@@ -1,3 +1,4 @@
+import collections
 import shutil
 import json
 import ruamel.yaml as yaml
@@ -15,32 +16,27 @@ import rdflib
 from rdflib import Graph, URIRef
 import rdflib.namespace
 from rdflib.namespace import RDF, RDFS
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
-    unicode=str
-    basestring=str
+import urlparse
 import logging
 from .aslist import aslist
-if sys.version_info >= (2,7):
-    import typing
+from typing import Any, Dict, Iterable, Tuple, Union
+from .ref_resolver import Loader
 
 _logger = logging.getLogger("salad")
 
 def pred(datatype, field, name, context, defaultBase, namespaces):
+    # type: (Dict[str, Union[Dict, str]], Dict, str, Dict[str, Union[Dict, str]], str, Dict[str, rdflib.namespace.Namespace]) -> Union[Dict, str]
     split = urlparse.urlsplit(name)
 
-    v = None
-
     if split.scheme:
-        v = name
-        (ns, ln) = rdflib.namespace.split_uri(unicode(v))
+        vee = name  # type: Union[str, unicode]
+        (ns, ln) = rdflib.namespace.split_uri(unicode(vee))
         name = ln
         if ns[0:-1] in namespaces:
-            v = unicode(namespaces[ns[0:-1]][ln])
-        _logger.debug("name, v %s %s", name, v)
+            vee = unicode(namespaces[ns[0:-1]][ln])
+        _logger.debug("name, v %s %s", name, vee)
 
+    v = None  # type: Any
     if field and "jsonldPredicate" in field:
         if isinstance(field["jsonldPredicate"], dict):
             v = {}
@@ -49,9 +45,17 @@ def pred(datatype, field, name, context, defaultBase, namespaces):
         else:
             v = field["jsonldPredicate"]
     elif "jsonldPredicate" in datatype:
-        for d in datatype["jsonldPredicate"]:
-            if d["symbol"] == name:
-                v = d["predicate"]
+        if isinstance(datatype["jsonldPredicate"], collections.Iterable):
+            for d in datatype["jsonldPredicate"]:
+                if isinstance(d, dict):
+                    if d["symbol"] == name:
+                        v = d["predicate"]
+                else:
+                    raise Exception(
+                            "entries in the jsonldPredicate List must be "
+                            "Dictionaries")
+        else:
+            raise Exception("jsonldPredicate must be a List of Dictionaries.")
     # if not v:
     #     if field and "jsonldPrefix" in field:
     #         defaultBase = field["jsonldPrefix"]
@@ -71,6 +75,7 @@ def pred(datatype, field, name, context, defaultBase, namespaces):
     return v
 
 def process_type(t, g, context, defaultBase, namespaces, defaultPrefix):
+    # type: (Dict[str, Any], Graph, Dict[str, Union[Dict[Any, Any], str]], str, Dict[str, rdflib.namespace.Namespace], str) -> None
     if t["type"] == "record":
         recordname = t["name"]
 
@@ -136,6 +141,7 @@ def process_type(t, g, context, defaultBase, namespaces, defaultPrefix):
 
 
 def salad_to_jsonld_context(j, schema_ctx):
+    # type: (Iterable, Dict[str, Any]) -> Tuple[Loader.ContextType, Graph]
     context = {}
     namespaces = {}
     g = Graph()
@@ -158,9 +164,3 @@ def salad_to_jsonld_context(j, schema_ctx):
         process_type(t, g, context, defaultBase, namespaces, defaultPrefix)
 
     return (context, g)
-
-if __name__ == "__main__":
-    with open(sys.argv[1]) as f:
-        j = yaml.load(f, Loader=SafeLoader)
-        (ctx, g) = salad_to_jsonld_context(j)
-        print(json.dumps(ctx, indent=4, sort_keys=True))

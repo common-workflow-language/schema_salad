@@ -5,10 +5,7 @@ import hashlib
 import logging
 import collections
 import requests
-try:
-    import urlparse
-except:
-    import urllib.parse as urlparse
+import urlparse
 import ruamel.yaml as yaml
 try:
         from ruamel.yaml import CSafeLoader as SafeLoader
@@ -16,24 +13,19 @@ except ImportError:
         from ruamel.yaml import SafeLoader
 from . import validate
 import pprint
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
-    unicode=str
-    basestring=str
+from StringIO import StringIO
 from .aslist import aslist
 import rdflib
 from rdflib.namespace import RDF, RDFS, OWL
 import xml.sax
-if sys.version_info >= (2,7):
-    import typing
-    from typing import Union, Tuple
+from typing import Union, Tuple, Dict, Any, Callable, Iterable
+import builtins
 
 _logger = logging.getLogger("salad")
 
+
 class NormDict(dict):
-    def __init__(self, normalize=unicode):
+    def __init__(self, normalize=unicode):  # type: (type) -> None
         super(NormDict, self).__init__()
         self.normalize = normalize
 
@@ -63,22 +55,29 @@ def merge_properties(a, b):
 
     return c
 
-def SubLoader(loader):
-    return Loader(loader.ctx, schemagraph=loader.graph, foreign_properties=loader.foreign_properties, idx=loader.idx, cache=loader.cache)
+def SubLoader(loader):  # type: (Loader) -> Loader
+    return Loader(loader.ctx, schemagraph=loader.graph,
+            foreign_properties=loader.foreign_properties, idx=loader.idx,
+            cache=loader.cache)
 
 class Loader(object):
-    def __init__(self, ctx, schemagraph=None, foreign_properties=None, idx=None, cache=None):
+
+    ContextType = Dict[str, Union[Dict, str, Iterable[str]]]
+
+    def __init__(self, ctx, schemagraph=None, foreign_properties=None,
+            idx=None, cache=None):
+        # type: (Loader.ContextType, rdflib.Graph, Set[str], Dict[unicode, Any], Dict[unicode, Any]) -> None
         normalize = lambda url: urlparse.urlsplit(url).geturl()
         if idx is not None:
             self.idx = idx
         else:
             self.idx = NormDict(normalize)
 
-        self.ctx = {}  # type: Dict[str, Union[str, dict, basestring]]
+        self.ctx = {}  # type: Loader.ContextType
         if schemagraph is not None:
             self.graph = schemagraph
         else:
-            self.graph = rdflib.Graph()
+            self.graph = rdflib.graph.Graph()
 
         if foreign_properties is not None:
             self.foreign_properties = foreign_properties
@@ -90,18 +89,21 @@ class Loader(object):
         else:
             self.cache = {}
 
-        self.url_fields = set()  # type: Set[str]
-        self.vocab_fields = set()  # type: Set
-        self.identifiers = set()  # type: Set
-        self.identity_links = set()  # type: Set
-        self.standalone = set()  # type: Set
-        self.nolinkcheck = set()  # type: Set
-        self.vocab = {}  # type: Dict
-        self.rvocab = {}  # type: Dict
+        self.url_fields = None  # type: Set[str]
+        self.vocab_fields = None  # type: Set[str]
+        self.identifiers = None  # type: Set[str]
+        self.identity_links = None  # type: Set[str]
+        self.standalone = None  # type: Set[str]
+        self.nolinkcheck = None  # type: Set[str]
+        self.vocab = {}  # type: Dict[unicode, Any]
+        self.rvocab = {}  # type: Dict[unicode, Any]
+        self.idmap = None  # type: Dict[unicode, Any]
+        self.mapPredicate = None  # type: Dict[unicode, Any]
 
         self.add_context(ctx)
 
     def expand_url(self, url, base_url, scoped=False, vocab_term=False):
+        # type: (Union[str, unicode], Union[str, unicode], bool, bool) -> Union[str, unicode]
         if url in ("@id", "@type"):
             return url
 
@@ -133,7 +135,7 @@ class Loader(object):
         else:
             return url
 
-    def _add_properties(self, s):
+    def _add_properties(self, s):  # type: (str) -> None
         for _, _, rng in self.graph.triples( (s, RDFS.range, None) ):
             literal = ((str(rng).startswith("http://www.w3.org/2001/XMLSchema#") and not str(rng) == "http://www.w3.org/2001/XMLSchema#anyURI") or
                        str(rng) == "http://www.w3.org/2000/01/rdf-schema#Literal")
@@ -141,11 +143,13 @@ class Loader(object):
                 self.url_fields.add(str(s))
         self.foreign_properties.add(str(s))
 
-    def add_namespaces(self, ns):
+    def add_namespaces(self, ns):  # type: (Dict[unicode, Any]) -> None
         self.vocab.update(ns)
 
     def add_schemas(self, ns, base_url):
+        # type: (Dict[str, Any], Union[str, unicode]) -> None
         for sch in aslist(ns):
+<<<<<<< c51c7237e8e8fd72cf80748bc6c156bb2dbc1558
             for fmt in ['xml', 'turtle', 'rdfa']:
                 try:
                     self.graph.parse(urlparse.urljoin(base_url, sch),
@@ -153,6 +157,12 @@ class Loader(object):
                     break
                 except xml.sax.SAXParseException:
                     pass
+=======
+            try:
+                self.graph.parse(urlparse.urljoin(base_url, sch), format="xml")
+            except xml.sax.SAXParseException:  # type: ignore
+                self.graph.parse(urlparse.urljoin(base_url, sch), format="turtle")
+>>>>>>> more type checking
 
         for s, _, _ in self.graph.triples( (None, RDF.type, RDF.Property) ):
             self._add_properties(s)
@@ -169,6 +179,7 @@ class Loader(object):
 
 
     def add_context(self, newcontext, baseuri=""):
+        # type: (Loader.ContextType, str) -> None
         if self.vocab:
             raise validate.ValidationException("Refreshing context that already has stuff in it")
 
@@ -187,31 +198,31 @@ class Loader(object):
 
         _logger.debug("ctx is %s", self.ctx)
 
-        for c in self.ctx:
-            if self.ctx[c] == "@id":
-                self.identifiers.add(c)
-                self.identity_links.add(c)
-            elif isinstance(self.ctx[c], dict) and self.ctx[c].get("@type") == "@id":
-                self.url_fields.add(c)
-                if self.ctx[c].get("identity", False):
-                    self.identity_links.add(c)
-            elif isinstance(self.ctx[c], dict) and self.ctx[c].get("@type") == "@vocab":
-                self.url_fields.add(c)
-                self.vocab_fields.add(c)
+        for key, value in self.ctx.items():
+            if value == "@id":
+                self.identifiers.add(key)
+                self.identity_links.add(key)
+            elif isinstance(value, dict) and value.get("@type") == "@id":
+                self.url_fields.add(key)
+                if value.get("identity", False):
+                    self.identity_links.add(key)
+            elif isinstance(value, dict) and value.get("@type") == "@vocab":
+                self.url_fields.add(key)
+                self.vocab_fields.add(key)
 
-            if isinstance(self.ctx[c], dict) and self.ctx[c].get("noLinkCheck"):
-                self.nolinkcheck.add(c)
+            if isinstance(value, dict) and value.get("noLinkCheck"):
+                self.nolinkcheck.add(key)
 
-            if isinstance(self.ctx[c], dict) and self.ctx[c].get("mapSubject"):
-                self.idmap[c] = self.ctx[c]["mapSubject"]
+            if isinstance(value, dict) and value.get("mapSubject"):
+                self.idmap[key] = value["mapSubject"]
 
-            if isinstance(self.ctx[c], dict) and self.ctx[c].get("mapPredicate"):
-                self.mapPredicate[c] = self.ctx[c]["mapPredicate"]
+            if isinstance(value, dict) and value.get("mapPredicate"):
+                self.mapPredicate[key] = value["mapPredicate"]
 
-            if isinstance(self.ctx[c], dict) and "@id" in self.ctx[c]:
-                self.vocab[c] = self.ctx[c]["@id"]
-            elif isinstance(self.ctx[c], basestring):
-                self.vocab[c] = self.ctx[c]
+            if isinstance(value, dict) and "@id" in value:
+                self.vocab[key] = value["@id"]
+            elif isinstance(value, basestring):
+                self.vocab[key] = value
 
         for k,v in self.vocab.items():
             self.rvocab[self.expand_url(v, "", scoped=False)] = k
@@ -224,9 +235,10 @@ class Loader(object):
 
 
     def resolve_ref(self, ref, base_url=None):
+        # type: (Union[Dict[str, Any], str, unicode], Union[str, unicode]) -> Tuple[Union[Dict[str, Any], str, unicode], Dict[str, Any]]
         base_url = base_url or 'file://%s/' % os.path.abspath('.')
 
-        obj = None
+        obj = None  # type: Dict[str, Any]
         inc = False
 
         # If `ref` is a dict, look for special directives.
@@ -254,7 +266,7 @@ class Loader(object):
                 if not ref:
                     raise ValueError("Object `%s` does not have identifier field in %s" % (obj, self.identifiers))
 
-        if not isinstance(ref, basestring):
+        if not isinstance(ref, (str, unicode)):
             raise ValueError("Must be string: `%s`" % str(ref))
 
         url = self.expand_url(ref, base_url, scoped=(obj is not None))
@@ -267,6 +279,7 @@ class Loader(object):
         if inc:
             return self.fetch_text(url), {}
 
+        doc = None
         if obj:
             for identifier in self.identifiers:
                 obj[identifier] = url
@@ -276,10 +289,10 @@ class Loader(object):
             doc_url, frg = urlparse.urldefrag(url)
             if doc_url in self.idx:
                 raise validate.ValidationException("Reference `#%s` not found in file `%s`." % (frg, doc_url))
-            obj = self.fetch(doc_url)
+            doc = self.fetch(doc_url)
 
         # Recursively expand urls and resolve directives
-        obj, metadata = self.resolve_all(obj, doc_url)
+        obj, metadata = self.resolve_all(doc if doc else obj, doc_url)
 
         # Requested reference should be in the index now, otherwise it's a bad reference
         if url is not None:
@@ -299,8 +312,9 @@ class Loader(object):
             return obj, metadata
 
     def resolve_all(self, document, base_url, file_base=None):
+        # type: (Any, Union[str, unicode], Union[str, unicode]) -> Tuple[Any, Dict[str, str]]
         loader = self
-        metadata = {}  # type: Dict[str, str]
+        metadata = {}  # type: Dict[str, Any]
         if file_base is None:
             file_base = base_url
 
@@ -311,7 +325,7 @@ class Loader(object):
         elif isinstance(document, list):
             pass
         else:
-            return document, metadata
+            raise TypeError("Document must be dict or list.")
 
         newctx = None
         if isinstance(document, dict):
@@ -323,7 +337,7 @@ class Loader(object):
                 if not newctx:
                     newctx = SubLoader(self)
                 prof = self.fetch(document["$profile"])
-                newctx.add_namespaces(document.get("$namespaces", {}), document["$profile"])
+                newctx.add_namespaces(document.get("$namespaces", {}))
                 newctx.add_schemas(document.get("$schemas", []), document["$profile"])
 
             if "$namespaces" in document:
@@ -388,7 +402,12 @@ class Loader(object):
                     if isinstance(document[d], basestring):
                         document[d] = loader.expand_url(document[d], base_url, scoped=False, vocab_term=(d in loader.vocab_fields))
                     elif isinstance(document[d], list):
-                        document[d] = [loader.expand_url(url, base_url, scoped=False, vocab_term=(d in loader.vocab_fields)) if isinstance(url, basestring) else url for url in document[d] ]
+                        document[d] = [
+                                loader.expand_url(
+                                    url, base_url, scoped=False,
+                                    vocab_term=(d in loader.vocab_fields))
+                                if isinstance(url, (str, unicode))
+                                else url for url in document[d] ]
 
             try:
                 for key, val in document.items():
@@ -420,13 +439,14 @@ class Loader(object):
 
             for identifer in loader.identity_links:
                 if identifer in metadata:
-                    if isinstance(metadata[identifer], basestring):
+                    if isinstance(metadata[identifer], (str, unicode)):
                         metadata[identifer] = loader.expand_url(metadata[identifer], base_url, scoped=True)
                         loader.idx[metadata[identifer]] = document
 
         return document, metadata
 
     def fetch_text(self, url):
+        # type: (Union[str, unicode]) -> Union[str, unicode]
         if url in self.cache:
             return self.cache[url]
 
@@ -453,17 +473,17 @@ class Loader(object):
         else:
             raise ValueError('Unsupported scheme in url: %s' % url)
 
-    def fetch(self, url):
+    def fetch(self, url):  # type: (Union[str, unicode]) -> Any
         if url in self.idx:
             return self.idx[url]
         try:
             text = self.fetch_text(url)
             if isinstance(text, bytes):
-                text = StringIO(text.decode('utf-8'))
+                textIO = StringIO(text.decode('utf-8'))
             else:
-                text = StringIO(text)
-            text.name = url
-            result = yaml.load(text, Loader=SafeLoader)
+                textIO = StringIO(text)
+            textIO.name = url  # type: ignore
+            result = yaml.load(textIO, Loader=SafeLoader)
         except yaml.parser.ParserError as e:
             raise validate.ValidationException("Syntax error %s" % (e))
         if isinstance(result, dict) and self.identifiers:
@@ -475,7 +495,7 @@ class Loader(object):
             self.idx[url] = result
         return result
 
-    def check_file(self, fn):
+    def check_file(self, fn):  # type: (Union[str, unicode]) -> bool
         if fn.startswith("file://"):
             u = urlparse.urlsplit(fn)
             return os.path.exists(u.path)
@@ -483,9 +503,10 @@ class Loader(object):
             return False
 
     def validate_link(self, field, link):
+        # type: (str, Union[str, unicode, List[str], Dict[str, Any]]) -> bool
         if field in self.nolinkcheck:
             return True
-        if isinstance(link, basestring):
+        if isinstance(link, (str, unicode)):
             if field in self.vocab_fields:
                 if link not in self.vocab and link not in self.idx and link not in self.rvocab:
                     if not self.check_file(link):
@@ -504,9 +525,12 @@ class Loader(object):
                 raise validate.ValidationException("\n".join([str(e) for e in errors]))
         elif isinstance(link, dict):
             self.validate_links(link)
+        else:
+            raise validate.ValidationException("Link must be a str, unicode, "
+                    "list, or a dict.")
         return True
 
-    def getid(self, d):
+    def getid(self, d):  # type: (Any) -> Union[basestring, None]
         if isinstance(d, dict):
             for i in self.identifiers:
                 if i in d:
@@ -514,12 +538,13 @@ class Loader(object):
                         return d[i]
         return None
 
-    def validate_links(self, document):
+    def validate_links(self, document):  # type: (Any) -> None
         docid = self.getid(document)
         if docid is None:
             docid = ""
 
         errors = []
+        iterator = None  # type: Any
         if isinstance(document, list):
             iterator = enumerate(document)
         elif isinstance(document, dict):
@@ -559,6 +584,7 @@ class Loader(object):
 
 
 def _copy_dict_without_key(from_dict, filtered_key):
+    # type: (Dict, Any) -> Dict
     new_dict = {}
     for key, value in from_dict.items():
         if key != filtered_key:

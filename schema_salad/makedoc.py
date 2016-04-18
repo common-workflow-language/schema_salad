@@ -5,25 +5,18 @@ import os
 import copy
 import re
 import sys
-try:
-    import StringIO
-except ImportError:
-    from io import StringIO
+import StringIO
 import logging
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
+import urlparse
 from .aslist import aslist
 from .add_dictlist import add_dictlist
 import re
 import argparse
-if sys.version_info >= (2,7):
-    import typing
+from typing import Any, IO, Union
 
 _logger = logging.getLogger("salad")
 
-def has_types(items):
+def has_types(items):  # type: (Any) -> List[basestring]
     r = []  # type: List
     if isinstance(items, dict):
         if items["type"] == "https://w3id.org/cwl/salad#record":
@@ -45,10 +38,13 @@ def linkto(item):
     return "[%s](#%s)" % (frg, to_id(frg))
 
 class MyRenderer(mistune.Renderer):
+    def __init__(self):  # type: () -> None
+        super(mistune.Renderer, self).__init__()
+
     def header(self, text, level, raw=None):
         return """<h%i id="%s">%s</h%i>""" % (level, to_id(text), text, level)
 
-def to_id(text):
+def to_id(text):  # type: (Union[str, unicode]) -> Union[str, unicode]
     textid = text
     if text[0] in ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"):
         try:
@@ -59,13 +55,13 @@ def to_id(text):
     return textid
 
 class ToC(object):
-    def __init__(self):
+    def __init__(self):  # type: () -> None
         self.first_toc_entry = True
         self.numbering = [0]
         self.toc = ""
         self.start_numbering = True
 
-    def add_entry(self, thisdepth, title):
+    def add_entry(self, thisdepth, title):  # type: (int, str) -> str
         depth = len(self.numbering)
         if thisdepth < depth:
             self.toc += "</ol>"
@@ -90,9 +86,9 @@ class ToC(object):
             num, title)
         return num
 
-    def contents(self, id):
+    def contents(self, idn):  # type: (str) -> str
         c = """<h1 id="%s">Table of contents</h1>
-               <nav class="tocnav"><ol>%s""" % (id, self.toc)
+               <nav class="tocnav"><ol>%s""" % (idn, self.toc)
         c += "</ol>"
         for i in range(0, len(self.numbering)):
             c += "</li></ol>"
@@ -110,7 +106,7 @@ basicTypes = ("https://w3id.org/cwl/salad#null",
               "https://w3id.org/cwl/salad#enum",
               "https://w3id.org/cwl/salad#array")
 
-def number_headings(toc, maindoc):
+def number_headings(toc, maindoc):  # type: (ToC, str) -> str
     mdlines = []
     skip = False
     for line in maindoc.splitlines():
@@ -132,19 +128,24 @@ def number_headings(toc, maindoc):
     maindoc = '\n'.join(mdlines)
     return maindoc
 
-def fix_doc(doc):
+def fix_doc(doc):  # type: (Union[List[str], str]) -> str
     if isinstance(doc, list):
-        doc = "".join(doc)
-    return "\n".join([re.sub(r"<([^>@]+@[^>]+)>", r"[\1](mailto:\1)", d) for d in doc.splitlines()])
+        docstr = "".join(doc)
+    else:
+        docstr = doc
+    return "\n".join(
+            [re.sub(r"<([^>@]+@[^>]+)>", r"[\1](mailto:\1)", d)
+                for d in docstr.splitlines()])
 
 class RenderType(object):
     def __init__(self, toc, j, renderlist, redirects):
+        # type: (ToC, List[Dict], str, Dict) -> None
         self.typedoc = StringIO.StringIO()
         self.toc = toc
-        self.subs = {}  # type: Dict
-        self.docParent = {}  # type: Dict
-        self.docAfter = {}  # type: Dict
-        self.rendered = set()  # type: Set
+        self.subs = {}  # type: Dict[str, str]
+        self.docParent = {}  # type: Dict[str, List]
+        self.docAfter = {}  # type: Dict[str, List]
+        self.rendered = set()  # type: Set[str]
         self.redirects = redirects
         self.title = None  # type: str
 
@@ -165,7 +166,7 @@ class RenderType(object):
             if t.get("docAfter"):
                 add_dictlist(self.docAfter, t["docAfter"], t["name"])
 
-        _, _, metaschema_loader = schema.get_metaschema()
+        metaschema_loader = schema.get_metaschema()[2]
         alltypes = schema.extend_and_specialize(j, metaschema_loader)
 
         self.typemap = {}  # type: Dict
@@ -200,6 +201,7 @@ class RenderType(object):
                 self.render_type(f, 1)
 
     def typefmt(self, tp, redirects, nbsp=False):
+        # type: (Any, Dict[str, str], bool) -> Union[str, unicode]
         global primitiveType
         if isinstance(tp, list):
             if nbsp and len(tp) <= 3:
@@ -231,7 +233,7 @@ class RenderType(object):
                 return """<a href="#%s">%s</a>""" % (to_id(tp), tp)
 
 
-    def render_type(self, f, depth):
+    def render_type(self, f, depth):  # type: (Dict[str, Any], int) -> None
         if f["name"] in self.rendered or f["name"] in self.redirects:
             return
         self.rendered.add(f["name"])
@@ -247,6 +249,7 @@ class RenderType(object):
             f["doc"] = ""
 
         def extendsfrom(item, ex):
+            # type: (Dict[str, Any], List[Dict[str, Any]]) -> None
             if "extends" in item:
                 for e in aslist(item["extends"]):
                     ex.insert(0, self.typemap[e])
@@ -325,8 +328,11 @@ class RenderType(object):
                 #if "inherited_from" in i:
                 #    desc = "%s _Inherited from %s_" % (desc, linkto(i["inherited_from"]))
 
-                frg = schema.avro_name(i["name"])
-                tr = "<td><code>%s</code></td><td>%s</td><td>%s</td><td>%s</td>" % (frg, self.typefmt(tp, self.redirects), opt, mistune.markdown(desc))
+                rfrg = schema.avro_name(i["name"])
+                tr = "<td><code>%s</code></td><td>%s</td><td>%s</td>"\
+                        "<td>%s</td>" % (
+                                rfrg, self.typefmt(tp, self.redirects), opt,
+                                mistune.markdown(desc))
                 if opt:
                     required.append(tr)
                 else:
@@ -341,8 +347,9 @@ class RenderType(object):
             for e in ex:
                 for i in e.get("symbols", []):
                     doc += "<tr>"
-                    frg = schema.avro_name(i)
-                    doc += "<td><code>%s</code></td><td>%s</td>" % (frg, enumDesc.get(frg, ""))
+                    efrg = schema.avro_name(i)
+                    doc += "<td><code>%s</code></td><td>%s</td>" % (
+                            efrg, enumDesc.get(efrg, ""))
                     doc += "</tr>"
             doc += """</table>"""
         f["doc"] = doc
@@ -360,11 +367,12 @@ class RenderType(object):
             self.render_type(self.typemap[s], depth)
 
 def avrold_doc(j, outdoc, renderlist, redirects, brand, brandlink):
+    # type: (List[Dict[str, Any]], IO[Any], str, Dict, str, str) -> None
     toc = ToC()
     toc.start_numbering = False
 
     rt = RenderType(toc, j, renderlist, redirects)
-    content = rt.typedoc.getvalue()
+    content = rt.typedoc.getvalue()  # type: unicode
 
     outdoc.write("""
     <!DOCTYPE html>
@@ -451,7 +459,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    s = []
+    s = []  # type: List[Dict[str, Any]]
     a = args.schema
     with open(a) as f:
         if a.endswith("md"):
@@ -461,12 +469,14 @@ if __name__ == "__main__":
               })
         else:
             uri = "file://" + os.path.abspath(a)
-            _, _, metaschema_loader = schema.get_metaschema()
+            metaschema_loader = schema.get_metaschema()[2]
             j, schema_metadata = metaschema_loader.resolve_ref(uri, "")
             if isinstance(j, list):
                 s.extend(j)
-            else:
+            elif isinstance(j, dict):
                 s.append(j)
+            else:
+                raise ValueError("Schema must resolve to a list or a dict")
 
     primitiveType = args.primtype
     redirect = {}
