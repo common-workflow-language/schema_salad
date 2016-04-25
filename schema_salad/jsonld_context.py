@@ -24,6 +24,7 @@ from .ref_resolver import Loader
 
 _logger = logging.getLogger("salad")
 
+
 def pred(datatype, field, name, context, defaultBase, namespaces):
     # type: (Dict[str, Union[Dict, str]], Dict, str, Dict[str, Union[Dict, str]], str, Dict[str, rdflib.namespace.Namespace]) -> Union[Dict, str]
     split = urlparse.urlsplit(name)
@@ -41,7 +42,7 @@ def pred(datatype, field, name, context, defaultBase, namespaces):
         if isinstance(field["jsonldPredicate"], dict):
             v = {}
             for k, val in field["jsonldPredicate"].items():
-                v[("@"+k[1:] if k.startswith("_") else k)] = val
+                v[("@" + k[1:] if k.startswith("_") else k)] = val
         else:
             v = field["jsonldPredicate"]
     elif "jsonldPredicate" in datatype:
@@ -52,8 +53,8 @@ def pred(datatype, field, name, context, defaultBase, namespaces):
                         v = d["predicate"]
                 else:
                     raise Exception(
-                            "entries in the jsonldPredicate List must be "
-                            "Dictionaries")
+                        "entries in the jsonldPredicate List must be "
+                        "Dictionaries")
         else:
             raise Exception("jsonldPredicate must be a List of Dictionaries.")
     # if not v:
@@ -67,12 +68,14 @@ def pred(datatype, field, name, context, defaultBase, namespaces):
 
     if name in context:
         if context[name] != v:
-            raise Exception("Predicate collision on %s, '%s' != '%s'" % (name, context[name], v))
+            raise Exception("Predicate collision on %s, '%s' != '%s'" %
+                            (name, context[name], v))
     else:
         _logger.debug("Adding to context '%s' %s (%s)", name, v, type(v))
         context[name] = v
 
     return v
+
 
 def process_type(t, g, context, defaultBase, namespaces, defaultPrefix):
     # type: (Dict[str, Any], Graph, Dict[str, Union[Dict[Any, Any], str]], str, Dict[str, rdflib.namespace.Namespace], str) -> None
@@ -95,12 +98,14 @@ def process_type(t, g, context, defaultBase, namespaces, defaultPrefix):
             predicate = "%s:%s" % (defaultPrefix, recordname)
 
         if context.get(recordname, predicate) != predicate:
-            raise Exception("Predicate collision on '%s', '%s' != '%s'" % (recordname, context[recordname], predicate))
+            raise Exception("Predicate collision on '%s', '%s' != '%s'" % (
+                recordname, context[recordname], predicate))
 
         if not recordname:
             raise Exception()
 
-        _logger.debug("Adding to context '%s' %s (%s)", recordname, predicate, type(predicate))
+        _logger.debug("Adding to context '%s' %s (%s)",
+                      recordname, predicate, type(predicate))
         context[recordname] = predicate
 
         for i in t.get("fields", []):
@@ -128,7 +133,8 @@ def process_type(t, g, context, defaultBase, namespaces, defaultPrefix):
                 # TODO generate range from datatype.
 
             if isinstance(i["type"], dict) and "name" in i["type"]:
-                process_type(i["type"], g, context, defaultBase, namespaces, defaultPrefix)
+                process_type(i["type"], g, context, defaultBase,
+                             namespaces, defaultPrefix)
 
         if "extends" in t:
             for e in aslist(t["extends"]):
@@ -147,7 +153,7 @@ def salad_to_jsonld_context(j, schema_ctx):
     g = Graph()
     defaultPrefix = ""
 
-    for k,v in schema_ctx.items():
+    for k, v in schema_ctx.items():
         context[k] = v
         namespaces[k] = rdflib.namespace.Namespace(v)
 
@@ -157,7 +163,7 @@ def salad_to_jsonld_context(j, schema_ctx):
     else:
         defaultBase = ""
 
-    for k,v in namespaces.items():
+    for k, v in namespaces.items():
         g.bind(k, v)
 
     for t in j:
