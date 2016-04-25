@@ -23,7 +23,7 @@ register('json-ld', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')
 
 
 def printrdf(workflow, wf, ctx, sr):
-    # type: (str, Union[Dict[Any, Any], str], Dict[str, Any], str) -> None
+    # type: (str, Union[Dict[Any, Any], str, unicode], Dict[str, Any], str) -> None
     g = Graph().parse(data=json.dumps(wf), format='json-ld',
                       location=workflow, context=ctx)
     print(g.serialize(format=sr))
@@ -206,30 +206,25 @@ def main(argsl=None):  # type: (List[str]) -> int
             document_loader.idx.keys(), indent=4))
         return 1
 
-    if isinstance(document, dict):
-        # Validate the schema document against the metaschema
-        try:
-            schema.validate_doc(avsc_names, document,
-                                document_loader, args.strict)
-        except validate.ValidationException as e:
-            _logger.error("While validating document `%s`:\n%s" %
-                          (args.document, str(e)))
-            return 1
-
-        # Optionally convert the document to RDF
-        if args.print_rdf:
-            printrdf(args.document, document, schema_ctx, args.rdf_serializer)
-            return 0
-
-        if args.print_metadata:
-            print(json.dumps(doc_metadata, indent=4))
-            return 0
-
-        print("Document `%s` is valid" % args.document)
-    else:
-        print("Whoops, got a non-dictionary from resolve_ref. That shouldn't "
-              "happen.")
+    # Validate the schema document against the metaschema
+    try:
+        schema.validate_doc(avsc_names, document,
+                            document_loader, args.strict)
+    except validate.ValidationException as e:
+        _logger.error("While validating document `%s`:\n%s" %
+                      (args.document, str(e)))
         return 1
+
+    # Optionally convert the document to RDF
+    if args.print_rdf:
+        printrdf(args.document, document, schema_ctx, args.rdf_serializer)
+        return 0
+
+    if args.print_metadata:
+        print(json.dumps(doc_metadata, indent=4))
+        return 0
+
+    print("Document `%s` is valid" % args.document)
 
     return 0
 

@@ -46,8 +46,8 @@ class TestSchemas(unittest.TestCase):
     #     })
 
     def test_self_validate(self):
-        schema_salad.main.main(args=["schema_salad/metaschema/metaschema.yml"])
-        schema_salad.main.main(args=["schema_salad/metaschema/metaschema.yml",
+        schema_salad.main.main(argsl=["schema_salad/metaschema/metaschema.yml"])
+        schema_salad.main.main(argsl=["schema_salad/metaschema/metaschema.yml",
                                      "schema_salad/metaschema/metaschema.yml"])
 
     def test_jsonld_ctx(self):

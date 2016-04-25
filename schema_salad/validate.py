@@ -49,10 +49,16 @@ def vpformat(datum):  # type: (Any) -> str
         a = a[0:160] + "[...]"
     return a
 
-def validate_ex(expected_schema, datum, identifiers=set(), strict=False,
-        foreign_properties=set()):
+def validate_ex(expected_schema, datum, identifiers=None, strict=False,
+        foreign_properties=None):
     # type: (avro.schema.Schema, Any, Set[str], bool, Set[str]) -> bool
     """Determine if a python datum is an instance of a schema."""
+
+    if not identifiers:
+        identifiers = set()
+
+    if not foreign_properties:
+        foreign_properties = set()
 
     schema_type = expected_schema.type
 

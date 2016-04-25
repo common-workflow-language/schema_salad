@@ -20,7 +20,7 @@ from .flatten import flatten
 import logging
 from .aslist import aslist
 from . import jsonld_context
-from typing import Any, AnyStr, Dict, List, Tuple, TypeVar, Union
+from typing import Any, AnyStr, cast, Dict, List, Tuple, TypeVar, Union
 
 _logger = logging.getLogger("salad")
 
@@ -197,7 +197,7 @@ def load_and_validate(document_loader, avsc_names, document, strict):
 
 
 def validate_doc(schema_names, doc, loader, strict):
-    # type: (avro.schema.Names, Union[Dict[str, Any], List[Dict[str, Any]]], ref_resolver.Loader, bool) -> None
+    # type: (avro.schema.Names, Union[Dict[str, Any], List[Dict[str, Any]], str, unicode], ref_resolver.Loader, bool) -> None
     has_root = False
     for r in schema_names.names.values():
         if ((hasattr(r, 'get_prop') and r.get_prop("documentRoot")) or (
@@ -297,11 +297,10 @@ def avro_name(url):  # type: (AnyStr) -> AnyStr
             return frg
     return url
 
-Avro = TypeVar('Avro', Dict[unicode, Any], List[Dict[unicode, Any], unicode])
-
+Avro = TypeVar('Avro', Dict[unicode, Any], List[Any], unicode)
 
 def make_valid_avro(items, alltypes, found, union=False):
-    # type: (Avro, Dict[unicode, Dict[unicode, Any]], Set[unicode], bool) -> Avro
+    # type: (Avro, Dict[unicode, Dict[unicode, Any]], Set[unicode], bool) -> Union[Avro, Dict]
     items = copy.deepcopy(items)
     if isinstance(items, dict):
         if items.get("name"):
@@ -333,7 +332,8 @@ def make_valid_avro(items, alltypes, found, union=False):
         return ret
     if union and isinstance(items, (str, unicode)):
         if items in alltypes and avro_name(items) not in found:
-            return make_valid_avro(alltypes[items], alltypes, found, union=union)
+            return cast(Dict, make_valid_avro(alltypes[items], alltypes, found,
+                union=union))
         items = avro_name(items)
     return items
 

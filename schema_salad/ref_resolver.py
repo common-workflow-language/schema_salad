@@ -327,7 +327,7 @@ class Loader(object):
         elif isinstance(document, list):
             pass
         else:
-            raise TypeError("Document must be dict or list.")
+            return (document, metadata)
 
         newctx = None
         if isinstance(document, dict):

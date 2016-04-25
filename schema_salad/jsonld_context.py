@@ -19,18 +19,20 @@ from rdflib.namespace import RDF, RDFS
 import urlparse
 import logging
 from .aslist import aslist
-from typing import Any, Dict, Iterable, Tuple, Union
+from typing import Any, cast, Dict, Iterable, Tuple, Union
 from .ref_resolver import Loader
 
 _logger = logging.getLogger("salad")
 
 
 def pred(datatype, field, name, context, defaultBase, namespaces):
-    # type: (Dict[str, Union[Dict, str]], Dict, str, Dict[str, Union[Dict, str]], str, Dict[str, rdflib.namespace.Namespace]) -> Union[Dict, str]
+    # type: (Dict[str, Union[Dict, str]], Dict, str, Loader.ContextType, str, Dict[str, rdflib.namespace.Namespace]) -> Union[Dict, str]
     split = urlparse.urlsplit(name)
 
+    vee = None  # type: Union[str, unicode]
+
     if split.scheme:
-        vee = name  # type: Union[str, unicode]
+        vee = name
         (ns, ln) = rdflib.namespace.split_uri(unicode(vee))
         name = ln
         if ns[0:-1] in namespaces:
@@ -38,6 +40,7 @@ def pred(datatype, field, name, context, defaultBase, namespaces):
         _logger.debug("name, v %s %s", name, vee)
 
     v = None  # type: Any
+
     if field and "jsonldPredicate" in field:
         if isinstance(field["jsonldPredicate"], dict):
             v = {}
@@ -63,22 +66,24 @@ def pred(datatype, field, name, context, defaultBase, namespaces):
     #     elif "jsonldPrefix" in datatype:
     #         defaultBase = datatype["jsonldPrefix"]
 
-    if not v:
-        v = defaultBase + name
+    ret = v or vee
+
+    if not ret:
+        ret = defaultBase + name
 
     if name in context:
-        if context[name] != v:
+        if context[name] != ret:
             raise Exception("Predicate collision on %s, '%s' != '%s'" %
-                            (name, context[name], v))
+                            (name, context[name], ret))
     else:
-        _logger.debug("Adding to context '%s' %s (%s)", name, v, type(v))
-        context[name] = v
+        _logger.debug("Adding to context '%s' %s (%s)", name, ret, type(ret))
+        context[name] = ret
 
-    return v
+    return ret
 
 
 def process_type(t, g, context, defaultBase, namespaces, defaultPrefix):
-    # type: (Dict[str, Any], Graph, Dict[str, Union[Dict[Any, Any], str]], str, Dict[str, rdflib.namespace.Namespace], str) -> None
+    # type: (Dict[str, Any], Graph, Loader.ContextType, str, Dict[str, rdflib.namespace.Namespace], str) -> None
     if t["type"] == "record":
         recordname = t["name"]
 
@@ -148,7 +153,7 @@ def process_type(t, g, context, defaultBase, namespaces, defaultPrefix):
 
 def salad_to_jsonld_context(j, schema_ctx):
     # type: (Iterable, Dict[str, Any]) -> Tuple[Loader.ContextType, Graph]
-    context = {}
+    context = {}  # type: Loader.ContextType
     namespaces = {}
     g = Graph()
     defaultPrefix = ""
@@ -158,7 +163,7 @@ def salad_to_jsonld_context(j, schema_ctx):
         namespaces[k] = rdflib.namespace.Namespace(v)
 
     if "@base" in context:
-        defaultBase = context["@base"]
+        defaultBase = cast(str, context["@base"])
         del context["@base"]
     else:
         defaultBase = ""
