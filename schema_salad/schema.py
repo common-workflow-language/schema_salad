@@ -6,9 +6,9 @@ import pprint
 from pkg_resources import resource_stream
 import ruamel.yaml as yaml
 try:
-        from ruamel.yaml import CSafeLoader as SafeLoader
+    from ruamel.yaml import CSafeLoader as SafeLoader
 except ImportError:
-        from ruamel.yaml import SafeLoader
+    from ruamel.yaml import SafeLoader  # type: ignore
 import avro.schema
 from . import validate
 import json
@@ -331,10 +331,15 @@ def make_valid_avro(items, alltypes, found, union=False):
             ret.append(make_valid_avro(i, alltypes, found, union=union))
         return ret
     if union and isinstance(items, (str, unicode)):
-        if items in alltypes and avro_name(items) not in found:
-            return cast(Dict, make_valid_avro(alltypes[items], alltypes, found,
-                union=union))
-        items = avro_name(items)
+        if items in alltypes and avro_name(cast(  # bug in mypy 0.3.1, fixed in
+                Union[str, unicode], items)) not in found:  # 0.4-dev
+            return cast(Dict,
+                    make_valid_avro(alltypes[cast(  # bug in mypy 0.3.1, fixed
+                        # fixed in 0.4-dev
+                        Union[str, unicode], items)], alltypes, found,
+                        union=union))
+        items = avro_name(items)  # type: ignore
+        # bug in mypy 0.3.1, fixed in 0.4-dev
     return items
 
 

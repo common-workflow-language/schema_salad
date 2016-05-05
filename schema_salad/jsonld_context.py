@@ -3,9 +3,9 @@ import shutil
 import json
 import ruamel.yaml as yaml
 try:
-        from ruamel.yaml import CSafeLoader as SafeLoader
+    from ruamel.yaml import CSafeLoader as SafeLoader
 except ImportError:
-        from ruamel.yaml import SafeLoader
+    from ruamel.yaml import SafeLoader  # type: ignore
 import os
 import subprocess
 import copy

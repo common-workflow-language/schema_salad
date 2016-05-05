@@ -8,9 +8,9 @@ import requests
 import urlparse
 import ruamel.yaml as yaml
 try:
-        from ruamel.yaml import CSafeLoader as SafeLoader
+    from ruamel.yaml import CSafeLoader as SafeLoader
 except ImportError:
-        from ruamel.yaml import SafeLoader
+    from ruamel.yaml import SafeLoader  # type: ignore
 from . import validate
 import pprint
 from StringIO import StringIO
@@ -18,7 +18,7 @@ from .aslist import aslist
 import rdflib
 from rdflib.namespace import RDF, RDFS, OWL
 import xml.sax
-from typing import Union, Tuple, Dict, Any, Callable, Iterable
+from typing import cast, Union, Tuple, Dict, Any, Callable, Iterable
 
 _logger = logging.getLogger("salad")
 
@@ -158,7 +158,7 @@ class Loader(object):
                     self.graph.parse(urlparse.urljoin(base_url, sch),
                                      format=fmt)
                     break
-                except xml.sax.SAXParseException:
+                except xml.sax.SAXParseException:  # type: ignore
                     pass
 
         for s, _, _ in self.graph.triples((None, RDF.type, RDF.Property)):
@@ -268,7 +268,9 @@ class Loader(object):
         if not isinstance(ref, (str, unicode)):
             raise ValueError("Must be string: `%s`" % str(ref))
 
-        url = self.expand_url(ref, base_url, scoped=(obj is not None))
+        url = self.expand_url(cast(  # bug in mypy 0.3.1, fixed in 0.4-dev
+            Union[str, unicode], ref), base_url,
+            scoped=(obj is not None))
 
         # Has this reference been loaded already?
         if url in self.idx:
@@ -498,7 +500,7 @@ class Loader(object):
                 textIO = StringIO(text)
             textIO.name = url  # type: ignore
             result = yaml.load(textIO, Loader=SafeLoader)
-        except yaml.parser.ParserError as e:
+        except yaml.parser.ParserError as e:  # type: ignore
             raise validate.ValidationException("Syntax error %s" % (e))
         if isinstance(result, dict) and self.identifiers:
             for identifier in self.identifiers:
@@ -523,11 +525,13 @@ class Loader(object):
         if isinstance(link, (str, unicode)):
             if field in self.vocab_fields:
                 if link not in self.vocab and link not in self.idx and link not in self.rvocab:
-                    if not self.check_file(link):
+                    if not self.check_file(cast(  # bug in mypy 0.3.1
+                            Union[str, unicode], link)):  # fixed in mypy 0.4-dev
                         raise validate.ValidationException(
                             "Field `%s` contains undefined reference to `%s`" % (field, link))
             elif link not in self.idx and link not in self.rvocab:
-                if not self.check_file(link):
+                if not self.check_file(cast(  # bug in mypy 0.3.1
+                        Union[str, unicode], link)):  # fixed in mypy 0.4-dev
                     raise validate.ValidationException(
                         "Field `%s` contains undefined reference to `%s`" % (field, link))
         elif isinstance(link, list):
