@@ -252,6 +252,14 @@ class Loader(object):
                 else:
                     raise ValueError(
                         "'$graphImport' must be the only field in %s" % (str(obj)))
+            elif "$import" in ref:
+                if len(obj) == 1:
+                    ref = obj["$import"]
+                    obj = None
+		    nonGraphImport = True
+                else:
+                    raise ValueError(
+                        "'$import' must be the only field in %s" % (str(obj)))
             elif "$include" in obj:
                 if len(obj) == 1:
                     ref = obj["$include"]

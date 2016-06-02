@@ -71,6 +71,15 @@ class TestSchemas(unittest.TestCase):
 
     maxDiff = None
 
+
+    def test_import(self):
+        ldr = schema_salad.ref_resolver.Loader({})
+        out = ldr.resolve_ref({
+		"$import": "tests/test.yml"
+	})
+	print out
+   
+
     def test_idmap(self):
         ldr = schema_salad.ref_resolver.Loader({})
         ldr.add_context({
