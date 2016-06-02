@@ -327,7 +327,7 @@ class Loader(object):
 
         if isinstance(document, dict):
             # Handle $graphImport and $include
-            if ('$graphImport' in document or '$include' in document):
+            if ('$graphImport' in document or '$include' in document or '$import' in document):
                 return self.resolve_ref(document, file_base)
         elif isinstance(document, list):
             pass
@@ -370,7 +370,8 @@ class Loader(object):
             for idmapField in loader.idmap:
                 if (idmapField in document and isinstance(document[idmapField], dict) and
                     "$graphImport" not in document[idmapField] and
-                    "$include" not in document[idmapField]):
+                    "$include" not in document[idmapField] and
+                    "$import" not in document[idmapField]):
                     ls = []
                     for k, v in document[idmapField].items():
                         if not isinstance(v, dict):
