@@ -245,13 +245,13 @@ class Loader(object):
         # If `ref` is a dict, look for special directives.
         if isinstance(ref, dict):
             obj = ref
-            if "$import" in ref:
+            if "$graphImport" in ref:
                 if len(obj) == 1:
-                    ref = obj["$import"]
+                    ref = obj["$graphImport"]
                     obj = None
                 else:
                     raise ValueError(
-                        "'$import' must be the only field in %s" % (str(obj)))
+                        "'$graphImport' must be the only field in %s" % (str(obj)))
             elif "$include" in obj:
                 if len(obj) == 1:
                     ref = obj["$include"]
@@ -326,8 +326,8 @@ class Loader(object):
             file_base = base_url
 
         if isinstance(document, dict):
-            # Handle $import and $include
-            if ('$import' in document or '$include' in document):
+            # Handle $graphImport and $include
+            if ('$graphImport' in document or '$include' in document):
                 return self.resolve_ref(document, file_base)
         elif isinstance(document, list):
             pass
@@ -369,7 +369,7 @@ class Loader(object):
         if isinstance(document, dict):
             for idmapField in loader.idmap:
                 if (idmapField in document and isinstance(document[idmapField], dict) and
-                    "$import" not in document[idmapField] and
+                    "$graphImport" not in document[idmapField] and
                     "$include" not in document[idmapField]):
                     ls = []
                     for k, v in document[idmapField].items():
@@ -438,7 +438,7 @@ class Loader(object):
             try:
                 while i < len(document):
                     val = document[i]
-                    if isinstance(val, dict) and "$import" in val:
+                    if isinstance(val, dict) and "$graphImport" in val:
                         l, _ = loader.resolve_ref(val, file_base)
                         if isinstance(l, list):
                             del document[i]
