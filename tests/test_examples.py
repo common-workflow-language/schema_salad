@@ -1,9 +1,11 @@
+import os
 import unittest
 import schema_salad.ref_resolver
 import schema_salad.main
 import schema_salad.schema
 import rdflib
 import ruamel.yaml as yaml
+
 try:
     from ruamel.yaml import CSafeLoader as SafeLoader
 except ImportError:
@@ -73,6 +75,13 @@ class TestSchemas(unittest.TestCase):
         })
 
     maxDiff = None
+
+    def test_import(self):
+        ldr = schema_salad.ref_resolver.Loader({})
+        out = ldr.resolve_ref({
+            "$import": "test.yml"
+        })
+        self.assertEqual(out[0], {'@id': 'test_id', '$graph': 'not_a_graph'})
 
     def test_idmap(self):
         ldr = schema_salad.ref_resolver.Loader({})
@@ -208,7 +217,6 @@ class TestSchemas(unittest.TestCase):
                     "out": ["http://example2.com/#step2/out"],
                 }]
         }, ra)
-
 
     def test_examples(self):
         self.maxDiff = None

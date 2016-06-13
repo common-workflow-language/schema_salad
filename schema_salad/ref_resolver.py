@@ -258,14 +258,23 @@ class Loader(object):
 
         obj = None  # type: Dict[unicode, Any]
         inc = False
+        non_graph_import = False
 
         # If `ref` is a dict, look for special directives.
         if isinstance(ref, dict):
             obj = ref
-            if u"$import" in ref:
+            if "$graphImport" in ref:
+                if len(obj) == 1:
+                    ref = obj["$graphImport"]
+                    obj = None
+                else:
+                    raise ValueError(
+                        "'$graphImport' must be the only field in %s" % (str(obj)))
+            elif "$import" in ref:
                 if len(obj) == 1:
                     ref = obj[u"$import"]
                     obj = None
+                    non_graph_import = True
                 else:
                     raise ValueError(
                         "'$import' must be the only field in %s" % (str(obj)))
@@ -327,7 +336,7 @@ class Loader(object):
                     "Index contains:\n  %s" % (url, "\n  ".join(self.idx)))
 
         if isinstance(resolved_obj, (dict)):
-            if u"$graph" in resolved_obj:
+            if u"$graph" in resolved_obj and not non_graph_import:
                 metadata = _copy_dict_without_key(resolved_obj, u"$graph")
                 return resolved_obj[u"$graph"], metadata
             else:
@@ -473,8 +482,8 @@ class Loader(object):
             file_base = base_url
 
         if isinstance(document, dict):
-            # Handle $import and $include
-            if (u'$import' in document or u'$include' in document):
+            # Handle $graphImport, $import and $include
+            if '$graphImport' in document or '$include' in document or '$import' in document:
                 return self.resolve_ref(document, base_url=file_base, checklinks=checklinks)
         elif isinstance(document, list):
             pass

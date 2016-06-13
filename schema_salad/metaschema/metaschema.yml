@@ -13,10 +13,10 @@ $graph:
   type: documentation
   doc:
     - $include: salad.md
-    - $import: field_name.yml
-    - $import: ident_res.yml
-    - $import: link_res.yml
-    - $import: vocab_res.yml
+    - $graphImport: field_name.yml
+    - $graphImport: ident_res.yml
+    - $graphImport: link_res.yml
+    - $graphImport: vocab_res.yml
     - $include: import_include.md
 
 - name: "Link_Validation"
