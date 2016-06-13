@@ -1,3 +1,4 @@
+import os
 import unittest
 import schema_salad.ref_resolver
 import schema_salad.main
@@ -75,9 +76,9 @@ class TestSchemas(unittest.TestCase):
     def test_import(self):
         ldr = schema_salad.ref_resolver.Loader({})
         out = ldr.resolve_ref({
-            "$import": "tests/test.yml"
+            "$import": "test.yml"
         })
-        print out
+        self.assertEqual(out[0], {'@id': 'test_id', '$graph': 'not_a_graph'})
 
     def test_idmap(self):
         ldr = schema_salad.ref_resolver.Loader({})
