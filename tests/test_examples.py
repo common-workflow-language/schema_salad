@@ -4,6 +4,7 @@ import schema_salad.main
 import schema_salad.schema
 import rdflib
 import ruamel.yaml as yaml
+
 try:
     from ruamel.yaml import CSafeLoader as SafeLoader
 except ImportError:
@@ -48,7 +49,7 @@ class TestSchemas(unittest.TestCase):
     def test_self_validate(self):
         schema_salad.main.main(argsl=["schema_salad/metaschema/metaschema.yml"])
         schema_salad.main.main(argsl=["schema_salad/metaschema/metaschema.yml",
-                                     "schema_salad/metaschema/metaschema.yml"])
+                                      "schema_salad/metaschema/metaschema.yml"])
 
     def test_jsonld_ctx(self):
         ldr, _, _, _ = schema_salad.schema.load_schema({
@@ -71,14 +72,12 @@ class TestSchemas(unittest.TestCase):
 
     maxDiff = None
 
-
     def test_import(self):
         ldr = schema_salad.ref_resolver.Loader({})
         out = ldr.resolve_ref({
-		"$import": "tests/test.yml"
-	})
-	print out
-   
+            "$import": "tests/test.yml"
+        })
+        print out
 
     def test_idmap(self):
         ldr = schema_salad.ref_resolver.Loader({})
@@ -110,10 +109,10 @@ class TestSchemas(unittest.TestCase):
         for item in ra["inputs"]:
             if item["a"] == 2:
                 self.assertEquals(item["id"],
-                        'http://example2.com/#stuff/zing')
+                                  'http://example2.com/#stuff/zing')
             else:
                 self.assertEquals(item["id"],
-                        'http://example2.com/#stuff/zip')
+                                  'http://example2.com/#stuff/zip')
         self.assertEquals(ra['outputs'], ['http://example2.com/#stuff/out'])
         self.assertEquals(ra['other'], {'n': 9})
 
@@ -131,6 +130,7 @@ class TestSchemas(unittest.TestCase):
 
     def test_yaml_float_test(self):
         self.assertEqual(yaml.load("float-test: 2e-10")["float-test"], 2e-10)
+
 
 if __name__ == '__main__':
     unittest.main()
