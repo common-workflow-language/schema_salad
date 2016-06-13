@@ -25,6 +25,7 @@ from typing import Any, AnyStr, cast, Dict, List, Tuple, TypeVar, Union
 _logger = logging.getLogger("salad")
 
 salad_files = ('metaschema.yml',
+               'metaschema_base.yml',
                'salad.md',
                'field_name.yml',
                'import_include.md',
@@ -79,12 +80,12 @@ def get_metaschema():
             "@id": "https://w3id.org/cwl/salad#docAfter",
             "@type": "@id"
         },
-        "docParent": {
-            "@id": "https://w3id.org/cwl/salad#docParent",
-            "@type": "@id"
-        },
         "docChild": {
             "@id": "https://w3id.org/cwl/salad#docChild",
+            "@type": "@id"
+        },
+        "docParent": {
+            "@id": "https://w3id.org/cwl/salad#docParent",
             "@type": "@id"
         },
         "documentRoot": "https://w3id.org/cwl/salad#SchemaDefinedType/documentRoot",
@@ -93,7 +94,8 @@ def get_metaschema():
         "enum": "https://w3id.org/cwl/salad#enum",
         "extends": {
             "@id": "https://w3id.org/cwl/salad#extends",
-            "@type": "@id"
+            "@type": "@id",
+            "refScope": 1
         },
         "fields": "sld:fields",
         "float": "http://www.w3.org/2001/XMLSchema#float",
@@ -101,16 +103,20 @@ def get_metaschema():
         "int": "http://www.w3.org/2001/XMLSchema#int",
         "items": {
             "@id": "https://w3id.org/cwl/salad#items",
-            "@type": "@vocab"
+            "@type": "@vocab",
+            "refScope": 2
         },
         "jsonldPredicate": "sld:jsonldPredicate",
         "long": "http://www.w3.org/2001/XMLSchema#long",
+        "mapPredicate": "https://w3id.org/cwl/salad#JsonldPredicate/mapPredicate",
+        "mapSubject": "https://w3id.org/cwl/salad#JsonldPredicate/mapSubject",
         "name": "@id",
         "noLinkCheck": "https://w3id.org/cwl/salad#JsonldPredicate/noLinkCheck",
         "null": "https://w3id.org/cwl/salad#null",
         "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
         "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
         "record": "https://w3id.org/cwl/salad#record",
+        "refScope": "https://w3id.org/cwl/salad#JsonldPredicate/refScope",
         "sld": "https://w3id.org/cwl/salad#",
         "specialize": "https://w3id.org/cwl/salad#SaladRecordSchema/specialize",
         "specializeFrom": {
@@ -129,8 +135,11 @@ def get_metaschema():
         },
         "type": {
             "@id": "https://w3id.org/cwl/salad#type",
-            "@type": "@vocab"
+            "@type": "@vocab",
+            "refScope": 2,
+            "typeDSL": True
         },
+        "typeDSL": "https://w3id.org/cwl/salad#JsonldPredicate/typeDSL",
         "xsd": "http://www.w3.org/2001/XMLSchema#"
     })
 
@@ -159,7 +168,7 @@ def get_metaschema():
 
 
 def load_schema(schema_ref, cache=None):
-    # type: (Union[unicode, Dict[str, Any]], Dict) -> Tuple[ref_resolver.Loader, Union[avro.schema.Names, avro.schema.SchemaParseException], Dict[unicode, Any], ref_resolver.Loader]
+    # type: (Union[unicode, Dict[unicode, Any]], Dict) -> Tuple[ref_resolver.Loader, Union[avro.schema.Names, avro.schema.SchemaParseException], Dict[unicode, Any], ref_resolver.Loader]
     metaschema_names, metaschema_doc, metaschema_loader = get_metaschema()
     if cache is not None:
         metaschema_loader.cache = cache
@@ -184,23 +193,22 @@ def load_schema(schema_ref, cache=None):
     return document_loader, avsc_names, schema_metadata, metaschema_loader
 
 def load_and_validate(document_loader, avsc_names, document, strict):
-    # type: (ref_resolver.Loader, avro.schema.Names, Union[Dict[unicode, Any], unicode], bool) -> Tuple[Any, Dict[str, Any]]
+    # type: (ref_resolver.Loader, avro.schema.Names, Union[Dict[unicode, Any], unicode], bool) -> Tuple[Any, Dict[unicode, Any]]
     if isinstance(document, dict):
         data, metadata = document_loader.resolve_all(document, document["id"])
     else:
         data, metadata = document_loader.resolve_ref(document)
 
-    document_loader.validate_links(data)
     validate_doc(avsc_names, data, document_loader, strict)
     return data, metadata
 
 
 def validate_doc(schema_names, doc, loader, strict):
-    # type: (avro.schema.Names, Union[Dict[str, Any], List[Dict[str, Any]], str, unicode], ref_resolver.Loader, bool) -> None
+    # type: (avro.schema.Names, Union[Dict[unicode, Any], List[Dict[unicode, Any]], unicode], ref_resolver.Loader, bool) -> None
     has_root = False
     for r in schema_names.names.values():
-        if ((hasattr(r, 'get_prop') and r.get_prop("documentRoot")) or (
-                "documentRoot" in r.props)):
+        if ((hasattr(r, 'get_prop') and r.get_prop(u"documentRoot")) or (
+                u"documentRoot" in r.props)):
             has_root = True
             break
 
@@ -220,8 +228,8 @@ def validate_doc(schema_names, doc, loader, strict):
         errors = []
         success = False
         for r in schema_names.names.values():
-            if ((hasattr(r, "get_prop") and r.get_prop("documentRoot")) or (
-                    "documentRoot" in r.props)):
+            if ((hasattr(r, "get_prop") and r.get_prop(u"documentRoot")) or (
+                    u"documentRoot" in r.props)):
                 try:
                     validate.validate_ex(
                         r, item, loader.identifiers, strict, foreign_properties=loader.foreign_properties)
@@ -229,7 +237,7 @@ def validate_doc(schema_names, doc, loader, strict):
                     break
                 except validate.ValidationException as e:
                     if hasattr(r, "get_prop"):
-                        name = r.get_prop("name")
+                        name = r.get_prop(u"name")
                     elif hasattr(r, "name"):
                         name = r.name
                     errors.append("Could not validate as `%s` because\n%s" % (
@@ -408,6 +416,10 @@ def extend_and_specialize(items, loader):
                 if ex_types[ex].get("abstract"):
                     add_dictlist(extended_by, ex, ex_types[t["name"]])
                     add_dictlist(extended_by, avro_name(ex), ex_types[ex])
+
+    for t in n:
+        if t.get("abstract") and t["name"] not in extended_by:
+            raise validate.ValidationException("%s is abstract but missing a concrete subtype" % t["name"])
 
     for t in n:
         if "fields" in t:

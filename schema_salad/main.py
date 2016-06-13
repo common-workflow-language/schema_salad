@@ -23,7 +23,7 @@ register('json-ld', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')
 
 
 def printrdf(workflow, wf, ctx, sr):
-    # type: (str, Union[Dict[Any, Any], str, unicode], Dict[str, Any], str) -> None
+    # type: (str, Union[List, Dict[Any, Any], str, unicode], Dict[unicode, Any], str) -> None
     g = Graph().parse(data=json.dumps(wf), format='json-ld',
                       location=workflow, context=ctx)
     print(g.serialize(format=sr))
@@ -98,8 +98,16 @@ def main(argsl=None):  # type: (List[str]) -> int
     if not urlparse.urlparse(schema_uri)[0]:
         schema_uri = "file://" + os.path.abspath(schema_uri)
     schema_raw_doc = metaschema_loader.fetch(schema_uri)
-    schema_doc, schema_metadata = metaschema_loader.resolve_all(
-        schema_raw_doc, schema_uri)
+
+    try:
+        schema_doc, schema_metadata = metaschema_loader.resolve_all(
+            schema_raw_doc, schema_uri)
+    except (validate.ValidationException) as e:
+        _logger.error("Schema `%s` failed link checking:\n%s",
+                      args.schema, e, exc_info=(e if args.debug else False))
+        _logger.debug("Index is %s", metaschema_loader.idx.keys())
+        _logger.debug("Vocabulary is %s", metaschema_loader.vocab.keys())
+        return 1
 
     # Optionally print the schema after ref resolution
     if not args.document and args.print_pre:
@@ -109,16 +117,6 @@ def main(argsl=None):  # type: (List[str]) -> int
     if not args.document and args.print_index:
         print(json.dumps(metaschema_loader.idx.keys(), indent=4))
         return 0
-
-    # Validate links in the schema document
-    try:
-        metaschema_loader.validate_links(schema_doc)
-    except (validate.ValidationException) as e:
-        _logger.error("Schema `%s` failed link checking:\n%s",
-                      args.schema, e, exc_info=(e if args.debug else False))
-        _logger.debug("Index is %s", metaschema_loader.idx.keys())
-        _logger.debug("Vocabulary is %s", metaschema_loader.vocab.keys())
-        return 1
 
     # Validate the schema document against the metaschema
     try:
@@ -142,7 +140,12 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     # Make the Avro validation that will be used to validate the target
     # document
-    (avsc_names, avsc_obj) = schema.make_avro_schema(schema_doc, document_loader)
+    if isinstance(schema_doc, list):
+        (avsc_names, avsc_obj) = schema.make_avro_schema(
+            schema_doc, document_loader)
+    else:
+        _logger.error("Schema `%s` must be a list.", args.schema)
+        return 1
 
     if isinstance(avsc_names, Exception):
         _logger.error("Schema `%s` error:\n%s", args.schema,
@@ -195,16 +198,6 @@ def main(argsl=None):  # type: (List[str]) -> int
     if args.print_index:
         print(json.dumps(document_loader.idx.keys(), indent=4))
         return 0
-
-    # Validate links in the target document
-    try:
-        document_loader.validate_links(document)
-    except (validate.ValidationException) as e:
-        _logger.error("Document `%s` failed link checking:\n%s",
-                      args.document, e, exc_info=(e if args.debug else False))
-        _logger.debug("Index is %s", json.dumps(
-            document_loader.idx.keys(), indent=4))
-        return 1
 
     # Validate the schema document against the metaschema
     try:
