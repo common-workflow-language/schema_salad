@@ -241,7 +241,7 @@ def validate_doc(schema_names, doc, loader, strict):
             if ((hasattr(r, "get_prop") and r.get_prop(u"documentRoot")) or (
                     u"documentRoot" in r.props)):
                 try:
-                    validate.validate_ex(
+                    validate.validate(
                         r, item, loader.identifiers, strict, foreign_properties=loader.foreign_properties)
                     success = True
                     break
