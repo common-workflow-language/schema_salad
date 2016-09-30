@@ -2,7 +2,7 @@ import pprint
 import avro.schema
 import sys
 import urlparse
-from typing import Any
+from typing import Any, Union
 
 class ValidationException(Exception):
     pass
@@ -19,11 +19,11 @@ INT_MAX_VALUE = (1 << 31) - 1
 LONG_MIN_VALUE = -(1 << 63)
 LONG_MAX_VALUE = (1 << 63) - 1
 
-def indent(v, nolead=False):  # type: (str, bool) -> str
+def indent(v, nolead=False):  # type: (Union[str, unicode], bool) -> unicode
     if nolead:
-        return v.splitlines()[0] + "\n".join(["  " + l for l in v.splitlines()[1:]])
+        return v.splitlines()[0] + u"\n".join([u"  " + l for l in v.splitlines()[1:]])
     else:
-        return "\n".join(["  " + l for l in v.splitlines()])
+        return u"\n".join(["  " + l for l in v.splitlines()])
 
 def friendly(v):  # type: (Any) -> Any
     if isinstance(v, avro.schema.NamedSchema):
@@ -37,11 +37,11 @@ def friendly(v):  # type: (Any) -> Any
     else:
         return v
 
-def multi(v, q=""):  # type: (str, str) -> str
+def multi(v, q=""):  # type: (Union[str, unicode], Union[str, unicode]) -> unicode
     if '\n' in v:
-        return "%s%s%s\n" % (q, v, q)
+        return u"%s%s%s\n" % (q, v, q)
     else:
-        return "%s%s%s" % (q, v, q)
+        return u"%s%s%s" % (q, v, q)
 
 def vpformat(datum):  # type: (Any) -> str
     a = pprint.pformat(datum)
@@ -67,7 +67,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
             return True
         else:
             if raise_ex:
-                raise ValidationException("the value `%s` is not null" % vpformat(datum))
+                raise ValidationException(u"the value `%s` is not null" % vpformat(datum))
             else:
                 return False
     elif schema_type == 'boolean':
@@ -75,18 +75,18 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
             return True
         else:
             if raise_ex:
-                raise ValidationException("the value `%s` is not boolean" % vpformat(datum))
+                raise ValidationException(u"the value `%s` is not boolean" % vpformat(datum))
             else:
                 return False
     elif schema_type == 'string':
         if isinstance(datum, basestring):
             return True
         elif isinstance(datum, bytes):
-            datum = datum.decode("utf-8")
+            datum = datum.decode(u"utf-8")
             return True
         else:
             if raise_ex:
-                raise ValidationException("the value `%s` is not string" % vpformat(datum))
+                raise ValidationException(u"the value `%s` is not string" % vpformat(datum))
             else:
                 return False
     elif schema_type == 'bytes':
@@ -94,7 +94,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
             return True
         else:
             if raise_ex:
-                raise ValidationException("the value `%s` is not bytes" % vpformat(datum))
+                raise ValidationException(u"the value `%s` is not bytes" % vpformat(datum))
             else:
                 return False
     elif schema_type == 'int':
@@ -103,7 +103,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
             return True
         else:
             if raise_ex:
-                raise ValidationException("`%s` is not int" % vpformat(datum))
+                raise ValidationException(u"`%s` is not int" % vpformat(datum))
             else:
                 return False
     elif schema_type == 'long':
@@ -112,7 +112,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
             return True
         else:
             if raise_ex:
-                raise ValidationException("the value `%s` is not long" % vpformat(datum))
+                raise ValidationException(u"the value `%s` is not long" % vpformat(datum))
             else:
                 return False
     elif schema_type in ['float', 'double']:
@@ -121,7 +121,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
             return True
         else:
             if raise_ex:
-                raise ValidationException("the value `%s` is not float or double" % vpformat(datum))
+                raise ValidationException(u"the value `%s` is not float or double" % vpformat(datum))
             else:
                 return False
     elif isinstance(expected_schema, avro.schema.FixedSchema):
@@ -129,7 +129,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
             return True
         else:
             if raise_ex:
-                raise ValidationException("the value `%s` is not fixed" % vpformat(datum))
+                raise ValidationException(u"the value `%s` is not fixed" % vpformat(datum))
             else:
                 return False
     elif isinstance(expected_schema, avro.schema.EnumSchema):
@@ -138,14 +138,14 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                 return True
             else:
                 if raise_ex:
-                    raise ValidationException("'Any' type must be non-null")
+                    raise ValidationException(u"'Any' type must be non-null")
                 else:
                     return False
         if datum in expected_schema.symbols:
             return True
         else:
             if raise_ex:
-                raise ValidationException("the value `%s`\n is not a valid symbol in enum %s, expected one of %s" % (vpformat(datum), expected_schema.name, "'" + "', '".join(expected_schema.symbols) + "'"))
+                raise ValidationException(u"the value `%s`\n is not a valid symbol in enum %s, expected one of %s" % (vpformat(datum), expected_schema.name, "'" + "', '".join(expected_schema.symbols) + "'"))
             else:
                 return False
     elif isinstance(expected_schema, avro.schema.ArraySchema):
@@ -156,13 +156,13 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                         return False
                 except ValidationException as v:
                     if raise_ex:
-                        raise ValidationException("At position %i\n%s" % (i, indent(str(v))))
+                        raise ValidationException(u"At position %i\n%s" % (i, indent(str(v))))
                     else:
                         return False
             return True
         else:
             if raise_ex:
-                raise ValidationException("the value `%s` is not a list, expected list of %s" % (vpformat(datum), friendly(expected_schema.items)))
+                raise ValidationException(u"the value `%s` is not a list, expected list of %s" % (vpformat(datum), friendly(expected_schema.items)))
             else:
                 return False
     elif isinstance(expected_schema, avro.schema.UnionSchema):
@@ -173,25 +173,25 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
         if not raise_ex:
             return False
 
-        errors = []
+        errors = []  # type: List[unicode]
         for s in expected_schema.schemas:
             try:
                 validate_ex(s, datum, identifiers, strict=strict, foreign_properties=foreign_properties, raise_ex=True)
             except ClassValidationException as e:
                 raise
             except ValidationException as e:
-                errors.append(str(e))
+                errors.append(unicode(e))
 
-        raise ValidationException("the value %s is not a valid type in the union, expected one of:\n%s" % (
-            multi(vpformat(datum), '`'), "\n".join([
-                "- %s, but\n %s" % (
+        raise ValidationException(u"the value %s is not a valid type in the union, expected one of:\n%s" % (
+            multi(vpformat(datum), '`'), u"\n".join([
+                u"- %s, but\n %s" % (
                     friendly(expected_schema.schemas[i]), indent(multi(errors[i])))
                 for i in range(0, len(expected_schema.schemas))])))
 
     elif isinstance(expected_schema, avro.schema.RecordSchema):
         if not isinstance(datum, dict):
             if raise_ex:
-                raise ValidationException("`%s`\n is not a dict" % vpformat(datum))
+                raise ValidationException(u"`%s`\n is not a dict" % vpformat(datum))
             else:
                 return False
 
@@ -201,7 +201,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                 d = datum.get("class")
                 if not d:
                     if raise_ex:
-                        raise ValidationException("Missing 'class' field")
+                        raise ValidationException(u"Missing 'class' field")
                     else:
                         return False
                 if not validate_ex(f.type, d, identifiers, strict=strict, foreign_properties=foreign_properties, raise_ex=raise_ex):
@@ -227,9 +227,9 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                     return False
             except ValidationException as v:
                 if f.name not in datum:
-                    errors.append("missing required field `%s`" % f.name)
+                    errors.append(u"missing required field `%s`" % f.name)
                 else:
-                    errors.append("could not validate field `%s` because\n%s" % (f.name, multi(indent(str(v)))))
+                    errors.append(u"could not validate field `%s` because\n%s" % (f.name, multi(indent(str(v)))))
 
         if strict:
             for d in datum:
@@ -243,21 +243,21 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                             return False
                         split = urlparse.urlsplit(d)
                         if split.scheme:
-                            errors.append("could not validate extension field `%s` because it is not recognized and strict is True.  Did you include a $schemas section?" % (d))
+                            errors.append(u"could not validate extension field `%s` because it is not recognized and strict is True.  Did you include a $schemas section?" % (d))
                         else:
-                            errors.append("could not validate field `%s` because it is not recognized and strict is True, valid fields are: %s" % (d, ", ".join(fn.name for fn in expected_schema.fields)))
+                            errors.append(u"could not validate field `%s` because it is not recognized and strict is True, valid fields are: %s" % (d, ", ".join(fn.name for fn in expected_schema.fields)))
 
         if errors:
             if raise_ex:
                 if classmatch:
-                    raise ClassValidationException("%s record %s" % (classmatch, "\n".join(errors)))
+                    raise ClassValidationException(u"%s record %s" % (classmatch, "\n".join(errors)))
                 else:
-                    raise ValidationException("\n".join(errors))
+                    raise ValidationException(u"\n".join(errors))
             else:
                 return False
         else:
             return True
     if raise_ex:
-        raise ValidationException("Unrecognized schema_type %s" % schema_type)
+        raise ValidationException(u"Unrecognized schema_type %s" % schema_type)
     else:
         return False

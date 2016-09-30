@@ -249,7 +249,7 @@ def validate_doc(schema_names, doc, loader, strict):
                 break
 
         if not success:
-            errors = []
+            errors = []  # type: List[unicode]
             for r in roots:
                 if hasattr(r, "get_prop"):
                     name = r.get_prop(u"name")
@@ -260,22 +260,22 @@ def validate_doc(schema_names, doc, loader, strict):
                     validate.validate_ex(
                         r, item, loader.identifiers, strict, foreign_properties=loader.foreign_properties, raise_ex=True)
                 except validate.ClassValidationException as e:
-                    errors = ["Could not validate `%s` because\n%s" % (
+                    errors = [u"Could not validate `%s` because\n%s" % (
                         name, validate.indent(str(e), nolead=False))]
                     break
                 except validate.ValidationException as e:
-                    errors.append("Could not validate as `%s` because\n%s" % (
+                    errors.append(u"Could not validate as `%s` because\n%s" % (
                         name, validate.indent(str(e), nolead=False)))
 
-            objerr = "Validation error at position %i" % pos
+            objerr = u"Validation error at position %i" % pos
             for ident in loader.identifiers:
                 if ident in item:
-                    objerr = "Validation error in object %s" % (item[ident])
+                    objerr = u"Validation error in object %s" % (item[ident])
                     break
-            anyerrors.append("%s\n%s" %
-                             (objerr, validate.indent("\n".join(errors))))
+            anyerrors.append(u"%s\n%s" %
+                             (objerr, validate.indent(u"\n".join(errors))))
     if anyerrors:
-        raise validate.ValidationException("\n".join(anyerrors))
+        raise validate.ValidationException(u"\n".join(anyerrors))
 
 
 def replace_type(items, spec, loader, found):
