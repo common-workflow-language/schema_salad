@@ -12,10 +12,7 @@ class ClassValidationException(ValidationException):
 
 def validate(expected_schema, datum, identifiers=set(), strict=False, foreign_properties=set()):
     # type: (avro.schema.Schema, Any, Set[unicode], bool, Set[unicode]) -> bool
-    if validate_ex(expected_schema, datum, identifiers, strict=strict, foreign_properties=foreign_properties, raise_ex=False):
-        return True
-    else:
-        return validate_ex(expected_schema, datum, identifiers, strict=strict, foreign_properties=foreign_properties, raise_ex=True)
+    return validate_ex(expected_schema, datum, identifiers, strict=strict, foreign_properties=foreign_properties, raise_ex=False)
 
 INT_MIN_VALUE = -(1 << 31)
 INT_MAX_VALUE = (1 << 31) - 1
