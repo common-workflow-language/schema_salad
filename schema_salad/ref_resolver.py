@@ -19,11 +19,6 @@ from cachecontrol.wrapper import CacheControl
 from cachecontrol.caches import FileCache
 import ruamel.yaml as yaml
 
-try:
-    from ruamel.yaml import CSafeLoader as SafeLoader
-except ImportError:
-    from ruamel.yaml import SafeLoader  # type: ignore
-
 import rdflib
 from rdflib.namespace import RDF, RDFS, OWL
 from rdflib.plugins.parsers.notation3 import BadSyntax
@@ -649,7 +644,7 @@ class Loader(object):
             else:
                 textIO = StringIO(text)
             textIO.name = url  # type: ignore
-            result = yaml.load(textIO, Loader=SafeLoader)
+            result = yaml.round_trip_load(textIO)
         except yaml.parser.ParserError as e:
             raise validate.ValidationException("Syntax error %s" % (e))
         if isinstance(result, dict) and inject_ids and self.identifiers:

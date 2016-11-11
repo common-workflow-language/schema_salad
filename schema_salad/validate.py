@@ -145,7 +145,9 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
             return True
         else:
             if raise_ex:
-                raise ValidationException(u"the value `%s`\n is not a valid symbol in enum %s, expected one of %s" % (vpformat(datum), expected_schema.name, "'" + "', '".join(expected_schema.symbols) + "'"))
+                raise ValidationException(u"the value `%s`\n is not a valid symbol in enum %s, expected %s%s" % (vpformat(datum), expected_schema.name,
+                                                                                                                 "one of " if len(expected_schema.symbols) > 1 else "",
+                                                                                                                      "'" + "', '".join(expected_schema.symbols) + "'"))
             else:
                 return False
     elif isinstance(expected_schema, avro.schema.ArraySchema):
@@ -156,7 +158,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                         return False
                 except ValidationException as v:
                     if raise_ex:
-                        raise ValidationException(u"At position %i\n%s" % (i, indent(str(v))))
+                        raise ValidationException(u"At line number %i\n%s" % (datum.lc.data[i][0]+1, indent(str(v))))
                     else:
                         return False
             return True
@@ -229,7 +231,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                 if f.name not in datum:
                     errors.append(u"missing required field `%s`" % f.name)
                 else:
-                    errors.append(u"could not validate field `%s` because\n%s" % (f.name, multi(indent(str(v)))))
+                    errors.append(u"could not validate field `%s` on line %i because\n%s" % (f.name, datum.lc.data[f.name][0]+1, multi(indent(str(v)))))
 
         if strict:
             for d in datum:

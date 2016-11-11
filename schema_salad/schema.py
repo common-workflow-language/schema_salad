@@ -5,10 +5,6 @@ import sys
 import pprint
 from pkg_resources import resource_stream
 import ruamel.yaml as yaml
-try:
-    from ruamel.yaml import CSafeLoader as SafeLoader
-except ImportError:
-    from ruamel.yaml import SafeLoader  # type: ignore
 import avro.schema
 from . import validate
 import json
@@ -162,8 +158,7 @@ def get_metaschema():
     loader.cache["https://w3id.org/cwl/salad"] = rs.read()
     rs.close()
 
-    j = yaml.load(loader.cache["https://w3id.org/cwl/salad"],
-            Loader=SafeLoader)
+    j = yaml.round_trip_load(loader.cache["https://w3id.org/cwl/salad"])
     j, _ = loader.resolve_all(j, "https://w3id.org/cwl/salad#")
 
     # pprint.pprint(j)
@@ -267,7 +262,7 @@ def validate_doc(schema_names, doc, loader, strict):
                     errors.append(u"Could not validate as `%s` because\n%s" % (
                         name, validate.indent(str(e), nolead=False)))
 
-            objerr = u"Validation error at position %i" % pos
+            objerr = u"Validation error starting at line %i" % (validate_doc.lc.data[pos][0]+1)
             for ident in loader.identifiers:
                 if ident in item:
                     objerr = u"Validation error in object %s" % (item[ident])
