@@ -259,11 +259,11 @@ def validate_doc(schema_names, doc, loader, strict, source=None):
                     validate.validate_ex(
                         r, item, loader.identifiers, strict, foreign_properties=loader.foreign_properties, raise_ex=True)
                 except validate.ClassValidationException as e:
-                    errors = [sl.makeError(u"it is not a valid `%s` record because\n%s" % (
+                    errors = [sl.makeError(u"not a valid `%s` record because\n%s" % (
                         name, validate.indent(str(e), nolead=False)))]
                     break
                 except validate.ValidationException as e:
-                    errors.append(sl.makeError(u"it is not a valid `%s` record because\n%s" % (
+                    errors.append(sl.makeError(u"not a valid `%s` record because\n%s" % (
                         name, validate.indent(str(e), nolead=False))))
 
             objerr = sl.makeError(u"Invalid")

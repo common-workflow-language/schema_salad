@@ -175,7 +175,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                         return False
                 except ValidationException as v:
                     if raise_ex:
-                        raise sl.makeError(unicode("list item is invalid because\n%s" % (v)))
+                        raise sl.makeError(unicode("item is invalid because\n%s" % (indent(multi(v)))))
                     else:
                         return False
             return True
@@ -194,6 +194,11 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
 
         errors = []  # type: List[unicode]
         for s in expected_schema.schemas:
+            if isinstance(datum, list) and not isinstance(s, avro.schema.ArraySchema):
+                continue
+            elif isinstance(datum, dict) and not isinstance(s, avro.schema.RecordSchema):
+                continue
+
             try:
                 validate_ex(s, datum, identifiers, strict=strict, foreign_properties=foreign_properties, raise_ex=True)
             except ClassValidationException as e:
@@ -201,11 +206,8 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
             except ValidationException as e:
                 errors.append(unicode(e))
 
-        raise ValidationException(u"the value does not match any of the expected types, expected one of:\n%s" % (
-             u"\n".join([
-                u"- %s, but\n%s" % (
-                    friendly(expected_schema.schemas[i]), indent(multi(errors[i])))
-                for i in range(0, len(expected_schema.schemas))])))
+        raise ValidationException(u"%s" % (
+             u"\n".join([indent(multi(errors[i])) for i in range(0, len(errors))])))
 
     elif isinstance(expected_schema, avro.schema.RecordSchema):
         if not isinstance(datum, dict):
@@ -261,14 +263,15 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                     if d == f.name:
                         found = True
                 if not found:
+                    sl = SourceLine(datum, d, unicode)
                     if d not in identifiers and d not in foreign_properties and d[0] not in ("@", "$"):
                         if not raise_ex:
                             return False
                         split = urlparse.urlsplit(d)
                         if split.scheme:
-                            errors.append(u"could not validate extension field `%s` because it is not recognized and strict is True.  Did you include a $schemas section?" % (d))
+                            errors.append(sl.makeError(u"unrecognized extension field `%s` and strict is True.  Did you include a $schemas section?" % (d)))
                         else:
-                            errors.append(u"could not validate field `%s` because it is not recognized and strict is True, valid fields are: %s" % (d, ", ".join(fn.name for fn in expected_schema.fields)))
+                            errors.append(sl.makeError(u"invalid field `%s`, expected one of: %s" % (d, ", ".join("'%s'" % fn.name for fn in expected_schema.fields))))
 
         if errors:
             if raise_ex:
