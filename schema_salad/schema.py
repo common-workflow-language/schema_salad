@@ -9,6 +9,7 @@ import avro.schema
 from . import validate
 import json
 import urlparse
+import os
 AvroSchemaFromJSONData = avro.schema.make_avsc_object
 # AvroSchemaFromJSONData=avro.schema.SchemaFromJSONData
 from . import ref_resolver
@@ -16,6 +17,7 @@ from .flatten import flatten
 import logging
 from .aslist import aslist
 from . import jsonld_context
+from .sourceline import SourceLine, strip_dup_lineno, add_lc_filename
 from typing import Any, AnyStr, cast, Dict, List, Tuple, TypeVar, Union
 
 _logger = logging.getLogger("salad")
@@ -159,6 +161,7 @@ def get_metaschema():
     rs.close()
 
     j = yaml.round_trip_load(loader.cache["https://w3id.org/cwl/salad"])
+    add_lc_filename(j, "metaschema.yml")
     j, _ = loader.resolve_all(j, "https://w3id.org/cwl/salad#")
 
     # pprint.pprint(j)
@@ -204,11 +207,11 @@ def load_and_validate(document_loader, avsc_names, document, strict):
     else:
         data, metadata = document_loader.resolve_ref(document)
 
-    validate_doc(avsc_names, data, document_loader, strict)
+    validate_doc(avsc_names, data, document_loader, strict, source=metadata["name"])
     return data, metadata
 
 
-def validate_doc(schema_names, doc, loader, strict):
+def validate_doc(schema_names, doc, loader, strict, source=None):
     # type: (avro.schema.Names, Union[Dict[unicode, Any], List[Dict[unicode, Any]], unicode], ref_resolver.Loader, bool) -> None
     has_root = False
     for r in schema_names.names.values():
@@ -236,6 +239,7 @@ def validate_doc(schema_names, doc, loader, strict):
 
     anyerrors = []
     for pos, item in enumerate(validate_doc):
+        sl = SourceLine(validate_doc, pos, unicode)
         success = False
         for r in roots:
             success = validate.validate_ex(
@@ -255,22 +259,22 @@ def validate_doc(schema_names, doc, loader, strict):
                     validate.validate_ex(
                         r, item, loader.identifiers, strict, foreign_properties=loader.foreign_properties, raise_ex=True)
                 except validate.ClassValidationException as e:
-                    errors = [u"Could not validate `%s` because\n%s" % (
-                        name, validate.indent(str(e), nolead=False))]
+                    errors = [sl.makeError(u"it is not a valid `%s` record because\n%s" % (
+                        name, validate.indent(str(e), nolead=False)))]
                     break
                 except validate.ValidationException as e:
-                    errors.append(u"Could not validate as `%s` because\n%s" % (
-                        name, validate.indent(str(e), nolead=False)))
+                    errors.append(sl.makeError(u"it is not a valid `%s` record because\n%s" % (
+                        name, validate.indent(str(e), nolead=False))))
 
-            objerr = u"Validation error starting at line %i" % (validate_doc.lc.data[pos][0]+1)
+            objerr = sl.makeError(u"Invalid")
             for ident in loader.identifiers:
                 if ident in item:
-                    objerr = u"Validation error in object %s" % (item[ident])
+                    objerr = sl.makeError(u"Object `%s` is not valid because" % (item[ident]))
                     break
             anyerrors.append(u"%s\n%s" %
                              (objerr, validate.indent(u"\n".join(errors))))
     if anyerrors:
-        raise validate.ValidationException(u"\n".join(anyerrors))
+        raise validate.ValidationException(strip_dup_lineno(u"\n".join(anyerrors)))
 
 
 def replace_type(items, spec, loader, found):

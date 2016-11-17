@@ -13,11 +13,13 @@ from StringIO import StringIO
 from . import validate
 from .aslist import aslist
 from .flatten import flatten
+from .sourceline import SourceLine, add_lc_filename
 
 import requests
 from cachecontrol.wrapper import CacheControl
 from cachecontrol.caches import FileCache
 import ruamel.yaml as yaml
+from ruamel.yaml.comments import CommentedSeq
 
 import rdflib
 from rdflib.namespace import RDF, RDFS, OWL
@@ -46,7 +48,6 @@ class NormDict(dict):
     def __contains__(self, key):
         return super(NormDict, self).__contains__(self.normalize(key))
 
-
 def merge_properties(a, b):
     c = {}
     for i in a:
@@ -60,7 +61,6 @@ def merge_properties(a, b):
             c[i] = aslist(a[i]) + aslist(b[i])
 
     return c
-
 
 def SubLoader(loader):  # type: (Loader) -> Loader
     return Loader(loader.ctx, schemagraph=loader.graph,
@@ -377,7 +377,7 @@ class Loader(object):
                 if (isinstance(idmapFieldValue, dict)
                         and "$import" not in idmapFieldValue
                         and "$include" not in idmapFieldValue):
-                    ls = []
+                    ls = CommentedSeq()
                     for k in sorted(idmapFieldValue.keys()):
                         val = idmapFieldValue[k]
                         v = None  # type: Dict[unicode, Any]
@@ -391,6 +391,8 @@ class Loader(object):
                         else:
                             v = val
                         v[loader.idmap[idmapField]] = k
+                        ls.lc.add_kv_line_col(len(ls), document[idmapField].lc.data[k])
+                        ls.lc.filename = document.lc.filename
                         ls.append(v)
                     document[idmapField] = ls
 
@@ -577,10 +579,15 @@ class Loader(object):
                     val = document[i]
                     if isinstance(val, dict) and (u"$import" in val or u"$mixin" in val):
                         l, _ = loader.resolve_ref(val, base_url=file_base, checklinks=False)
-                        if isinstance(l, list):  # never true?
+                        if isinstance(l, list):
+                            lc = document.lc.data[i]
                             del document[i]
-                            for item in aslist(l):
+                            llen = len(l)
+                            for j in range(len(document)+llen, i+llen, -1):
+                                document.lc.data[j-1] = document.lc.data[j-llen]
+                            for item in l:
                                 document.insert(i, item)
+                                document.lc.data[i] = lc
                                 i += 1
                         else:
                             document[i] = l
@@ -645,6 +652,7 @@ class Loader(object):
                 textIO = StringIO(text)
             textIO.name = url  # type: ignore
             result = yaml.round_trip_load(textIO)
+            add_lc_filename(result, url)
         except yaml.parser.ParserError as e:
             raise validate.ValidationException("Syntax error %s" % (e))
         if isinstance(result, dict) and inject_ids and self.identifiers:
@@ -695,8 +703,11 @@ class Loader(object):
             if len(sp) == 0:
                 break
             sp.pop()
-        raise validate.ValidationException(
-            "Field `%s` contains undefined reference to `%s`, tried %s" % (field, link, tried))
+        if field in self.vocab_fields:
+            return link
+        else:
+            raise validate.ValidationException(
+                "Field `%s` references unknown identifier `%s`, tried %s" % (field, link, ", ".join(tried)))
 
     def validate_link(self, field, link, docid):
         # type: (unicode, FieldType, unicode) -> FieldType
@@ -729,8 +740,7 @@ class Loader(object):
         elif isinstance(link, dict):
             self.validate_links(link, docid)
         else:
-            raise validate.ValidationException("Link must be a str, unicode, "
-                                               "list, or a dict.")
+            raise validate.ValidationException("`%s` field is %s, expected string, list, or a dict." % (field, type(link).__name__))
         return link
 
     def getid(self, d):  # type: (Any) -> unicode
@@ -754,10 +764,11 @@ class Loader(object):
         elif isinstance(document, dict):
             try:
                 for d in self.url_fields:
+                    sl = SourceLine(document, d, validate.ValidationException)
                     if d in document and d not in self.identity_links:
                         document[d] = self.validate_link(d, document[d], docid)
             except validate.ValidationException as v:
-                errors.append(v)
+                errors.append(sl.makeError(str(v)))
             if hasattr(document, "iteritems"):
                 iterator = document.iteritems()
             else:
@@ -766,21 +777,19 @@ class Loader(object):
             return document
 
         for key, val in iterator:
+            sl = SourceLine(document, key, validate.ValidationException)
             try:
                 document[key] = self.validate_links(val, docid)
             except validate.ValidationException as v:
                 if key not in self.nolinkcheck:
                     docid2 = self.getid(val)
                     if docid2:
-                        errors.append(validate.ValidationException(
-                            "While checking object `%s`\n%s" % (docid2, validate.indent(str(v)))))
+                        errors.append(sl.makeError("While checking object `%s`\n%s" % (docid2, validate.indent(str(v)))))
                     else:
                         if isinstance(key, basestring):
-                            errors.append(validate.ValidationException(
-                                "While checking field `%s`\n%s" % (key, validate.indent(str(v)))))
+                            errors.append(sl.makeError("While checking field `%s`\n%s" % (key, validate.indent(str(v)))))
                         else:
-                            errors.append(validate.ValidationException(
-                                "While checking position %s\n%s" % (key, validate.indent(str(v)))))
+                            errors.append(sl.makeError("While checking position %s\n%s" % (key, validate.indent(str(v)))))
 
         if errors:
             if len(errors) > 1:

@@ -2,7 +2,9 @@ import pprint
 import avro.schema
 import sys
 import urlparse
+import re
 from typing import Any, Union
+from .sourceline import SourceLine, lineno_re
 
 class ValidationException(Exception):
     pass
@@ -23,7 +25,16 @@ def indent(v, nolead=False):  # type: (Union[str, unicode], bool) -> unicode
     if nolead:
         return v.splitlines()[0] + u"\n".join([u"  " + l for l in v.splitlines()[1:]])
     else:
-        return u"\n".join(["  " + l for l in v.splitlines()])
+        ul = [""]
+        def lineno(l, ul):
+            r = lineno_re.match(l)
+            if r:
+                ul[0] = r.group(1)
+                return ul[0] + "  " + r.group(2)
+            else:
+                return " " * len(ul[0]) + "  " + l
+
+        return u"\n".join([lineno(l, ul) for l in v.splitlines()])
 
 def friendly(v):  # type: (Any) -> Any
     if isinstance(v, avro.schema.NamedSchema):
@@ -67,7 +78,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
             return True
         else:
             if raise_ex:
-                raise ValidationException(u"the value `%s` is not null" % vpformat(datum))
+                raise ValidationException(u"the value is not null")
             else:
                 return False
     elif schema_type == 'boolean':
@@ -75,7 +86,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
             return True
         else:
             if raise_ex:
-                raise ValidationException(u"the value `%s` is not boolean" % vpformat(datum))
+                raise ValidationException(u"the value is not boolean")
             else:
                 return False
     elif schema_type == 'string':
@@ -86,7 +97,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
             return True
         else:
             if raise_ex:
-                raise ValidationException(u"the value `%s` is not string" % vpformat(datum))
+                raise ValidationException(u"the value is not string")
             else:
                 return False
     elif schema_type == 'bytes':
@@ -141,11 +152,16 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                     raise ValidationException(u"'Any' type must be non-null")
                 else:
                     return False
+        if not isinstance(datum, basestring):
+            if raise_ex:
+                raise ValidationException(u"value is a %s but expected a string" % (type(datum).__name__))
+            else:
+                return False
         if datum in expected_schema.symbols:
             return True
         else:
             if raise_ex:
-                raise ValidationException(u"the value `%s`\n is not a valid symbol in enum %s, expected %s%s" % (vpformat(datum), expected_schema.name,
+                raise ValidationException(u"the value %s is not a valid %s, expected %s%s" % (vpformat(datum), expected_schema.name,
                                                                                                                  "one of " if len(expected_schema.symbols) > 1 else "",
                                                                                                                       "'" + "', '".join(expected_schema.symbols) + "'"))
             else:
@@ -154,17 +170,18 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
         if isinstance(datum, list):
             for i, d in enumerate(datum):
                 try:
+                    sl = SourceLine(datum, i, ValidationException)
                     if not validate_ex(expected_schema.items, d, identifiers, strict=strict, foreign_properties=foreign_properties, raise_ex=raise_ex):
                         return False
                 except ValidationException as v:
                     if raise_ex:
-                        raise ValidationException(u"At line number %i\n%s" % (datum.lc.data[i][0]+1, indent(str(v))))
+                        raise sl.makeError(unicode("list item is invalid because\n%s" % (v)))
                     else:
                         return False
             return True
         else:
             if raise_ex:
-                raise ValidationException(u"the value `%s` is not a list, expected list of %s" % (vpformat(datum), friendly(expected_schema.items)))
+                raise ValidationException(u"the value is not a list, expected list of %s" % (friendly(expected_schema.items)))
             else:
                 return False
     elif isinstance(expected_schema, avro.schema.UnionSchema):
@@ -184,9 +201,9 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
             except ValidationException as e:
                 errors.append(unicode(e))
 
-        raise ValidationException(u"the value %s is not a valid type in the union, expected one of:\n%s" % (
-            multi(vpformat(datum), '`'), u"\n".join([
-                u"- %s, but\n %s" % (
+        raise ValidationException(u"the value does not match any of the expected types, expected one of:\n%s" % (
+             u"\n".join([
+                u"- %s, but\n%s" % (
                     friendly(expected_schema.schemas[i]), indent(multi(errors[i])))
                 for i in range(0, len(expected_schema.schemas))])))
 
@@ -199,21 +216,23 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
 
         classmatch = None
         for f in expected_schema.fields:
-            if f.name == "class":
-                d = datum.get("class")
+            if f.name in ("class"):
+                d = datum.get(f.name)
                 if not d:
                     if raise_ex:
-                        raise ValidationException(u"Missing 'class' field")
+                        raise ValidationException(u"Missing '%s' field" % (f.name))
                     else:
+                        print "A1"
                         return False
                 if expected_schema.name != d:
+                    print expected_schema.name, d
                     return False
                 classmatch = d
                 break
 
         errors = []
         for f in expected_schema.fields:
-            if f.name == "class":
+            if f.name in ("class", "type"):
                 continue
 
             if f.name in datum:
@@ -225,13 +244,15 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                     fieldval = None
 
             try:
+                sl = SourceLine(datum, f.name, unicode)
                 if not validate_ex(f.type, fieldval, identifiers, strict=strict, foreign_properties=foreign_properties, raise_ex=raise_ex):
                     return False
             except ValidationException as v:
                 if f.name not in datum:
                     errors.append(u"missing required field `%s`" % f.name)
                 else:
-                    errors.append(u"could not validate field `%s` on line %i because\n%s" % (f.name, datum.lc.data[f.name][0]+1, multi(indent(str(v)))))
+                    errors.append(sl.makeError(u"the `%s` field is not valid because\n%s" % (
+                        f.name, multi(indent(str(v))))))
 
         if strict:
             for d in datum:
@@ -254,7 +275,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                 if classmatch:
                     raise ClassValidationException(u"%s record %s" % (classmatch, "\n".join(errors)))
                 else:
-                    raise ValidationException(u"\n".join(errors))
+                    raise ValidationException(u", and\n".join(errors))
             else:
                 return False
         else:
