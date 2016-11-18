@@ -19,7 +19,7 @@ import requests
 from cachecontrol.wrapper import CacheControl
 from cachecontrol.caches import FileCache
 import ruamel.yaml as yaml
-from ruamel.yaml.comments import CommentedSeq
+from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
 import rdflib
 from rdflib.namespace import RDF, RDFS, OWL
@@ -383,7 +383,9 @@ class Loader(object):
                         v = None  # type: Dict[unicode, Any]
                         if not isinstance(val, dict):
                             if idmapField in loader.mapPredicate:
-                                v = {loader.mapPredicate[idmapField]: val}
+                                v = CommentedMap({loader.mapPredicate[idmapField]: val})
+                                v.lc.add_kv_line_col(loader.mapPredicate[idmapField], document[idmapField].lc.data[k])
+                                v.lc.filename = document.lc.filename
                             else:
                                 raise validate.ValidationException(
                                     "mapSubject '%s' value '%s' is not a dict"
@@ -398,7 +400,7 @@ class Loader(object):
 
     typeDSLregex = re.compile(ur"^([^[?]+)(\[\])?(\?)?$")
 
-    def _type_dsl(self, t):
+    def _type_dsl(self, t, lc, filename):
         # type: (Union[unicode, Dict, List]) -> Union[unicode, Dict[unicode, unicode], List[Union[unicode, Dict[unicode, unicode]]]]
         if not isinstance(t, (str, unicode)):
             return t
@@ -409,31 +411,48 @@ class Loader(object):
         first = m.group(1)
         second = third = None
         if m.group(2):
-            second = {u"type": u"array",
-                 u"items": first}
+            second = CommentedMap({u"type": u"array",
+                                   u"items": first})
+            second.lc.add_kv_line_col("type", lc)
+            second.lc.add_kv_line_col("items", lc)
+            second.lc.filename = filename
         if m.group(3):
-            third = [u"null", second or first]
+            third = CommentedSeq([u"null", second or first])
+            third.lc.add_kv_line_col(0, lc)
+            third.lc.add_kv_line_col(1, lc)
+            third.lc.filename = filename
         return third or second or first
 
     def _resolve_type_dsl(self, document, loader):
         # type: (Dict[unicode, Union[unicode, Dict[unicode, unicode], List]], Loader) -> None
         for d in loader.type_dsl_fields:
             if d in document:
-                datum = document[d]
+                datum2 = datum = document[d]
                 if isinstance(datum, (str, unicode)):
-                    document[d] = self._type_dsl(datum)
+                    datum2 = self._type_dsl(datum, document.lc.data[d], document.lc.filename)
                 elif isinstance(datum, list):
-                    document[d] = [self._type_dsl(t) for t in datum]
-                datum2 = document[d]
+                    datum2 = CommentedSeq()
+                    for n, t in enumerate(datum):
+                        datum2.lc.add_kv_line_col(len(datum2), datum.lc.data[n])
+                        datum2.append(self._type_dsl(t, datum.lc.data[n], document.lc.filename))
                 if isinstance(datum2, list):
-                    document[d] = flatten(datum2)
+                    datum3 = CommentedSeq()
                     seen = []  # type: List[unicode]
-                    uniq = []
-                    for item in document[d]:
-                        if item not in seen:
-                            uniq.append(item)
-                            seen.append(item)
-                    document[d] = uniq
+                    for i,item in enumerate(datum2):
+                        if isinstance(item, list):
+                            for j,v in enumerate(item):
+                                if v not in seen:
+                                    datum3.lc.add_kv_line_col(len(datum3), item.lc.data[j])
+                                    datum3.append(v)
+                                    seen.append(v)
+                        else:
+                            if item not in seen:
+                                datum3.lc.add_kv_line_col(len(datum3), datum2.lc.data[i])
+                                datum3.append(item)
+                                seen.append(item)
+                    document[d] = datum3
+                else:
+                    document[d] = datum2
 
     def _resolve_identifier(self, document, loader, base_url):
         # type: (Dict[unicode, unicode], Loader, unicode) -> unicode
@@ -703,10 +722,7 @@ class Loader(object):
             if len(sp) == 0:
                 break
             sp.pop()
-        if field in self.vocab_fields:
-            return link
-        else:
-            raise validate.ValidationException(
+        raise validate.ValidationException(
                 "Field `%s` references unknown identifier `%s`, tried %s" % (field, link, ", ".join(tried)))
 
     def validate_link(self, field, link, docid):

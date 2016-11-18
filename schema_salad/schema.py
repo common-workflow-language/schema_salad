@@ -17,7 +17,7 @@ from .flatten import flatten
 import logging
 from .aslist import aslist
 from . import jsonld_context
-from .sourceline import SourceLine, strip_dup_lineno, add_lc_filename
+from .sourceline import SourceLine, strip_dup_lineno, add_lc_filename, bullets
 from typing import Any, AnyStr, cast, Dict, List, Tuple, TypeVar, Union
 
 _logger = logging.getLogger("salad")
@@ -243,7 +243,8 @@ def validate_doc(schema_names, doc, loader, strict, source=None):
         success = False
         for r in roots:
             success = validate.validate_ex(
-                r, item, loader.identifiers, strict, foreign_properties=loader.foreign_properties, raise_ex=False)
+                r, item, loader.identifiers, strict, foreign_properties=loader.foreign_properties,
+                raise_ex=False, vocab=loader.vocab)
             if success:
                 break
 
@@ -257,13 +258,14 @@ def validate_doc(schema_names, doc, loader, strict, source=None):
 
                 try:
                     validate.validate_ex(
-                        r, item, loader.identifiers, strict, foreign_properties=loader.foreign_properties, raise_ex=True)
+                        r, item, loader.identifiers, strict, foreign_properties=loader.foreign_properties,
+                        raise_ex=True, vocab=loader.vocab)
                 except validate.ClassValidationException as e:
-                    errors = [sl.makeError(u"not a valid `%s` record because\n%s" % (
+                    errors = [sl.makeError(u"tried `%s` but\n%s" % (
                         name, validate.indent(str(e), nolead=False)))]
                     break
                 except validate.ValidationException as e:
-                    errors.append(sl.makeError(u"not a valid `%s` record because\n%s" % (
+                    errors.append(sl.makeError(u"tried `%s` but\n%s" % (
                         name, validate.indent(str(e), nolead=False))))
 
             objerr = sl.makeError(u"Invalid")
@@ -272,9 +274,9 @@ def validate_doc(schema_names, doc, loader, strict, source=None):
                     objerr = sl.makeError(u"Object `%s` is not valid because" % (item[ident]))
                     break
             anyerrors.append(u"%s\n%s" %
-                             (objerr, validate.indent(u"\n".join(errors))))
+                             (objerr, validate.indent(bullets(errors, "- "))))
     if anyerrors:
-        raise validate.ValidationException(strip_dup_lineno(u"\n".join(anyerrors)))
+        raise validate.ValidationException(strip_dup_lineno(bullets(anyerrors, "* ")))
 
 
 def replace_type(items, spec, loader, found):
