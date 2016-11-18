@@ -17,8 +17,9 @@ from .flatten import flatten
 import logging
 from .aslist import aslist
 from . import jsonld_context
-from .sourceline import SourceLine, strip_dup_lineno, add_lc_filename, bullets
+from .sourceline import SourceLine, strip_dup_lineno, add_lc_filename, bullets, relname
 from typing import Any, AnyStr, cast, Dict, List, Tuple, TypeVar, Union
+from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
 _logger = logging.getLogger("salad")
 
@@ -177,6 +178,10 @@ def get_metaschema():
 
 def load_schema(schema_ref, cache=None):
     # type: (Union[unicode, Dict[unicode, Any]], Dict) -> Tuple[ref_resolver.Loader, Union[avro.schema.Names, avro.schema.SchemaParseException], Dict[unicode, Any], ref_resolver.Loader]
+    """Load a schema that can be used to validate documents using load_and_validate.
+
+    return document_loader, avsc_names, schema_metadata, metaschema_loader"""
+
     metaschema_names, metaschema_doc, metaschema_loader = get_metaschema()
     if cache is not None:
         metaschema_loader.cache = cache
@@ -202,12 +207,34 @@ def load_schema(schema_ref, cache=None):
 
 def load_and_validate(document_loader, avsc_names, document, strict):
     # type: (ref_resolver.Loader, avro.schema.Names, Union[Dict[unicode, Any], unicode], bool) -> Tuple[Any, Dict[unicode, Any]]
-    if isinstance(document, dict):
-        data, metadata = document_loader.resolve_all(document, document["id"])
-    else:
-        data, metadata = document_loader.resolve_ref(document)
+    """Load a document and validate it with the provided schema.
 
-    validate_doc(avsc_names, data, document_loader, strict, source=metadata["name"])
+    return data, metadata
+    """
+    try:
+        if isinstance(document, dict):
+            source = document["id"]
+            data, metadata = document_loader.resolve_all(document, document["id"], checklinks=False)
+        else:
+            source = document
+            data, metadata = document_loader.resolve_ref(document, checklinks=False)
+    except validate.ValidationException as v:
+        raise validate.ValidationException(strip_dup_lineno(str(v)))
+
+    validationErrors = ""
+    try:
+        data = document_loader.validate_links(data, u"")
+    except validate.ValidationException as v:
+        validationErrors = unicode(v) + "\n"
+
+    try:
+        validate_doc(avsc_names, data, document_loader, strict, source=source)
+    except validate.ValidationException as v:
+        validationErrors += unicode(v)
+
+    if validationErrors:
+        raise validate.ValidationException(validationErrors)
+
     return data, metadata
 
 
@@ -227,7 +254,9 @@ def validate_doc(schema_names, doc, loader, strict, source=None):
     if isinstance(doc, list):
         validate_doc = doc
     elif isinstance(doc, dict):
-        validate_doc = [doc]
+        validate_doc = CommentedSeq([doc])
+        validate_doc.lc.add_kv_line_col(0, [doc.lc.line, doc.lc.col])
+        validate_doc.lc.filename = doc.lc.filename
     else:
         raise validate.ValidationException("Document must be dict or list")
 
@@ -244,7 +273,7 @@ def validate_doc(schema_names, doc, loader, strict, source=None):
         for r in roots:
             success = validate.validate_ex(
                 r, item, loader.identifiers, strict, foreign_properties=loader.foreign_properties,
-                raise_ex=False, vocab=loader.vocab)
+                raise_ex=False)
             if success:
                 break
 
@@ -259,7 +288,7 @@ def validate_doc(schema_names, doc, loader, strict, source=None):
                 try:
                     validate.validate_ex(
                         r, item, loader.identifiers, strict, foreign_properties=loader.foreign_properties,
-                        raise_ex=True, vocab=loader.vocab)
+                        raise_ex=True)
                 except validate.ClassValidationException as e:
                     errors = [sl.makeError(u"tried `%s` but\n%s" % (
                         name, validate.indent(str(e), nolead=False)))]
@@ -271,7 +300,7 @@ def validate_doc(schema_names, doc, loader, strict, source=None):
             objerr = sl.makeError(u"Invalid")
             for ident in loader.identifiers:
                 if ident in item:
-                    objerr = sl.makeError(u"Object `%s` is not valid because" % (item[ident]))
+                    objerr = sl.makeError(u"Object `%s` is not valid because" % (relname(item[ident])))
                     break
             anyerrors.append(u"%s\n%s" %
                              (objerr, validate.indent(bullets(errors, "- "))))

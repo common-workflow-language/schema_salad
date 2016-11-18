@@ -13,7 +13,7 @@ from StringIO import StringIO
 from . import validate
 from .aslist import aslist
 from .flatten import flatten
-from .sourceline import SourceLine, add_lc_filename
+from .sourceline import SourceLine, add_lc_filename, relname
 
 import requests
 from cachecontrol.wrapper import CacheControl
@@ -275,25 +275,29 @@ class Loader(object):
         inc = False
         mixin = None
 
+        sl = SourceLine(obj, None, ValueError)
         # If `ref` is a dict, look for special directives.
         if isinstance(ref, dict):
             obj = ref
             if u"$import" in obj:
+                sl = SourceLine(obj, "$import", RuntimeError)
                 if len(obj) == 1:
                     ref = obj[u"$import"]
                     obj = None
                 else:
-                    raise ValueError(
-                        u"'$import' must be the only field in %s" % (str(obj)))
+                    raise sl.makeError(
+                        u"'$import' must be the only field in %s" % (unicode(obj)))
             elif u"$include" in obj:
+                sl = SourceLine(obj, "$include", RuntimeError)
                 if len(obj) == 1:
                     ref = obj[u"$include"]
                     inc = True
                     obj = None
                 else:
-                    raise ValueError(
-                        u"'$include' must be the only field in %s" % (str(obj)))
+                    raise sl.makeError(
+                        u"'$include' must be the only field in %s" % (unicode(obj)))
             elif u"$mixin" in obj:
+                sl = SourceLine(obj, "$mixin", RuntimeError)
                 ref = obj[u"$mixin"]
                 mixin = obj
                 obj = None
@@ -304,11 +308,11 @@ class Loader(object):
                         ref = obj[identifier]
                         break
                 if not ref:
-                    raise ValueError(
-                        u"Object `%s` does not have identifier field in %s" % (obj, self.identifiers))
+                    raise sl.makeError(
+                        u"Object `%s` does not have identifier field in %s" % (relname(obj), self.identifiers))
 
         if not isinstance(ref, (str, unicode)):
-            raise ValueError(u"Must be string: `%s`" % str(ref))
+            raise ValueError(u"Must be string: `%s`" % unicode(ref))
 
         url = self.expand_url(ref, base_url, scoped_id=(obj is not None))
 
@@ -316,25 +320,26 @@ class Loader(object):
         if url in self.idx and (not mixin):
             return self.idx[url], {}
 
-        # "$include" directive means load raw text
-        if inc:
-            return self.fetch_text(url), {}
+        with sl:
+            # "$include" directive means load raw text
+            if inc:
+                return self.fetch_text(url), {}
 
-        doc = None
-        if obj:
-            for identifier in self.identifiers:
-                obj[identifier] = url
-            doc_url = url
-        else:
-            # Load structured document
-            doc_url, frg = urlparse.urldefrag(url)
-            if doc_url in self.idx and (not mixin):
-                # If the base document is in the index, it was already loaded,
-                # so if we didn't find the reference earlier then it must not
-                # exist.
-                raise validate.ValidationException(
-                    u"Reference `#%s` not found in file `%s`." % (frg, doc_url))
-            doc = self.fetch(doc_url, inject_ids=(not mixin))
+            doc = None
+            if obj:
+                for identifier in self.identifiers:
+                    obj[identifier] = url
+                doc_url = url
+            else:
+                # Load structured document
+                doc_url, frg = urlparse.urldefrag(url)
+                if doc_url in self.idx and (not mixin):
+                    # If the base document is in the index, it was already loaded,
+                    # so if we didn't find the reference earlier then it must not
+                    # exist.
+                    raise validate.ValidationException(
+                        u"Reference `#%s` not found in file `%s`." % (frg, doc_url))
+                doc = self.fetch(doc_url, inject_ids=(not mixin))
 
         # Recursively expand urls and resolve directives
         if mixin:
@@ -589,7 +594,7 @@ class Loader(object):
             except validate.ValidationException as v:
                 _logger.warn("loader is %s", id(loader), exc_info=True)
                 raise validate.ValidationException("(%s) (%s) Validation error in field %s:\n%s" % (
-                    id(loader), file_base, key, validate.indent(str(v))))
+                    id(loader), file_base, key, validate.indent(unicode(v))))
 
         elif isinstance(document, list):
             i = 0
@@ -618,7 +623,7 @@ class Loader(object):
             except validate.ValidationException as v:
                 _logger.warn("failed", exc_info=True)
                 raise validate.ValidationException("(%s) (%s) Validation error in position %i:\n%s" % (
-                    id(loader), file_base, i, validate.indent(str(v))))
+                    id(loader), file_base, i, validate.indent(unicode(v))))
 
             for identifer in loader.identity_links:
                 if identifer in metadata:
@@ -656,7 +661,10 @@ class Loader(object):
                 else:
                     return read
             except (OSError, IOError) as e:
-                raise RuntimeError('Error reading %s %s' % (url, e))
+                if e.filename == path:
+                    raise RuntimeError(unicode(e))
+                else:
+                    raise RuntimeError('Error reading %s: %s' % (url, e))
         else:
             raise ValueError('Unsupported scheme in url: %s' % url)
 
@@ -752,7 +760,7 @@ class Loader(object):
                     errors.append(v)
             if errors:
                 raise validate.ValidationException(
-                    "\n".join([str(e) for e in errors]))
+                    "\n".join([unicode(e) for e in errors]))
         elif isinstance(link, dict):
             self.validate_links(link, docid)
         else:
@@ -784,7 +792,7 @@ class Loader(object):
                     if d in document and d not in self.identity_links:
                         document[d] = self.validate_link(d, document[d], docid)
             except validate.ValidationException as v:
-                errors.append(sl.makeError(str(v)))
+                errors.append(sl.makeError(unicode(v)))
             if hasattr(document, "iteritems"):
                 iterator = document.iteritems()
             else:
@@ -800,17 +808,17 @@ class Loader(object):
                 if key not in self.nolinkcheck:
                     docid2 = self.getid(val)
                     if docid2:
-                        errors.append(sl.makeError("While checking object `%s`\n%s" % (docid2, validate.indent(str(v)))))
+                        errors.append(sl.makeError("While checking object `%s`\n%s" % (relname(docid2), validate.indent(unicode(v)))))
                     else:
                         if isinstance(key, basestring):
-                            errors.append(sl.makeError("While checking field `%s`\n%s" % (key, validate.indent(str(v)))))
+                            errors.append(sl.makeError("While checking field `%s`\n%s" % (key, validate.indent(unicode(v)))))
                         else:
-                            errors.append(sl.makeError("While checking position %s\n%s" % (key, validate.indent(str(v)))))
+                            errors.append(sl.makeError("While checking position %s\n%s" % (key, validate.indent(unicode(v)))))
 
         if errors:
             if len(errors) > 1:
                 raise validate.ValidationException(
-                    "\n".join([str(e) for e in errors]))
+                    "\n".join([unicode(e) for e in errors]))
             else:
                 raise errors[0]
         return document

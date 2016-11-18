@@ -3,19 +3,23 @@ import argparse
 import logging
 import sys
 import traceback
-import pkg_resources  # part of setuptools
-from . import schema
-from . import jsonld_context
-from . import makedoc
 import json
-from rdflib import Graph, plugin
-from rdflib.serializer import Serializer
 import os
 import urlparse
 
-from .ref_resolver import Loader
-from . import validate
+import pkg_resources  # part of setuptools
+
 from typing import Any, Dict, List, Union
+
+from rdflib import Graph, plugin
+from rdflib.serializer import Serializer
+
+from . import schema
+from . import jsonld_context
+from . import makedoc
+from . import validate
+from .sourceline import strip_dup_lineno
+from .ref_resolver import Loader
 
 _logger = logging.getLogger("salad")
 
@@ -108,6 +112,10 @@ def main(argsl=None):  # type: (List[str]) -> int
         _logger.debug("Index is %s", metaschema_loader.idx.keys())
         _logger.debug("Vocabulary is %s", metaschema_loader.vocab.keys())
         return 1
+    except (RuntimeError) as e:
+        _logger.error("Schema `%s` read error:\n%s",
+                args.schema, e, exc_info=(True if args.debug else False))
+        return 1
 
     # Optionally print the schema after ref resolution
     if not args.document and args.print_pre:
@@ -189,7 +197,7 @@ def main(argsl=None):  # type: (List[str]) -> int
         document, doc_metadata = document_loader.resolve_ref(uri)
     except (validate.ValidationException, RuntimeError) as e:
         _logger.error("Document `%s` failed validation:\n%s",
-                      args.document, e, exc_info=args.debug)
+                      args.document, strip_dup_lineno(unicode(e)), exc_info=args.debug)
         return 1
 
     # Optionally print the document after ref resolution

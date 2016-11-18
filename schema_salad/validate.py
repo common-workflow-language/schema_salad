@@ -41,7 +41,7 @@ def vpformat(datum):  # type: (Any) -> str
     return a
 
 def validate_ex(expected_schema, datum, identifiers=None, strict=False,
-                foreign_properties=None, raise_ex=True, uri_field=False, vocab=None):
+                foreign_properties=None, raise_ex=True):
     # type: (avro.schema.Schema, Any, Set[unicode], bool, Set[unicode], bool) -> bool
     """Determine if a python datum is an instance of a schema."""
 
@@ -71,13 +71,6 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                 return False
     elif schema_type == 'string':
         if isinstance(datum, basestring):
-            if uri_field:
-                split = urlparse.urlsplit(datum)
-                if not split.scheme:
-                    if raise_ex:
-                        raise ValidationException(u"`%s` not a URI" % (datum))
-                    else:
-                        return False
             return True
         elif isinstance(datum, bytes):
             datum = datum.decode(u"utf-8")
@@ -122,14 +115,6 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                 raise ValidationException(u"the value `%s` is not float or double" % vpformat(datum))
             else:
                 return False
-    elif isinstance(expected_schema, avro.schema.FixedSchema):
-        if isinstance(datum, str) and len(datum) == expected_schema.size:
-            return True
-        else:
-            if raise_ex:
-                raise ValidationException(u"the value `%s` is not fixed" % vpformat(datum))
-            else:
-                return False
     elif isinstance(expected_schema, avro.schema.EnumSchema):
         if expected_schema.name == "Any":
             if datum is not None:
@@ -160,7 +145,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                     sl = SourceLine(datum, i, ValidationException)
                     if not validate_ex(expected_schema.items, d, identifiers, strict=strict,
                                        foreign_properties=foreign_properties,
-                                       raise_ex=raise_ex, vocab=vocab):
+                                       raise_ex=raise_ex):
                         return False
                 except ValidationException as v:
                     if raise_ex:
@@ -175,7 +160,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                 return False
     elif isinstance(expected_schema, avro.schema.UnionSchema):
         for s in expected_schema.schemas:
-            if validate_ex(s, datum, identifiers, strict=strict, raise_ex=False, uri_field=uri_field, vocab=vocab):
+            if validate_ex(s, datum, identifiers, strict=strict, raise_ex=False):
                 return True
 
         if not raise_ex:
@@ -188,18 +173,22 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                 continue
             elif isinstance(datum, dict) and not isinstance(s, avro.schema.RecordSchema):
                 continue
-            elif isinstance(datum, (bool, int, long, float, basestring, type(None))) and isinstance(s, (avro.schema.ArraySchema, avro.schema.RecordSchema)):
+            elif isinstance(datum, (bool, int, long, float, basestring)) and isinstance(s, (avro.schema.ArraySchema, avro.schema.RecordSchema)):
+                continue
+            elif datum is not None and s.type == "null":
                 continue
 
             checked.append(s)
             try:
-                validate_ex(s, datum, identifiers, strict=strict, foreign_properties=foreign_properties, raise_ex=True, uri_field=uri_field)
+                validate_ex(s, datum, identifiers, strict=strict, foreign_properties=foreign_properties, raise_ex=True)
             except ClassValidationException as e:
                 raise
             except ValidationException as e:
                 errors.append(unicode(e))
-
-        raise ValidationException(bullets(["tried %s but\n%s" % (friendly(checked[i]), indent(errors[i])) for i in range(0, len(errors))], "- "))
+        if errors:
+            raise ValidationException(bullets(["tried %s but\n%s" % (friendly(checked[i]), indent(errors[i])) for i in range(0, len(errors))], "- "))
+        else:
+            raise ValidationException("value is a %s, expected %s" % (type(datum).__name__, friendly(expected_schema)))
 
     elif isinstance(expected_schema, avro.schema.RecordSchema):
         if not isinstance(datum, dict):
@@ -218,7 +207,6 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
                     else:
                         return False
                 if expected_schema.name != d:
-                    print expected_schema.name, d
                     return False
                 classmatch = d
                 break
@@ -238,11 +226,8 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
 
             try:
                 sl = SourceLine(datum, f.name, unicode)
-                uri_field = False
-                if isinstance(f.get_prop("jsonldPredicate"), dict):
-                    uri_field = f.get_prop("jsonldPredicate").get("_type") in ("@id", "@vocab")
                 if not validate_ex(f.type, fieldval, identifiers, strict=strict, foreign_properties=foreign_properties,
-                                   raise_ex=raise_ex, uri_field=uri_field, vocab=vocab):
+                                   raise_ex=raise_ex):
                     return False
             except ValidationException as v:
                 if f.name not in datum:
@@ -271,7 +256,7 @@ def validate_ex(expected_schema, datum, identifiers=None, strict=False,
         if errors:
             if raise_ex:
                 if classmatch:
-                    raise ClassValidationException(u"%s record %s" % (classmatch, bullets(errors, "* ")))
+                    raise ClassValidationException(bullets(errors, "* "))
                 else:
                     raise ValidationException(bullets(errors, "* "))
             else:
