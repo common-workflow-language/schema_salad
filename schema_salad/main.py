@@ -27,8 +27,12 @@ from rdflib.plugin import register, Parser
 register('json-ld', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')
 
 
-def printrdf(workflow, wf, ctx, sr):
-    # type: (str, Union[List[Dict[unicode, Any]], Dict[unicode, Any]], Dict[unicode, Any], str) -> None
+def printrdf(workflow,  # type: str
+             wf,        # type: Union[List[Dict[unicode, Any]], Dict[unicode, Any]]
+             ctx,       # type: Dict[unicode, Any]
+             sr         # type: str
+             ):
+    # type: (...) -> None
     g = jsonld_context.makerdf(workflow, wf, ctx)
     print(g.serialize(format=sr))
 
@@ -108,13 +112,13 @@ def main(argsl=None):  # type: (List[str]) -> int
             schema_raw_doc, schema_uri)
     except (validate.ValidationException) as e:
         _logger.error("Schema `%s` failed link checking:\n%s",
-                args.schema, e, exc_info=(True if args.debug else False))
+                      args.schema, e, exc_info=(True if args.debug else False))
         _logger.debug("Index is %s", metaschema_loader.idx.keys())
         _logger.debug("Vocabulary is %s", metaschema_loader.vocab.keys())
         return 1
     except (RuntimeError) as e:
         _logger.error("Schema `%s` read error:\n%s",
-                args.schema, e, exc_info=(True if args.debug else False))
+                      args.schema, e, exc_info=(True if args.debug else False))
         return 1
 
     # Optionally print the schema after ref resolution
@@ -158,8 +162,8 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     if isinstance(avsc_names, Exception):
         _logger.error("Schema `%s` error:\n%s", args.schema,
-                avsc_names, exc_info=((type(avsc_names), avsc_names,
-                    None) if args.debug else None))
+                      avsc_names, exc_info=((type(avsc_names), avsc_names,
+                                             None) if args.debug else None))
         if args.print_avro:
             print(json.dumps(avsc_obj, indent=4))
         return 1

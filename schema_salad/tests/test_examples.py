@@ -5,7 +5,7 @@ import schema_salad.schema
 from schema_salad.jsonld_context import makerdf
 from pkg_resources import Requirement, resource_filename, ResolutionError  # type: ignore
 import rdflib
-import ruamel.yaml as yaml
+import ruamel.yaml
 import json
 import os
 
@@ -234,13 +234,15 @@ class TestSchemas(unittest.TestCase):
                 get_data("metaschema/%s_schema.yml" % a))
             with open(get_data("metaschema/%s_src.yml" % a)) as src_fp:
                 src = ldr.resolve_all(
-                    yaml.load(src_fp, Loader=SafeLoader), "", checklinks=False)[0]
+                    ruaml.yaml.load(src_fp, Loader=SafeLoader), "",
+                    checklinks=False)[0]
             with open(get_data("metaschema/%s_proc.yml" % a)) as src_proc:
-                proc = yaml.load(src_proc, Loader=SafeLoader)
+                proc = ruamel.yaml.load(src_proc, Loader=SafeLoader)
             self.assertEqual(proc, src)
 
     def test_yaml_float_test(self):
-        self.assertEqual(yaml.load("float-test: 2e-10")["float-test"], 2e-10)
+        self.assertEqual(ruamel.yaml.load("float-test: 2e-10")["float-test"],
+                2e-10)
 
     def test_typedsl_ref(self):
         ldr = schema_salad.ref_resolver.Loader({})
@@ -363,6 +365,7 @@ class TestSchemas(unittest.TestCase):
                 'id': base_url + u'#b/four',
                 'one': 'two'}
         }], ra[0])
+
 
 if __name__ == '__main__':
     unittest.main()
