@@ -22,4 +22,8 @@ class TestErrors(unittest.TestCase):
                   "test_schema/test10.cwl",
                   "test_schema/test11.cwl"):
             with self.assertRaises(ValidationException):
-                load_and_validate(document_loader, avsc_names, unicode("schema_salad/tests/"+t), True)
+                try:
+                    load_and_validate(document_loader, avsc_names, unicode("schema_salad/tests/"+t), True)
+                except ValidationException as e:
+                    print "\n", e
+                    raise
