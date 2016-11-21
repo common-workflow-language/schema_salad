@@ -397,10 +397,15 @@ class Loader(object):
                                     "and does not have a mapPredicate", k, v)
                         else:
                             v = val
+
                         v[loader.idmap[idmapField]] = k
+                        v.lc.add_kv_line_col(loader.idmap[idmapField], document[idmapField].lc.data[k])
+                        v.lc.filename = document.lc.filename
+
                         ls.lc.add_kv_line_col(len(ls), document[idmapField].lc.data[k])
                         ls.lc.filename = document.lc.filename
                         ls.append(v)
+
                     document[idmapField] = ls
 
     typeDSLregex = re.compile(ur"^([^[?]+)(\[\])?(\?)?$")
@@ -808,12 +813,12 @@ class Loader(object):
                 if key not in self.nolinkcheck:
                     docid2 = self.getid(val)
                     if docid2:
-                        errors.append(sl.makeError("While checking object `%s`\n%s" % (relname(docid2), validate.indent(unicode(v)))))
+                        errors.append(sl.makeError("checking object `%s`\n%s" % (relname(docid2), validate.indent(unicode(v)))))
                     else:
                         if isinstance(key, basestring):
-                            errors.append(sl.makeError("While checking field `%s`\n%s" % (key, validate.indent(unicode(v)))))
+                            errors.append(sl.makeError("checking field `%s`\n%s" % (key, validate.indent(unicode(v)))))
                         else:
-                            errors.append(sl.makeError("While checking position %s\n%s" % (key, validate.indent(unicode(v)))))
+                            errors.append(sl.makeError("checking item\n%s" % (validate.indent(unicode(v)))))
 
         if errors:
             if len(errors) > 1:
