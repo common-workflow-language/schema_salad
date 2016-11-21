@@ -12,7 +12,9 @@ import urlparse
 import os
 AvroSchemaFromJSONData = avro.schema.make_avsc_object
 # AvroSchemaFromJSONData=avro.schema.SchemaFromJSONData
+from avro.schema import Names, SchemaParseException
 from . import ref_resolver
+from .ref_resolver import Loader, DocumentType
 from .flatten import flatten
 import logging
 from .aslist import aslist
@@ -47,7 +49,7 @@ salad_files = ('metaschema.yml',
 
 
 def get_metaschema():
-    # type: () -> Tuple[avro.schema.Names, List[Dict[unicode, Any]], ref_resolver.Loader]
+    # type: () -> Tuple[Names, List[Dict[unicode, Any]], Loader]
     loader = ref_resolver.Loader({
         "Any": "https://w3id.org/cwl/salad#Any",
         "ArraySchema": "https://w3id.org/cwl/salad#ArraySchema",
@@ -176,8 +178,10 @@ def get_metaschema():
     return (sch_names, j, loader)
 
 
-def load_schema(schema_ref, cache=None):
-    # type: (Union[unicode, Dict[unicode, Any]], Dict) -> Tuple[ref_resolver.Loader, Union[avro.schema.Names, avro.schema.SchemaParseException], Dict[unicode, Any], ref_resolver.Loader]
+def load_schema(schema_ref,  # type: Union[CommentedMap, CommentedSeq, unicode]
+                cache=None   # type: Dict
+                ):
+    # type: (...) -> Tuple[Loader, Union[Names, SchemaParseException], Dict[unicode, Any], Loader]
     """Load a schema that can be used to validate documents using load_and_validate.
 
     return document_loader, avsc_names, schema_metadata, metaschema_loader"""
@@ -197,7 +201,7 @@ def load_schema(schema_ref, cache=None):
         schema_doc, metactx)
 
     # Create the loader that will be used to load the target document.
-    document_loader = ref_resolver.Loader(schema_ctx, cache=cache)
+    document_loader = Loader(schema_ctx, cache=cache)
 
     # Make the Avro validation that will be used to validate the target
     # document
@@ -205,25 +209,32 @@ def load_schema(schema_ref, cache=None):
 
     return document_loader, avsc_names, schema_metadata, metaschema_loader
 
-def load_and_validate(document_loader, avsc_names, document, strict):
-    # type: (ref_resolver.Loader, avro.schema.Names, Union[Dict[unicode, Any], unicode], bool) -> Tuple[Any, Dict[unicode, Any]]
+
+def load_and_validate(document_loader,  # type: Loader
+                      avsc_names,       # type: Names
+                      document,         # type: Union[CommentedMap, unicode]
+                      strict            # type: bool
+                      ):
+    # type: (...) -> Tuple[Any, Dict[unicode, Any]]
     """Load a document and validate it with the provided schema.
 
     return data, metadata
     """
     try:
-        if isinstance(document, dict):
+        if isinstance(document, CommentedMap):
             source = document["id"]
-            data, metadata = document_loader.resolve_all(document, document["id"], checklinks=False)
+            data, metadata = document_loader.resolve_all(
+                document, document["id"], checklinks=False)
         else:
             source = document
-            data, metadata = document_loader.resolve_ref(document, checklinks=False)
+            data, metadata = document_loader.resolve_ref(
+                document, checklinks=False)
     except validate.ValidationException as v:
         raise validate.ValidationException(strip_dup_lineno(str(v)))
 
-    validationErrors = ""
+    validationErrors = u""
     try:
-        data = document_loader.validate_links(data, u"")
+        document_loader.validate_links(data, u"")
     except validate.ValidationException as v:
         validationErrors = unicode(v) + "\n"
 
@@ -238,8 +249,13 @@ def load_and_validate(document_loader, avsc_names, document, strict):
     return data, metadata
 
 
-def validate_doc(schema_names, doc, loader, strict, source=None):
-    # type: (avro.schema.Names, Union[Dict[unicode, Any], List[Dict[unicode, Any]], unicode], ref_resolver.Loader, bool) -> None
+def validate_doc(schema_names,  # type: Names
+                 doc,           # type: Union[Dict[unicode, Any], List[Dict[unicode, Any]], unicode]
+                 loader,        # type: Loader
+                 strict,        # type: bool
+                 source=None
+                 ):
+    # type: (...) -> None
     has_root = False
     for r in schema_names.names.values():
         if ((hasattr(r, 'get_prop') and r.get_prop(u"documentRoot")) or (
@@ -253,7 +269,7 @@ def validate_doc(schema_names, doc, loader, strict, source=None):
 
     if isinstance(doc, list):
         validate_doc = doc
-    elif isinstance(doc, dict):
+    elif isinstance(doc, CommentedMap):
         validate_doc = CommentedSeq([doc])
         validate_doc.lc.add_kv_line_col(0, [doc.lc.line, doc.lc.col])
         validate_doc.lc.filename = doc.lc.filename
@@ -272,8 +288,8 @@ def validate_doc(schema_names, doc, loader, strict, source=None):
         success = False
         for r in roots:
             success = validate.validate_ex(
-                r, item, loader.identifiers, strict, foreign_properties=loader.foreign_properties,
-                raise_ex=False)
+                r, item, loader.identifiers, strict,
+                foreign_properties=loader.foreign_properties, raise_ex=False)
             if success:
                 break
 
@@ -287,7 +303,8 @@ def validate_doc(schema_names, doc, loader, strict, source=None):
 
                 try:
                     validate.validate_ex(
-                        r, item, loader.identifiers, strict, foreign_properties=loader.foreign_properties,
+                        r, item, loader.identifiers, strict,
+                        foreign_properties=loader.foreign_properties,
                         raise_ex=True)
                 except validate.ClassValidationException as e:
                     errors = [sl.makeError(u"tried `%s` but\n%s" % (
@@ -300,16 +317,19 @@ def validate_doc(schema_names, doc, loader, strict, source=None):
             objerr = sl.makeError(u"Invalid")
             for ident in loader.identifiers:
                 if ident in item:
-                    objerr = sl.makeError(u"Object `%s` is not valid because" % (relname(item[ident])))
+                    objerr = sl.makeError(
+                        u"Object `%s` is not valid because"
+                        % (relname(item[ident])))
                     break
             anyerrors.append(u"%s\n%s" %
                              (objerr, validate.indent(bullets(errors, "- "))))
     if anyerrors:
-        raise validate.ValidationException(strip_dup_lineno(bullets(anyerrors, "* ")))
+        raise validate.ValidationException(
+            strip_dup_lineno(bullets(anyerrors, "* ")))
 
 
 def replace_type(items, spec, loader, found):
-    # type: (Any, Dict[unicode, Any], ref_resolver.Loader, Set[unicode]) -> Any
+    # type: (Any, Dict[unicode, Any], Loader, Set[unicode]) -> Any
     """ Go through and replace types in the 'spec' mapping"""
 
     items = copy.deepcopy(items)
@@ -358,10 +378,16 @@ def avro_name(url):  # type: (AnyStr) -> AnyStr
             return frg
     return url
 
+
 Avro = TypeVar('Avro', Dict[unicode, Any], List[Any], unicode)
 
-def make_valid_avro(items, alltypes, found, union=False):
-    # type: (Avro, Dict[unicode, Dict[unicode, Any]], Set[unicode], bool) -> Union[Avro, Dict]
+
+def make_valid_avro(items,          # type: Avro
+                    alltypes,       # type: Dict[unicode, Dict[unicode, Any]]
+                    found,          # type: Set[unicode]
+                    union=False     # type: bool
+                    ):
+    # type: (...) -> Union[Avro, Dict]
     items = copy.deepcopy(items)
     if isinstance(items, dict):
         if items.get("name"):
@@ -394,13 +420,13 @@ def make_valid_avro(items, alltypes, found, union=False):
     if union and isinstance(items, (str, unicode)):
         if items in alltypes and avro_name(items) not in found:
             return cast(Dict, make_valid_avro(alltypes[items], alltypes, found,
-                        union=union))
+                                              union=union))
         items = avro_name(items)
     return items
 
 
 def extend_and_specialize(items, loader):
-    # type: (List[Dict[unicode, Any]], ref_resolver.Loader) -> List[Dict[unicode, Any]]
+    # type: (List[Dict[unicode, Any]], Loader) -> List[Dict[unicode, Any]]
     """Apply 'extend' and 'specialize' to fully materialize derived record
     types."""
 
@@ -472,7 +498,8 @@ def extend_and_specialize(items, loader):
 
     for t in n:
         if t.get("abstract") and t["name"] not in extended_by:
-            raise validate.ValidationException("%s is abstract but missing a concrete subtype" % t["name"])
+            raise validate.ValidationException(
+                "%s is abstract but missing a concrete subtype" % t["name"])
 
     for t in n:
         if "fields" in t:
@@ -481,8 +508,10 @@ def extend_and_specialize(items, loader):
     return n
 
 
-def make_avro_schema(i, loader):
-    # type: (List[Dict[unicode, Any]], ref_resolver.Loader) -> Tuple[Union[avro.schema.Names,avro.schema.SchemaParseException], List[Dict[unicode, Any]]]
+def make_avro_schema(i,         # type: List[Dict[unicode, Any]]
+                     loader     # type: Loader
+                     ):
+    # type: (...) -> Tuple[Union[Names, SchemaParseException], List[Dict[unicode, Any]]]
     names = avro.schema.Names()
 
     j = extend_and_specialize(i, loader)
