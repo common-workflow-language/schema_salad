@@ -8,12 +8,14 @@ import rdflib
 import ruamel.yaml
 import json
 import os
+from schema_salad.sourceline import cmap
 
 try:
     from ruamel.yaml import CSafeLoader as SafeLoader
 except ImportError:
     from ruamel.yaml import SafeLoader  # type: ignore
 
+from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
 def get_data(filename):
     filepath = None
@@ -31,11 +33,11 @@ class TestSchemas(unittest.TestCase):
     def test_schemas(self):
         l = schema_salad.ref_resolver.Loader({})
 
-        ra, _ = l.resolve_all({
+        ra, _ = l.resolve_all(cmap({
             u"$schemas": ["file://" + get_data("tests/EDAM.owl")],
             u"$namespaces": {u"edam": u"http://edamontology.org/"},
             u"edam:has_format": u"edam:format_1915"
-        }, "")
+        }), "")
 
         self.assertEqual({
             u"$schemas": ["file://" + get_data("tests/EDAM.owl")],
@@ -74,7 +76,7 @@ class TestSchemas(unittest.TestCase):
             argsl=[get_data("tests/Process.yml")]))
 
     def test_jsonld_ctx(self):
-        ldr, _, _, _ = schema_salad.schema.load_schema({
+        ldr, _, _, _ = schema_salad.schema.load_schema(cmap({
             "$base": "Y",
             "name": "X",
             "$namespaces": {
@@ -84,9 +86,9 @@ class TestSchemas(unittest.TestCase):
                 "name": "ExampleType",
                 "type": "enum",
                 "symbols": ["asym", "bsym"]}]
-        })
+        }))
 
-        ra, _ = ldr.resolve_all({"foo:bar": "asym"}, "X")
+        ra, _ = ldr.resolve_all(cmap({"foo:bar": "asym"}), "X")
 
         self.assertEqual(ra, {
             'http://example.com/foo#bar': 'asym'
@@ -106,7 +108,7 @@ class TestSchemas(unittest.TestCase):
             },
             "id": "@id"})
 
-        ra, _ = ldr.resolve_all({
+        ra, _ = ldr.resolve_all(cmap({
             "id": "stuff",
             "inputs": {
                 "zip": 1,
@@ -116,7 +118,7 @@ class TestSchemas(unittest.TestCase):
             "other": {
                 'n': 9
             }
-        }, "http://example2.com/")
+        }), "http://example2.com/")
 
         self.assertEqual("http://example2.com/#stuff", ra["id"])
         for item in ra["inputs"]:
@@ -159,7 +161,7 @@ class TestSchemas(unittest.TestCase):
             },
             "id": "@id"})
 
-        ra, _ = ldr.resolve_all({
+        ra, _ = ldr.resolve_all(cmap({
             "inputs": {
                 "inp": "string",
                 "inp2": "string"
@@ -188,7 +190,7 @@ class TestSchemas(unittest.TestCase):
                     "out": ["out"]
                 }
             }
-        }, "http://example2.com/")
+        }), "http://example2.com/")
 
         self.assertEquals(
             {'inputs': [{
@@ -234,10 +236,10 @@ class TestSchemas(unittest.TestCase):
                 get_data("metaschema/%s_schema.yml" % a))
             with open(get_data("metaschema/%s_src.yml" % a)) as src_fp:
                 src = ldr.resolve_all(
-                    ruaml.yaml.load(src_fp, Loader=SafeLoader), "",
+                    ruamel.yaml.round_trip_load(src_fp), "",
                     checklinks=False)[0]
             with open(get_data("metaschema/%s_proc.yml" % a)) as src_proc:
-                proc = ruamel.yaml.load(src_proc, Loader=SafeLoader)
+                proc = ruamel.yaml.safe_load(src_proc)
             self.assertEqual(proc, src)
 
     def test_yaml_float_test(self):
@@ -256,16 +258,16 @@ class TestSchemas(unittest.TestCase):
             }
         })
 
-        ra, _ = ldr.resolve_all({"type": "File"}, "")
+        ra, _ = ldr.resolve_all(cmap({"type": "File"}), "")
         self.assertEqual({'type': 'File'}, ra)
 
-        ra, _ = ldr.resolve_all({"type": "File?"}, "")
+        ra, _ = ldr.resolve_all(cmap({"type": "File?"}), "")
         self.assertEqual({'type': ['null', 'File']}, ra)
 
-        ra, _ = ldr.resolve_all({"type": "File[]"}, "")
+        ra, _ = ldr.resolve_all(cmap({"type": "File[]"}), "")
         self.assertEqual({'type': {'items': 'File', 'type': 'array'}}, ra)
 
-        ra, _ = ldr.resolve_all({"type": "File[]?"}, "")
+        ra, _ = ldr.resolve_all(cmap({"type": "File[]?"}), "")
         self.assertEqual(
             {'type': ['null', {'items': 'File', 'type': 'array'}]}, ra)
 
@@ -282,12 +284,12 @@ class TestSchemas(unittest.TestCase):
         }
         ldr.add_context(ctx)
 
-        ra, _ = ldr.resolve_all({
+        ra, _ = ldr.resolve_all(cmap({
             "id": "foo",
             "bar": {
                 "id": "baz"
             }
-        }, "http://example.com")
+        }), "http://example.com")
         self.assertEqual({'id': 'http://example.com/#foo',
                           'bar': {
                               'id': 'http://example.com/#foo/baz'},
@@ -296,12 +298,12 @@ class TestSchemas(unittest.TestCase):
         g = makerdf(None, ra, ctx)
         print(g.serialize(format="n3"))
 
-        ra, _ = ldr.resolve_all({
+        ra, _ = ldr.resolve_all(cmap({
             "location": "foo",
             "bar": {
                 "location": "baz"
             }
-        }, "http://example.com", checklinks=False)
+        }), "http://example.com", checklinks=False)
         self.assertEqual({'location': 'http://example.com/foo',
                           'bar': {
                               'location': 'http://example.com/baz'},
@@ -310,12 +312,12 @@ class TestSchemas(unittest.TestCase):
         g = makerdf(None, ra, ctx)
         print(g.serialize(format="n3"))
 
-        ra, _ = ldr.resolve_all({
+        ra, _ = ldr.resolve_all(cmap({
             "id": "foo",
             "bar": {
                 "location": "baz"
             }
-        }, "http://example.com", checklinks=False)
+        }), "http://example.com", checklinks=False)
         self.assertEqual({'id': 'http://example.com/#foo',
                           'bar': {
                               'location': 'http://example.com/baz'},
@@ -324,12 +326,12 @@ class TestSchemas(unittest.TestCase):
         g = makerdf(None, ra, ctx)
         print(g.serialize(format="n3"))
 
-        ra, _ = ldr.resolve_all({
+        ra, _ = ldr.resolve_all(cmap({
             "location": "foo",
             "bar": {
                 "id": "baz"
             }
-        }, "http://example.com", checklinks=False)
+        }), "http://example.com", checklinks=False)
         self.assertEqual({'location': 'http://example.com/foo',
                           'bar': {
                               'id': 'http://example.com/#baz'},
@@ -340,19 +342,19 @@ class TestSchemas(unittest.TestCase):
 
     def test_mixin(self):
         ldr = schema_salad.ref_resolver.Loader({})
-        ra = ldr.resolve_ref({"$mixin": get_data("tests/mixin.yml"), "one": "five"},
+        ra = ldr.resolve_ref(cmap({"$mixin": get_data("tests/mixin.yml"), "one": "five"}),
                              base_url="file://" + os.getcwd() + "/tests/")
         self.assertEqual({'id': 'four', 'one': 'five'}, ra[0])
 
         ldr = schema_salad.ref_resolver.Loader({"id": "@id"})
         base_url = "file://" + os.getcwd() + "/tests/"
-        ra = ldr.resolve_all([{
+        ra = ldr.resolve_all(cmap([{
             "id": "a",
             "m": {"$mixin": get_data("tests/mixin.yml")}
         }, {
             "id": "b",
             "m": {"$mixin": get_data("tests/mixin.yml")}
-        }], base_url=base_url)
+        }]), base_url=base_url)
         self.assertEqual([{
             'id': base_url + '#a',
             'm': {

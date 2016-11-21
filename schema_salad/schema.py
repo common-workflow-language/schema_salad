@@ -163,7 +163,7 @@ def get_metaschema():
     loader.cache["https://w3id.org/cwl/salad"] = rs.read()
     rs.close()
 
-    j = yaml.round_trip_load(loader.cache["https://w3id.org/cwl/salad"])
+    j = yaml.round_trip_load(loader.cache["https://w3id.org/cwl/salad"])  # type: ignore
     add_lc_filename(j, "metaschema.yml")
     j, _ = loader.resolve_all(j, "https://w3id.org/cwl/salad#")
 
