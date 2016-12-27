@@ -373,5 +373,6 @@ class TestSchemas(unittest.TestCase):
         b, _ = ldr.resolve_ref("schema_salad/tests/frag.yml#foo2")
         self.assertEquals({"id": b["id"], "bar":"b2"}, b)
 
+
 if __name__ == '__main__':
     unittest.main()
