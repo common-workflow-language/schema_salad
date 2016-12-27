@@ -379,7 +379,7 @@ class Loader(object):
         inc = False
         mixin = None            # type: Dict[unicode, Any]
 
-        if base_url is None:
+        if not base_url:
             base_url = pathlib2.Path(os.getcwd()).as_uri() + '/'
 
         if isinstance(ref, (str, unicode)) and os.sep == "\\":
