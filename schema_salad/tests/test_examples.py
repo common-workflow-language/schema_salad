@@ -368,6 +368,10 @@ class TestSchemas(unittest.TestCase):
                 'one': 'two'}
         }], ra[0])
 
+    def test_fragment(self):
+        ldr = schema_salad.ref_resolver.Loader({"id": "@id"})
+        b, _ = ldr.resolve_ref("schema_salad/tests/frag.yml#foo2")
+        self.assertEquals({"id": b["id"], "bar":"b2"}, b)
 
 if __name__ == '__main__':
     unittest.main()
