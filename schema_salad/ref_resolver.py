@@ -48,7 +48,7 @@ def file_uri(path):  # type: (unicode) -> unicode
 def uri_file_path(url):  # type: (unicode) -> unicode
     split = urlparse.urlsplit(url)
     if split.scheme == "file":
-        urllib.url2pathname(str(split.path))
+        return urllib.url2pathname(str(split.path))
     else:
         raise ValueError("Not a file URI")
 
