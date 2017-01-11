@@ -39,16 +39,18 @@ DocumentOrStrType = TypeVar(
 def file_uri(path):  # type: (unicode) -> unicode
     if path.startswith("file://"):
         return path
-    urlpath = urllib.pathname2url(str(path))
+    path = path.split("#", 2)
+    frag = "#" + path[1] if len(path) == 2 else ""
+    urlpath = urllib.pathname2url(str(path[0]))
     if urlpath.startswith("//"):
-        return "file:%s" % urlpath
+        return "file:%s%s" % (urlpath, frag)
     else:
-        return "file://%s" % urlpath
+        return "file://%s%s" % (urlpath, frag)
 
 def uri_file_path(url):  # type: (unicode) -> unicode
     split = urlparse.urlsplit(url)
     if split.scheme == "file":
-        return urllib.url2pathname(str(split.path))
+        return urllib.url2pathname(str(split.path)) + ("#" + split.fragment if split.fragment else "")
     else:
         raise ValueError("Not a file URI")
 
