@@ -40,7 +40,7 @@ def file_uri(path):  # type: (unicode) -> unicode
     if path.startswith("file://"):
         return path
     path = path.split("#", 2)
-    frag = "#" + path[1] if len(path) == 2 else ""
+    frag = "#" + urllib.quote(path[1]) if len(path) == 2 else ""
     urlpath = urllib.pathname2url(str(path[0]))
     if urlpath.startswith("//"):
         return "file:%s%s" % (urlpath, frag)
@@ -50,7 +50,7 @@ def file_uri(path):  # type: (unicode) -> unicode
 def uri_file_path(url):  # type: (unicode) -> unicode
     split = urlparse.urlsplit(url)
     if split.scheme == "file":
-        return urllib.url2pathname(str(split.path)) + ("#" + split.fragment if split.fragment else "")
+        return urllib.url2pathname(str(split.path)) + ("#" + urllib.unquote(split.fragment) if split.fragment else "")
     else:
         raise ValueError("Not a file URI")
 
