@@ -36,7 +36,7 @@ DocumentType = TypeVar('DocumentType', CommentedSeq, CommentedMap)
 DocumentOrStrType = TypeVar(
     'DocumentOrStrType', CommentedSeq, CommentedMap, unicode)
 
-def file_uri(path, split_frag=False):  # type: (str) -> str
+def file_uri(path, split_frag=False):  # type: (str, bool) -> str
     if path.startswith("file://"):
         return path
     if split_frag:
