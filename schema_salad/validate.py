@@ -286,8 +286,8 @@ def validate_ex(expected_schema,                 # type: Schema
             if not found:
                 sl = SourceLine(datum, d, unicode)
                 if d not in identifiers and d not in foreign_properties and d[0] not in ("@", "$"):
-                    if not raise_ex and (d not in identifiers and strict) or (
-                            d not in foreign_properties and strict_foreign_properties):
+                    if (d not in identifiers and strict) and (
+                            d not in foreign_properties and strict_foreign_properties) and not raise_ex:
                         return False
                     split = urlparse.urlsplit(d)
                     if split.scheme:
