@@ -57,14 +57,14 @@ def vpformat(datum):  # type: (Any) -> str
     return a
 
 
-def validate_ex(expected_schema,                 # type: Schema
-                datum,                           # type: Any
-                identifiers=None,                # type: Set[unicode]
-                strict=False,                    # type: bool
-                foreign_properties=None,         # type: Set[unicode]
-                raise_ex=True,                   # type: bool
-                strict_foreign_properties=False, # type: bool
-                logger=_logger                   # type: logging.Logger
+def validate_ex(expected_schema,                  # type: Schema
+                datum,                            # type: Any
+                identifiers=None,                 # type: Set[unicode]
+                strict=False,                     # type: bool
+                foreign_properties=None,          # type: Set[unicode]
+                raise_ex=True,                    # type: bool
+                strict_foreign_properties=False,  # type: bool
+                logger=_logger                    # type: logging.Logger
                 ):
     # type: (...) -> bool
     """Determine if a python datum is an instance of a schema."""
