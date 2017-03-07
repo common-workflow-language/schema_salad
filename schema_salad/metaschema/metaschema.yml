@@ -18,6 +18,8 @@ $graph:
     - $import: link_res.yml
     - $import: vocab_res.yml
     - $include: import_include.md
+    - $import: map_res.yml
+    - $import: typedsl_res.yml
 
 - name: "Link_Validation"
   type: documentation

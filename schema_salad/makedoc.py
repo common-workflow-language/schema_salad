@@ -493,8 +493,7 @@ def avrold_doc(j, outdoc, renderlist, redirects, brand, brandlink):
     </html>""")
 
 
-if __name__ == "__main__":
-
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("schema")
     parser.add_argument('--only', action='append')
@@ -523,10 +522,13 @@ if __name__ == "__main__":
                 s.append(j)
             else:
                 raise ValueError("Schema must resolve to a list or a dict")
-
+    global primitiveType
     primitiveType = args.primtype
     redirect = {}
     for r in (args.redirect or []):
         redirect[r.split("=")[0]] = r.split("=")[1]
     renderlist = args.only if args.only else []
     avrold_doc(s, sys.stdout, renderlist, redirect, args.brand, args.brandlink)
+
+if __name__ == "__main__":
+    main()
