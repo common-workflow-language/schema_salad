@@ -158,7 +158,7 @@ def fix_doc(doc):  # type: (Union[List[str], str]) -> str
 
 class RenderType(object):
 
-    def __init__(self, toc, j, renderlist, redirects):
+    def __init__(self, toc, j, renderlist, redirects, primitiveType):
         # type: (ToC, List[Dict], str, Dict) -> None
         self.typedoc = StringIO()
         self.toc = toc
@@ -168,6 +168,7 @@ class RenderType(object):
         self.rendered = set()  # type: Set[str]
         self.redirects = redirects
         self.title = None  # type: Optional[str]
+        self.primitiveType = primitiveType
 
         for t in j:
             if "extends" in t:
@@ -227,7 +228,6 @@ class RenderType(object):
                 jsonldPredicate=None    # type: Optional[Dict[str, str]]
                 ):
         # type: (...) -> Union[str, unicode]
-        global primitiveType
         if isinstance(tp, list):
             if nbsp and len(tp) <= 3:
                 return "&nbsp;|&nbsp;".join([self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp])
@@ -264,7 +264,7 @@ class RenderType(object):
             if str(tp) in redirects:
                 return """<a href="%s">%s</a>""" % (redirects[tp], redirects[tp])
             elif str(tp) in basicTypes:
-                return """<a href="%s">%s</a>""" % (primitiveType, schema.avro_name(str(tp)))
+                return """<a href="%s">%s</a>""" % (self.primitiveType, schema.avro_name(str(tp)))
             else:
                 _, frg = urlparse.urldefrag(tp)
                 if frg is not '':
@@ -416,12 +416,12 @@ class RenderType(object):
             self.render_type(self.typemap[s], depth)
 
 
-def avrold_doc(j, outdoc, renderlist, redirects, brand, brandlink):
+def avrold_doc(j, outdoc, renderlist, redirects, brand, brandlink, primtype):
     # type: (List[Dict[unicode, Any]], IO[Any], str, Dict, str, str) -> None
     toc = ToC()
     toc.start_numbering = False
 
-    rt = RenderType(toc, j, renderlist, redirects)
+    rt = RenderType(toc, j, renderlist, redirects, primtype)
     content = rt.typedoc.getvalue()  # type: unicode
 
     outdoc.write("""
@@ -528,13 +528,12 @@ def main():
                 s.append(j)
             else:
                 raise ValueError("Schema must resolve to a list or a dict")
-    global primitiveType
-    primitiveType = args.primtype
     redirect = {}
     for r in (args.redirect or []):
         redirect[r.split("=")[0]] = r.split("=")[1]
     renderlist = args.only if args.only else []
-    avrold_doc(s, sys.stdout, renderlist, redirect, args.brand, args.brandlink)
+    avrold_doc(s, sys.stdout, renderlist, redirect, args.brand, args.brandlink, args.primtype)
+
 
 if __name__ == "__main__":
     main()
