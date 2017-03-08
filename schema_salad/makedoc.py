@@ -499,7 +499,7 @@ def avrold_doc(j, outdoc, renderlist, redirects, brand, brandlink, primtype):
     </html>""")
 
 
-def main():
+def main():  # type: () -> None
     parser = argparse.ArgumentParser()
     parser.add_argument("schema")
     parser.add_argument('--only', action='append')
