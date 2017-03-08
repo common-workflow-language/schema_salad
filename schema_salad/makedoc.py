@@ -277,6 +277,9 @@ class RenderType(object):
             return
         self.rendered.add(f["name"])
 
+        if f.get("abstract"):
+            return
+
         if "doc" not in f:
             f["doc"] = ""
 
@@ -324,7 +327,7 @@ class RenderType(object):
 
             _, frg = urlparse.urldefrag(f["name"])
             num = self.toc.add_entry(depth, frg)
-            doc = "## %s %s\n" % (num, frg)
+            doc = "%s %s %s\n" % (("#" * depth), num, frg)
         else:
             doc = ""
 

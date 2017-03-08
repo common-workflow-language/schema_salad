@@ -156,6 +156,7 @@ $graph:
 - name: NamedType
   type: record
   abstract: true
+  docParent: "#Schema"
   fields:
     - name: name
       type: string
@@ -166,6 +167,7 @@ $graph:
 - name: DocType
   type: record
   abstract: true
+  docParent: "#Schema"
   fields:
     - name: doc
       type:
@@ -242,6 +244,7 @@ $graph:
 
 
 - name: SaladRecordSchema
+  docParent: "#Schema"
   type: record
   extends: [NamedType, RecordSchema, SchemaDefinedType]
   documentRoot: true
@@ -279,6 +282,7 @@ $graph:
         mapPredicate: specializeTo
 
 - name: SaladEnumSchema
+  docParent: "#Schema"
   type: record
   extends: [EnumSchema, SchemaDefinedType]
   documentRoot: true
@@ -299,6 +303,7 @@ $graph:
 
 - name: Documentation
   type: record
+  docParent: "#Schema"
   extends: [NamedType, DocType]
   documentRoot: true
   doc: |
