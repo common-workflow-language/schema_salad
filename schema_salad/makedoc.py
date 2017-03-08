@@ -159,7 +159,7 @@ def fix_doc(doc):  # type: (Union[List[str], str]) -> str
 class RenderType(object):
 
     def __init__(self, toc, j, renderlist, redirects, primitiveType):
-        # type: (ToC, List[Dict], str, Dict) -> None
+        # type: (ToC, List[Dict], str, Dict, str) -> None
         self.typedoc = StringIO()
         self.toc = toc
         self.subs = {}  # type: Dict[str, str]
@@ -417,7 +417,7 @@ class RenderType(object):
 
 
 def avrold_doc(j, outdoc, renderlist, redirects, brand, brandlink, primtype):
-    # type: (List[Dict[unicode, Any]], IO[Any], str, Dict, str, str) -> None
+    # type: (List[Dict[unicode, Any]], IO[Any], str, Dict, str, str, str) -> None
     toc = ToC()
     toc.start_numbering = False
 
