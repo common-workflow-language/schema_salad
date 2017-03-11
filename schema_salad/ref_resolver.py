@@ -822,7 +822,9 @@ class Loader(object):
                         loader.idx[metadata[identifer]] = document
 
         if checklinks:
+            all_doc_ids=[]  # type: List[unicode]
             self.validate_links(document, u"")
+            self.validate_ids(document,all_doc_ids)
 
         return document, metadata
 
@@ -968,6 +970,56 @@ class Loader(object):
                                 validate.indent(unicode(v)))))
                 else:
                     _logger.warn( validate.indent(unicode(v)))
+        if bool(errors):
+            if len(errors) > 1:
+                raise validate.ValidationException(
+                    u"\n".join([unicode(e) for e in errors]))
+            else:
+                raise errors[0]
+        return
+
+    def validate_ids(self, document,all_doc_ids):
+        # type: (Union[CommentedMap, CommentedSeq, unicode, None], List[unicode] ) -> None
+        errors = []  # type: List[Exception]
+        iterator = None  # type: Any
+        if isinstance(document, list):
+            iterator = enumerate(document)
+        elif isinstance(document, dict):
+            try:
+                for identifier in self.identifiers:  # validates that all id's are unique
+                    if identifier in document:
+                        sl = SourceLine(document, identifier, validate.ValidationException)
+                        if document[identifier] in all_doc_ids:
+                            raise validate.ValidationException(
+                                "%s `%s` is defined multiple times " % (identifier,relname(document[identifier])))
+                        else:
+                            all_doc_ids.append(document[identifier])
+            except validate.ValidationException as v:
+                errors.append(sl.makeError(unicode(v)))
+            if hasattr(document, "iteritems"):
+                iterator = document.iteritems()
+            else:
+                iterator = document.items()
+        else:
+            return
+
+        for key, val in iterator:
+            sl = SourceLine(document, key, validate.ValidationException)
+            try:
+                self.validate_ids(val, all_doc_ids)
+            except validate.ValidationException as v:
+                docid2 = self.getid(val)
+                if docid2 is not None:
+                    errors.append(sl.makeError("checking object `%s`\n%s"
+                                               % (relname(docid2), validate.indent(unicode(v)))))
+                else:
+                    if isinstance(key, basestring):
+                        errors.append(sl.makeError("checking field `%s`\n%s" % (
+                            key, validate.indent(unicode(v)))))
+                    else:
+                        errors.append(sl.makeError("checking item\n%s" % (
+                            validate.indent(unicode(v)))))
+
         if bool(errors):
             if len(errors) > 1:
                 raise validate.ValidationException(
