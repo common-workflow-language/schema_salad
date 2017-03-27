@@ -822,9 +822,8 @@ class Loader(object):
                         loader.idx[metadata[identifer]] = document
 
         if checklinks:
-            all_doc_ids=[]  # type: List[unicode]
-            self.validate_links(document, u"")
-            self.validate_ids(document,all_doc_ids)
+            all_doc_ids={}  # type: Dict[Text, Text]
+            self.validate_links(document, u"", all_doc_ids)
 
         return document, metadata
 
@@ -879,8 +878,8 @@ class Loader(object):
         raise validate.ValidationException(
             "Field `%s` references unknown identifier `%s`, tried %s" % (field, link, ", ".join(tried)))
 
-    def validate_link(self, field, link, docid):
-        # type: (unicode, FieldType, unicode) -> FieldType
+    def validate_link(self, field, link, docid, all_doc_ids):
+        # type: (unicode, FieldType, unicode, Dict[Text, Text]) -> FieldType
         if field in self.nolinkcheck:
             return link
         if isinstance(link, (str, unicode)):
@@ -903,14 +902,14 @@ class Loader(object):
             errors = []
             for n, i in enumerate(link):
                 try:
-                    link[n] = self.validate_link(field, i, docid)
+                    link[n] = self.validate_link(field, i, docid, all_doc_ids)
                 except validate.ValidationException as v:
                     errors.append(v)
             if bool(errors):
                 raise validate.ValidationException(
                     "\n".join([unicode(e) for e in errors]))
         elif isinstance(link, CommentedMap):
-            self.validate_links(link, docid)
+            self.validate_links(link, docid, all_doc_ids)
         else:
             raise validate.ValidationException(
                 "`%s` field is %s, expected string, list, or a dict."
@@ -926,8 +925,8 @@ class Loader(object):
                         return idd
         return None
 
-    def validate_links(self, document, base_url):
-        # type: (Union[CommentedMap, CommentedSeq, unicode, None], unicode) -> None
+    def validate_links(self, document, base_url, all_doc_ids):
+        # type: (Union[CommentedMap, CommentedSeq, unicode, None], unicode, Dict[Text, Text]) -> None
         docid = self.getid(document)
         if not docid:
             docid = base_url
@@ -941,7 +940,15 @@ class Loader(object):
                 for d in self.url_fields:
                     sl = SourceLine(document, d, validate.ValidationException)
                     if d in document and d not in self.identity_links:
-                        document[d] = self.validate_link(d, document[d], docid)
+                        document[d] = self.validate_link(d, document[d], docid, all_doc_ids)
+                for identifier in self.identifiers:  # validate that each id is defined uniquely
+                    if identifier in document:
+                        sl = SourceLine(document, identifier, validate.ValidationException)
+                        if document[identifier] in all_doc_ids and sl.makeLead() != all_doc_ids[document[identifier]]:
+                            raise validate.ValidationException(
+                                "%s object %s `%s` previously defined" % (all_doc_ids[document[identifier]], identifier, relname(document[identifier]), ))
+                        else:
+                            all_doc_ids[document[identifier]] = sl.makeLead()
             except validate.ValidationException as v:
                 errors.append(sl.makeError(unicode(v)))
             if hasattr(document, "iteritems"):
@@ -954,7 +961,7 @@ class Loader(object):
         for key, val in iterator:
             sl = SourceLine(document, key, validate.ValidationException)
             try:
-                self.validate_links(val, docid)
+                self.validate_links(val, docid, all_doc_ids)
             except validate.ValidationException as v:
                 if key not in self.nolinkcheck:
                     docid2 = self.getid(val)
@@ -970,56 +977,6 @@ class Loader(object):
                                 validate.indent(unicode(v)))))
                 else:
                     _logger.warn( validate.indent(unicode(v)))
-        if bool(errors):
-            if len(errors) > 1:
-                raise validate.ValidationException(
-                    u"\n".join([unicode(e) for e in errors]))
-            else:
-                raise errors[0]
-        return
-
-    def validate_ids(self, document,all_doc_ids):
-        # type: (Union[CommentedMap, CommentedSeq, unicode, None], List[unicode] ) -> None
-        errors = []  # type: List[Exception]
-        iterator = None  # type: Any
-        if isinstance(document, list):
-            iterator = enumerate(document)
-        elif isinstance(document, dict):
-            try:
-                for identifier in self.identifiers:  # validates that all id's are unique
-                    if identifier in document:
-                        sl = SourceLine(document, identifier, validate.ValidationException)
-                        if document[identifier] in all_doc_ids:
-                            raise validate.ValidationException(
-                                "%s `%s` is defined multiple times " % (identifier,relname(document[identifier])))
-                        else:
-                            all_doc_ids.append(document[identifier])
-            except validate.ValidationException as v:
-                errors.append(sl.makeError(unicode(v)))
-            if hasattr(document, "iteritems"):
-                iterator = document.iteritems()
-            else:
-                iterator = document.items()
-        else:
-            return
-
-        for key, val in iterator:
-            sl = SourceLine(document, key, validate.ValidationException)
-            try:
-                self.validate_ids(val, all_doc_ids)
-            except validate.ValidationException as v:
-                docid2 = self.getid(val)
-                if docid2 is not None:
-                    errors.append(sl.makeError("checking object `%s`\n%s"
-                                               % (relname(docid2), validate.indent(unicode(v)))))
-                else:
-                    if isinstance(key, basestring):
-                        errors.append(sl.makeError("checking field `%s`\n%s" % (
-                            key, validate.indent(unicode(v)))))
-                    else:
-                        errors.append(sl.makeError("checking item\n%s" % (
-                            validate.indent(unicode(v)))))
-
         if bool(errors):
             if len(errors) > 1:
                 raise validate.ValidationException(
