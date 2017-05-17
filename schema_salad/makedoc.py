@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import mistune
 from . import schema
 import json
@@ -13,6 +14,8 @@ from .add_dictlist import add_dictlist
 import re
 import argparse
 from typing import cast, Any, Dict, IO, List, Optional, Set, Text, Union
+import six
+from six.moves import range
 
 _logger = logging.getLogger("salad")
 
@@ -30,7 +33,7 @@ def has_types(items):  # type: (Any) -> List[basestring]
         for i in items:
             r.extend(has_types(i))
         return r
-    if isinstance(items, basestring):
+    if isinstance(items, six.string_types):
         return [items]
     return []
 
