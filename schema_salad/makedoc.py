@@ -6,12 +6,13 @@ import os
 import copy
 import re
 import sys
-from StringIO import StringIO
+
 import logging
 # import urlparse
 import six
 from six.moves import range
 from six.moves.urllib import parse
+from six import StringIO
 
 from .aslist import aslist
 from .add_dictlist import add_dictlist
