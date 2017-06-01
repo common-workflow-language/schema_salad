@@ -143,7 +143,7 @@ class DefaultFetcher(Fetcher):
                 # On Windows, url.path will be /drive:/path ; on Unix systems,
                 # /path. As we want drive:/path instead of /drive:/path on Windows,
                 # remove the leading /.
-                if os.path.isabs(path[1:]): # checking if pathis valid after removing front / or not
+                if os.path.isabs(path[1:]):  # checking if pathis valid after removing front / or not
                     path = path[1:]
                 with open(urllib.url2pathname(str(path))) as fp:
                     read = fp.read()
@@ -181,11 +181,11 @@ class DefaultFetcher(Fetcher):
     def urljoin(self, base_url, url):  # type: (Text, Text) -> Text
         # On windows urljoin consider drive name as scheme and forces it over base url's scheme,
         # here we are forcing base url's scheme over url
-        basesplit = urlparse.urlsplit(base_url)
+        basesplit = urllib.parse.urlsplit(base_url)
         if basesplit.scheme:
-            split = urlparse.urlsplit(url)
-            url = urlparse.urlunsplit(('', split.netloc, split.path, split.query, split.fragment))
-        return urlparse.urljoin(base_url, url)
+            split = urllib.parse.urlsplit(url)
+            url = urllib.parse.urlunsplit(('', split.netloc, split.path, split.query, split.fragment))
+        return urllib.parse.urljoin(base_url, url)
 
 class Loader(object):
     def __init__(self,
