@@ -25,13 +25,13 @@ class TestSchemas(unittest.TestCase):
         l = schema_salad.ref_resolver.Loader({})
 
         ra, _ = l.resolve_all(cmap({
-            u"$schemas": ["file://" + get_data("tests/EDAM.owl")],
+            u"$schemas": [schema_salad.ref_resolver.file_uri(get_data("tests/EDAM.owl"))],
             u"$namespaces": {u"edam": u"http://edamontology.org/"},
             u"edam:has_format": u"edam:format_1915"
         }), "")
 
         self.assertEqual({
-            u"$schemas": ["file://" + get_data("tests/EDAM.owl")],
+            u"$schemas": [schema_salad.ref_resolver.file_uri(get_data("tests/EDAM.owl"))],
             u"$namespaces": {u"edam": u"http://edamontology.org/"},
             u'http://edamontology.org/has_format': u'http://edamontology.org/format_1915'
         }, ra)
@@ -332,7 +332,7 @@ class TestSchemas(unittest.TestCase):
         print(g.serialize(format="n3"))
 
     def test_mixin(self):
-        base_url = "file://" + os.getcwd() + "/tests/"
+        base_url = schema_salad.ref_resolver.file_uri(os.path.join(os.getcwd(), os.path.normpath("/tests/")))
         ldr = schema_salad.ref_resolver.Loader({})
         ra = ldr.resolve_ref(cmap({"$mixin": get_data("tests/mixin.yml"), "one": "five"}),
                              base_url=base_url)
@@ -367,11 +367,13 @@ class TestSchemas(unittest.TestCase):
     def test_file_uri(self):
         # Note: this test probably won't pass on Windows.  Someone with a
         # windows box should add an alternate test.
-        self.assertEqual("file:///foo/bar%20baz/quux", schema_salad.ref_resolver.file_uri("/foo/bar baz/quux"))
-        self.assertEqual("/foo/bar baz/quux", schema_salad.ref_resolver.uri_file_path("file:///foo/bar%20baz/quux"))
-        self.assertEqual("file:///foo/bar%20baz/quux%23zing%20zong", schema_salad.ref_resolver.file_uri("/foo/bar baz/quux#zing zong"))
-        self.assertEqual("file:///foo/bar%20baz/quux#zing%20zong", schema_salad.ref_resolver.file_uri("/foo/bar baz/quux#zing zong", split_frag=True))
-        self.assertEqual("/foo/bar baz/quux#zing zong", schema_salad.ref_resolver.uri_file_path("file:///foo/bar%20baz/quux#zing%20zong"))
+        self.assertEquals("file:///foo/bar%20baz/quux", schema_salad.ref_resolver.file_uri("/foo/bar baz/quux"))
+        self.assertEquals(os.path.normpath("/foo/bar baz/quux"),
+                          schema_salad.ref_resolver.uri_file_path("file:///foo/bar%20baz/quux"))
+        self.assertEquals("file:///foo/bar%20baz/quux%23zing%20zong", schema_salad.ref_resolver.file_uri("/foo/bar baz/quux#zing zong"))
+        self.assertEquals("file:///foo/bar%20baz/quux#zing%20zong", schema_salad.ref_resolver.file_uri("/foo/bar baz/quux#zing zong", split_frag=True))
+        self.assertEquals(os.path.normpath("/foo/bar baz/quux#zing zong"),
+                          schema_salad.ref_resolver.uri_file_path("file:///foo/bar%20baz/quux#zing%20zong"))
 
 
 if __name__ == '__main__':
