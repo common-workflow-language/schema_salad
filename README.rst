@@ -1,3 +1,8 @@
+|Build Status|
+
+.. |Build Status| image:: https://img.shields.io/travis/common-workflow-language/schema_salad/master.svg?label=unix%20build
+   :target: https://travis-ci.org/common-workflow-language/schema_salad
+
 Schema Salad
 ------------
 
