@@ -332,7 +332,7 @@ class TestSchemas(unittest.TestCase):
         print(g.serialize(format="n3"))
 
     def test_mixin(self):
-        base_url = schema_salad.ref_resolver.file_uri(os.path.join(os.getcwd(), os.path.normpath("/tests/")))
+        base_url = schema_salad.ref_resolver.file_uri(os.path.join(os.getcwd(), "tests"))
         ldr = schema_salad.ref_resolver.Loader({})
         ra = ldr.resolve_ref(cmap({"$mixin": get_data("tests/mixin.yml"), "one": "five"}),
                              base_url=base_url)
