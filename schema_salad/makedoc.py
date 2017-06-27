@@ -24,7 +24,7 @@ from typing import cast, Any, Dict, IO, List, Optional, Set, Text, Union
 _logger = logging.getLogger("salad")
 
 
-def has_types(items):  # type: (Any) -> List[basestring]
+def has_types(items):  # type: (Any) -> List[Text]
     r = []  # type: List
     if isinstance(items, dict):
         if items["type"] == "https://w3id.org/cwl/salad#record":
@@ -63,7 +63,7 @@ class MyRenderer(mistune.Renderer):
         ) % (header, body)
 
 
-def to_id(text):  # type: (Union[str, Text]) -> Union[str, Text]
+def to_id(text):  # type: (Text) -> Text
     textid = text
     if text[0] in ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"):
         try:
@@ -234,7 +234,7 @@ class RenderType(object):
                 nbsp=False,             # type: bool
                 jsonldPredicate=None    # type: Optional[Dict[str, str]]
                 ):
-        # type: (...) -> Union[str, Text]
+        # type: (...) -> Text
         if isinstance(tp, list):
             if nbsp and len(tp) <= 3:
                 return "&nbsp;|&nbsp;".join([self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp])
@@ -334,9 +334,9 @@ class RenderType(object):
 
             _, frg = urllib.parse.urldefrag(f["name"])
             num = self.toc.add_entry(depth, frg)
-            doc = "%s %s %s\n" % (("#" * depth), num, frg)
+            doc = u"%s %s %s\n" % (("#" * depth), num, frg)
         else:
-            doc = ""
+            doc = u""
 
         if self.title is None and f["doc"]:
             title = f["doc"][0:f["doc"].index("\n")]
