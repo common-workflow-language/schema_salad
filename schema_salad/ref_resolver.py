@@ -145,7 +145,7 @@ class DefaultFetcher(Fetcher):
                 # remove the leading /.
                 if os.path.isabs(path[1:]):  # checking if pathis valid after removing front / or not
                     path = path[1:]
-                with open(urllib.url2pathname(str(path))) as fp:
+                with open(urllib.request.url2pathname(str(path))) as fp:
                     read = fp.read()
                 if hasattr(read, "decode"):
                     return read.decode("utf-8")
