@@ -109,7 +109,7 @@ def main(argsl=None):  # type: (List[str]) -> int
     # Load schema document and resolve refs
 
     schema_uri = args.schema
-    if not (urlparse.urlparse(schema_uri)[0] and urlparse.urlparse(schema_uri)[0] in [u'http', u'https', u'file']):
+    if not (urllib.parse.urlparse(schema_uri)[0] and urllib.parse.urlparse(schema_uri)[0] in [u'http', u'https', u'file']):
         schema_uri = file_uri(os.path.abspath(schema_uri))
     schema_raw_doc = metaschema_loader.fetch(schema_uri)
 
