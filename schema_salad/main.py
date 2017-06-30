@@ -7,6 +7,7 @@ import traceback
 import json
 import os
 
+import six
 from six.moves import urllib
 
 import pkg_resources  # part of setuptools
