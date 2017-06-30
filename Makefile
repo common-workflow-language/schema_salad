@@ -191,6 +191,7 @@ jenkins:
 	. env3/bin/activate ; \
 	pip install -U setuptools pip wheel ; \
 	${MAKE} install-dep ; \
-	pip install -U -r mypy_requirements.txt ; ${MAKE} mypy
+	pip install -U -r mypy_requirements.txt ; ${MAKE} mypy2
+	# pip install -U -r mypy_requirements.txt ; ${MAKE} mypy3
 
 FORCE:
