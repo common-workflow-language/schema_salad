@@ -140,6 +140,11 @@ class DefaultFetcher(Fetcher):
             return resp.text
         elif scheme == 'file':
             try:
+                # On Windows, url.path will be /drive:/path ; on Unix systems,
+                # /path. As we want drive:/path instead of /drive:/path on Windows,
+                # remove the leading /.
+                if os.path.isabs(path[1:]):  # checking if pathis valid after removing front / or not
+                    path = path[1:]
                 with open(urllib.request.url2pathname(str(path))) as fp:
                     read = fp.read()
                 if hasattr(read, "decode"):
@@ -174,6 +179,14 @@ class DefaultFetcher(Fetcher):
             raise ValueError('Unsupported scheme in url: %s' % url)
 
     def urljoin(self, base_url, url):  # type: (Text, Text) -> Text
+        # On windows urljoin consider drive name as scheme and forces it over base url's scheme,
+        # here we are forcing base url's scheme over url
+        if(base_url==url):
+            return url
+        basesplit = urllib.parse.urlsplit(base_url)
+        if basesplit.scheme:
+            split = urllib.parse.urlsplit(url)
+            url = urllib.parse.urlunsplit(('', split.netloc, split.path, split.query, split.fragment))
         return urllib.parse.urljoin(base_url, url)
 
 class Loader(object):
@@ -277,7 +290,7 @@ class Loader(object):
 
         split = urllib.parse.urlsplit(url)
 
-        if (bool(split.scheme) or url.startswith(u"$(")
+        if ((bool(split.scheme) and split.scheme in [u'http', u'https', u'file']) or url.startswith(u"$(")
             or url.startswith(u"${")):
             pass
         elif scoped_id and not bool(split.fragment):
@@ -430,10 +443,6 @@ class Loader(object):
         if not base_url:
             base_url = file_uri(os.getcwd()) + "/"
 
-        if isinstance(lref, (str, six.text_type)) and os.sep == "\\":
-            # Convert Windows path separator in ref
-            lref = lref.replace("\\", "/")
-
         sl = SourceLine(obj, None, ValueError)
         # If `ref` is a dict, look for special directives.
         if isinstance(lref, CommentedMap):
@@ -476,6 +485,10 @@ class Loader(object):
         if not isinstance(lref, (str, six.text_type)):
             raise ValueError(u"Expected CommentedMap or string, got %s: `%s`"
                     % (type(lref), six.text_type(lref)))
+
+        if isinstance(lref, (str, six.text_type)) and os.sep == "\\":
+            # Convert Windows path separator in ref
+            lref = lref.replace("\\", "/")
 
         url = self.expand_url(lref, base_url, scoped_id=(obj is not None))
         # Has this reference been loaded already?

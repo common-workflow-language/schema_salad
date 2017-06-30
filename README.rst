@@ -1,3 +1,10 @@
+|Build Status| |Build status|
+
+.. |Build Status| image:: https://img.shields.io/travis/common-workflow-language/schema_salad/master.svg?label=unix%20build
+   :target: https://travis-ci.org/common-workflow-language/schema_salad
+.. |Build status| image:: https://img.shields.io/appveyor/ci/mr-c/schema-salad/master.svg?label=windows%20build
+   :target: https://ci.appveyor.com/project/mr-c/schema-salad/branch/master
+
 Schema Salad
 ------------
 
