@@ -179,15 +179,23 @@ class DefaultFetcher(Fetcher):
             raise ValueError('Unsupported scheme in url: %s' % url)
 
     def urljoin(self, base_url, url):  # type: (Text, Text) -> Text
+
         # On windows urljoin consider drive name as scheme and forces it over base url's scheme,
         # here we are forcing base url's scheme over url
-        if(base_url==url):
-            return url
-        basesplit = urllib.parse.urlsplit(base_url)
-        if basesplit.scheme:
-            split = urllib.parse.urlsplit(url)
-            url = urllib.parse.urlunsplit(('', split.netloc, split.path, split.query, split.fragment))
-        return urllib.parse.urljoin(base_url, url)
+        if sys.platform == 'win32':
+            if (base_url == url):
+                return url
+            basesplit = urllib.parse.urlsplit(base_url)
+            if basesplit.scheme:
+                split = urllib.parse.urlsplit(url)
+                if split.scheme:
+                    if split.scheme in ['http','https','file']:
+                        url = urllib.parse.urlunsplit(('', split.netloc, split.path, split.query, split.fragment))
+                    else:
+                        url= urllib.parse.urlunsplit((basesplit.scheme, split.netloc, urllib.parse.urlunsplit((split.scheme, '', split.path,'', '')), split.query, split.fragment))
+            return urllib.parse.urljoin(base_url, url)
+        else:
+            return urllib.parse.urljoin(base_url, url)
 
 class Loader(object):
     def __init__(self,
