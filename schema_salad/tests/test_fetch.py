@@ -53,7 +53,8 @@ class TestFetcher(unittest.TestCase):
 
     def test_cache(self):
         loader = schema_salad.ref_resolver.Loader({})
-        foo = "file://%s/foo.txt" % os.getcwd()
+        foo = os.path.join(os.getcwd(), "foo.txt")
+        foo = schema_salad.ref_resolver.file_uri(foo)
         loader.cache.update({foo: "hello: foo"})
         print(loader.cache)
         self.assertEqual({"hello": "foo"}, loader.resolve_ref("foo.txt")[0])

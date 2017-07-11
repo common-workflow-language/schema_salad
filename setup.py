@@ -30,7 +30,7 @@ else:
 install_requires = [
     'setuptools',
     'requests >= 1.0',
-    'ruamel.yaml >= 0.12.4, <= 0.15.2',
+    'ruamel.yaml >= 0.12.4, < 0.15',
     'rdflib >= 4.2.2, < 4.3.0',
     'rdflib-jsonld >= 0.3.0, < 0.5.0',
     'mistune >= 0.7.3, < 0.8',
@@ -44,7 +44,7 @@ extras_require={
     ':python_version>="3"': ['avro-python3']}
 
 setup(name='schema-salad',
-      version='2.5.1',
+      version='2.6',
       description='Schema Annotations for Linked Avro Data (SALAD)',
       long_description=open(README).read(),
       author='Common workflow language working group',
@@ -74,6 +74,7 @@ setup(name='schema-salad',
           "Programming Language :: Python :: 2.7",
           "Programming Language :: Python :: 3.3",
           "Programming Language :: Python :: 3.4",
-          "Programming Language :: Python :: 3.5"
+          "Programming Language :: Python :: 3.5",
+          "Programming Language :: Python :: 3.6"
       ]
       )
