@@ -516,7 +516,7 @@ def main():  # type: () -> None
 
     s = []  # type: List[Dict[Text, Any]]
     a = args.schema
-    with open(a) as f:
+    with open(a, 'rb') as f:
         if a.endswith("md"):
             s.append({"name": os.path.splitext(os.path.basename(a))[0],
                       "type": "documentation",

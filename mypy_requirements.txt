@@ -1,1 +1,1 @@
-mypy==0.511 ;  python_version>="3"
+mypy==0.520
