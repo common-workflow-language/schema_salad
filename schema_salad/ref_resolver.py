@@ -145,9 +145,10 @@ class DefaultFetcher(Fetcher):
                 # remove the leading /.
                 if os.path.isabs(path[1:]):  # checking if pathis valid after removing front / or not
                     path = path[1:]
-                with open(urllib.request.url2pathname(str(path)), 'wb') as fp:
+                with open(urllib.request.url2pathname(str(path)), 'rb') as fp:
                     read = fp.read()
-                    return read.decode("utf-8")
+                return read.decode("utf-8")
+
             except (OSError, IOError) as e:
                 if e.filename == path:
                     raise RuntimeError(six.text_type(e))
