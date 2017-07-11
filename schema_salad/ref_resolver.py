@@ -140,12 +140,9 @@ class DefaultFetcher(Fetcher):
             return resp.text
         elif scheme == 'file':
             try:
-                with open(urllib.request.url2pathname(str(path))) as fp:
+                with open(urllib.request.url2pathname(str(path)), 'wb') as fp:
                     read = fp.read()
-                if hasattr(read, "decode"):
                     return read.decode("utf-8")
-                else:
-                    return read
             except (OSError, IOError) as e:
                 if e.filename == path:
                     raise RuntimeError(six.text_type(e))
