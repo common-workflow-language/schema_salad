@@ -5,6 +5,7 @@ import json
 import hashlib
 import logging
 import collections
+from io import open
 
 import six
 from six.moves import range
@@ -145,9 +146,8 @@ class DefaultFetcher(Fetcher):
                 # remove the leading /.
                 if os.path.isabs(path[1:]):  # checking if pathis valid after removing front / or not
                     path = path[1:]
-                with open(urllib.request.url2pathname(str(path)), 'rb') as fp:
-                    read = fp.read()
-                return read.decode("utf-8")
+                with open(urllib.request.url2pathname(str(path)), encoding='utf-8') as fp:
+                    return fp.read()
 
             except (OSError, IOError) as e:
                 if e.filename == path:
