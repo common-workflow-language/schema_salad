@@ -2,10 +2,8 @@
 
 import os
 import sys
-import shutil
 
 import setuptools.command.egg_info as egg_info_cmd
-
 from setuptools import setup, find_packages
 
 SETUP_DIR = os.path.dirname(__file__)
@@ -40,8 +38,9 @@ install_requires = [
     'six >= 1.8.0']
 
 extras_require={
-    ':python_version<"3"': ['avro'],
-    ':python_version>="3"': ['avro-python3']}
+    ':python_version<"3"': ['avro == 1.8.1'],
+    ':python_version>="3"': ['future', 'avro-cwl == 1.8.3']  # fork of avro for working with python3
+}
 
 setup(name='schema-salad',
       version='2.6',

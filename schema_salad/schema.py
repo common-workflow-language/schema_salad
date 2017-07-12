@@ -14,10 +14,7 @@ import os
 import six
 from six.moves import urllib
 
-if six.PY3:
-    AvroSchemaFromJSONData = avro.schema.SchemaFromJSONData
-else:
-    AvroSchemaFromJSONData = avro.schema.make_avsc_object
+AvroSchemaFromJSONData = avro.schema.make_avsc_object
 
 from avro.schema import Names, SchemaParseException
 from . import ref_resolver
