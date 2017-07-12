@@ -2,10 +2,8 @@
 
 import os
 import sys
-import shutil
 
 import setuptools.command.egg_info as egg_info_cmd
-
 from setuptools import setup, find_packages
 
 SETUP_DIR = os.path.dirname(__file__)
@@ -41,18 +39,9 @@ install_requires = [
 
 extras_require={
     ':python_version<"3"': ['avro == 1.8.2'],
-    ':python_version>="3"': ['future', 'avro == 1.8.3']
+    ':python_version>="3"': ['future', 'avro-cwl == 1.8.3']  # fork of avro for working with python3
     }
 
-dependency_links=[
-          'https://github.com/common-workflow-language/avro/archive/cwl.zip#egg=avro-1.8.3'
-    ]
-
-# when running 'setup.py install', disable the compilation of all python
-# modules, because avro-python2 triggers a syntax error with Python 3.
-# For this, add the option --no-compile to the command-line:
-if 'pip' in sys.argv and sys.version_info.major == 3:
-    sys.argv.append('--process-dependency-links')
 
 setup(name='schema-salad',
       version='2.6',
@@ -74,7 +63,6 @@ setup(name='schema-salad',
       entry_points={
           'console_scripts': ["schema-salad-tool=schema_salad.main:main", "schema-salad-doc=schema_salad.makedoc:main"]
       },
-      dependency_links=dependency_links,
       zip_safe=True,
       cmdclass={'egg_info': tagger},
       classifiers=[
