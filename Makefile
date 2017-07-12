@@ -170,7 +170,7 @@ mypy2: ${PYSOURCES}
 	ln -s $(shell python -c 'from __future__ import print_function; import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))') \
 		typeshed/2and3/ruamel/
 	MYPYPATH=$MYPYPATH:typeshed/2.7:typeshed/2and3 mypy --py2 --disallow-untyped-calls \
-		 --warn-redundant-casts --warn-unused-ignores \
+		 --warn-redundant-casts \
 		 schema_salad
 
 mypy3: ${PYSOURCES}
