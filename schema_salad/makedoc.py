@@ -8,6 +8,7 @@ import copy
 import re
 import sys
 import logging
+from io import open
 
 from . import schema
 from .utils import add_dictlist, aslist
@@ -516,11 +517,11 @@ def main():  # type: () -> None
 
     s = []  # type: List[Dict[Text, Any]]
     a = args.schema
-    with open(a, 'rb') as f:
+    with open(a, encoding='utf-8') as f:
         if a.endswith("md"):
             s.append({"name": os.path.splitext(os.path.basename(a))[0],
                       "type": "documentation",
-                      "doc": f.read().decode("utf-8")
+                      "doc": f.read()
                       })
         else:
             uri = "file://" + os.path.abspath(a)
