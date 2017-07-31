@@ -39,3 +39,8 @@ def flatten(l, ltypes=(list, tuple)):
                 l[i:i + 1] = l[i]
         i += 1
     return ltype(l)
+
+# Check if we are on windows OS
+def onWindows():
+    # type: () -> (bool)
+    return os.name == 'nt'
