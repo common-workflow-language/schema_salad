@@ -18,9 +18,10 @@ if six.PY3:
         # required by autotranslate module
         if not os.path.exists("/tmp"):
             try:
-                os.mkdirs("/tmp")
+                os.makedirs("/tmp")
             except OSError as exception:
-                exit(0)
+                print("Cannot create '\\tmp' folder needed for",
+                    "'cwltool' Python 3 installation.")
 
     from past import autotranslate  # type: ignore
     autotranslate(['avro', 'avro.schema'])
