@@ -18,6 +18,8 @@ if six.PY3:
     if onWindows:
         # create '/tmp' folder if not present
         # required by autotranslate module
+        # TODO: remove when https://github.com/PythonCharmers/python-future/issues/295
+        # is fixed
         if not os.path.exists("/tmp"):
             try:
                 os.makedirs("/tmp")
