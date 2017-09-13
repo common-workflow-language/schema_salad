@@ -95,7 +95,7 @@ def test_DefaultFetcher_urljoin_win32(tmp_dir_fixture):
         # resolving absolute non-drive URIs still works
         url = fetcher.urljoin("file:///C:/Users/fred/foo.cwl", "http://example.com/bar/soup.cwl")
         assert url == "http://example.com/bar/soup.cwl"
-        # and of course relative paths from http:// 
+        # and of course relative paths from http://
         url = fetcher.urljoin("http://example.com/fred/foo.cwl", "soup.cwl")
         assert url == "http://example.com/fred/soup.cwl"
 
@@ -106,7 +106,7 @@ def test_DefaultFetcher_urljoin_win32(tmp_dir_fixture):
 
         # Security concern - can't resolve file: from http:
         with pytest.raises(ValueError):
-            url = fetcher.urljoin("http://example.com/fred/foo.cwl", "file:///c:/bar/soup.cwl")        
+            url = fetcher.urljoin("http://example.com/fred/foo.cwl", "file:///c:/bar/soup.cwl")
         # Drive-relative -- should NOT return "absolute" URI c:/bar/soup.cwl"
         # as that is a potential remote exploit
         with pytest.raises(ValueError):
@@ -137,7 +137,7 @@ def test_DefaultFetcher_urljoin_linux(tmp_dir_fixture):
         # relative from root
         url = fetcher.urljoin("file:///home/fred/foo.cwl", "/baz/soup.cwl")
         assert url == "file:///baz/soup.cwl"
- 
+
         url = fetcher.urljoin("file:///home/fred/foo.cwl", "http://example.com/bar/soup.cwl")
         assert url == "http://example.com/bar/soup.cwl"
 
@@ -150,10 +150,10 @@ def test_DefaultFetcher_urljoin_linux(tmp_dir_fixture):
 
         # Security concern - can't resolve file: from http:
         with pytest.raises(ValueError):
-            url = fetcher.urljoin("http://example.com/fred/foo.cwl", "file:///bar/soup.cwl")        
+            url = fetcher.urljoin("http://example.com/fred/foo.cwl", "file:///bar/soup.cwl")
 
         # But this one is not "dangerous" on Linux
-        fetcher.urljoin("http://example.com/fred/foo.cwl", "c:/bar/soup.cwl")            
+        fetcher.urljoin("http://example.com/fred/foo.cwl", "c:/bar/soup.cwl")
 
     finally:
-        sys.platform = actual_platform        
+        sys.platform = actual_platform

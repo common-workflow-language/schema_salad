@@ -182,7 +182,7 @@ class DefaultFetcher(Fetcher):
         basesplit = urllib.parse.urlsplit(base_url)
         split = urllib.parse.urlsplit(url)
         if (basesplit.scheme and basesplit.scheme != "file" and split.scheme == "file"):
-            raise ValueError("Not resolving potential remote exploit %s from base %s" % (url, base_url))            
+            raise ValueError("Not resolving potential remote exploit %s from base %s" % (url, base_url))
 
         if sys.platform == 'win32':
             if (base_url == url):
@@ -199,7 +199,7 @@ class DefaultFetcher(Fetcher):
                 # as urllib seems to not be quite up to the job
 
                 # netloc MIGHT appear in equivalents of UNC Strings
-                # \\server1.example.com\path as 
+                # \\server1.example.com\path as
                 # file:///server1.example.com/path
                 # https://tools.ietf.org/html/rfc8089#appendix-E.3.2
                 # (TODO: test this)
@@ -213,21 +213,21 @@ class DefaultFetcher(Fetcher):
                     path_with_drive = urllib.parse.urlunsplit((split.scheme, '', split.path,'', ''))
                     # Compose new file:/// URI with path_with_drive
                     # .. carrying over any #fragment (?query just in case..)
-                    return urllib.parse.urlunsplit(("file", netloc, 
+                    return urllib.parse.urlunsplit(("file", netloc,
                                         path_with_drive, split.query, split.fragment))
-                if (not split.scheme and not netloc and 
+                if (not split.scheme and not netloc and
                     split.path and split.path.startswith("/")):
                     # Relative - but does it have a drive?
                     base_drive = _re_drive.match(basesplit.path)
                     drive = _re_drive.match(split.path)
-                    if base_drive and not drive:                        
+                    if base_drive and not drive:
                         # Keep drive letter from base_url
                         # https://tools.ietf.org/html/rfc8089#appendix-E.2.1
                         # e.g. urljoin("file:///D:/bar/a.txt", "/foo/b.txt") == file:///D:/foo/b.txt
                         path_with_drive = "/%s:%s" % (base_drive.group(1), split.path)
-                        return urllib.parse.urlunsplit(("file", netloc, path_with_drive, 
-                                                   split.query, split.fragment))                    
-                        
+                        return urllib.parse.urlunsplit(("file", netloc, path_with_drive,
+                                                   split.query, split.fragment))
+
                 # else: fall-through to resolve as relative URI
             elif has_drive:
                 # Base is http://something but url is C:/something - which urllib would wrongly
