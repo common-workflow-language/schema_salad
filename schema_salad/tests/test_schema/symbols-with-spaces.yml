@@ -1,0 +1,19 @@
+$graph:
+- type: enum
+  name: table type  
+  symbols:
+    - OTU table
+    - Pathway table
+    - Function table
+    - Ortholog table
+    - Gene table
+    - Metabolite table
+    - Taxon table
+    - Table
+- type: record
+  name: Test
+  documentRoot: true
+  fields:
+   - name: tableField
+     type: table type
+    

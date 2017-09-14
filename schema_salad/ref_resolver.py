@@ -100,6 +100,13 @@ def merge_properties(a, b):  # type: (List[Any], List[Any]) -> Dict[Any, Any]
 
     return c
 
+def quote_for_fragment(id): # type: (str) -> str
+    # Instead of %20 we'll replace space with _ (at risk of collision)
+    id = id.replace(" ", "_")
+    # Anything else invalid in URI fragment get's %-encoded 
+    # ..but with _ instead of % so it's valid as JSON-LD Context key
+    # FIXME: We can't easily unquote as _ is overloaded twice ..
+    return urllib.parse.quote(id).replace("%","_")
 
 def SubLoader(loader):  # type: (Loader) -> Loader
     return Loader(loader.ctx, schemagraph=loader.graph,
@@ -342,15 +349,16 @@ class Loader(object):
         elif scoped_id and not bool(split.fragment):
             splitbase = urllib.parse.urlsplit(base_url)
             frg = u""
+            path = quote_for_fragment(split.path)
             if bool(splitbase.fragment):
-                frg = splitbase.fragment + u"/" + split.path
+                frg = splitbase.fragment + u"/" + path
             else:
-                frg = split.path
+                frg = path
             pt = splitbase.path if splitbase.path != '' else "/"
             url = urllib.parse.urlunsplit(
                 (splitbase.scheme, splitbase.netloc, pt, splitbase.query, frg))
         elif scoped_ref is not None and not split.fragment:
-            pass
+            url = quote_for_fragment(url)
         else:
             url = self.fetcher.urljoin(base_url, url)
 
