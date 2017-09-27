@@ -3,6 +3,7 @@ import ruamel.yaml
 from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq
 import re
 import os
+import traceback
 
 from typing import (Any, AnyStr, Callable, cast, Dict, List, Iterable, Tuple,
                     TypeVar, Union, Text)
@@ -134,10 +135,11 @@ def cmap(d, lc=None, fn=None):  # type: (Union[int, float, str, Text, Dict, List
         return d
 
 class SourceLine(object):
-    def __init__(self, item, key=None, raise_type=six.text_type):  # type: (Any, Any, Callable) -> None
+    def __init__(self, item, key=None, raise_type=six.text_type, include_traceback=False):  # type: (Any, Any, Callable, bool) -> None
         self.item = item
         self.key = key
         self.raise_type = raise_type
+        self.include_traceback = include_traceback
 
     def __enter__(self):  # type: () -> SourceLine
         return self
@@ -145,11 +147,14 @@ class SourceLine(object):
     def __exit__(self,
                  exc_type,   # type: Any
                  exc_value,  # type: Any
-                 traceback   # type: Any
-                 ):  # -> Any
+                 tb   # type: Any
+                 ):   # -> Any
         if not exc_value:
             return
-        raise self.makeError(six.text_type(exc_value))
+        if self.include_traceback:
+            raise self.makeError("\n".join(traceback.format_exception(exc_type, exc_value, tb)))
+        else:
+            raise self.makeError(six.text_type(exc_value))
 
     def makeLead(self):  # type: () -> Text
         if self.key is None or self.item.lc.data is None or self.key not in self.item.lc.data:

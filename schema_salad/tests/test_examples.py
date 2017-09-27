@@ -10,7 +10,7 @@ import rdflib
 import ruamel.yaml
 import json
 import os
-from schema_salad.sourceline import cmap
+from schema_salad.sourceline import cmap, SourceLine
 
 try:
     from ruamel.yaml import CSafeLoader as SafeLoader
@@ -374,6 +374,31 @@ class TestSchemas(unittest.TestCase):
         self.assertEquals("file:///foo/bar%20baz/quux#zing%20zong", schema_salad.ref_resolver.file_uri("/foo/bar baz/quux#zing zong", split_frag=True))
         self.assertEquals(os.path.normpath("/foo/bar baz/quux#zing zong"),
                           schema_salad.ref_resolver.uri_file_path("file:///foo/bar%20baz/quux#zing%20zong"))
+
+
+class SourceLineTest(unittest.TestCase):
+    def test_sourceline(self):
+        ldr = schema_salad.ref_resolver.Loader({"id": "@id"})
+        b, _ = ldr.resolve_ref(get_data("tests/frag.yml"))
+
+        class TestExp(Exception):
+            pass
+
+        try:
+            with SourceLine(b, 1, TestExp, False):
+                raise Exception("Whoops")
+        except TestExp as e:
+            self.assertTrue(str(e).endswith("frag.yml:3:3: Whoops"))
+        except:
+            self.assertFail()
+
+        try:
+            with SourceLine(b, 1, TestExp, True):
+                raise Exception("Whoops")
+        except TestExp as e:
+            self.assertTrue(str(e).splitlines()[0].endswith("frag.yml:3:3: Traceback (most recent call last):"))
+        except:
+            self.assertFail()
 
 
 if __name__ == '__main__':
