@@ -21,6 +21,7 @@ from . import schema
 from . import jsonld_context
 from . import makedoc
 from . import validate
+from . import codegen
 from .sourceline import strip_dup_lineno
 from .ref_resolver import Loader, file_uri
 _logger = logging.getLogger("salad")
@@ -64,6 +65,8 @@ def main(argsl=None):  # type: (List[str]) -> int
         "--print-index", action="store_true", help="Print node index")
     exgroup.add_argument("--print-metadata",
                          action="store_true", help="Print document metadata")
+    exgroup.add_argument("--codegen", type=str, metavar="language", help="Generate classes in target language, currently supported: python")
+
 
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--strict", action="store_true", help="Strict validation (unrecognized or out of place fields are error)",
@@ -161,6 +164,10 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     # Create the loader that will be used to load the target document.
     document_loader = Loader(schema_ctx)
+
+    if args.codegen:
+        codegen.codegen(args.codegen, schema_doc, document_loader)
+        return 0
 
     # Make the Avro validation that will be used to validate the target
     # document
