@@ -122,7 +122,7 @@ class _RecordLoader(_Loader):
        self.classtype = classtype
 
    def load(self, doc, baseuri):
-       if not isinstance(dict, doc):
+       if not isinstance(doc, dict):
            raise ValidationException()
        return self.classtype(doc, baseuri)
 
@@ -141,25 +141,44 @@ class _UnionLoader(_Loader):
                 return doc
         raise ValidationException()
 
-class IdentiferLoader(_Loader):
+class _IdentiferLoader(_Loader):
    def load(self, doc, baseuri):
        pass
 
-class IdentityLoader(_Loader):
+class _IdentityLoader(_Loader):
    def load(self, doc, baseuri):
        pass
 
-class URILoader(_Loader):
+class _URILoader(_Loader):
    def load(self, doc, baseuri):
        pass
 
-class TypeDSLLoader(_Loader):
+class _TypeDSLLoader(_Loader):
    def load(self, doc, baseuri):
        pass
 
-class IdMapLoader(_Loader):
+class _IdMapLoader(_Loader):
+   def __init__(self, inner, mapSubject, mapPredicate):
+       self.inner = inner
+       self.mapSubject = mapSubject
+       self.mapPredicate = mapPredicate
+
    def load(self, doc, baseuri):
-       pass
+       if isinstance(doc, dict):
+           r = []
+           for k in sorted(doc.keys()):
+               val = doc[k]
+               if isinstance(val, dict):
+                   v = val.copy()
+               else:
+                   if self.mapPredicate:
+                       v = {self.mapPredicate: val}
+                   else:
+                       raise ValidationException()
+               v[self.mapSubject] = k
+               r.append(v)
+           doc = r
+       return self.inner.load(doc, baseuri)
 
 """)
 
@@ -218,7 +237,7 @@ class IdMapLoader(_Loader):
         return self.collected_types[self.safe_name(t)+"Loader"]
 
     def declare_field(self, name, fieldtype, doc):
-        self.out.write("        self.%s = try_load(doc, ('%s', '%s'), %s, baseuri)\n" % (self.safe_name(name), shortname(name), name, fieldtype.name))
+        self.out.write("        self.%s = try_load(doc, ('%s', '%s'), %s, baseuri)\n" % (self.safe_name(name), shortname(name), name, fieldtype.name if fieldtype.name else fieldtype.init))
         self.serializer.write("        if self.%s is not None:\n            r['%s'] = save(self.%s)\n" % (self.safe_name(name), shortname(name), self.safe_name(name)))
 
 
@@ -252,7 +271,13 @@ def codegen(lang,      # type: str
             cg.begin_class(rec["name"], aslist(rec.get("extends", [])), rec.get("doc"))
 
             for f in rec["fields"]:
-                cg.declare_field(f["name"], cg.type_loader(f["type"]), f.get("doc"))
+                tl = cg.type_loader(f["type"])
+                jld = f.get("jsonldPredicate")
+                if isinstance(jld, dict):
+                    mapSubject = jld.get("mapSubject")
+                    if mapSubject:
+                        tl = CompoundType("", "_IdMapLoader(%s, '%s', '%s')" % (tl.name, mapSubject, jld.get("mapPredicate", '')))
+                cg.declare_field(f["name"], tl, f.get("doc"))
 
             cg.end_class()
 
