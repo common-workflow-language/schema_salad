@@ -1,6 +1,7 @@
 import cg_metaschema
 import unittest
 import logging
+from util import get_data
 
 class TestGeneratedMetaschema(unittest.TestCase):
     def test_load(self):
@@ -90,6 +91,8 @@ class TestGeneratedMetaschema(unittest.TestCase):
             }]
         }, rs.save())
 
+    def test_load_metaschema(self):
+        cg_metaschema.load_document("file://"+get_data("metaschema/metaschema.yml"), "", cg_metaschema.LoadingOptions())
 
 if __name__ == '__main__':
     unittest.main()
