@@ -4,6 +4,7 @@ import cStringIO
 from six.moves import urllib
 import collections
 import logging
+from pkg_resources import resource_stream
 
 from .utils import aslist, flatten
 
@@ -30,6 +31,7 @@ class CompoundType(object):
 class CodeGenBase(object):
     def __init__(self):
         self.collected_types = collections.OrderedDict()
+        self.vocab = {}
 
     def prologue(self):
         raise NotImplementedError()
@@ -49,6 +51,9 @@ class CodeGenBase(object):
     def declare_field(self, name, types, doc):
         raise NotImplementedError()
 
+    def add_vocab(self, name, uri):
+        self.vocab[name] = uri
+
     def epilogue(self):
         raise NotImplementedError()
 
@@ -64,123 +69,9 @@ class PythonCodeGen(CodeGenBase):
         self.out = out
 
     def prologue(self):
-        self.out.write(
-        """from types import NoneType
-
-class ValidationException(Exception):
-    pass
-
-class Savable(object):
-    pass
-
-def try_load(doc, field, fieldtype, baseuri):
-    val = None
-    for f in field:
-        if f in doc:
-            val = doc[f]
-            break
-
-    if isinstance(fieldtype, _Loader):
-        return fieldtype.load(val, baseuri)
-    elif isinstance(val, fieldtype):
-        return val
-    raise ValidationException()
-
-def save(val):
-   if isinstance(val, Savable):
-       return val.save()
-   if isinstance(val, list):
-       return [save(v) for v in val]
-   return val
-
-class _Loader(object):
-   def load(self, doc, baseuri):
-       pass
-
-class _ArrayLoader(_Loader):
-   def __init__(self, items):
-       self.items = items
-
-   def load(self, doc, baseuri):
-       if not isinstance(doc, list):
-           raise ValidationException()
-       return [self.items.load(i, baseuri) for i in doc]
-
-
-class _EnumLoader(_Loader):
-   def __init__(self, symbols):
-       self.symbols = symbols
-
-   def load(self, doc, baseuri):
-       if doc in self.symbols:
-           return doc
-       else:
-           raise ValidationException()
-
-class _RecordLoader(_Loader):
-   def __init__(self, classtype):
-       self.classtype = classtype
-
-   def load(self, doc, baseuri):
-       if not isinstance(doc, dict):
-           raise ValidationException()
-       return self.classtype(doc, baseuri)
-
-class _UnionLoader(_Loader):
-   def __init__(self, alternates):
-       self.alternates = alternates
-
-   def load(self, doc, baseuri):
-        for t in self.alternates:
-            if isinstance(t, _Loader):
-                try:
-                    return t.load(doc, baseuri)
-                except ValidationException:
-                    pass
-            elif isinstance(doc, t):
-                return doc
-        raise ValidationException()
-
-class _IdentiferLoader(_Loader):
-   def load(self, doc, baseuri):
-       pass
-
-class _IdentityLoader(_Loader):
-   def load(self, doc, baseuri):
-       pass
-
-class _URILoader(_Loader):
-   def load(self, doc, baseuri):
-       pass
-
-class _TypeDSLLoader(_Loader):
-   def load(self, doc, baseuri):
-       pass
-
-class _IdMapLoader(_Loader):
-   def __init__(self, inner, mapSubject, mapPredicate):
-       self.inner = inner
-       self.mapSubject = mapSubject
-       self.mapPredicate = mapPredicate
-
-   def load(self, doc, baseuri):
-       if isinstance(doc, dict):
-           r = []
-           for k in sorted(doc.keys()):
-               val = doc[k]
-               if isinstance(val, dict):
-                   v = val.copy()
-               else:
-                   if self.mapPredicate:
-                       v = {self.mapPredicate: val}
-                   else:
-                       raise ValidationException()
-               v[self.mapSubject] = k
-               r.append(v)
-           doc = r
-       return self.inner.load(doc, baseuri)
-
-""")
+        rs = resource_stream(__name__, 'python_codegen_support.py')
+        self.out.write(rs.read())
+        rs.close()
 
     def begin_class(self, classname, extends, doc):
         classname = self.safe_name(classname)
@@ -197,7 +88,10 @@ class _IdMapLoader(_Loader):
             self.out.write(doc)
             self.out.write('\n    """\n')
 
-        self.out.write("    def __init__(self, doc, baseuri):\n")
+        self.out.write(
+            """    def __init__(self, doc, baseuri, loadingOptions):
+           doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
+""")
 
         self.serializer = cStringIO.StringIO()
         self.serializer.write("""
@@ -237,16 +131,33 @@ class _IdMapLoader(_Loader):
         return self.collected_types[self.safe_name(t)+"Loader"]
 
     def declare_field(self, name, fieldtype, doc):
-        self.out.write("        self.%s = try_load(doc, ('%s', '%s'), %s, baseuri)\n" % (self.safe_name(name), shortname(name), name, fieldtype.name if fieldtype.name else fieldtype.init))
+        self.out.write("           self.%s = try_load(doc, '%s', %s, baseuri, loadingOptions)\n" % (self.safe_name(name), shortname(name), fieldtype.name if fieldtype.name else fieldtype.init))
         self.serializer.write("        if self.%s is not None:\n            r['%s'] = save(self.%s)\n" % (self.safe_name(name), shortname(name), self.safe_name(name)))
 
+    def uri_loader(self, inner, scoped_id, vocab_term, refScope):
+        return self.declare_type(CompoundType("uri_%s_%s_%s_%s" % (inner.name, scoped_id, vocab_term, refScope) ,
+                                              "_URILoader(%s, %s, %s, %s)" % (inner.name, scoped_id, vocab_term, refScope)))
+
+    def idmap_loader(self, field, inner, mapSubject, mapPredicate):
+        return self.declare_type(CompoundType("idmap_%s_%s" % (self.safe_name(field), inner.name),
+                                              "_IdMapLoader(%s, '%s', '%s')" % (inner.name, mapSubject, mapPredicate)))
 
     def epilogue(self):
-        self.out.write("\n\n")
+        self.out.write("_vocab = {\n")
+        for k,v in self.vocab.iteritems():
+            self.out.write("    \"%s\": \"%s\",\n" % (k, v))
+        self.out.write("}\n")
+
+        self.out.write("_rvocab = {\n")
+        for k,v in self.vocab.iteritems():
+            self.out.write("    \"%s\": \"%s\",\n" % (v, k))
+        self.out.write("}\n\n")
+
         for k,v in self.collected_types.iteritems():
             if isinstance(v, CompoundType):
                 self.out.write("%s = %s\n" % (v.name, v.init))
         self.out.write("\n\n")
+
 
 class GoCodeGen(object):
     pass
@@ -269,15 +180,26 @@ def codegen(lang,      # type: str
     for rec in j:
         if rec["type"] == "record":
             cg.begin_class(rec["name"], aslist(rec.get("extends", [])), rec.get("doc"))
+            cg.add_vocab(shortname(rec["name"]), rec["name"])
 
             for f in rec["fields"]:
                 tl = cg.type_loader(f["type"])
                 jld = f.get("jsonldPredicate")
+                fieldpred = f["name"]
                 if isinstance(jld, dict):
+                    refScope = jld.get("refScope")
+                    if jld.get("_type") == "@id":
+                        tl = cg.uri_loader(tl, False, True, refScope)
                     mapSubject = jld.get("mapSubject")
                     if mapSubject:
-                        tl = CompoundType("", "_IdMapLoader(%s, '%s', '%s')" % (tl.name, mapSubject, jld.get("mapPredicate", '')))
-                cg.declare_field(f["name"], tl, f.get("doc"))
+                        tl = cg.idmap_loader(f["name"], tl, mapSubject, jld.get("mapPredicate"))
+                    if "_id" in jld:
+                        fieldpred = jld["_id"]
+                if jld == "@id":
+                    tl = cg.uri_loader(tl, True, True, None)
+
+                cg.add_vocab(shortname(f["name"]), fieldpred)
+                cg.declare_field(fieldpred, tl, f.get("doc"))
 
             cg.end_class()
 

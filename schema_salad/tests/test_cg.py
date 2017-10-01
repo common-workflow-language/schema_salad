@@ -12,12 +12,19 @@ class TestGeneratedMetaschema(unittest.TestCase):
                 "type": "string"
             }]
         }
-        rs = cg_metaschema.RecordSchema(doc, "")
+        rs = cg_metaschema.RecordSchema(doc, "http://example.com/", cg_metaschema.LoadingOptions())
         self.assertEqual("record", rs.type)
-        self.assertEqual("hello", rs.fields[0].name)
+        self.assertEqual("http://example.com/#hello", rs.fields[0].name)
         self.assertEqual("Hello test case", rs.fields[0].doc)
         self.assertEqual("string", rs.fields[0].type)
-        self.assertEqual(doc, rs.save())
+        self.assertEqual({
+            "type": "record",
+            "fields": [{
+                "name": "http://example.com/#hello",
+                "doc": "Hello test case",
+                "type": "string"
+            }]
+        }, rs.save())
 
     def test_err(self):
         doc = {
@@ -25,7 +32,7 @@ class TestGeneratedMetaschema(unittest.TestCase):
             "type": "string"
         }
         with self.assertRaises(cg_metaschema.ValidationException):
-            rf = cg_metaschema.RecordField(doc, "")
+            rf = cg_metaschema.RecordField(doc, "", cg_metaschema.LoadingOptions())
 
     def test_err2(self):
         doc = {
@@ -37,7 +44,7 @@ class TestGeneratedMetaschema(unittest.TestCase):
             }]
         }
         with self.assertRaises(cg_metaschema.ValidationException):
-            rs = cg_metaschema.RecordSchema(doc, "")
+            rs = cg_metaschema.RecordSchema(doc, "", cg_metaschema.LoadingOptions())
 
     def test_idmap(self):
         doc = {
@@ -49,12 +56,19 @@ class TestGeneratedMetaschema(unittest.TestCase):
                 }
             }
         }
-        rs = cg_metaschema.RecordSchema(doc, "")
+        rs = cg_metaschema.RecordSchema(doc, "http://example.com/", cg_metaschema.LoadingOptions())
         self.assertEqual("record", rs.type)
-        self.assertEqual("hello", rs.fields[0].name)
+        self.assertEqual("http://example.com/#hello", rs.fields[0].name)
         self.assertEqual("Hello test case", rs.fields[0].doc)
         self.assertEqual("string", rs.fields[0].type)
-        self.assertEqual(doc, rs.save())
+        self.assertEqual({
+            "type": "record",
+            "fields": [{
+                "name": "http://example.com/#hello",
+                "doc": "Hello test case",
+                "type": "string"
+            }]
+        }, rs.save())
 
     def test_idmap2(self):
         doc = {
@@ -63,12 +77,18 @@ class TestGeneratedMetaschema(unittest.TestCase):
                 "hello": "string"
             }
         }
-        rs = cg_metaschema.RecordSchema(doc, "")
+        rs = cg_metaschema.RecordSchema(doc, "http://example.com/", cg_metaschema.LoadingOptions())
         self.assertEqual("record", rs.type)
-        self.assertEqual("hello", rs.fields[0].name)
+        self.assertEqual("http://example.com/#hello", rs.fields[0].name)
         self.assertEqual(None, rs.fields[0].doc)
         self.assertEqual("string", rs.fields[0].type)
-        self.assertEqual(doc, rs.save())
+        self.assertEqual({
+            "type": "record",
+            "fields": [{
+                "name": "http://example.com/#hello",
+                "type": "string"
+            }]
+        }, rs.save())
 
 
 if __name__ == '__main__':
