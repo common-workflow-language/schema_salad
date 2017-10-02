@@ -111,15 +111,17 @@ class PythonCodeGen(CodeGenBase):
 """)
 
     def end_class(self, classname):
-        self.out.write("           if errors:\n")
-        self.out.write("               raise ValidationException(\"Trying '%s'\\n\"+\"\\n\".join(errors))\n" % self.safe_name(classname))
+        self.out.write("""
+           if errors:
+               raise ValidationException(\"Trying '%s'\\n\"+\"\\n\".join(errors))
+""" % self.safe_name(classname))
 
         self.serializer.write("        return r\n")
         self.out.write(self.serializer.getvalue())
         self.out.write("\n\n")
 
     prims = {
-        "http://www.w3.org/2001/XMLSchema#string": TypeDef("strtype", "_PrimitiveLoader(six.text_type)"),
+        "http://www.w3.org/2001/XMLSchema#string": TypeDef("strtype", "_PrimitiveLoader((str, six.text_type))"),
         "http://www.w3.org/2001/XMLSchema#int": TypeDef("inttype", "_PrimitiveLoader(int)"),
         "http://www.w3.org/2001/XMLSchema#boolean": TypeDef("booltype", "_PrimitiveLoader(bool)"),
         "https://w3id.org/cwl/salad#null": TypeDef("None_type", "_PrimitiveLoader(NoneType)")
@@ -145,10 +147,15 @@ class PythonCodeGen(CodeGenBase):
         return self.collected_types[self.safe_name(t)+"Loader"]
 
     def declare_field(self, name, fieldtype, doc):
-        self.out.write("           try:\n")
-        self.out.write("               self.%s = load_field(doc, '%s', %s, baseuri, loadingOptions)\n" % (self.safe_name(name), shortname(name), fieldtype.name if fieldtype.name else fieldtype.init))
-        self.out.write("           except ValidationException as e:\n")
-        self.out.write("               errors.append(SourceLine(doc, '%s', str).makeError(\"Loading field '%s':\\n\"+indent(str(e))))\n" % (shortname(name), shortname(name)))
+        self.out.write("""
+           try:
+               self.{safename} = load_field(doc.get('{fieldname}'), {fieldtype}, baseuri, loadingOptions)
+           except ValidationException as e:
+               if '{fieldname}' in doc:
+                   errors.append(SourceLine(doc, '{fieldname}', str).makeError(\"the `{fieldname}` field is not valid because:\\n\"+str(e)))
+        """.format(safename=self.safe_name(name),
+                   fieldname=shortname(name),
+                   fieldtype=fieldtype.name))
 
         self.serializer.write("        if self.%s is not None:\n            r['%s'] = save(self.%s)\n" % (self.safe_name(name), shortname(name), self.safe_name(name)))
 
