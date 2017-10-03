@@ -98,7 +98,7 @@ class PythonCodeGen(CodeGenBase):
             self.out.write('\n    """\n')
 
         self.out.write(
-            """    def __init__(self, _doc, baseuri, loadingOptions):
+            """    def __init__(self, _doc, baseuri, loadingOptions, docRoot=None):
            doc = copy.copy(_doc)
            if hasattr(_doc, 'lc'):
                doc.lc.data = _doc.lc.data
@@ -149,8 +149,17 @@ class PythonCodeGen(CodeGenBase):
             return self.prims[t]
         return self.collected_types[self.safe_name(t)+"Loader"]
 
-    def declare_id_field(self, name, fieldtype, doc, optional):
-        self.declare_field(name, fieldtype, doc, optional)
+    def declare_id_field(self, name, fieldtype, doc):
+        self.declare_field(name, fieldtype, doc, True)
+        self.out.write("""
+           if self.{safename} is None:
+               if docRoot is not None:
+                   self.{safename} = docRoot
+               else:
+                   raise ValidationException("Missing {fieldname}")
+           baseuri = self.{safename}
+""".format(safename=self.safe_name(name),
+                   fieldname=shortname(name)))
 
     def declare_field(self, name, fieldtype, doc, optional):
         if optional:
@@ -235,7 +244,7 @@ def codegen(lang,      # type: str
                 if f.get("jsonldPredicate") == "@id":
                     fieldpred = f["name"]
                     tl = cg.uri_loader(cg.type_loader(f["type"]), True, False, None)
-                    cg.declare_id_field(fieldpred, tl, f.get("doc"), False)
+                    cg.declare_id_field(fieldpred, tl, f.get("doc"))
                     break
 
             for f in rec["fields"]:
