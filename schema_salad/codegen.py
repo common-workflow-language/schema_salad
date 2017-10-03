@@ -108,12 +108,12 @@ class PythonCodeGen(CodeGenBase):
 
         self.out.write(
             """    def __init__(self, _doc, baseuri, loadingOptions, docRoot=None):
-           doc = copy.copy(_doc)
-           if hasattr(_doc, 'lc'):
-               doc.lc.data = _doc.lc.data
-               doc.lc.filename = _doc.lc.filename
-           errors = []
-           #doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
+        doc = copy.copy(_doc)
+        if hasattr(_doc, 'lc'):
+            doc.lc.data = _doc.lc.data
+            doc.lc.filename = _doc.lc.filename
+        errors = []
+        #doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
 """)
 
         self.serializer = cStringIO.StringIO()
@@ -124,8 +124,8 @@ class PythonCodeGen(CodeGenBase):
 
     def end_class(self, classname):
         self.out.write("""
-           if errors:
-               raise ValidationException(\"Trying '%s'\\n\"+\"\\n\".join(errors))
+        if errors:
+            raise ValidationException(\"Trying '%s'\\n\"+\"\\n\".join(errors))
 """ % self.safe_name(classname))
 
         self.serializer.write("        return r\n")
@@ -148,6 +148,8 @@ class PythonCodeGen(CodeGenBase):
                 i = self.type_loader(t["items"])
                 return self.declare_type(TypeDef("array_of_%s" % i.name, "_ArrayLoader(%s)" % i.name))
             elif t["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
+                for sym in t["symbols"]:
+                    self.add_vocab(shortname(sym), sym)
                 return self.declare_type(TypeDef(self.safe_name(t["name"])+"Loader", '_EnumLoader(("%s",))' % (
                     '", "'.join(self.safe_name(sym) for sym in t["symbols"]))))
             elif t["type"] in ("record", "https://w3id.org/cwl/salad#record"):
@@ -161,32 +163,32 @@ class PythonCodeGen(CodeGenBase):
     def declare_id_field(self, name, fieldtype, doc):
         self.declare_field(name, fieldtype, doc, True)
         self.out.write("""
-           if self.{safename} is None:
-               if docRoot is not None:
-                   self.{safename} = docRoot
-               else:
-                   raise ValidationException("Missing {fieldname}")
-           baseuri = self.{safename}
+        if self.{safename} is None:
+            if docRoot is not None:
+                self.{safename} = docRoot
+            else:
+                raise ValidationException("Missing {fieldname}")
+        baseuri = self.{safename}
 """.format(safename=self.safe_name(name),
                    fieldname=shortname(name)))
 
     def declare_field(self, name, fieldtype, doc, optional):
         if optional:
-            self.out.write("           if '{fieldname}' in doc:\n".format(fieldname=shortname(name)))
+            self.out.write("        if '{fieldname}' in doc:\n".format(fieldname=shortname(name)))
             spc = "    "
         else:
             spc = ""
-        self.out.write("""{spc}           try:
-{spc}               self.{safename} = load_field(doc.get('{fieldname}'), {fieldtype}, baseuri, loadingOptions)
-{spc}           except ValidationException as e:
-{spc}               errors.append(SourceLine(doc, '{fieldname}', str).makeError(\"the `{fieldname}` field is not valid because:\\n\"+str(e)))
+        self.out.write("""{spc}        try:
+{spc}            self.{safename} = load_field(doc.get('{fieldname}'), {fieldtype}, baseuri, loadingOptions)
+{spc}        except ValidationException as e:
+{spc}            errors.append(SourceLine(doc, '{fieldname}', str).makeError(\"the `{fieldname}` field is not valid because:\\n\"+str(e)))
 """.format(safename=self.safe_name(name),
                    fieldname=shortname(name),
                    fieldtype=fieldtype.name,
                    spc=spc))
         if optional:
-            self.out.write("""           else:
-               self.{safename} = None
+            self.out.write("""        else:
+            self.{safename} = None
 """.format(safename=self.safe_name(name)))
 
         self.out.write("\n")
@@ -246,7 +248,12 @@ def codegen(lang,      # type: str
         if rec["type"] in ("enum", "record"):
             cg.type_loader(rec)
 
+
     for rec in j:
+        if rec["type"] == "enum":
+            for s in rec["symbols"]:
+                cg.add_vocab(shortname(s), s)
+
         if rec["type"] == "record":
             if rec.get("documentRoot"):
                 documentRoots.append(rec["name"])

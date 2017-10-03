@@ -110,10 +110,13 @@ def expand_url(url,                 # type: Text
     else:
         url = loadingOptions.fetcher.urljoin(base_url, url)
 
-    if vocab_term and url in loadingOptions.rvocab:
-        return loadingOptions.rvocab[url]
-    else:
-        return url
+    if vocab_term:
+        if bool(split.scheme):
+            if url in loadingOptions.rvocab:
+                return loadingOptions.rvocab[url]
+        else:
+            raise ValidationException("Term '%s' not in vocabulary" % url)
+    return url
 
 
 class _Loader(object):
@@ -206,10 +209,11 @@ class _URILoader(_Loader):
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         if isinstance(doc, list):
-            return [self.load(i, baseuri, loadingOptions) for i in doc]
+            doc = [expand_url(i, baseuri, loadingOptions,
+                            self.scoped_id, self.vocab_term, self.scoped_ref) for i in doc]
         if isinstance(doc, basestring):
-            return expand_url(doc, baseuri, loadingOptions,
-                              self.scoped_id, self.vocab_term, self.scoped_ref)
+            doc = expand_url(doc, baseuri, loadingOptions,
+                             self.scoped_id, self.vocab_term, self.scoped_ref)
         return self.inner.load(doc, baseuri, loadingOptions)
 
 

@@ -142,6 +142,17 @@ class TestGeneratedMetaschema(unittest.TestCase):
             }]
         }, rs.save())
 
+    def test_load_pt(self):
+        doc = cg_metaschema.load_document("file://"+get_data("tests/pt.yml"), "", cg_metaschema.LoadingOptions())
+        self.assertEqual(['https://w3id.org/cwl/salad#null',
+                          'http://www.w3.org/2001/XMLSchema#boolean',
+                          'http://www.w3.org/2001/XMLSchema#int',
+                          'http://www.w3.org/2001/XMLSchema#long',
+                          'http://www.w3.org/2001/XMLSchema#float',
+                          'http://www.w3.org/2001/XMLSchema#double',
+                          'http://www.w3.org/2001/XMLSchema#string'], doc.symbols)
+        print json.dumps(doc.save(), indent=4)
+
     def test_load_metaschema(self):
         doc = cg_metaschema.load_document("file://"+get_data("metaschema/metaschema.yml"), "", cg_metaschema.LoadingOptions())
         with open(get_data("tests/metaschema-pre.yml")) as f:
