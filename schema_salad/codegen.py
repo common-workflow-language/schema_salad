@@ -53,6 +53,15 @@ class CodeGenBase(object):
     def add_vocab(self, name, uri):
         self.vocab[name] = uri
 
+    def uri_loader(self, inner, scoped_id, vocab_term, refScope):
+        pass
+
+    def idmap_loader(self, field, inner, mapSubject, mapPredicate):
+        pass
+
+    def typedsl_loader(self, inner):
+        pass
+
     def epilogue(self, rootLoader):
         raise NotImplementedError()
 
@@ -192,6 +201,10 @@ class PythonCodeGen(CodeGenBase):
         return self.declare_type(TypeDef("idmap_%s_%s" % (self.safe_name(field), inner.name),
                                               "_IdMapLoader(%s, '%s', '%s')" % (inner.name, mapSubject, mapPredicate)))
 
+    def typedsl_loader(self, inner):
+        return self.declare_type(TypeDef("typedsl_%s" % (inner.name),
+                                              "_TypeDSLLoader(%s)" % (inner.name)))
+
     def epilogue(self, rootLoader):
         self.out.write("_vocab = {\n")
         for k,v in self.vocab.iteritems():
@@ -254,13 +267,22 @@ def codegen(lang,      # type: str
                 fieldpred = f["name"]
                 if isinstance(jld, dict):
                     refScope = jld.get("refScope")
+
                     if jld.get("_type") == "@id":
                         tl = cg.uri_loader(tl, False, False, refScope)
+                    elif jld.get("_type") == "@vocab":
+                        tl = cg.uri_loader(tl, False, True, refScope)
+
+                    if jld.get("typeDSL"):
+                        tl = cg.typedsl_loader(tl)
+
                     mapSubject = jld.get("mapSubject")
                     if mapSubject:
                         tl = cg.idmap_loader(f["name"], tl, mapSubject, jld.get("mapPredicate"))
+
                     if "_id" in jld:
                         fieldpred = jld["_id"]
+
                 if jld == "@id":
                     continue
 
