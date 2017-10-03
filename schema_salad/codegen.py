@@ -47,6 +47,9 @@ class CodeGenBase(object):
     def declare_field(self, name, types, doc):
         raise NotImplementedError()
 
+    def declare_id_field(self, name, types, doc):
+        raise NotImplementedError()
+
     def add_vocab(self, name, uri):
         self.vocab[name] = uri
 
@@ -146,16 +149,29 @@ class PythonCodeGen(CodeGenBase):
             return self.prims[t]
         return self.collected_types[self.safe_name(t)+"Loader"]
 
-    def declare_field(self, name, fieldtype, doc):
-        self.out.write("""
-           try:
-               self.{safename} = load_field(doc.get('{fieldname}'), {fieldtype}, baseuri, loadingOptions)
-           except ValidationException as e:
-               if '{fieldname}' in doc:
-                   errors.append(SourceLine(doc, '{fieldname}', str).makeError(\"the `{fieldname}` field is not valid because:\\n\"+str(e)))
-        """.format(safename=self.safe_name(name),
+    def declare_id_field(self, name, fieldtype, doc, optional):
+        self.declare_field(name, fieldtype, doc, optional)
+
+    def declare_field(self, name, fieldtype, doc, optional):
+        if optional:
+            self.out.write("           if '{fieldname}' in doc:\n".format(fieldname=shortname(name)))
+            spc = "    "
+        else:
+            spc = ""
+        self.out.write("""{spc}           try:
+{spc}               self.{safename} = load_field(doc.get('{fieldname}'), {fieldtype}, baseuri, loadingOptions)
+{spc}           except ValidationException as e:
+{spc}               errors.append(SourceLine(doc, '{fieldname}', str).makeError(\"the `{fieldname}` field is not valid because:\\n\"+str(e)))
+""".format(safename=self.safe_name(name),
                    fieldname=shortname(name),
-                   fieldtype=fieldtype.name))
+                   fieldtype=fieldtype.name,
+                   spc=spc))
+        if optional:
+            self.out.write("""           else:
+               self.{safename} = None
+""".format(safename=self.safe_name(name)))
+
+        self.out.write("\n")
 
         self.serializer.write("        if self.%s is not None:\n            r['%s'] = save(self.%s)\n" % (self.safe_name(name), shortname(name), self.safe_name(name)))
 
@@ -216,23 +232,31 @@ def codegen(lang,      # type: str
             cg.add_vocab(shortname(rec["name"]), rec["name"])
 
             for f in rec["fields"]:
+                if f.get("jsonldPredicate") == "@id":
+                    fieldpred = f["name"]
+                    tl = cg.uri_loader(cg.type_loader(f["type"]), True, False, None)
+                    cg.declare_id_field(fieldpred, tl, f.get("doc"), False)
+                    break
+
+            for f in rec["fields"]:
+                optional = bool("https://w3id.org/cwl/salad#null" in f["type"])
                 tl = cg.type_loader(f["type"])
                 jld = f.get("jsonldPredicate")
                 fieldpred = f["name"]
                 if isinstance(jld, dict):
                     refScope = jld.get("refScope")
                     if jld.get("_type") == "@id":
-                        tl = cg.uri_loader(tl, False, True, refScope)
+                        tl = cg.uri_loader(tl, False, False, refScope)
                     mapSubject = jld.get("mapSubject")
                     if mapSubject:
                         tl = cg.idmap_loader(f["name"], tl, mapSubject, jld.get("mapPredicate"))
                     if "_id" in jld:
                         fieldpred = jld["_id"]
                 if jld == "@id":
-                    tl = cg.uri_loader(tl, True, True, None)
+                    continue
 
                 cg.add_vocab(shortname(f["name"]), fieldpred)
-                cg.declare_field(fieldpred, tl, f.get("doc"))
+                cg.declare_field(fieldpred, tl, f.get("doc"), optional)
 
             cg.end_class(rec["name"])
 
