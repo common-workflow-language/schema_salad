@@ -3,6 +3,7 @@ from six.moves import urllib
 import ruamel.yaml as yaml
 from StringIO import StringIO
 import copy
+import re
 
 class ValidationException(Exception):
     pass
@@ -79,6 +80,10 @@ def expand_url(url,                 # type: Text
                scoped_ref=None      # type: int
                ):
     # type: (...) -> Text
+
+    if not isinstance(url, (str, six.text_type)):
+        return url
+
     if url in (u"@id", u"@type"):
         return url
 
@@ -106,7 +111,16 @@ def expand_url(url,                 # type: Text
         url = urllib.parse.urlunsplit(
             (splitbase.scheme, splitbase.netloc, pt, splitbase.query, frg))
     elif scoped_ref is not None and not split.fragment:
-        pass
+        splitbase = urllib.parse.urlsplit(base_url)
+        sp = splitbase.fragment.split(u"/")
+        n = scoped_ref
+        while n > 0 and len(sp) > 0:
+            sp.pop()
+            n -= 1
+        sp.append(url)
+        url = urllib.parse.urlunsplit((
+            splitbase.scheme, splitbase.netloc, splitbase.path, splitbase.query,
+            u"/".join(sp)))
     else:
         url = loadingOptions.fetcher.urljoin(base_url, url)
 
@@ -216,12 +230,52 @@ class _URILoader(_Loader):
                              self.scoped_id, self.vocab_term, self.scoped_ref)
         return self.inner.load(doc, baseuri, loadingOptions)
 
-
 class _TypeDSLLoader(_Loader):
+    typeDSLregex = re.compile(u"^([^[?]+)(\[\])?(\?)?$")
+
     def __init__(self, inner):
         self.inner = inner
 
+    def resolve(self, doc, baseuri, loadingOptions):
+        m = self.typeDSLregex.match(doc)
+        if m:
+            first = expand_url(m.group(1), baseuri, loadingOptions, False, True, None)
+            second = third = None
+            if bool(m.group(2)):
+                second = {"type": "array", "items": first}
+                #second = CommentedMap((("type", "array"),
+                #                       ("items", first)))
+                #second.lc.add_kv_line_col("type", lc)
+                #second.lc.add_kv_line_col("items", lc)
+                #second.lc.filename = filename
+            if bool(m.group(3)):
+                third = [u"null", second or first]
+                #third = CommentedSeq([u"null", second or first])
+                #third.lc.add_kv_line_col(0, lc)
+                #third.lc.add_kv_line_col(1, lc)
+                #third.lc.filename = filename
+            doc = third or second or first
+        return doc
+
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        if isinstance(doc, list):
+            r = []
+            for d in doc:
+                if isinstance(d, (str, six.text_type)):
+                    resolved = self.resolve(d, baseuri, loadingOptions)
+                    if isinstance(resolved, list):
+                        for i in resolved:
+                            if i not in r:
+                                r.append(i)
+                    else:
+                        if resolved not in r:
+                            r.append(resolved)
+                else:
+                    r.append(d)
+            doc = r
+        elif isinstance(doc, (str, six.text_type)):
+            doc = self.resolve(doc, baseuri, loadingOptions)
+
         return self.inner.load(doc, baseuri, loadingOptions)
 
 

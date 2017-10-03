@@ -151,7 +151,6 @@ class TestGeneratedMetaschema(unittest.TestCase):
                           'http://www.w3.org/2001/XMLSchema#float',
                           'http://www.w3.org/2001/XMLSchema#double',
                           'http://www.w3.org/2001/XMLSchema#string'], doc.symbols)
-        print json.dumps(doc.save(), indent=4)
 
     def test_load_metaschema(self):
         doc = cg_metaschema.load_document("file://"+get_data("metaschema/metaschema.yml"), "", cg_metaschema.LoadingOptions())

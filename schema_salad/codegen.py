@@ -247,7 +247,7 @@ def codegen(lang,      # type: str
     for rec in j:
         if rec["type"] in ("enum", "record"):
             cg.type_loader(rec)
-
+            cg.add_vocab(shortname(rec["name"]), rec["name"])
 
     for rec in j:
         if rec["type"] == "enum":
