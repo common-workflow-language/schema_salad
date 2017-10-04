@@ -311,7 +311,7 @@ class _IdMapLoader(_Loader):
 
 def _document_load(loader, doc, baseuri, loadingOptions):
     if isinstance(doc, basestring):
-        return _document_load_by_url(loader, doc, loadingOptions)
+        return _document_load_by_url(loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions)
 
     if isinstance(doc, dict):
         if "$namespaces" in doc:
@@ -349,3 +349,18 @@ def _document_load_by_url(loader, url, loadingOptions):
     loadingOptions = LoadingOptions(copyfrom=loadingOptions, fileuri=url)
 
     return _document_load(loader, result, url, loadingOptions)
+
+def file_uri(path, split_frag=False):  # type: (str, bool) -> str
+    if path.startswith("file://"):
+        return path
+    if split_frag:
+        pathsp = path.split("#", 2)
+        frag = "#" + urllib.parse.quote(str(pathsp[1])) if len(pathsp) == 2 else ""
+        urlpath = urllib.request.pathname2url(str(pathsp[0]))
+    else:
+        urlpath = urllib.request.pathname2url(path)
+        frag = ""
+    if urlpath.startswith("//"):
+        return "file:%s%s" % (urlpath, frag)
+    else:
+        return "file://%s%s" % (urlpath, frag)

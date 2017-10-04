@@ -145,9 +145,9 @@ class PythonCodeGen(CodeGenBase):
     prims = {
         "http://www.w3.org/2001/XMLSchema#string": TypeDef("strtype", "_PrimitiveLoader((str, six.text_type))"),
         "http://www.w3.org/2001/XMLSchema#int": TypeDef("inttype", "_PrimitiveLoader(int)"),
-        "http://www.w3.org/2001/XMLSchema#long": TypeDef("inttype", "_PrimitiveLoader(long)"),
-        "http://www.w3.org/2001/XMLSchema#float": TypeDef("inttype", "_PrimitiveLoader(float)"),
-        "http://www.w3.org/2001/XMLSchema#double": TypeDef("inttype", "_PrimitiveLoader(float)"),
+        "http://www.w3.org/2001/XMLSchema#long": TypeDef("inttype", "_PrimitiveLoader(int)"),
+        "http://www.w3.org/2001/XMLSchema#float": TypeDef("floattype", "_PrimitiveLoader(float)"),
+        "http://www.w3.org/2001/XMLSchema#double": TypeDef("floattype", "_PrimitiveLoader(float)"),
         "http://www.w3.org/2001/XMLSchema#boolean": TypeDef("booltype", "_PrimitiveLoader(bool)"),
         "https://w3id.org/cwl/salad#null": TypeDef("None_type", "_PrimitiveLoader(NoneType)")
     }
@@ -155,7 +155,7 @@ class PythonCodeGen(CodeGenBase):
     def type_loader(self, t):
         if isinstance(t, list):
             sub = [self.type_loader(i) for i in t]
-            return self.declare_type(TypeDef("union_of_%s" % "_or_".join(s.name for s in sub), "_UnionLoader((%s))" % (", ".join(s.name for s in sub))))
+            return self.declare_type(TypeDef("union_of_%s" % "_or_".join(s.name for s in sub), "_UnionLoader((%s,))" % (", ".join(s.name for s in sub))))
         if isinstance(t, dict):
             if t["type"] in ("array", "https://w3id.org/cwl/salad#array"):
                 i = self.type_loader(t["items"])
@@ -236,7 +236,11 @@ class PythonCodeGen(CodeGenBase):
         self.out.write("\n\n")
 
         self.out.write("""
-def load_document(doc, baseuri, loadingOptions):
+def load_document(doc, baseuri=None, loadingOptions=None):
+    if baseuri is None:
+        baseuri = file_uri(os.getcwd()) + "/"
+    if loadingOptions is None:
+        loadingOptions = LoadingOptions()
     return _document_load(%s, doc, baseuri, loadingOptions)
 """ % rootLoader.name)
 
