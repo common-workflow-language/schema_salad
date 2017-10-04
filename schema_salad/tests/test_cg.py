@@ -49,9 +49,9 @@ class TestGeneratedMetaschema(unittest.TestCase):
         self.assertEqual(["hello world!\n"], rf.doc)
         self.assertEqual("documentation", rf.type)
         self.assertEqual({
-                "name": "http://example.com/#hello",
-                "doc": ["hello world!\n"],
-                "type": "documentation"
+            "name": "http://example.com/#hello",
+            "doc": ["hello world!\n"],
+            "type": "documentation"
         }, rf.save())
 
     def test_import(self):
@@ -165,6 +165,7 @@ class TestGeneratedMetaschema(unittest.TestCase):
             pre = json.load(f)
         saved = [d.save() for d in doc]
         self.assertEqual(saved, JsonDiffMatcher(pre))
+
 
 if __name__ == '__main__':
     unittest.main()

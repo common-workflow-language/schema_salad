@@ -66,11 +66,11 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
 
 
 def save(val):
-   if isinstance(val, Savable):
-       return val.save()
-   if isinstance(val, list):
-       return [save(v) for v in val]
-   return val
+    if isinstance(val, Savable):
+        return val.save()
+    if isinstance(val, list):
+        return [save(v) for v in val]
+    return val
 
 def expand_url(url,                 # type: Text
                base_url,            # type: Text
