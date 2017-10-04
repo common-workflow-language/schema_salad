@@ -1,6 +1,7 @@
 $base: "https://w3id.org/cwl/cwl#"
 
 $namespaces:
+  sld: "https://w3id.org/cwl/salad#"
   cwl: "https://w3id.org/cwl/cwl#"
 
 $graph:

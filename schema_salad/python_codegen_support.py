@@ -110,7 +110,7 @@ def expand_url(url,                 # type: Text
         pt = splitbase.path if splitbase.path != '' else "/"
         url = urllib.parse.urlunsplit(
             (splitbase.scheme, splitbase.netloc, pt, splitbase.query, frg))
-    elif scoped_ref is not None and not split.fragment:
+    elif scoped_ref is not None and not bool(split.fragment):
         splitbase = urllib.parse.urlsplit(base_url)
         sp = splitbase.fragment.split(u"/")
         n = scoped_ref
@@ -125,11 +125,13 @@ def expand_url(url,                 # type: Text
         url = loadingOptions.fetcher.urljoin(base_url, url)
 
     if vocab_term:
+        split = urllib.parse.urlsplit(url)
         if bool(split.scheme):
             if url in loadingOptions.rvocab:
                 return loadingOptions.rvocab[url]
         else:
             raise ValidationException("Term '%s' not in vocabulary" % url)
+
     return url
 
 
@@ -233,13 +235,14 @@ class _URILoader(_Loader):
 class _TypeDSLLoader(_Loader):
     typeDSLregex = re.compile(u"^([^[?]+)(\[\])?(\?)?$")
 
-    def __init__(self, inner):
+    def __init__(self, inner, refScope):
         self.inner = inner
+        self.refScope = refScope
 
     def resolve(self, doc, baseuri, loadingOptions):
         m = self.typeDSLregex.match(doc)
         if m:
-            first = expand_url(m.group(1), baseuri, loadingOptions, False, True, None)
+            first = expand_url(m.group(1), baseuri, loadingOptions, False, True, self.refScope)
             second = third = None
             if bool(m.group(2)):
                 second = {"type": "array", "items": first}

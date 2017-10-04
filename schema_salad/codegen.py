@@ -59,7 +59,7 @@ class CodeGenBase(object):
     def idmap_loader(self, field, inner, mapSubject, mapPredicate):
         pass
 
-    def typedsl_loader(self, inner):
+    def typedsl_loader(self, inner, refScope):
         pass
 
     def epilogue(self, rootLoader):
@@ -203,9 +203,9 @@ class PythonCodeGen(CodeGenBase):
         return self.declare_type(TypeDef("idmap_%s_%s" % (self.safe_name(field), inner.name),
                                               "_IdMapLoader(%s, '%s', '%s')" % (inner.name, mapSubject, mapPredicate)))
 
-    def typedsl_loader(self, inner):
-        return self.declare_type(TypeDef("typedsl_%s" % (inner.name),
-                                              "_TypeDSLLoader(%s)" % (inner.name)))
+    def typedsl_loader(self, inner, refScope):
+        return self.declare_type(TypeDef("typedsl_%s_%s" % (inner.name, refScope),
+                                              "_TypeDSLLoader(%s, %s)" % (inner.name, refScope)))
 
     def epilogue(self, rootLoader):
         self.out.write("_vocab = {\n")
@@ -275,13 +275,12 @@ def codegen(lang,      # type: str
                 if isinstance(jld, dict):
                     refScope = jld.get("refScope")
 
-                    if jld.get("_type") == "@id":
-                        tl = cg.uri_loader(tl, False, False, refScope)
+                    if jld.get("typeDSL"):
+                        tl = cg.typedsl_loader(tl, refScope)
+                    elif jld.get("_type") == "@id":
+                        tl = cg.uri_loader(tl, jld.get("identity"), False, refScope)
                     elif jld.get("_type") == "@vocab":
                         tl = cg.uri_loader(tl, False, True, refScope)
-
-                    if jld.get("typeDSL"):
-                        tl = cg.typedsl_loader(tl)
 
                     mapSubject = jld.get("mapSubject")
                     if mapSubject:

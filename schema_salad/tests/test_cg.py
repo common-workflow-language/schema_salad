@@ -159,5 +159,12 @@ class TestGeneratedMetaschema(unittest.TestCase):
         saved = [d.save() for d in doc]
         self.assertEqual(saved, JsonDiffMatcher(pre))
 
+    def test_load_cwlschema(self):
+        doc = cg_metaschema.load_document("file://"+get_data("tests/test_schema/CommonWorkflowLanguage.yml"), "", cg_metaschema.LoadingOptions())
+        with open(get_data("tests/cwl-pre.yml")) as f:
+            pre = json.load(f)
+        saved = [d.save() for d in doc]
+        self.assertEqual(saved, JsonDiffMatcher(pre))
+
 if __name__ == '__main__':
     unittest.main()
