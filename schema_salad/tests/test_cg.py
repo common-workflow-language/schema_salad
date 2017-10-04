@@ -1,4 +1,4 @@
-import cg_metaschema
+import schema_salad.metaschema as cg_metaschema
 import unittest
 import logging
 from util import get_data
