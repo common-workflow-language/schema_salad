@@ -137,6 +137,9 @@ class PythonCodeGen(CodeGenBase):
     prims = {
         "http://www.w3.org/2001/XMLSchema#string": TypeDef("strtype", "_PrimitiveLoader((str, six.text_type))"),
         "http://www.w3.org/2001/XMLSchema#int": TypeDef("inttype", "_PrimitiveLoader(int)"),
+        "http://www.w3.org/2001/XMLSchema#long": TypeDef("inttype", "_PrimitiveLoader(long)"),
+        "http://www.w3.org/2001/XMLSchema#float": TypeDef("inttype", "_PrimitiveLoader(float)"),
+        "http://www.w3.org/2001/XMLSchema#double": TypeDef("inttype", "_PrimitiveLoader(float)"),
         "http://www.w3.org/2001/XMLSchema#boolean": TypeDef("booltype", "_PrimitiveLoader(bool)"),
         "https://w3id.org/cwl/salad#null": TypeDef("None_type", "_PrimitiveLoader(NoneType)")
     }
@@ -262,14 +265,14 @@ def codegen(lang,      # type: str
             cg.begin_class(rec["name"], aslist(rec.get("extends", [])), rec.get("doc"))
             cg.add_vocab(shortname(rec["name"]), rec["name"])
 
-            for f in rec["fields"]:
+            for f in rec.get("fields", []):
                 if f.get("jsonldPredicate") == "@id":
                     fieldpred = f["name"]
                     tl = cg.uri_loader(cg.type_loader(f["type"]), True, False, None)
                     cg.declare_id_field(fieldpred, tl, f.get("doc"))
                     break
 
-            for f in rec["fields"]:
+            for f in rec.get("fields", []):
                 optional = bool("https://w3id.org/cwl/salad#null" in f["type"])
                 tl = cg.type_loader(f["type"])
                 jld = f.get("jsonldPredicate")
@@ -294,7 +297,7 @@ def codegen(lang,      # type: str
                 if jld == "@id":
                     continue
 
-                cg.add_vocab(shortname(f["name"]), fieldpred)
+                #cg.add_vocab(shortname(f["name"]), fieldpred)
                 cg.declare_field(fieldpred, tl, f.get("doc"), optional)
 
             cg.end_class(rec["name"])
