@@ -139,6 +139,12 @@ class _Loader(object):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         pass
 
+class _AnyLoader(_Loader):
+    def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        if doc is not None:
+            return doc
+        raise ValidationException("Expected non-null")
+
 class _PrimitiveLoader(_Loader):
     def __init__(self, tp):
         self.tp = tp
