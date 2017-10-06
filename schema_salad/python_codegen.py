@@ -1,5 +1,6 @@
 import json
 import sys
+import six
 from six.moves import urllib, cStringIO
 import collections
 import logging
@@ -165,16 +166,16 @@ class PythonCodeGen(CodeGenBase):
 
     def epilogue(self, rootLoader):
         self.out.write("_vocab = {\n")
-        for k,v in self.vocab.iteritems():
+        for k,v in six.iteritems(self.vocab):
             self.out.write("    \"%s\": \"%s\",\n" % (k, v))
         self.out.write("}\n")
 
         self.out.write("_rvocab = {\n")
-        for k,v in self.vocab.iteritems():
+        for k,v in six.iteritems(self.vocab):
             self.out.write("    \"%s\": \"%s\",\n" % (v, k))
         self.out.write("}\n\n")
 
-        for k,v in self.collected_types.iteritems():
+        for k,v in six.iteritems(self.collected_types):
             self.out.write("%s = %s\n" % (v.name, v.init))
         self.out.write("\n\n")
 

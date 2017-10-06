@@ -51,7 +51,7 @@ class LoadingOptions(object):
         if namespaces is not None:
             self.vocab = self.vocab.copy()
             self.rvocab = self.rvocab.copy()
-            for k,v in namespaces.iteritems():
+            for k,v in six.iteritems(namespaces):
                 self.vocab[k] = v
                 self.rvocab[v] = k
 
