@@ -183,9 +183,8 @@ class SourceLine(object):
 
 
 from types import NoneType
-from six.moves import urllib
+from six.moves import urllib, StringIO
 import ruamel.yaml as yaml
-from StringIO import StringIO
 import copy
 import re
 
@@ -322,6 +321,12 @@ def expand_url(url,                 # type: Text
 class _Loader(object):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         pass
+
+class _AnyLoader(_Loader):
+    def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        if doc is not None:
+            return doc
+        raise ValidationException("Expected non-null")
 
 class _PrimitiveLoader(_Loader):
     def __init__(self, tp):
@@ -1530,9 +1535,10 @@ _rvocab = {
 }
 
 inttype = _PrimitiveLoader(int)
-strtype = _PrimitiveLoader((str, six.text_type))
-floattype = _PrimitiveLoader(float)
 booltype = _PrimitiveLoader(bool)
+strtype = _PrimitiveLoader((str, six.text_type))
+Any_type = _AnyLoader()
+floattype = _PrimitiveLoader(float)
 None_type = _PrimitiveLoader(NoneType)
 PrimitiveTypeLoader = _EnumLoader(("null", "boolean", "int", "long", "float", "double", "string",))
 AnyLoader = _EnumLoader(("Any",))

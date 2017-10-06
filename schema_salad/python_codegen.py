@@ -1,7 +1,6 @@
 import json
 import sys
-import cStringIO
-from six.moves import urllib
+from six.moves import urllib, cStringIO
 import collections
 import logging
 from pkg_resources import resource_stream
@@ -67,7 +66,7 @@ class PythonCodeGen(CodeGenBase):
         #doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
 """)
 
-        self.serializer = cStringIO.StringIO()
+        self.serializer = cStringIO()
         self.serializer.write("""
     def save(self):
         r = {}

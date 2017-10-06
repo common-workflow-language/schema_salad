@@ -1,7 +1,6 @@
 from types import NoneType
-from six.moves import urllib
+from six.moves import urllib, StringIO
 import ruamel.yaml as yaml
-from StringIO import StringIO
 import copy
 import re
 
