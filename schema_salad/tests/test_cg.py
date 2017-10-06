@@ -1,10 +1,12 @@
 import schema_salad.metaschema as cg_metaschema
 import unittest
 import logging
-from util import get_data
-import json
-from matcher import JsonDiffMatcher
 import os
+import json
+
+from .matcher import JsonDiffMatcher
+from .util import get_data
+
 
 class TestGeneratedMetaschema(unittest.TestCase):
     def test_load(self):
