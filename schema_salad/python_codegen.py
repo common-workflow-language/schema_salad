@@ -89,7 +89,7 @@ class PythonCodeGen(CodeGenBase):
         "http://www.w3.org/2001/XMLSchema#float": TypeDef("floattype", "_PrimitiveLoader(float)"),
         "http://www.w3.org/2001/XMLSchema#double": TypeDef("floattype", "_PrimitiveLoader(float)"),
         "http://www.w3.org/2001/XMLSchema#boolean": TypeDef("booltype", "_PrimitiveLoader(bool)"),
-        "https://w3id.org/cwl/salad#null": TypeDef("None_type", "_PrimitiveLoader(NoneType)"),
+        "https://w3id.org/cwl/salad#null": TypeDef("None_type", "_PrimitiveLoader(type(None))"),
         "https://w3id.org/cwl/salad#Any": TypeDef("Any_type", "_AnyLoader()")
     }
 

@@ -1,4 +1,3 @@
-from types import NoneType
 from six.moves import urllib, StringIO
 import ruamel.yaml as yaml
 import copy

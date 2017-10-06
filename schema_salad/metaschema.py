@@ -182,7 +182,6 @@ class SourceLine(object):
         return self.raise_type("\n".join(errs))
 
 
-from types import NoneType
 from six.moves import urllib, StringIO
 import ruamel.yaml as yaml
 import copy
@@ -1539,7 +1538,7 @@ booltype = _PrimitiveLoader(bool)
 strtype = _PrimitiveLoader((str, six.text_type))
 Any_type = _AnyLoader()
 floattype = _PrimitiveLoader(float)
-None_type = _PrimitiveLoader(NoneType)
+None_type = _PrimitiveLoader(type(None))
 PrimitiveTypeLoader = _EnumLoader(("null", "boolean", "int", "long", "float", "double", "string",))
 AnyLoader = _EnumLoader(("Any",))
 RecordFieldLoader = _RecordLoader(RecordField)
