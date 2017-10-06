@@ -1,3 +1,4 @@
+import six
 from six.moves import urllib, StringIO
 import ruamel.yaml as yaml
 import copy
@@ -164,7 +165,7 @@ class _ArrayLoader(_Loader):
             raise ValidationException("Expected a list")
         r = []
         errors = []
-        for i in xrange(0, len(doc)):
+        for i in range(0, len(doc)):
             try:
                 lf = load_field(doc[i], _UnionLoader((self, self.items)), baseuri, loadingOptions)
                 if isinstance(lf, list):
@@ -231,7 +232,7 @@ class _URILoader(_Loader):
         if isinstance(doc, list):
             doc = [expand_url(i, baseuri, loadingOptions,
                             self.scoped_id, self.vocab_term, self.scoped_ref) for i in doc]
-        if isinstance(doc, basestring):
+        if isinstance(doc, six.text_type):
             doc = expand_url(doc, baseuri, loadingOptions,
                              self.scoped_id, self.vocab_term, self.scoped_ref)
         return self.inner.load(doc, baseuri, loadingOptions)
@@ -314,7 +315,7 @@ class _IdMapLoader(_Loader):
 
 
 def _document_load(loader, doc, baseuri, loadingOptions):
-    if isinstance(doc, basestring):
+    if isinstance(doc, six.text_type):
         return _document_load_by_url(loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions)
 
     if isinstance(doc, dict):
