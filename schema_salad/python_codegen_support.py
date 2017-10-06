@@ -80,7 +80,7 @@ def expand_url(url,                 # type: Text
                ):
     # type: (...) -> Text
 
-    if not isinstance(url, (str, six.text_type)):
+    if not isinstance(url, six.string_types):
         return url
 
     if url in (u"@id", u"@type"):
@@ -232,7 +232,7 @@ class _URILoader(_Loader):
         if isinstance(doc, list):
             doc = [expand_url(i, baseuri, loadingOptions,
                             self.scoped_id, self.vocab_term, self.scoped_ref) for i in doc]
-        if isinstance(doc, six.text_type):
+        if isinstance(doc, six.string_types):
             doc = expand_url(doc, baseuri, loadingOptions,
                              self.scoped_id, self.vocab_term, self.scoped_ref)
         return self.inner.load(doc, baseuri, loadingOptions)
@@ -269,7 +269,7 @@ class _TypeDSLLoader(_Loader):
         if isinstance(doc, list):
             r = []
             for d in doc:
-                if isinstance(d, (str, six.text_type)):
+                if isinstance(d, six.string_types):
                     resolved = self.resolve(d, baseuri, loadingOptions)
                     if isinstance(resolved, list):
                         for i in resolved:
@@ -281,7 +281,7 @@ class _TypeDSLLoader(_Loader):
                 else:
                     r.append(d)
             doc = r
-        elif isinstance(doc, (str, six.text_type)):
+        elif isinstance(doc, six.string_types):
             doc = self.resolve(doc, baseuri, loadingOptions)
 
         return self.inner.load(doc, baseuri, loadingOptions)
@@ -315,7 +315,7 @@ class _IdMapLoader(_Loader):
 
 
 def _document_load(loader, doc, baseuri, loadingOptions):
-    if isinstance(doc, six.text_type):
+    if isinstance(doc, six.string_types):
         return _document_load_by_url(loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions)
 
     if isinstance(doc, dict):
