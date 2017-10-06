@@ -1,7 +1,6 @@
 import json
 import sys
-import cStringIO
-from six.moves import urllib
+from six.moves import urllib, cStringIO
 import collections
 import logging
 from pkg_resources import resource_stream
