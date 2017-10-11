@@ -18,6 +18,8 @@ def codegen(lang,      # type: str
             i,         # type: List[Dict[Text, Any]]
             loader     # type: Loader
            ):
+    # type: (...) -> None
+
     j = schema.extend_and_specialize(i, loader)
 
     cg = PythonCodeGen(sys.stdout)
@@ -39,7 +41,8 @@ def codegen(lang,      # type: str
         if rec["type"] == "record":
             if rec.get("documentRoot"):
                 documentRoots.append(rec["name"])
-            cg.begin_class(rec["name"], aslist(rec.get("extends", [])), rec.get("doc"))
+            cg.begin_class(rec["name"], aslist(rec.get("extends", [])), rec.get("doc"),
+                           rec.get("abstract"))
             cg.add_vocab(shortname(rec["name"]), rec["name"])
 
             for f in rec.get("fields", []):

@@ -3,6 +3,7 @@ from six.moves import urllib, StringIO
 import ruamel.yaml as yaml
 import copy
 import re
+from typing import List, Text, Dict, Union, Any, Sequence
 
 class ValidationException(Exception):
     pass
@@ -71,9 +72,9 @@ def save(val):
         return [save(v) for v in val]
     return val
 
-def expand_url(url,                 # type: Text
-               base_url,            # type: Text
-               loadingOptions,
+def expand_url(url,                 # type: six.string_types
+               base_url,            # type: six.string_types
+               loadingOptions,      # type: LoadingOptions
                scoped_id=False,     # type: bool
                vocab_term=False,    # type: bool
                scoped_ref=None      # type: int
@@ -82,6 +83,8 @@ def expand_url(url,                 # type: Text
 
     if not isinstance(url, six.string_types):
         return url
+
+    url = Text(url)
 
     if url in (u"@id", u"@type"):
         return url
@@ -136,6 +139,7 @@ def expand_url(url,                 # type: Text
 
 class _Loader(object):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Union[Text, None]) -> Any
         pass
 
 class _AnyLoader(_Loader):
@@ -146,6 +150,7 @@ class _AnyLoader(_Loader):
 
 class _PrimitiveLoader(_Loader):
     def __init__(self, tp):
+        # type: (Union[type, Sequence[type]]) -> None
         self.tp = tp
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
@@ -158,6 +163,7 @@ class _PrimitiveLoader(_Loader):
 
 class _ArrayLoader(_Loader):
     def __init__(self, items):
+        # type: (_Loader) -> None
         self.items = items
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
@@ -183,6 +189,7 @@ class _ArrayLoader(_Loader):
 
 class _EnumLoader(_Loader):
     def __init__(self, symbols):
+        # type: (Sequence[Text]) -> None
         self.symbols = symbols
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
@@ -194,6 +201,7 @@ class _EnumLoader(_Loader):
 
 class _RecordLoader(_Loader):
     def __init__(self, classtype):
+        # type: (type) -> None
         self.classtype = classtype
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
@@ -207,6 +215,7 @@ class _RecordLoader(_Loader):
 
 class _UnionLoader(_Loader):
     def __init__(self, alternates):
+        # type: (Sequence[_Loader]) -> None
         self.alternates = alternates
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
@@ -223,6 +232,7 @@ class _UnionLoader(_Loader):
 
 class _URILoader(_Loader):
     def __init__(self, inner, scoped_id, vocab_term, scoped_ref):
+        # type: (_Loader, bool, bool, Union[int, None]) -> None
         self.inner = inner
         self.scoped_id = scoped_id
         self.vocab_term = vocab_term
@@ -241,6 +251,7 @@ class _TypeDSLLoader(_Loader):
     typeDSLregex = re.compile(u"^([^[?]+)(\[\])?(\?)?$")
 
     def __init__(self, inner, refScope):
+        # type: (_Loader, Union[int, None]) -> None
         self.inner = inner
         self.refScope = refScope
 
@@ -289,6 +300,7 @@ class _TypeDSLLoader(_Loader):
 
 class _IdMapLoader(_Loader):
     def __init__(self, inner, mapSubject, mapPredicate):
+        # type: (_Loader, Text, Union[Text, None]) -> None
         self.inner = inner
         self.mapSubject = mapSubject
         self.mapPredicate = mapPredicate
