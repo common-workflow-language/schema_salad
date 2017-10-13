@@ -35,6 +35,8 @@ class JavaCodeGen(CodeGenBase):
         cls = self.interface_name(classname)
         self.current_class = cls
         self.current_class_is_abstract = abstract
+        self.current_loader = cStringIO()
+        self.current_fields = cStringIO()
         with open(os.path.join(self.outdir, "%s.java" % cls), "w") as f:
             if extends:
                 ext = "extends " + ", ".join(self.interface_name(e) for e in extends)
@@ -59,7 +61,9 @@ public class {cls}Impl implements {cls} {{
                     format(package=self.package,
                            cls=cls,
                            ext=ext))
-
+        self.current_loader.write("""
+    void Load() {
+""")
 
     def end_class(self, classname):
         with open(os.path.join(self.outdir, "%s.java" % self.current_class), "a") as f:
@@ -69,7 +73,13 @@ public class {cls}Impl implements {cls} {{
         if self.current_class_is_abstract:
             return
 
+        self.current_loader.write("""
+    }
+""")
+
         with open(os.path.join(self.outdir, "%sImpl.java" % self.current_class), "a") as f:
+            f.write(self.current_fields.getvalue())
+            f.write(self.current_loader.getvalue())
             f.write("""
 }
 """)
@@ -107,8 +117,7 @@ public class {cls}Impl implements {cls} {{
         if self.current_class_is_abstract:
             return
 
-        with open(os.path.join(self.outdir, "%sImpl.java" % self.current_class), "a") as f:
-            f.write("""
+        self.current_fields.write("""
     private {type} {fieldname};
     public {type} get{capfieldname}() {{
         return this.{fieldname};
@@ -117,6 +126,11 @@ public class {cls}Impl implements {cls} {{
                     format(fieldname=fieldname,
                            capfieldname=fieldname[0].upper() + fieldname[1:],
                            type=typedef.name))
+
+        self.current_loader.write("""
+        this.{fieldname} = null; // TODO: loaders
+        """.
+                                  format(fieldname=fieldname))
 
 
     def declare_id_field(self, name, typedef, doc):
