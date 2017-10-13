@@ -53,11 +53,11 @@ class CodeGenBase(object):
         # type: (Union[List[Any], Dict[Text, Any]]) -> TypeDef
         raise NotImplementedError()
 
-    def declare_field(self, name, types, doc, optional):
+    def declare_field(self, name, typedef, doc, optional):
         # type: (Text, TypeDef, Text, bool) -> None
         raise NotImplementedError()
 
-    def declare_id_field(self, name, types, doc):
+    def declare_id_field(self, name, typedef, doc):
         # type: (Text, TypeDef, Text) -> None
         raise NotImplementedError()
 

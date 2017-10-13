@@ -6,23 +6,31 @@ import logging
 from pkg_resources import resource_stream
 from .utils import aslist, flatten
 from . import schema
-from .codegen_base import shortname
+from .codegen_base import shortname, CodeGenBase
 from .python_codegen import PythonCodeGen
+from .java_codegen import JavaCodeGen
 
 
 class GoCodeGen(object):
     pass
 
 
-def codegen(lang,      # type: str
-            i,         # type: List[Dict[Text, Any]]
-            loader     # type: Loader
+def codegen(lang,             # type: str
+            i,                # type: List[Dict[Text, Any]]
+            schema_metadata,  # type: Dict[Text, Any]
+            loader            # type: Loader
            ):
     # type: (...) -> None
 
     j = schema.extend_and_specialize(i, loader)
 
-    cg = PythonCodeGen(sys.stdout)
+    cg = None  # type: CodeGenBase
+    if lang == "python":
+        cg = PythonCodeGen(sys.stdout)
+    elif lang == "java":
+        cg = JavaCodeGen(schema_metadata.get("$base", schema_metadata.get("id")))
+    else:
+        raise Exception("Unsupported code generation language '%s'" % lang)
 
     cg.prologue()
 

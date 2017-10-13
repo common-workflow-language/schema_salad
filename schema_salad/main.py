@@ -166,7 +166,7 @@ def main(argsl=None):  # type: (List[str]) -> int
     document_loader = Loader(schema_ctx)
 
     if args.codegen:
-        codegen.codegen(args.codegen, schema_doc, document_loader)
+        codegen.codegen(args.codegen, schema_doc, schema_metadata, document_loader)
         return 0
 
     # Make the Avro validation that will be used to validate the target
