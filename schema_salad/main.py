@@ -6,13 +6,15 @@ import sys
 import traceback
 import json
 import os
+import re
+import itertools
 
 import six
 from six.moves import urllib
 
 import pkg_resources  # part of setuptools
 
-from typing import Any, Dict, List, Union, Text
+from typing import Any, Dict, List, Union, Text, Tuple
 
 from rdflib import Graph, plugin
 from rdflib.serializer import Serializer
@@ -38,6 +40,32 @@ def printrdf(workflow,  # type: str
     g = jsonld_context.makerdf(workflow, wf, ctx)
     print(g.serialize(format=sr))
 
+def chunk_messages(msg): # type: (str) -> List[Tuple[int, str]]
+    arr = []
+    lst = msg.split("\n")
+    while len(lst):
+        fst = lst[0]
+        indent = len(re.match(r'^.+:\d+:\d+:(\s+)', fst).group(1))
+        elem = "\n".join([fst]+list(itertools.takewhile(lambda x: x.startswith(' '), lst[1:])))
+        elem = re.sub(r'[\n\s]+', ' ', elem)
+        # remove unnecessary '*' for itemize if exists
+        elem = re.sub(r'^(.+:\d+:\d+: )\* ', r'\1', elem)
+        arr.append((indent, elem))
+        lst = list(itertools.dropwhile(lambda x: x.startswith(' '), lst[1:]))
+    return arr
+
+def to_one_line_messages(msg): # type: (str) -> str
+    ret = []
+    max_elem = (0, '')
+    for (indent, msg) in chunk_messages(msg):
+        if indent > max_elem[0]:
+            max_elem = (indent, msg)
+        else:
+            ret.append(max_elem[1])
+            max_elem = (indent, msg)
+    else:
+        ret.append(max_elem[1])
+    return "\n".join(ret)
 
 def main(argsl=None):  # type: (List[str]) -> int
     if argsl is None:
@@ -64,6 +92,8 @@ def main(argsl=None):  # type: (List[str]) -> int
         "--print-index", action="store_true", help="Print node index")
     exgroup.add_argument("--print-metadata",
                          action="store_true", help="Print document metadata")
+    exgroup.add_argument("--print-oneline",
+                         action="store_true", help="Print each error message in oneline")
 
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--strict", action="store_true", help="Strict validation (unrecognized or out of place fields are error)",
@@ -211,8 +241,10 @@ def main(argsl=None):  # type: (List[str]) -> int
             doc = "file://" + os.path.abspath(uri)
         document, doc_metadata = document_loader.resolve_ref(uri)
     except (validate.ValidationException, RuntimeError) as e:
+        msg = strip_dup_lineno(six.text_type(e))
+        msg = to_one_line_messages(str(msg)) if args.print_oneline else msg
         _logger.error("Document `%s` failed validation:\n%s",
-                      args.document, strip_dup_lineno(six.text_type(e)), exc_info=args.debug)
+                      args.document, msg, exc_info=args.debug)
         return 1
 
     # Optionally print the document after ref resolution
@@ -229,8 +261,9 @@ def main(argsl=None):  # type: (List[str]) -> int
         schema.validate_doc(avsc_names, document,
                             document_loader, args.strict)
     except validate.ValidationException as e:
+        msg = to_one_line_messages(str(e)) if args.print_oneline else str(e)
         _logger.error("While validating document `%s`:\n%s" %
-                      (args.document, str(e)))
+                      (args.document, msg))
         return 1
 
     # Optionally convert the document to RDF
