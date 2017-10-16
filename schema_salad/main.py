@@ -40,7 +40,7 @@ def printrdf(workflow,  # type: str
     g = jsonld_context.makerdf(workflow, wf, ctx)
     print(g.serialize(format=sr))
 
-def chunk_messages(msg): # type: (str) -> List[Tuple[int, str]]
+def chunk_messages(msg):  # type: (str) -> List[Tuple[int, str]]
     arr = []
     lst = msg.split("\n")
     while len(lst):
@@ -54,7 +54,7 @@ def chunk_messages(msg): # type: (str) -> List[Tuple[int, str]]
         lst = list(itertools.dropwhile(lambda x: x.startswith(' '), lst[1:]))
     return arr
 
-def to_one_line_messages(msg): # type: (str) -> str
+def to_one_line_messages(msg):  # type: (str) -> str
     ret = []
     max_elem = (0, '')
     for (indent, msg) in chunk_messages(msg):
