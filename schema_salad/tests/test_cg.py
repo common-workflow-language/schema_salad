@@ -3,6 +3,7 @@ import unittest
 import logging
 import os
 import json
+from schema_salad.ref_resolver import file_uri
 
 from .matcher import JsonDiffMatcher
 from .util import get_data
@@ -46,7 +47,8 @@ class TestGeneratedMetaschema(unittest.TestCase):
             "doc": [{"$include": "hello.txt"}],
             "type": "documentation"
         }
-        rf = cg_metaschema.Documentation(doc, "http://example.com/", cg_metaschema.LoadingOptions(fileuri="file://"+get_data("tests/_")))
+        rf = cg_metaschema.Documentation(doc, "http://example.com/",
+                                         cg_metaschema.LoadingOptions(fileuri=file_uri(get_data("tests/_"))))
         self.assertEqual("http://example.com/#hello", rf.name)
         self.assertEqual(["hello world!\n"], rf.doc)
         self.assertEqual("documentation", rf.type)
@@ -63,7 +65,7 @@ class TestGeneratedMetaschema(unittest.TestCase):
                 "$import": "hellofield.yml"
             }]
         }
-        lead = "file://"+os.path.normpath(get_data("tests"))
+        lead = file_uri(os.path.normpath(get_data("tests")))
         rs = cg_metaschema.RecordSchema(doc, "http://example.com/", cg_metaschema.LoadingOptions(fileuri=lead+"/_"))
         self.assertEqual("record", rs.type)
         self.assertEqual(lead+"/hellofield.yml#hello", rs.fields[0].name)
@@ -79,13 +81,15 @@ class TestGeneratedMetaschema(unittest.TestCase):
         }, rs.save())
 
 
+    maxDiff = None
+
     def test_import2(self):
-        rs = cg_metaschema.load_document("file://"+get_data("tests/docimp/d1.yml"), "", cg_metaschema.LoadingOptions())
+        rs = cg_metaschema.load_document(file_uri(get_data("tests/docimp/d1.yml")), "", cg_metaschema.LoadingOptions())
         self.assertEqual([{'doc': [u'*Hello*', 'hello 2', u'*dee dee dee five*',
                                    'hello 3', 'hello 4', u'*dee dee dee five*',
                                    'hello 5'],
                            'type': 'documentation',
-                           'name': "file://"+get_data("tests/docimp/d1.yml#Semantic_Annotations_for_Linked_Avro_Data")+''}],
+                           'name': file_uri(get_data("tests/docimp/d1.yml"))+"#Semantic_Annotations_for_Linked_Avro_Data"}],
               [r.save() for r in rs])
 
     def test_err2(self):
@@ -145,7 +149,7 @@ class TestGeneratedMetaschema(unittest.TestCase):
         }, rs.save())
 
     def test_load_pt(self):
-        doc = cg_metaschema.load_document("file://"+get_data("tests/pt.yml"), "", cg_metaschema.LoadingOptions())
+        doc = cg_metaschema.load_document(file_uri(get_data("tests/pt.yml")), "", cg_metaschema.LoadingOptions())
         self.assertEqual(['https://w3id.org/cwl/salad#null',
                           'http://www.w3.org/2001/XMLSchema#boolean',
                           'http://www.w3.org/2001/XMLSchema#int',
@@ -155,14 +159,14 @@ class TestGeneratedMetaschema(unittest.TestCase):
                           'http://www.w3.org/2001/XMLSchema#string'], doc.symbols)
 
     def test_load_metaschema(self):
-        doc = cg_metaschema.load_document("file://"+get_data("metaschema/metaschema.yml"), "", cg_metaschema.LoadingOptions())
+        doc = cg_metaschema.load_document(file_uri(get_data("metaschema/metaschema.yml")), "", cg_metaschema.LoadingOptions())
         with open(get_data("tests/metaschema-pre.yml")) as f:
             pre = json.load(f)
         saved = [d.save() for d in doc]
         self.assertEqual(saved, JsonDiffMatcher(pre))
 
     def test_load_cwlschema(self):
-        doc = cg_metaschema.load_document("file://"+get_data("tests/test_schema/CommonWorkflowLanguage.yml"), "", cg_metaschema.LoadingOptions())
+        doc = cg_metaschema.load_document(file_uri(get_data("tests/test_schema/CommonWorkflowLanguage.yml")), "", cg_metaschema.LoadingOptions())
         with open(get_data("tests/cwl-pre.yml")) as f:
             pre = json.load(f)
         saved = [d.save() for d in doc]
