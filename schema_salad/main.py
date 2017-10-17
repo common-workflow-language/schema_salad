@@ -40,13 +40,15 @@ def printrdf(workflow,  # type: str
     g = jsonld_context.makerdf(workflow, wf, ctx)
     print(g.serialize(format=sr))
 
+
 def chunk_messages(msg):  # type: (str) -> List[Tuple[int, str]]
     arr = []
     lst = msg.split("\n")
-    while len(lst):
+    while lst:
         fst = lst[0]
         indent = len(re.match(r'^.+:\d+:\d+:(\s+)', fst).group(1))
-        elem = "\n".join([fst]+list(itertools.takewhile(lambda x: x.startswith(' '), lst[1:])))
+        rst = list(itertools.takewhile(lambda x: x.startswith(' '), lst[1:]))
+        elem = "\n".join([fst]+rst)
         elem = re.sub(r'[\n\s]+', ' ', elem)
         # remove unnecessary '*' for itemize if exists
         elem = re.sub(r'^(.+:\d+:\d+: )\* ', r'\1', elem)
@@ -54,18 +56,19 @@ def chunk_messages(msg):  # type: (str) -> List[Tuple[int, str]]
         lst = list(itertools.dropwhile(lambda x: x.startswith(' '), lst[1:]))
     return arr
 
-def to_one_line_messages(msg):  # type: (str) -> str
+
+def to_one_line_messages(message):  # type: (str) -> str
     ret = []
     max_elem = (0, '')
-    for (indent, msg) in chunk_messages(msg):
+    for (indent, msg) in chunk_messages(message):
         if indent > max_elem[0]:
             max_elem = (indent, msg)
         else:
             ret.append(max_elem[1])
             max_elem = (indent, msg)
-    else:
-        ret.append(max_elem[1])
+    ret.append(max_elem[1])
     return "\n".join(ret)
+
 
 def main(argsl=None):  # type: (List[str]) -> int
     if argsl is None:
@@ -92,8 +95,8 @@ def main(argsl=None):  # type: (List[str]) -> int
         "--print-index", action="store_true", help="Print node index")
     exgroup.add_argument("--print-metadata",
                          action="store_true", help="Print document metadata")
-    exgroup.add_argument("--print-oneline",
-                         action="store_true", help="Print each error message in oneline")
+    exgroup.add_argument("--print-oneline", action="store_true",
+                         help="Print each error message in oneline")
 
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--strict", action="store_true", help="Strict validation (unrecognized or out of place fields are error)",
