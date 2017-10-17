@@ -34,6 +34,7 @@ def validate(expected_schema,           # type: Schema
         expected_schema, datum, identifiers, strict=strict,
         foreign_properties=foreign_properties, raise_ex=False)
 
+
 INT_MIN_VALUE = -(1 << 31)
 INT_MAX_VALUE = (1 << 31) - 1
 LONG_MIN_VALUE = -(1 << 63)
