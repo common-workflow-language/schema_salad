@@ -34,7 +34,6 @@ def validate(expected_schema,           # type: Schema
         expected_schema, datum, identifiers, strict=strict,
         foreign_properties=foreign_properties, raise_ex=False)
 
-
 INT_MIN_VALUE = -(1 << 31)
 INT_MAX_VALUE = (1 << 31) - 1
 LONG_MIN_VALUE = -(1 << 63)
@@ -213,7 +212,8 @@ def validate_ex(expected_schema,                  # type: Schema
                 continue
             elif isinstance(datum, dict) and not isinstance(s, avro.schema.RecordSchema):
                 continue
-            elif isinstance(datum, (bool, six.integer_types, float, six.string_types)) and isinstance(s, (avro.schema.ArraySchema, avro.schema.RecordSchema)):
+            elif (isinstance(datum, (bool, six.integer_types, float, six.string_types)) and  # type: ignore
+                  isinstance(s, (avro.schema.ArraySchema, avro.schema.RecordSchema))):
                 continue
             elif datum is not None and s.type == "null":
                 continue

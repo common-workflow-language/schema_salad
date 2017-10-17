@@ -9,7 +9,9 @@ from . import schema
 from .codegen_base import shortname, CodeGenBase
 from .python_codegen import PythonCodeGen
 from .java_codegen import JavaCodeGen
-
+from .ref_resolver import Loader
+from typing import List, Dict, Text, Any, Union, Text
+from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
 class GoCodeGen(object):
     pass

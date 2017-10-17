@@ -8,10 +8,13 @@ from pkg_resources import resource_stream
 from .utils import aslist, flatten
 from . import schema
 from .codegen_base import TypeDef, CodeGenBase, shortname
+from typing import Text
 import os
 
 class JavaCodeGen(CodeGenBase):
     def __init__(self, base):
+        # type: (Text) -> None
+
         super(JavaCodeGen, self).__init__()
         sp = urllib.parse.urlsplit(base)
         self.package = ".".join(list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/"))

@@ -36,16 +36,16 @@ class PythonCodeGen(CodeGenBase):
 """)
 
         rs = resource_stream(__name__, 'sourceline.py')
-        self.out.write(rs.read())
+        self.out.write(rs.read().decode("UTF-8"))
         rs.close()
         self.out.write("\n\n")
 
         rs = resource_stream(__name__, 'python_codegen_support.py')
-        self.out.write(rs.read())
+        self.out.write(rs.read().decode("UTF-8"))
         rs.close()
         self.out.write("\n\n")
 
-        for p in self.prims.itervalues():
+        for p in six.itervalues(self.prims):
             self.declare_type(p)
 
 
@@ -63,7 +63,7 @@ class PythonCodeGen(CodeGenBase):
 
         if doc:
             self.out.write('    """\n')
-            self.out.write(doc.encode("UTF-8"))
+            self.out.write(str(doc))
             self.out.write('\n    """\n')
 
         self.serializer = cStringIO()
@@ -202,13 +202,13 @@ class PythonCodeGen(CodeGenBase):
     def epilogue(self, rootLoader):
         # type: (TypeDef) -> None
         self.out.write("_vocab = {\n")
-        for k,v in six.iteritems(self.vocab):
-            self.out.write("    \"%s\": \"%s\",\n" % (k, v))
+        for k in sorted(self.vocab.keys()):
+            self.out.write("    \"%s\": \"%s\",\n" % (k, self.vocab[k]))
         self.out.write("}\n")
 
         self.out.write("_rvocab = {\n")
-        for k,v in six.iteritems(self.vocab):
-            self.out.write("    \"%s\": \"%s\",\n" % (v, k))
+        for k in sorted(self.vocab.keys()):
+            self.out.write("    \"%s\": \"%s\",\n" % (self.vocab[k], k))
         self.out.write("}\n\n")
 
         for k,tv in six.iteritems(self.collected_types):

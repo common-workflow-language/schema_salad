@@ -256,8 +256,8 @@ def save(val):
         return [save(v) for v in val]
     return val
 
-def expand_url(url,                 # type: six.string_types
-               base_url,            # type: six.string_types
+def expand_url(url,                 # type: Union[str, Text]
+               base_url,            # type: Union[str, Text]
                loadingOptions,      # type: LoadingOptions
                scoped_id=False,     # type: bool
                vocab_term=False,    # type: bool
@@ -1321,68 +1321,68 @@ schemas but has no role in formal validation.
 
 
 _vocab = {
-    "int": "http://www.w3.org/2001/XMLSchema#int",
-    "float": "http://www.w3.org/2001/XMLSchema#float",
-    "PrimitiveType": "https://w3id.org/cwl/salad#PrimitiveType",
-    "EnumSchema": "https://w3id.org/cwl/salad#EnumSchema",
-    "boolean": "http://www.w3.org/2001/XMLSchema#boolean",
-    "NamedType": "https://w3id.org/cwl/salad#NamedType",
-    "array": "https://w3id.org/cwl/salad#array",
-    "null": "https://w3id.org/cwl/salad#null",
-    "SchemaDefinedType": "https://w3id.org/cwl/salad#SchemaDefinedType",
-    "SaladEnumSchema": "https://w3id.org/cwl/salad#SaladEnumSchema",
-    "SpecializeDef": "https://w3id.org/cwl/salad#SpecializeDef",
-    "DocType": "https://w3id.org/cwl/salad#DocType",
-    "long": "http://www.w3.org/2001/XMLSchema#long",
-    "JsonldPredicate": "https://w3id.org/cwl/salad#JsonldPredicate",
-    "ArraySchema": "https://w3id.org/cwl/salad#ArraySchema",
-    "enum": "https://w3id.org/cwl/salad#enum",
-    "string": "http://www.w3.org/2001/XMLSchema#string",
-    "RecordField": "https://w3id.org/cwl/salad#RecordField",
-    "Documentation": "https://w3id.org/cwl/salad#Documentation",
-    "RecordSchema": "https://w3id.org/cwl/salad#RecordSchema",
-    "SaladRecordField": "https://w3id.org/cwl/salad#SaladRecordField",
-    "double": "http://www.w3.org/2001/XMLSchema#double",
-    "documentation": "https://w3id.org/cwl/salad#documentation",
-    "SaladRecordSchema": "https://w3id.org/cwl/salad#SaladRecordSchema",
-    "record": "https://w3id.org/cwl/salad#record",
     "Any": "https://w3id.org/cwl/salad#Any",
+    "ArraySchema": "https://w3id.org/cwl/salad#ArraySchema",
+    "DocType": "https://w3id.org/cwl/salad#DocType",
+    "Documentation": "https://w3id.org/cwl/salad#Documentation",
+    "EnumSchema": "https://w3id.org/cwl/salad#EnumSchema",
+    "JsonldPredicate": "https://w3id.org/cwl/salad#JsonldPredicate",
+    "NamedType": "https://w3id.org/cwl/salad#NamedType",
+    "PrimitiveType": "https://w3id.org/cwl/salad#PrimitiveType",
+    "RecordField": "https://w3id.org/cwl/salad#RecordField",
+    "RecordSchema": "https://w3id.org/cwl/salad#RecordSchema",
+    "SaladEnumSchema": "https://w3id.org/cwl/salad#SaladEnumSchema",
+    "SaladRecordField": "https://w3id.org/cwl/salad#SaladRecordField",
+    "SaladRecordSchema": "https://w3id.org/cwl/salad#SaladRecordSchema",
+    "SchemaDefinedType": "https://w3id.org/cwl/salad#SchemaDefinedType",
+    "SpecializeDef": "https://w3id.org/cwl/salad#SpecializeDef",
+    "array": "https://w3id.org/cwl/salad#array",
+    "boolean": "http://www.w3.org/2001/XMLSchema#boolean",
+    "documentation": "https://w3id.org/cwl/salad#documentation",
+    "double": "http://www.w3.org/2001/XMLSchema#double",
+    "enum": "https://w3id.org/cwl/salad#enum",
+    "float": "http://www.w3.org/2001/XMLSchema#float",
+    "int": "http://www.w3.org/2001/XMLSchema#int",
+    "long": "http://www.w3.org/2001/XMLSchema#long",
+    "null": "https://w3id.org/cwl/salad#null",
+    "record": "https://w3id.org/cwl/salad#record",
+    "string": "http://www.w3.org/2001/XMLSchema#string",
 }
 _rvocab = {
-    "http://www.w3.org/2001/XMLSchema#int": "int",
-    "http://www.w3.org/2001/XMLSchema#float": "float",
-    "https://w3id.org/cwl/salad#PrimitiveType": "PrimitiveType",
-    "https://w3id.org/cwl/salad#EnumSchema": "EnumSchema",
-    "http://www.w3.org/2001/XMLSchema#boolean": "boolean",
-    "https://w3id.org/cwl/salad#NamedType": "NamedType",
-    "https://w3id.org/cwl/salad#array": "array",
-    "https://w3id.org/cwl/salad#null": "null",
-    "https://w3id.org/cwl/salad#SchemaDefinedType": "SchemaDefinedType",
-    "https://w3id.org/cwl/salad#SaladEnumSchema": "SaladEnumSchema",
-    "https://w3id.org/cwl/salad#SpecializeDef": "SpecializeDef",
-    "https://w3id.org/cwl/salad#DocType": "DocType",
-    "http://www.w3.org/2001/XMLSchema#long": "long",
-    "https://w3id.org/cwl/salad#JsonldPredicate": "JsonldPredicate",
-    "https://w3id.org/cwl/salad#ArraySchema": "ArraySchema",
-    "https://w3id.org/cwl/salad#enum": "enum",
-    "http://www.w3.org/2001/XMLSchema#string": "string",
-    "https://w3id.org/cwl/salad#RecordField": "RecordField",
-    "https://w3id.org/cwl/salad#Documentation": "Documentation",
-    "https://w3id.org/cwl/salad#RecordSchema": "RecordSchema",
-    "https://w3id.org/cwl/salad#SaladRecordField": "SaladRecordField",
-    "http://www.w3.org/2001/XMLSchema#double": "double",
-    "https://w3id.org/cwl/salad#documentation": "documentation",
-    "https://w3id.org/cwl/salad#SaladRecordSchema": "SaladRecordSchema",
-    "https://w3id.org/cwl/salad#record": "record",
     "https://w3id.org/cwl/salad#Any": "Any",
+    "https://w3id.org/cwl/salad#ArraySchema": "ArraySchema",
+    "https://w3id.org/cwl/salad#DocType": "DocType",
+    "https://w3id.org/cwl/salad#Documentation": "Documentation",
+    "https://w3id.org/cwl/salad#EnumSchema": "EnumSchema",
+    "https://w3id.org/cwl/salad#JsonldPredicate": "JsonldPredicate",
+    "https://w3id.org/cwl/salad#NamedType": "NamedType",
+    "https://w3id.org/cwl/salad#PrimitiveType": "PrimitiveType",
+    "https://w3id.org/cwl/salad#RecordField": "RecordField",
+    "https://w3id.org/cwl/salad#RecordSchema": "RecordSchema",
+    "https://w3id.org/cwl/salad#SaladEnumSchema": "SaladEnumSchema",
+    "https://w3id.org/cwl/salad#SaladRecordField": "SaladRecordField",
+    "https://w3id.org/cwl/salad#SaladRecordSchema": "SaladRecordSchema",
+    "https://w3id.org/cwl/salad#SchemaDefinedType": "SchemaDefinedType",
+    "https://w3id.org/cwl/salad#SpecializeDef": "SpecializeDef",
+    "https://w3id.org/cwl/salad#array": "array",
+    "http://www.w3.org/2001/XMLSchema#boolean": "boolean",
+    "https://w3id.org/cwl/salad#documentation": "documentation",
+    "http://www.w3.org/2001/XMLSchema#double": "double",
+    "https://w3id.org/cwl/salad#enum": "enum",
+    "http://www.w3.org/2001/XMLSchema#float": "float",
+    "http://www.w3.org/2001/XMLSchema#int": "int",
+    "http://www.w3.org/2001/XMLSchema#long": "long",
+    "https://w3id.org/cwl/salad#null": "null",
+    "https://w3id.org/cwl/salad#record": "record",
+    "http://www.w3.org/2001/XMLSchema#string": "string",
 }
 
-inttype = _PrimitiveLoader(int)
-booltype = _PrimitiveLoader(bool)
-strtype = _PrimitiveLoader((str, six.text_type))
-Any_type = _AnyLoader()
 floattype = _PrimitiveLoader(float)
 None_type = _PrimitiveLoader(type(None))
+inttype = _PrimitiveLoader(int)
+strtype = _PrimitiveLoader((str, six.text_type))
+booltype = _PrimitiveLoader(bool)
+Any_type = _AnyLoader()
 PrimitiveTypeLoader = _EnumLoader(("null", "boolean", "int", "long", "float", "double", "string",))
 AnyLoader = _EnumLoader(("Any",))
 RecordFieldLoader = _RecordLoader(RecordField)

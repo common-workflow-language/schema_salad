@@ -12,7 +12,7 @@ from six.moves import urllib
 
 import pkg_resources  # part of setuptools
 
-from typing import Any, Dict, List, Union, Text
+from typing import Any, Dict, List, Union, Text, cast
 
 from rdflib import Graph, plugin
 from rdflib.serializer import Serializer
@@ -166,7 +166,8 @@ def main(argsl=None):  # type: (List[str]) -> int
     document_loader = Loader(schema_ctx)
 
     if args.codegen:
-        codegen.codegen(args.codegen, schema_doc, schema_metadata, document_loader)
+        codegen.codegen(args.codegen, cast(List[Dict[Text, Any]], schema_doc),
+                        schema_metadata, document_loader)
         return 0
 
     # Make the Avro validation that will be used to validate the target

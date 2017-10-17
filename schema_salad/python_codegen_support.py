@@ -72,8 +72,8 @@ def save(val):
         return [save(v) for v in val]
     return val
 
-def expand_url(url,                 # type: six.string_types
-               base_url,            # type: six.string_types
+def expand_url(url,                 # type: Union[str, Text]
+               base_url,            # type: Union[str, Text]
                loadingOptions,      # type: LoadingOptions
                scoped_id=False,     # type: bool
                vocab_term=False,    # type: bool
