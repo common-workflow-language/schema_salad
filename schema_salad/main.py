@@ -14,7 +14,7 @@ from six.moves import urllib
 
 import pkg_resources  # part of setuptools
 
-from typing import Any, Dict, List, Union, Text, Tuple
+from typing import Any, Dict, List, Union, Text, Tuple, cast
 
 from rdflib import Graph, plugin
 from rdflib.serializer import Serializer
@@ -23,6 +23,7 @@ from . import schema
 from . import jsonld_context
 from . import makedoc
 from . import validate
+from . import codegen
 from .sourceline import strip_dup_lineno
 from .ref_resolver import Loader, file_uri
 _logger = logging.getLogger("salad")
@@ -95,6 +96,9 @@ def main(argsl=None):  # type: (List[str]) -> int
         "--print-index", action="store_true", help="Print node index")
     exgroup.add_argument("--print-metadata",
                          action="store_true", help="Print document metadata")
+
+    exgroup.add_argument("--codegen", type=str, metavar="language", help="Generate classes in target language, currently supported: python")
+
     exgroup.add_argument("--print-oneline", action="store_true",
                          help="Print each error message in oneline")
 
@@ -194,6 +198,11 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     # Create the loader that will be used to load the target document.
     document_loader = Loader(schema_ctx)
+
+    if args.codegen:
+        codegen.codegen(args.codegen, cast(List[Dict[Text, Any]], schema_doc),
+                        schema_metadata, document_loader)
+        return 0
 
     # Make the Avro validation that will be used to validate the target
     # document

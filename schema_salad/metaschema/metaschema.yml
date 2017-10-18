@@ -290,7 +290,7 @@ $graph:
 - name: SaladEnumSchema
   docParent: "#Schema"
   type: record
-  extends: [EnumSchema, SchemaDefinedType]
+  extends: [NamedType, EnumSchema, SchemaDefinedType]
   documentRoot: true
   doc: |
     Define an enumerated type.
