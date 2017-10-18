@@ -254,7 +254,7 @@ def main(argsl=None):  # type: (List[str]) -> int
         document, doc_metadata = document_loader.resolve_ref(uri)
     except (validate.ValidationException, RuntimeError) as e:
         msg = strip_dup_lineno(six.text_type(e))
-        msg = to_one_line_messages(str(msg)) if args.print_oneline else msg
+        msg = re.sub(r'[\s\n]+', ' ', msg) if args.print_oneline else msg
         _logger.error("Document `%s` failed validation:\n%s",
                       args.document, msg, exc_info=args.debug)
         return 1
