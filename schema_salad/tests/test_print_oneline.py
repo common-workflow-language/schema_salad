@@ -4,7 +4,7 @@ from schema_salad.main import to_one_line_messages
 from schema_salad.schema import load_schema, load_and_validate
 from schema_salad.sourceline import strip_dup_lineno
 from schema_salad.validate import ValidationException
-from os.path import abspath
+from os.path import normpath
 import re
 import six
 
@@ -33,7 +33,7 @@ class TestPrintOneline(unittest.TestCase):
             get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
 
         src = "test16.cwl"
-        fullpath = abspath(get_data("tests/test_schema/"+src))
+        fullpath = normpath(get_data("tests/test_schema/"+src))
         with self.assertRaises(RuntimeError):
             try:
                 load_and_validate(document_loader, avsc_names,
