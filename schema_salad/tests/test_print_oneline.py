@@ -2,7 +2,10 @@ from .util import get_data
 import unittest
 from schema_salad.main import to_one_line_messages
 from schema_salad.schema import load_schema, load_and_validate
+from schema_salad.sourceline import strip_dup_lineno
 from schema_salad.validate import ValidationException
+from os.path import abspath
+import re
 import six
 
 class TestPrintOneline(unittest.TestCase):
@@ -21,5 +24,23 @@ class TestPrintOneline(unittest.TestCase):
                 self.assertEqual(len(msgs), 2)
                 self.assertTrue(msgs[0].endswith(src+":11:7: invalid field `invalid_field`, expected one of: 'loadContents', 'position', 'prefix', 'separate', 'itemSeparator', 'valueFrom', 'shellQuote'"))
                 self.assertTrue(msgs[1].endswith(src+":12:7: invalid field `another_invalid_field`, expected one of: 'loadContents', 'position', 'prefix', 'separate', 'itemSeparator', 'valueFrom', 'shellQuote'"))
+                print("\n", e)
+                raise
+
+    def test_print_oneline_for_invalid_yaml(self):
+        # Issue #137
+        document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
+            get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
+
+        src = "test16.cwl"
+        fullpath = abspath(get_data("tests/test_schema/"+src))
+        with self.assertRaises(RuntimeError):
+            try:
+                load_and_validate(document_loader, avsc_names,
+                                  six.text_type(fullpath), True)
+            except RuntimeError as e:
+                msg = re.sub(r'[\s\n]+', ' ', strip_dup_lineno(six.text_type(e)))
+                self.maxDiff = None
+                self.assertEqual(msg, 'while scanning a simple key in "file://%s", line 9, column 7 could not find expected \':\' in "file://%s", line 10, column 1' % (fullpath, fullpath))
                 print("\n", e)
                 raise
