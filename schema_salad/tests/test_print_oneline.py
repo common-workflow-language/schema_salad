@@ -41,8 +41,8 @@ class TestPrintOneline(unittest.TestCase):
             except RuntimeError as e:
                 msg = re.sub(r'[\s\n]+', ' ', strip_dup_lineno(six.text_type(e)))
                 # convert Windows path to Posix path
-                if re.match(r'\\'):
-                    fullpath = re.sub(r'\\', '/')
+                if '\\' in fullpath:
+                    fullpath = re.replace('\\', '/')
                     fullpath = '/'+fullpath
                 self.assertEqual(msg, 'while scanning a simple key in "file://%s", line 9, column 7 could not find expected \':\' in "file://%s", line 10, column 1' % (fullpath, fullpath))
                 print("\n", e)
