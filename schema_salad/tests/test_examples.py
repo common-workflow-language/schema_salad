@@ -22,9 +22,9 @@ from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
 class TestSchemas(unittest.TestCase):
     def test_schemas(self):
-        l = schema_salad.ref_resolver.Loader({})
+        loader = schema_salad.ref_resolver.Loader({})
 
-        ra, _ = l.resolve_all(cmap({
+        ra, _ = loader.resolve_all(cmap({
             u"$schemas": [schema_salad.ref_resolver.file_uri(get_data("tests/EDAM.owl"))],
             u"$namespaces": {u"edam": u"http://edamontology.org/"},
             u"edam:has_format": u"edam:format_1915"
@@ -389,7 +389,7 @@ class SourceLineTest(unittest.TestCase):
                 raise Exception("Whoops")
         except TestExp as e:
             self.assertTrue(str(e).endswith("frag.yml:3:3: Whoops"))
-        except:
+        except Exception:
             self.assertFail()
 
         try:
@@ -397,7 +397,7 @@ class SourceLineTest(unittest.TestCase):
                 raise Exception("Whoops")
         except TestExp as e:
             self.assertTrue(str(e).splitlines()[0].endswith("frag.yml:3:3: Traceback (most recent call last):"))
-        except:
+        except Exception:
             self.assertFail()
 
 
