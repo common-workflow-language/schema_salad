@@ -324,10 +324,10 @@ class RenderType(object):
 
         if f["type"] != "documentation":
             lines = []
-            for l in f["doc"].splitlines():
-                if len(l) > 0 and l[0] == "#":
-                    l = ("#" * depth) + l
-                lines.append(l)
+            for line in f["doc"].splitlines():
+                if len(line) > 0 and line[0] == "#":
+                    line = ("#" * depth) + line
+                lines.append(line)
             f["doc"] = "\n".join(lines)
 
             _, frg = urllib.parse.urldefrag(f["name"])
