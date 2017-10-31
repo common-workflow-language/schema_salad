@@ -14,7 +14,7 @@ from six.moves import urllib
 
 import pkg_resources  # part of setuptools
 
-from typing import Any, Dict, List, Union, Text, Tuple, cast
+from typing import Any, Dict, List, Union, Pattern, Text, Tuple, cast
 
 from rdflib import Graph, plugin
 from rdflib.serializer import Serializer
@@ -42,19 +42,41 @@ def printrdf(workflow,  # type: str
     print(g.serialize(format=sr))
 
 
-def chunk_messages(msg):  # type: (str) -> List[Tuple[int, str]]
+def regex_chunk(lines, regex):
+    # type: (List[str], Pattern[str]) -> List[List[str]]
+    lst = list(itertools.dropwhile(lambda x: not regex.match(x), lines))
     arr = []
-    lst = msg.split("\n")
     while lst:
-        fst = lst[0]
-        indent = len(re.match(r'^.+:\d+:\d+:(\s+)', fst).group(1))
-        rst = list(itertools.takewhile(lambda x: x.startswith(' '), lst[1:]))
-        elem = "\n".join([fst]+rst)
-        elem = re.sub(r'[\n\s]+', ' ', elem)
-        # remove unnecessary '*' for itemize if exists
-        elem = re.sub(r'^(.+:\d+:\d+: )\* ', r'\1', elem)
-        arr.append((indent, elem))
-        lst = list(itertools.dropwhile(lambda x: x.startswith(' '), lst[1:]))
+        ret = [lst[0]]+list(itertools.takewhile(lambda x: not regex.match(x),
+                                                lst[1:]))
+        arr.append(ret)
+        lst = list(itertools.dropwhile(lambda x: not regex.match(x),
+                                       lst[1:]))
+    return arr
+
+
+def chunk_messages(message):  # type: (str) -> List[Tuple[int, str]]
+    file_regex = re.compile(r'^(.+:\d+:\d+:)(\s+)(.+)$')
+    item_regex = re.compile(r'^\s*\*\s+')
+    arr = []
+    for chun in regex_chunk(message.splitlines(), file_regex):
+        fst = chun[0]
+        mat = file_regex.match(fst)
+        place = mat.group(1)
+        indent = len(mat.group(2))
+
+        lst = [mat.group(3)]+chun[1:]
+        if [x for x in lst if item_regex.match(x)]:
+            for item in regex_chunk(lst, item_regex):
+                msg = re.sub(item_regex, ' ', "\n".join(item))
+                arr.append((indent, place+re.sub(r'[\n\s]+',
+                                                 ' ',
+                                                 msg)))
+        else:
+            msg = re.sub(item_regex, ' ', "\n".join(lst))
+            arr.append((indent, place+re.sub(r'[\n\s]+',
+                                             ' ',
+                                             msg)))
     return arr
 
 
