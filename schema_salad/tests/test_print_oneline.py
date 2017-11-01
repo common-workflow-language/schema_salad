@@ -65,3 +65,24 @@ class TestPrintOneline(unittest.TestCase):
                 self.assertTrue(msgs[1].endswith(src+":13:5: invalid field `aa`, expected one of: 'label', 'secondaryFiles', 'format', 'streamable', 'doc', 'id', 'outputBinding', 'type'"))
                 print("\n", e)
                 raise
+
+    def test_print_oneline_for_errors_in_resolve_ref(self):
+        # Issue #141
+        document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
+            get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
+
+        src = "test18.cwl"
+        fullpath = normpath(get_data("tests/test_schema/"+src))
+        with self.assertRaises(ValidationException):
+            try:
+                load_and_validate(document_loader, avsc_names,
+                                  six.text_type(fullpath), True)
+            except ValidationException as e:
+                msgs = to_one_line_messages(str(strip_dup_lineno(six.text_type(e)))).splitlines()
+                # convert Windows path to Posix path
+                if '\\' in fullpath:
+                    fullpath = '/'+fullpath.replace('\\', '/')
+                self.assertEqual(len(msgs), 1)
+                self.assertTrue(msgs[0].endswith(src+':13:5:Field `type` references unknown identifier `Filea`, tried file://%s#Filea' % (fullpath)))
+                print("\n", e)
+                raise
