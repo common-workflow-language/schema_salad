@@ -78,7 +78,7 @@ class TestPrintOneline(unittest.TestCase):
                 load_and_validate(document_loader, avsc_names,
                                   six.text_type(fullpath), True)
             except ValidationException as e:
-                msgs = to_one_line_messages(strip_dup_lineno(six.text_type(e))).splitlines()
+                msgs = to_one_line_messages(str(strip_dup_lineno(six.text_type(e)))).splitlines()
                 # convert Windows path to Posix path
                 if '\\' in fullpath:
                     fullpath = '/'+fullpath.replace('\\', '/')
