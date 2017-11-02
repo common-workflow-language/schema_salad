@@ -68,15 +68,15 @@ def chunk_messages(message):  # type: (str) -> List[Tuple[int, str]]
         lst = [mat.group(3)]+chun[1:]
         if [x for x in lst if item_regex.match(x)]:
             for item in regex_chunk(lst, item_regex):
-                msg = re.sub(item_regex, ' ', "\n".join(item))
-                arr.append((indent, place+re.sub(r'[\n\s]+',
+                msg = re.sub(item_regex, '', "\n".join(item))
+                arr.append((indent, place+' '+re.sub(r'[\n\s]+',
+                                                     ' ',
+                                                     msg)))
+        else:
+            msg = re.sub(item_regex, '', "\n".join(lst))
+            arr.append((indent, place+' '+re.sub(r'[\n\s]+',
                                                  ' ',
                                                  msg)))
-        else:
-            msg = re.sub(item_regex, ' ', "\n".join(lst))
-            arr.append((indent, place+re.sub(r'[\n\s]+',
-                                             ' ',
-                                             msg)))
     return arr
 
 
