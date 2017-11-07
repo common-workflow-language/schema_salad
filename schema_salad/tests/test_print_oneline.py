@@ -85,7 +85,7 @@ class TestPrintOneline(unittest.TestCase):
                 raise
 
     def test_for_invalid_yaml1(self):
-        # Issue ???
+        # Issue 143
         document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
             get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
 
@@ -104,7 +104,7 @@ class TestPrintOneline(unittest.TestCase):
                 raise
 
     def test_for_invalid_yaml2(self):
-        # Issue ???
+        # Issue 143
         document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
             get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
 
