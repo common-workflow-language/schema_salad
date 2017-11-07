@@ -1,6 +1,6 @@
 from .util import get_data
 import unittest
-from schema_salad.main import to_one_line_messages
+from schema_salad.main import to_one_line_messages, reformat_yaml_exception_message
 from schema_salad.schema import load_schema, load_and_validate
 from schema_salad.sourceline import strip_dup_lineno
 from schema_salad.validate import ValidationException
@@ -34,17 +34,14 @@ class TestPrintOneline(unittest.TestCase):
             get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
 
         src = "test16.cwl"
-        fullpath = normpath(get_data("tests/test_schema/"+src))
         with self.assertRaises(RuntimeError):
             try:
                 load_and_validate(document_loader, avsc_names,
-                                  six.text_type(fullpath), True)
+                                  six.text_type(get_data("tests/test_schema/"+src)), True)
             except RuntimeError as e:
-                msg = re.sub(r'[\s\n]+', ' ', strip_dup_lineno(six.text_type(e)))
-                # convert Windows path to Posix path
-                if '\\' in fullpath:
-                    fullpath = '/'+fullpath.replace('\\', '/')
-                self.assertEqual(msg, 'while scanning a simple key in "file://%s", line 9, column 7 could not find expected \':\' in "file://%s", line 10, column 1' % (fullpath, fullpath))
+                msg = reformat_yaml_exception_message(strip_dup_lineno(six.text_type(e)))
+                msg = to_one_line_messages(msg)
+                self.assertTrue(msg.endswith(src+":10:1: could not find expected \':\'"))
                 print("\n", e)
                 raise
 
@@ -84,5 +81,40 @@ class TestPrintOneline(unittest.TestCase):
                     fullpath = '/'+fullpath.replace('\\', '/')
                 self.assertEqual(len(msgs), 1)
                 self.assertTrue(msgs[0].endswith(src+':13:5: Field `type` references unknown identifier `Filea`, tried file://%s#Filea' % (fullpath)))
+                print("\n", e)
+                raise
+
+    def test_for_invalid_yaml1(self):
+        # Issue ???
+        document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
+            get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
+
+        src = "test16.cwl"
+        with self.assertRaises(RuntimeError):
+            try:
+                load_and_validate(document_loader, avsc_names,
+                                  six.text_type(get_data("tests/test_schema/"+src)), True)
+            except RuntimeError as e:
+                msg = reformat_yaml_exception_message(strip_dup_lineno(six.text_type(e)))
+                msgs = msg.splitlines()
+                self.assertEqual(len(msgs), 2)
+                self.assertTrue(msgs[0].endswith(src+":9:7: while scanning a simple key"))
+                self.assertTrue(msgs[1].endswith(src+":10:1:   could not find expected ':'"))
+                print("\n", e)
+                raise
+
+    def test_for_invalid_yaml2(self):
+        # Issue ???
+        document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
+            get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
+
+        src = "test19.cwl"
+        with self.assertRaises(RuntimeError):
+            try:
+                load_and_validate(document_loader, avsc_names,
+                                  six.text_type(get_data("tests/test_schema/"+src)), True)
+            except RuntimeError as e:
+                msg = reformat_yaml_exception_message(strip_dup_lineno(six.text_type(e)))
+                self.assertTrue(msg.endswith(src+":1:1: expected <block end>, but found ':'"))
                 print("\n", e)
                 raise
