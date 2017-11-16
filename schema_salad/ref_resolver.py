@@ -131,7 +131,7 @@ class DefaultFetcher(Fetcher):
         if url in self.cache and self.cache[url] is not True:
             # treat "True" as a placeholder that indicates something exists but
             # not necessarily what its contents is.
-            return Text(self.cache[url])
+            return cast(Text, self.cache[url])
 
         split = urllib.parse.urlsplit(url)
         scheme, path = split.scheme, split.path
