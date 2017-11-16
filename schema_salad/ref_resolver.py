@@ -120,7 +120,7 @@ class Fetcher(object):
 
 class DefaultFetcher(Fetcher):
     def __init__(self,
-                 cache,   # type: Dict[Text, Text]
+                 cache,   # type: Dict[Text, Union[Text, bool]]
                  session  # type: Optional[requests.sessions.Session]
                  ):  # type: (...) -> None
         self.cache = cache
@@ -131,7 +131,7 @@ class DefaultFetcher(Fetcher):
         if url in self.cache and self.cache[url] is not True:
             # treat "True" as a placeholder that indicates something exists but
             # not necessarily what its contents is.
-            return self.cache[url]
+            return Text(self.cache[url])
 
         split = urllib.parse.urlsplit(url)
         scheme, path = split.scheme, split.path
@@ -247,7 +247,7 @@ class Loader(object):
                  idx=None,                  # type: Dict[Text, Union[CommentedMap, CommentedSeq, Text, None]]
                  cache=None,                # type: Dict[Text, Any]
                  session=None,              # type: requests.sessions.Session
-                 fetcher_constructor=None,  # type: Callable[[Dict[Text, Text], requests.sessions.Session], Fetcher]
+                 fetcher_constructor=None,  # type: Callable[[Dict[Text, Union[Text, bool]], requests.sessions.Session], Fetcher]
                  skip_schemas=None          # type: bool
                  ):
         # type: (...) -> None
