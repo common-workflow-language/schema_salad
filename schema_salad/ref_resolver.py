@@ -128,7 +128,9 @@ class DefaultFetcher(Fetcher):
 
     def fetch_text(self, url):
         # type: (Text) -> Text
-        if url in self.cache:
+        if url in self.cache and self.cache[url] is not True:
+            # treat "True" as a placeholder that indicates something exists but
+            # not necessarily what its contents is.
             return self.cache[url]
 
         split = urllib.parse.urlsplit(url)
@@ -172,6 +174,7 @@ class DefaultFetcher(Fetcher):
                 resp.raise_for_status()
             except Exception as e:
                 return False
+            self.cache[url] = True
             return True
         elif scheme == 'file':
             return os.path.exists(urllib.request.url2pathname(str(path)))
@@ -378,22 +381,25 @@ class Loader(object):
         if self.skip_schemas:
             return
         for sch in aslist(ns):
-            fetchurl = self.fetcher.urljoin(base_url, sch)
-            if fetchurl not in self.cache:
-                _logger.debug("Getting external schema %s", fetchurl)
-                content = self.fetch_text(fetchurl)
-                self.cache[fetchurl] = rdflib.graph.Graph()
-                for fmt in ['xml', 'turtle', 'rdfa']:
-                    try:
-                        self.cache[fetchurl].parse(data=content, format=fmt, publicID=str(fetchurl))
-                        self.graph += self.cache[fetchurl]
-                        break
-                    except xml.sax.SAXParseException:
-                        pass
-                    except TypeError:
-                        pass
-                    except BadSyntax:
-                        pass
+            try:
+                fetchurl = self.fetcher.urljoin(base_url, sch)
+                if fetchurl not in self.cache or self.cache[fetchurl] is True:
+                    _logger.debug("Getting external schema %s", fetchurl)
+                    content = self.fetch_text(fetchurl)
+                    self.cache[fetchurl] = rdflib.graph.Graph()
+                    for fmt in ['xml', 'turtle', 'rdfa']:
+                        try:
+                            self.cache[fetchurl].parse(data=content, format=fmt, publicID=str(fetchurl))
+                            self.graph += self.cache[fetchurl]
+                            break
+                        except xml.sax.SAXParseException:
+                            pass
+                        except TypeError:
+                            pass
+                        except BadSyntax:
+                            pass
+            except Exception as e:
+                _logger.warn("Could not load extension schema %s: %s", fetchurl, e)
 
         for s, _, _ in self.graph.triples((None, RDF.type, RDF.Property)):
             self._add_properties(s)
