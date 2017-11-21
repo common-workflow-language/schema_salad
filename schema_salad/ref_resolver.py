@@ -1031,7 +1031,10 @@ class Loader(object):
                             all_doc_ids[document[identifier]] = sl.makeLead()
                             break
             except validate.ValidationException as v:
-                errors.append(sl.makeError(six.text_type(v)))
+                if d == "$schemas":
+                    _logger.warn( validate.indent(six.text_type(v)))
+                else:
+                    errors.append(sl.makeError(six.text_type(v)))
             if hasattr(document, "iteritems"):
                 iterator = six.iteritems(document)
             else:
@@ -1044,7 +1047,9 @@ class Loader(object):
             try:
                 self.validate_links(val, docid, all_doc_ids)
             except validate.ValidationException as v:
-                if key not in self.nolinkcheck:
+                if key in self.nolinkcheck or (isinstance(key, six.string_types) and ":" in key):
+                    _logger.warn( validate.indent(six.text_type(v)))
+                else:
                     docid2 = self.getid(val)
                     if docid2 is not None:
                         errors.append(sl.makeError("checking object `%s`\n%s"
@@ -1056,8 +1061,6 @@ class Loader(object):
                         else:
                             errors.append(sl.makeError("checking item\n%s" % (
                                 validate.indent(six.text_type(v)))))
-                else:
-                    _logger.warn( validate.indent(six.text_type(v)))
         if bool(errors):
             if len(errors) > 1:
                 raise validate.ValidationException(
