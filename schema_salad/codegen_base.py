@@ -2,14 +2,7 @@ import collections
 from six.moves import urllib
 from typing import List, Text, Dict, Union, Any
 from . import schema
-
-def shortname(inputid):
-    # type: (Text) -> Text
-    d = urllib.parse.urlparse(inputid)
-    if d.fragment:
-        return d.fragment.split(u"/")[-1]
-    else:
-        return d.path.split(u"/")[-1]
+from .schema import shortname
 
 class TypeDef(object):
     def __init__(self, name, init):

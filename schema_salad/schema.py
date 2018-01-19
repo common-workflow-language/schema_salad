@@ -161,7 +161,8 @@ def get_metaschema():
             "typeDSL": True
         },
         "typeDSL": "https://w3id.org/cwl/salad#JsonldPredicate/typeDSL",
-        "xsd": "http://www.w3.org/2001/XMLSchema#"
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
+        "default": "https://w3id.org/cwl/salad#default"
     })
 
     for f in salad_files:
@@ -554,3 +555,24 @@ def make_avro_schema(i,         # type: List[Dict[Text, Any]]
         return (e, j3)
 
     return (names, j3)
+
+def shortname(inputid):
+    # type: (Text) -> Text
+    d = urllib.parse.urlparse(inputid)
+    if d.fragment:
+        return d.fragment.split(u"/")[-1]
+    else:
+        return d.path.split(u"/")[-1]
+
+def print_inheritance(doc, stream):
+    stream.write("digraph {\n")
+    for d in doc:
+        if d["type"] == "record":
+            label = shortname(d["name"])
+            if len(d.get("fields", [])) > 0:
+                   label += "\\n* %s\\l" % ("\\l* ".join(shortname(f["name"]) for f in d.get("fields", [])))
+            stream.write("\"%s\" [shape=%s label=\"%s\"];\n" % (shortname(d["name"]), "ellipse" if d.get("abstract") else "box", label))
+            if "extends" in d:
+                for e in aslist(d["extends"]):
+                    stream.write("\"%s\" -> \"%s\";\n" % (shortname(e), shortname(d["name"])))
+    stream.write("}\n")
