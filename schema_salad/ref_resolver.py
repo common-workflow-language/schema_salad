@@ -432,6 +432,7 @@ class Loader(object):
         self.vocab = {}
         self.rvocab = {}
         self.type_dsl_fields = set()
+        self.subscopes = {}
 
         self.ctx.update(_copy_dict_without_key(newcontext, u"@context"))
 
@@ -467,6 +468,9 @@ class Loader(object):
                 self.vocab[key] = value[u"@id"]
             elif isinstance(value, six.string_types):
                 self.vocab[key] = value
+
+            if isinstance(value, dict) and value.get(u"subscope"):
+                self.subscopes[key] = value[u"subscope"]
 
         for k, v in self.vocab.items():
             self.rvocab[self.expand_url(v, u"", scoped_id=False)] = k
@@ -856,8 +860,11 @@ class Loader(object):
 
             try:
                 for key, val in document.items():
+                    subscope = ""
+                    if key in self.subscopes:
+                        subscope = "/" + self.subscopes[key]
                     document[key], _ = loader.resolve_all(
-                        val, base_url, file_base=file_base, checklinks=False)
+                        val, base_url+subscope, file_base=file_base, checklinks=False)
             except validate.ValidationException as v:
                 _logger.warn("loader is %s", id(loader), exc_info=True)
                 raise validate.ValidationException("(%s) (%s) Validation error in field %s:\n%s" % (

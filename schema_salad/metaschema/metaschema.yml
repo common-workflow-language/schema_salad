@@ -131,7 +131,11 @@ $graph:
       type: boolean?
       doc: |
         Field must be expanded based on the the Schema Salad type DSL.
-
+    - name: subscope
+      type: string
+      doc: |
+        Append the subscope to the current scope when performing
+        identifier resolution to objects under this field.
 
 - name: SpecializeDef
   type: record

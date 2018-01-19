@@ -331,6 +331,28 @@ class TestSchemas(unittest.TestCase):
         g = makerdf(None, ra, ctx)
         print(g.serialize(format="n3"))
 
+    def test_subscoped_id(self):
+        ldr = schema_salad.ref_resolver.Loader({})
+        ctx = {
+            "id": "@id",
+            "bar": {
+                "subscope": "bar",
+            }
+        }
+        ldr.add_context(ctx)
+
+        ra, _ = ldr.resolve_all(cmap({
+            "id": "foo",
+            "bar": {
+                "id": "baz"
+            }
+        }), "http://example.com")
+        self.assertEqual({'id': 'http://example.com/#foo',
+                          'bar': {
+                              'id': 'http://example.com/#foo/bar/baz'},
+                          }, ra)
+
+
     def test_mixin(self):
         base_url = schema_salad.ref_resolver.file_uri(os.path.join(os.getcwd(), "tests"))
         ldr = schema_salad.ref_resolver.Loader({})
