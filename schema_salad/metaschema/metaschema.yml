@@ -172,16 +172,10 @@ $graph:
 
 - name: DocType
   type: record
+  extends: Documented
   abstract: true
   docParent: "#Schema"
   fields:
-    - name: doc
-      type:
-        - string?
-        - string[]?
-      doc: "A documentation string for this type, or an array of strings which should be concatenated."
-      jsonldPredicate: "rdfs:comment"
-
     - name: docParent
       type: string?
       doc: |
@@ -247,6 +241,13 @@ $graph:
       doc: |
         Annotate this type with linked data context.
       jsonldPredicate: "sld:jsonldPredicate"
+    - name: default
+      type: Any?
+      jsonldPredicate:
+        _id: sld:default
+        noLinkCheck: true
+      doc: |
+        The default value to use for this field if the field is missing or "null".
 
 
 - name: SaladRecordSchema
