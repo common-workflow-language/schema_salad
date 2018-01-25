@@ -178,6 +178,9 @@ class DefaultFetcher(Fetcher):
             return True
         elif scheme == 'file':
             return os.path.exists(urllib.request.url2pathname(str(path)))
+        # Google storage links are protected by user accounts and thus are not subject to external validation
+        elif scheme == 'gs':
+            return True
         else:
             raise ValueError('Unsupported scheme in url: %s' % url)
 
