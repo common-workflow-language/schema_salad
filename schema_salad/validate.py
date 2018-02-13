@@ -68,7 +68,8 @@ def validate_ex(expected_schema,                  # type: Schema
                 foreign_properties=None,          # type: Set[Text]
                 raise_ex=True,                    # type: bool
                 strict_foreign_properties=False,  # type: bool
-                logger=_logger                    # type: logging.Logger
+                logger=_logger,                   # type: logging.Logger
+                skip_foreign_properties=False     # type: bool
                 ):
     # type: (...) -> bool
     """Determine if a python datum is an instance of a schema."""
@@ -181,7 +182,8 @@ def validate_ex(expected_schema,                  # type: Schema
                                        foreign_properties=foreign_properties,
                                        raise_ex=raise_ex,
                                        strict_foreign_properties=strict_foreign_properties,
-                                       logger=logger):
+                                       logger=logger,
+                                       skip_foreign_properties=skip_foreign_properties):
                         return False
                 except ValidationException as v:
                     if raise_ex:
@@ -200,7 +202,7 @@ def validate_ex(expected_schema,                  # type: Schema
         for s in expected_schema.schemas:
             if validate_ex(s, datum, identifiers, strict=strict, raise_ex=False,
                            strict_foreign_properties=strict_foreign_properties,
-                           logger=logger):
+                           logger=logger, skip_foreign_properties=skip_foreign_properties):
                 return True
 
         if not raise_ex:
@@ -225,7 +227,7 @@ def validate_ex(expected_schema,                  # type: Schema
                             foreign_properties=foreign_properties,
                             raise_ex=True,
                             strict_foreign_properties=strict_foreign_properties,
-                            logger=logger)
+                            logger=logger, skip_foreign_properties=skip_foreign_properties)
             except ClassValidationException as e:
                 raise
             except ValidationException as e:
@@ -282,7 +284,7 @@ def validate_ex(expected_schema,                  # type: Schema
                                    foreign_properties=foreign_properties,
                                    raise_ex=raise_ex,
                                    strict_foreign_properties=strict_foreign_properties,
-                                   logger=logger):
+                                   logger=logger, skip_foreign_properties=skip_foreign_properties):
                     return False
             except ValidationException as v:
                 if f.name not in datum:
@@ -304,14 +306,16 @@ def validate_ex(expected_schema,                  # type: Schema
                         return False
                     split = urllib.parse.urlsplit(d)
                     if split.scheme:
-                        err = sl.makeError(u"unrecognized extension field `%s`%s."
-                                           "  Did you include "
-                                           "a $schemas section?" % (
-                                               d, " and strict_foreign_properties is True" if strict_foreign_properties else ""))
-                        if strict_foreign_properties:
-                            errors.append(err)
-                        else:
-                            logger.warn(err)
+                        if not skip_foreign_properties:
+                            err = sl.makeError(u"unrecognized extension field `%s`%s."
+                                               "  Did you include "
+                                               "a $schemas section?" % (
+                                                   d, " and strict_foreign_properties is True" if strict_foreign_properties else ""))
+                            if strict_foreign_properties:
+                                errors.append(err)
+                            else:
+                                logger.warn(err)
+                                logger.warn("foreign properties %s", foreign_properties)
                     else:
                         err = sl.makeError(u"invalid field `%s`, expected one of: %s" % (
                             d, ", ".join("'%s'" % fn.name for fn in expected_schema.fields)))
