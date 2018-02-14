@@ -22,6 +22,7 @@
 # make coverage-report to check coverage of the python scripts by the tests
 
 MODULE=schema_salad
+PACKAGE=schema-salad
 
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
@@ -205,11 +206,11 @@ release-test: FORCE
 
 release: release-test
 	. testenv2.7_2/bin/activate && \
-		testenv2.7_2/src/${MODULE}/setup.py sdist bdist_wheel
+		testenv2.7_2/src/${PACKAGE}/setup.py sdist bdist_wheel
 	. testenv2.7_2/bin/activate && \
 		pip install twine && \
-		twine upload testenv2.7_2/src/${MODULE}/dist/* \
-		             testenv3_2/src/${MODULE}/dist/*whl && \
+		twine upload testenv2.7_2/src/${PACKAGE}/dist/* \
+		             testenv3_2/src/${PACKAGE}/dist/*whl && \
 		git tag ${VERSION} && git push --tags
 
 
