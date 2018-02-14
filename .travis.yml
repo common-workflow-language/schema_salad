@@ -11,9 +11,9 @@ os:
   - linux
 jobs:
   include:
-    - script: tox
     - stage: release-test
       script: PYVER= ./release-test.sh
+script: tox
 install:
   - pip install tox-travis
 notifications:
