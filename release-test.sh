@@ -47,7 +47,7 @@ make install-dependencies
 make dist
 make test
 cp dist/${package}*tar.gz ../../../testenv${PYVER}_3/
-cp dist/${package}*whl ../../../testenv${PYVER}_4/
+cp dist/${module}*whl ../../../testenv${PYVER}_4/
 pip uninstall -y ${package} || true; pip uninstall -y ${package} || true; make install
 popd # ../.. no subdir named ${proj} here, safe for py.testing the installed module
 bin/${run_tests}

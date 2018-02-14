@@ -198,9 +198,11 @@ jenkins: FORCE
 	pip install -U -r mypy_requirements.txt ; ${MAKE} mypy2
 	# pip install -U -r mypy_requirements.txt ; ${MAKE} mypy3
 
-release: FORCE
+release-test: FORCE
 	PYVER=2.7 ./release-test.sh
 	PYVER=3 ./release-test.sh
+
+release: release-test
 	. testenv2.7_2/bin/activate && \
 		testenv2.7_2/src/${MODULE}/setup.py sdist bdist_wheel
 	. testenv2.7_2/bin/activate && \
