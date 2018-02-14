@@ -199,6 +199,7 @@ jenkins: FORCE
 	# pip install -U -r mypy_requirements.txt ; ${MAKE} mypy3
 
 release-test: FORCE
+	git diff-index --quiet HEAD -- || ( echo You have uncommited changes, please commit them and try again; false )
 	PYVER=2.7 ./release-test.sh
 	PYVER=3 ./release-test.sh
 
