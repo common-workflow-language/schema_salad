@@ -181,7 +181,7 @@ mypy3: ${PYSOURCES}
 		 --warn-redundant-casts \
 		 schema_salad
 
-jenkins:
+jenkins: FORCE
 	rm -Rf env && virtualenv env
 	. env/bin/activate ; \
 	pip install -U setuptools pip wheel ; \
@@ -193,5 +193,17 @@ jenkins:
 	${MAKE} install-dep ; \
 	pip install -U -r mypy_requirements.txt ; ${MAKE} mypy2
 	# pip install -U -r mypy_requirements.txt ; ${MAKE} mypy3
+
+release: FORCE
+	PYVER=2.7 ./release-test.sh
+	PYVER=3 ./release-test.sh
+	. testenv2.7_2/bin/activate && \
+		testenv2.7_2/src/${MODULE}/setup.py sdist bdist_wheel
+	. testenv2.7_2/bin/activate && \
+		pip install twine && \
+		twine upload testenv2.7_2/src/${MODULE}/dist/* \
+		             testenv3_2/src/${MODULE}/dist/*whl && \
+		git tag ${VERSION} && git push --tags
+
 
 FORCE:
