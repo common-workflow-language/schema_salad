@@ -1,5 +1,6 @@
 sudo: false
 language: python
+cache: pip
 python:
   - 2.7
   - 3.3
@@ -8,9 +9,12 @@ python:
   - 3.6
 os:
   - linux
-
+jobs:
+  include:
+    - script: tox
+    - stage: release-test
+      script: PYVER= ./release-test.sh
 install:
   - pip install tox-travis
-script: tox
 notifications:
   email: false

@@ -41,6 +41,7 @@ source bin/activate
 rm lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \
         && pip install setuptools==${setupver} wheel
+# The following can fail if you haven't pushed your commits to ${repo}
 pip install -e git+${repo}@${HEAD}#egg=${package}
 pushd src/${package}
 make install-dependencies
@@ -81,7 +82,7 @@ source bin/activate
 rm lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \
         && pip install setuptools==${setupver} wheel
-pip install ${package}*.whl
+pip install ${module}*.whl
 pip install pytest
 mkdir not-${module}
 pushd not-${module} ; ../bin/${run_tests}; popd
