@@ -209,8 +209,7 @@ release: release-test
 		testenv2.7_2/src/${PACKAGE}/setup.py sdist bdist_wheel
 	. testenv2.7_2/bin/activate && \
 		pip install twine && \
-		twine upload testenv2.7_2/src/${PACKAGE}/dist/* \
-		             testenv3_2/src/${PACKAGE}/dist/*whl && \
+		twine upload testenv2.7_2/src/${PACKAGE}/dist/* && \
 		git tag ${VERSION} && git push --tags
 
 
