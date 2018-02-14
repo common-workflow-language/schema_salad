@@ -299,7 +299,8 @@ def validate_doc(schema_names,  # type: Names
         for r in roots:
             success = validate.validate_ex(
                 r, item, loader.identifiers, strict,
-                foreign_properties=loader.foreign_properties, raise_ex=False)
+                foreign_properties=loader.foreign_properties,
+                raise_ex=False, skip_foreign_properties=loader.skip_schemas)
             if success:
                 break
 
@@ -315,7 +316,7 @@ def validate_doc(schema_names,  # type: Names
                     validate.validate_ex(
                         r, item, loader.identifiers, strict,
                         foreign_properties=loader.foreign_properties,
-                        raise_ex=True)
+                        raise_ex=True, skip_foreign_properties=loader.skip_schemas)
                 except validate.ClassValidationException as e:
                     errors = [sl.makeError(u"tried `%s` but\n%s" % (
                         name, validate.indent(str(e), nolead=False)))]
