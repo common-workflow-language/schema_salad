@@ -23,17 +23,21 @@
 
 MODULE=schema_salad
 
-# `SHELL=bash` Will break Titus's laptop, so don't use BASH-isms like
+# `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py) setup.py
 DEVPKGS=pep8 diff_cover autopep8 pylint coverage pep257 pytest flake8
 COVBASE=coverage run --branch --append --source=${MODULE} \
 	--omit=schema_salad/tests/*
 
-VERSION=$(shell git describe --tags --dirty | sed s/v//)
+# Updating the Major & Minor version below?
+# Don't forget to update setup.py as well
+VERSION=2.6.$(shell date +%Y%m%d%H%M%S --date=`git log --first-parent \
+	--max-count=1 --format=format:%cI`)
 
 ## all         : default task
-all: ./setup.py develop
+all:
+	pip install -e .
 
 ## help        : print this help message and exit
 help: Makefile
@@ -54,7 +58,7 @@ install: FORCE
 dist: dist/${MODULE}-$(VERSION).tar.gz
 
 dist/${MODULE}-$(VERSION).tar.gz: $(SOURCES)
-	./setup.py sdist
+	./setup.py sdist bdist_wheel
 
 ## clean       : clean up all temporary / machine-generated files
 clean: FORCE
@@ -104,7 +108,7 @@ pylint_report.txt: ${PYSOURCES}
 diff_pylint_report: pylint_report.txt
 	diff-quality --violations=pylint pylint_report.txt
 
-.coverage: $(PYSOURCES)
+.coverage: $(PYSOURCES) all
 	rm -f .coverage
 	$(COVBASE) setup.py test
 	$(COVBASE) -m schema_salad.main \
@@ -166,9 +170,9 @@ list-author-emails:
 	@git log --format='%aN,%aE' | sort -u | grep -v 'root'
 
 mypy2: ${PYSOURCES}
-	rm -Rf typeshed/2and3/ruamel/yaml
+	rm -Rf typeshed/2.7/ruamel/yaml
 	ln -s $(shell python -c 'from __future__ import print_function; import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))') \
-		typeshed/2and3/ruamel/
+		typeshed/2.7/ruamel/
 	MYPYPATH=$MYPYPATH:typeshed/2.7:typeshed/2and3 mypy --py2 --disallow-untyped-calls \
 		 --warn-redundant-casts \
 		 schema_salad
