@@ -338,31 +338,33 @@ def validate_doc(schema_names,  # type: Names
         raise validate.ValidationException(
             strip_dup_lineno(bullets(anyerrors, "* ")))
 
-
-def replace_type(items, spec, loader, found):
+def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
     # type: (Any, Dict[Text, Any], Loader, Set[Text]) -> Any
     """ Go through and replace types in the 'spec' mapping"""
 
     if isinstance(items, dict):
         # recursively check these fields for types to replace
-        if "type" in items and items["type"] in ("record", "enum"):
-            if items.get("name"):
-                if items["name"] in found:
-                    return items["name"]
-                else:
-                    found.add(items["name"])
+        if items.get("type") in ("record", "enum") and items.get("name"):
+            if items["name"] in found:
+                return items["name"]
+            else:
+                found.add(items["name"])
+
+        if not deepen:
+            return items
 
         items = copy.copy(items)
         for n in ("type", "items", "fields"):
             if n in items:
-                items[n] = replace_type(items[n], spec, loader, found)
+                items[n] = replace_type(items[n], spec, loader, found,
+                                        find_embeds=find_embeds, deepen=find_embeds)
                 if isinstance(items[n], list):
                     items[n] = flatten(items[n])
 
         return items
     elif isinstance(items, list):
         # recursively transform list
-        return [replace_type(i, spec, loader, found) for i in items]
+        return [replace_type(i, spec, loader, found, find_embeds=find_embeds, deepen=deepen) for i in items]
     elif isinstance(items, (str, six.text_type)):
         # found a string which is a symbol corresponding to a type.
         replace_with = None
@@ -376,7 +378,9 @@ def replace_type(items, spec, loader, found):
             replace_with = spec[items]
 
         if replace_with:
-            return replace_type(replace_with, spec, loader, found)
+            return replace_type(replace_with, spec, loader, found, find_embeds=find_embeds)
+        else:
+            found.add(items)
     return items
 
 
@@ -575,4 +579,32 @@ def print_inheritance(doc, stream):
             if "extends" in d:
                 for e in aslist(d["extends"]):
                     stream.write("\"%s\" -> \"%s\";\n" % (shortname(e), shortname(d["name"])))
+    stream.write("}\n")
+
+def print_fieldrefs(doc, loader, stream):
+    j = extend_and_specialize(doc, loader)
+
+    primitives = set(("http://www.w3.org/2001/XMLSchema#string",
+                      "http://www.w3.org/2001/XMLSchema#boolean",
+                      "http://www.w3.org/2001/XMLSchema#int",
+                      "http://www.w3.org/2001/XMLSchema#long",
+                      "https://w3id.org/cwl/salad#null",
+                      "https://w3id.org/cwl/salad#enum",
+                      "https://w3id.org/cwl/salad#array",
+                      "https://w3id.org/cwl/salad#record",
+                      "https://w3id.org/cwl/salad#Any"
+    ))
+
+    stream.write("digraph {\n")
+    for d in j:
+        if d.get("abstract"):
+            continue
+        if d["type"] == "record":
+            label = shortname(d["name"])
+            for f in d.get("fields", []):
+                found = set()  # type: Set[Text]
+                replace_type(f["type"], {}, loader, found, find_embeds=False)
+                for each_type in found:
+                    if each_type not in primitives:
+                        stream.write("\"%s\" -> \"%s\" [label=\"%s\"];\n" % (label, shortname(each_type), shortname(f["name"])))
     stream.write("}\n")

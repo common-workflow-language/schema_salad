@@ -144,6 +144,8 @@ def main(argsl=None):  # type: (List[str]) -> int
                          action="store_true", help="Print document metadata")
     exgroup.add_argument("--print-inheritance-dot",
                          action="store_true", help="Print graphviz file of inheritance")
+    exgroup.add_argument("--print-fieldrefs-dot",
+                         action="store_true", help="Print graphviz file of field refs")
 
     exgroup.add_argument("--codegen", type=str, metavar="language", help="Generate classes in target language, currently supported: python")
 
@@ -291,6 +293,10 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     if args.print_inheritance_dot:
         schema.print_inheritance(schema_doc, sys.stdout)
+        return 0
+
+    if args.print_fieldrefs_dot:
+        schema.print_fieldrefs(schema_doc, document_loader, sys.stdout)
         return 0
 
     # If no document specified, all done.
