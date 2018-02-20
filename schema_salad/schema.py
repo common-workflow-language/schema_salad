@@ -10,6 +10,7 @@ import avro.schema
 from . import validate
 import json
 import os
+import hashlib
 
 import six
 from six.moves import urllib
@@ -63,13 +64,19 @@ def get_metaschema():
     loader = ref_resolver.Loader({
         "Any": "https://w3id.org/cwl/salad#Any",
         "ArraySchema": "https://w3id.org/cwl/salad#ArraySchema",
+        "Array_symbol": "https://w3id.org/cwl/salad#ArraySchema/type/Array_symbol",
         "DocType": "https://w3id.org/cwl/salad#DocType",
         "Documentation": "https://w3id.org/cwl/salad#Documentation",
+        "Documentation_symbol": "https://w3id.org/cwl/salad#Documentation/type/Documentation_symbol",
+        "Documented": "https://w3id.org/cwl/salad#Documented",
         "EnumSchema": "https://w3id.org/cwl/salad#EnumSchema",
+        "Enum_symbol": "https://w3id.org/cwl/salad#EnumSchema/type/Enum_symbol",
         "JsonldPredicate": "https://w3id.org/cwl/salad#JsonldPredicate",
         "NamedType": "https://w3id.org/cwl/salad#NamedType",
+        "PrimitiveType": "https://w3id.org/cwl/salad#PrimitiveType",
         "RecordField": "https://w3id.org/cwl/salad#RecordField",
         "RecordSchema": "https://w3id.org/cwl/salad#RecordSchema",
+        "Record_symbol": "https://w3id.org/cwl/salad#RecordSchema/type/Record_symbol",
         "SaladEnumSchema": "https://w3id.org/cwl/salad#SaladEnumSchema",
         "SaladRecordField": "https://w3id.org/cwl/salad#SaladRecordField",
         "SaladRecordSchema": "https://w3id.org/cwl/salad#SaladRecordSchema",
@@ -86,7 +93,11 @@ def get_metaschema():
         "array": "https://w3id.org/cwl/salad#array",
         "boolean": "http://www.w3.org/2001/XMLSchema#boolean",
         "dct": "http://purl.org/dc/terms/",
-        "doc": "sld:doc",
+        "default": {
+            "@id": "https://w3id.org/cwl/salad#default",
+            "noLinkCheck": True
+        },
+        "doc": "rdfs:comment",
         "docAfter": {
             "@id": "https://w3id.org/cwl/salad#docAfter",
             "@type": "@id"
@@ -115,6 +126,7 @@ def get_metaschema():
         },
         "float": "http://www.w3.org/2001/XMLSchema#float",
         "identity": "https://w3id.org/cwl/salad#JsonldPredicate/identity",
+        "inVocab": "https://w3id.org/cwl/salad#NamedType/inVocab",
         "int": "http://www.w3.org/2001/XMLSchema#int",
         "items": {
             "@id": "https://w3id.org/cwl/salad#items",
@@ -149,6 +161,7 @@ def get_metaschema():
             "refScope": 1
         },
         "string": "http://www.w3.org/2001/XMLSchema#string",
+        "subscope": "https://w3id.org/cwl/salad#JsonldPredicate/subscope",
         "symbols": {
             "@id": "https://w3id.org/cwl/salad#symbols",
             "@type": "@id",
@@ -161,8 +174,7 @@ def get_metaschema():
             "typeDSL": True
         },
         "typeDSL": "https://w3id.org/cwl/salad#JsonldPredicate/typeDSL",
-        "xsd": "http://www.w3.org/2001/XMLSchema#",
-        "default": "https://w3id.org/cwl/salad#default"
+        "xsd": "http://www.w3.org/2001/XMLSchema#"
     })
 
     for f in salad_files:
@@ -339,6 +351,20 @@ def validate_doc(schema_names,  # type: Names
         raise validate.ValidationException(
             strip_dup_lineno(bullets(anyerrors, "* ")))
 
+def get_anon_name(rec):
+    if "name" in rec:
+        return rec["name"]
+    anon_name = ""
+    if rec['type'] in ('enum', 'https://w3id.org/cwl/salad#enum'):
+        for sym in rec["symbols"]:
+            anon_name += sym
+        return "enum_"+hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
+    if rec['type'] in ('record', 'https://w3id.org/cwl/salad#record'):
+        for f in rec["fields"]:
+            anon_name += f["name"]
+        return "record_"+hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
+
+
 def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
     # type: (Any, Dict[Text, Any], Loader, Set[Text]) -> Any
     """ Go through and replace types in the 'spec' mapping"""
@@ -355,6 +381,8 @@ def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
             return items
 
         items = copy.copy(items)
+        if not items.get("name"):
+            items["name"] = get_anon_name(items)
         for n in ("type", "items", "fields"):
             if n in items:
                 items[n] = replace_type(items[n], spec, loader, found,
@@ -406,17 +434,13 @@ def make_valid_avro(items,          # type: Avro
     # type: (...) -> Union[Avro, Dict, Text]
     if isinstance(items, dict):
         items = copy.copy(items)
-        if items.get("name"):
-            if items.get("inVocab", True):
-                items["name"] = avro_name(items["name"])
+        if items.get("name") and items.get("inVocab", True):
+            items["name"] = avro_name(items["name"])
 
         if "type" in items and items["type"] in ("https://w3id.org/cwl/salad#record", "https://w3id.org/cwl/salad#enum", "record", "enum"):
             if (hasattr(items, "get") and items.get("abstract")) or ("abstract"
                                                                      in items):
                 return items
-            if not items.get("name"):
-                raise Exception(
-                    "Named schemas must have a non-empty name: %s" % items)
 
             if items["name"] in found:
                 return cast(Text, items["name"])
