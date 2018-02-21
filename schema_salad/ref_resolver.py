@@ -314,6 +314,7 @@ class Loader(object):
         self.idmap = {}                 # type: Dict[Text, Any]
         self.mapPredicate = {}          # type: Dict[Text, Text]
         self.type_dsl_fields = set()    # type: Set[Text]
+        self.subscopes = {}             # type: Dict[Text, Text]
 
         self.add_context(ctx)
 

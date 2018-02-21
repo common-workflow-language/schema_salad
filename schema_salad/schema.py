@@ -23,7 +23,7 @@ from .ref_resolver import Loader, DocumentType
 import logging
 from . import jsonld_context
 from .sourceline import SourceLine, strip_dup_lineno, add_lc_filename, bullets, relname
-from typing import cast, Any, AnyStr, Dict, List, Set, Tuple, TypeVar, Union, Text
+from typing import cast, Any, AnyStr, Dict, List, Set, Tuple, TypeVar, Union, Text, IO
 from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
 _logger = logging.getLogger("salad")
@@ -352,6 +352,7 @@ def validate_doc(schema_names,  # type: Names
             strip_dup_lineno(bullets(anyerrors, "* ")))
 
 def get_anon_name(rec):
+    # type: (Dict[Text, Any]) -> Text
     if "name" in rec:
         return rec["name"]
     anon_name = ""
@@ -359,14 +360,17 @@ def get_anon_name(rec):
         for sym in rec["symbols"]:
             anon_name += sym
         return "enum_"+hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
-    if rec['type'] in ('record', 'https://w3id.org/cwl/salad#record'):
+    elif rec['type'] in ('record', 'https://w3id.org/cwl/salad#record'):
         for f in rec["fields"]:
             anon_name += f["name"]
         return "record_"+hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
-
+    elif rec['type'] in ('array', 'https://w3id.org/cwl/salad#array'):
+        return ""
+    else:
+        raise validate.ValidationException("Expected enum or record, was %s" % rec['type'])
 
 def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
-    # type: (Any, Dict[Text, Any], Loader, Set[Text]) -> Any
+    # type: (Any, Dict[Text, Any], Loader, Set[Text], bool, bool) -> Any
     """ Go through and replace types in the 'spec' mapping"""
 
     if isinstance(items, dict):
@@ -594,12 +598,13 @@ def shortname(inputid):
         return d.path.split(u"/")[-1]
 
 def print_inheritance(doc, stream):
+    # type: (List[Dict[Text, Any]], IO) -> None
     stream.write("digraph {\n")
     for d in doc:
         if d["type"] == "record":
             label = shortname(d["name"])
             if len(d.get("fields", [])) > 0:
-                   label += "\\n* %s\\l" % ("\\l* ".join(shortname(f["name"]) for f in d.get("fields", [])))
+                label += "\\n* %s\\l" % ("\\l* ".join(shortname(f["name"]) for f in d.get("fields", [])))
             stream.write("\"%s\" [shape=%s label=\"%s\"];\n" % (shortname(d["name"]), "ellipse" if d.get("abstract") else "box", label))
             if "extends" in d:
                 for e in aslist(d["extends"]):
@@ -607,6 +612,7 @@ def print_inheritance(doc, stream):
     stream.write("}\n")
 
 def print_fieldrefs(doc, loader, stream):
+    # type: (List[Dict[Text, Any]], Loader, IO) -> None
     j = extend_and_specialize(doc, loader)
 
     primitives = set(("http://www.w3.org/2001/XMLSchema#string",
