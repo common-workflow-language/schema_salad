@@ -567,7 +567,10 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         return "file://%s%s" % (urlpath, frag)
 
 
-class RecordField(Savable):
+class Documented(Savable):
+    pass
+
+class RecordField(Documented):
     """
 A field of a record.
     """
@@ -595,7 +598,7 @@ A field of a record.
         baseuri = self.name
         if 'doc' in doc:
             try:
-                self.doc = load_field(doc.get('doc'), union_of_None_type_or_strtype, baseuri, loadingOptions)
+                self.doc = load_field(doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
             except ValidationException as e:
                 errors.append(SourceLine(doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
         else:
@@ -638,7 +641,7 @@ class RecordSchema(Savable):
             self.fields = None
 
         try:
-            self.type = load_field(doc.get('type'), typedsl_Record_symbolLoader_2, baseuri, loadingOptions)
+            self.type = load_field(doc.get('type'), typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2, baseuri, loadingOptions)
         except ValidationException as e:
             errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
@@ -673,7 +676,7 @@ Define an enumerated type.
             errors.append(SourceLine(doc, 'symbols', str).makeError("the `symbols` field is not valid because:\n"+str(e)))
 
         try:
-            self.type = load_field(doc.get('type'), typedsl_Enum_symbolLoader_2, baseuri, loadingOptions)
+            self.type = load_field(doc.get('type'), typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2, baseuri, loadingOptions)
         except ValidationException as e:
             errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
@@ -704,7 +707,7 @@ class ArraySchema(Savable):
             errors.append(SourceLine(doc, 'items', str).makeError("the `items` field is not valid because:\n"+str(e)))
 
         try:
-            self.type = load_field(doc.get('type'), typedsl_Array_symbolLoader_2, baseuri, loadingOptions)
+            self.type = load_field(doc.get('type'), typedsl_enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader_2, baseuri, loadingOptions)
         except ValidationException as e:
             errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
@@ -806,6 +809,14 @@ URI resolution and JSON-LD context generation.
         else:
             self.typeDSL = None
 
+        if 'subscope' in doc:
+            try:
+                self.subscope = load_field(doc.get('subscope'), union_of_None_type_or_strtype, baseuri, loadingOptions)
+            except ValidationException as e:
+                errors.append(SourceLine(doc, 'subscope', str).makeError("the `subscope` field is not valid because:\n"+str(e)))
+        else:
+            self.subscope = None
+
 
         if errors:
             raise ValidationException("Trying 'JsonldPredicate'\n"+"\n".join(errors))
@@ -830,6 +841,8 @@ URI resolution and JSON-LD context generation.
             r['refScope'] = save(self.refScope)
         if self.typeDSL is not None:
             r['typeDSL'] = save(self.typeDSL)
+        if self.subscope is not None:
+            r['subscope'] = save(self.subscope)
         return r
 
 
@@ -867,7 +880,7 @@ class SpecializeDef(Savable):
 class NamedType(Savable):
     pass
 
-class DocType(Savable):
+class DocType(Documented):
     pass
 
 class SchemaDefinedType(DocType):
@@ -905,7 +918,7 @@ A field of a record.
         baseuri = self.name
         if 'doc' in doc:
             try:
-                self.doc = load_field(doc.get('doc'), union_of_None_type_or_strtype, baseuri, loadingOptions)
+                self.doc = load_field(doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
             except ValidationException as e:
                 errors.append(SourceLine(doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
         else:
@@ -924,6 +937,14 @@ A field of a record.
         else:
             self.jsonldPredicate = None
 
+        if 'default' in doc:
+            try:
+                self.default = load_field(doc.get('default'), union_of_None_type_or_Any_type, baseuri, loadingOptions)
+            except ValidationException as e:
+                errors.append(SourceLine(doc, 'default', str).makeError("the `default` field is not valid because:\n"+str(e)))
+        else:
+            self.default = None
+
 
         if errors:
             raise ValidationException("Trying 'SaladRecordField'\n"+"\n".join(errors))
@@ -938,6 +959,8 @@ A field of a record.
             r['type'] = save(self.type)
         if self.jsonldPredicate is not None:
             r['jsonldPredicate'] = save(self.jsonldPredicate)
+        if self.default is not None:
+            r['default'] = save(self.default)
         return r
 
 
@@ -981,7 +1004,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             self.fields = None
 
         try:
-            self.type = load_field(doc.get('type'), typedsl_Record_symbolLoader_2, baseuri, loadingOptions)
+            self.type = load_field(doc.get('type'), typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2, baseuri, loadingOptions)
         except ValidationException as e:
             errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
@@ -1133,7 +1156,7 @@ Define an enumerated type.
             errors.append(SourceLine(doc, 'symbols', str).makeError("the `symbols` field is not valid because:\n"+str(e)))
 
         try:
-            self.type = load_field(doc.get('type'), typedsl_Enum_symbolLoader_2, baseuri, loadingOptions)
+            self.type = load_field(doc.get('type'), typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2, baseuri, loadingOptions)
         except ValidationException as e:
             errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
@@ -1293,7 +1316,7 @@ schemas but has no role in formal validation.
             self.docAfter = None
 
         try:
-            self.type = load_field(doc.get('type'), typedsl_Documentation_symbolLoader_2, baseuri, loadingOptions)
+            self.type = load_field(doc.get('type'), typedsl_enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader_2, baseuri, loadingOptions)
         except ValidationException as e:
             errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
@@ -1325,6 +1348,7 @@ _vocab = {
     "ArraySchema": "https://w3id.org/cwl/salad#ArraySchema",
     "DocType": "https://w3id.org/cwl/salad#DocType",
     "Documentation": "https://w3id.org/cwl/salad#Documentation",
+    "Documented": "https://w3id.org/cwl/salad#Documented",
     "EnumSchema": "https://w3id.org/cwl/salad#EnumSchema",
     "JsonldPredicate": "https://w3id.org/cwl/salad#JsonldPredicate",
     "NamedType": "https://w3id.org/cwl/salad#NamedType",
@@ -1353,6 +1377,7 @@ _rvocab = {
     "https://w3id.org/cwl/salad#ArraySchema": "ArraySchema",
     "https://w3id.org/cwl/salad#DocType": "DocType",
     "https://w3id.org/cwl/salad#Documentation": "Documentation",
+    "https://w3id.org/cwl/salad#Documented": "Documented",
     "https://w3id.org/cwl/salad#EnumSchema": "EnumSchema",
     "https://w3id.org/cwl/salad#JsonldPredicate": "JsonldPredicate",
     "https://w3id.org/cwl/salad#NamedType": "NamedType",
@@ -1377,12 +1402,13 @@ _rvocab = {
     "http://www.w3.org/2001/XMLSchema#string": "string",
 }
 
+Any_type = _AnyLoader()
 floattype = _PrimitiveLoader(float)
 None_type = _PrimitiveLoader(type(None))
-inttype = _PrimitiveLoader(int)
-strtype = _PrimitiveLoader((str, six.text_type))
 booltype = _PrimitiveLoader(bool)
-Any_type = _AnyLoader()
+strtype = _PrimitiveLoader((str, six.text_type))
+inttype = _PrimitiveLoader(int)
+DocumentedLoader = _RecordLoader(Documented)
 PrimitiveTypeLoader = _EnumLoader(("null", "boolean", "int", "long", "float", "double", "string",))
 AnyLoader = _EnumLoader(("Any",))
 RecordFieldLoader = _RecordLoader(RecordField)
@@ -1398,8 +1424,9 @@ SaladRecordFieldLoader = _RecordLoader(SaladRecordField)
 SaladRecordSchemaLoader = _RecordLoader(SaladRecordSchema)
 SaladEnumSchemaLoader = _RecordLoader(SaladEnumSchema)
 DocumentationLoader = _RecordLoader(Documentation)
+array_of_strtype = _ArrayLoader(strtype)
+union_of_None_type_or_strtype_or_array_of_strtype = _UnionLoader((None_type, strtype, array_of_strtype,))
 uri_strtype_True_False_None = _URILoader(strtype, True, False, None)
-union_of_None_type_or_strtype = _UnionLoader((None_type, strtype,))
 union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype = _UnionLoader((PrimitiveTypeLoader, RecordSchemaLoader, EnumSchemaLoader, ArraySchemaLoader, strtype,))
 array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype = _ArrayLoader(union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype)
 union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype = _UnionLoader((PrimitiveTypeLoader, RecordSchemaLoader, EnumSchemaLoader, ArraySchemaLoader, strtype, array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype,))
@@ -1407,23 +1434,23 @@ typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_o
 array_of_RecordFieldLoader = _ArrayLoader(RecordFieldLoader)
 union_of_None_type_or_array_of_RecordFieldLoader = _UnionLoader((None_type, array_of_RecordFieldLoader,))
 idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader = _IdMapLoader(union_of_None_type_or_array_of_RecordFieldLoader, 'name', 'type')
-Record_symbolLoader = _EnumLoader(("record",))
-typedsl_Record_symbolLoader_2 = _TypeDSLLoader(Record_symbolLoader, 2)
-array_of_strtype = _ArrayLoader(strtype)
+enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader = _EnumLoader(("record",))
+typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2 = _TypeDSLLoader(enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader, 2)
 uri_array_of_strtype_True_False_None = _URILoader(array_of_strtype, True, False, None)
-Enum_symbolLoader = _EnumLoader(("enum",))
-typedsl_Enum_symbolLoader_2 = _TypeDSLLoader(Enum_symbolLoader, 2)
+enum_d961d79c225752b9fadb617367615ab176b47d77Loader = _EnumLoader(("enum",))
+typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2 = _TypeDSLLoader(enum_d961d79c225752b9fadb617367615ab176b47d77Loader, 2)
 uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2 = _URILoader(union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype, False, True, 2)
-Array_symbolLoader = _EnumLoader(("array",))
-typedsl_Array_symbolLoader_2 = _TypeDSLLoader(Array_symbolLoader, 2)
+enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader = _EnumLoader(("array",))
+typedsl_enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader_2 = _TypeDSLLoader(enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader, 2)
+union_of_None_type_or_strtype = _UnionLoader((None_type, strtype,))
 uri_union_of_None_type_or_strtype_True_False_None = _URILoader(union_of_None_type_or_strtype, True, False, None)
 union_of_None_type_or_booltype = _UnionLoader((None_type, booltype,))
 union_of_None_type_or_inttype = _UnionLoader((None_type, inttype,))
 uri_strtype_None_False_1 = _URILoader(strtype, None, False, 1)
-union_of_None_type_or_strtype_or_array_of_strtype = _UnionLoader((None_type, strtype, array_of_strtype,))
 uri_union_of_None_type_or_strtype_None_False_None = _URILoader(union_of_None_type_or_strtype, None, False, None)
 uri_union_of_None_type_or_strtype_or_array_of_strtype_None_False_None = _URILoader(union_of_None_type_or_strtype_or_array_of_strtype, None, False, None)
 union_of_None_type_or_strtype_or_JsonldPredicateLoader = _UnionLoader((None_type, strtype, JsonldPredicateLoader,))
+union_of_None_type_or_Any_type = _UnionLoader((None_type, Any_type,))
 array_of_SaladRecordFieldLoader = _ArrayLoader(SaladRecordFieldLoader)
 union_of_None_type_or_array_of_SaladRecordFieldLoader = _UnionLoader((None_type, array_of_SaladRecordFieldLoader,))
 idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader = _IdMapLoader(union_of_None_type_or_array_of_SaladRecordFieldLoader, 'name', 'type')
@@ -1431,8 +1458,8 @@ uri_union_of_None_type_or_strtype_or_array_of_strtype_None_False_1 = _URILoader(
 array_of_SpecializeDefLoader = _ArrayLoader(SpecializeDefLoader)
 union_of_None_type_or_array_of_SpecializeDefLoader = _UnionLoader((None_type, array_of_SpecializeDefLoader,))
 idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader = _IdMapLoader(union_of_None_type_or_array_of_SpecializeDefLoader, 'specializeFrom', 'specializeTo')
-Documentation_symbolLoader = _EnumLoader(("documentation",))
-typedsl_Documentation_symbolLoader_2 = _TypeDSLLoader(Documentation_symbolLoader, 2)
+enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader = _EnumLoader(("documentation",))
+typedsl_enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader_2 = _TypeDSLLoader(enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader, 2)
 union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader = _UnionLoader((SaladRecordSchemaLoader, SaladEnumSchemaLoader, DocumentationLoader,))
 array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader = _ArrayLoader(union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader)
 union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader = _UnionLoader((SaladRecordSchemaLoader, SaladEnumSchemaLoader, DocumentationLoader, array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader,))

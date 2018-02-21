@@ -98,10 +98,13 @@ def process_type(t,             # type: Dict[str, Any]
                  defaultPrefix  # type: str
                  ):
     # type: (...) -> None
-    if t["type"] == "record":
+    if t["type"] not in ("record", "enum"):
+        return
+
+    if "name" in t:
         recordname = t["name"]
 
-        _logger.debug("Processing record %s\n", t)
+        _logger.debug("Processing %s %s\n", t.get("type"), t)
 
         classnode = URIRef(recordname)
         g.add((classnode, RDF.type, RDFS.Class))
@@ -127,6 +130,7 @@ def process_type(t,             # type: Dict[str, Any]
                       recordname, predicate, type(predicate))
         context[recordname] = predicate
 
+    if t["type"] == "record":
         for i in t.get("fields", []):
             fieldname = i["name"]
 
@@ -152,7 +156,7 @@ def process_type(t,             # type: Dict[str, Any]
 
                 # TODO generate range from datatype.
 
-            if isinstance(i["type"], dict) and "name" in i["type"]:
+            if isinstance(i["type"], dict):
                 process_type(i["type"], g, context, defaultBase,
                              namespaces, defaultPrefix)
 
@@ -160,7 +164,7 @@ def process_type(t,             # type: Dict[str, Any]
             for e in aslist(t["extends"]):
                 g.add((classnode, RDFS.subClassOf, URIRef(e)))
     elif t["type"] == "enum":
-        _logger.debug("Processing enum %s", t["name"])
+        _logger.debug("Processing enum %s", t.get("name"))
 
         for i in t["symbols"]:
             pred(t, None, i, context, defaultBase, namespaces)

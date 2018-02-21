@@ -41,7 +41,6 @@ def printrdf(workflow,  # type: str
     g = jsonld_context.makerdf(workflow, wf, ctx)
     print(g.serialize(format=sr))
 
-
 def regex_chunk(lines, regex):
     # type: (List[str], Pattern[str]) -> List[List[str]]
     lst = list(itertools.dropwhile(lambda x: not regex.match(x), lines))
@@ -143,6 +142,10 @@ def main(argsl=None):  # type: (List[str]) -> int
         "--print-index", action="store_true", help="Print node index")
     exgroup.add_argument("--print-metadata",
                          action="store_true", help="Print document metadata")
+    exgroup.add_argument("--print-inheritance-dot",
+                         action="store_true", help="Print graphviz file of inheritance")
+    exgroup.add_argument("--print-fieldrefs-dot",
+                         action="store_true", help="Print graphviz file of field refs")
 
     exgroup.add_argument("--codegen", type=str, metavar="language", help="Generate classes in target language, currently supported: python")
 
@@ -286,6 +289,14 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     if args.print_metadata and not args.document:
         print(json.dumps(schema_metadata, indent=4))
+        return 0
+
+    if args.print_inheritance_dot:
+        schema.print_inheritance(schema_doc, sys.stdout)
+        return 0
+
+    if args.print_fieldrefs_dot:
+        schema.print_fieldrefs(schema_doc, document_loader, sys.stdout)
         return 0
 
     # If no document specified, all done.

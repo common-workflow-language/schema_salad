@@ -65,6 +65,27 @@
         "doc": "# Schema\n"
     },
     {
+        "name": "https://w3id.org/cwl/salad#Documented",
+        "type": "record",
+        "abstract": true,
+        "docParent": "https://w3id.org/cwl/salad#Schema",
+        "fields": [
+            {
+                "name": "https://w3id.org/cwl/salad#Documented/doc",
+                "type": [
+                    "null",
+                    "string",
+                    {
+                        "type": "array",
+                        "items": "string"
+                    }
+                ],
+                "doc": "A documentation string for this object, or an array of strings which should be concatenated.",
+                "jsonldPredicate": "rdfs:comment"
+            }
+        ]
+    },
+    {
         "name": "https://w3id.org/cwl/salad#PrimitiveType",
         "type": "enum",
         "symbols": [
@@ -99,6 +120,7 @@
     {
         "name": "https://w3id.org/cwl/salad#RecordField",
         "type": "record",
+        "extends": "https://w3id.org/cwl/salad#Documented",
         "doc": "A field of a record.",
         "fields": [
             {
@@ -106,15 +128,6 @@
                 "type": "string",
                 "jsonldPredicate": "@id",
                 "doc": "The name of the field\n"
-            },
-            {
-                "name": "https://w3id.org/cwl/salad#RecordField/doc",
-                "type": [
-                    "null",
-                    "string"
-                ],
-                "doc": "A documentation string for this field\n",
-                "jsonldPredicate": "rdfs:comment"
             },
             {
                 "name": "https://w3id.org/cwl/salad#RecordField/type",
@@ -348,6 +361,14 @@
                     "boolean"
                 ],
                 "doc": "Field must be expanded based on the the Schema Salad type DSL.\n"
+            },
+            {
+                "name": "https://w3id.org/cwl/salad#JsonldPredicate/subscope",
+                "type": [
+                    "null",
+                    "string"
+                ],
+                "doc": "Append the subscope to the current scope when performing\nidentifier resolution to objects under this field.\n"
             }
         ]
     },
@@ -402,22 +423,10 @@
     {
         "name": "https://w3id.org/cwl/salad#DocType",
         "type": "record",
+        "extends": "https://w3id.org/cwl/salad#Documented",
         "abstract": true,
         "docParent": "https://w3id.org/cwl/salad#Schema",
         "fields": [
-            {
-                "name": "https://w3id.org/cwl/salad#DocType/doc",
-                "type": [
-                    "null",
-                    "string",
-                    {
-                        "type": "array",
-                        "items": "string"
-                    }
-                ],
-                "doc": "A documentation string for this type, or an array of strings which should be concatenated.",
-                "jsonldPredicate": "rdfs:comment"
-            },
             {
                 "name": "https://w3id.org/cwl/salad#DocType/docParent",
                 "type": [
@@ -502,6 +511,18 @@
                 ],
                 "doc": "Annotate this type with linked data context.\n",
                 "jsonldPredicate": "sld:jsonldPredicate"
+            },
+            {
+                "name": "https://w3id.org/cwl/salad#SaladRecordField/default",
+                "type": [
+                    "null",
+                    "Any"
+                ],
+                "jsonldPredicate": {
+                    "_id": "https://w3id.org/cwl/salad#default",
+                    "noLinkCheck": true
+                },
+                "doc": "The default value to use for this field if the field is missing or \"null\".\n"
             }
         ]
     },

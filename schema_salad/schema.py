@@ -10,6 +10,7 @@ import avro.schema
 from . import validate
 import json
 import os
+import hashlib
 
 import six
 from six.moves import urllib
@@ -22,7 +23,7 @@ from .ref_resolver import Loader, DocumentType
 import logging
 from . import jsonld_context
 from .sourceline import SourceLine, strip_dup_lineno, add_lc_filename, bullets, relname
-from typing import cast, Any, AnyStr, Dict, List, Set, Tuple, TypeVar, Union, Text
+from typing import cast, Any, AnyStr, Dict, List, Set, Tuple, TypeVar, Union, Text, IO
 from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
 _logger = logging.getLogger("salad")
@@ -63,13 +64,19 @@ def get_metaschema():
     loader = ref_resolver.Loader({
         "Any": "https://w3id.org/cwl/salad#Any",
         "ArraySchema": "https://w3id.org/cwl/salad#ArraySchema",
+        "Array_symbol": "https://w3id.org/cwl/salad#ArraySchema/type/Array_symbol",
         "DocType": "https://w3id.org/cwl/salad#DocType",
         "Documentation": "https://w3id.org/cwl/salad#Documentation",
+        "Documentation_symbol": "https://w3id.org/cwl/salad#Documentation/type/Documentation_symbol",
+        "Documented": "https://w3id.org/cwl/salad#Documented",
         "EnumSchema": "https://w3id.org/cwl/salad#EnumSchema",
+        "Enum_symbol": "https://w3id.org/cwl/salad#EnumSchema/type/Enum_symbol",
         "JsonldPredicate": "https://w3id.org/cwl/salad#JsonldPredicate",
         "NamedType": "https://w3id.org/cwl/salad#NamedType",
+        "PrimitiveType": "https://w3id.org/cwl/salad#PrimitiveType",
         "RecordField": "https://w3id.org/cwl/salad#RecordField",
         "RecordSchema": "https://w3id.org/cwl/salad#RecordSchema",
+        "Record_symbol": "https://w3id.org/cwl/salad#RecordSchema/type/Record_symbol",
         "SaladEnumSchema": "https://w3id.org/cwl/salad#SaladEnumSchema",
         "SaladRecordField": "https://w3id.org/cwl/salad#SaladRecordField",
         "SaladRecordSchema": "https://w3id.org/cwl/salad#SaladRecordSchema",
@@ -86,7 +93,11 @@ def get_metaschema():
         "array": "https://w3id.org/cwl/salad#array",
         "boolean": "http://www.w3.org/2001/XMLSchema#boolean",
         "dct": "http://purl.org/dc/terms/",
-        "doc": "sld:doc",
+        "default": {
+            "@id": "https://w3id.org/cwl/salad#default",
+            "noLinkCheck": True
+        },
+        "doc": "rdfs:comment",
         "docAfter": {
             "@id": "https://w3id.org/cwl/salad#docAfter",
             "@type": "@id"
@@ -115,6 +126,7 @@ def get_metaschema():
         },
         "float": "http://www.w3.org/2001/XMLSchema#float",
         "identity": "https://w3id.org/cwl/salad#JsonldPredicate/identity",
+        "inVocab": "https://w3id.org/cwl/salad#NamedType/inVocab",
         "int": "http://www.w3.org/2001/XMLSchema#int",
         "items": {
             "@id": "https://w3id.org/cwl/salad#items",
@@ -149,6 +161,7 @@ def get_metaschema():
             "refScope": 1
         },
         "string": "http://www.w3.org/2001/XMLSchema#string",
+        "subscope": "https://w3id.org/cwl/salad#JsonldPredicate/subscope",
         "symbols": {
             "@id": "https://w3id.org/cwl/salad#symbols",
             "@type": "@id",
@@ -338,31 +351,53 @@ def validate_doc(schema_names,  # type: Names
         raise validate.ValidationException(
             strip_dup_lineno(bullets(anyerrors, "* ")))
 
+def get_anon_name(rec):
+    # type: (Dict[Text, Any]) -> Text
+    if "name" in rec:
+        return rec["name"]
+    anon_name = ""
+    if rec['type'] in ('enum', 'https://w3id.org/cwl/salad#enum'):
+        for sym in rec["symbols"]:
+            anon_name += sym
+        return "enum_"+hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
+    elif rec['type'] in ('record', 'https://w3id.org/cwl/salad#record'):
+        for f in rec["fields"]:
+            anon_name += f["name"]
+        return "record_"+hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
+    elif rec['type'] in ('array', 'https://w3id.org/cwl/salad#array'):
+        return ""
+    else:
+        raise validate.ValidationException("Expected enum or record, was %s" % rec['type'])
 
-def replace_type(items, spec, loader, found):
-    # type: (Any, Dict[Text, Any], Loader, Set[Text]) -> Any
+def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
+    # type: (Any, Dict[Text, Any], Loader, Set[Text], bool, bool) -> Any
     """ Go through and replace types in the 'spec' mapping"""
 
     if isinstance(items, dict):
         # recursively check these fields for types to replace
-        if "type" in items and items["type"] in ("record", "enum"):
-            if items.get("name"):
-                if items["name"] in found:
-                    return items["name"]
-                else:
-                    found.add(items["name"])
+        if items.get("type") in ("record", "enum") and items.get("name"):
+            if items["name"] in found:
+                return items["name"]
+            else:
+                found.add(items["name"])
+
+        if not deepen:
+            return items
 
         items = copy.copy(items)
+        if not items.get("name"):
+            items["name"] = get_anon_name(items)
         for n in ("type", "items", "fields"):
             if n in items:
-                items[n] = replace_type(items[n], spec, loader, found)
+                items[n] = replace_type(items[n], spec, loader, found,
+                                        find_embeds=find_embeds, deepen=find_embeds)
                 if isinstance(items[n], list):
                     items[n] = flatten(items[n])
 
         return items
     elif isinstance(items, list):
         # recursively transform list
-        return [replace_type(i, spec, loader, found) for i in items]
+        return [replace_type(i, spec, loader, found, find_embeds=find_embeds, deepen=deepen) for i in items]
     elif isinstance(items, (str, six.text_type)):
         # found a string which is a symbol corresponding to a type.
         replace_with = None
@@ -376,7 +411,9 @@ def replace_type(items, spec, loader, found):
             replace_with = spec[items]
 
         if replace_with:
-            return replace_type(replace_with, spec, loader, found)
+            return replace_type(replace_with, spec, loader, found, find_embeds=find_embeds)
+        else:
+            found.add(items)
     return items
 
 
@@ -401,17 +438,13 @@ def make_valid_avro(items,          # type: Avro
     # type: (...) -> Union[Avro, Dict, Text]
     if isinstance(items, dict):
         items = copy.copy(items)
-        if items.get("name"):
-            if items.get("inVocab", True):
-                items["name"] = avro_name(items["name"])
+        if items.get("name") and items.get("inVocab", True):
+            items["name"] = avro_name(items["name"])
 
         if "type" in items and items["type"] in ("https://w3id.org/cwl/salad#record", "https://w3id.org/cwl/salad#enum", "record", "enum"):
             if (hasattr(items, "get") and items.get("abstract")) or ("abstract"
                                                                      in items):
                 return items
-            if not items.get("name"):
-                raise Exception(
-                    "Named schemas must have a non-empty name: %s" % items)
 
             if items["name"] in found:
                 return cast(Text, items["name"])
@@ -555,3 +588,54 @@ def make_avro_schema(i,         # type: List[Dict[Text, Any]]
         return (e, j3)
 
     return (names, j3)
+
+def shortname(inputid):
+    # type: (Text) -> Text
+    d = urllib.parse.urlparse(inputid)
+    if d.fragment:
+        return d.fragment.split(u"/")[-1]
+    else:
+        return d.path.split(u"/")[-1]
+
+def print_inheritance(doc, stream):
+    # type: (List[Dict[Text, Any]], IO) -> None
+    stream.write("digraph {\n")
+    for d in doc:
+        if d["type"] == "record":
+            label = shortname(d["name"])
+            if len(d.get("fields", [])) > 0:
+                label += "\\n* %s\\l" % ("\\l* ".join(shortname(f["name"]) for f in d.get("fields", [])))
+            stream.write("\"%s\" [shape=%s label=\"%s\"];\n" % (shortname(d["name"]), "ellipse" if d.get("abstract") else "box", label))
+            if "extends" in d:
+                for e in aslist(d["extends"]):
+                    stream.write("\"%s\" -> \"%s\";\n" % (shortname(e), shortname(d["name"])))
+    stream.write("}\n")
+
+def print_fieldrefs(doc, loader, stream):
+    # type: (List[Dict[Text, Any]], Loader, IO) -> None
+    j = extend_and_specialize(doc, loader)
+
+    primitives = set(("http://www.w3.org/2001/XMLSchema#string",
+                      "http://www.w3.org/2001/XMLSchema#boolean",
+                      "http://www.w3.org/2001/XMLSchema#int",
+                      "http://www.w3.org/2001/XMLSchema#long",
+                      "https://w3id.org/cwl/salad#null",
+                      "https://w3id.org/cwl/salad#enum",
+                      "https://w3id.org/cwl/salad#array",
+                      "https://w3id.org/cwl/salad#record",
+                      "https://w3id.org/cwl/salad#Any"
+    ))
+
+    stream.write("digraph {\n")
+    for d in j:
+        if d.get("abstract"):
+            continue
+        if d["type"] == "record":
+            label = shortname(d["name"])
+            for f in d.get("fields", []):
+                found = set()  # type: Set[Text]
+                replace_type(f["type"], {}, loader, found, find_embeds=False)
+                for each_type in found:
+                    if each_type not in primitives:
+                        stream.write("\"%s\" -> \"%s\" [label=\"%s\"];\n" % (label, shortname(each_type), shortname(f["name"])))
+    stream.write("}\n")

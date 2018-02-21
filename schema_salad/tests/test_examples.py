@@ -331,6 +331,28 @@ class TestSchemas(unittest.TestCase):
         g = makerdf(None, ra, ctx)
         print(g.serialize(format="n3"))
 
+    def test_subscoped_id(self):
+        ldr = schema_salad.ref_resolver.Loader({})
+        ctx = {
+            "id": "@id",
+            "bar": {
+                "subscope": "bar",
+            }
+        }
+        ldr.add_context(ctx)
+
+        ra, _ = ldr.resolve_all(cmap({
+            "id": "foo",
+            "bar": {
+                "id": "baz"
+            }
+        }), "http://example.com")
+        self.assertEqual({'id': 'http://example.com/#foo',
+                          'bar': {
+                              'id': 'http://example.com/#foo/bar/baz'},
+                          }, ra)
+
+
     def test_mixin(self):
         base_url = schema_salad.ref_resolver.file_uri(os.path.join(os.getcwd(), "tests"))
         ldr = schema_salad.ref_resolver.Loader({})
@@ -367,13 +389,13 @@ class TestSchemas(unittest.TestCase):
     def test_file_uri(self):
         # Note: this test probably won't pass on Windows.  Someone with a
         # windows box should add an alternate test.
-        self.assertEquals("file:///foo/bar%20baz/quux", schema_salad.ref_resolver.file_uri("/foo/bar baz/quux"))
-        self.assertEquals(os.path.normpath("/foo/bar baz/quux"),
-                          schema_salad.ref_resolver.uri_file_path("file:///foo/bar%20baz/quux"))
-        self.assertEquals("file:///foo/bar%20baz/quux%23zing%20zong", schema_salad.ref_resolver.file_uri("/foo/bar baz/quux#zing zong"))
-        self.assertEquals("file:///foo/bar%20baz/quux#zing%20zong", schema_salad.ref_resolver.file_uri("/foo/bar baz/quux#zing zong", split_frag=True))
-        self.assertEquals(os.path.normpath("/foo/bar baz/quux#zing zong"),
-                          schema_salad.ref_resolver.uri_file_path("file:///foo/bar%20baz/quux#zing%20zong"))
+        self.assertEqual("file:///foo/bar%20baz/quux", schema_salad.ref_resolver.file_uri("/foo/bar baz/quux"))
+        self.assertEqual(os.path.normpath("/foo/bar baz/quux"),
+                         schema_salad.ref_resolver.uri_file_path("file:///foo/bar%20baz/quux"))
+        self.assertEqual("file:///foo/bar%20baz/quux%23zing%20zong", schema_salad.ref_resolver.file_uri("/foo/bar baz/quux#zing zong"))
+        self.assertEqual("file:///foo/bar%20baz/quux#zing%20zong", schema_salad.ref_resolver.file_uri("/foo/bar baz/quux#zing zong", split_frag=True))
+        self.assertEqual(os.path.normpath("/foo/bar baz/quux#zing zong"),
+                         schema_salad.ref_resolver.uri_file_path("file:///foo/bar%20baz/quux#zing%20zong"))
 
 
 class SourceLineTest(unittest.TestCase):
