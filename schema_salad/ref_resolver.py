@@ -860,7 +860,7 @@ class Loader(object):
 
             try:
                 for key, val in document.items():
-                    subscope = ""
+                    subscope = ""  # type: Text
                     if key in self.subscopes:
                         subscope = "/" + self.subscopes[key]
                     document[key], _ = loader.resolve_all(
