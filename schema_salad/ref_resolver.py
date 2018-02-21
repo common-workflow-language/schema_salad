@@ -1023,11 +1023,18 @@ class Loader(object):
         if isinstance(document, list):
             iterator = enumerate(document)
         elif isinstance(document, dict):
-            try:
-                for d in self.url_fields:
+            for d in self.url_fields:
+                try:
                     sl = SourceLine(document, d, validate.ValidationException)
                     if d in document and d not in self.identity_links:
                         document[d] = self.validate_link(d, document[d], docid, all_doc_ids)
+                except validate.ValidationException as v:
+                    if d == "$schemas":
+                        _logger.warn( validate.indent(six.text_type(v)))
+                    else:
+                        errors.append(sl.makeError(six.text_type(v)))
+
+            try:
                 for identifier in self.identifiers:  # validate that each id is defined uniquely
                     if identifier in document:
                         sl = SourceLine(document, identifier, validate.ValidationException)
@@ -1038,10 +1045,8 @@ class Loader(object):
                             all_doc_ids[document[identifier]] = sl.makeLead()
                             break
             except validate.ValidationException as v:
-                if d == "$schemas":
-                    _logger.warn( validate.indent(six.text_type(v)))
-                else:
-                    errors.append(sl.makeError(six.text_type(v)))
+                errors.append(sl.makeError(six.text_type(v)))
+
             if hasattr(document, "iteritems"):
                 iterator = six.iteritems(document)
             else:
