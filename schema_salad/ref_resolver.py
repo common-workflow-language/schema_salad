@@ -290,7 +290,7 @@ class Loader(object):
             else:
                 self.session = CacheControl(
                     requests.Session(),
-                    cache=FileCache("/tmp", ".cache", "salad"))
+                    cache=FileCache(os.path.join("/tmp", ".cache", "salad")))
         else:
             self.session = session
 
