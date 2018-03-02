@@ -131,7 +131,11 @@ $graph:
       type: boolean?
       doc: |
         Field must be expanded based on the the Schema Salad type DSL.
-
+    - name: subscope
+      type: string?
+      doc: |
+        Append the subscope to the current scope when performing
+        identifier resolution to objects under this field.
 
 - name: SpecializeDef
   type: record
@@ -172,16 +176,10 @@ $graph:
 
 - name: DocType
   type: record
+  extends: Documented
   abstract: true
   docParent: "#Schema"
   fields:
-    - name: doc
-      type:
-        - string?
-        - string[]?
-      doc: "A documentation string for this type, or an array of strings which should be concatenated."
-      jsonldPredicate: "rdfs:comment"
-
     - name: docParent
       type: string?
       doc: |
@@ -247,6 +245,13 @@ $graph:
       doc: |
         Annotate this type with linked data context.
       jsonldPredicate: "sld:jsonldPredicate"
+    - name: default
+      type: Any?
+      jsonldPredicate:
+        _id: sld:default
+        noLinkCheck: true
+      doc: |
+        The default value to use for this field if the field is missing or "null".
 
 
 - name: SaladRecordSchema
@@ -319,7 +324,6 @@ $graph:
     - name: type
       doc: "Must be `documentation`"
       type:
-        name: Documentation_symbol
         type: enum
         symbols:
           - "sld:documentation"

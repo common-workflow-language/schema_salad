@@ -22,18 +22,23 @@
 # make coverage-report to check coverage of the python scripts by the tests
 
 MODULE=schema_salad
+PACKAGE=schema-salad
 
-# `SHELL=bash` Will break Titus's laptop, so don't use BASH-isms like
+# `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py) setup.py
 DEVPKGS=pep8 diff_cover autopep8 pylint coverage pep257 pytest flake8
 COVBASE=coverage run --branch --append --source=${MODULE} \
 	--omit=schema_salad/tests/*
 
-VERSION=$(shell git describe --tags --dirty | sed s/v//)
+# Updating the Major & Minor version below?
+# Don't forget to update setup.py as well
+VERSION=2.7.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
+	--max-count=1 --format=format:%cI`)
 
 ## all         : default task
-all: ./setup.py develop
+all:
+	pip install -e .
 
 ## help        : print this help message and exit
 help: Makefile
@@ -54,7 +59,7 @@ install: FORCE
 dist: dist/${MODULE}-$(VERSION).tar.gz
 
 dist/${MODULE}-$(VERSION).tar.gz: $(SOURCES)
-	./setup.py sdist
+	./setup.py sdist bdist_wheel
 
 ## clean       : clean up all temporary / machine-generated files
 clean: FORCE
@@ -104,7 +109,7 @@ pylint_report.txt: ${PYSOURCES}
 diff_pylint_report: pylint_report.txt
 	diff-quality --violations=pylint pylint_report.txt
 
-.coverage: $(PYSOURCES)
+.coverage: $(PYSOURCES) all
 	rm -f .coverage
 	$(COVBASE) setup.py test
 	$(COVBASE) -m schema_salad.main \
@@ -181,7 +186,7 @@ mypy3: ${PYSOURCES}
 		 --warn-redundant-casts \
 		 schema_salad
 
-jenkins:
+jenkins: FORCE
 	rm -Rf env && virtualenv env
 	. env/bin/activate ; \
 	pip install -U setuptools pip wheel ; \
@@ -193,5 +198,20 @@ jenkins:
 	${MAKE} install-dep ; \
 	pip install -U -r mypy_requirements.txt ; ${MAKE} mypy2
 	# pip install -U -r mypy_requirements.txt ; ${MAKE} mypy3
+
+release-test: FORCE
+	git diff-index --quiet HEAD -- || ( echo You have uncommited changes, please commit them and try again; false )
+	PYVER=2.7 ./release-test.sh
+	PYVER=3 ./release-test.sh
+
+release: release-test
+	. testenv2.7_2/bin/activate && \
+		testenv2.7_2/src/${PACKAGE}/setup.py sdist bdist_wheel
+	. testenv2.7_2/bin/activate && \
+		pip install twine && \
+		twine upload testenv2.7_2/src/${PACKAGE}/dist/* \
+		             testenv3_2/src/${PACKAGE}/dist/*whl && \
+		git tag ${VERSION} && git push --tags
+
 
 FORCE:

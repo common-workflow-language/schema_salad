@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import os
 import sys
@@ -43,7 +44,7 @@ extras_require={
 }
 
 setup(name='schema-salad',
-      version='2.6',
+      version='2.7',  # update the VERSION prefix in the Makefile as well 🙂
       description='Schema Annotations for Linked Avro Data (SALAD)',
       long_description=open(README).read(),
       author='Common workflow language working group',
@@ -67,9 +68,11 @@ setup(name='schema-salad',
       classifiers=[
           "Environment :: Console",
           "Intended Audience :: Science/Research",
-          "Operating System :: POSIX :: Linux",
+          "License :: OSI Approved :: Apache Software License",
+          "Operating System :: POSIX",
           "Operating System :: MacOS :: MacOS X",
-          "Development Status :: 4 - Beta",
+          "Operating System :: Microsoft :: Windows",
+          "Development Status :: 5 - Production/Stable",
           "Programming Language :: Python :: 2.7",
           "Programming Language :: Python :: 3.3",
           "Programming Language :: Python :: 3.4",
