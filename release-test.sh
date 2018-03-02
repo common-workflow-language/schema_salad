@@ -13,7 +13,7 @@ PYVER=${PYVER:=2.7}
 
 rm -Rf testenv${PYVER}_? || /bin/true
 
-export HEAD=`git rev-parse HEAD`
+export HEAD=${TRAVIS_PULL_REQUEST_SHA:-$(git rev-parse HEAD)}
 virtualenv testenv${PYVER}_1 -p python${PYVER}
 virtualenv testenv${PYVER}_2 -p python${PYVER}
 virtualenv testenv${PYVER}_3 -p python${PYVER}
