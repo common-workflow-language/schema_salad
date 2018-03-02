@@ -39,7 +39,7 @@ def printrdf(workflow,  # type: str
              ):
     # type: (...) -> None
     g = jsonld_context.makerdf(workflow, wf, ctx)
-    print(g.serialize(format=sr))
+    print(g.serialize(format=sr, encoding='utf-8').decode('utf-8'))
 
 def regex_chunk(lines, regex):
     # type: (List[str], Pattern[str]) -> List[List[str]]
