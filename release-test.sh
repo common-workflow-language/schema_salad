@@ -5,11 +5,8 @@ set -x
 
 package=schema-salad
 module=schema_salad
-if [ "${TRAVIS}" == "true" ] && [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then
-	repo=https://github.com/${TRAVIS_REPO_SLUG}/schema_salad.git
-else
-	repo=https://github.com/common-workflow-language/schema_salad.git
-fi
+TRAVIS_REPO_SLUG=${TRAVIS_REPO_SLUG:=common-workflow-language/schema_salad}
+repo=https://github.com/${TRAVIS_REPO_SLUG}.git
 run_tests="bin/py.test --pyarg ${module}"
 pipver=8.0.1 # minimum required version of pip
 setupver=20.10.1 # minimum required version of setuptools
