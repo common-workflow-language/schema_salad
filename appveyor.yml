@@ -27,9 +27,10 @@ install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   - "python --version"
   - "pip install --disable-pip-version-check --user --upgrade pip"
+  - "pip install --disable-pip-version-check --user --upgrade setuptools"
 
 build_script:
-  - "%CMD_IN_ENV% python setup.py install"
+  - "%CMD_IN_ENV% pip install ."
 
 
 test_script:
