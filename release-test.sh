@@ -16,28 +16,33 @@ rm -Rf "testenv${PYVER}_"? || /bin/true
 
 export HEAD=${TRAVIS_PULL_REQUEST_SHA:-$(git rev-parse HEAD)}
 
-virtualenv "testenv${PYVER}_1" -p "python${PYVER}"
+if [ "${RELEASE_SKIP}" != "head" ]
+then
+	virtualenv "testenv${PYVER}_1" -p "python${PYVER}"
+	# First we test the head
+	# shellcheck source=/dev/null
+	source "testenv${PYVER}_1/bin/activate"
+	rm "testenv${PYVER}_1/lib/python-wheels/setuptools"* \
+		&& pip install --force-reinstall -U pip==${pipver} \
+	        && pip install setuptools==${setupver} wheel
+	make install-dependencies
+	make test
+	pip uninstall -y ${package} || true; pip uninstall -y ${package} \
+		|| true; make install
+	mkdir "testenv${PYVER}_1/not-${module}"
+	# if there is a subdir named '${module}' py.test will execute tests
+	# there instead of the installed module's tests
+	
+	pushd "testenv${PYVER}_1/not-${module}"
+	# shellcheck disable=SC2086
+	../${run_tests}; popd
+fi
+
+
 virtualenv "testenv${PYVER}_2" -p "python${PYVER}"
 virtualenv "testenv${PYVER}_3" -p "python${PYVER}"
 virtualenv "testenv${PYVER}_4" -p "python${PYVER}"
 virtualenv "testenv${PYVER}_5" -p "python${PYVER}"
-
-# First we test the head
-# shellcheck source=/dev/null
-source "testenv${PYVER}_1/bin/activate"
-rm "testenv${PYVER}_1/lib/python-wheels/setuptools"* \
-	&& pip install --force-reinstall -U pip==${pipver} \
-        && pip install setuptools==${setupver} wheel
-make install-dependencies
-make test
-pip uninstall -y ${package} || true; pip uninstall -y ${package} || true; make install
-mkdir "testenv${PYVER}_1/not-${module}"
-# if there is a subdir named '${module}' py.test will execute tests
-# there instead of the installed module's tests
-
-pushd "testenv${PYVER}_1/not-${module}"
-# shellcheck disable=SC2086
-../${run_tests}; popd
 
 
 # Secondly we test via pip

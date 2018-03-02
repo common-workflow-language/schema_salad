@@ -12,7 +12,7 @@ os:
 jobs:
   include:
     - stage: release-test
-      script: PYVER= ./release-test.sh
+      script: RELEASE_SKIP=head PYVER= ./release-test.sh
 script: tox
 install:
   - pip install tox-travis
