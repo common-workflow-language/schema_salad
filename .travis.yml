@@ -3,7 +3,6 @@ language: python
 cache: pip
 python:
   - 2.7
-  - 3.3
   - 3.4
   - 3.5
   - 3.6
@@ -12,7 +11,7 @@ os:
 jobs:
   include:
     - stage: release-test
-      script: PYVER= ./release-test.sh
+      script: RELEASE_SKIP=head PYVER= ./release-test.sh
 script: tox
 install:
   - pip install tox-travis
