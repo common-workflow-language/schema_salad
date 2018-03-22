@@ -30,3 +30,6 @@ if six.PY3:
 
     from past import autotranslate  # type: ignore
     autotranslate(['avro', 'avro.schema'])
+    import avro, avro.schema
+    from past.translation import remove_hooks
+    remove_hooks()
