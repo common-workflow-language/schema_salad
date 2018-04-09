@@ -284,7 +284,7 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     # Optionally print the RDFS graph from the schema
     if args.print_rdfs:
-        print(rdfs.serialize(format=args.rdf_serializer))
+        print(rdfs.serialize(format=args.rdf_serializer).decode('utf-8'))
         return 0
 
     if args.print_metadata and not args.document:
