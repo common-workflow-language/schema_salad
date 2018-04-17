@@ -88,17 +88,23 @@ class PythonCodeGen(CodeGenBase):
         r = {}
 """)
 
-    def end_class(self, classname):
-        # type: (Text) -> None
+    def end_class(self, classname, field_names):
+        # type: (Text, List[Text]) -> None
 
         if self.current_class_is_abstract:
             return
 
         self.out.write("""
-        if errors:
-            raise ValidationException(\"Trying '%s'\\n\"+\"\\n\".join(errors))
-""" % self.safe_name(classname))
+        diff = set([str(k) for k in doc.keys()]) - set({attrs})
+        if len(diff) > 0:
+            head = list(diff)[0]
+            errors.append(SourceLine(doc, head, str).makeError("invalid field `%s`, expected one of: {attrstr}" % (head)))
 
+        if errors:
+            raise ValidationException(\"Trying '{class_}'\\n\"+\"\\n\".join(errors))
+""".
+                       format(attrs=field_names, attrstr=", ".join(["`%s`" % f for f in field_names]),
+                              class_=self.safe_name(classname)))
         self.serializer.write("        return r\n")
         self.out.write(self.serializer.getvalue())
         self.out.write("\n\n")
