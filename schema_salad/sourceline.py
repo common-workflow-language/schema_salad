@@ -67,19 +67,26 @@ def strip_dup_lineno(text, maxline=None):  # type: (Text, int) -> Text
         maxline = int(os.environ.get("COLUMNS", "100"))
     pre = None
     msg = []
+    maxno = 0
+    for l in text.splitlines():
+        g = lineno_re.match(l)
+        if not g:
+            continue
+        maxno = max(maxno, len(g.group(1)))
+
     for l in text.splitlines():
         g = lineno_re.match(l)
         if not g:
             msg.append(l)
             continue
-        shift = len(g.group(1)) + len(g.group(3))
-        g2 = reflow(g.group(2), maxline-shift, " " * shift)
         if g.group(1) != pre:
+            shift = maxno + len(g.group(3))
+            g2 = reflow(g.group(2), maxline-shift, " " * shift)
             pre = g.group(1)
-            msg.append(pre + g2)
+            msg.append(pre + " " * (maxno-len(g.group(1))) + g2)
         else:
-            g2 = reflow(g.group(2), maxline-len(g.group(1)), " " * (len(g.group(1))+len(g.group(3))))
-            msg.append(" " * len(g.group(1)) + g2)
+            g2 = reflow(g.group(2), maxline-maxno, " " * (maxno+len(g.group(3))))
+            msg.append(" " * maxno + g2)
     return "\n".join(msg)
 
 def cmap(d, lc=None, fn=None):  # type: (Union[int, float, str, Text, Dict, List], List[int], Text) -> Union[int, float, str, Text, CommentedMap, CommentedSeq]
