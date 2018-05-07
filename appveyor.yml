@@ -22,7 +22,7 @@ environment:
 install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   - "python --version"
-  - "pip install --disable-pip-version-check --user --upgrade pip"
+  - "pip install --disable-pip-version-check --user --upgrade pip==9.0.3"
   - "pip install --disable-pip-version-check --user --upgrade setuptools"
 
 build_script:
@@ -32,3 +32,6 @@ build_script:
 test_script:
   - "%CMD_IN_ENV% python setup.py test"
 
+branches:
+  only:
+    - master
