@@ -93,9 +93,6 @@ def codegen(lang,             # type: str
             for f in rec.get("fields", []):
                 jld = f.get("jsonldPredicate")
                 name = f["name"]
-                if isinstance(jld, dict):
-                    if "_id" in jld and jld["_id"][0] != "@":
-                        name = jld["_id"]
                 field_names.append(shortname(name))
 
             cg.end_class(rec["name"], field_names)
