@@ -95,17 +95,20 @@ class PythonCodeGen(CodeGenBase):
             return
 
         self.out.write("""
-        diff = set([str(k) for k in doc.keys()]) - set({attrs})
-        if len(diff) > 0:
-            head = list(diff)[0]
-            errors.append(SourceLine(doc, head, str).makeError("invalid field `%s`, expected one of: {attrstr}" % (head)))
+        for k in doc.keys():
+            if k not in self.attrs:
+                errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: {attrstr}" % (k)))
+                break
 
         if errors:
             raise ValidationException(\"Trying '{class_}'\\n\"+\"\\n\".join(errors))
 """.
-                       format(attrs=field_names, attrstr=", ".join(["`%s`" % f for f in field_names]),
+                       format(attrstr=", ".join(["`%s`" % f for f in field_names]),
                               class_=self.safe_name(classname)))
-        self.serializer.write("        return r\n")
+        self.serializer.write("        return r\n\n")
+
+        self.serializer.write("    attrs = frozenset({attrs})\n".format(attrs=field_names))
+
         self.out.write(self.serializer.getvalue())
         self.out.write("\n\n")
 
