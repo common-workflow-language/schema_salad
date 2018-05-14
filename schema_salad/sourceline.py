@@ -49,7 +49,7 @@ def indent(v, nolead=False, shift=u"  ", bullet=u"  "):  # type: (Text, bool, Te
     else:
         def lineno(i, l):  # type: (int, Text) -> Text
             r = lineno_re.match(l)
-            if bool(r):
+            if r is not None:
                 return r.group(1) + (bullet if i == 0 else shift) + r.group(2)
             else:
                 return (bullet if i == 0 else shift) + l
