@@ -962,7 +962,7 @@ class Loader(object):
             if len(sp) == 0:
                 break
             sp.pop()
-        if onWindows() and link.startsWith("file:"):
+        if onWindows() and link.startswith("file:"):
             link = link.lower()
         raise validate.ValidationException(
             "Field `%s` references unknown identifier `%s`, tried %s" % (field, link, ", ".join(tried)))
