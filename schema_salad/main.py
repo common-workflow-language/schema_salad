@@ -94,7 +94,7 @@ def to_one_line_messages(message):  # type: (str) -> str
 
 def reformat_yaml_exception_message(message):  # type: (str) -> str
     line_regex = re.compile(r'^\s+in "(.+)", line (\d+), column (\d+)$')
-    fname_regex = re.compile(r'^file://'+os.getcwd()+'/')
+    fname_regex = re.compile(r'^file://'+re.escape(os.getcwd())+'/')
     msgs = message.splitlines()
     ret = []
 
