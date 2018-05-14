@@ -8,7 +8,7 @@ from pkg_resources import resource_stream
 from .utils import aslist, flatten
 from . import schema
 from .codegen_base import TypeDef, CodeGenBase, shortname
-from typing import List, Text, Dict, Union, IO, Any
+from typing import Any, Dict, IO, List, Optional, Text, Union
 
 class PythonCodeGen(CodeGenBase):
     def __init__(self, out):
@@ -50,7 +50,7 @@ class PythonCodeGen(CodeGenBase):
 
 
     def begin_class(self, classname, extends, doc, abstract):
-        # type: (Text, List[Text], Text, bool) -> None
+        # type: (Text, List[Text], Optional[Text], bool) -> None
 
         classname = self.safe_name(classname)
 
