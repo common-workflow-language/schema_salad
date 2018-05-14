@@ -80,8 +80,10 @@ class TestPrintOneline(unittest.TestCase):
                 if '\\' in fullpath:
                     fullpath = '/'+fullpath.replace('\\', '/')
                 self.assertEqual(len(msgs), 1)
-                self.assertTrue(msgs[0].endswith(src+':13:5: Field `type` references unknown identifier `Filea`, tried file://%s#Filea' % (fullpath)))
                 print("\n", e)
+                assert msgs[0].endswith(
+                    src + ':13:5: Field `type` references unknown identifier '
+                    '`Filea`, tried file://%s#Filea' % (fullpath))
                 raise
 
     def test_for_invalid_yaml1(self):
