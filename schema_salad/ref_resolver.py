@@ -582,8 +582,12 @@ class Loader(object):
             resolved_obj, metadata = self.resolve_all(
                 doc, base_url, file_base=doc_url, checklinks=checklinks)
         else:
+            if doc:
+                resolve_target = doc
+            else:
+                resolve_target = obj
             resolved_obj, metadata = self.resolve_all(
-                doc if doc else obj, doc_url, checklinks=checklinks)
+                resolve_target, doc_url, checklinks=checklinks)
 
         # Requested reference should be in the index now, otherwise it's a bad
         # reference
