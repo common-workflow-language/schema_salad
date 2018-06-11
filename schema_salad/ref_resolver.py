@@ -2,7 +2,6 @@ from __future__ import absolute_import
 import sys
 import os
 import json
-import hashlib
 import logging
 import collections
 from io import open
@@ -17,7 +16,7 @@ import copy
 
 
 from . import validate
-from .utils import aslist, flatten
+from .utils import aslist, flatten, onWindows
 from .sourceline import SourceLine, add_lc_filename, relname
 
 import requests
@@ -294,7 +293,7 @@ class Loader(object):
             else:
                 self.session = CacheControl(
                     requests.Session(),
-                    cache=FileCache("/tmp", ".cache", "salad"))
+                    cache=FileCache(os.path.join("/tmp", ".cache", "salad")))
         else:
             self.session = session
 
@@ -318,6 +317,7 @@ class Loader(object):
         self.idmap = {}                 # type: Dict[Text, Any]
         self.mapPredicate = {}          # type: Dict[Text, Text]
         self.type_dsl_fields = set()    # type: Set[Text]
+        self.subscopes = {}             # type: Dict[Text, Text]
 
         self.add_context(ctx)
 
@@ -435,6 +435,7 @@ class Loader(object):
         self.vocab = {}
         self.rvocab = {}
         self.type_dsl_fields = set()
+        self.subscopes = {}
 
         self.ctx.update(_copy_dict_without_key(newcontext, u"@context"))
 
@@ -470,6 +471,9 @@ class Loader(object):
                 self.vocab[key] = value[u"@id"]
             elif isinstance(value, six.string_types):
                 self.vocab[key] = value
+
+            if isinstance(value, dict) and value.get(u"subscope"):
+                self.subscopes[key] = value[u"subscope"]
 
         for k, v in self.vocab.items():
             self.rvocab[self.expand_url(v, u"", scoped_id=False)] = k
@@ -859,8 +863,11 @@ class Loader(object):
 
             try:
                 for key, val in document.items():
+                    subscope = ""  # type: Text
+                    if key in self.subscopes:
+                        subscope = "/" + self.subscopes[key]
                     document[key], _ = loader.resolve_all(
-                        val, base_url, file_base=file_base, checklinks=False)
+                        val, base_url+subscope, file_base=file_base, checklinks=False)
             except validate.ValidationException as v:
                 _logger.warn("loader is %s", id(loader), exc_info=True)
                 raise validate.ValidationException("(%s) (%s) Validation error in field %s:\n%s" % (
@@ -958,6 +965,8 @@ class Loader(object):
             if len(sp) == 0:
                 break
             sp.pop()
+        if onWindows() and link.startswith("file:"):
+            link = link.lower()
         raise validate.ValidationException(
             "Field `%s` references unknown identifier `%s`, tried %s" % (field, link, ", ".join(tried)))
 
@@ -1019,11 +1028,18 @@ class Loader(object):
         if isinstance(document, list):
             iterator = enumerate(document)
         elif isinstance(document, dict):
-            try:
-                for d in self.url_fields:
+            for d in self.url_fields:
+                try:
                     sl = SourceLine(document, d, validate.ValidationException)
                     if d in document and d not in self.identity_links:
                         document[d] = self.validate_link(d, document[d], docid, all_doc_ids)
+                except validate.ValidationException as v:
+                    if d == "$schemas":
+                        _logger.warn( validate.indent(six.text_type(v)))
+                    else:
+                        errors.append(sl.makeError(six.text_type(v)))
+
+            try:
                 for identifier in self.identifiers:  # validate that each id is defined uniquely
                     if identifier in document:
                         sl = SourceLine(document, identifier, validate.ValidationException)
@@ -1034,10 +1050,8 @@ class Loader(object):
                             all_doc_ids[document[identifier]] = sl.makeLead()
                             break
             except validate.ValidationException as v:
-                if d == "$schemas":
-                    _logger.warn( validate.indent(six.text_type(v)))
-                else:
-                    errors.append(sl.makeError(six.text_type(v)))
+                errors.append(sl.makeError(six.text_type(v)))
+
             if hasattr(document, "iteritems"):
                 iterator = six.iteritems(document)
             else:

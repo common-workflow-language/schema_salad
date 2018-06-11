@@ -2,14 +2,7 @@ import collections
 from six.moves import urllib
 from typing import List, Text, Dict, Union, Any
 from . import schema
-
-def shortname(inputid):
-    # type: (Text) -> Text
-    d = urllib.parse.urlparse(inputid)
-    if d.fragment:
-        return d.fragment.split(u"/")[-1]
-    else:
-        return d.path.split(u"/")[-1]
+from .schema import shortname
 
 class TypeDef(object):
     def __init__(self, name, init):
@@ -45,8 +38,8 @@ class CodeGenBase(object):
         # type: (Text, List[Text], Text, bool) -> None
         raise NotImplementedError()
 
-    def end_class(self, classname):
-        # type: (Text) -> None
+    def end_class(self, classname, field_names):
+        # type: (Text, List[Text]) -> None
         raise NotImplementedError()
 
     def type_loader(self, t):
