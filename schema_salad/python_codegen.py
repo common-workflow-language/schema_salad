@@ -16,7 +16,6 @@ class PythonCodeGen(CodeGenBase):
         super(PythonCodeGen, self).__init__()
         self.out = out
         self.current_class_is_abstract = False
-        self.current_classname = None
 
     def safe_name(self, n):
         # type: (Text) -> Text
@@ -50,7 +49,7 @@ class PythonCodeGen(CodeGenBase):
             self.declare_type(p)
 
 
-    def begin_class(self, classname, extends, doc, abstract):
+    def begin_class(self, classname, extends, doc, abstract, fields):
         # type: (Text, List[Text], Optional[Text], bool) -> None
 
         classname = self.safe_name(classname)
@@ -88,6 +87,20 @@ class PythonCodeGen(CodeGenBase):
         r = copy.copy(self.extension_fields)
 """)
 
+        for fi in fields:
+            if shortname(fi["name"]) == "class":
+                self.out.write(
+                    """
+        if doc.get('class') != '{class_}':
+            raise ValidationException("Not a {class_}")
+
+""".format(class_=classname))
+
+                self.serializer.write("""
+        r['class'] = '{class_}'
+""".format(class_=classname))
+
+
     def end_class(self, classname, field_names):
         # type: (Text, List[Text]) -> None
 
@@ -112,7 +125,7 @@ class PythonCodeGen(CodeGenBase):
                               class_=self.safe_name(classname)))
         self.serializer.write("        return r\n\n")
 
-        self.serializer.write("    attrs = frozenset({attrs})\n".format(attrs=field_names+["$namespaces"]))
+        self.serializer.write("    attrs = frozenset({attrs})\n".format(attrs=field_names))
 
         self.out.write(self.serializer.getvalue())
         self.out.write("\n\n")
@@ -163,7 +176,8 @@ class PythonCodeGen(CodeGenBase):
             if docRoot is not None:
                 self.{safename} = docRoot
             else:
-                raise ValidationException("Missing {fieldname}")
+                self.{safename} = "_:" + str(uuid.uuid4())
+#                raise ValidationException("Missing {fieldname}")
         baseuri = self.{safename}
 """.
                        format(safename=self.safe_name(name),
@@ -176,11 +190,6 @@ class PythonCodeGen(CodeGenBase):
             return
 
         if shortname(name) == "class":
-            self.out.write(
-            """
-        if doc['class'] != '{class_}':
-            raise ValidationException("Not a {class_}")
-""".format(class_=self.current_classname))
             return
 
         if optional:

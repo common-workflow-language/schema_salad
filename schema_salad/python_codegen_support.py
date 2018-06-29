@@ -4,6 +4,7 @@ import ruamel.yaml as yaml
 import copy
 import re
 from typing import List, Text, Dict, Union, Any, Sequence
+import uuid
 
 class ValidationException(Exception):
     pass
@@ -333,6 +334,10 @@ def _document_load(loader, doc, baseuri, loadingOptions):
     if isinstance(doc, dict):
         if "$namespaces" in doc:
             loadingOptions = LoadingOptions(copyfrom=loadingOptions, namespaces=doc["$namespaces"])
+            del doc["$namespaces"]
+
+        if "$schemas" in doc:
+            del doc["$schemas"]
 
         if "$base" in doc:
             baseuri = doc["$base"]

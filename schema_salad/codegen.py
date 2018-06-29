@@ -53,7 +53,7 @@ def codegen(lang,             # type: str
             if rec.get("documentRoot"):
                 documentRoots.append(rec["name"])
             cg.begin_class(rec["name"], aslist(rec.get("extends", [])), rec.get("doc"),
-                           rec.get("abstract", False))
+                           rec.get("abstract", False), rec.get("fields", []))
             cg.add_vocab(shortname(rec["name"]), rec["name"])
 
             for f in rec.get("fields", []):
