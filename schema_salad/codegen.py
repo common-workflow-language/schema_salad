@@ -52,8 +52,13 @@ def codegen(lang,             # type: str
         if rec["type"] == "record":
             if rec.get("documentRoot"):
                 documentRoots.append(rec["name"])
+
+            field_names = []
+            for f in rec.get("fields", []):
+                field_names.append(shortname(f["name"]))
+
             cg.begin_class(rec["name"], aslist(rec.get("extends", [])), rec.get("doc"),
-                           rec.get("abstract", False), rec.get("fields", []))
+                           rec.get("abstract", False), field_names)
             cg.add_vocab(shortname(rec["name"]), rec["name"])
 
             for f in rec.get("fields", []):
@@ -89,12 +94,6 @@ def codegen(lang,             # type: str
                     continue
 
                 cg.declare_field(fieldpred, tl, f.get("doc"), optional)
-
-            field_names = []
-            for f in rec.get("fields", []):
-                jld = f.get("jsonldPredicate")
-                name = f["name"]
-                field_names.append(shortname(name))
 
             cg.end_class(rec["name"], field_names)
 

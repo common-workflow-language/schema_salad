@@ -49,9 +49,7 @@ class PythonCodeGen(CodeGenBase):
             self.declare_type(p)
 
 
-    def begin_class(self, classname, extends, doc, abstract, fields):
-        # type: (Text, List[Text], Optional[Text], bool) -> None
-
+    def begin_class(self, classname, extends, doc, abstract, field_names):
         classname = self.safe_name(classname)
 
         if extends:
@@ -90,16 +88,14 @@ class PythonCodeGen(CodeGenBase):
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 """)
 
-        for fi in fields:
-            if shortname(fi["name"]) == "class":
-                self.out.write(
-                    """
+        if "class" in field_names:
+            self.out.write("""
         if doc.get('class') != '{class_}':
             raise ValidationException("Not a {class_}")
 
 """.format(class_=classname))
 
-                self.serializer.write("""
+            self.serializer.write("""
         r['class'] = '{class_}'
 """.format(class_=classname))
 

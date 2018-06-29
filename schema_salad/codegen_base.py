@@ -34,8 +34,8 @@ class CodeGenBase(object):
         # type: (Text) -> Text
         return schema.avro_name(n)
 
-    def begin_class(self, classname, extends, doc, abstract, fields):
-        # type: (Text, List[Text], Text, bool) -> None
+    def begin_class(self, classname, extends, doc, abstract, field_names):
+        # type: (Text, List[Text], Text, bool, List[Text]) -> None
         raise NotImplementedError()
 
     def end_class(self, classname, field_names):

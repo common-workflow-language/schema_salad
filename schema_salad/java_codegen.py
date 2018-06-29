@@ -34,7 +34,7 @@ class JavaCodeGen(CodeGenBase):
     def interface_name(self, n):
         return self.safe_name(n)
 
-    def begin_class(self, classname, extends, doc, abstract, fields):
+    def begin_class(self, classname, extends, doc, abstract, field_names):
         cls = self.interface_name(classname)
         self.current_class = cls
         self.current_class_is_abstract = abstract
