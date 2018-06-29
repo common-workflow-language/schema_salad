@@ -80,11 +80,14 @@ class PythonCodeGen(CodeGenBase):
             doc.lc.data = _doc.lc.data
             doc.lc.filename = _doc.lc.filename
         errors = []
+        self.loadingOptions = loadingOptions
 """)
 
         self.serializer.write("""
-    def save(self):
-        r = copy.copy(self.extension_fields)
+    def save(self, top=True):
+        r = {}
+        for ef in self.extension_fields:
+            r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 """)
 
         for fi in fields:
@@ -123,6 +126,13 @@ class PythonCodeGen(CodeGenBase):
 """.
                        format(attrstr=", ".join(["`%s`" % f for f in field_names]),
                               class_=self.safe_name(classname)))
+
+        self.serializer.write("""
+        if top and self.loadingOptions.vocab:
+            r["$namespaces"] = self.loadingOptions.namespaces
+
+""")
+
         self.serializer.write("        return r\n\n")
 
         self.serializer.write("    attrs = frozenset({attrs})\n".format(attrs=field_names))
@@ -213,7 +223,7 @@ class PythonCodeGen(CodeGenBase):
 
         self.out.write("\n")
 
-        self.serializer.write("        if self.%s is not None:\n            r['%s'] = save(self.%s)\n" % (self.safe_name(name), shortname(name), self.safe_name(name)))
+        self.serializer.write("        if self.%s is not None:\n            r['%s'] = save(self.%s, top=False)\n" % (self.safe_name(name), shortname(name), self.safe_name(name)))
 
     def uri_loader(self, inner, scoped_id, vocab_term, refScope):
         # type: (TypeDef, bool, bool, Union[int, None]) -> TypeDef

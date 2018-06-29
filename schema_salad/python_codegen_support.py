@@ -13,13 +13,17 @@ class Savable(object):
     pass
 
 class LoadingOptions(object):
-    def __init__(self, fetcher=None, namespaces=None, fileuri=None, copyfrom=None):
+    def __init__(self, fetcher=None, namespaces=None, fileuri=None, copyfrom=None, schemas=None):
         if copyfrom is not None:
             self.idx = copyfrom.idx
             if fetcher is None:
                 fetcher = copyfrom.fetcher
             if fileuri is None:
                 fileuri = copyfrom.fileuri
+            if namespaces is None:
+                namespaces = copyfrom.namespaces
+            if namespaces is None:
+                schemas = copyfrom.schemas
         else:
             self.idx = {}
 
@@ -49,6 +53,8 @@ class LoadingOptions(object):
 
         self.vocab = _vocab
         self.rvocab = _rvocab
+        self.namespaces = namespaces
+        self.schemas = schemas
 
         if namespaces is not None:
             self.vocab = self.vocab.copy()
@@ -56,6 +62,8 @@ class LoadingOptions(object):
             for k,v in six.iteritems(namespaces):
                 self.vocab[k] = v
                 self.rvocab[v] = k
+
+
 
 def load_field(val, fieldtype, baseuri, loadingOptions):
     if isinstance(val, dict):
@@ -66,11 +74,11 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
     return fieldtype.load(val, baseuri, loadingOptions)
 
 
-def save(val):
+def save(val, top=True):
     if isinstance(val, Savable):
-        return val.save()
+        return val.save(top=top)
     if isinstance(val, list):
-        return [save(v) for v in val]
+        return [save(v, top=False) for v in val]
     return val
 
 def expand_url(url,                 # type: Union[str, Text]
@@ -334,10 +342,11 @@ def _document_load(loader, doc, baseuri, loadingOptions):
     if isinstance(doc, dict):
         if "$namespaces" in doc:
             loadingOptions = LoadingOptions(copyfrom=loadingOptions, namespaces=doc["$namespaces"])
-            del doc["$namespaces"]
+            doc = {k: v for k,v in doc.items() if k != "$namespaces"}
 
         if "$schemas" in doc:
-            del doc["$schemas"]
+            loadingOptions = LoadingOptions(copyfrom=loadingOptions, schemas=doc["$schemas"])
+            doc = {k: v for k,v in doc.items() if k != "$schemas"}
 
         if "$base" in doc:
             baseuri = doc["$base"]
@@ -386,3 +395,9 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         return "file:%s%s" % (urlpath, frag)
     else:
         return "file://%s%s" % (urlpath, frag)
+
+def prefix_url(url, namespaces):
+    for k,v in namespaces.items():
+        if url.startswith(v):
+            return k+":"+url[len(v):]
+    return url
