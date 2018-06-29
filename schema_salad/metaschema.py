@@ -587,7 +587,6 @@ A field of a record.
             doc.lc.data = _doc.lc.data
             doc.lc.filename = _doc.lc.filename
         errors = []
-        #doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
         if 'name' in doc:
             try:
                 self.name = load_field(doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
@@ -617,11 +616,21 @@ A field of a record.
             errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
 
+        self.extension_fields = {}
+        for k in doc.keys():
+            if k not in self.attrs:
+                if ":" in k:
+                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    self.extension_fields[ex] = doc[k]
+                else:
+                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `doc`, `name`, `type`" % (k)))
+                    break
+
         if errors:
             raise ValidationException("Trying 'RecordField'\n"+"\n".join(errors))
 
     def save(self):
-        r = {}
+        r = copy.copy(self.extension_fields)
         if self.name is not None:
             r['name'] = save(self.name)
         if self.doc is not None:
@@ -629,6 +638,8 @@ A field of a record.
         if self.type is not None:
             r['type'] = save(self.type)
         return r
+
+    attrs = frozenset([u'doc', u'name', u'type', '$namespaces'])
 
 
 class RecordSchema(Savable):
@@ -638,7 +649,6 @@ class RecordSchema(Savable):
             doc.lc.data = _doc.lc.data
             doc.lc.filename = _doc.lc.filename
         errors = []
-        #doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
         if 'fields' in doc:
             try:
                 self.fields = load_field(doc.get('fields'), idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader, baseuri, loadingOptions)
@@ -653,16 +663,28 @@ class RecordSchema(Savable):
             errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
 
+        self.extension_fields = {}
+        for k in doc.keys():
+            if k not in self.attrs:
+                if ":" in k:
+                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    self.extension_fields[ex] = doc[k]
+                else:
+                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `fields`, `type`" % (k)))
+                    break
+
         if errors:
             raise ValidationException("Trying 'RecordSchema'\n"+"\n".join(errors))
 
     def save(self):
-        r = {}
+        r = copy.copy(self.extension_fields)
         if self.fields is not None:
             r['fields'] = save(self.fields)
         if self.type is not None:
             r['type'] = save(self.type)
         return r
+
+    attrs = frozenset([u'fields', u'type', '$namespaces'])
 
 
 class EnumSchema(Savable):
@@ -676,7 +698,6 @@ Define an enumerated type.
             doc.lc.data = _doc.lc.data
             doc.lc.filename = _doc.lc.filename
         errors = []
-        #doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
         try:
             self.symbols = load_field(doc.get('symbols'), uri_array_of_strtype_True_False_None, baseuri, loadingOptions)
         except ValidationException as e:
@@ -688,16 +709,28 @@ Define an enumerated type.
             errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
 
+        self.extension_fields = {}
+        for k in doc.keys():
+            if k not in self.attrs:
+                if ":" in k:
+                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    self.extension_fields[ex] = doc[k]
+                else:
+                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `symbols`, `type`" % (k)))
+                    break
+
         if errors:
             raise ValidationException("Trying 'EnumSchema'\n"+"\n".join(errors))
 
     def save(self):
-        r = {}
+        r = copy.copy(self.extension_fields)
         if self.symbols is not None:
             r['symbols'] = save(self.symbols)
         if self.type is not None:
             r['type'] = save(self.type)
         return r
+
+    attrs = frozenset([u'symbols', u'type', '$namespaces'])
 
 
 class ArraySchema(Savable):
@@ -707,7 +740,6 @@ class ArraySchema(Savable):
             doc.lc.data = _doc.lc.data
             doc.lc.filename = _doc.lc.filename
         errors = []
-        #doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
         try:
             self.items = load_field(doc.get('items'), uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2, baseuri, loadingOptions)
         except ValidationException as e:
@@ -719,16 +751,28 @@ class ArraySchema(Savable):
             errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
 
+        self.extension_fields = {}
+        for k in doc.keys():
+            if k not in self.attrs:
+                if ":" in k:
+                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    self.extension_fields[ex] = doc[k]
+                else:
+                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `items`, `type`" % (k)))
+                    break
+
         if errors:
             raise ValidationException("Trying 'ArraySchema'\n"+"\n".join(errors))
 
     def save(self):
-        r = {}
+        r = copy.copy(self.extension_fields)
         if self.items is not None:
             r['items'] = save(self.items)
         if self.type is not None:
             r['type'] = save(self.type)
         return r
+
+    attrs = frozenset([u'items', u'type', '$namespaces'])
 
 
 class JsonldPredicate(Savable):
@@ -743,7 +787,6 @@ URI resolution and JSON-LD context generation.
             doc.lc.data = _doc.lc.data
             doc.lc.filename = _doc.lc.filename
         errors = []
-        #doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
         if '_id' in doc:
             try:
                 self._id = load_field(doc.get('_id'), uri_union_of_None_type_or_strtype_True_False_None, baseuri, loadingOptions)
@@ -825,11 +868,21 @@ URI resolution and JSON-LD context generation.
             self.subscope = None
 
 
+        self.extension_fields = {}
+        for k in doc.keys():
+            if k not in self.attrs:
+                if ":" in k:
+                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    self.extension_fields[ex] = doc[k]
+                else:
+                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `_id`, `_type`, `_container`, `identity`, `noLinkCheck`, `mapSubject`, `mapPredicate`, `refScope`, `typeDSL`, `subscope`" % (k)))
+                    break
+
         if errors:
             raise ValidationException("Trying 'JsonldPredicate'\n"+"\n".join(errors))
 
     def save(self):
-        r = {}
+        r = copy.copy(self.extension_fields)
         if self._id is not None:
             r['_id'] = save(self._id)
         if self._type is not None:
@@ -852,6 +905,8 @@ URI resolution and JSON-LD context generation.
             r['subscope'] = save(self.subscope)
         return r
 
+    attrs = frozenset([u'_id', u'_type', u'_container', u'identity', u'noLinkCheck', u'mapSubject', u'mapPredicate', u'refScope', u'typeDSL', u'subscope', '$namespaces'])
+
 
 class SpecializeDef(Savable):
     def __init__(self, _doc, baseuri, loadingOptions, docRoot=None):
@@ -860,7 +915,6 @@ class SpecializeDef(Savable):
             doc.lc.data = _doc.lc.data
             doc.lc.filename = _doc.lc.filename
         errors = []
-        #doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
         try:
             self.specializeFrom = load_field(doc.get('specializeFrom'), uri_strtype_False_False_1, baseuri, loadingOptions)
         except ValidationException as e:
@@ -872,16 +926,28 @@ class SpecializeDef(Savable):
             errors.append(SourceLine(doc, 'specializeTo', str).makeError("the `specializeTo` field is not valid because:\n"+str(e)))
 
 
+        self.extension_fields = {}
+        for k in doc.keys():
+            if k not in self.attrs:
+                if ":" in k:
+                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    self.extension_fields[ex] = doc[k]
+                else:
+                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `specializeFrom`, `specializeTo`" % (k)))
+                    break
+
         if errors:
             raise ValidationException("Trying 'SpecializeDef'\n"+"\n".join(errors))
 
     def save(self):
-        r = {}
+        r = copy.copy(self.extension_fields)
         if self.specializeFrom is not None:
             r['specializeFrom'] = save(self.specializeFrom)
         if self.specializeTo is not None:
             r['specializeTo'] = save(self.specializeTo)
         return r
+
+    attrs = frozenset([u'specializeFrom', u'specializeTo', '$namespaces'])
 
 
 class NamedType(Savable):
@@ -907,7 +973,6 @@ A field of a record.
             doc.lc.data = _doc.lc.data
             doc.lc.filename = _doc.lc.filename
         errors = []
-        #doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
         if 'name' in doc:
             try:
                 self.name = load_field(doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
@@ -953,11 +1018,21 @@ A field of a record.
             self.default = None
 
 
+        self.extension_fields = {}
+        for k in doc.keys():
+            if k not in self.attrs:
+                if ":" in k:
+                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    self.extension_fields[ex] = doc[k]
+                else:
+                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `doc`, `name`, `type`, `jsonldPredicate`, `default`" % (k)))
+                    break
+
         if errors:
             raise ValidationException("Trying 'SaladRecordField'\n"+"\n".join(errors))
 
     def save(self):
-        r = {}
+        r = copy.copy(self.extension_fields)
         if self.name is not None:
             r['name'] = save(self.name)
         if self.doc is not None:
@@ -970,6 +1045,8 @@ A field of a record.
             r['default'] = save(self.default)
         return r
 
+    attrs = frozenset([u'doc', u'name', u'type', u'jsonldPredicate', u'default', '$namespaces'])
+
 
 class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
     def __init__(self, _doc, baseuri, loadingOptions, docRoot=None):
@@ -978,7 +1055,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             doc.lc.data = _doc.lc.data
             doc.lc.filename = _doc.lc.filename
         errors = []
-        #doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
         if 'name' in doc:
             try:
                 self.name = load_field(doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
@@ -1088,11 +1164,21 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             self.specialize = None
 
 
+        self.extension_fields = {}
+        for k in doc.keys():
+            if k not in self.attrs:
+                if ":" in k:
+                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    self.extension_fields[ex] = doc[k]
+                else:
+                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `name`, `inVocab`, `fields`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `abstract`, `extends`, `specialize`" % (k)))
+                    break
+
         if errors:
             raise ValidationException("Trying 'SaladRecordSchema'\n"+"\n".join(errors))
 
     def save(self):
-        r = {}
+        r = copy.copy(self.extension_fields)
         if self.name is not None:
             r['name'] = save(self.name)
         if self.inVocab is not None:
@@ -1121,6 +1207,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             r['specialize'] = save(self.specialize)
         return r
 
+    attrs = frozenset([u'name', u'inVocab', u'fields', u'type', u'doc', u'docParent', u'docChild', u'docAfter', u'jsonldPredicate', u'documentRoot', u'abstract', u'extends', u'specialize', '$namespaces'])
+
 
 class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
     """
@@ -1133,7 +1221,6 @@ Define an enumerated type.
             doc.lc.data = _doc.lc.data
             doc.lc.filename = _doc.lc.filename
         errors = []
-        #doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
         if 'name' in doc:
             try:
                 self.name = load_field(doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
@@ -1224,11 +1311,21 @@ Define an enumerated type.
             self.extends = None
 
 
+        self.extension_fields = {}
+        for k in doc.keys():
+            if k not in self.attrs:
+                if ":" in k:
+                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    self.extension_fields[ex] = doc[k]
+                else:
+                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `name`, `inVocab`, `symbols`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `extends`" % (k)))
+                    break
+
         if errors:
             raise ValidationException("Trying 'SaladEnumSchema'\n"+"\n".join(errors))
 
     def save(self):
-        r = {}
+        r = copy.copy(self.extension_fields)
         if self.name is not None:
             r['name'] = save(self.name)
         if self.inVocab is not None:
@@ -1253,6 +1350,8 @@ Define an enumerated type.
             r['extends'] = save(self.extends)
         return r
 
+    attrs = frozenset([u'name', u'inVocab', u'symbols', u'type', u'doc', u'docParent', u'docChild', u'docAfter', u'jsonldPredicate', u'documentRoot', u'extends', '$namespaces'])
+
 
 class Documentation(NamedType, DocType):
     """
@@ -1266,7 +1365,6 @@ schemas but has no role in formal validation.
             doc.lc.data = _doc.lc.data
             doc.lc.filename = _doc.lc.filename
         errors = []
-        #doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
         if 'name' in doc:
             try:
                 self.name = load_field(doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
@@ -1328,11 +1426,21 @@ schemas but has no role in formal validation.
             errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
 
+        self.extension_fields = {}
+        for k in doc.keys():
+            if k not in self.attrs:
+                if ":" in k:
+                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    self.extension_fields[ex] = doc[k]
+                else:
+                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `name`, `inVocab`, `doc`, `docParent`, `docChild`, `docAfter`, `type`" % (k)))
+                    break
+
         if errors:
             raise ValidationException("Trying 'Documentation'\n"+"\n".join(errors))
 
     def save(self):
-        r = {}
+        r = copy.copy(self.extension_fields)
         if self.name is not None:
             r['name'] = save(self.name)
         if self.inVocab is not None:
@@ -1348,6 +1456,8 @@ schemas but has no role in formal validation.
         if self.type is not None:
             r['type'] = save(self.type)
         return r
+
+    attrs = frozenset([u'name', u'inVocab', u'doc', u'docParent', u'docChild', u'docAfter', u'type', '$namespaces'])
 
 
 _vocab = {
@@ -1409,12 +1519,12 @@ _rvocab = {
     "http://www.w3.org/2001/XMLSchema#string": "string",
 }
 
+inttype = _PrimitiveLoader(int)
+booltype = _PrimitiveLoader(bool)
+strtype = _PrimitiveLoader((str, six.text_type))
 Any_type = _AnyLoader()
 floattype = _PrimitiveLoader(float)
 None_type = _PrimitiveLoader(type(None))
-booltype = _PrimitiveLoader(bool)
-inttype = _PrimitiveLoader(int)
-strtype = _PrimitiveLoader((str, six.text_type))
 DocumentedLoader = _RecordLoader(Documented)
 PrimitiveTypeLoader = _EnumLoader(("null", "boolean", "int", "long", "float", "double", "string",))
 AnyLoader = _EnumLoader(("Any",))

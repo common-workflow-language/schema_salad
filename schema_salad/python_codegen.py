@@ -16,6 +16,7 @@ class PythonCodeGen(CodeGenBase):
         super(PythonCodeGen, self).__init__()
         self.out = out
         self.current_class_is_abstract = False
+        self.current_classname = None
 
     def safe_name(self, n):
         # type: (Text) -> Text
@@ -80,12 +81,11 @@ class PythonCodeGen(CodeGenBase):
             doc.lc.data = _doc.lc.data
             doc.lc.filename = _doc.lc.filename
         errors = []
-        #doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
 """)
 
         self.serializer.write("""
     def save(self):
-        r = {}
+        r = copy.copy(self.extension_fields)
 """)
 
     def end_class(self, classname, field_names):
@@ -95,10 +95,15 @@ class PythonCodeGen(CodeGenBase):
             return
 
         self.out.write("""
+        self.extension_fields = {{}}
         for k in doc.keys():
             if k not in self.attrs:
-                errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: {attrstr}" % (k)))
-                break
+                if ":" in k:
+                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    self.extension_fields[ex] = doc[k]
+                else:
+                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: {attrstr}" % (k)))
+                    break
 
         if errors:
             raise ValidationException(\"Trying '{class_}'\\n\"+\"\\n\".join(errors))
@@ -107,7 +112,7 @@ class PythonCodeGen(CodeGenBase):
                               class_=self.safe_name(classname)))
         self.serializer.write("        return r\n\n")
 
-        self.serializer.write("    attrs = frozenset({attrs})\n".format(attrs=field_names))
+        self.serializer.write("    attrs = frozenset({attrs})\n".format(attrs=field_names+["$namespaces"]))
 
         self.out.write(self.serializer.getvalue())
         self.out.write("\n\n")
@@ -168,6 +173,14 @@ class PythonCodeGen(CodeGenBase):
         # type: (Text, TypeDef, Text, bool) -> None
 
         if self.current_class_is_abstract:
+            return
+
+        if shortname(name) == "class":
+            self.out.write(
+            """
+        if doc['class'] != '{class_}':
+            raise ValidationException("Not a {class_}")
+""".format(class_=self.current_classname))
             return
 
         if optional:
