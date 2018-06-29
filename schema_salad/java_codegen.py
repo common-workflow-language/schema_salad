@@ -8,7 +8,7 @@ from pkg_resources import resource_stream
 from .utils import aslist, flatten
 from . import schema
 from .codegen_base import TypeDef, CodeGenBase, shortname
-from typing import Text
+from typing import Text, List
 import os
 
 class JavaCodeGen(CodeGenBase):
@@ -21,10 +21,12 @@ class JavaCodeGen(CodeGenBase):
         self.outdir = self.package.replace(".", "/")
 
     def prologue(self):
+        # type: () -> None
         if not os.path.exists(self.outdir):
             os.makedirs(self.outdir)
 
     def safe_name(self, n):
+        # type: (Text) -> Text
         avn = schema.avro_name(n)
         if avn in ("class", "extends", "abstract"):
             # reserved words
@@ -32,9 +34,11 @@ class JavaCodeGen(CodeGenBase):
         return avn
 
     def interface_name(self, n):
+        # type: (Text) -> Text
         return self.safe_name(n)
 
     def begin_class(self, classname, extends, doc, abstract, field_names):
+        # type: (Text, List[Text], Text, bool, List[Text]) -> None
         cls = self.interface_name(classname)
         self.current_class = cls
         self.current_class_is_abstract = abstract
