@@ -83,7 +83,7 @@ class PythonCodeGen(CodeGenBase):
 """)
 
         self.serializer.write("""
-    def save(self, top=True):
+    def save(self, top=False):
         r = {}
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
@@ -125,7 +125,7 @@ class PythonCodeGen(CodeGenBase):
                               class_=self.safe_name(classname)))
 
         self.serializer.write("""
-        if top and self.loadingOptions.vocab:
+        if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
 """)
@@ -171,24 +171,30 @@ class PythonCodeGen(CodeGenBase):
             return self.prims[t]
         return self.collected_types[self.safe_name(t)+"Loader"]
 
-    def declare_id_field(self, name, fieldtype, doc):
-        # type: (Text, TypeDef, Text) -> None
+    def declare_id_field(self, name, fieldtype, doc, optional):
+        # type: (Text, TypeDef, Text, bool) -> None
 
         if self.current_class_is_abstract:
             return
 
         self.declare_field(name, fieldtype, doc, True)
+
+        if optional:
+            opt = """self.{safename} = "_:" + str(uuid.uuid4())""".format(safename=self.safe_name(name))
+        else:
+            opt = """raise ValidationException("Missing {fieldname}")""".format(fieldname=shortname(name))
+
         self.out.write("""
         if self.{safename} is None:
             if docRoot is not None:
                 self.{safename} = docRoot
             else:
-                self.{safename} = "_:" + str(uuid.uuid4())
-#                raise ValidationException("Missing {fieldname}")
+                {opt}
         baseuri = self.{safename}
 """.
                        format(safename=self.safe_name(name),
-                              fieldname=shortname(name)))
+                              fieldname=shortname(name),
+                              opt=opt))
 
     def declare_field(self, name, fieldtype, doc, optional):
         # type: (Text, TypeDef, Text, bool) -> None
@@ -220,7 +226,10 @@ class PythonCodeGen(CodeGenBase):
 
         self.out.write("\n")
 
-        self.serializer.write("        if self.%s is not None:\n            r['%s'] = save(self.%s, top=False)\n" % (self.safe_name(name), shortname(name), self.safe_name(name)))
+        self.serializer.write("""
+        if self.%s is not None:
+            r['%s'] = save(self.%s, top=False)
+""" % (self.safe_name(name), shortname(name), self.safe_name(name)))
 
     def uri_loader(self, inner, scoped_id, vocab_term, refScope):
         # type: (TypeDef, bool, bool, Union[int, None]) -> TypeDef

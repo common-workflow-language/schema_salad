@@ -50,8 +50,8 @@ class CodeGenBase(object):
         # type: (Text, TypeDef, Text, bool) -> None
         raise NotImplementedError()
 
-    def declare_id_field(self, name, typedef, doc):
-        # type: (Text, TypeDef, Text) -> None
+    def declare_id_field(self, name, typedef, doc, optional):
+        # type: (Text, TypeDef, Text, bool) -> None
         raise NotImplementedError()
 
     def uri_loader(self, inner, scoped_id, vocab_term, refScope):

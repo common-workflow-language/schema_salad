@@ -64,8 +64,9 @@ def codegen(lang,             # type: str
             for f in rec.get("fields", []):
                 if f.get("jsonldPredicate") == "@id":
                     fieldpred = f["name"]
+                    optional = bool("https://w3id.org/cwl/salad#null" in f["type"])
                     tl = cg.uri_loader(cg.type_loader(f["type"]), True, False, None)
-                    cg.declare_id_field(fieldpred, tl, f.get("doc"))
+                    cg.declare_id_field(fieldpred, tl, f.get("doc"), optional)
                     break
 
             for f in rec.get("fields", []):

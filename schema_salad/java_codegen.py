@@ -140,7 +140,7 @@ public class {cls}Impl implements {cls} {{
                                   format(fieldname=fieldname))
 
 
-    def declare_id_field(self, name, typedef, doc):
+    def declare_id_field(self, name, typedef, doc, optional):
         pass
 
     def uri_loader(self, inner, scoped_id, vocab_term, refScope):
