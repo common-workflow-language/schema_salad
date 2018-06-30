@@ -25,27 +25,59 @@ Usage
 ::
 
    $ pip install schema_salad
-   $ schema-salad-tool
-   usage: schema-salad-tool [-h] [--rdf-serializer RDF_SERIALIZER]
-                         [--print-jsonld-context | --print-doc | --print-rdfs | --print-avro | --print-rdf | --print-pre | --print-index | --print-metadata | --version]
-                         [--strict | --non-strict]
-                         [--verbose | --quiet | --debug]
-                         schema [document]
-   $ python
-   >>> import schema_salad
 
 To install from source::
 
-  git clone https://github.com/common-workflow-language/schema_salad 
-  cd schema_salad 
+  git clone https://github.com/common-workflow-language/schema_salad
+  cd schema_salad
   python setup.py install
- 
+
+Commands
+--------
+
+Schema salad can be used as a command line tool or imported as a Python module::
+
+   $ schema-salad-tool
+   usage: schema-salad-tool [-h] [--rdf-serializer RDF_SERIALIZER]
+                         [--print-jsonld-context | --print-rdfs | --print-avro | --print-rdf | --print-pre | --print-index | --print-metadata | --print-inheritance-dot | --print-fieldrefs-dot | --codegen language | --print-oneline]
+                         [--strict | --non-strict] [--verbose | --quiet | --debug] [--version]
+                         [schema] [document]
+
+   $ python
+   >>> import schema_salad
+
+Validate a schema::
+
+   $ schema-salad-tool myschema.yml
+
+Validate a document using a schema::
+
+   $ schema-salad-tool myschema.yml mydocument.yml
+
+Get JSON-LD context::
+
+   $ schema-salad-tool --print-jsonld-context myschema.yml mydocument.yml
+
+
+Convert a document to JSON-LD::
+
+   $ schema-salad-tool --print-pre myschema.yml mydocument.yml > mydocument.jsonld
+
+Generate Python classes for loading/generating documents described by the schema::
+
+   $ schema-salad-tool --codegen=python myschema.yml > myschema.py
+
+Display inheritance relationship between classes as a graphviz 'dot' file and render as SVG::
+
+   $ schema-salad-tool --print-inheritance-dot myschema.yml | dot -Tsvg > myschema.svg
+
 
 Documentation
 -------------
 
 See the specification_ and the metaschema_ (salad schema for itself).  For an
 example application of Schema Salad see the Common Workflow Language_.
+
 
 Rationale
 ---------
