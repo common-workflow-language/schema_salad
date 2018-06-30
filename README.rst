@@ -8,16 +8,15 @@
 Schema Salad
 ------------
 
-Salad is a schema language for describing JSON or YAML structured linked data
-documents.  Salad is based originally on JSON-LD_ and the Apache Avro_ data
-serialization system.
-
-Salad schema describes rules for preprocessing, structural validation, and link
-checking for documents described by a Salad schema. Salad features for rich
-data modeling such as inheritance, template specialization, object identifiers,
-object references, documentation generation, and transformation to RDF_. Salad
-provides a bridge between document and record oriented data modeling and the
-Semantic Web.
+Salad is a schema language for describing JSON or YAML structured
+linked data documents.  Salad schema describes rules for
+preprocessing, structural validation, and hyperlink checking for
+documents described by a Salad schema. Salad supports rich data
+modeling with inheritance, template specialization, object
+identifiers, object references, documentation generation, code
+generation, and transformation to RDF_. Salad provides a bridge
+between document and record oriented data modeling and the Semantic
+Web.
 
 Usage
 -----
@@ -57,7 +56,6 @@ Validate a document using a schema::
 Get JSON-LD context::
 
    $ schema-salad-tool --print-jsonld-context myschema.yml mydocument.yml
-
 
 Convert a document to JSON-LD::
 

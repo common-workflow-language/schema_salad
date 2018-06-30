@@ -83,7 +83,7 @@ class PythonCodeGen(CodeGenBase):
 """)
 
         self.serializer.write("""
-    def save(self, top=False):
+    def save(self, top=False, base_url=""):
         r = {}
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
@@ -226,15 +226,22 @@ class PythonCodeGen(CodeGenBase):
 
         self.out.write("\n")
 
-        self.serializer.write("""
+        if fieldtype.is_uri:
+            self.serializer.write("""
         if self.%s is not None:
-            r['%s'] = save(self.%s, top=False)
+            r['%s'] = relative_uri(self.%s, base_url, %s)
+""" % (self.safe_name(name), shortname(name), self.safe_name(name), fieldtype.scoped_id))
+        else:
+            self.serializer.write("""
+        if self.%s is not None:
+            r['%s'] = save(self.%s, top=False, base_url=base_url)
 """ % (self.safe_name(name), shortname(name), self.safe_name(name)))
 
     def uri_loader(self, inner, scoped_id, vocab_term, refScope):
         # type: (TypeDef, bool, bool, Union[int, None]) -> TypeDef
         return self.declare_type(TypeDef("uri_%s_%s_%s_%s" % (inner.name, scoped_id, vocab_term, refScope),
-                                         "_URILoader(%s, %s, %s, %s)" % (inner.name, scoped_id, vocab_term, refScope)))
+                                         "_URILoader(%s, %s, %s, %s)" % (inner.name, scoped_id, vocab_term, refScope),
+                                         is_uri=True, scoped_id=scoped_id))
 
     def idmap_loader(self, field, inner, mapSubject, mapPredicate):
         # type: (Text, TypeDef, Text, Union[Text, None]) -> TypeDef

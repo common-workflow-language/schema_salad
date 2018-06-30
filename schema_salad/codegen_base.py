@@ -5,10 +5,12 @@ from . import schema
 from .schema import shortname
 
 class TypeDef(object):
-    def __init__(self, name, init):
-        # type: (Text, Text) -> None
+    def __init__(self, name, init, is_uri=False, scoped_id=False):
+        # type: (Text, Text, bool, bool) -> None
         self.name = name
         self.init = init
+        self.is_uri = is_uri
+        self.scoped_id = scoped_id
 
 class CodeGenBase(object):
     def __init__(self):

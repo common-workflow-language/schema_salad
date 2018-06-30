@@ -74,11 +74,11 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
     return fieldtype.load(val, baseuri, loadingOptions)
 
 
-def save(val, top=True):
+def save(val, top=True, base_url=""):
     if isinstance(val, Savable):
-        return val.save(top=top)
+        return val.save(top=top, base_url=base_url)
     if isinstance(val, list):
-        return [save(v, top=False) for v in val]
+        return [save(v, top=False, base_url=base_url) for v in val]
     return val
 
 def expand_url(url,                 # type: Union[str, Text]
@@ -401,3 +401,20 @@ def prefix_url(url, namespaces):
         if url.startswith(v):
             return k+":"+url[len(v):]
     return url
+
+def relative_uri(uri, base_url, scoped_id):
+    if isinstance(uri, list):
+        return [relative_uri(u, base_url, scoped_id) for u in uri]
+    else:
+        urisplit = urllib.parse.urlsplit(uri)
+        basesplit = urllib.parse.urlsplit(base_url)
+        if urisplit.scheme == basesplit.scheme and urisplit.netloc == basesplit.netloc:
+            if urisplit.path == basesplit.path:
+                p = ""
+            else:
+                p = os.path.relpath(urisplit.path, os.path.dirname(basesplit.path))
+
+            if urisplit.fragment:
+                p = p + "#" + urisplit.fragment
+            return p
+        return uri
