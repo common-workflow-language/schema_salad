@@ -57,7 +57,7 @@ def codegen(lang,             # type: str
             for f in rec.get("fields", []):
                 field_names.append(shortname(f["name"]))
 
-            cg.begin_class(rec["name"], aslist(rec.get("extends", [])), rec.get("doc"),
+            cg.begin_class(rec["name"], aslist(rec.get("extends", [])), rec.get("doc", ""),
                            rec.get("abstract", False), field_names)
             cg.add_vocab(shortname(rec["name"]), rec["name"])
 
