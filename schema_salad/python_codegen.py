@@ -8,7 +8,7 @@ from pkg_resources import resource_stream
 from .utils import aslist, flatten
 from . import schema
 from .codegen_base import TypeDef, CodeGenBase, shortname
-from typing import Any, Dict, IO, List, Optional, Text, Union
+from typing import Any, Dict, IO, List, Optional, Text, Union, List
 
 class PythonCodeGen(CodeGenBase):
     def __init__(self, out):
@@ -49,9 +49,8 @@ class PythonCodeGen(CodeGenBase):
             self.declare_type(p)
 
 
-    def begin_class(self, classname, extends, doc, abstract):
-        # type: (Text, List[Text], Optional[Text], bool) -> None
-
+    def begin_class(self, classname, extends, doc, abstract, field_names):
+        # type: (Text, List[Text], Text, bool, List[Text]) -> None
         classname = self.safe_name(classname)
 
         if extends:
@@ -80,13 +79,27 @@ class PythonCodeGen(CodeGenBase):
             doc.lc.data = _doc.lc.data
             doc.lc.filename = _doc.lc.filename
         errors = []
-        #doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
+        self.loadingOptions = loadingOptions
 """)
 
         self.serializer.write("""
-    def save(self):
+    def save(self, top=False, base_url=""):
         r = {}
+        for ef in self.extension_fields:
+            r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 """)
+
+        if "class" in field_names:
+            self.out.write("""
+        if doc.get('class') != '{class_}':
+            raise ValidationException("Not a {class_}")
+
+""".format(class_=classname))
+
+            self.serializer.write("""
+        r['class'] = '{class_}'
+""".format(class_=classname))
+
 
     def end_class(self, classname, field_names):
         # type: (Text, List[Text]) -> None
@@ -95,16 +108,28 @@ class PythonCodeGen(CodeGenBase):
             return
 
         self.out.write("""
+        self.extension_fields = {{}}
         for k in doc.keys():
             if k not in self.attrs:
-                errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: {attrstr}" % (k)))
-                break
+                if ":" in k:
+                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    self.extension_fields[ex] = doc[k]
+                else:
+                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: {attrstr}" % (k)))
+                    break
 
         if errors:
             raise ValidationException(\"Trying '{class_}'\\n\"+\"\\n\".join(errors))
 """.
                        format(attrstr=", ".join(["`%s`" % f for f in field_names]),
                               class_=self.safe_name(classname)))
+
+        self.serializer.write("""
+        if top and self.loadingOptions.namespaces:
+            r["$namespaces"] = self.loadingOptions.namespaces
+
+""")
+
         self.serializer.write("        return r\n\n")
 
         self.serializer.write("    attrs = frozenset({attrs})\n".format(attrs=field_names))
@@ -146,28 +171,38 @@ class PythonCodeGen(CodeGenBase):
             return self.prims[t]
         return self.collected_types[self.safe_name(t)+"Loader"]
 
-    def declare_id_field(self, name, fieldtype, doc):
-        # type: (Text, TypeDef, Text) -> None
+    def declare_id_field(self, name, fieldtype, doc, optional):
+        # type: (Text, TypeDef, Text, bool) -> None
 
         if self.current_class_is_abstract:
             return
 
         self.declare_field(name, fieldtype, doc, True)
+
+        if optional:
+            opt = """self.{safename} = "_:" + str(uuid.uuid4())""".format(safename=self.safe_name(name))
+        else:
+            opt = """raise ValidationException("Missing {fieldname}")""".format(fieldname=shortname(name))
+
         self.out.write("""
         if self.{safename} is None:
             if docRoot is not None:
                 self.{safename} = docRoot
             else:
-                raise ValidationException("Missing {fieldname}")
+                {opt}
         baseuri = self.{safename}
 """.
                        format(safename=self.safe_name(name),
-                              fieldname=shortname(name)))
+                              fieldname=shortname(name),
+                              opt=opt))
 
     def declare_field(self, name, fieldtype, doc, optional):
         # type: (Text, TypeDef, Text, bool) -> None
 
         if self.current_class_is_abstract:
+            return
+
+        if shortname(name) == "class":
             return
 
         if optional:
@@ -191,12 +226,22 @@ class PythonCodeGen(CodeGenBase):
 
         self.out.write("\n")
 
-        self.serializer.write("        if self.%s is not None:\n            r['%s'] = save(self.%s)\n" % (self.safe_name(name), shortname(name), self.safe_name(name)))
+        if fieldtype.is_uri:
+            self.serializer.write("""
+        if self.%s is not None:
+            r['%s'] = relative_uri(self.%s, base_url, %s)
+""" % (self.safe_name(name), shortname(name), self.safe_name(name), fieldtype.scoped_id))
+        else:
+            self.serializer.write("""
+        if self.%s is not None:
+            r['%s'] = save(self.%s, top=False, base_url=base_url)
+""" % (self.safe_name(name), shortname(name), self.safe_name(name)))
 
     def uri_loader(self, inner, scoped_id, vocab_term, refScope):
         # type: (TypeDef, bool, bool, Union[int, None]) -> TypeDef
         return self.declare_type(TypeDef("uri_%s_%s_%s_%s" % (inner.name, scoped_id, vocab_term, refScope),
-                                         "_URILoader(%s, %s, %s, %s)" % (inner.name, scoped_id, vocab_term, refScope)))
+                                         "_URILoader(%s, %s, %s, %s)" % (inner.name, scoped_id, vocab_term, refScope),
+                                         is_uri=True, scoped_id=scoped_id))
 
     def idmap_loader(self, field, inner, mapSubject, mapPredicate):
         # type: (Text, TypeDef, Text, Union[Text, None]) -> TypeDef

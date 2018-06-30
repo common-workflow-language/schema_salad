@@ -5,10 +5,12 @@ from . import schema
 from .schema import shortname
 
 class TypeDef(object):
-    def __init__(self, name, init):
-        # type: (Text, Text) -> None
+    def __init__(self, name, init, is_uri=False, scoped_id=False):
+        # type: (Text, Text, bool, bool) -> None
         self.name = name
         self.init = init
+        self.is_uri = is_uri
+        self.scoped_id = scoped_id
 
 class CodeGenBase(object):
     def __init__(self):
@@ -34,8 +36,8 @@ class CodeGenBase(object):
         # type: (Text) -> Text
         return schema.avro_name(n)
 
-    def begin_class(self, classname, extends, doc, abstract):
-        # type: (Text, List[Text], Text, bool) -> None
+    def begin_class(self, classname, extends, doc, abstract, field_names):
+        # type: (Text, List[Text], Text, bool, List[Text]) -> None
         raise NotImplementedError()
 
     def end_class(self, classname, field_names):
@@ -50,8 +52,8 @@ class CodeGenBase(object):
         # type: (Text, TypeDef, Text, bool) -> None
         raise NotImplementedError()
 
-    def declare_id_field(self, name, typedef, doc):
-        # type: (Text, TypeDef, Text) -> None
+    def declare_id_field(self, name, typedef, doc, optional):
+        # type: (Text, TypeDef, Text, bool) -> None
         raise NotImplementedError()
 
     def uri_loader(self, inner, scoped_id, vocab_term, refScope):
