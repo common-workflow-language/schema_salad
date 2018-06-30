@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import mistune
 import argparse
 import json
+import io
 import os
 import copy
 import re
@@ -493,7 +494,7 @@ def avrold_doc(j, outdoc, renderlist, redirects, brand, brandlink, primtype):
     outdoc.write("""
     <div class="col-md-12" role="main" id="main">""")
 
-    outdoc.write(content.encode("utf-8"))
+    outdoc.write(content)
 
     outdoc.write("""</div>""")
 
@@ -537,7 +538,15 @@ def main():  # type: () -> None
     for r in (args.redirect or []):
         redirect[r.split("=")[0]] = r.split("=")[1]
     renderlist = args.only if args.only else []
-    avrold_doc(s, sys.stdout, renderlist, redirect, args.brand, args.brandlink, args.primtype)
+    if (hasattr(sys.stdout, "encoding")  # type: ignore
+            and sys.stdout.encoding != 'UTF-8'):  # type: ignore
+        if six.PY3 and hasattr(sys.stdout, "detach"):
+            stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+        else:
+            stdout = codecs.getwriter('utf-8')(sys.stdout)  # type: ignore
+    else:
+        stdout = cast(TextIO, sys.stdout)  # type: ignore
+    avrold_doc(s, stdout, renderlist, redirect, args.brand, args.brandlink, args.primtype)
 
 
 if __name__ == "__main__":
