@@ -10,6 +10,8 @@ import re
 import sys
 import logging
 from io import open
+import codecs
+from codecs import StreamWriter  # pylint: disable=unused-import
 
 from . import schema
 from .utils import add_dictlist, aslist
