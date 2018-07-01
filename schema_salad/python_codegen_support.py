@@ -404,7 +404,7 @@ def prefix_url(url, namespaces):
 
 def save_relative_uri(uri, base_url, scoped_id):
     if isinstance(uri, list):
-        return [relative_uri(u, base_url, scoped_id) for u in uri]
+        return [save_relative_uri(u, base_url, scoped_id) for u in uri]
     elif isinstance(uri, str):
         urisplit = urllib.parse.urlsplit(uri)
         basesplit = urllib.parse.urlsplit(base_url)
