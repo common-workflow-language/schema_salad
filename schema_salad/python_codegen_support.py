@@ -402,10 +402,10 @@ def prefix_url(url, namespaces):
             return k+":"+url[len(v):]
     return url
 
-def relative_uri(uri, base_url, scoped_id):
+def save_relative_uri(uri, base_url, scoped_id):
     if isinstance(uri, list):
-        return [relative_uri(u, base_url, scoped_id) for u in uri]
-    else:
+        return [save_relative_uri(u, base_url, scoped_id) for u in uri]
+    elif isinstance(uri, str):
         urisplit = urllib.parse.urlsplit(uri)
         basesplit = urllib.parse.urlsplit(base_url)
         if urisplit.scheme == basesplit.scheme and urisplit.netloc == basesplit.netloc:
@@ -418,3 +418,5 @@ def relative_uri(uri, base_url, scoped_id):
                 p = p + "#" + urisplit.fragment
             return p
         return uri
+    else:
+        return save(uri, top=False, base_url=base_url)
