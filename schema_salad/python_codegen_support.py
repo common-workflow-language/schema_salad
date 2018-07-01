@@ -37,10 +37,10 @@ class LoadingOptions(object):
                 session = CacheControl(
                     requests.Session(),
                     cache=FileCache(os.path.join(os.environ["HOME"], ".cache", "salad")))
-            elif "TMP" in os.environ:
+            elif "TMPDIR" in os.environ:
                 session = CacheControl(
                     requests.Session(),
-                    cache=FileCache(os.path.join(os.environ["TMP"], ".cache", "salad")))
+                    cache=FileCache(os.path.join(os.environ["TMPDIR"], ".cache", "salad")))
             else:
                 session = CacheControl(
                     requests.Session(),
@@ -402,25 +402,32 @@ def prefix_url(url, namespaces):
             return k+":"+url[len(v):]
     return url
 
-def save_relative_uri(uri, base_url, scoped_id):
+def save_relative_uri(uri, base_url, scoped_id, ref_scope):
     if isinstance(uri, list):
-        return [save_relative_uri(u, base_url, scoped_id) for u in uri]
+        return [save_relative_uri(u, base_url, scoped_id, ref_scope) for u in uri]
     elif isinstance(uri, str):
         urisplit = urllib.parse.urlsplit(uri)
         basesplit = urllib.parse.urlsplit(base_url)
         if urisplit.scheme == basesplit.scheme and urisplit.netloc == basesplit.netloc:
-            if urisplit.path == basesplit.path:
-                p = ""
-            else:
+            if urisplit.path != basesplit.path:
                 p = os.path.relpath(urisplit.path, os.path.dirname(basesplit.path))
-
-            if urisplit.fragment:
-                print(urisplit.fragment, basesplit.fragment, urisplit.fragment.startswith(basesplit.fragment+"/"))
-                if urisplit.fragment.startswith(basesplit.fragment+"/"):
-                    p = urisplit.fragment[len(basesplit.fragment)+1:]
-                else:
+                if urisplit.fragment:
                     p = p + "#" + urisplit.fragment
-            return p
+                return p
+
+            basefrag = basesplit.fragment+"/"
+            if ref_scope:
+                sp = basefrag.split("/")
+                i = 0
+                while i < ref_scope:
+                    sp.pop()
+                    i += 1
+                basefrag = "/".join(sp)
+
+            if urisplit.fragment.startswith(basefrag):
+                return urisplit.fragment[len(basefrag):]
+            else:
+                return urisplit.fragment
         return uri
     else:
         return save(uri, top=False, base_url=base_url)

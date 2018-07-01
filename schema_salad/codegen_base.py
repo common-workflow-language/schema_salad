@@ -5,12 +5,13 @@ from . import schema
 from .schema import shortname
 
 class TypeDef(object):
-    def __init__(self, name, init, is_uri=False, scoped_id=False):
+    def __init__(self, name, init, is_uri=False, scoped_id=False, ref_scope=0):
         # type: (Text, Text, bool, bool) -> None
         self.name = name
         self.init = init
         self.is_uri = is_uri
         self.scoped_id = scoped_id
+        self.ref_scope = ref_scope
 
 class CodeGenBase(object):
     def __init__(self):
