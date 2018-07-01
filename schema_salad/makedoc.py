@@ -10,6 +10,8 @@ import re
 import sys
 import logging
 from io import open
+import codecs
+from codecs import StreamWriter  # pylint: disable=unused-import
 
 from . import schema
 from .utils import add_dictlist, aslist
@@ -422,8 +424,14 @@ class RenderType(object):
             self.render_type(self.typemap[s], depth)
 
 
-def avrold_doc(j, outdoc, renderlist, redirects, brand, brandlink, primtype):
-    # type: (List[Dict[Text, Any]], IO[Any], str, Dict, str, str, str) -> None
+def avrold_doc(j,           # type: List[Dict[Text, Any]]
+               outdoc,      # type: Union[IO[Any], StreamWriter]
+               renderlist,  # type: str
+               redirects,   # type: Dict
+               brand,       # type: str
+               brandlink,   # type: str
+               primtype     # type: str
+              ):  # type: (...) -> None
     toc = ToC()
     toc.start_numbering = False
 
