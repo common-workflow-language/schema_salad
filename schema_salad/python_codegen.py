@@ -229,7 +229,7 @@ class PythonCodeGen(CodeGenBase):
         if fieldtype.is_uri:
             self.serializer.write("""
         if self.%s is not None:
-            r['%s'] = relative_uri(self.%s, base_url, %s)
+            r['%s'] = save_relative_uri(self.%s, base_url, %s)
 """ % (self.safe_name(name), shortname(name), self.safe_name(name), fieldtype.scoped_id))
         else:
             self.serializer.write("""
