@@ -57,8 +57,13 @@ def codegen(lang,             # type: str
             for f in rec.get("fields", []):
                 field_names.append(shortname(f["name"]))
 
+            idfield = ""
+            for f in rec.get("fields", []):
+                if f.get("jsonldPredicate") == "@id":
+                    idfield = f.get("name")
+
             cg.begin_class(rec["name"], aslist(rec.get("extends", [])), rec.get("doc", ""),
-                           rec.get("abstract", False), field_names)
+                           rec.get("abstract", False), field_names, idfield)
             cg.add_vocab(shortname(rec["name"]), rec["name"])
 
             for f in rec.get("fields", []):

@@ -49,8 +49,8 @@ class PythonCodeGen(CodeGenBase):
             self.declare_type(p)
 
 
-    def begin_class(self, classname, extends, doc, abstract, field_names):
-        # type: (Text, List[Text], Text, bool, List[Text]) -> None
+    def begin_class(self, classname, extends, doc, abstract, field_names, idfield):
+        # type: (Text, List[Text], Text, bool, List[Text], Text) -> None
         classname = self.safe_name(classname)
 
         if extends:
@@ -82,12 +82,16 @@ class PythonCodeGen(CodeGenBase):
         self.loadingOptions = loadingOptions
 """)
 
+        self.idbase = ""
+        if idfield:
+            self.idbase = "self.%s" % self.safe_name(idfield)
+
         self.serializer.write("""
     def save(self, top=False, base_url=""):
         r = {}
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
-""")
+""" % (setbase))
 
         if "class" in field_names:
             self.out.write("""
@@ -195,6 +199,10 @@ class PythonCodeGen(CodeGenBase):
                        format(safename=self.safe_name(name),
                               fieldname=shortname(name),
                               opt=opt))
+
+        self.has_id = """
+        base_url = base_url + "/" + self.{safename}
+""".format(safename=self.safe_name(name))
 
     def declare_field(self, name, fieldtype, doc, optional):
         # type: (Text, TypeDef, Text, bool) -> None

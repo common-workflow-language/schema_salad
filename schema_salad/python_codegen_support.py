@@ -415,7 +415,11 @@ def save_relative_uri(uri, base_url, scoped_id):
                 p = os.path.relpath(urisplit.path, os.path.dirname(basesplit.path))
 
             if urisplit.fragment:
-                p = p + "#" + urisplit.fragment
+                print(urisplit.fragment, basesplit.fragment, urisplit.fragment.startswith(basesplit.fragment+"/"))
+                if urisplit.fragment.startswith(basesplit.fragment+"/"):
+                    p = urisplit.fragment[len(basesplit.fragment)+1:]
+                else:
+                    p = p + "#" + urisplit.fragment
             return p
         return uri
     else:
