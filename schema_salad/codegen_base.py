@@ -1,12 +1,12 @@
 import collections
 from six.moves import urllib
-from typing import List, Text, Dict, Union, Any
+from typing import List, Text, Dict, Union, Any, Optional
 from . import schema
 from .schema import shortname
 
 class TypeDef(object):
     def __init__(self, name, init, is_uri=False, scoped_id=False, ref_scope=0):
-        # type: (Text, Text, bool, bool) -> None
+        # type: (Text, Text, bool, bool, Optional[int]) -> None
         self.name = name
         self.init = init
         self.is_uri = is_uri

@@ -243,13 +243,20 @@ class PythonCodeGen(CodeGenBase):
             u = save_relative_uri(self.{safename}, {baseurl}, {scoped_id}, {ref_scope})
             if u:
                 r['{fieldname}'] = u
-""".format(safename=self.safe_name(name), fieldname=shortname(name),
-           baseurl=baseurl, scoped_id=fieldtype.scoped_id, ref_scope=fieldtype.ref_scope))
+""".
+                                  format(safename=self.safe_name(name),
+                                         fieldname=shortname(name),
+                                         baseurl=baseurl,
+                                         scoped_id=fieldtype.scoped_id,
+                                         ref_scope=fieldtype.ref_scope))
         else:
             self.serializer.write("""
         if self.{safename} is not None:
             r['{fieldname}'] = save(self.{safename}, top=False, base_url={baseurl})
-""".format(safename=self.safe_name(name), fieldname=shortname(name), baseurl=baseurl))
+""".
+                                  format(safename=self.safe_name(name),
+                                         fieldname=shortname(name),
+                                         baseurl=baseurl))
 
     def uri_loader(self, inner, scoped_id, vocab_term, refScope):
         # type: (TypeDef, bool, bool, Union[int, None]) -> TypeDef
