@@ -1,5 +1,7 @@
 """
 Checks loading of some real world tools and workflows found in the wild (e.g. dockstore)
+
+run individually as py.test -k tests/test_real_cwl.py
 """
 
 from .util import get_data
@@ -16,14 +18,14 @@ test_dir_name = "tests/test_real_cwl/"
 
 
 class TestRealWorldCWL(unittest.TestCase):
+    def setUp(self):
+        self.document_loader, self.avsc_names, schema_metadata, metaschema_loader = \
+            load_schema(get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
 
     def load_cwl(self, src):
-        document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-            get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
-
         with self.assertRaises(ValidationException):
             try:
-                load_and_validate(document_loader, avsc_names,
+                load_and_validate(self.document_loader, self.avsc_names,
                                   six.text_type(get_data(test_dir_name+src)), True)
             except ValidationException as e:
                 # msgs = to_one_line_messages(str(e)).splitlines()
