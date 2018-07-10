@@ -1,16 +1,17 @@
 import collections
 from six.moves import urllib
-from typing import List, Text, Dict, Union, Any
+from typing import List, Text, Dict, Union, Any, Optional
 from . import schema
 from .schema import shortname
 
 class TypeDef(object):
-    def __init__(self, name, init, is_uri=False, scoped_id=False):
-        # type: (Text, Text, bool, bool) -> None
+    def __init__(self, name, init, is_uri=False, scoped_id=False, ref_scope=0):
+        # type: (Text, Text, bool, bool, Optional[int]) -> None
         self.name = name
         self.init = init
         self.is_uri = is_uri
         self.scoped_id = scoped_id
+        self.ref_scope = ref_scope
 
 class CodeGenBase(object):
     def __init__(self):
@@ -36,8 +37,8 @@ class CodeGenBase(object):
         # type: (Text) -> Text
         return schema.avro_name(n)
 
-    def begin_class(self, classname, extends, doc, abstract, field_names):
-        # type: (Text, List[Text], Text, bool, List[Text]) -> None
+    def begin_class(self, classname, extends, doc, abstract, field_names, idfield):
+        # type: (Text, List[Text], Text, bool, List[Text], Text) -> None
         raise NotImplementedError()
 
     def end_class(self, classname, field_names):

@@ -49,8 +49,8 @@ class PythonCodeGen(CodeGenBase):
             self.declare_type(p)
 
 
-    def begin_class(self, classname, extends, doc, abstract, field_names):
-        # type: (Text, List[Text], Text, bool, List[Text]) -> None
+    def begin_class(self, classname, extends, doc, abstract, field_names, idfield):
+        # type: (Text, List[Text], Text, bool, List[Text], Text) -> None
         classname = self.safe_name(classname)
 
         if extends:
@@ -81,6 +81,8 @@ class PythonCodeGen(CodeGenBase):
         errors = []
         self.loadingOptions = loadingOptions
 """)
+
+        self.idfield = idfield
 
         self.serializer.write("""
     def save(self, top=False, base_url=""):
@@ -196,6 +198,10 @@ class PythonCodeGen(CodeGenBase):
                               fieldname=shortname(name),
                               opt=opt))
 
+        self.has_id = """
+        base_url = base_url + "/" + self.{safename}
+""".format(safename=self.safe_name(name))
+
     def declare_field(self, name, fieldtype, doc, optional):
         # type: (Text, TypeDef, Text, bool) -> None
 
@@ -226,22 +232,37 @@ class PythonCodeGen(CodeGenBase):
 
         self.out.write("\n")
 
+        if name == self.idfield or not self.idfield:
+            baseurl = 'base_url'
+        else:
+            baseurl = "self.%s " % self.safe_name(self.idfield)
+
         if fieldtype.is_uri:
             self.serializer.write("""
-        if self.%s is not None:
-            r['%s'] = save_relative_uri(self.%s, base_url, %s)
-""" % (self.safe_name(name), shortname(name), self.safe_name(name), fieldtype.scoped_id))
+        if self.{safename} is not None:
+            u = save_relative_uri(self.{safename}, {baseurl}, {scoped_id}, {ref_scope})
+            if u:
+                r['{fieldname}'] = u
+""".
+                                  format(safename=self.safe_name(name),
+                                         fieldname=shortname(name),
+                                         baseurl=baseurl,
+                                         scoped_id=fieldtype.scoped_id,
+                                         ref_scope=fieldtype.ref_scope))
         else:
             self.serializer.write("""
-        if self.%s is not None:
-            r['%s'] = save(self.%s, top=False, base_url=base_url)
-""" % (self.safe_name(name), shortname(name), self.safe_name(name)))
+        if self.{safename} is not None:
+            r['{fieldname}'] = save(self.{safename}, top=False, base_url={baseurl})
+""".
+                                  format(safename=self.safe_name(name),
+                                         fieldname=shortname(name),
+                                         baseurl=baseurl))
 
     def uri_loader(self, inner, scoped_id, vocab_term, refScope):
         # type: (TypeDef, bool, bool, Union[int, None]) -> TypeDef
         return self.declare_type(TypeDef("uri_%s_%s_%s_%s" % (inner.name, scoped_id, vocab_term, refScope),
                                          "_URILoader(%s, %s, %s, %s)" % (inner.name, scoped_id, vocab_term, refScope),
-                                         is_uri=True, scoped_id=scoped_id))
+                                         is_uri=True, scoped_id=scoped_id, ref_scope=refScope))
 
     def idmap_loader(self, field, inner, mapSubject, mapPredicate):
         # type: (Text, TypeDef, Text, Union[Text, None]) -> TypeDef
