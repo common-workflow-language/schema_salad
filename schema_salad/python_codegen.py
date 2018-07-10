@@ -232,10 +232,7 @@ class PythonCodeGen(CodeGenBase):
 
         self.out.write("\n")
 
-        if name == self.idfield or not self.idfield:
-            baseurl = 'base_url'
-        else:
-            baseurl = "self.%s " % self.safe_name(self.idfield)
+        baseurl = 'base_url'
 
         if fieldtype.is_uri:
             self.serializer.write("""
