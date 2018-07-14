@@ -1047,7 +1047,7 @@ class Loader(object):
                         if document[identifier] in all_doc_ids and sl.makeLead() != all_doc_ids[document[identifier]]:
                             # raise validate.ValidationException(
                             #     "%s object %s `%s` previously defined" % (all_doc_ids[document[identifier]], identifier, relname(document[identifier]), ))
-                            pass # Because the spec of CWL allows duplicated keys globally.
+                            pass  # Because the spec of CWL allows duplicated keys globally.
                             # TODO: Validator should local scope only in which duplicated keys are prohibited.
                             # See also https://github.com/common-workflow-language/common-workflow-language/issues/734
                         else:
