@@ -1,6 +1,8 @@
 group: travis_latest
 language: python
-sudo: false
+sudo: required
+services:
+  - docker
 dist: trusty
 
 cache:
@@ -19,7 +21,6 @@ matrix:
   include:
     - python: '3.7'
       dist: xenial
-      sudo: true
 
 jobs:
   include:
