@@ -28,11 +28,12 @@ environment:
 
 install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
-  - pip install --disable-pip-version-check "setuptools>=27.3"
+  - %PYTHON%\\python.exe -m pip install -U pip
+  - pip install --disable-pip-version-check -U setuptools wheel
 
 build_script:
   - |
-        %PYTHON%\\python.exe -m pip install . wheel pytest pytest-xdist"
+        %PYTHON%\\python.exe -m pip install . pytest pytest-xdist"
 
 test_script:
  - |
