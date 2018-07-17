@@ -7,20 +7,15 @@ cache:
   directories:
     - .mypy_cache
     
+python:
+ - '2.7'  # inherited by release-test build stage
+ - '3.4'
+ - '3.5'
+ - '3.6'
+ - '3.7'
+    
 matrix:
   include:
-    - python: '2.7'
-      dist: trusty
-      sudo: false
-    - python: '3.4'
-      dist: trusty
-      sudo: false
-    - python: '3.5'
-      dist: trusty
-      sudo: false
-    - python: '3.6'
-      dist: trusty
-      sudo: false
     - python: '3.7'
       dist: xenial
       sudo: true
