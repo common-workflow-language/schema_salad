@@ -1,3 +1,4 @@
+group: travis_latest
 language: python
 sudo: false
 dist: trusty
