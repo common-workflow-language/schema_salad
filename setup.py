@@ -29,11 +29,11 @@ else:
 install_requires = [
     'setuptools',
     'requests >= 1.0',
-    'ruamel.yaml >= 0.12.4, < 0.15',
+    'ruamel.yaml >= 0.12.4, < 0.16',
     'rdflib >= 4.2.2, < 4.3.0',
     'rdflib-jsonld >= 0.3.0, < 0.5.0',
     'mistune >= 0.7.3, < 0.8',
-    'typing >= 3.5.3',
+    'typing >= 3.6.4',
     'CacheControl >= 0.11.7, < 0.12',
     'lockfile >= 0.9',
     'six >= 1.8.0']
@@ -76,6 +76,7 @@ setup(name='schema-salad',
           "Programming Language :: Python :: 2.7",
           "Programming Language :: Python :: 3.4",
           "Programming Language :: Python :: 3.5",
-          "Programming Language :: Python :: 3.6"
+          "Programming Language :: Python :: 3.6",
+          "Programming Language :: Python :: 3.7"
       ]
       )

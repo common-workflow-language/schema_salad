@@ -1,16 +1,21 @@
-sudo: false
+group: travis_latest
 language: python
+sudo: required
+services:
+  - docker
+dist: xenial
+
 cache:
   pip: true
   directories:
     - .mypy_cache
+    
 python:
-  - 2.7
-  - 3.4
-  - 3.5
-  - 3.6
-os:
-  - linux
+ - '2.7'  # inherited by release-test build stage
+ - '3.5'
+ - '3.6'
+ - '3.7'
+
 jobs:
   include:
     - stage: release-test
