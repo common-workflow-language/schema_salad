@@ -1,4 +1,6 @@
 language: python
+sudo: false
+dist: trusty
 
 cache:
   pip: true
@@ -7,9 +9,6 @@ cache:
     
 matrix:
   include:
-    - python: '3.7'
-      dist: xenial
-      sudo: required
     - python: '2.7'
       dist: trusty
       sudo: false
@@ -22,6 +21,9 @@ matrix:
     - python: '3.6'
       dist: trusty
       sudo: false
+    - python: '3.7'
+      dist: xenial
+      sudo: true
 
 jobs:
   include:
