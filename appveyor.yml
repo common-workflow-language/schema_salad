@@ -36,9 +36,9 @@ build_script:
   - |
         %PYTHON%\\python.exe -m pip install . pytest pytest-xdist"
 
-test_script:
+test_script:  # right now -n2 triggers a bug in xdist / py3.7 / typing
  - |
-        %PYTHON%\\python.exe setup.py test --addopts "--verbose -p no:cacheprovider --junit-xml=tests.xml -n2"
+        %PYTHON%\\python.exe setup.py test --addopts "--verbose -p no:cacheprovider --junit-xml=tests.xml"
 
 on_finish:
   - ps: |
