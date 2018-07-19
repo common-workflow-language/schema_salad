@@ -33,13 +33,13 @@ install_requires = [
     'rdflib >= 4.2.2, < 4.3.0',
     'rdflib-jsonld >= 0.3.0, < 0.5.0',
     'mistune >= 0.7.3, < 0.8',
-    'typing >= 3.6.4',
     'CacheControl >= 0.11.7, < 0.12',
     'lockfile >= 0.9',
     'six >= 1.8.0']
 
 extras_require={
     ':python_version<"3"': ['avro == 1.8.1'],
+    ':python_version<"3.7"': ['typing >= 3.6.4'],
     ':python_version>="3"': ['future', 'avro-cwl == 1.8.4']  # fork of avro for working with python3
 }
 
