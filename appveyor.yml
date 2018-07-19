@@ -22,17 +22,23 @@ environment:
       PYTHON_VERSION: "3.6.x"
       PYTHON_ARCH: "64"
 
+    - PYTHON: "C:\\Python37-x64"
+      PYTHON_VERSION: "3.7.x"
+      PYTHON_ARCH: "64"
+
 install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
-  - pip install --disable-pip-version-check "setuptools>=27.3"
+  - |
+          %PYTHON%\\python.exe -m pip install -U pip
+  - pip install --disable-pip-version-check -U setuptools wheel
 
 build_script:
   - |
-        %PYTHON%\\python.exe -m pip install . wheel pytest pytest-xdist"
+        %PYTHON%\\python.exe -m pip install . pytest pytest-xdist"
 
-test_script:
+test_script:  # right now -n2 triggers a bug in xdist / py3.7 / typing
  - |
-        %PYTHON%\\python.exe setup.py test --addopts "--verbose -p no:cacheprovider --junit-xml=tests.xml -n2"
+        %PYTHON%\\python.exe setup.py test --addopts "--verbose -p no:cacheprovider --junit-xml=tests.xml"
 
 on_finish:
   - ps: |
