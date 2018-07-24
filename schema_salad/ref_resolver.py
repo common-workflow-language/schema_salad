@@ -1045,8 +1045,10 @@ class Loader(object):
                     if identifier in document:
                         sl = SourceLine(document, identifier, validate.ValidationException)
                         if document[identifier] in all_doc_ids and sl.makeLead() != all_doc_ids[document[identifier]]:
-                            raise validate.ValidationException(
-                                "%s object %s `%s` previously defined" % (all_doc_ids[document[identifier]], identifier, relname(document[identifier]), ))
+                            # TODO: Validator should local scope only in which duplicated keys are prohibited.
+                            # See also https://github.com/common-workflow-language/common-workflow-language/issues/734
+                            # In the future, it should raise validate.ValidationException instead of _logger.warn
+                            _logger.warn("%s object %s `%s` previously defined" % (all_doc_ids[document[identifier]], identifier, relname(document[identifier]), ))
                         else:
                             all_doc_ids[document[identifier]] = sl.makeLead()
                             break

@@ -23,10 +23,23 @@ class TestErrors(unittest.TestCase):
                   "test_schema/test9.cwl",
                   "test_schema/test10.cwl",
                   "test_schema/test11.cwl",
-                  "test_schema/test12.cwl",
-                  "test_schema/test13.cwl",
-                  "test_schema/test14.cwl",
                   "test_schema/test15.cwl"):
+            with self.assertRaises(ValidationException):
+                try:
+                    load_and_validate(document_loader, avsc_names,
+                            six.text_type(get_data("tests/"+t)), True)
+                except ValidationException as e:
+                    print("\n", e)
+                    raise
+
+    @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
+    def test_errors_previously_defined_dict_key(self):
+        document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
+            get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
+
+        for t in ("test_schema/test12.cwl",
+                  "test_schema/test13.cwl",
+                  "test_schema/test14.cwl"):
             with self.assertRaises(ValidationException):
                 try:
                     load_and_validate(document_loader, avsc_names,
