@@ -1,24 +1,20 @@
 from __future__ import absolute_import
 import sys
 import os
-import json
 import logging
 import collections
 from io import open
+import re
+import copy
+import xml.sax
+from typing import (cast, Any, AnyStr,  # pylint: disable=unused-import
+                    Callable, Dict, List, Iterable, Optional, Set, Text, Tuple,
+                    TypeVar, Union)
 
 import six
 from six.moves import range
 from six.moves import urllib
 from six import StringIO
-
-import re
-import copy
-
-
-from . import validate
-from .utils import aslist, flatten, onWindows
-from .sourceline import SourceLine, add_lc_filename, relname
-
 import requests
 from cachecontrol.wrapper import CacheControl
 from cachecontrol.caches import FileCache
@@ -26,12 +22,13 @@ import ruamel.yaml as yaml
 from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
 import rdflib
-from rdflib import Graph
 from rdflib.namespace import RDF, RDFS, OWL
 from rdflib.plugins.parsers.notation3 import BadSyntax
-import xml.sax
-from typing import (cast, Any, AnyStr, Callable, Dict, List, Iterable,
-        Optional, Set, Text, Tuple, TypeVar, Union)
+
+from . import validate
+from .utils import aslist, onWindows
+from .sourceline import SourceLine, add_lc_filename, relname
+
 
 
 _logger = logging.getLogger("salad")
@@ -62,7 +59,7 @@ def uri_file_path(url):  # type: (str) -> str
     if split.scheme == "file":
         return urllib.request.url2pathname(
             str(split.path)) + ("#" + urllib.parse.unquote(str(split.fragment))
-                if bool(split.fragment) else "")
+                                if bool(split.fragment) else "")
     else:
         raise ValueError("Not a file URI")
 
@@ -824,7 +821,8 @@ class Loader(object):
                 if newctx is None:
                     newctx = SubLoader(self)
                 prof = self.fetch(document[u"$profile"])
-                newctx.add_namespaces(document.get(u"$namespaces", {}))
+                newctx.add_namespaces(
+                    document.get(u"$namespaces", CommentedMap()))
                 newctx.add_schemas(document.get(
                     u"$schemas", []), document[u"$profile"])
 
