@@ -240,7 +240,7 @@ class RenderType(object):
             if nbsp and len(tp) <= 3:
                 return "&nbsp;|&nbsp;".join([self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp])
             else:
-                return " | ".join([self.typefmt(n, redirects) for n in tp])
+                return " | ".join([self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp])
         if isinstance(tp, dict):
             if tp["type"] == "https://w3id.org/cwl/salad#array":
                 ar = "array&lt;%s&gt;" % (self.typefmt(
@@ -553,7 +553,7 @@ def main():  # type: () -> None
         else:
             stdout = codecs.getwriter('utf-8')(sys.stdout)  # type: ignore
     else:
-        stdout = cast(TextIO, sys.stdout)  # type: ignore
+        stdout = cast(io.TextIOWrapper, sys.stdout)  # type: ignore
     avrold_doc(s, stdout, renderlist, redirect, args.brand, args.brandlink, args.primtype)
 
 
