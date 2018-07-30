@@ -233,27 +233,38 @@ class RenderType(object):
                 tp,                     # type: Any
                 redirects,              # type: Dict[str, str]
                 nbsp=False,             # type: bool
-                jsonldPredicate=None    # type: Optional[Dict[str, str]]
+                jsonldPredicate=None,   # type: Optional[Dict[str, str]]
+                group=False
                 ):
         # type: (...) -> Text
         if isinstance(tp, list):
+            ret = ""
             if nbsp and len(tp) <= 3:
-                return "&nbsp;|&nbsp;".join([self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp])
+                ret = "&nbsp;|&nbsp;".join([self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp])
             else:
-                return " | ".join([self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp])
+                ret = " | ".join([self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp])
+            if group:
+                ret = "(%s)" % ret
+            return ret
         if isinstance(tp, dict):
             if tp["type"] == "https://w3id.org/cwl/salad#array":
                 ar = "array&lt;%s&gt;" % (self.typefmt(
                     tp["items"], redirects, nbsp=True))
                 if jsonldPredicate is not None and "mapSubject" in jsonldPredicate:
                     if "mapPredicate" in jsonldPredicate:
-                        ar += " | map&lt;%s.%s,&nbsp;%s.%s&gt" % (self.typefmt(tp["items"], redirects),
+                        ar += " | "
+                        if len(ar) > 40:
+                            ar += "<br>"
+                        ar += "map&lt;%s.%s,&nbsp;%s.%s&gt" % (self.typefmt(tp["items"], redirects, group=True),
                                                                   jsonldPredicate[
                                                                       "mapSubject"],
                                                                   self.typefmt(
                                                                       tp["items"], redirects),
                                                                   jsonldPredicate["mapPredicate"])
-                    ar += " | map&lt;%s.%s,&nbsp;%s&gt" % (self.typefmt(tp["items"], redirects),
+                    ar += " | "
+                    if len(ar) > 40:
+                        ar += "<br>"
+                    ar += "map&lt;%s.%s,&nbsp;%s&gt" % (self.typefmt(tp["items"], redirects, group=True),
                                                            jsonldPredicate[
                                                                "mapSubject"],
                                                            self.typefmt(tp["items"], redirects))
