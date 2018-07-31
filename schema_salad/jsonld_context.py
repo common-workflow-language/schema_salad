@@ -1,31 +1,21 @@
 from __future__ import absolute_import
 import collections
-import shutil
 import json
+import logging
+from typing import (cast, Any, Dict, Iterable,  # pylint: disable=unused-import
+                    List, Optional, Text, Tuple, Union)
 
 import six
 from six.moves import urllib
 
-import ruamel.yaml as yaml
-try:
-    from ruamel.yaml import CSafeLoader as SafeLoader
-except ImportError:
-    from ruamel.yaml import SafeLoader  # type: ignore
-import os
-import subprocess
-import copy
-import pprint
-import re
-import sys
+from ruamel.yaml.comments import CommentedMap
 import rdflib
 from rdflib import Graph, URIRef
 import rdflib.namespace
 from rdflib.namespace import RDF, RDFS
-import logging
-from schema_salad.utils import aslist
-from typing import (cast, Any, Dict, Iterable, List, Optional, Text, Tuple,
-    Union)
-from .ref_resolver import Loader, ContextType
+
+from .utils import aslist
+from .ref_resolver import ContextType  # pylint: disable=unused-import
 
 _logger = logging.getLogger("salad")
 
@@ -36,8 +26,7 @@ def pred(datatype,      # type: Dict[str, Union[Dict, str]]
          context,       # type: ContextType
          defaultBase,   # type: str
          namespaces     # type: Dict[str, rdflib.namespace.Namespace]
-         ):
-    # type: (...) -> Union[Dict, Text]
+        ):  # type: (...) -> Union[Dict, Text]
     split = urllib.parse.urlsplit(name)
 
     vee = None  # type: Optional[Text]
@@ -96,8 +85,7 @@ def process_type(t,             # type: Dict[str, Any]
                  defaultBase,   # type: str
                  namespaces,    # type: Dict[str, rdflib.namespace.Namespace]
                  defaultPrefix  # type: str
-                 ):
-    # type: (...) -> None
+                ):  # type: (...) -> None
     if t["type"] not in ("record", "enum"):
         return
 
@@ -137,7 +125,7 @@ def process_type(t,             # type: Dict[str, Any]
             _logger.debug("Processing field %s", i)
 
             v = pred(t, i, fieldname, context, defaultPrefix,
-                    namespaces)  # type: Union[Dict[Any, Any], Text, None]
+                     namespaces)  # type: Union[Dict[Any, Any], Text, None]
 
             if isinstance(v, six.string_types):
                 v = v if v[0] != "@" else None
@@ -196,10 +184,9 @@ def salad_to_jsonld_context(j, schema_ctx):
     return (context, g)
 
 
-def fix_jsonld_ids(obj,     # type: Union[Dict[Text, Any], List[Dict[Text, Any]]]
-                   ids      # type: List[Text]
-                   ):
-    # type: (...) -> None
+def fix_jsonld_ids(obj,  # type: Union[Dict[Text, Any], List[Dict[Text, Any]]]
+                   ids   # type: List[Text]
+                  ):  # type: (...) -> None
     if isinstance(obj, dict):
         for i in ids:
             if i in obj:
@@ -215,8 +202,7 @@ def makerdf(workflow,       # type: Text
             wf,             # type: Union[List[Dict[Text, Any]], Dict[Text, Any]]
             ctx,            # type: ContextType
             graph=None      # type: Graph
-            ):
-    # type: (...) -> Graph
+           ):  # type: (...) -> Graph
     prefixes = {}
     idfields = []
     for k, v in six.iteritems(ctx):
