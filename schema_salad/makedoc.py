@@ -237,26 +237,30 @@ class RenderType(object):
                 ):
         # type: (...) -> Text
         if isinstance(tp, list):
+            ret = ""
             if nbsp and len(tp) <= 3:
                 return "&nbsp;|&nbsp;".join([self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp])
             else:
-                return " | ".join([self.typefmt(n, redirects) for n in tp])
+                return " | ".join([self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp])
         if isinstance(tp, dict):
             if tp["type"] == "https://w3id.org/cwl/salad#array":
                 ar = "array&lt;%s&gt;" % (self.typefmt(
                     tp["items"], redirects, nbsp=True))
                 if jsonldPredicate is not None and "mapSubject" in jsonldPredicate:
                     if "mapPredicate" in jsonldPredicate:
-                        ar += " | map&lt;%s.%s,&nbsp;%s.%s&gt" % (self.typefmt(tp["items"], redirects),
-                                                                  jsonldPredicate[
-                                                                      "mapSubject"],
-                                                                  self.typefmt(
-                                                                      tp["items"], redirects),
-                                                                  jsonldPredicate["mapPredicate"])
-                    ar += " | map&lt;%s.%s,&nbsp;%s&gt" % (self.typefmt(tp["items"], redirects),
-                                                           jsonldPredicate[
-                                                               "mapSubject"],
-                                                           self.typefmt(tp["items"], redirects))
+                        ar += " | "
+                        if len(ar) > 40:
+                            ar += "<br>"
+
+                        ar += "map&lt;<code>%s</code>,&nbsp;<code>%s</code> | %s&gt" % (
+                            jsonldPredicate["mapSubject"], jsonldPredicate["mapPredicate"],
+                            self.typefmt(tp["items"], redirects))
+                    else:
+                        ar += " | "
+                        if len(ar) > 40:
+                            ar += "<br>"
+                        ar += "map&lt;<code>%s</code>,&nbsp;%s&gt" % (jsonldPredicate["mapSubject"],
+                                                            self.typefmt(tp["items"], redirects))
                 return ar
             if tp["type"] in ("https://w3id.org/cwl/salad#record", "https://w3id.org/cwl/salad#enum"):
                 frg = cast(Text, schema.avro_name(tp["name"]))
@@ -553,7 +557,7 @@ def main():  # type: () -> None
         else:
             stdout = codecs.getwriter('utf-8')(sys.stdout)  # type: ignore
     else:
-        stdout = cast(TextIO, sys.stdout)  # type: ignore
+        stdout = cast(io.TextIOWrapper, sys.stdout)  # type: ignore
     avrold_doc(s, stdout, renderlist, redirect, args.brand, args.brandlink, args.primtype)
 
 
