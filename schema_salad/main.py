@@ -3,11 +3,11 @@ from __future__ import absolute_import
 import argparse
 import logging
 import sys
-import traceback
 import json
 import os
 import re
 import itertools
+from collections import Mapping
 
 import six
 from six.moves import urllib
@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Union, Pattern, Text, Tuple, cast
 
 from rdflib import Graph, plugin
 from rdflib.serializer import Serializer
+from ruamel.yaml.comments import CommentedMap
 
 from . import schema
 from . import jsonld_context
@@ -239,9 +240,9 @@ def main(argsl=None):  # type: (List[str]) -> int
         return 1
 
     # Get the json-ld context and RDFS representation from the schema
-    metactx = {}  # type: Dict[str, str]
-    if isinstance(schema_raw_doc, dict):
-        metactx = schema_raw_doc.get("$namespaces", {})
+    metactx = CommentedMap()  # type: Dict[str, str]
+    if isinstance(schema_raw_doc, Mapping):
+        metactx = schema_raw_doc.get("$namespaces", CommentedMap())
         if "$base" in schema_raw_doc:
             metactx["@base"] = schema_raw_doc["$base"]
     if schema_doc is not None:
