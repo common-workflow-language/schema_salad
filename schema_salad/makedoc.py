@@ -252,11 +252,9 @@ class RenderType(object):
                         if len(ar) > 40:
                             ar += "<br>"
 
-                        ar += "map&lt;<code>%s</code>,&nbsp;<code>%s</code> | %s&gt" % (jsonldPredicate["mapSubject"],
-                                                               jsonldPredicate["mapPredicate"],
-                                                               self.typefmt(
-                                                                   tp["items"], redirects)
-                        )
+                        ar += "map&lt;<code>%s</code>,&nbsp;<code>%s</code> | %s&gt" % (
+                            jsonldPredicate["mapSubject"], jsonldPredicate["mapPredicate"],
+                            self.typefmt(tp["items"], redirects))
                     else:
                         ar += " | "
                         if len(ar) > 40:
