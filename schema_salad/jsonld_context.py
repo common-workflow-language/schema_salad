@@ -17,6 +17,13 @@ from rdflib.namespace import RDF, RDFS
 from .utils import aslist
 from .ref_resolver import ContextType  # pylint: disable=unused-import
 
+if six.PY2:
+    from collections import MutableMapping
+    import collections.Iterable as AbcIterable
+else:
+    from collections.abc import MutableMapping
+    import collections.abc.Iterable as AbcIterable
+
 _logger = logging.getLogger("salad")
 
 
@@ -42,7 +49,7 @@ def pred(datatype,      # type: Dict[str, Union[Dict, str]]
     v = None  # type: Optional[Dict]
 
     if field is not None and "jsonldPredicate" in field:
-        if isinstance(field["jsonldPredicate"], dict):
+        if isinstance(field["jsonldPredicate"], MutableMapping):
             v = {}
             for k, val in field["jsonldPredicate"].items():
                 v[("@" + k[1:] if k.startswith("_") else k)] = val
@@ -51,9 +58,9 @@ def pred(datatype,      # type: Dict[str, Union[Dict, str]]
         else:
             v = field["jsonldPredicate"]
     elif "jsonldPredicate" in datatype:
-        if isinstance(datatype["jsonldPredicate"], collections.Iterable):
+        if isinstance(datatype["jsonldPredicate"], AbcIterable):
             for d in datatype["jsonldPredicate"]:
-                if isinstance(d, dict):
+                if isinstance(d, MutableMapping):
                     if d["symbol"] == name:
                         v = d["predicate"]
                 else:
@@ -144,7 +151,7 @@ def process_type(t,             # type: Dict[str, Any]
 
                 # TODO generate range from datatype.
 
-            if isinstance(i["type"], dict):
+            if isinstance(i["type"], MutableMapping):
                 process_type(i["type"], g, context, defaultBase,
                              namespaces, defaultPrefix)
 
@@ -187,7 +194,7 @@ def salad_to_jsonld_context(j, schema_ctx):
 def fix_jsonld_ids(obj,  # type: Union[Dict[Text, Any], List[Dict[Text, Any]]]
                    ids   # type: List[Text]
                   ):  # type: (...) -> None
-    if isinstance(obj, dict):
+    if isinstance(obj, MutableMapping):
         for i in ids:
             if i in obj:
                 obj["@id"] = obj[i]
@@ -206,7 +213,7 @@ def makerdf(workflow,       # type: Text
     prefixes = {}
     idfields = []
     for k, v in six.iteritems(ctx):
-        if isinstance(v, dict):
+        if isinstance(v, MutableMapping):
             url = v["@id"]
         else:
             url = v

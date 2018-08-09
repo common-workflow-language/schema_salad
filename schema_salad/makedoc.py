@@ -22,12 +22,17 @@ from six.moves import urllib
 from six import StringIO
 from typing import cast, Any, Dict, IO, List, Optional, Set, Text, Union
 
+if six.PY2:
+    from collections import MutableMapping
+else:
+    from collections.abc import MutableMapping
+
 _logger = logging.getLogger("salad")
 
 
 def has_types(items):  # type: (Any) -> List[Text]
     r = []  # type: List
-    if isinstance(items, dict):
+    if isinstance(items, MutableMapping):
         if items["type"] == "https://w3id.org/cwl/salad#record":
             return [items["name"]]
         for n in ("type", "items", "values"):
@@ -242,7 +247,7 @@ class RenderType(object):
                 return "&nbsp;|&nbsp;".join([self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp])
             else:
                 return " | ".join([self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp])
-        if isinstance(tp, dict):
+        if isinstance(tp, MutableMapping):
             if tp["type"] == "https://w3id.org/cwl/salad#array":
                 ar = "array&lt;%s&gt;" % (self.typefmt(
                     tp["items"], redirects, nbsp=True))
@@ -270,7 +275,7 @@ class RenderType(object):
                     return """<a href="#%s">%s</a>""" % (to_id(frg), frg)
                 else:
                     return frg
-            if isinstance(tp["type"], dict):
+            if isinstance(tp["type"], MutableMapping):
                 return self.typefmt(tp["type"], redirects)
         else:
             if str(tp) in redirects:
@@ -542,7 +547,7 @@ def main():  # type: () -> None
             j, schema_metadata = metaschema_loader.resolve_ref(uri, "")
             if isinstance(j, list):
                 s.extend(j)
-            elif isinstance(j, dict):
+            elif isinstance(j, MutableMapping):
                 s.append(j)
             else:
                 raise ValueError("Schema must resolve to a list or a dict")

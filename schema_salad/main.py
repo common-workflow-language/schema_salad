@@ -7,7 +7,6 @@ import json
 import os
 import re
 import itertools
-from collections import Mapping
 
 import six
 from six.moves import urllib
@@ -19,6 +18,11 @@ from typing import Any, Dict, List, Union, Pattern, Text, Tuple, cast
 from rdflib import Graph, plugin
 from rdflib.serializer import Serializer
 from ruamel.yaml.comments import CommentedMap
+
+if six.PY2:
+    from collections import Mapping
+else:
+    from collections.abc import Mapping
 
 from . import schema
 from . import jsonld_context
@@ -351,7 +355,7 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     # Optionally convert the document to RDF
     if args.print_rdf:
-        if isinstance(document, (dict, list)):
+        if isinstance(document, (Mapping, list)):
             printrdf(args.document, document, schema_ctx, args.rdf_serializer)
             return 0
         else:

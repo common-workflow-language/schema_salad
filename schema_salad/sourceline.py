@@ -9,6 +9,11 @@ from typing import (Any, AnyStr, Callable, cast, Dict, List, Iterable, Tuple,
                     TypeVar, Union, Text)
 import six
 
+if six.PY2:
+    from collections import MutableMapping
+else:
+    from collections.abc import MutableMapping
+
 lineno_re = re.compile(u"^(.*?:[0-9]+:[0-9]+: )(( *)(.*))")
 
 def _add_lc_filename(r, source):  # type: (ruamel.yaml.comments.CommentedBase, AnyStr) -> None
@@ -17,7 +22,7 @@ def _add_lc_filename(r, source):  # type: (ruamel.yaml.comments.CommentedBase, A
     if isinstance(r, list):
         for d in r:
             _add_lc_filename(d, source)
-    elif isinstance(r, dict):
+    elif isinstance(r, MutableMapping):
         for d in six.itervalues(r):
             _add_lc_filename(d, source)
 
@@ -111,7 +116,7 @@ def cmap(d, lc=None, fn=None):  # type: (Union[int, float, str, Text, Dict, List
             else:
                 d[k] = cmap(v, lc, fn=fn)
         return d
-    if isinstance(d, dict):
+    if isinstance(d, MutableMapping):
         cm = CommentedMap()
         for k in sorted(d.keys()):
             v = d[k]

@@ -10,6 +10,11 @@ from . import schema
 from .codegen_base import TypeDef, CodeGenBase, shortname
 from typing import Any, Dict, IO, List, Optional, Text, Union, List
 
+if six.PY2:
+    from collections import MutableMapping
+else:
+    from collections.abc import MutableMapping
+
 class PythonCodeGen(CodeGenBase):
     def __init__(self, out):
         # type: (IO[str]) -> None
@@ -156,7 +161,7 @@ class PythonCodeGen(CodeGenBase):
         if isinstance(t, list):
             sub = [self.type_loader(i) for i in t]
             return self.declare_type(TypeDef("union_of_%s" % "_or_".join(s.name for s in sub), "_UnionLoader((%s,))" % (", ".join(s.name for s in sub))))
-        if isinstance(t, dict):
+        if isinstance(t, MutableMapping):
             if t["type"] in ("array", "https://w3id.org/cwl/salad#array"):
                 i = self.type_loader(t["items"])
                 return self.declare_type(TypeDef("array_of_%s" % i.name, "_ArrayLoader(%s)" % i.name))

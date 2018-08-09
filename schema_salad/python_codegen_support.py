@@ -6,6 +6,11 @@ import re
 from typing import List, Text, Dict, Union, Any, Sequence
 import uuid
 
+if six.PY2:
+    from collections import MutableMapping
+else:
+    from collections.abc import MutableMapping
+
 class ValidationException(Exception):
     pass
 
@@ -66,7 +71,7 @@ class LoadingOptions(object):
 
 
 def load_field(val, fieldtype, baseuri, loadingOptions):
-    if isinstance(val, dict):
+    if isinstance(val, MutableMapping):
         if "$import" in val:
             return _document_load_by_url(fieldtype, loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$import"]), loadingOptions)
         elif "$include" in val:
@@ -214,7 +219,7 @@ class _RecordLoader(_Loader):
         self.classtype = classtype
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        if not isinstance(doc, dict):
+        if not isinstance(doc, MutableMapping):
             raise ValidationException("Expected a dict")
         return self.classtype(doc, baseuri, loadingOptions, docRoot=docRoot)
 
@@ -315,11 +320,11 @@ class _IdMapLoader(_Loader):
         self.mapPredicate = mapPredicate
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        if isinstance(doc, dict):
+        if isinstance(doc, MutableMapping):
             r = []
             for k in sorted(doc.keys()):
                 val = doc[k]
-                if isinstance(val, dict):
+                if isinstance(val, MutableMapping):
                     v = copy.copy(val)
                     if hasattr(val, 'lc'):
                         v.lc.data = val.lc.data
@@ -339,7 +344,7 @@ def _document_load(loader, doc, baseuri, loadingOptions):
     if isinstance(doc, six.string_types):
         return _document_load_by_url(loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions)
 
-    if isinstance(doc, dict):
+    if isinstance(doc, MutableMapping):
         if "$namespaces" in doc:
             loadingOptions = LoadingOptions(copyfrom=loadingOptions, namespaces=doc["$namespaces"])
             doc = {k: v for k,v in doc.items() if k != "$namespaces"}

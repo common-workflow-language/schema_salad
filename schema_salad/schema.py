@@ -26,6 +26,11 @@ from .sourceline import SourceLine, strip_dup_lineno, add_lc_filename, bullets, 
 from typing import cast, Any, AnyStr, Dict, List, Set, Tuple, TypeVar, Union, Text, IO
 from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
+if six.PY2:
+    from collections import MutableMapping
+else:
+    from collections.abc import MutableMapping
+
 _logger = logging.getLogger("salad")
 
 salad_files = ('metaschema.yml',
@@ -373,7 +378,7 @@ def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
     # type: (Any, Dict[Text, Any], Loader, Set[Text], bool, bool) -> Any
     """ Go through and replace types in the 'spec' mapping"""
 
-    if isinstance(items, dict):
+    if isinstance(items, MutableMapping):
         # recursively check these fields for types to replace
         if items.get("type") in ("record", "enum") and items.get("name"):
             if items["name"] in found:
@@ -436,7 +441,7 @@ def make_valid_avro(items,          # type: Avro
                     union=False     # type: bool
                     ):
     # type: (...) -> Union[Avro, Dict, Text]
-    if isinstance(items, dict):
+    if isinstance(items, MutableMapping):
         items = copy.copy(items)
         if items.get("name") and items.get("inVocab", True):
             items["name"] = avro_name(items["name"])
@@ -477,7 +482,7 @@ def deepcopy_strip(item):  # type: (Any) -> Any
 
     """
 
-    if isinstance(item, dict):
+    if isinstance(item, MutableMapping):
         return {k: deepcopy_strip(v) for k,v in six.iteritems(item)}
     elif isinstance(item, list):
         return [deepcopy_strip(k) for k in item]
@@ -579,7 +584,7 @@ def make_avro_schema(i,         # type: List[Dict[Text, Any]]
         name_dict[t["name"]] = t
     j2 = make_valid_avro(j, name_dict, set())
 
-    j3 = [t for t in j2 if isinstance(t, dict) and not t.get(
+    j3 = [t for t in j2 if isinstance(t, MutableMapping) and not t.get(
         "abstract") and t.get("type") != "documentation"]
 
     try:

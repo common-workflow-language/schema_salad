@@ -10,6 +10,11 @@ import six
 from six.moves import urllib
 from six.moves import range
 
+if six.PY2:
+    from collections import MutableMapping
+else:
+    from collections.abc import MutableMapping
+
 from typing import Any, List, Set, Union, Text
 from .sourceline import SourceLine, lineno_re, bullets, indent
 
@@ -213,7 +218,7 @@ def validate_ex(expected_schema,                  # type: Schema
         for s in expected_schema.schemas:
             if isinstance(datum, list) and not isinstance(s, avro.schema.ArraySchema):
                 continue
-            elif isinstance(datum, dict) and not isinstance(s, avro.schema.RecordSchema):
+            elif isinstance(datum, MutableMapping) and not isinstance(s, avro.schema.RecordSchema):
                 continue
             elif (isinstance(datum, (bool, six.integer_types, float, six.string_types)) and  # type: ignore
                   isinstance(s, (avro.schema.ArraySchema, avro.schema.RecordSchema))):
@@ -240,7 +245,7 @@ def validate_ex(expected_schema,                  # type: Schema
                 type(datum).__name__, friendly(expected_schema)))
 
     elif isinstance(expected_schema, avro.schema.RecordSchema):
-        if not isinstance(datum, dict):
+        if not isinstance(datum, MutableMapping):
             if raise_ex:
                 raise ValidationException(u"is not a dict")
             else:

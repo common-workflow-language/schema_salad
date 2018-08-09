@@ -1,7 +1,6 @@
 import json
 import sys
-from six.moves import urllib, cStringIO
-import collections
+from six.moves import urllib, cStringIO, PY2
 import logging
 from pkg_resources import resource_stream
 from .utils import aslist, flatten
@@ -12,6 +11,11 @@ from .java_codegen import JavaCodeGen
 from .ref_resolver import Loader
 from typing import Any, Dict, List, Optional, Text, Union
 from ruamel.yaml.comments import CommentedSeq, CommentedMap
+
+if PY2:
+    from collections import MutableMapping
+else:
+    from collections.abc import MutableMapping
 
 class GoCodeGen(object):
     pass
@@ -79,7 +83,7 @@ def codegen(lang,             # type: str
                 tl = cg.type_loader(f["type"])
                 jld = f.get("jsonldPredicate")
                 fieldpred = f["name"]
-                if isinstance(jld, dict):
+                if isinstance(jld, MutableMapping):
                     refScope = jld.get("refScope")
 
                     if jld.get("typeDSL"):

@@ -29,7 +29,10 @@ from . import validate
 from .utils import aslist, onWindows
 from .sourceline import SourceLine, add_lc_filename, relname
 
-
+if six.PY2:
+    from collections import MutableMapping
+else:
+    from collections.abc import MutableMapping
 
 _logger = logging.getLogger("salad")
 ContextType = Dict[six.text_type, Union[Dict, six.text_type, Iterable[six.text_type]]]
@@ -439,34 +442,34 @@ class Loader(object):
             if value == u"@id":
                 self.identifiers.append(key)
                 self.identity_links.add(key)
-            elif isinstance(value, dict) and value.get(u"@type") == u"@id":
+            elif isinstance(value, MutableMapping) and value.get(u"@type") == u"@id":
                 self.url_fields.add(key)
                 if u"refScope" in value:
                     self.scoped_ref_fields[key] = value[u"refScope"]
                 if value.get(u"identity", False):
                     self.identity_links.add(key)
-            elif isinstance(value, dict) and value.get(u"@type") == u"@vocab":
+            elif isinstance(value, MutableMapping) and value.get(u"@type") == u"@vocab":
                 self.url_fields.add(key)
                 self.vocab_fields.add(key)
                 if u"refScope" in value:
                     self.scoped_ref_fields[key] = value[u"refScope"]
                 if value.get(u"typeDSL"):
                     self.type_dsl_fields.add(key)
-            if isinstance(value, dict) and value.get(u"noLinkCheck"):
+            if isinstance(value, MutableMapping) and value.get(u"noLinkCheck"):
                 self.nolinkcheck.add(key)
 
-            if isinstance(value, dict) and value.get(u"mapSubject"):
+            if isinstance(value, MutableMapping) and value.get(u"mapSubject"):
                 self.idmap[key] = value[u"mapSubject"]
 
-            if isinstance(value, dict) and value.get(u"mapPredicate"):
+            if isinstance(value, MutableMapping) and value.get(u"mapPredicate"):
                 self.mapPredicate[key] = value[u"mapPredicate"]
 
-            if isinstance(value, dict) and u"@id" in value:
+            if isinstance(value, MutableMapping) and u"@id" in value:
                 self.vocab[key] = value[u"@id"]
             elif isinstance(value, six.string_types):
                 self.vocab[key] = value
 
-            if isinstance(value, dict) and value.get(u"subscope"):
+            if isinstance(value, MutableMapping) and value.get(u"subscope"):
                 self.subscopes[key] = value[u"subscope"]
 
         for k, v in self.vocab.items():
@@ -555,7 +558,7 @@ class Loader(object):
                 return self.fetch_text(url), {}
 
             doc = None
-            if isinstance(obj, collections.MutableMapping):
+            if isinstance(obj, MutableMapping):
                 for identifier in self.identifiers:
                     obj[identifier] = url
                 doc_url = url
@@ -615,7 +618,7 @@ class Loader(object):
         for idmapField in loader.idmap:
             if (idmapField in document):
                 idmapFieldValue = document[idmapField]
-                if (isinstance(idmapFieldValue, dict)
+                if (isinstance(idmapFieldValue, MutableMapping)
                         and "$import" not in idmapFieldValue
                         and "$include" not in idmapFieldValue):
                     ls = CommentedSeq()
@@ -845,7 +848,7 @@ class Loader(object):
                 resolved_metadata = loader.resolve_all(
                     metadata, base_url, file_base=file_base,
                     checklinks=False)[0]
-                if isinstance(resolved_metadata, dict):
+                if isinstance(resolved_metadata, MutableMapping):
                     metadata = resolved_metadata
                 else:
                     raise validate.ValidationException(
@@ -1008,7 +1011,7 @@ class Loader(object):
         return link
 
     def getid(self, d):  # type: (Any) -> Optional[Text]
-        if isinstance(d, dict):
+        if isinstance(d, MutableMapping):
             for i in self.identifiers:
                 if i in d:
                     idd = d[i]
@@ -1026,7 +1029,7 @@ class Loader(object):
         iterator = None     # type: Any
         if isinstance(document, list):
             iterator = enumerate(document)
-        elif isinstance(document, dict):
+        elif isinstance(document, MutableMapping):
             for d in self.url_fields:
                 try:
                     sl = SourceLine(document, d, validate.ValidationException)
