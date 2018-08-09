@@ -1090,7 +1090,7 @@ D = TypeVar('D', CommentedMap, ContextType)
 
 def _copy_dict_without_key(from_dict, filtered_key):
     # type: (D, Any) -> D
-    new_dict = copy.copy(from_dict)
+    new_dict = CommentedMap(from_dict.items())
     if filtered_key in new_dict:
         del new_dict[filtered_key]
     if isinstance(from_dict, CommentedMap):

@@ -15,8 +15,6 @@ import hashlib
 import six
 from six.moves import urllib
 
-AvroSchemaFromJSONData = avro.schema.make_avsc_object
-
 from avro.schema import Names, SchemaParseException
 from . import ref_resolver
 from .ref_resolver import Loader, DocumentType
@@ -565,6 +563,17 @@ def extend_and_specialize(items, loader):
             t["fields"] = replace_type(t["fields"], extended_by, loader, set())
 
     return n
+
+def convert_to_dict(j4):
+    if isinstance(j4, MutableMapping):
+        return {k: convert_to_dict(v) for k, v in j4.items()}
+    elif isinstance(j4, list):
+        return [convert_to_dict(v) for v in j4]
+    else:
+        return j4
+
+def AvroSchemaFromJSONData(j, names):
+    return avro.schema.make_avsc_object(convert_to_dict(j), names)
 
 def make_avro_schema(i,         # type: List[Dict[Text, Any]]
                      loader     # type: Loader
