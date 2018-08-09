@@ -9,7 +9,7 @@ import copy
 import xml.sax
 from typing import (cast, Any, AnyStr,  # pylint: disable=unused-import
                     Callable, Dict, List, Iterable, Optional, Set, Text, Tuple,
-                    TypeVar, Union)
+                    TypeVar, Union, MutableMapping)
 
 import six
 from six.moves import range
@@ -28,11 +28,6 @@ from rdflib.plugins.parsers.notation3 import BadSyntax
 from . import validate
 from .utils import aslist, onWindows
 from .sourceline import SourceLine, add_lc_filename, relname
-
-if six.PY2:
-    from collections import MutableMapping
-else:
-    from collections.abc import MutableMapping
 
 _logger = logging.getLogger("salad")
 ContextType = Dict[six.text_type, Union[Dict, six.text_type, Iterable[six.text_type]]]

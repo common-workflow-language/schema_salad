@@ -3,13 +3,8 @@ from six.moves import urllib, StringIO
 import ruamel.yaml as yaml
 import copy
 import re
-from typing import List, Text, Dict, Union, Any, Sequence
+from typing import List, Text, Dict, Union, Any, Sequence, MutableMapping
 import uuid
-
-if six.PY2:
-    from collections import MutableMapping
-else:
-    from collections.abc import MutableMapping
 
 class ValidationException(Exception):
     pass

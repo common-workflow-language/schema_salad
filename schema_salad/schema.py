@@ -23,13 +23,8 @@ from .ref_resolver import Loader, DocumentType
 import logging
 from . import jsonld_context
 from .sourceline import SourceLine, strip_dup_lineno, add_lc_filename, bullets, relname
-from typing import cast, Any, AnyStr, Dict, List, Set, Tuple, TypeVar, Union, Text, IO
+from typing import cast, Any, AnyStr, Dict, List, Set, Tuple, TypeVar, Union, Text, IO, MutableMapping
 from ruamel.yaml.comments import CommentedSeq, CommentedMap
-
-if six.PY2:
-    from collections import MutableMapping
-else:
-    from collections.abc import MutableMapping
 
 _logger = logging.getLogger("salad")
 

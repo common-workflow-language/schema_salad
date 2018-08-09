@@ -10,12 +10,7 @@ import six
 from six.moves import urllib
 from six.moves import range
 
-if six.PY2:
-    from collections import MutableMapping
-else:
-    from collections.abc import MutableMapping
-
-from typing import Any, List, Set, Union, Text
+from typing import Any, List, Set, Union, Text, MutableMapping
 from .sourceline import SourceLine, lineno_re, bullets, indent
 
 _logger = logging.getLogger("salad")

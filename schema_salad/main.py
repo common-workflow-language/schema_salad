@@ -13,16 +13,11 @@ from six.moves import urllib
 
 import pkg_resources  # part of setuptools
 
-from typing import Any, Dict, List, Union, Pattern, Text, Tuple, cast
+from typing import Any, Dict, List, Union, Pattern, Text, Tuple, cast, Mapping
 
 from rdflib import Graph, plugin
 from rdflib.serializer import Serializer
 from ruamel.yaml.comments import CommentedMap
-
-if six.PY2:
-    from collections import Mapping
-else:
-    from collections.abc import Mapping
 
 from . import schema
 from . import jsonld_context

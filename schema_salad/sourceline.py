@@ -6,13 +6,8 @@ import os
 import traceback
 
 from typing import (Any, AnyStr, Callable, cast, Dict, List, Iterable, Tuple,
-                    TypeVar, Union, Text)
+                    TypeVar, Union, Text, MutableMapping)
 import six
-
-if six.PY2:
-    from collections import MutableMapping
-else:
-    from collections.abc import MutableMapping
 
 lineno_re = re.compile(u"^(.*?:[0-9]+:[0-9]+: )(( *)(.*))")
 

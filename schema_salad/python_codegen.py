@@ -8,12 +8,7 @@ from pkg_resources import resource_stream
 from .utils import aslist, flatten
 from . import schema
 from .codegen_base import TypeDef, CodeGenBase, shortname
-from typing import Any, Dict, IO, List, Optional, Text, Union, List
-
-if six.PY2:
-    from collections import MutableMapping
-else:
-    from collections.abc import MutableMapping
+from typing import Any, Dict, IO, List, Optional, Text, Union, List, MutableMapping
 
 class PythonCodeGen(CodeGenBase):
     def __init__(self, out):

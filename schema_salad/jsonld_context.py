@@ -3,7 +3,7 @@ import collections
 import json
 import logging
 from typing import (cast, Any, Dict, Iterable,  # pylint: disable=unused-import
-                    List, Optional, Text, Tuple, Union)
+                    List, Optional, Text, Tuple, Union, MutableMapping)
 
 import six
 from six.moves import urllib
@@ -16,13 +16,6 @@ from rdflib.namespace import RDF, RDFS
 
 from .utils import aslist
 from .ref_resolver import ContextType  # pylint: disable=unused-import
-
-if six.PY2:
-    from collections import MutableMapping
-    import collections.Iterable as AbcIterable
-else:
-    from collections.abc import MutableMapping
-    import collections.abc.Iterable as AbcIterable
 
 _logger = logging.getLogger("salad")
 
@@ -58,7 +51,7 @@ def pred(datatype,      # type: Dict[str, Union[Dict, str]]
         else:
             v = field["jsonldPredicate"]
     elif "jsonldPredicate" in datatype:
-        if isinstance(datatype["jsonldPredicate"], AbcIterable):
+        if isinstance(datatype["jsonldPredicate"], Iterable):
             for d in datatype["jsonldPredicate"]:
                 if isinstance(d, MutableMapping):
                     if d["symbol"] == name:

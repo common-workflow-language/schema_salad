@@ -1,6 +1,6 @@
 import json
 import sys
-from six.moves import urllib, cStringIO, PY2
+from six.moves import urllib, cStringIO
 import logging
 from pkg_resources import resource_stream
 from .utils import aslist, flatten
@@ -9,13 +9,8 @@ from .codegen_base import shortname, CodeGenBase
 from .python_codegen import PythonCodeGen
 from .java_codegen import JavaCodeGen
 from .ref_resolver import Loader
-from typing import Any, Dict, List, Optional, Text, Union
+from typing import Any, Dict, List, Optional, Text, Union, MutableMapping
 from ruamel.yaml.comments import CommentedSeq, CommentedMap
-
-if PY2:
-    from collections import MutableMapping
-else:
-    from collections.abc import MutableMapping
 
 class GoCodeGen(object):
     pass

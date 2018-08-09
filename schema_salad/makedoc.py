@@ -20,12 +20,7 @@ import six
 from six.moves import range
 from six.moves import urllib
 from six import StringIO
-from typing import cast, Any, Dict, IO, List, Optional, Set, Text, Union
-
-if six.PY2:
-    from collections import MutableMapping
-else:
-    from collections.abc import MutableMapping
+from typing import cast, Any, Dict, IO, List, Optional, Set, Text, Union, MutableMapping
 
 _logger = logging.getLogger("salad")
 
