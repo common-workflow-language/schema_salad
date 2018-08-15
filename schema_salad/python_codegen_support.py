@@ -372,7 +372,7 @@ def _document_load_by_url(loader, url, loadingOptions):
     else:
         textIO = StringIO(text)
     textIO.name = url    # type: ignore
-    result = yaml.round_trip_load(textIO)
+    result = yaml.round_trip_load(textIO, preserve_quotes=True)
     add_lc_filename(result, url)
 
     loadingOptions.idx[url] = result
