@@ -20,7 +20,8 @@ import six
 from six.moves import range
 from six.moves import urllib
 from six import StringIO
-from typing import cast, Any, Dict, IO, List, Optional, Set, Text, Union, MutableMapping
+from typing import (cast, Any, Dict, IO, List, Optional, Set, Text, Union,
+                    MutableMapping, MutableSequence)
 
 _logger = logging.getLogger("salad")
 
@@ -34,7 +35,7 @@ def has_types(items):  # type: (Any) -> List[Text]
             if n in items:
                 r.extend(has_types(items[n]))
         return r
-    if isinstance(items, list):
+    if isinstance(items, MutableSequence):
         for i in items:
             r.extend(has_types(i))
         return r
@@ -155,7 +156,7 @@ def number_headings(toc, maindoc):  # type: (ToC, str) -> str
 
 
 def fix_doc(doc):  # type: (Union[List[str], str]) -> str
-    if isinstance(doc, list):
+    if isinstance(doc, MutableSequence):
         docstr = "".join(doc)
     else:
         docstr = doc
@@ -236,7 +237,7 @@ class RenderType(object):
                 jsonldPredicate=None    # type: Optional[Dict[str, str]]
                 ):
         # type: (...) -> Text
-        if isinstance(tp, list):
+        if isinstance(tp, MutableSequence):
             ret = ""
             if nbsp and len(tp) <= 3:
                 return "&nbsp;|&nbsp;".join([self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp])
@@ -313,7 +314,7 @@ class RenderType(object):
         extendsfrom(f, ex)
 
         enumDesc = {}
-        if f["type"] == "enum" and isinstance(f["doc"], list):
+        if f["type"] == "enum" and isinstance(f["doc"], MutableSequence):
             for e in ex:
                 for i in e["doc"]:
                     idx = i.find(":")
@@ -376,7 +377,7 @@ class RenderType(object):
             optional = []
             for i in f.get("fields", []):
                 tp = i["type"]
-                if isinstance(tp, list) and tp[0] == "https://w3id.org/cwl/salad#null":
+                if isinstance(tp, MutableSequence) and tp[0] == "https://w3id.org/cwl/salad#null":
                     opt = False
                     tp = tp[1:]
                 else:
@@ -540,7 +541,7 @@ def main():  # type: () -> None
             uri = "file://" + os.path.abspath(a)
             metaschema_loader = schema.get_metaschema()[2]
             j, schema_metadata = metaschema_loader.resolve_ref(uri, "")
-            if isinstance(j, list):
+            if isinstance(j, MutableSequence):
                 s.extend(j)
             elif isinstance(j, MutableMapping):
                 s.append(j)

@@ -9,7 +9,7 @@ import copy
 import xml.sax
 from typing import (cast, Any, AnyStr,  # pylint: disable=unused-import
                     Callable, Dict, List, Iterable, Optional, Set, Text, Tuple,
-                    TypeVar, Union, MutableMapping)
+                    TypeVar, Union, MutableMapping, MutableSequence)
 
 import six
 from six.moves import range
@@ -740,7 +740,8 @@ class Loader(object):
         # Resolve scope for identity fields (fields where the value is the
         # identity of a standalone node, such as enum symbols)
         for identifer in loader.identity_links:
-            if identifer in document and isinstance(document[identifer], list):
+            if identifer in document and isinstance(
+                    document[identifer], MutableSequence):
                 for n, v in enumerate(document[identifer]):
                     if isinstance(document[identifer][n], six.string_types):
                         document[identifer][n] = loader.expand_url(
@@ -773,7 +774,7 @@ class Loader(object):
                         datum, base_url, scoped_id=False,
                         vocab_term=(d in loader.vocab_fields),
                         scoped_ref=self.scoped_ref_fields.get(d))
-                elif isinstance(datum, list):
+                elif isinstance(datum, MutableSequence):
                     for i, url in enumerate(datum):
                         if isinstance(url, (str, six.text_type)):
                             datum[i] = loader.expand_url(
@@ -1022,7 +1023,7 @@ class Loader(object):
 
         errors = []         # type: List[Exception]
         iterator = None     # type: Any
-        if isinstance(document, list):
+        if isinstance(document, MutableSequence):
             iterator = enumerate(document)
         elif isinstance(document, MutableMapping):
             for d in self.url_fields:

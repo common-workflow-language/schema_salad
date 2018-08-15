@@ -13,7 +13,8 @@ from six.moves import urllib
 
 import pkg_resources  # part of setuptools
 
-from typing import Any, Dict, List, Union, Pattern, Text, Tuple, cast, Mapping
+from typing import (Any, Dict, List, Union, Pattern, Text, Tuple, cast,
+                    Mapping, MutableSequence)
 
 from rdflib import Graph, plugin
 from rdflib.serializer import Serializer
@@ -260,7 +261,7 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     # Make the Avro validation that will be used to validate the target
     # document
-    if isinstance(schema_doc, list):
+    if isinstance(schema_doc, MutableSequence):
         (avsc_names, avsc_obj) = schema.make_avro_schema(
             schema_doc, document_loader)
     else:
@@ -350,7 +351,7 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     # Optionally convert the document to RDF
     if args.print_rdf:
-        if isinstance(document, (Mapping, list)):
+        if isinstance(document, (Mapping, MutableSequence)):
             printrdf(args.document, document, schema_ctx, args.rdf_serializer)
             return 0
         else:

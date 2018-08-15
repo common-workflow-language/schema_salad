@@ -3,7 +3,8 @@ from six.moves import urllib, StringIO
 import ruamel.yaml as yaml
 import copy
 import re
-from typing import List, Text, Dict, Union, Any, Sequence, MutableMapping
+from typing import (List, Text, Dict, Union, Any, Sequence, MutableMapping,
+                    MutableSequence)
 import uuid
 
 class ValidationException(Exception):
@@ -77,7 +78,7 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
 def save(val, top=True, base_url=""):
     if isinstance(val, Savable):
         return val.save(top=top, base_url=base_url)
-    if isinstance(val, list):
+    if isinstance(val, MutableSequence):
         return [save(v, top=False, base_url=base_url) for v in val]
     return val
 
@@ -176,14 +177,14 @@ class _ArrayLoader(_Loader):
         self.items = items
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        if not isinstance(doc, list):
+        if not isinstance(doc, MutableSequence):
             raise ValidationException("Expected a list")
         r = []
         errors = []
         for i in range(0, len(doc)):
             try:
                 lf = load_field(doc[i], _UnionLoader((self, self.items)), baseuri, loadingOptions)
-                if isinstance(lf, list):
+                if isinstance(lf, MutableSequence):
                     r.extend(lf)
                 else:
                     r.append(lf)
@@ -248,7 +249,7 @@ class _URILoader(_Loader):
         self.scoped_ref = scoped_ref
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        if isinstance(doc, list):
+        if isinstance(doc, MutableSequece):
             doc = [expand_url(i, baseuri, loadingOptions,
                             self.scoped_id, self.vocab_term, self.scoped_ref) for i in doc]
         if isinstance(doc, six.string_types):
@@ -286,12 +287,12 @@ class _TypeDSLLoader(_Loader):
         return doc
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        if isinstance(doc, list):
+        if isinstance(doc, MutableSequence):
             r = []
             for d in doc:
                 if isinstance(d, six.string_types):
                     resolved = self.resolve(d, baseuri, loadingOptions)
-                    if isinstance(resolved, list):
+                    if isinstance(resolved, MutableSequence):
                         for i in resolved:
                             if i not in r:
                                 r.append(i)
@@ -356,7 +357,7 @@ def _document_load(loader, doc, baseuri, loadingOptions):
         else:
             return loader.load(doc, baseuri, loadingOptions, docRoot=baseuri)
 
-    if isinstance(doc, list):
+    if isinstance(doc, MutableSequence):
         return loader.load(doc, baseuri, loadingOptions)
 
     raise ValidationException()
@@ -403,9 +404,9 @@ def prefix_url(url, namespaces):
     return url
 
 def save_relative_uri(uri, base_url, scoped_id, ref_scope):
-    if isinstance(uri, list):
+    if isinstance(uri, MutableSequence):
         return [save_relative_uri(u, base_url, scoped_id, ref_scope) for u in uri]
-    elif isinstance(uri, str):
+    elif isinstance(uri, six.text_type):
         urisplit = urllib.parse.urlsplit(uri)
         basesplit = urllib.parse.urlsplit(base_url)
         if urisplit.scheme == basesplit.scheme and urisplit.netloc == basesplit.netloc:

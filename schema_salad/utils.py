@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, MutableSequence
 
 
 def add_dictlist(di, key, val):  # type: (Dict, Any, Any) -> None
@@ -12,7 +12,7 @@ def add_dictlist(di, key, val):  # type: (Dict, Any, Any) -> None
 def aslist(l):  # type: (Any) -> List
     """Convenience function to wrap single items and lists, and return lists unchanged."""
 
-    if isinstance(l, list):
+    if isinstance(l, MutableSequence):
         return l
     else:
         return [l]

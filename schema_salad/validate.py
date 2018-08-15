@@ -10,7 +10,7 @@ import six
 from six.moves import urllib
 from six.moves import range
 
-from typing import Any, List, Set, Union, Text, MutableMapping
+from typing import Any, List, Set, Union, Text, MutableMapping, MutableSequence
 from .sourceline import SourceLine, lineno_re, bullets, indent
 
 _logger = logging.getLogger("salad")
@@ -173,7 +173,7 @@ def validate_ex(expected_schema,                  # type: Schema
             else:
                 return False
     elif isinstance(expected_schema, avro.schema.ArraySchema):
-        if isinstance(datum, list):
+        if isinstance(datum, MutableSequence):
             for i, d in enumerate(datum):
                 try:
                     sl = SourceLine(datum, i, ValidationException)
@@ -211,7 +211,7 @@ def validate_ex(expected_schema,                  # type: Schema
         errors = []  # type: List[Text]
         checked = []
         for s in expected_schema.schemas:
-            if isinstance(datum, list) and not isinstance(s, avro.schema.ArraySchema):
+            if isinstance(datum, MutableSequence) and not isinstance(s, avro.schema.ArraySchema):
                 continue
             elif isinstance(datum, MutableMapping) and not isinstance(s, avro.schema.RecordSchema):
                 continue

@@ -21,7 +21,8 @@ from .ref_resolver import Loader, DocumentType
 import logging
 from . import jsonld_context
 from .sourceline import SourceLine, strip_dup_lineno, add_lc_filename, bullets, relname
-from typing import cast, Any, AnyStr, Dict, List, Set, Tuple, TypeVar, Union, Text, IO, MutableMapping
+from typing import (cast, Any, AnyStr, Dict, List, Set, Tuple, TypeVar, Union,
+                    Text, IO, MutableMapping, MutableSequence)
 from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
 _logger = logging.getLogger("salad")
@@ -212,7 +213,7 @@ def load_schema(schema_ref,  # type: Union[CommentedMap, CommentedSeq, Text]
         metaschema_loader.cache.update(cache)
     schema_doc, schema_metadata = metaschema_loader.resolve_ref(schema_ref, "")
 
-    if not isinstance(schema_doc, list):
+    if not isinstance(schema_doc, MutableSequence):
         raise ValueError("Schema reference must resolve to a list.")
 
     validate_doc(metaschema_names, schema_doc, metaschema_loader, True)
@@ -288,7 +289,7 @@ def validate_doc(schema_names,  # type: Names
         raise validate.ValidationException(
             "No document roots defined in the schema")
 
-    if isinstance(doc, list):
+    if isinstance(doc, MutableSequence):
         validate_doc = doc
     elif isinstance(doc, CommentedMap):
         validate_doc = CommentedSeq([doc])
@@ -389,11 +390,11 @@ def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
             if n in items:
                 items[n] = replace_type(items[n], spec, loader, found,
                                         find_embeds=find_embeds, deepen=find_embeds)
-                if isinstance(items[n], list):
+                if isinstance(items[n], MutableSequence):
                     items[n] = flatten(items[n])
 
         return items
-    elif isinstance(items, list):
+    elif isinstance(items, MutableSequence):
         # recursively transform list
         return [replace_type(i, spec, loader, found, find_embeds=find_embeds, deepen=deepen) for i in items]
     elif isinstance(items, (str, six.text_type)):
@@ -455,7 +456,7 @@ def make_valid_avro(items,          # type: Avro
         if "symbols" in items:
             items["symbols"] = [avro_name(sym) for sym in items["symbols"]]
         return items
-    if isinstance(items, list):
+    if isinstance(items, MutableSequence):
         ret = []
         for i in items:
             ret.append(make_valid_avro(i, alltypes, found, union=union))  # type: ignore
@@ -477,7 +478,7 @@ def deepcopy_strip(item):  # type: (Any) -> Any
 
     if isinstance(item, MutableMapping):
         return {k: deepcopy_strip(v) for k,v in six.iteritems(item)}
-    elif isinstance(item, list):
+    elif isinstance(item, MutableSequence):
         return [deepcopy_strip(k) for k in item]
     else:
         return item
@@ -567,7 +568,7 @@ def extend_and_specialize(items, loader):
 def convert_to_dict(j4):
     if isinstance(j4, MutableMapping):
         return {k: convert_to_dict(v) for k, v in j4.items()}
-    elif isinstance(j4, list):
+    elif isinstance(j4, MutabelSequence):
         return [convert_to_dict(v) for v in j4]
     else:
         return j4

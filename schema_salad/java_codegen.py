@@ -2,13 +2,12 @@ import json
 import sys
 import six
 from six.moves import urllib, cStringIO
-import collections
 import logging
 from pkg_resources import resource_stream
 from .utils import aslist, flatten
 from . import schema
 from .codegen_base import TypeDef, CodeGenBase, shortname
-from typing import Text, List
+from typing import Text, List, MutableSequence
 import os
 
 class JavaCodeGen(CodeGenBase):
@@ -103,7 +102,7 @@ public class {cls}Impl implements {cls} {{
     }
 
     def type_loader(self, t):
-        if isinstance(t, list) and len(t) == 2:
+        if isinstance(t, MutableSequence) and len(t) == 2:
             if t[0] == "https://w3id.org/cwl/salad#null":
                 t = t[1]
         if isinstance(t, basestring):

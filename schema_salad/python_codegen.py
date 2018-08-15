@@ -8,7 +8,8 @@ from pkg_resources import resource_stream
 from .utils import aslist, flatten
 from . import schema
 from .codegen_base import TypeDef, CodeGenBase, shortname
-from typing import Any, Dict, IO, List, Optional, Text, Union, List, MutableMapping
+from typing import (Any, Dict, IO, List, Optional, Text, Union, List,
+                    MutableMapping, MutableSequence)
 
 class PythonCodeGen(CodeGenBase):
     def __init__(self, out):
@@ -153,7 +154,7 @@ class PythonCodeGen(CodeGenBase):
     def type_loader(self, t):
         # type: (Union[List[Any], Dict[Text, Any], Text]) -> TypeDef
 
-        if isinstance(t, list):
+        if isinstance(t, MutableSequence):
             sub = [self.type_loader(i) for i in t]
             return self.declare_type(TypeDef("union_of_%s" % "_or_".join(s.name for s in sub), "_UnionLoader((%s,))" % (", ".join(s.name for s in sub))))
         if isinstance(t, MutableMapping):

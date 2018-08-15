@@ -6,7 +6,7 @@ import os
 import traceback
 
 from typing import (Any, AnyStr, Callable, cast, Dict, List, Iterable, Tuple,
-                    TypeVar, Union, Text, MutableMapping)
+                    TypeVar, Union, Text, MutableMapping, MutableSequence)
 import six
 
 lineno_re = re.compile(u"^(.*?:[0-9]+:[0-9]+: )(( *)(.*))")
@@ -14,7 +14,7 @@ lineno_re = re.compile(u"^(.*?:[0-9]+:[0-9]+: )(( *)(.*))")
 def _add_lc_filename(r, source):  # type: (ruamel.yaml.comments.CommentedBase, AnyStr) -> None
     if isinstance(r, ruamel.yaml.comments.CommentedBase):
         r.lc.filename = source
-    if isinstance(r, list):
+    if isinstance(r, MutableSequence):
         for d in r:
             _add_lc_filename(d, source)
     elif isinstance(r, MutableMapping):
@@ -125,7 +125,7 @@ def cmap(d, lc=None, fn=None):  # type: (Union[int, float, str, Text, Dict, List
             cm.lc.add_kv_line_col(k, uselc)
             cm.lc.filename = fn
         return cm
-    if isinstance(d, list):
+    if isinstance(d, MutableSequence):
         cs = CommentedSeq()
         for k,v in enumerate(d):
             if isinstance(v, CommentedBase):

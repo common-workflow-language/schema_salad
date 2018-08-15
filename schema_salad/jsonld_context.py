@@ -3,7 +3,8 @@ import collections
 import json
 import logging
 from typing import (cast, Any, Dict, Iterable,  # pylint: disable=unused-import
-                    List, Optional, Text, Tuple, Union, MutableMapping)
+                    List, Optional, Text, Tuple, Union, MutableSequence,
+                    MutableMapping)
 
 import six
 from six.moves import urllib
@@ -193,7 +194,7 @@ def fix_jsonld_ids(obj,  # type: Union[Dict[Text, Any], List[Dict[Text, Any]]]
                 obj["@id"] = obj[i]
         for v in obj.values():
             fix_jsonld_ids(v, ids)
-    if isinstance(obj, list):
+    if isinstance(obj, MutableSequence):
         for entry in obj:
             fix_jsonld_ids(entry, ids)
 
@@ -224,7 +225,7 @@ def makerdf(workflow,       # type: Text
     else:
         g = graph
 
-    if isinstance(wf, list):
+    if isinstance(wf, MutableSequence):
         for w in wf:
             w["@context"] = ctx
             g.parse(data=json.dumps(w), format='json-ld', publicID=str(workflow))
