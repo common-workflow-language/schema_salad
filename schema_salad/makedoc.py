@@ -1,27 +1,28 @@
 from __future__ import absolute_import
 
-import mistune
 import argparse
-import json
 import io
+from io import open
 import os
 import copy
 import re
 import sys
 import logging
-from io import open
 import codecs
 from codecs import StreamWriter  # pylint: disable=unused-import
-
-from . import schema
-from .utils import add_dictlist, aslist
-
+from typing import (cast, Any, Dict, IO, List, Optional, Set, Union,
+                    MutableMapping, MutableSequence)
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+import mistune
 import six
 from six.moves import range
 from six.moves import urllib
 from six import StringIO
-from typing import (cast, Any, Dict, IO, List, Optional, Set, Text, Union,
-                    MutableMapping, MutableSequence)
+
+from . import schema
+from .utils import add_dictlist, aslist
+
 
 _logger = logging.getLogger("salad")
 

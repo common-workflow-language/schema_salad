@@ -1,11 +1,15 @@
-import six
-from six.moves import urllib, StringIO
-import ruamel.yaml as yaml
 import copy
 import re
-from typing import (List, Text, Dict, Union, Any, Sequence, MutableMapping,
-                    MutableSequence)
 import uuid
+from typing import (List, Dict, Union, Any, Sequence, MutableMapping,
+                    MutableSequence)
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+
+
+import six
+from six.moves import urllib, StringIO
+from ruamel import yaml
 
 class ValidationException(Exception):
     pass
@@ -249,7 +253,7 @@ class _URILoader(_Loader):
         self.scoped_ref = scoped_ref
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        if isinstance(doc, MutableSequece):
+        if isinstance(doc, MutableSequence):
             doc = [expand_url(i, baseuri, loadingOptions,
                             self.scoped_id, self.vocab_term, self.scoped_ref) for i in doc]
         if isinstance(doc, six.string_types):

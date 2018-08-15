@@ -1,14 +1,10 @@
-import json
-import sys
-import six
-from six.moves import urllib, cStringIO
-import logging
-from pkg_resources import resource_stream
-from .utils import aslist, flatten
-from . import schema
-from .codegen_base import TypeDef, CodeGenBase, shortname
-from typing import Text, List, MutableSequence
 import os
+from typing import MutableSequence
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+from six.moves import urllib, cStringIO
+from . import schema
+from .codegen_base import TypeDef, CodeGenBase
 
 class JavaCodeGen(CodeGenBase):
     def __init__(self, base):
@@ -36,8 +32,14 @@ class JavaCodeGen(CodeGenBase):
         # type: (Text) -> Text
         return self.safe_name(n)
 
-    def begin_class(self, classname, extends, doc, abstract, field_names, idfield):
-        # type: (Text, List[Text], Text, bool, List[Text], Text) -> None
+    def begin_class(self,
+                    classname,    # type: Text
+                    extends,      # type: MutableSequence[Text]
+                    doc,          # type: Text
+                    abstract,     # type: bool
+                    field_names,  # type: MutableSequence[Text]
+                    idfield       # type: Text
+                   ):  # type: (...) -> None
         cls = self.interface_name(classname)
         self.current_class = cls
         self.current_class_is_abstract = abstract

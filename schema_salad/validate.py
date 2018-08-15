@@ -1,17 +1,17 @@
 from __future__ import absolute_import
-import pprint
-import avro.schema
-from avro.schema import Schema
-import sys
-import re
 import logging
+import pprint
+from typing import Any, List, Set, Union, MutableMapping, MutableSequence
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+import avro.schema  # pylint: disable=no-name-in-module, import-error
+from avro.schema import Schema  # pylint: disable=unused-import, no-name-in-module, import-error
 
 import six
 from six.moves import urllib
 from six.moves import range
 
-from typing import Any, List, Set, Union, Text, MutableMapping, MutableSequence
-from .sourceline import SourceLine, lineno_re, bullets, indent
+from .sourceline import SourceLine, bullets, indent
 
 _logger = logging.getLogger("salad")
 
@@ -25,11 +25,15 @@ class ClassValidationException(ValidationException):
 
 def validate(expected_schema,           # type: Schema
              datum,                     # type: Any
-             identifiers=[],            # type: List[Text]
+             identifiers=None,          # type: List[Text]
              strict=False,              # type: bool
-             foreign_properties=set()   # type: Set[Text]
+             foreign_properties=None    # type: Set[Text]
              ):
     # type: (...) -> bool
+    if not identifiers:
+        identifiers = []
+    if not foreign_properties:
+        foreign_properties = set()
     return validate_ex(
         expected_schema, datum, identifiers, strict=strict,
         foreign_properties=foreign_properties, raise_ex=False)

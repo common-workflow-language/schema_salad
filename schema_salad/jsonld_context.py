@@ -1,15 +1,15 @@
 from __future__ import absolute_import
-import collections
 import json
 import logging
 from typing import (cast, Any, Dict, Iterable,  # pylint: disable=unused-import
-                    List, Optional, Text, Tuple, Union, MutableSequence,
+                    List, Optional, Tuple, Union, MutableSequence,
                     MutableMapping)
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 import six
 from six.moves import urllib
 
-from ruamel.yaml.comments import CommentedMap
 import rdflib
 from rdflib import Graph, URIRef
 import rdflib.namespace
@@ -21,7 +21,7 @@ from .ref_resolver import ContextType  # pylint: disable=unused-import
 _logger = logging.getLogger("salad")
 
 
-def pred(datatype,      # type: Dict[str, Union[Dict, str]]
+def pred(datatype,      # type: MutableMapping[Text, Union[Dict, Text]]
          field,         # type: Optional[Dict]
          name,          # type: str
          context,       # type: ContextType
@@ -80,7 +80,7 @@ def pred(datatype,      # type: Dict[str, Union[Dict, str]]
     return ret
 
 
-def process_type(t,             # type: Dict[str, Any]
+def process_type(t,             # type: MutableMapping[Text, Any]
                  g,             # type: Graph
                  context,       # type: ContextType
                  defaultBase,   # type: str

@@ -1,16 +1,15 @@
-import json
+"""Generate langauge specific loaders for a particular SALAD schema."""
 import sys
-from six.moves import urllib, cStringIO
-import logging
-from pkg_resources import resource_stream
-from .utils import aslist, flatten
+from typing import Any, Dict, List, Optional, Union, MutableMapping
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+from .utils import aslist
 from . import schema
-from .codegen_base import shortname, CodeGenBase
+from .schema import shortname
+from .codegen_base import CodeGenBase
 from .python_codegen import PythonCodeGen
 from .java_codegen import JavaCodeGen
-from .ref_resolver import Loader
-from typing import Any, Dict, List, Optional, Text, Union, MutableMapping
-from ruamel.yaml.comments import CommentedSeq, CommentedMap
+from .ref_resolver import Loader  # pylint: disable=unused-import
 
 class GoCodeGen(object):
     pass

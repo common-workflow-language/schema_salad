@@ -35,7 +35,8 @@ install_requires = [
     'mistune >= 0.7.3, < 0.8',
     'CacheControl >= 0.11.7, < 0.12',
     'lockfile >= 0.9',
-    'six >= 1.8.0']
+    'six >= 1.8.0',
+    'typing-extensions']
 
 extras_require={
     ':python_version<"3"': ['avro == 1.8.1'],

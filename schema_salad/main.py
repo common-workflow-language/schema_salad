@@ -7,31 +7,28 @@ import json
 import os
 import re
 import itertools
+from typing import (Any, Dict, List, Union, Pattern, Tuple, cast,
+                    Mapping, MutableSequence)
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 import six
 from six.moves import urllib
 
 import pkg_resources  # part of setuptools
-
-from typing import (Any, Dict, List, Union, Pattern, Text, Tuple, cast,
-                    Mapping, MutableSequence)
-
-from rdflib import Graph, plugin
-from rdflib.serializer import Serializer
 from ruamel.yaml.comments import CommentedMap
+from rdflib.plugin import register
+from rdflib.parser import Parser
 
 from . import schema
 from . import jsonld_context
-from . import makedoc
 from . import validate
 from . import codegen
 from .sourceline import strip_dup_lineno
 from .ref_resolver import Loader, file_uri
-_logger = logging.getLogger("salad")
 
-from rdflib.plugin import register
-from rdflib.parser import Parser
 register('json-ld', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')
+_logger = logging.getLogger("salad")
 
 
 def printrdf(workflow,  # type: str

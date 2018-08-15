@@ -2,14 +2,15 @@ from __future__ import absolute_import
 import sys
 import os
 import logging
-import collections
 from io import open
 import re
 import copy
 import xml.sax
 from typing import (cast, Any, AnyStr,  # pylint: disable=unused-import
-                    Callable, Dict, List, Iterable, Optional, Set, Text, Tuple,
+                    Callable, Dict, List, Iterable, Optional, Set, Tuple,
                     TypeVar, Union, MutableMapping, MutableSequence)
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 import six
 from six.moves import range
@@ -18,7 +19,7 @@ from six import StringIO
 import requests
 from cachecontrol.wrapper import CacheControl
 from cachecontrol.caches import FileCache
-import ruamel.yaml as yaml
+from ruamel import yaml
 from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
 import rdflib
@@ -90,7 +91,7 @@ def merge_properties(a, b):  # type: (List[Any], List[Any]) -> Dict[Any, Any]
             c[i] = b[i]
     for i in a:
         if i in b:
-            c[i] = aslist(a[i]) + aslist(b[i])
+            c[i] = aslist(a[i]) + aslist(b[i])  # type: ignore
 
     return c
 

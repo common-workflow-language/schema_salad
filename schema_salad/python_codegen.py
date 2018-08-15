@@ -1,15 +1,13 @@
-import json
-import sys
-import six
-from six.moves import urllib, cStringIO
-import collections
-import logging
-from pkg_resources import resource_stream
-from .utils import aslist, flatten
-from . import schema
-from .codegen_base import TypeDef, CodeGenBase, shortname
-from typing import (Any, Dict, IO, List, Optional, Text, Union, List,
+from typing import (Any, Dict, IO, List, Union,
                     MutableMapping, MutableSequence)
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+import six
+from six.moves import cStringIO
+from pkg_resources import resource_stream
+from . import schema
+from .schema import shortname
+from .codegen_base import TypeDef, CodeGenBase
 
 class PythonCodeGen(CodeGenBase):
     def __init__(self, out):
@@ -50,8 +48,14 @@ class PythonCodeGen(CodeGenBase):
             self.declare_type(p)
 
 
-    def begin_class(self, classname, extends, doc, abstract, field_names, idfield):
-        # type: (Text, List[Text], Text, bool, List[Text], Text) -> None
+    def begin_class(self,
+                    classname,    # type: Text
+                    extends,      # type: MutableSequence[Text]
+                    doc,          # type: Text
+                    abstract,     # type: bool
+                    field_names,  # type: MutableSequence[Text]
+                    idfield       # type: Text
+                   ):  # type: (...) -> None
         classname = self.safe_name(classname)
 
         if extends:
@@ -236,7 +240,7 @@ class PythonCodeGen(CodeGenBase):
         if name == self.idfield or not self.idfield:
             baseurl = 'base_url'
         else:
-            baseurl = "self.%s " % self.safe_name(self.idfield)
+            baseurl = "self.%s" % self.safe_name(self.idfield)
 
         if fieldtype.is_uri:
             self.serializer.write("""
@@ -246,7 +250,7 @@ class PythonCodeGen(CodeGenBase):
                 r['{fieldname}'] = u
 """.
                                   format(safename=self.safe_name(name),
-                                         fieldname=shortname(name),
+                                         fieldname=shortname(name).strip(),
                                          baseurl=baseurl,
                                          scoped_id=fieldtype.scoped_id,
                                          ref_scope=fieldtype.ref_scope))

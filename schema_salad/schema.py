@@ -1,29 +1,28 @@
 from __future__ import absolute_import
-import avro
 import copy
-from schema_salad.utils import add_dictlist, aslist, flatten
-import sys
-import pprint
-from pkg_resources import resource_stream
-import ruamel.yaml as yaml
-import avro.schema
-from . import validate
 import json
-import os
 import hashlib
+import logging
+from typing import (cast, Any, AnyStr, Dict, List, Set, Tuple, TypeVar, Union,
+                    IO, MutableMapping, MutableSequence)
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
+import avro
+import avro.schema  # pylint: disable=no-name-in-module,import-error
+from avro.schema import Names, SchemaParseException  # pylint: disable=no-name-in-module,import-error
+from pkg_resources import resource_stream
+from ruamel import yaml
+from ruamel.yaml.comments import CommentedSeq, CommentedMap
 import six
 from six.moves import urllib
 
-from avro.schema import Names, SchemaParseException
+from schema_salad.utils import add_dictlist, aslist, flatten
+from . import validate
 from . import ref_resolver
-from .ref_resolver import Loader, DocumentType
-import logging
+from .ref_resolver import Loader
 from . import jsonld_context
 from .sourceline import SourceLine, strip_dup_lineno, add_lc_filename, bullets, relname
-from typing import (cast, Any, AnyStr, Dict, List, Set, Tuple, TypeVar, Union,
-                    Text, IO, MutableMapping, MutableSequence)
-from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
 _logger = logging.getLogger("salad")
 
@@ -189,8 +188,6 @@ def get_metaschema():
     add_lc_filename(j, "metaschema.yml")
     j, _ = loader.resolve_all(j, "https://w3id.org/cwl/salad#")
 
-    # pprint.pprint(j)
-
     (sch_names, sch_obj) = make_avro_schema(j, loader)
     if isinstance(sch_names, Exception):
         _logger.error("Metaschema error, avro was:\n%s",
@@ -351,7 +348,7 @@ def validate_doc(schema_names,  # type: Names
             strip_dup_lineno(bullets(anyerrors, "* ")))
 
 def get_anon_name(rec):
-    # type: (Dict[Text, Any]) -> Text
+    # type: (MutableMapping[Text, Any]) -> Text
     if "name" in rec:
         return rec["name"]
     anon_name = ""
@@ -565,21 +562,21 @@ def extend_and_specialize(items, loader):
 
     return n
 
-def convert_to_dict(j4):
+def convert_to_dict(j4):  # type: (Any) -> Any
     if isinstance(j4, MutableMapping):
         return {k: convert_to_dict(v) for k, v in j4.items()}
-    elif isinstance(j4, MutabelSequence):
+    elif isinstance(j4, MutableSequence):
         return [convert_to_dict(v) for v in j4]
     else:
         return j4
 
-def AvroSchemaFromJSONData(j, names):
+def AvroSchemaFromJSONData(j, names):  # type: (Any, avro.schema.Names) -> Any
     return avro.schema.make_avsc_object(convert_to_dict(j), names)
 
 def make_avro_schema(i,         # type: List[Dict[Text, Any]]
                      loader     # type: Loader
                      ):
-    # type: (...) -> Tuple[Union[Names, SchemaParseException], List[Dict[Text, Any]]]
+    # type: (...) -> Tuple[Union[Names, SchemaParseException], MutableSequence[MutableMapping[Text, Any]]]
     names = avro.schema.Names()
 
     j = extend_and_specialize(i, loader)
