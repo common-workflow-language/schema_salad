@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
-from typing import Any, Dict, List, Mapping, MutableSequence
+from typing import Any, Dict, List, Mapping, MutableSequence, IO, Union, AnyStr
+from typing_extensions import Text  # pylint: disable=unused-import
 import os
 import six
 import json
@@ -47,7 +48,7 @@ def onWindows():
     # type: () -> (bool)
     return os.name == 'nt'
 
-def convert_to_dict(j4):
+def convert_to_dict(j4):  # type: (Any) -> Any
     if isinstance(j4, Mapping):
         return {k: convert_to_dict(v) for k, v in j4.items()}
     elif isinstance(j4, MutableSequence):
@@ -67,7 +68,7 @@ def json_dump(obj,       # type: Any
 
 def json_dumps(obj,       # type: Any
                **kwargs   # type: Any
-              ):  # type: (...) -> Union[Text, AnyStr]
+              ):  # type: (...) -> str
     """ Force use of unicode. """
     if six.PY2:
         kwargs['encoding'] = 'utf-8'

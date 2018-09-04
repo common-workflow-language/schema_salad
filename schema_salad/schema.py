@@ -17,7 +17,7 @@ from ruamel.yaml.comments import CommentedSeq, CommentedMap
 import six
 from six.moves import urllib
 
-from schema_salad.utils import add_dictlist, aslist, flatten, convert_to_dict
+from schema_salad.utils import add_dictlist, aslist, flatten, convert_to_dict, json_dumps
 from . import validate
 from . import ref_resolver
 from .ref_resolver import Loader
