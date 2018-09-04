@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-import json
 import logging
 from typing import (cast, Any, Dict, Iterable,  # pylint: disable=unused-import
                     List, Optional, Tuple, Union, MutableSequence,
@@ -15,7 +14,7 @@ from rdflib import Graph, URIRef
 import rdflib.namespace
 from rdflib.namespace import RDF, RDFS
 
-from .utils import aslist
+from .utils import aslist, json_dumps
 from .ref_resolver import ContextType  # pylint: disable=unused-import
 
 _logger = logging.getLogger("salad")
@@ -228,10 +227,10 @@ def makerdf(workflow,       # type: Text
     if isinstance(wf, MutableSequence):
         for w in wf:
             w["@context"] = ctx
-            g.parse(data=json.dumps(w), format='json-ld', publicID=str(workflow))
+            g.parse(data=json_dumps(w), format='json-ld', publicID=str(workflow))
     else:
         wf["@context"] = ctx
-        g.parse(data=json.dumps(wf), format='json-ld', publicID=str(workflow))
+        g.parse(data=json_dumps(wf), format='json-ld', publicID=str(workflow))
 
     # Bug in json-ld loader causes @id fields to be added to the graph
     for sub, pred, obj in g.triples((None, URIRef("@id"), None)):

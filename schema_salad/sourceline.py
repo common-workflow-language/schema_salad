@@ -7,6 +7,7 @@ from typing import (Any, AnyStr, Callable, Dict, List,
                     Union, MutableMapping, MutableSequence)
 from typing_extensions import Text  # pylint: disable=unused-import
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
+
 import six
 import ruamel.yaml
 from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq

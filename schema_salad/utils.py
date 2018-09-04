@@ -1,7 +1,9 @@
 from __future__ import absolute_import
-import os
-from typing import Any, Dict, MutableSequence
 
+from typing import Any, Dict, List, Mapping, MutableSequence
+import os
+import six
+import json
 
 def add_dictlist(di, key, val):  # type: (Dict, Any, Any) -> None
     if key not in di:
@@ -44,3 +46,29 @@ def flatten(l, ltypes=(list, tuple)):
 def onWindows():
     # type: () -> (bool)
     return os.name == 'nt'
+
+def convert_to_dict(j4):
+    if isinstance(j4, Mapping):
+        return {k: convert_to_dict(v) for k, v in j4.items()}
+    elif isinstance(j4, MutableSequence):
+        return [convert_to_dict(v) for v in j4]
+    else:
+        return j4
+
+def json_dump(obj,       # type: Any
+              fp,        # type: IO[str]
+              **kwargs   # type: Any
+             ):  # type: (...) -> None
+    """ Force use of unicode. """
+    if six.PY2:
+        kwargs['encoding'] = 'utf-8'
+    json.dump(convert_to_dict(obj), fp, **kwargs)
+
+
+def json_dumps(obj,       # type: Any
+               **kwargs   # type: Any
+              ):  # type: (...) -> Union[Text, AnyStr]
+    """ Force use of unicode. """
+    if six.PY2:
+        kwargs['encoding'] = 'utf-8'
+    return json.dumps(convert_to_dict(obj), **kwargs)

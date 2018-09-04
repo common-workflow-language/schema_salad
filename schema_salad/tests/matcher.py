@@ -3,9 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import difflib
-import json
 import re
-
+from schema_salad.utils import json_dumps
 
 class JsonDiffMatcher(object):
     """Raise AssertionError with a readable JSON diff when not __eq__().
@@ -18,8 +17,8 @@ class JsonDiffMatcher(object):
         self.expected = expected
 
     def __eq__(self, actual):
-        expected_json = json.dumps(self.expected, sort_keys=True, indent=2)
-        actual_json = json.dumps(actual, sort_keys=True, indent=2)
+        expected_json = json_dumps(self.expected, sort_keys=True, indent=2)
+        actual_json = json_dumps(actual, sort_keys=True, indent=2)
         if expected_json != actual_json:
             raise AssertionError("".join(difflib.context_diff(
                 expected_json.splitlines(1),

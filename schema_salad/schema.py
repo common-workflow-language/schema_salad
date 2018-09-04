@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import copy
-import json
+
 import hashlib
 import logging
 from typing import (cast, Any, AnyStr, Dict, List, Set, Tuple, TypeVar, Union,
@@ -17,12 +17,13 @@ from ruamel.yaml.comments import CommentedSeq, CommentedMap
 import six
 from six.moves import urllib
 
-from schema_salad.utils import add_dictlist, aslist, flatten
+from schema_salad.utils import add_dictlist, aslist, flatten, convert_to_dict
 from . import validate
 from . import ref_resolver
 from .ref_resolver import Loader
 from . import jsonld_context
 from .sourceline import SourceLine, strip_dup_lineno, add_lc_filename, bullets, relname
+
 
 _logger = logging.getLogger("salad")
 
@@ -191,7 +192,7 @@ def get_metaschema():
     (sch_names, sch_obj) = make_avro_schema(j, loader)
     if isinstance(sch_names, Exception):
         _logger.error("Metaschema error, avro was:\n%s",
-                      json.dumps(sch_obj, indent=4))
+                      json_dumps(sch_obj, indent=4))
         raise sch_names
     validate_doc(sch_names, j, loader, strict=True)
     return (sch_names, j, loader)
@@ -562,13 +563,6 @@ def extend_and_specialize(items, loader):
 
     return n
 
-def convert_to_dict(j4):  # type: (Any) -> Any
-    if isinstance(j4, MutableMapping):
-        return {k: convert_to_dict(v) for k, v in j4.items()}
-    elif isinstance(j4, MutableSequence):
-        return [convert_to_dict(v) for v in j4]
-    else:
-        return j4
 
 def AvroSchemaFromJSONData(j, names):  # type: (Any, avro.schema.Names) -> Any
     return avro.schema.make_avsc_object(convert_to_dict(j), names)

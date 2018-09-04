@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import argparse
 import logging
 import sys
-import json
 import os
 import re
 import itertools
@@ -16,6 +15,7 @@ import six
 from six.moves import urllib
 
 import pkg_resources  # part of setuptools
+
 from ruamel.yaml.comments import CommentedMap
 from rdflib.plugin import register
 from rdflib.parser import Parser
@@ -26,6 +26,8 @@ from . import validate
 from . import codegen
 from .sourceline import strip_dup_lineno
 from .ref_resolver import Loader, file_uri
+from .utils import json_dumps
+
 
 register('json-ld', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')
 _logger = logging.getLogger("salad")
@@ -219,11 +221,11 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     # Optionally print the schema after ref resolution
     if not args.document and args.print_pre:
-        print(json.dumps(schema_doc, indent=4))
+        print(json_dumps(schema_doc, indent=4))
         return 0
 
     if not args.document and args.print_index:
-        print(json.dumps(list(metaschema_loader.idx.keys()), indent=4))
+        print(json_dumps(list(metaschema_loader.idx.keys()), indent=4))
         return 0
 
     # Validate the schema document against the metaschema
@@ -271,18 +273,18 @@ def main(argsl=None):  # type: (List[str]) -> int
                           (type(avsc_names), avsc_names, None) if args.debug
                           else None))
         if args.print_avro:
-            print(json.dumps(avsc_obj, indent=4))
+            print(json_dumps(avsc_obj, indent=4))
         return 1
 
     # Optionally print Avro-compatible schema from schema
     if args.print_avro:
-        print(json.dumps(avsc_obj, indent=4))
+        print(json_dumps(avsc_obj, indent=4))
         return 0
 
     # Optionally print the json-ld context from the schema
     if args.print_jsonld_context:
         j = {"@context": schema_ctx}
-        print(json.dumps(j, indent=4, sort_keys=True))
+        print(json_dumps(j, indent=4, sort_keys=True))
         return 0
 
     # Optionally print the RDFS graph from the schema
@@ -291,7 +293,7 @@ def main(argsl=None):  # type: (List[str]) -> int
         return 0
 
     if args.print_metadata and not args.document:
-        print(json.dumps(schema_metadata, indent=4))
+        print(json_dumps(schema_metadata, indent=4))
         return 0
 
     if args.print_inheritance_dot:
@@ -329,11 +331,11 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     # Optionally print the document after ref resolution
     if args.print_pre:
-        print(json.dumps(document, indent=4))
+        print(json_dumps(document, indent=4))
         return 0
 
     if args.print_index:
-        print(json.dumps(list(document_loader.idx.keys()), indent=4))
+        print(json_dumps(list(document_loader.idx.keys()), indent=4))
         return 0
 
     # Validate the schema document against the metaschema
@@ -356,7 +358,7 @@ def main(argsl=None):  # type: (List[str]) -> int
             return 1
 
     if args.print_metadata:
-        print(json.dumps(doc_metadata, indent=4))
+        print(json_dumps(doc_metadata, indent=4))
         return 0
 
     print("Document `%s` is valid" % args.document)
