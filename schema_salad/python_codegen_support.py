@@ -79,11 +79,11 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
     return fieldtype.load(val, baseuri, loadingOptions)
 
 
-def save(val, top=True, base_url=""):
+def save(val, top=True, base_url="", relative_uris=True):
     if isinstance(val, Savable):
-        return val.save(top=top, base_url=base_url)
+        return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
     if isinstance(val, MutableSequence):
-        return [save(v, top=False, base_url=base_url) for v in val]
+        return [save(v, top=False, base_url=base_url, relative_uris=relative_uris) for v in val]
     return val
 
 def expand_url(url,                 # type: Union[str, Text]
@@ -407,9 +407,11 @@ def prefix_url(url, namespaces):
             return k+":"+url[len(v):]
     return url
 
-def save_relative_uri(uri, base_url, scoped_id, ref_scope):
+def save_relative_uri(uri, base_url, scoped_id, ref_scope, relative_uris):
+    if not relative_uris:
+        return uri
     if isinstance(uri, MutableSequence):
-        return [save_relative_uri(u, base_url, scoped_id, ref_scope) for u in uri]
+        return [save_relative_uri(u, base_url, scoped_id, ref_scope, relative_uris) for u in uri]
     elif isinstance(uri, six.text_type):
         urisplit = urllib.parse.urlsplit(uri)
         basesplit = urllib.parse.urlsplit(base_url)

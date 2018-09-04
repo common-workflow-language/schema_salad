@@ -90,7 +90,7 @@ class PythonCodeGen(CodeGenBase):
         self.idfield = idfield
 
         self.serializer.write("""
-    def save(self, top=False, base_url=""):
+    def save(self, top=False, base_url="", relative_uris=True):
         r = {}
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
@@ -245,7 +245,7 @@ class PythonCodeGen(CodeGenBase):
         if fieldtype.is_uri:
             self.serializer.write("""
         if self.{safename} is not None:
-            u = save_relative_uri(self.{safename}, {baseurl}, {scoped_id}, {ref_scope})
+            u = save_relative_uri(self.{safename}, {baseurl}, {scoped_id}, {ref_scope}, relative_uris)
             if u:
                 r['{fieldname}'] = u
 """.
@@ -257,7 +257,7 @@ class PythonCodeGen(CodeGenBase):
         else:
             self.serializer.write("""
         if self.{safename} is not None:
-            r['{fieldname}'] = save(self.{safename}, top=False, base_url={baseurl})
+            r['{fieldname}'] = save(self.{safename}, top=False, base_url={baseurl}, relative_uris=relative_uris)
 """.
                                   format(safename=self.safe_name(name),
                                          fieldname=shortname(name),

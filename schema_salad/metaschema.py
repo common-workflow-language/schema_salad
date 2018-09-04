@@ -10,6 +10,7 @@ from typing import (Any, AnyStr, Callable, Dict, List,
                     Union, MutableMapping, MutableSequence)
 from typing_extensions import Text  # pylint: disable=unused-import
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
+
 import six
 import ruamel.yaml
 from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq
@@ -272,11 +273,11 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
     return fieldtype.load(val, baseuri, loadingOptions)
 
 
-def save(val, top=True, base_url=""):
+def save(val, top=True, base_url="", relative_uris=True):
     if isinstance(val, Savable):
-        return val.save(top=top, base_url=base_url)
+        return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
     if isinstance(val, MutableSequence):
-        return [save(v, top=False, base_url=base_url) for v in val]
+        return [save(v, top=False, base_url=base_url, relative_uris=relative_uris) for v in val]
     return val
 
 def expand_url(url,                 # type: Union[str, Text]
@@ -570,7 +571,7 @@ def _document_load_by_url(loader, url, loadingOptions):
     else:
         textIO = StringIO(text)
     textIO.name = url    # type: ignore
-    result = yaml.round_trip_load(textIO)
+    result = yaml.round_trip_load(textIO, preserve_quotes=True)
     add_lc_filename(result, url)
 
     loadingOptions.idx[url] = result
@@ -600,9 +601,11 @@ def prefix_url(url, namespaces):
             return k+":"+url[len(v):]
     return url
 
-def save_relative_uri(uri, base_url, scoped_id, ref_scope):
+def save_relative_uri(uri, base_url, scoped_id, ref_scope, relative_uris):
+    if not relative_uris:
+        return uri
     if isinstance(uri, MutableSequence):
-        return [save_relative_uri(u, base_url, scoped_id, ref_scope) for u in uri]
+        return [save_relative_uri(u, base_url, scoped_id, ref_scope, relative_uris) for u in uri]
     elif isinstance(uri, six.text_type):
         urisplit = urllib.parse.urlsplit(uri)
         basesplit = urllib.parse.urlsplit(base_url)
@@ -687,28 +690,28 @@ A field of a record.
         if errors:
             raise ValidationException("Trying 'RecordField'\n"+"\n".join(errors))
 
-    def save(self, top=False, base_url=""):
+    def save(self, top=False, base_url="", relative_uris=True):
         r = {}
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
         if self.name is not None:
-            u = save_relative_uri(self.name, base_url, True, None)
+            u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             if u:
                 r['name'] = u
 
         if self.doc is not None:
-            r['doc'] = save(self.doc, top=False, base_url=self.name)
+            r['doc'] = save(self.doc, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.type is not None:
-            r['type'] = save(self.type, top=False, base_url=self.name)
+            r['type'] = save(self.type, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['doc', 'name', 'type'])
+    attrs = frozenset([u'doc', u'name', u'type'])
 
 
 class RecordSchema(Savable):
@@ -746,23 +749,23 @@ class RecordSchema(Savable):
         if errors:
             raise ValidationException("Trying 'RecordSchema'\n"+"\n".join(errors))
 
-    def save(self, top=False, base_url=""):
+    def save(self, top=False, base_url="", relative_uris=True):
         r = {}
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
         if self.fields is not None:
-            r['fields'] = save(self.fields, top=False, base_url=base_url)
+            r['fields'] = save(self.fields, top=False, base_url=base_url, relative_uris=relative_uris)
 
         if self.type is not None:
-            r['type'] = save(self.type, top=False, base_url=base_url)
+            r['type'] = save(self.type, top=False, base_url=base_url, relative_uris=relative_uris)
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['fields', 'type'])
+    attrs = frozenset([u'fields', u'type'])
 
 
 class EnumSchema(Savable):
@@ -801,25 +804,25 @@ Define an enumerated type.
         if errors:
             raise ValidationException("Trying 'EnumSchema'\n"+"\n".join(errors))
 
-    def save(self, top=False, base_url=""):
+    def save(self, top=False, base_url="", relative_uris=True):
         r = {}
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
         if self.symbols is not None:
-            u = save_relative_uri(self.symbols, base_url, True, None)
+            u = save_relative_uri(self.symbols, base_url, True, None, relative_uris)
             if u:
                 r['symbols'] = u
 
         if self.type is not None:
-            r['type'] = save(self.type, top=False, base_url=base_url)
+            r['type'] = save(self.type, top=False, base_url=base_url, relative_uris=relative_uris)
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['symbols', 'type'])
+    attrs = frozenset([u'symbols', u'type'])
 
 
 class ArraySchema(Savable):
@@ -854,25 +857,25 @@ class ArraySchema(Savable):
         if errors:
             raise ValidationException("Trying 'ArraySchema'\n"+"\n".join(errors))
 
-    def save(self, top=False, base_url=""):
+    def save(self, top=False, base_url="", relative_uris=True):
         r = {}
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
         if self.items is not None:
-            u = save_relative_uri(self.items, base_url, False, 2)
+            u = save_relative_uri(self.items, base_url, False, 2, relative_uris)
             if u:
                 r['items'] = u
 
         if self.type is not None:
-            r['type'] = save(self.type, top=False, base_url=base_url)
+            r['type'] = save(self.type, top=False, base_url=base_url, relative_uris=relative_uris)
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['items', 'type'])
+    attrs = frozenset([u'items', u'type'])
 
 
 class JsonldPredicate(Savable):
@@ -982,49 +985,49 @@ URI resolution and JSON-LD context generation.
         if errors:
             raise ValidationException("Trying 'JsonldPredicate'\n"+"\n".join(errors))
 
-    def save(self, top=False, base_url=""):
+    def save(self, top=False, base_url="", relative_uris=True):
         r = {}
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
         if self._id is not None:
-            u = save_relative_uri(self._id, base_url, True, None)
+            u = save_relative_uri(self._id, base_url, True, None, relative_uris)
             if u:
                 r['_id'] = u
 
         if self._type is not None:
-            r['_type'] = save(self._type, top=False, base_url=base_url)
+            r['_type'] = save(self._type, top=False, base_url=base_url, relative_uris=relative_uris)
 
         if self._container is not None:
-            r['_container'] = save(self._container, top=False, base_url=base_url)
+            r['_container'] = save(self._container, top=False, base_url=base_url, relative_uris=relative_uris)
 
         if self.identity is not None:
-            r['identity'] = save(self.identity, top=False, base_url=base_url)
+            r['identity'] = save(self.identity, top=False, base_url=base_url, relative_uris=relative_uris)
 
         if self.noLinkCheck is not None:
-            r['noLinkCheck'] = save(self.noLinkCheck, top=False, base_url=base_url)
+            r['noLinkCheck'] = save(self.noLinkCheck, top=False, base_url=base_url, relative_uris=relative_uris)
 
         if self.mapSubject is not None:
-            r['mapSubject'] = save(self.mapSubject, top=False, base_url=base_url)
+            r['mapSubject'] = save(self.mapSubject, top=False, base_url=base_url, relative_uris=relative_uris)
 
         if self.mapPredicate is not None:
-            r['mapPredicate'] = save(self.mapPredicate, top=False, base_url=base_url)
+            r['mapPredicate'] = save(self.mapPredicate, top=False, base_url=base_url, relative_uris=relative_uris)
 
         if self.refScope is not None:
-            r['refScope'] = save(self.refScope, top=False, base_url=base_url)
+            r['refScope'] = save(self.refScope, top=False, base_url=base_url, relative_uris=relative_uris)
 
         if self.typeDSL is not None:
-            r['typeDSL'] = save(self.typeDSL, top=False, base_url=base_url)
+            r['typeDSL'] = save(self.typeDSL, top=False, base_url=base_url, relative_uris=relative_uris)
 
         if self.subscope is not None:
-            r['subscope'] = save(self.subscope, top=False, base_url=base_url)
+            r['subscope'] = save(self.subscope, top=False, base_url=base_url, relative_uris=relative_uris)
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['_id', '_type', '_container', 'identity', 'noLinkCheck', 'mapSubject', 'mapPredicate', 'refScope', 'typeDSL', 'subscope'])
+    attrs = frozenset([u'_id', u'_type', u'_container', u'identity', u'noLinkCheck', u'mapSubject', u'mapPredicate', u'refScope', u'typeDSL', u'subscope'])
 
 
 class SpecializeDef(Savable):
@@ -1059,18 +1062,18 @@ class SpecializeDef(Savable):
         if errors:
             raise ValidationException("Trying 'SpecializeDef'\n"+"\n".join(errors))
 
-    def save(self, top=False, base_url=""):
+    def save(self, top=False, base_url="", relative_uris=True):
         r = {}
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
         if self.specializeFrom is not None:
-            u = save_relative_uri(self.specializeFrom, base_url, False, 1)
+            u = save_relative_uri(self.specializeFrom, base_url, False, 1, relative_uris)
             if u:
                 r['specializeFrom'] = u
 
         if self.specializeTo is not None:
-            u = save_relative_uri(self.specializeTo, base_url, False, 1)
+            u = save_relative_uri(self.specializeTo, base_url, False, 1, relative_uris)
             if u:
                 r['specializeTo'] = u
 
@@ -1079,7 +1082,7 @@ class SpecializeDef(Savable):
 
         return r
 
-    attrs = frozenset(['specializeFrom', 'specializeTo'])
+    attrs = frozenset([u'specializeFrom', u'specializeTo'])
 
 
 class NamedType(Savable):
@@ -1164,34 +1167,34 @@ A field of a record.
         if errors:
             raise ValidationException("Trying 'SaladRecordField'\n"+"\n".join(errors))
 
-    def save(self, top=False, base_url=""):
+    def save(self, top=False, base_url="", relative_uris=True):
         r = {}
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
         if self.name is not None:
-            u = save_relative_uri(self.name, base_url, True, None)
+            u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             if u:
                 r['name'] = u
 
         if self.doc is not None:
-            r['doc'] = save(self.doc, top=False, base_url=self.name)
+            r['doc'] = save(self.doc, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.type is not None:
-            r['type'] = save(self.type, top=False, base_url=self.name)
+            r['type'] = save(self.type, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.jsonldPredicate is not None:
-            r['jsonldPredicate'] = save(self.jsonldPredicate, top=False, base_url=self.name)
+            r['jsonldPredicate'] = save(self.jsonldPredicate, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.default is not None:
-            r['default'] = save(self.default, top=False, base_url=self.name)
+            r['default'] = save(self.default, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['doc', 'name', 'type', 'jsonldPredicate', 'default'])
+    attrs = frozenset([u'doc', u'name', u'type', u'jsonldPredicate', u'default'])
 
 
 class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
@@ -1324,66 +1327,66 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         if errors:
             raise ValidationException("Trying 'SaladRecordSchema'\n"+"\n".join(errors))
 
-    def save(self, top=False, base_url=""):
+    def save(self, top=False, base_url="", relative_uris=True):
         r = {}
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
         if self.name is not None:
-            u = save_relative_uri(self.name, base_url, True, None)
+            u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             if u:
                 r['name'] = u
 
         if self.inVocab is not None:
-            r['inVocab'] = save(self.inVocab, top=False, base_url=self.name)
+            r['inVocab'] = save(self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.fields is not None:
-            r['fields'] = save(self.fields, top=False, base_url=self.name)
+            r['fields'] = save(self.fields, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.type is not None:
-            r['type'] = save(self.type, top=False, base_url=self.name)
+            r['type'] = save(self.type, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.doc is not None:
-            r['doc'] = save(self.doc, top=False, base_url=self.name)
+            r['doc'] = save(self.doc, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.docParent is not None:
-            u = save_relative_uri(self.docParent, self.name, False, None)
+            u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
             if u:
                 r['docParent'] = u
 
         if self.docChild is not None:
-            u = save_relative_uri(self.docChild, self.name, False, None)
+            u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
             if u:
                 r['docChild'] = u
 
         if self.docAfter is not None:
-            u = save_relative_uri(self.docAfter, self.name, False, None)
+            u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
             if u:
                 r['docAfter'] = u
 
         if self.jsonldPredicate is not None:
-            r['jsonldPredicate'] = save(self.jsonldPredicate, top=False, base_url=self.name)
+            r['jsonldPredicate'] = save(self.jsonldPredicate, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.documentRoot is not None:
-            r['documentRoot'] = save(self.documentRoot, top=False, base_url=self.name)
+            r['documentRoot'] = save(self.documentRoot, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.abstract is not None:
-            r['abstract'] = save(self.abstract, top=False, base_url=self.name)
+            r['abstract'] = save(self.abstract, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.extends is not None:
-            u = save_relative_uri(self.extends, self.name, False, 1)
+            u = save_relative_uri(self.extends, self.name, False, 1, relative_uris)
             if u:
                 r['extends'] = u
 
         if self.specialize is not None:
-            r['specialize'] = save(self.specialize, top=False, base_url=self.name)
+            r['specialize'] = save(self.specialize, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['name', 'inVocab', 'fields', 'type', 'doc', 'docParent', 'docChild', 'docAfter', 'jsonldPredicate', 'documentRoot', 'abstract', 'extends', 'specialize'])
+    attrs = frozenset([u'name', u'inVocab', u'fields', u'type', u'doc', u'docParent', u'docChild', u'docAfter', u'jsonldPredicate', u'documentRoot', u'abstract', u'extends', u'specialize'])
 
 
 class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
@@ -1501,53 +1504,53 @@ Define an enumerated type.
         if errors:
             raise ValidationException("Trying 'SaladEnumSchema'\n"+"\n".join(errors))
 
-    def save(self, top=False, base_url=""):
+    def save(self, top=False, base_url="", relative_uris=True):
         r = {}
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
         if self.name is not None:
-            u = save_relative_uri(self.name, base_url, True, None)
+            u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             if u:
                 r['name'] = u
 
         if self.inVocab is not None:
-            r['inVocab'] = save(self.inVocab, top=False, base_url=self.name)
+            r['inVocab'] = save(self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.symbols is not None:
-            u = save_relative_uri(self.symbols, self.name, True, None)
+            u = save_relative_uri(self.symbols, self.name, True, None, relative_uris)
             if u:
                 r['symbols'] = u
 
         if self.type is not None:
-            r['type'] = save(self.type, top=False, base_url=self.name)
+            r['type'] = save(self.type, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.doc is not None:
-            r['doc'] = save(self.doc, top=False, base_url=self.name)
+            r['doc'] = save(self.doc, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.docParent is not None:
-            u = save_relative_uri(self.docParent, self.name, False, None)
+            u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
             if u:
                 r['docParent'] = u
 
         if self.docChild is not None:
-            u = save_relative_uri(self.docChild, self.name, False, None)
+            u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
             if u:
                 r['docChild'] = u
 
         if self.docAfter is not None:
-            u = save_relative_uri(self.docAfter, self.name, False, None)
+            u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
             if u:
                 r['docAfter'] = u
 
         if self.jsonldPredicate is not None:
-            r['jsonldPredicate'] = save(self.jsonldPredicate, top=False, base_url=self.name)
+            r['jsonldPredicate'] = save(self.jsonldPredicate, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.documentRoot is not None:
-            r['documentRoot'] = save(self.documentRoot, top=False, base_url=self.name)
+            r['documentRoot'] = save(self.documentRoot, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.extends is not None:
-            u = save_relative_uri(self.extends, self.name, False, 1)
+            u = save_relative_uri(self.extends, self.name, False, 1, relative_uris)
             if u:
                 r['extends'] = u
 
@@ -1556,7 +1559,7 @@ Define an enumerated type.
 
         return r
 
-    attrs = frozenset(['name', 'inVocab', 'symbols', 'type', 'doc', 'docParent', 'docChild', 'docAfter', 'jsonldPredicate', 'documentRoot', 'extends'])
+    attrs = frozenset([u'name', u'inVocab', u'symbols', u'type', u'doc', u'docParent', u'docChild', u'docAfter', u'jsonldPredicate', u'documentRoot', u'extends'])
 
 
 class Documentation(NamedType, DocType):
@@ -1646,46 +1649,46 @@ schemas but has no role in formal validation.
         if errors:
             raise ValidationException("Trying 'Documentation'\n"+"\n".join(errors))
 
-    def save(self, top=False, base_url=""):
+    def save(self, top=False, base_url="", relative_uris=True):
         r = {}
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
         if self.name is not None:
-            u = save_relative_uri(self.name, base_url, True, None)
+            u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             if u:
                 r['name'] = u
 
         if self.inVocab is not None:
-            r['inVocab'] = save(self.inVocab, top=False, base_url=self.name)
+            r['inVocab'] = save(self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.doc is not None:
-            r['doc'] = save(self.doc, top=False, base_url=self.name)
+            r['doc'] = save(self.doc, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if self.docParent is not None:
-            u = save_relative_uri(self.docParent, self.name, False, None)
+            u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
             if u:
                 r['docParent'] = u
 
         if self.docChild is not None:
-            u = save_relative_uri(self.docChild, self.name, False, None)
+            u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
             if u:
                 r['docChild'] = u
 
         if self.docAfter is not None:
-            u = save_relative_uri(self.docAfter, self.name, False, None)
+            u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
             if u:
                 r['docAfter'] = u
 
         if self.type is not None:
-            r['type'] = save(self.type, top=False, base_url=self.name)
+            r['type'] = save(self.type, top=False, base_url=self.name, relative_uris=relative_uris)
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['name', 'inVocab', 'doc', 'docParent', 'docChild', 'docAfter', 'type'])
+    attrs = frozenset([u'name', u'inVocab', u'doc', u'docParent', u'docChild', u'docAfter', u'type'])
 
 
 _vocab = {
@@ -1747,12 +1750,12 @@ _rvocab = {
     "http://www.w3.org/2001/XMLSchema#string": "string",
 }
 
-strtype = _PrimitiveLoader((str, six.text_type))
 inttype = _PrimitiveLoader(int)
-floattype = _PrimitiveLoader(float)
 booltype = _PrimitiveLoader(bool)
-None_type = _PrimitiveLoader(type(None))
+strtype = _PrimitiveLoader((str, six.text_type))
 Any_type = _AnyLoader()
+floattype = _PrimitiveLoader(float)
+None_type = _PrimitiveLoader(type(None))
 DocumentedLoader = _RecordLoader(Documented)
 PrimitiveTypeLoader = _EnumLoader(("null", "boolean", "int", "long", "float", "double", "string",))
 AnyLoader = _EnumLoader(("Any",))
