@@ -1,8 +1,10 @@
 import collections
-from six.moves import urllib
-from typing import List, Text, Dict, Union, Any, Optional
+from typing import (List, Dict, Union, Any, Optional, MutableSequence,
+                    MutableMapping)
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+
 from . import schema
-from .schema import shortname
 
 class TypeDef(object):
     def __init__(self, name, init, is_uri=False, scoped_id=False, ref_scope=0):
@@ -37,8 +39,14 @@ class CodeGenBase(object):
         # type: (Text) -> Text
         return schema.avro_name(n)
 
-    def begin_class(self, classname, extends, doc, abstract, field_names, idfield):
-        # type: (Text, List[Text], Text, bool, List[Text], Text) -> None
+    def begin_class(self,
+                    classname,    # type: Text
+                    extends,      # type: MutableSequence[Text]
+                    doc,          # type: Text
+                    abstract,     # type: bool
+                    field_names,  # type: MutableSequence[Text]
+                    idfield       # type: Text
+                   ):  # type: (...) -> None
         raise NotImplementedError()
 
     def end_class(self, classname, field_names):

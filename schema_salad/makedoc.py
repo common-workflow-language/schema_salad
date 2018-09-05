@@ -1,40 +1,42 @@
 from __future__ import absolute_import
 
-import mistune
 import argparse
-import json
 import io
+from io import open
 import os
 import copy
 import re
 import sys
 import logging
-from io import open
 import codecs
 from codecs import StreamWriter  # pylint: disable=unused-import
-
-from . import schema
-from .utils import add_dictlist, aslist
-
+from typing import (cast, Any, Dict, IO, List, Optional, Set, Union,
+                    MutableMapping, MutableSequence)
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+import mistune
 import six
 from six.moves import range
 from six.moves import urllib
 from six import StringIO
-from typing import cast, Any, Dict, IO, List, Optional, Set, Text, Union
+
+from . import schema
+from .utils import add_dictlist, aslist
+
 
 _logger = logging.getLogger("salad")
 
 
 def has_types(items):  # type: (Any) -> List[Text]
     r = []  # type: List
-    if isinstance(items, dict):
+    if isinstance(items, MutableMapping):
         if items["type"] == "https://w3id.org/cwl/salad#record":
             return [items["name"]]
         for n in ("type", "items", "values"):
             if n in items:
                 r.extend(has_types(items[n]))
         return r
-    if isinstance(items, list):
+    if isinstance(items, MutableSequence):
         for i in items:
             r.extend(has_types(i))
         return r
@@ -155,7 +157,7 @@ def number_headings(toc, maindoc):  # type: (ToC, str) -> str
 
 
 def fix_doc(doc):  # type: (Union[List[str], str]) -> str
-    if isinstance(doc, list):
+    if isinstance(doc, MutableSequence):
         docstr = "".join(doc)
     else:
         docstr = doc
@@ -236,13 +238,13 @@ class RenderType(object):
                 jsonldPredicate=None    # type: Optional[Dict[str, str]]
                 ):
         # type: (...) -> Text
-        if isinstance(tp, list):
+        if isinstance(tp, MutableSequence):
             ret = ""
             if nbsp and len(tp) <= 3:
                 return "&nbsp;|&nbsp;".join([self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp])
             else:
                 return " | ".join([self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp])
-        if isinstance(tp, dict):
+        if isinstance(tp, MutableMapping):
             if tp["type"] == "https://w3id.org/cwl/salad#array":
                 ar = "array&lt;%s&gt;" % (self.typefmt(
                     tp["items"], redirects, nbsp=True))
@@ -270,7 +272,7 @@ class RenderType(object):
                     return """<a href="#%s">%s</a>""" % (to_id(frg), frg)
                 else:
                     return frg
-            if isinstance(tp["type"], dict):
+            if isinstance(tp["type"], MutableMapping):
                 return self.typefmt(tp["type"], redirects)
         else:
             if str(tp) in redirects:
@@ -313,7 +315,7 @@ class RenderType(object):
         extendsfrom(f, ex)
 
         enumDesc = {}
-        if f["type"] == "enum" and isinstance(f["doc"], list):
+        if f["type"] == "enum" and isinstance(f["doc"], MutableSequence):
             for e in ex:
                 for i in e["doc"]:
                     idx = i.find(":")
@@ -376,7 +378,7 @@ class RenderType(object):
             optional = []
             for i in f.get("fields", []):
                 tp = i["type"]
-                if isinstance(tp, list) and tp[0] == "https://w3id.org/cwl/salad#null":
+                if isinstance(tp, MutableSequence) and tp[0] == "https://w3id.org/cwl/salad#null":
                     opt = False
                     tp = tp[1:]
                 else:
@@ -540,9 +542,9 @@ def main():  # type: () -> None
             uri = "file://" + os.path.abspath(a)
             metaschema_loader = schema.get_metaschema()[2]
             j, schema_metadata = metaschema_loader.resolve_ref(uri, "")
-            if isinstance(j, list):
+            if isinstance(j, MutableSequence):
                 s.extend(j)
-            elif isinstance(j, dict):
+            elif isinstance(j, MutableMapping):
                 s.append(j)
             else:
                 raise ValueError("Schema must resolve to a list or a dict")

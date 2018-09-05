@@ -117,6 +117,7 @@ class TestPrintOneline(unittest.TestCase):
                                   six.text_type(get_data("tests/test_schema/"+src)), True)
             except RuntimeError as e:
                 msg = reformat_yaml_exception_message(strip_dup_lineno(six.text_type(e)))
-                self.assertTrue(msg.endswith(src+":1:1: expected <block end>, but found ':'"))
+                self.assertTrue(msg.endswith(src+":1:1: expected <block end>, but found ':'")
+                                or msg.endswith(src+":1:1: expected <block end>, but found u':'"))
                 print("\n", e)
                 raise

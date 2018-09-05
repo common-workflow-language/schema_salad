@@ -1,14 +1,13 @@
-import json
-import sys
+from typing import (Any, Dict, IO, List, Union,
+                    MutableMapping, MutableSequence)
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
 import six
-from six.moves import urllib, cStringIO
-import collections
-import logging
+from six.moves import cStringIO
 from pkg_resources import resource_stream
-from .utils import aslist, flatten
 from . import schema
-from .codegen_base import TypeDef, CodeGenBase, shortname
-from typing import Any, Dict, IO, List, Optional, Text, Union, List
+from .schema import shortname
+from .codegen_base import TypeDef, CodeGenBase
 
 class PythonCodeGen(CodeGenBase):
     def __init__(self, out):
@@ -49,8 +48,14 @@ class PythonCodeGen(CodeGenBase):
             self.declare_type(p)
 
 
-    def begin_class(self, classname, extends, doc, abstract, field_names, idfield):
-        # type: (Text, List[Text], Text, bool, List[Text], Text) -> None
+    def begin_class(self,
+                    classname,    # type: Text
+                    extends,      # type: MutableSequence[Text]
+                    doc,          # type: Text
+                    abstract,     # type: bool
+                    field_names,  # type: MutableSequence[Text]
+                    idfield       # type: Text
+                   ):  # type: (...) -> None
         classname = self.safe_name(classname)
 
         if extends:
@@ -85,7 +90,7 @@ class PythonCodeGen(CodeGenBase):
         self.idfield = idfield
 
         self.serializer.write("""
-    def save(self, top=False, base_url=""):
+    def save(self, top=False, base_url="", relative_uris=True):
         r = {}
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
@@ -153,10 +158,10 @@ class PythonCodeGen(CodeGenBase):
     def type_loader(self, t):
         # type: (Union[List[Any], Dict[Text, Any], Text]) -> TypeDef
 
-        if isinstance(t, list):
+        if isinstance(t, MutableSequence):
             sub = [self.type_loader(i) for i in t]
             return self.declare_type(TypeDef("union_of_%s" % "_or_".join(s.name for s in sub), "_UnionLoader((%s,))" % (", ".join(s.name for s in sub))))
-        if isinstance(t, dict):
+        if isinstance(t, MutableMapping):
             if t["type"] in ("array", "https://w3id.org/cwl/salad#array"):
                 i = self.type_loader(t["items"])
                 return self.declare_type(TypeDef("array_of_%s" % i.name, "_ArrayLoader(%s)" % i.name))
@@ -235,24 +240,24 @@ class PythonCodeGen(CodeGenBase):
         if name == self.idfield or not self.idfield:
             baseurl = 'base_url'
         else:
-            baseurl = "self.%s " % self.safe_name(self.idfield)
+            baseurl = "self.%s" % self.safe_name(self.idfield)
 
         if fieldtype.is_uri:
             self.serializer.write("""
         if self.{safename} is not None:
-            u = save_relative_uri(self.{safename}, {baseurl}, {scoped_id}, {ref_scope})
+            u = save_relative_uri(self.{safename}, {baseurl}, {scoped_id}, {ref_scope}, relative_uris)
             if u:
                 r['{fieldname}'] = u
 """.
                                   format(safename=self.safe_name(name),
-                                         fieldname=shortname(name),
+                                         fieldname=shortname(name).strip(),
                                          baseurl=baseurl,
                                          scoped_id=fieldtype.scoped_id,
                                          ref_scope=fieldtype.ref_scope))
         else:
             self.serializer.write("""
         if self.{safename} is not None:
-            r['{fieldname}'] = save(self.{safename}, top=False, base_url={baseurl})
+            r['{fieldname}'] = save(self.{safename}, top=False, base_url={baseurl}, relative_uris=relative_uris)
 """.
                                   format(safename=self.safe_name(name),
                                          fieldname=shortname(name),

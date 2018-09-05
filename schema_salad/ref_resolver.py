@@ -2,14 +2,15 @@ from __future__ import absolute_import
 import sys
 import os
 import logging
-import collections
 from io import open
 import re
 import copy
 import xml.sax
 from typing import (cast, Any, AnyStr,  # pylint: disable=unused-import
-                    Callable, Dict, List, Iterable, Optional, Set, Text, Tuple,
-                    TypeVar, Union)
+                    Callable, Dict, List, Iterable, Optional, Set, Tuple,
+                    TypeVar, Union, MutableMapping, MutableSequence)
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 import six
 from six.moves import range
@@ -18,7 +19,7 @@ from six import StringIO
 import requests
 from cachecontrol.wrapper import CacheControl
 from cachecontrol.caches import FileCache
-import ruamel.yaml as yaml
+from ruamel import yaml
 from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
 import rdflib
@@ -28,8 +29,6 @@ from rdflib.plugins.parsers.notation3 import BadSyntax
 from . import validate
 from .utils import aslist, onWindows
 from .sourceline import SourceLine, add_lc_filename, relname
-
-
 
 _logger = logging.getLogger("salad")
 ContextType = Dict[six.text_type, Union[Dict, six.text_type, Iterable[six.text_type]]]
@@ -92,7 +91,7 @@ def merge_properties(a, b):  # type: (List[Any], List[Any]) -> Dict[Any, Any]
             c[i] = b[i]
     for i in a:
         if i in b:
-            c[i] = aslist(a[i]) + aslist(b[i])
+            c[i] = aslist(a[i]) + aslist(b[i])  # type: ignore
 
     return c
 
@@ -439,34 +438,34 @@ class Loader(object):
             if value == u"@id":
                 self.identifiers.append(key)
                 self.identity_links.add(key)
-            elif isinstance(value, dict) and value.get(u"@type") == u"@id":
+            elif isinstance(value, MutableMapping) and value.get(u"@type") == u"@id":
                 self.url_fields.add(key)
                 if u"refScope" in value:
                     self.scoped_ref_fields[key] = value[u"refScope"]
                 if value.get(u"identity", False):
                     self.identity_links.add(key)
-            elif isinstance(value, dict) and value.get(u"@type") == u"@vocab":
+            elif isinstance(value, MutableMapping) and value.get(u"@type") == u"@vocab":
                 self.url_fields.add(key)
                 self.vocab_fields.add(key)
                 if u"refScope" in value:
                     self.scoped_ref_fields[key] = value[u"refScope"]
                 if value.get(u"typeDSL"):
                     self.type_dsl_fields.add(key)
-            if isinstance(value, dict) and value.get(u"noLinkCheck"):
+            if isinstance(value, MutableMapping) and value.get(u"noLinkCheck"):
                 self.nolinkcheck.add(key)
 
-            if isinstance(value, dict) and value.get(u"mapSubject"):
+            if isinstance(value, MutableMapping) and value.get(u"mapSubject"):
                 self.idmap[key] = value[u"mapSubject"]
 
-            if isinstance(value, dict) and value.get(u"mapPredicate"):
+            if isinstance(value, MutableMapping) and value.get(u"mapPredicate"):
                 self.mapPredicate[key] = value[u"mapPredicate"]
 
-            if isinstance(value, dict) and u"@id" in value:
+            if isinstance(value, MutableMapping) and u"@id" in value:
                 self.vocab[key] = value[u"@id"]
             elif isinstance(value, six.string_types):
                 self.vocab[key] = value
 
-            if isinstance(value, dict) and value.get(u"subscope"):
+            if isinstance(value, MutableMapping) and value.get(u"subscope"):
                 self.subscopes[key] = value[u"subscope"]
 
         for k, v in self.vocab.items():
@@ -555,7 +554,7 @@ class Loader(object):
                 return self.fetch_text(url), {}
 
             doc = None
-            if isinstance(obj, collections.MutableMapping):
+            if isinstance(obj, MutableMapping):
                 for identifier in self.identifiers:
                     obj[identifier] = url
                 doc_url = url
@@ -615,7 +614,7 @@ class Loader(object):
         for idmapField in loader.idmap:
             if (idmapField in document):
                 idmapFieldValue = document[idmapField]
-                if (isinstance(idmapFieldValue, dict)
+                if (isinstance(idmapFieldValue, MutableMapping)
                         and "$import" not in idmapFieldValue
                         and "$include" not in idmapFieldValue):
                     ls = CommentedSeq()
@@ -742,7 +741,8 @@ class Loader(object):
         # Resolve scope for identity fields (fields where the value is the
         # identity of a standalone node, such as enum symbols)
         for identifer in loader.identity_links:
-            if identifer in document and isinstance(document[identifer], list):
+            if identifer in document and isinstance(
+                    document[identifer], MutableSequence):
                 for n, v in enumerate(document[identifer]):
                     if isinstance(document[identifer][n], six.string_types):
                         document[identifer][n] = loader.expand_url(
@@ -775,7 +775,7 @@ class Loader(object):
                         datum, base_url, scoped_id=False,
                         vocab_term=(d in loader.vocab_fields),
                         scoped_ref=self.scoped_ref_fields.get(d))
-                elif isinstance(datum, list):
+                elif isinstance(datum, MutableSequence):
                     for i, url in enumerate(datum):
                         if isinstance(url, (str, six.text_type)):
                             datum[i] = loader.expand_url(
@@ -845,7 +845,7 @@ class Loader(object):
                 resolved_metadata = loader.resolve_all(
                     metadata, base_url, file_base=file_base,
                     checklinks=False)[0]
-                if isinstance(resolved_metadata, dict):
+                if isinstance(resolved_metadata, MutableMapping):
                     metadata = resolved_metadata
                 else:
                     raise validate.ValidationException(
@@ -1008,7 +1008,7 @@ class Loader(object):
         return link
 
     def getid(self, d):  # type: (Any) -> Optional[Text]
-        if isinstance(d, dict):
+        if isinstance(d, MutableMapping):
             for i in self.identifiers:
                 if i in d:
                     idd = d[i]
@@ -1024,9 +1024,9 @@ class Loader(object):
 
         errors = []         # type: List[Exception]
         iterator = None     # type: Any
-        if isinstance(document, list):
+        if isinstance(document, MutableSequence):
             iterator = enumerate(document)
-        elif isinstance(document, dict):
+        elif isinstance(document, MutableMapping):
             for d in self.url_fields:
                 try:
                     sl = SourceLine(document, d, validate.ValidationException)
@@ -1092,7 +1092,7 @@ D = TypeVar('D', CommentedMap, ContextType)
 
 def _copy_dict_without_key(from_dict, filtered_key):
     # type: (D, Any) -> D
-    new_dict = copy.copy(from_dict)
+    new_dict = CommentedMap(from_dict.items())
     if filtered_key in new_dict:
         del new_dict[filtered_key]
     if isinstance(from_dict, CommentedMap):

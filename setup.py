@@ -29,13 +29,14 @@ else:
 install_requires = [
     'setuptools',
     'requests >= 1.0',
-    'ruamel.yaml >= 0.12.4, <= 0.15.51',
+    'ruamel.yaml >= 0.12.4, < 0.16',
     'rdflib >= 4.2.2, < 4.3.0',
     'rdflib-jsonld >= 0.3.0, < 0.5.0',
     'mistune >= 0.7.3, < 0.8',
     'CacheControl >= 0.11.7, < 0.12',
     'lockfile >= 0.9',
-    'six >= 1.8.0']
+    'six >= 1.8.0',
+    'typing-extensions']
 
 extras_require={
     ':python_version<"3"': ['avro == 1.8.1'],

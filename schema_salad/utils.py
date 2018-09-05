@@ -1,7 +1,10 @@
 from __future__ import absolute_import
-import os
-from typing import Any, Dict, List
 
+from typing import Any, Dict, List, Mapping, MutableSequence, IO, Union, AnyStr
+from typing_extensions import Text  # pylint: disable=unused-import
+import os
+import six
+import json
 
 def add_dictlist(di, key, val):  # type: (Dict, Any, Any) -> None
     if key not in di:
@@ -9,10 +12,10 @@ def add_dictlist(di, key, val):  # type: (Dict, Any, Any) -> None
     di[key].append(val)
 
 
-def aslist(l):  # type: (Any) -> List
+def aslist(l):  # type: (Any) -> MutableSequence
     """Convenience function to wrap single items and lists, and return lists unchanged."""
 
-    if isinstance(l, list):
+    if isinstance(l, MutableSequence):
         return l
     else:
         return [l]
@@ -44,3 +47,29 @@ def flatten(l, ltypes=(list, tuple)):
 def onWindows():
     # type: () -> (bool)
     return os.name == 'nt'
+
+def convert_to_dict(j4):  # type: (Any) -> Any
+    if isinstance(j4, Mapping):
+        return {k: convert_to_dict(v) for k, v in j4.items()}
+    elif isinstance(j4, MutableSequence):
+        return [convert_to_dict(v) for v in j4]
+    else:
+        return j4
+
+def json_dump(obj,       # type: Any
+              fp,        # type: IO[str]
+              **kwargs   # type: Any
+             ):  # type: (...) -> None
+    """ Force use of unicode. """
+    if six.PY2:
+        kwargs['encoding'] = 'utf-8'
+    json.dump(convert_to_dict(obj), fp, **kwargs)
+
+
+def json_dumps(obj,       # type: Any
+               **kwargs   # type: Any
+              ):  # type: (...) -> str
+    """ Force use of unicode. """
+    if six.PY2:
+        kwargs['encoding'] = 'utf-8'
+    return json.dumps(convert_to_dict(obj), **kwargs)
