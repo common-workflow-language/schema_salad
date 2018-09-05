@@ -1,16 +1,17 @@
 from __future__ import absolute_import
-import re
-import os
-import traceback
 
-from typing import (Any, AnyStr, Callable, Dict, List,
-                    Union, MutableMapping, MutableSequence)
+import os
+import re
+import traceback
+from typing import (Any, AnyStr, Callable, Dict, List, MutableMapping,
+                    MutableSequence, Union)
+
+import ruamel.yaml
+import six
+from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq
 from typing_extensions import Text  # pylint: disable=unused-import
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
-import six
-import ruamel.yaml
-from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq
 
 lineno_re = re.compile(u"^(.*?:[0-9]+:[0-9]+: )(( *)(.*))")
 

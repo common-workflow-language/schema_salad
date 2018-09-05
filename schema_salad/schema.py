@@ -1,29 +1,30 @@
 from __future__ import absolute_import
-import copy
 
+import copy
 import hashlib
 import logging
-from typing import (cast, Any, AnyStr, Dict, List, Set, Tuple, TypeVar, Union,
-                    IO, MutableMapping, MutableSequence)
-from typing_extensions import Text  # pylint: disable=unused-import
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
+from typing import (IO, Any, AnyStr, Dict, List, MutableMapping,
+                    MutableSequence, Set, Tuple, TypeVar, Union, cast)
 
 import avro
 import avro.schema  # pylint: disable=no-name-in-module,import-error
-from avro.schema import Names, SchemaParseException  # pylint: disable=no-name-in-module,import-error
+from avro.schema import Names  # pylint: disable=no-name-in-module,import-error
+from avro.schema import SchemaParseException
 from pkg_resources import resource_stream
 from ruamel import yaml
-from ruamel.yaml.comments import CommentedSeq, CommentedMap
-import six
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
+from six import iteritems, string_types
 from six.moves import urllib
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
-from schema_salad.utils import add_dictlist, aslist, flatten, convert_to_dict, json_dumps
-from . import validate
-from . import ref_resolver
+from schema_salad.utils import (add_dictlist, aslist, convert_to_dict, flatten,
+                                json_dumps)
+
+from . import jsonld_context, ref_resolver, validate
 from .ref_resolver import Loader
-from . import jsonld_context
-from .sourceline import SourceLine, strip_dup_lineno, add_lc_filename, bullets, relname
-
+from .sourceline import (SourceLine, add_lc_filename, bullets, relname,
+                         strip_dup_lineno)
 
 _logger = logging.getLogger("salad")
 
@@ -256,12 +257,12 @@ def load_and_validate(document_loader,  # type: Loader
     try:
         document_loader.validate_links(data, u"", {})
     except validate.ValidationException as v:
-        validationErrors = six.text_type(v) + "\n"
+        validationErrors = Text(v) + "\n"
 
     try:
         validate_doc(avsc_names, data, document_loader, strict, source=source)
     except validate.ValidationException as v:
-        validationErrors += six.text_type(v)
+        validationErrors += Text(v)
 
     if validationErrors != u"":
         raise validate.ValidationException(validationErrors)
@@ -304,7 +305,7 @@ def validate_doc(schema_names,  # type: Names
 
     anyerrors = []
     for pos, item in enumerate(validate_doc):
-        sl = SourceLine(validate_doc, pos, six.text_type)
+        sl = SourceLine(validate_doc, pos, Text)
         success = False
         for r in roots:
             success = validate.validate_ex(
@@ -395,7 +396,7 @@ def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
     elif isinstance(items, MutableSequence):
         # recursively transform list
         return [replace_type(i, spec, loader, found, find_embeds=find_embeds, deepen=deepen) for i in items]
-    elif isinstance(items, (str, six.text_type)):
+    elif isinstance(items, string_types):
         # found a string which is a symbol corresponding to a type.
         replace_with = None
         if items in loader.vocab:
@@ -459,7 +460,7 @@ def make_valid_avro(items,          # type: Avro
         for i in items:
             ret.append(make_valid_avro(i, alltypes, found, union=union))  # type: ignore
         return ret
-    if union and isinstance(items, six.string_types):
+    if union and isinstance(items, string_types):
         if items in alltypes and avro_name(items) not in found:
             return cast(Dict, make_valid_avro(alltypes[items], alltypes, found,
                                               union=union))
@@ -475,7 +476,7 @@ def deepcopy_strip(item):  # type: (Any) -> Any
     """
 
     if isinstance(item, MutableMapping):
-        return {k: deepcopy_strip(v) for k,v in six.iteritems(item)}
+        return {k: deepcopy_strip(v) for k, v in iteritems(item)}
     elif isinstance(item, MutableSequence):
         return [deepcopy_strip(k) for k in item]
     else:

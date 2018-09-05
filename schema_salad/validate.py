@@ -1,15 +1,16 @@
 from __future__ import absolute_import
+
 import logging
 import pprint
-from typing import Any, List, Set, Union, MutableMapping, MutableSequence
+from typing import Any, List, MutableMapping, MutableSequence, Set, Union
+
+import avro.schema  # pylint: disable=no-name-in-module, import-error
+import six
+from avro.schema import \
+    Schema  # pylint: disable=unused-import, no-name-in-module, import-error
+from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
-import avro.schema  # pylint: disable=no-name-in-module, import-error
-from avro.schema import Schema  # pylint: disable=unused-import, no-name-in-module, import-error
-
-import six
-from six.moves import urllib
-from six.moves import range
 
 from .sourceline import SourceLine, bullets, indent
 

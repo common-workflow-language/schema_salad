@@ -1,15 +1,16 @@
 import copy
 import re
-import uuid
-from typing import (List, Dict, Union, Any, Sequence, MutableMapping,
-                    MutableSequence)
+import uuid  # pylint: disable=unused-import
+from typing import (Any, Dict, List, MutableMapping, MutableSequence, Sequence,
+                    Union)
+
+from ruamel import yaml
+from six import iteritems, string_types, text_type
+from six.moves import StringIO, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 
-import six
-from six.moves import urllib, StringIO
-from ruamel import yaml
 
 class ValidationException(Exception):
     pass
@@ -64,7 +65,7 @@ class LoadingOptions(object):
         if namespaces is not None:
             self.vocab = self.vocab.copy()
             self.rvocab = self.rvocab.copy()
-            for k,v in six.iteritems(namespaces):
+            for k,v in iteritems(namespaces):
                 self.vocab[k] = v
                 self.rvocab[v] = k
 
@@ -95,7 +96,7 @@ def expand_url(url,                 # type: Union[str, Text]
                ):
     # type: (...) -> Text
 
-    if not isinstance(url, six.string_types):
+    if not isinstance(url, string_types):
         return url
 
     url = Text(url)
@@ -193,7 +194,7 @@ class _ArrayLoader(_Loader):
                 else:
                     r.append(lf)
             except ValidationException as e:
-                errors.append(SourceLine(doc, i, str).makeError(six.text_type(e)))
+                errors.append(SourceLine(doc, i, str).makeError(text_type(e)))
         if errors:
             raise ValidationException("\n".join(errors))
         return r
@@ -256,7 +257,7 @@ class _URILoader(_Loader):
         if isinstance(doc, MutableSequence):
             doc = [expand_url(i, baseuri, loadingOptions,
                             self.scoped_id, self.vocab_term, self.scoped_ref) for i in doc]
-        if isinstance(doc, six.string_types):
+        if isinstance(doc, string_types):
             doc = expand_url(doc, baseuri, loadingOptions,
                              self.scoped_id, self.vocab_term, self.scoped_ref)
         return self.inner.load(doc, baseuri, loadingOptions)
@@ -294,7 +295,7 @@ class _TypeDSLLoader(_Loader):
         if isinstance(doc, MutableSequence):
             r = []
             for d in doc:
-                if isinstance(d, six.string_types):
+                if isinstance(d, string_types):
                     resolved = self.resolve(d, baseuri, loadingOptions)
                     if isinstance(resolved, MutableSequence):
                         for i in resolved:
@@ -306,7 +307,7 @@ class _TypeDSLLoader(_Loader):
                 else:
                     r.append(d)
             doc = r
-        elif isinstance(doc, six.string_types):
+        elif isinstance(doc, string_types):
             doc = self.resolve(doc, baseuri, loadingOptions)
 
         return self.inner.load(doc, baseuri, loadingOptions)
@@ -341,7 +342,7 @@ class _IdMapLoader(_Loader):
 
 
 def _document_load(loader, doc, baseuri, loadingOptions):
-    if isinstance(doc, six.string_types):
+    if isinstance(doc, string_types):
         return _document_load_by_url(loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions)
 
     if isinstance(doc, MutableMapping):
@@ -412,7 +413,7 @@ def save_relative_uri(uri, base_url, scoped_id, ref_scope, relative_uris):
         return uri
     if isinstance(uri, MutableSequence):
         return [save_relative_uri(u, base_url, scoped_id, ref_scope, relative_uris) for u in uri]
-    elif isinstance(uri, six.text_type):
+    elif isinstance(uri, text_type):
         urisplit = urllib.parse.urlsplit(uri)
         basesplit = urllib.parse.urlsplit(base_url)
         if urisplit.scheme == basesplit.scheme and urisplit.netloc == basesplit.netloc:

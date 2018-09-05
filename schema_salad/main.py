@@ -1,33 +1,28 @@
-from __future__ import print_function
-from __future__ import absolute_import
+"""Command line interface to schema-salad."""
+from __future__ import absolute_import, print_function
+
 import argparse
+import itertools
 import logging
-import sys
 import os
 import re
-import itertools
-from typing import (Any, Dict, List, Union, Pattern, Tuple, cast,
-                    Mapping, MutableSequence)
+import sys
+from typing import (Any, Dict, List, Mapping, MutableSequence, Pattern, Tuple,
+                    Union, cast)
+
+import pkg_resources  # part of setuptools
+from rdflib.parser import Parser
+from rdflib.plugin import register
+from ruamel.yaml.comments import CommentedMap
+import six
+from six.moves import urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
-import six
-from six.moves import urllib
-
-import pkg_resources  # part of setuptools
-
-from ruamel.yaml.comments import CommentedMap
-from rdflib.plugin import register
-from rdflib.parser import Parser
-
-from . import schema
-from . import jsonld_context
-from . import validate
-from . import codegen
-from .sourceline import strip_dup_lineno
+from . import codegen, jsonld_context, schema, validate
 from .ref_resolver import Loader, file_uri
+from .sourceline import strip_dup_lineno
 from .utils import json_dumps
-
 
 register('json-ld', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')
 _logger = logging.getLogger("salad")
