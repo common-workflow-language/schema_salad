@@ -1,10 +1,15 @@
+"""Work-in-progress Java code generator for a given schema salad definition."""
 import os
 from typing import MutableSequence
+
+from six import string_types
+from six.moves import cStringIO, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
-from six.moves import urllib, cStringIO
+
 from . import schema
-from .codegen_base import TypeDef, CodeGenBase
+from .codegen_base import CodeGenBase, TypeDef
+
 
 class JavaCodeGen(CodeGenBase):
     def __init__(self, base):
@@ -15,14 +20,13 @@ class JavaCodeGen(CodeGenBase):
         self.package = ".".join(list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/"))
         self.outdir = self.package.replace(".", "/")
 
-    def prologue(self):
-        # type: () -> None
+    def prologue(self):  # type: () -> None
         if not os.path.exists(self.outdir):
             os.makedirs(self.outdir)
 
-    def safe_name(self, n):
-        # type: (Text) -> Text
-        avn = schema.avro_name(n)
+    @staticmethod
+    def safe_name(name):  # type: (Text) -> Text
+        avn = schema.avro_name(name)
         if avn in ("class", "extends", "abstract"):
             # reserved words
             avn = avn+"_"
@@ -103,16 +107,16 @@ public class {cls}Impl implements {cls} {{
         u"https://w3id.org/cwl/salad#Any": TypeDef("Any_type", "Support.AnyLoader()")
     }
 
-    def type_loader(self, t):
-        if isinstance(t, MutableSequence) and len(t) == 2:
-            if t[0] == "https://w3id.org/cwl/salad#null":
-                t = t[1]
-        if isinstance(t, basestring):
-            if t in self.prims:
-                return self.prims[t]
+    def type_loader(self, type_declaration):
+        if isinstance(type_declaration, MutableSequence) and len(type_declaration) == 2:
+            if type_declaration[0] == "https://w3id.org/cwl/salad#null":
+                type_declaration = type_declaration[1]
+        if isinstance(type_declaration, string_types):
+            if type_declaration in self.prims:
+                return self.prims[type_declaration]
         return TypeDef("Object", "")
 
-    def declare_field(self, name, typedef, doc, optional):
+    def declare_field(self, name, fieldtype, doc, optional):
         fieldname = self.safe_name(name)
         with open(os.path.join(self.outdir, "%s.java" % self.current_class), "a") as f:
             f.write("""
@@ -120,7 +124,7 @@ public class {cls}Impl implements {cls} {{
 """.
                     format(fieldname=fieldname,
                            capfieldname=fieldname[0].upper() + fieldname[1:],
-                           type=typedef.name))
+                           type=fieldtype.name))
 
         if self.current_class_is_abstract:
             return
@@ -133,7 +137,7 @@ public class {cls}Impl implements {cls} {{
 """.
                     format(fieldname=fieldname,
                            capfieldname=fieldname[0].upper() + fieldname[1:],
-                           type=typedef.name))
+                           type=fieldtype.name))
 
         self.current_loader.write("""
         this.{fieldname} = null; // TODO: loaders
@@ -141,17 +145,18 @@ public class {cls}Impl implements {cls} {{
                                   format(fieldname=fieldname))
 
 
-    def declare_id_field(self, name, typedef, doc, optional):
+    def declare_id_field(self, name, fieldtype, doc, optional):
         pass
 
-    def uri_loader(self, inner, scoped_id, vocab_term, refScope):
+    def uri_loader(self, inner, scoped_id, vocab_term, ref_scope):
         return inner
 
-    def idmap_loader(self, field, inner, mapSubject, mapPredicate):
+    def idmap_loader(self, field, inner, map_subject, map_predicate):
         return inner
 
-    def typedsl_loader(self, inner, refScope):
+    def typedsl_loader(self, inner, ref_scope):
         return inner
 
-    def epilogue(self, rootLoader):
+    def epilogue(self, root_loader):
+
         pass

@@ -1,7 +1,11 @@
 from __future__ import absolute_import
-from pkg_resources import Requirement, resource_filename, ResolutionError  # type: ignore
-from typing import Optional, Text
+
 import os
+from typing import Optional, Text
+
+from pkg_resources import (Requirement, ResolutionError,  # type: ignore
+                           resource_filename)
+
 
 def get_data(filename):  # type: (Text) -> Optional[Text]
     filename = os.path.normpath(filename)  # normalizing path depending on OS or else it will cause problem when joining path

@@ -1,12 +1,17 @@
-from .util import get_data
+import re
 import unittest
-from schema_salad.main import to_one_line_messages, reformat_yaml_exception_message
-from schema_salad.schema import load_schema, load_and_validate
+from os.path import normpath
+
+import six
+
+from schema_salad.main import (reformat_yaml_exception_message,
+                               to_one_line_messages)
+from schema_salad.schema import load_and_validate, load_schema
 from schema_salad.sourceline import strip_dup_lineno
 from schema_salad.validate import ValidationException
-from os.path import normpath
-import re
-import six
+
+from .util import get_data
+
 
 class TestPrintOneline(unittest.TestCase):
     def test_print_oneline(self):

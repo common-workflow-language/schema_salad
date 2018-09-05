@@ -1,21 +1,22 @@
 from __future__ import absolute_import
+
 import logging
-from typing import (cast, Any, Dict, Iterable,  # pylint: disable=unused-import
-                    List, Optional, Tuple, Union, MutableSequence,
-                    MutableMapping)
+from typing import (Any, Dict, Iterable, List,  # pylint: disable=unused-import
+                    MutableMapping, MutableSequence, Optional, Tuple, Union,
+                    cast)
+
+import rdflib
+import rdflib.namespace
+from rdflib import Graph, URIRef
+from rdflib.namespace import RDF, RDFS
+import six
+from six.moves import urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
-import six
-from six.moves import urllib
-
-import rdflib
-from rdflib import Graph, URIRef
-import rdflib.namespace
-from rdflib.namespace import RDF, RDFS
-
-from .utils import aslist, json_dumps
 from .ref_resolver import ContextType  # pylint: disable=unused-import
+from .utils import aslist, json_dumps
+
 
 _logger = logging.getLogger("salad")
 

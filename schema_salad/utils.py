@@ -1,10 +1,13 @@
 from __future__ import absolute_import
 
-from typing import Any, Dict, List, Mapping, MutableSequence, IO, Union, AnyStr
-from typing_extensions import Text  # pylint: disable=unused-import
-import os
-import six
 import json
+import os
+from typing import IO, Any, AnyStr, Dict, List, Mapping, MutableSequence, Union
+
+import six
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+
 
 def add_dictlist(di, key, val):  # type: (Dict, Any, Any) -> None
     if key not in di:

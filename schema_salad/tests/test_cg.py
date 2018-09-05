@@ -1,8 +1,9 @@
-import schema_salad.metaschema as cg_metaschema
-import unittest
+import json
 import logging
 import os
-import json
+import unittest
+
+import schema_salad.metaschema as cg_metaschema
 from schema_salad.ref_resolver import file_uri
 
 from .matcher import JsonDiffMatcher

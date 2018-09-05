@@ -1,11 +1,15 @@
-from __future__ import absolute_import
-from __future__ import print_function
-from .util import get_data
+from __future__ import absolute_import, print_function
+
 import unittest
-from schema_salad.schema import load_schema, load_and_validate
-from schema_salad.validate import ValidationException
-from avro.schema import Names
+
 import six
+from avro.schema import Names
+
+from schema_salad.schema import load_and_validate, load_schema
+from schema_salad.validate import ValidationException
+
+from .util import get_data
+
 
 class TestErrors(unittest.TestCase):
     def test_errors(self):
