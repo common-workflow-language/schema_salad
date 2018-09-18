@@ -747,7 +747,7 @@ class Loader(object):
         for identifer in loader.identity_links:
             if identifer in document and isinstance(
                     document[identifer], MutableSequence):
-                for n, v in enumerate(document[identifer]):
+                for n, _ in enumerate(document[identifer]):
                     if isinstance(document[identifer][n], string_types):
                         document[identifer][n] = loader.expand_url(
                             document[identifer][n], base_url, scoped_id=True)
@@ -993,7 +993,7 @@ class Loader(object):
                     raise validate.ValidationException(
                         "Field `%s` contains undefined reference to `%s`"
                         % (field, link))
-        elif isinstance(link, CommentedSeq):
+        elif isinstance(link, MutableSequence):
             errors = []
             for n, i in enumerate(link):
                 try:
@@ -1003,7 +1003,7 @@ class Loader(object):
             if bool(errors):
                 raise validate.ValidationException(
                     "\n".join([Text(e) for e in errors]))
-        elif isinstance(link, CommentedMap):
+        elif isinstance(link, MutableMapping):
             self.validate_links(link, docid, all_doc_ids)
         else:
             raise validate.ValidationException(
