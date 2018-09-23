@@ -1,19 +1,31 @@
-sudo: false
+group: travis_latest
 language: python
+sudo: required
+services:
+  - docker
+
 cache:
   pip: true
   directories:
     - .mypy_cache
-python:
-  - 2.7
-  - 3.4
-  - 3.5
-  - 3.6
-os:
-  - linux
+
+
 jobs:
   include:
+    - stage: test
+      python: "2.7"
+    - stage: test
+      python: "3.4"
+    - stage: test
+      python: "3.5"
+    - stage: test
+      python: "3.6"
+    - stage: test
+      python: "3.7"
+      dist: xenial
+      sudo: required
     - stage: release-test
+      python: "2.7"
       script: RELEASE_SKIP=head PYVER= ./release-test.sh
 script: tox
 install:

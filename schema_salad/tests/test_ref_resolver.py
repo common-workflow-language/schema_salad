@@ -1,10 +1,12 @@
 """Test the ref_resolver module."""
 
 from __future__ import absolute_import
+
 import shutil
 import tempfile
 
 import pytest  # type: ignore
+
 
 @pytest.fixture
 def tmp_dir_fixture(request):

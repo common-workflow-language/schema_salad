@@ -1,6 +1,8 @@
+"""Default entry point for the schema-salad module."""
 from __future__ import absolute_import
-from . import main
+
 import sys
-import typing
+
+from . import main
 
 sys.exit(main.main())

@@ -1,23 +1,27 @@
 from __future__ import absolute_import
-import ruamel.yaml
-from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq
-import re
-import os
-import traceback
 
-from typing import (Any, AnyStr, Callable, cast, Dict, List, Iterable, Tuple,
-                    TypeVar, Union, Text)
+import os
+import re
+import traceback
+from typing import (Any, AnyStr, Callable, Dict, List, MutableMapping,
+                    MutableSequence, Union)
+
+import ruamel.yaml
 import six
+from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+
 
 lineno_re = re.compile(u"^(.*?:[0-9]+:[0-9]+: )(( *)(.*))")
 
 def _add_lc_filename(r, source):  # type: (ruamel.yaml.comments.CommentedBase, AnyStr) -> None
     if isinstance(r, ruamel.yaml.comments.CommentedBase):
         r.lc.filename = source
-    if isinstance(r, list):
+    if isinstance(r, MutableSequence):
         for d in r:
             _add_lc_filename(d, source)
-    elif isinstance(r, dict):
+    elif isinstance(r, MutableMapping):
         for d in six.itervalues(r):
             _add_lc_filename(d, source)
 
@@ -111,7 +115,7 @@ def cmap(d, lc=None, fn=None):  # type: (Union[int, float, str, Text, Dict, List
             else:
                 d[k] = cmap(v, lc, fn=fn)
         return d
-    if isinstance(d, dict):
+    if isinstance(d, MutableMapping):
         cm = CommentedMap()
         for k in sorted(d.keys()):
             v = d[k]
@@ -125,7 +129,7 @@ def cmap(d, lc=None, fn=None):  # type: (Union[int, float, str, Text, Dict, List
             cm.lc.add_kv_line_col(k, uselc)
             cm.lc.filename = fn
         return cm
-    if isinstance(d, list):
+    if isinstance(d, MutableSequence):
         cs = CommentedSeq()
         for k,v in enumerate(d):
             if isinstance(v, CommentedBase):

@@ -1,26 +1,30 @@
-import json
-import sys
-import six
-from six.moves import urllib, cStringIO
-import collections
-import logging
+"""Python code generator for a given schema salad definition."""
+from typing import IO, Any, Dict, List, MutableMapping, MutableSequence, Union
+
 from pkg_resources import resource_stream
-from .utils import aslist, flatten
+from six import itervalues, iteritems
+from six.moves import cStringIO
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+
 from . import schema
-from .codegen_base import TypeDef, CodeGenBase, shortname
-from typing import Any, Dict, IO, List, Optional, Text, Union
+from .codegen_base import CodeGenBase, TypeDef
+from .schema import shortname
+
 
 class PythonCodeGen(CodeGenBase):
+    """Generation of Python code for a given Schema Salad definition."""
     def __init__(self, out):
         # type: (IO[str]) -> None
         super(PythonCodeGen, self).__init__()
         self.out = out
         self.current_class_is_abstract = False
+        self.serializer = cStringIO()
+        self.idfield = u""
 
-    def safe_name(self, n):
-        # type: (Text) -> Text
-
-        avn = schema.avro_name(n)
+    @staticmethod
+    def safe_name(name):  # type: (Text) -> Text
+        avn = schema.avro_name(name)
         if avn in ("class", "in"):
             # reserved words
             avn = avn+"_"
@@ -35,23 +39,28 @@ class PythonCodeGen(CodeGenBase):
 #
 """)
 
-        rs = resource_stream(__name__, 'sourceline.py')
-        self.out.write(rs.read().decode("UTF-8"))
-        rs.close()
+        stream = resource_stream(__name__, 'sourceline.py')
+        self.out.write(stream.read().decode("UTF-8"))
+        stream.close()
         self.out.write("\n\n")
 
-        rs = resource_stream(__name__, 'python_codegen_support.py')
-        self.out.write(rs.read().decode("UTF-8"))
-        rs.close()
+        stream = resource_stream(__name__, 'python_codegen_support.py')
+        self.out.write(stream.read().decode("UTF-8"))
+        stream.close()
         self.out.write("\n\n")
 
-        for p in six.itervalues(self.prims):
-            self.declare_type(p)
+        for primative in itervalues(self.prims):
+            self.declare_type(primative)
 
 
-    def begin_class(self, classname, extends, doc, abstract):
-        # type: (Text, List[Text], Optional[Text], bool) -> None
-
+    def begin_class(self,  # pylint: disable=too-many-arguments
+                    classname,    # type: Text
+                    extends,      # type: MutableSequence[Text]
+                    doc,          # type: Text
+                    abstract,     # type: bool
+                    field_names,  # type: MutableSequence[Text]
+                    idfield       # type: Text
+                   ):  # type: (...) -> None
         classname = self.safe_name(classname)
 
         if extends:
@@ -80,13 +89,29 @@ class PythonCodeGen(CodeGenBase):
             doc.lc.data = _doc.lc.data
             doc.lc.filename = _doc.lc.filename
         errors = []
-        #doc = {expand_url(d, u"", loadingOptions, scoped_id=False, vocab_term=True): v for d,v in doc.items()}
+        self.loadingOptions = loadingOptions
 """)
 
+        self.idfield = idfield
+
         self.serializer.write("""
-    def save(self):
+    def save(self, top=False, base_url="", relative_uris=True):
         r = {}
+        for ef in self.extension_fields:
+            r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 """)
+
+        if "class" in field_names:
+            self.out.write("""
+        if doc.get('class') != '{class_}':
+            raise ValidationException("Not a {class_}")
+
+""".format(class_=classname))
+
+            self.serializer.write("""
+        r['class'] = '{class_}'
+""".format(class_=classname))
+
 
     def end_class(self, classname, field_names):
         # type: (Text, List[Text]) -> None
@@ -95,16 +120,28 @@ class PythonCodeGen(CodeGenBase):
             return
 
         self.out.write("""
+        self.extension_fields = {{}}
         for k in doc.keys():
             if k not in self.attrs:
-                errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: {attrstr}" % (k)))
-                break
+                if ":" in k:
+                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    self.extension_fields[ex] = doc[k]
+                else:
+                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: {attrstr}" % (k)))
+                    break
 
         if errors:
             raise ValidationException(\"Trying '{class_}'\\n\"+\"\\n\".join(errors))
 """.
                        format(attrstr=", ".join(["`%s`" % f for f in field_names]),
                               class_=self.safe_name(classname)))
+
+        self.serializer.write("""
+        if top and self.loadingOptions.namespaces:
+            r["$namespaces"] = self.loadingOptions.namespaces
+
+""")
+
         self.serializer.write("        return r\n\n")
 
         self.serializer.write("    attrs = frozenset({attrs})\n".format(attrs=field_names))
@@ -113,61 +150,89 @@ class PythonCodeGen(CodeGenBase):
         self.out.write("\n\n")
 
     prims = {
-        u"http://www.w3.org/2001/XMLSchema#string": TypeDef("strtype", "_PrimitiveLoader((str, six.text_type))"),
-        u"http://www.w3.org/2001/XMLSchema#int": TypeDef("inttype", "_PrimitiveLoader(int)"),
-        u"http://www.w3.org/2001/XMLSchema#long": TypeDef("inttype", "_PrimitiveLoader(int)"),
-        u"http://www.w3.org/2001/XMLSchema#float": TypeDef("floattype", "_PrimitiveLoader(float)"),
-        u"http://www.w3.org/2001/XMLSchema#double": TypeDef("floattype", "_PrimitiveLoader(float)"),
-        u"http://www.w3.org/2001/XMLSchema#boolean": TypeDef("booltype", "_PrimitiveLoader(bool)"),
-        u"https://w3id.org/cwl/salad#null": TypeDef("None_type", "_PrimitiveLoader(type(None))"),
+        u"http://www.w3.org/2001/XMLSchema#string": TypeDef(
+            "strtype", "_PrimitiveLoader((str, six.text_type))"),
+        u"http://www.w3.org/2001/XMLSchema#int": TypeDef(
+            "inttype", "_PrimitiveLoader(int)"),
+        u"http://www.w3.org/2001/XMLSchema#long": TypeDef(
+            "inttype", "_PrimitiveLoader(int)"),
+        u"http://www.w3.org/2001/XMLSchema#float": TypeDef(
+            "floattype", "_PrimitiveLoader(float)"),
+        u"http://www.w3.org/2001/XMLSchema#double": TypeDef(
+            "floattype", "_PrimitiveLoader(float)"),
+        u"http://www.w3.org/2001/XMLSchema#boolean": TypeDef(
+            "booltype", "_PrimitiveLoader(bool)"),
+        u"https://w3id.org/cwl/salad#null": TypeDef(
+            "None_type", "_PrimitiveLoader(type(None))"),
         u"https://w3id.org/cwl/salad#Any": TypeDef("Any_type", "_AnyLoader()")
     }
 
-    def type_loader(self, t):
+    def type_loader(self, type_declaration):
         # type: (Union[List[Any], Dict[Text, Any], Text]) -> TypeDef
 
-        if isinstance(t, list):
-            sub = [self.type_loader(i) for i in t]
-            return self.declare_type(TypeDef("union_of_%s" % "_or_".join(s.name for s in sub), "_UnionLoader((%s,))" % (", ".join(s.name for s in sub))))
-        if isinstance(t, dict):
-            if t["type"] in ("array", "https://w3id.org/cwl/salad#array"):
-                i = self.type_loader(t["items"])
-                return self.declare_type(TypeDef("array_of_%s" % i.name, "_ArrayLoader(%s)" % i.name))
-            elif t["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
-                for sym in t["symbols"]:
+        if isinstance(type_declaration, MutableSequence):
+            sub = [self.type_loader(i) for i in type_declaration]
+            return self.declare_type(
+                TypeDef("union_of_%s" % "_or_".join(s.name for s in sub),
+                        "_UnionLoader((%s,))" % (", ".join(s.name for s in sub))))
+        if isinstance(type_declaration, MutableMapping):
+            if type_declaration["type"] in ("array", "https://w3id.org/cwl/salad#array"):
+                i = self.type_loader(type_declaration["items"])
+                return self.declare_type(
+                    TypeDef("array_of_%s" % i.name,
+                            "_ArrayLoader(%s)" % i.name))
+            if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
+                for sym in type_declaration["symbols"]:
                     self.add_vocab(shortname(sym), sym)
-                return self.declare_type(TypeDef(self.safe_name(t["name"])+"Loader", '_EnumLoader(("%s",))' % (
-                    '", "'.join(self.safe_name(sym) for sym in t["symbols"]))))
-            elif t["type"] in ("record", "https://w3id.org/cwl/salad#record"):
-                return self.declare_type(TypeDef(self.safe_name(t["name"])+"Loader", "_RecordLoader(%s)" % self.safe_name(t["name"])))
-            else:
-                raise Exception("wft %s" % t["type"])
-        if t in self.prims:
-            return self.prims[t]
-        return self.collected_types[self.safe_name(t)+"Loader"]
+                return self.declare_type(
+                    TypeDef(self.safe_name(type_declaration["name"])+"Loader",
+                            '_EnumLoader(("%s",))' % ('", "'.join(
+                                self.safe_name(sym) for
+                                sym in type_declaration["symbols"]))))
+            if type_declaration["type"] in ("record", "https://w3id.org/cwl/salad#record"):
+                return self.declare_type(
+                    TypeDef(self.safe_name(type_declaration["name"])+"Loader",
+                            "_RecordLoader(%s)" % self.safe_name(type_declaration["name"])))
+            raise Exception("wft %s" % type_declaration["type"])
+        if type_declaration in self.prims:
+            return self.prims[type_declaration]
+        return self.collected_types[self.safe_name(type_declaration)+"Loader"]
 
-    def declare_id_field(self, name, fieldtype, doc):
-        # type: (Text, TypeDef, Text) -> None
+    def declare_id_field(self, name, fieldtype, doc, optional):
+        # type: (Text, TypeDef, Text, bool) -> None
 
         if self.current_class_is_abstract:
             return
 
         self.declare_field(name, fieldtype, doc, True)
+
+        if optional:
+            opt = """self.{safename} = "_:" + str(uuid.uuid4())""".format(
+                safename=self.safe_name(name))
+        else:
+            opt = """raise ValidationException("Missing {fieldname}")""".format(
+                fieldname=shortname(name))
+
         self.out.write("""
         if self.{safename} is None:
             if docRoot is not None:
                 self.{safename} = docRoot
             else:
-                raise ValidationException("Missing {fieldname}")
+                {opt}
         baseuri = self.{safename}
 """.
                        format(safename=self.safe_name(name),
-                              fieldname=shortname(name)))
+                              fieldname=shortname(name),
+                              opt=opt))
+
 
     def declare_field(self, name, fieldtype, doc, optional):
         # type: (Text, TypeDef, Text, bool) -> None
 
         if self.current_class_is_abstract:
+            return
+
+        if shortname(name) == "class":
             return
 
         if optional:
@@ -191,24 +256,54 @@ class PythonCodeGen(CodeGenBase):
 
         self.out.write("\n")
 
-        self.serializer.write("        if self.%s is not None:\n            r['%s'] = save(self.%s)\n" % (self.safe_name(name), shortname(name), self.safe_name(name)))
+        if name == self.idfield or not self.idfield:
+            baseurl = 'base_url'
+        else:
+            baseurl = "self.%s" % self.safe_name(self.idfield)
 
-    def uri_loader(self, inner, scoped_id, vocab_term, refScope):
+        if fieldtype.is_uri:
+            self.serializer.write("""
+        if self.{safename} is not None:
+            u = save_relative_uri(self.{safename}, {baseurl}, {scoped_id}, {ref_scope}, relative_uris)
+            if u:
+                r['{fieldname}'] = u
+""".
+                                  format(safename=self.safe_name(name),
+                                         fieldname=shortname(name).strip(),
+                                         baseurl=baseurl,
+                                         scoped_id=fieldtype.scoped_id,
+                                         ref_scope=fieldtype.ref_scope))
+        else:
+            self.serializer.write("""
+        if self.{safename} is not None:
+            r['{fieldname}'] = save(self.{safename}, top=False, base_url={baseurl}, relative_uris=relative_uris)
+""".
+                                  format(safename=self.safe_name(name),
+                                         fieldname=shortname(name),
+                                         baseurl=baseurl))
+
+    def uri_loader(self, inner, scoped_id, vocab_term, ref_scope):
         # type: (TypeDef, bool, bool, Union[int, None]) -> TypeDef
-        return self.declare_type(TypeDef("uri_%s_%s_%s_%s" % (inner.name, scoped_id, vocab_term, refScope),
-                                         "_URILoader(%s, %s, %s, %s)" % (inner.name, scoped_id, vocab_term, refScope)))
+        return self.declare_type(
+            TypeDef("uri_%s_%s_%s_%s" % (inner.name, scoped_id, vocab_term, ref_scope),
+                    "_URILoader(%s, %s, %s, %s)" % (inner.name, scoped_id,
+                                                    vocab_term, ref_scope),
+                    is_uri=True, scoped_id=scoped_id, ref_scope=ref_scope))
 
-    def idmap_loader(self, field, inner, mapSubject, mapPredicate):
+    def idmap_loader(self, field, inner, map_subject, map_predicate):
         # type: (Text, TypeDef, Text, Union[Text, None]) -> TypeDef
-        return self.declare_type(TypeDef("idmap_%s_%s" % (self.safe_name(field), inner.name),
-                                         "_IdMapLoader(%s, '%s', '%s')" % (inner.name, mapSubject, mapPredicate)))
+        return self.declare_type(
+            TypeDef("idmap_%s_%s" % (self.safe_name(field), inner.name),
+                    "_IdMapLoader(%s, '%s', '%s')" % (inner.name, map_subject,
+                                                      map_predicate)))
 
-    def typedsl_loader(self, inner, refScope):
+    def typedsl_loader(self, inner, ref_scope):
         # type: (TypeDef, Union[int, None]) -> TypeDef
-        return self.declare_type(TypeDef("typedsl_%s_%s" % (inner.name, refScope),
-                                         "_TypeDSLLoader(%s, %s)" % (inner.name, refScope)))
+        return self.declare_type(
+            TypeDef("typedsl_%s_%s" % (inner.name, ref_scope),
+                    "_TypeDSLLoader(%s, %s)" % (inner.name, ref_scope)))
 
-    def epilogue(self, rootLoader):
+    def epilogue(self, root_loader):
         # type: (TypeDef) -> None
         self.out.write("_vocab = {\n")
         for k in sorted(self.vocab.keys()):
@@ -220,8 +315,8 @@ class PythonCodeGen(CodeGenBase):
             self.out.write("    \"%s\": \"%s\",\n" % (self.vocab[k], k))
         self.out.write("}\n\n")
 
-        for k,tv in six.iteritems(self.collected_types):
-            self.out.write("%s = %s\n" % (tv.name, tv.init))
+        for _, collected_type in iteritems(self.collected_types):
+            self.out.write("%s = %s\n" % (collected_type.name, collected_type.init))
         self.out.write("\n\n")
 
         self.out.write("""
@@ -231,4 +326,4 @@ def load_document(doc, baseuri=None, loadingOptions=None):
     if loadingOptions is None:
         loadingOptions = LoadingOptions()
     return _document_load(%s, doc, baseuri, loadingOptions)
-""" % rootLoader.name)
+""" % root_loader.name)

@@ -1,9 +1,16 @@
-import six
-from six.moves import urllib, StringIO
-import ruamel.yaml as yaml
 import copy
 import re
-from typing import List, Text, Dict, Union, Any, Sequence
+import uuid  # pylint: disable=unused-import
+from typing import (Any, Dict, List, MutableMapping, MutableSequence, Sequence,
+                    Union)
+
+from ruamel import yaml
+from six import iteritems, string_types, text_type
+from six.moves import StringIO, urllib
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+
+
 
 class ValidationException(Exception):
     pass
@@ -12,13 +19,17 @@ class Savable(object):
     pass
 
 class LoadingOptions(object):
-    def __init__(self, fetcher=None, namespaces=None, fileuri=None, copyfrom=None):
+    def __init__(self, fetcher=None, namespaces=None, fileuri=None, copyfrom=None, schemas=None):
         if copyfrom is not None:
             self.idx = copyfrom.idx
             if fetcher is None:
                 fetcher = copyfrom.fetcher
             if fileuri is None:
                 fileuri = copyfrom.fileuri
+            if namespaces is None:
+                namespaces = copyfrom.namespaces
+            if namespaces is None:
+                schemas = copyfrom.schemas
         else:
             self.idx = {}
 
@@ -32,10 +43,10 @@ class LoadingOptions(object):
                 session = CacheControl(
                     requests.Session(),
                     cache=FileCache(os.path.join(os.environ["HOME"], ".cache", "salad")))
-            elif "TMP" in os.environ:
+            elif "TMPDIR" in os.environ:
                 session = CacheControl(
                     requests.Session(),
-                    cache=FileCache(os.path.join(os.environ["TMP"], ".cache", "salad")))
+                    cache=FileCache(os.path.join(os.environ["TMPDIR"], ".cache", "salad")))
             else:
                 session = CacheControl(
                     requests.Session(),
@@ -48,16 +59,20 @@ class LoadingOptions(object):
 
         self.vocab = _vocab
         self.rvocab = _rvocab
+        self.namespaces = namespaces
+        self.schemas = schemas
 
         if namespaces is not None:
             self.vocab = self.vocab.copy()
             self.rvocab = self.rvocab.copy()
-            for k,v in six.iteritems(namespaces):
+            for k,v in iteritems(namespaces):
                 self.vocab[k] = v
                 self.rvocab[v] = k
 
+
+
 def load_field(val, fieldtype, baseuri, loadingOptions):
-    if isinstance(val, dict):
+    if isinstance(val, MutableMapping):
         if "$import" in val:
             return _document_load_by_url(fieldtype, loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$import"]), loadingOptions)
         elif "$include" in val:
@@ -65,11 +80,11 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
     return fieldtype.load(val, baseuri, loadingOptions)
 
 
-def save(val):
+def save(val, top=True, base_url="", relative_uris=True):
     if isinstance(val, Savable):
-        return val.save()
-    if isinstance(val, list):
-        return [save(v) for v in val]
+        return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
+    if isinstance(val, MutableSequence):
+        return [save(v, top=False, base_url=base_url, relative_uris=relative_uris) for v in val]
     return val
 
 def expand_url(url,                 # type: Union[str, Text]
@@ -81,7 +96,7 @@ def expand_url(url,                 # type: Union[str, Text]
                ):
     # type: (...) -> Text
 
-    if not isinstance(url, six.string_types):
+    if not isinstance(url, string_types):
         return url
 
     url = Text(url)
@@ -167,19 +182,19 @@ class _ArrayLoader(_Loader):
         self.items = items
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        if not isinstance(doc, list):
+        if not isinstance(doc, MutableSequence):
             raise ValidationException("Expected a list")
         r = []
         errors = []
         for i in range(0, len(doc)):
             try:
                 lf = load_field(doc[i], _UnionLoader((self, self.items)), baseuri, loadingOptions)
-                if isinstance(lf, list):
+                if isinstance(lf, MutableSequence):
                     r.extend(lf)
                 else:
                     r.append(lf)
             except ValidationException as e:
-                errors.append(SourceLine(doc, i, str).makeError(six.text_type(e)))
+                errors.append(SourceLine(doc, i, str).makeError(text_type(e)))
         if errors:
             raise ValidationException("\n".join(errors))
         return r
@@ -205,7 +220,7 @@ class _RecordLoader(_Loader):
         self.classtype = classtype
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        if not isinstance(doc, dict):
+        if not isinstance(doc, MutableMapping):
             raise ValidationException("Expected a dict")
         return self.classtype(doc, baseuri, loadingOptions, docRoot=docRoot)
 
@@ -239,10 +254,10 @@ class _URILoader(_Loader):
         self.scoped_ref = scoped_ref
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        if isinstance(doc, list):
+        if isinstance(doc, MutableSequence):
             doc = [expand_url(i, baseuri, loadingOptions,
                             self.scoped_id, self.vocab_term, self.scoped_ref) for i in doc]
-        if isinstance(doc, six.string_types):
+        if isinstance(doc, string_types):
             doc = expand_url(doc, baseuri, loadingOptions,
                              self.scoped_id, self.vocab_term, self.scoped_ref)
         return self.inner.load(doc, baseuri, loadingOptions)
@@ -277,12 +292,12 @@ class _TypeDSLLoader(_Loader):
         return doc
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        if isinstance(doc, list):
+        if isinstance(doc, MutableSequence):
             r = []
             for d in doc:
-                if isinstance(d, six.string_types):
+                if isinstance(d, string_types):
                     resolved = self.resolve(d, baseuri, loadingOptions)
-                    if isinstance(resolved, list):
+                    if isinstance(resolved, MutableSequence):
                         for i in resolved:
                             if i not in r:
                                 r.append(i)
@@ -292,7 +307,7 @@ class _TypeDSLLoader(_Loader):
                 else:
                     r.append(d)
             doc = r
-        elif isinstance(doc, six.string_types):
+        elif isinstance(doc, string_types):
             doc = self.resolve(doc, baseuri, loadingOptions)
 
         return self.inner.load(doc, baseuri, loadingOptions)
@@ -306,11 +321,11 @@ class _IdMapLoader(_Loader):
         self.mapPredicate = mapPredicate
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        if isinstance(doc, dict):
+        if isinstance(doc, MutableMapping):
             r = []
             for k in sorted(doc.keys()):
                 val = doc[k]
-                if isinstance(val, dict):
+                if isinstance(val, MutableMapping):
                     v = copy.copy(val)
                     if hasattr(val, 'lc'):
                         v.lc.data = val.lc.data
@@ -327,12 +342,17 @@ class _IdMapLoader(_Loader):
 
 
 def _document_load(loader, doc, baseuri, loadingOptions):
-    if isinstance(doc, six.string_types):
+    if isinstance(doc, string_types):
         return _document_load_by_url(loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions)
 
-    if isinstance(doc, dict):
+    if isinstance(doc, MutableMapping):
         if "$namespaces" in doc:
             loadingOptions = LoadingOptions(copyfrom=loadingOptions, namespaces=doc["$namespaces"])
+            doc = {k: v for k,v in doc.items() if k != "$namespaces"}
+
+        if "$schemas" in doc:
+            loadingOptions = LoadingOptions(copyfrom=loadingOptions, schemas=doc["$schemas"])
+            doc = {k: v for k,v in doc.items() if k != "$schemas"}
 
         if "$base" in doc:
             baseuri = doc["$base"]
@@ -342,7 +362,7 @@ def _document_load(loader, doc, baseuri, loadingOptions):
         else:
             return loader.load(doc, baseuri, loadingOptions, docRoot=baseuri)
 
-    if isinstance(doc, list):
+    if isinstance(doc, MutableSequence):
         return loader.load(doc, baseuri, loadingOptions)
 
     raise ValidationException()
@@ -358,7 +378,7 @@ def _document_load_by_url(loader, url, loadingOptions):
     else:
         textIO = StringIO(text)
     textIO.name = url    # type: ignore
-    result = yaml.round_trip_load(textIO)
+    result = yaml.round_trip_load(textIO, preserve_quotes=True)
     add_lc_filename(result, url)
 
     loadingOptions.idx[url] = result
@@ -381,3 +401,41 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         return "file:%s%s" % (urlpath, frag)
     else:
         return "file://%s%s" % (urlpath, frag)
+
+def prefix_url(url, namespaces):
+    for k,v in namespaces.items():
+        if url.startswith(v):
+            return k+":"+url[len(v):]
+    return url
+
+def save_relative_uri(uri, base_url, scoped_id, ref_scope, relative_uris):
+    if not relative_uris:
+        return uri
+    if isinstance(uri, MutableSequence):
+        return [save_relative_uri(u, base_url, scoped_id, ref_scope, relative_uris) for u in uri]
+    elif isinstance(uri, text_type):
+        urisplit = urllib.parse.urlsplit(uri)
+        basesplit = urllib.parse.urlsplit(base_url)
+        if urisplit.scheme == basesplit.scheme and urisplit.netloc == basesplit.netloc:
+            if urisplit.path != basesplit.path:
+                p = os.path.relpath(urisplit.path, os.path.dirname(basesplit.path))
+                if urisplit.fragment:
+                    p = p + "#" + urisplit.fragment
+                return p
+
+            basefrag = basesplit.fragment+"/"
+            if ref_scope:
+                sp = basefrag.split("/")
+                i = 0
+                while i < ref_scope:
+                    sp.pop()
+                    i += 1
+                basefrag = "/".join(sp)
+
+            if urisplit.fragment.startswith(basefrag):
+                return urisplit.fragment[len(basefrag):]
+            else:
+                return urisplit.fragment
+        return uri
+    else:
+        return save(uri, top=False, base_url=base_url)

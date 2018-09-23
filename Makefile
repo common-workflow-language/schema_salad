@@ -15,7 +15,7 @@
 #
 # Contact: common-workflow-language@googlegroups.com
 
-# make pep8 to check for basic Python code compliance
+# make pycodestyle to check for basic Python code compliance
 # make autopep8 to fix most pep8 errors
 # make pylint to check Python code for enhanced compliance including naming
 #  and documentation
@@ -27,7 +27,7 @@ PACKAGE=schema-salad
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py) setup.py
-DEVPKGS=pep8 diff_cover autopep8 pylint coverage pep257 pytest flake8
+DEVPKGS=pycodestyle diff_cover autopep8 pylint coverage pep257 pytest flake8
 COVBASE=coverage run --branch --append --source=${MODULE} \
 	--omit=schema_salad/tests/*
 
@@ -68,14 +68,18 @@ clean: FORCE
 	rm -Rf .coverage
 	rm -f diff-cover.html
 
-## pep8        : check Python code style
-pep8: $(PYSOURCES)
+pep8: pycodestyle
+
+## pycodestyle  : check Python code style
+pycodestyle: $(PYSOURCES)
 	pep8 --exclude=_version.py  --show-source --show-pep8 $^ || true
 
-pep8_report.txt: $(PYSOURCES)
+pep8_report.txt: pycodestyle_report.txt
+pycodestyle_report.txt: $(PYSOURCES)
 	pep8 --exclude=_version.py $^ > $@ || true
 
-diff_pep8_report: pep8_report.txt
+diff_pep8_report: diff_pycodestyle_report
+diff_pycodestyle_report: pycodestyle_report.txt
 	diff-quality --violations=pep8 pep8_report.txt
 
 ## pep257      : check Python code style
@@ -191,7 +195,7 @@ jenkins: FORCE
 	. env/bin/activate ; \
 	pip install -U setuptools pip wheel ; \
 	${MAKE} install-dep coverage.html coverage.xml pep257_report.txt \
-		sloccount.sc pep8_report.txt pylint_report.txt
+		sloccount.sc pycodestyle_report.txt pylint_report.txt
 	if ! test -d env3 ; then virtualenv -p python3 env3 ; fi
 	. env3/bin/activate ; \
 	pip install -U setuptools pip wheel ; \

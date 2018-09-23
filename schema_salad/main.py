@@ -1,36 +1,31 @@
-from __future__ import print_function
-from __future__ import absolute_import
+"""Command line interface to schema-salad."""
+from __future__ import absolute_import, print_function
+
 import argparse
+import itertools
 import logging
-import sys
-import traceback
-import json
 import os
 import re
-import itertools
-
-import six
-from six.moves import urllib
+import sys
+from typing import (Any, Dict, List, Mapping, MutableSequence, Pattern, Tuple,
+                    Union, cast)
 
 import pkg_resources  # part of setuptools
-
-from typing import Any, Dict, List, Union, Pattern, Text, Tuple, cast
-
-from rdflib import Graph, plugin
-from rdflib.serializer import Serializer
-
-from . import schema
-from . import jsonld_context
-from . import makedoc
-from . import validate
-from . import codegen
-from .sourceline import strip_dup_lineno
-from .ref_resolver import Loader, file_uri
-_logger = logging.getLogger("salad")
-
-from rdflib.plugin import register
 from rdflib.parser import Parser
+from rdflib.plugin import register
+from ruamel.yaml.comments import CommentedMap
+import six
+from six.moves import urllib
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+
+from . import codegen, jsonld_context, schema, validate
+from .ref_resolver import Loader, file_uri
+from .sourceline import strip_dup_lineno
+from .utils import json_dumps
+
 register('json-ld', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')
+_logger = logging.getLogger("salad")
 
 
 def printrdf(workflow,  # type: str
@@ -221,11 +216,11 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     # Optionally print the schema after ref resolution
     if not args.document and args.print_pre:
-        print(json.dumps(schema_doc, indent=4))
+        print(json_dumps(schema_doc, indent=4))
         return 0
 
     if not args.document and args.print_index:
-        print(json.dumps(list(metaschema_loader.idx.keys()), indent=4))
+        print(json_dumps(list(metaschema_loader.idx.keys()), indent=4))
         return 0
 
     # Validate the schema document against the metaschema
@@ -239,9 +234,9 @@ def main(argsl=None):  # type: (List[str]) -> int
         return 1
 
     # Get the json-ld context and RDFS representation from the schema
-    metactx = {}  # type: Dict[str, str]
-    if isinstance(schema_raw_doc, dict):
-        metactx = schema_raw_doc.get("$namespaces", {})
+    metactx = CommentedMap()  # type: Dict[str, str]
+    if isinstance(schema_raw_doc, Mapping):
+        metactx = schema_raw_doc.get("$namespaces", CommentedMap())
         if "$base" in schema_raw_doc:
             metactx["@base"] = schema_raw_doc["$base"]
     if schema_doc is not None:
@@ -260,7 +255,7 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     # Make the Avro validation that will be used to validate the target
     # document
-    if isinstance(schema_doc, list):
+    if isinstance(schema_doc, MutableSequence):
         (avsc_names, avsc_obj) = schema.make_avro_schema(
             schema_doc, document_loader)
     else:
@@ -273,18 +268,18 @@ def main(argsl=None):  # type: (List[str]) -> int
                           (type(avsc_names), avsc_names, None) if args.debug
                           else None))
         if args.print_avro:
-            print(json.dumps(avsc_obj, indent=4))
+            print(json_dumps(avsc_obj, indent=4))
         return 1
 
     # Optionally print Avro-compatible schema from schema
     if args.print_avro:
-        print(json.dumps(avsc_obj, indent=4))
+        print(json_dumps(avsc_obj, indent=4))
         return 0
 
     # Optionally print the json-ld context from the schema
     if args.print_jsonld_context:
         j = {"@context": schema_ctx}
-        print(json.dumps(j, indent=4, sort_keys=True))
+        print(json_dumps(j, indent=4, sort_keys=True))
         return 0
 
     # Optionally print the RDFS graph from the schema
@@ -293,7 +288,7 @@ def main(argsl=None):  # type: (List[str]) -> int
         return 0
 
     if args.print_metadata and not args.document:
-        print(json.dumps(schema_metadata, indent=4))
+        print(json_dumps(schema_metadata, indent=4))
         return 0
 
     if args.print_inheritance_dot:
@@ -331,11 +326,11 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     # Optionally print the document after ref resolution
     if args.print_pre:
-        print(json.dumps(document, indent=4))
+        print(json_dumps(document, indent=4))
         return 0
 
     if args.print_index:
-        print(json.dumps(list(document_loader.idx.keys()), indent=4))
+        print(json_dumps(list(document_loader.idx.keys()), indent=4))
         return 0
 
     # Validate the schema document against the metaschema
@@ -350,7 +345,7 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     # Optionally convert the document to RDF
     if args.print_rdf:
-        if isinstance(document, (dict, list)):
+        if isinstance(document, (Mapping, MutableSequence)):
             printrdf(args.document, document, schema_ctx, args.rdf_serializer)
             return 0
         else:
@@ -358,7 +353,7 @@ def main(argsl=None):  # type: (List[str]) -> int
             return 1
 
     if args.print_metadata:
-        print(json.dumps(doc_metadata, indent=4))
+        print(json_dumps(doc_metadata, indent=4))
         return 0
 
     print("Document `%s` is valid" % args.document)

@@ -1,37 +1,40 @@
 from __future__ import absolute_import
 
-import mistune
 import argparse
-import json
-import os
+import codecs
+from codecs import StreamWriter  # pylint: disable=unused-import
 import copy
+import logging
+import os
 import re
 import sys
-import logging
-from io import open
+from io import open, TextIOWrapper
+from typing import (IO, Any, Dict, List, MutableMapping, MutableSequence,
+                    Optional, Set, Union, cast)
+
+import mistune
+import six
+from six import StringIO
+from six.moves import range, urllib
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 from . import schema
 from .utils import add_dictlist, aslist
-
-import six
-from six.moves import range
-from six.moves import urllib
-from six import StringIO
-from typing import cast, Any, Dict, IO, List, Optional, Set, Text, Union
 
 _logger = logging.getLogger("salad")
 
 
 def has_types(items):  # type: (Any) -> List[Text]
     r = []  # type: List
-    if isinstance(items, dict):
+    if isinstance(items, MutableMapping):
         if items["type"] == "https://w3id.org/cwl/salad#record":
             return [items["name"]]
         for n in ("type", "items", "values"):
             if n in items:
                 r.extend(has_types(items[n]))
         return r
-    if isinstance(items, list):
+    if isinstance(items, MutableSequence):
         for i in items:
             r.extend(has_types(i))
         return r
@@ -48,7 +51,7 @@ def linkto(item):  # type: (Text) -> Text
 class MyRenderer(mistune.Renderer):
 
     def __init__(self):  # type: () -> None
-        super(mistune.Renderer, self).__init__()
+        super(MyRenderer, self).__init__()
         self.options = {}
 
     def header(self, text, level, raw=None):  # type: (Text, int, Any) -> Text
@@ -84,7 +87,7 @@ class ToC(object):
         depth = len(self.numbering)
         if thisdepth < depth:
             self.toc += "</ol>"
-            for n in range(0, depth - thisdepth):
+            for _ in range(0, depth - thisdepth):
                 self.numbering.pop()
                 self.toc += "</li></ol>"
             self.numbering[-1] += 1
@@ -107,13 +110,13 @@ class ToC(object):
         return num
 
     def contents(self, idn):  # type: (str) -> str
-        c = """<h1 id="%s">Table of contents</h1>
+        toc = """<h1 id="%s">Table of contents</h1>
                <nav class="tocnav"><ol>%s""" % (idn, self.toc)
-        c += "</ol>"
-        for i in range(0, len(self.numbering)):
-            c += "</li></ol>"
-        c += """</nav>"""
-        return c
+        toc += "</ol>"
+        for _ in range(0, len(self.numbering)):
+            toc += "</li></ol>"
+        toc += """</nav>"""
+        return toc
 
 
 basicTypes = ("https://w3id.org/cwl/salad#null",
@@ -152,7 +155,7 @@ def number_headings(toc, maindoc):  # type: (ToC, str) -> str
 
 
 def fix_doc(doc):  # type: (Union[List[str], str]) -> str
-    if isinstance(doc, list):
+    if isinstance(doc, MutableSequence):
         docstr = "".join(doc)
     else:
         docstr = doc
@@ -214,17 +217,15 @@ class RenderType(object):
                                 self.uses[tp].append((frg1, frg2))
                             if tp not in basicTypes and tp not in self.record_refs[t["name"]]:
                                 self.record_refs[t["name"]].append(tp)
-            except KeyError as e:
+            except KeyError:
                 _logger.error("Did not find 'type' in %s", t)
                 raise
 
-        for f in alltypes:
-            if (f["name"] in renderlist or
-                ((not renderlist) and
-                 ("extends" not in f) and
-                 ("docParent" not in f) and
-                 ("docAfter" not in f))):
-                self.render_type(f, 1)
+        for entry in alltypes:
+            if (entry["name"] in renderlist or
+                    ((not renderlist) and ("extends" not in entry) and
+                     ("docParent" not in entry) and ("docAfter" not in entry))):
+                self.render_type(entry, 1)
 
     def typefmt(self,
                 tp,                     # type: Any
@@ -233,51 +234,57 @@ class RenderType(object):
                 jsonldPredicate=None    # type: Optional[Dict[str, str]]
                 ):
         # type: (...) -> Text
-        if isinstance(tp, list):
+        if isinstance(tp, MutableSequence):
             if nbsp and len(tp) <= 3:
-                return "&nbsp;|&nbsp;".join([self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp])
-            else:
-                return " | ".join([self.typefmt(n, redirects) for n in tp])
-        if isinstance(tp, dict):
+                return "&nbsp;|&nbsp;".join(
+                    [self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate)
+                     for n in tp])
+            return " | ".join(
+                [self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate)
+                 for n in tp])
+        if isinstance(tp, MutableMapping):
             if tp["type"] == "https://w3id.org/cwl/salad#array":
                 ar = "array&lt;%s&gt;" % (self.typefmt(
                     tp["items"], redirects, nbsp=True))
                 if jsonldPredicate is not None and "mapSubject" in jsonldPredicate:
                     if "mapPredicate" in jsonldPredicate:
-                        ar += " | map&lt;%s.%s,&nbsp;%s.%s&gt" % (self.typefmt(tp["items"], redirects),
-                                                                  jsonldPredicate[
-                                                                      "mapSubject"],
-                                                                  self.typefmt(
-                                                                      tp["items"], redirects),
-                                                                  jsonldPredicate["mapPredicate"])
-                    ar += " | map&lt;%s.%s,&nbsp;%s&gt" % (self.typefmt(tp["items"], redirects),
-                                                           jsonldPredicate[
-                                                               "mapSubject"],
-                                                           self.typefmt(tp["items"], redirects))
+                        ar += " | "
+                        if len(ar) > 40:
+                            ar += "<br>"
+
+                        ar += "map&lt;<code>%s</code>,&nbsp;<code>%s</code> | %s&gt" % (
+                            jsonldPredicate["mapSubject"], jsonldPredicate["mapPredicate"],
+                            self.typefmt(tp["items"], redirects))
+                    else:
+                        ar += " | "
+                        if len(ar) > 40:
+                            ar += "<br>"
+                        ar += "map&lt;<code>%s</code>,&nbsp;%s&gt" % (
+                            jsonldPredicate["mapSubject"],
+                            self.typefmt(tp["items"], redirects))
                 return ar
-            if tp["type"] in ("https://w3id.org/cwl/salad#record", "https://w3id.org/cwl/salad#enum"):
+            if tp["type"] in ("https://w3id.org/cwl/salad#record",
+                              "https://w3id.org/cwl/salad#enum"):
                 frg = cast(Text, schema.avro_name(tp["name"]))
                 if tp["name"] in redirects:
                     return """<a href="%s">%s</a>""" % (redirects[tp["name"]], frg)
-                elif tp["name"] in self.typemap:
+                if tp["name"] in self.typemap:
                     return """<a href="#%s">%s</a>""" % (to_id(frg), frg)
-                else:
-                    return frg
-            if isinstance(tp["type"], dict):
+                return frg
+            if isinstance(tp["type"], MutableMapping):
                 return self.typefmt(tp["type"], redirects)
         else:
             if str(tp) in redirects:
                 return """<a href="%s">%s</a>""" % (redirects[tp], redirects[tp])
-            elif str(tp) in basicTypes:
+            if str(tp) in basicTypes:
                 return """<a href="%s">%s</a>""" % (self.primitiveType, schema.avro_name(str(tp)))
-            else:
-                _, frg = urllib.parse.urldefrag(tp)
-                if frg is not '':
-                    tp = frg
-                return """<a href="#%s">%s</a>""" % (to_id(tp), tp)
+            _, frg = urllib.parse.urldefrag(tp)
+            if frg != '':
+                tp = frg
+            return """<a href="#%s">%s</a>""" % (to_id(tp), tp)
         raise Exception("We should not be here!")
 
-    def render_type(self, f, depth):  # type: (Dict[str, Any], int) -> None
+    def render_type(self, f, depth):  # type: (Dict[Text, Any], int) -> None
         if f["name"] in self.rendered or f["name"] in self.redirects:
             return
         self.rendered.add(f["name"])
@@ -296,7 +303,7 @@ class RenderType(object):
             f["doc"] = ""
 
         def extendsfrom(item, ex):
-            # type: (Dict[str, Any], List[Dict[str, Any]]) -> None
+            # type: (Dict[Text, Any], List[Dict[Text, Any]]) -> None
             if "extends" in item:
                 for e in aslist(item["extends"]):
                     ex.insert(0, self.typemap[e])
@@ -306,7 +313,7 @@ class RenderType(object):
         extendsfrom(f, ex)
 
         enumDesc = {}
-        if f["type"] == "enum" and isinstance(f["doc"], list):
+        if f["type"] == "enum" and isinstance(f["doc"], MutableSequence):
             for e in ex:
                 for i in e["doc"]:
                     idx = i.find(":")
@@ -369,7 +376,7 @@ class RenderType(object):
             optional = []
             for i in f.get("fields", []):
                 tp = i["type"]
-                if isinstance(tp, list) and tp[0] == "https://w3id.org/cwl/salad#null":
+                if isinstance(tp, MutableSequence) and tp[0] == "https://w3id.org/cwl/salad#null":
                     opt = False
                     tp = tp[1:]
                 else:
@@ -421,8 +428,14 @@ class RenderType(object):
             self.render_type(self.typemap[s], depth)
 
 
-def avrold_doc(j, outdoc, renderlist, redirects, brand, brandlink, primtype):
-    # type: (List[Dict[Text, Any]], IO[Any], str, Dict, str, str, str) -> None
+def avrold_doc(j,           # type: List[Dict[Text, Any]]
+               outdoc,      # type: Union[IO[Any], StreamWriter]
+               renderlist,  # type: str
+               redirects,   # type: Dict
+               brand,       # type: str
+               brandlink,   # type: str
+               primtype     # type: str
+              ):  # type: (...) -> None
     toc = ToC()
     toc.start_numbering = False
 
@@ -493,7 +506,7 @@ def avrold_doc(j, outdoc, renderlist, redirects, brand, brandlink, primtype):
     outdoc.write("""
     <div class="col-md-12" role="main" id="main">""")
 
-    outdoc.write(content.encode("utf-8"))
+    outdoc.write(content)
 
     outdoc.write("""</div>""")
 
@@ -526,10 +539,10 @@ def main():  # type: () -> None
         else:
             uri = "file://" + os.path.abspath(a)
             metaschema_loader = schema.get_metaschema()[2]
-            j, schema_metadata = metaschema_loader.resolve_ref(uri, "")
-            if isinstance(j, list):
+            j, _ = metaschema_loader.resolve_ref(uri, "")
+            if isinstance(j, MutableSequence):
                 s.extend(j)
-            elif isinstance(j, dict):
+            elif isinstance(j, MutableMapping):
                 s.append(j)
             else:
                 raise ValueError("Schema must resolve to a list or a dict")
@@ -537,7 +550,15 @@ def main():  # type: () -> None
     for r in (args.redirect or []):
         redirect[r.split("=")[0]] = r.split("=")[1]
     renderlist = args.only if args.only else []
-    avrold_doc(s, sys.stdout, renderlist, redirect, args.brand, args.brandlink, args.primtype)
+    if (hasattr(sys.stdout, "encoding")  # type: ignore
+            and sys.stdout.encoding != 'UTF-8'):  # type: ignore
+        if six.PY3 and hasattr(sys.stdout, "detach"):
+            stdout = TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+        else:
+            stdout = codecs.getwriter('utf-8')(sys.stdout)  # type: ignore
+    else:
+        stdout = cast(TextIOWrapper, sys.stdout)  # type: ignore
+    avrold_doc(s, stdout, renderlist, redirect, args.brand, args.brandlink, args.primtype)
 
 
 if __name__ == "__main__":
