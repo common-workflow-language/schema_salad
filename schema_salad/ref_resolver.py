@@ -213,8 +213,8 @@ class DefaultFetcher(Fetcher):
                     # .. carrying over any #fragment (?query just in case..)
                     return urllib.parse.urlunsplit(
                         ("file", netloc, path_with_drive, split.query, split.fragment))
-                if (not split.scheme and not netloc and
-                        split.path and split.path.startswith("/")):
+                if (not split.scheme and not netloc and split.path
+                        and split.path.startswith("/")):
                     # Relative - but does it have a drive?
                     base_drive = _re_drive.match(basesplit.path)
                     drive = _re_drive.match(split.path)
@@ -365,10 +365,9 @@ class Loader(object):
     def _add_properties(self, s):  # type: (Text) -> None
         for _, _, rng in self.graph.triples((s, RDFS.range, None)):
             literal = ((Text(rng).startswith(
-                u"http://www.w3.org/2001/XMLSchema#") and
-                not Text(rng) == u"http://www.w3.org/2001/XMLSchema#anyURI")
-                or Text(rng) ==
-                u"http://www.w3.org/2000/01/rdf-schema#Literal")
+                u"http://www.w3.org/2001/XMLSchema#")
+                and not Text(rng) == u"http://www.w3.org/2001/XMLSchema#anyURI")
+                or Text(rng) == u"http://www.w3.org/2000/01/rdf-schema#Literal")
             if not literal:
                 self.url_fields.add(Text(s))
         self.foreign_properties.add(Text(s))
@@ -653,7 +652,7 @@ class Loader(object):
 
                     document[idmapField] = ls
 
-    typeDSLregex = re.compile(u"^([^[?]+)(\[\])?(\?)?$")
+    typeDSLregex = re.compile(Text(r"^([^[?]+)(\[\])?(\?)?$"))
 
     def _type_dsl(self,
                   t,        # type: Union[Text, Dict, List]

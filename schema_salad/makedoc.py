@@ -222,9 +222,10 @@ class RenderType(object):
                 raise
 
         for entry in alltypes:
-            if (entry["name"] in renderlist or
-                    ((not renderlist) and ("extends" not in entry) and
-                     ("docParent" not in entry) and ("docAfter" not in entry))):
+            if (entry["name"] in renderlist
+                    or ((not renderlist) and ("extends" not in entry)
+                        and ("docParent" not in entry)
+                        and ("docAfter" not in entry))):
                 self.render_type(entry, 1)
 
     def typefmt(self,
