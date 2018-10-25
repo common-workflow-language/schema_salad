@@ -220,8 +220,10 @@ def validate_ex(expected_schema,                  # type: Schema
                 continue
             elif isinstance(datum, MutableMapping) and not isinstance(s, avro.schema.RecordSchema):
                 continue
-            elif (isinstance(datum, (bool, six.integer_types, float, six.string_types)) and  # type: ignore
-                  isinstance(s, (avro.schema.ArraySchema, avro.schema.RecordSchema))):
+            elif (isinstance(  # type: ignore
+                    datum, (bool, six.integer_types, float, six.string_types))
+                    and isinstance(s, (avro.schema.ArraySchema,
+                                       avro.schema.RecordSchema))):
                 continue
             elif datum is not None and s.type == "null":
                 continue
