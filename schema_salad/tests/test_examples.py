@@ -1,23 +1,26 @@
-from __future__ import absolute_import
-from __future__ import print_function
-from .util import get_data
-import unittest
-import schema_salad.ref_resolver
-import schema_salad.main
-import schema_salad.schema
-from schema_salad.jsonld_context import makerdf
-import rdflib
-import ruamel.yaml
+from __future__ import absolute_import, print_function
+
 import json
 import os
-from schema_salad.sourceline import cmap, SourceLine
+import unittest
+
+import rdflib
+import ruamel.yaml
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
+
+import schema_salad.main
+import schema_salad.ref_resolver
+import schema_salad.schema
+from schema_salad.jsonld_context import makerdf
+from schema_salad.sourceline import SourceLine, cmap
+
+from .util import get_data
 
 try:
     from ruamel.yaml import CSafeLoader as SafeLoader
 except ImportError:
     from ruamel.yaml import SafeLoader  # type: ignore
 
-from ruamel.yaml.comments import CommentedSeq, CommentedMap
 
 
 class TestSchemas(unittest.TestCase):

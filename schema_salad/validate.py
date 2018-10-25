@@ -1,17 +1,18 @@
 from __future__ import absolute_import
-import pprint
-import avro.schema
-from avro.schema import Schema
-import sys
-import re
+
 import logging
+import pprint
+from typing import Any, List, MutableMapping, MutableSequence, Set, Union
 
+import avro.schema  # pylint: disable=no-name-in-module, import-error
 import six
-from six.moves import urllib
-from six.moves import range
+from avro.schema import \
+    Schema  # pylint: disable=unused-import, no-name-in-module, import-error
+from six.moves import range, urllib
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
-from typing import Any, List, Set, Union, Text
-from .sourceline import SourceLine, lineno_re, bullets, indent
+from .sourceline import SourceLine, bullets, indent
 
 _logger = logging.getLogger("salad")
 
@@ -25,11 +26,15 @@ class ClassValidationException(ValidationException):
 
 def validate(expected_schema,           # type: Schema
              datum,                     # type: Any
-             identifiers=[],            # type: List[Text]
+             identifiers=None,          # type: List[Text]
              strict=False,              # type: bool
-             foreign_properties=set()   # type: Set[Text]
+             foreign_properties=None    # type: Set[Text]
              ):
     # type: (...) -> bool
+    if not identifiers:
+        identifiers = []
+    if not foreign_properties:
+        foreign_properties = set()
     return validate_ex(
         expected_schema, datum, identifiers, strict=strict,
         foreign_properties=foreign_properties, raise_ex=False)
@@ -173,7 +178,7 @@ def validate_ex(expected_schema,                  # type: Schema
             else:
                 return False
     elif isinstance(expected_schema, avro.schema.ArraySchema):
-        if isinstance(datum, list):
+        if isinstance(datum, MutableSequence):
             for i, d in enumerate(datum):
                 try:
                     sl = SourceLine(datum, i, ValidationException)
@@ -211,9 +216,9 @@ def validate_ex(expected_schema,                  # type: Schema
         errors = []  # type: List[Text]
         checked = []
         for s in expected_schema.schemas:
-            if isinstance(datum, list) and not isinstance(s, avro.schema.ArraySchema):
+            if isinstance(datum, MutableSequence) and not isinstance(s, avro.schema.ArraySchema):
                 continue
-            elif isinstance(datum, dict) and not isinstance(s, avro.schema.RecordSchema):
+            elif isinstance(datum, MutableMapping) and not isinstance(s, avro.schema.RecordSchema):
                 continue
             elif (isinstance(datum, (bool, six.integer_types, float, six.string_types)) and  # type: ignore
                   isinstance(s, (avro.schema.ArraySchema, avro.schema.RecordSchema))):
@@ -240,7 +245,7 @@ def validate_ex(expected_schema,                  # type: Schema
                 type(datum).__name__, friendly(expected_schema)))
 
     elif isinstance(expected_schema, avro.schema.RecordSchema):
-        if not isinstance(datum, dict):
+        if not isinstance(datum, MutableMapping):
             if raise_ex:
                 raise ValidationException(u"is not a dict")
             else:
@@ -314,15 +319,15 @@ def validate_ex(expected_schema,                  # type: Schema
                             if strict_foreign_properties:
                                 errors.append(err)
                             else:
-                                logger.warn(err)
-                                logger.warn("foreign properties %s", foreign_properties)
+                                logger.warning(err)
+                                logger.warning("foreign properties %s", foreign_properties)
                     else:
                         err = sl.makeError(u"invalid field `%s`, expected one of: %s" % (
                             d, ", ".join("'%s'" % fn.name for fn in expected_schema.fields)))
                         if strict:
                             errors.append(err)
                         else:
-                            logger.warn(err)
+                            logger.warning(err)
 
         if bool(errors):
             if raise_ex:

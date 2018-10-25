@@ -1,43 +1,33 @@
 from __future__ import absolute_import
-import collections
-import shutil
-import json
 
+import logging
+from typing import (Any, Dict, Iterable, List,  # pylint: disable=unused-import
+                    MutableMapping, MutableSequence, Optional, Tuple, Union,
+                    cast)
+
+import rdflib
+import rdflib.namespace
+from rdflib import Graph, URIRef
+from rdflib.namespace import RDF, RDFS
 import six
 from six.moves import urllib
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
-import ruamel.yaml as yaml
-try:
-    from ruamel.yaml import CSafeLoader as SafeLoader
-except ImportError:
-    from ruamel.yaml import SafeLoader  # type: ignore
-import os
-import subprocess
-import copy
-import pprint
-import re
-import sys
-import rdflib
-from rdflib import Graph, URIRef
-import rdflib.namespace
-from rdflib.namespace import RDF, RDFS
-import logging
-from schema_salad.utils import aslist
-from typing import (cast, Any, Dict, Iterable, List, Optional, Text, Tuple,
-    Union)
-from .ref_resolver import Loader, ContextType
+from .ref_resolver import ContextType  # pylint: disable=unused-import
+from .utils import aslist, json_dumps
+
 
 _logger = logging.getLogger("salad")
 
 
-def pred(datatype,      # type: Dict[str, Union[Dict, str]]
+def pred(datatype,      # type: MutableMapping[Text, Union[Dict, Text]]
          field,         # type: Optional[Dict]
          name,          # type: str
          context,       # type: ContextType
          defaultBase,   # type: str
          namespaces     # type: Dict[str, rdflib.namespace.Namespace]
-         ):
-    # type: (...) -> Union[Dict, Text]
+        ):  # type: (...) -> Union[Dict, Text]
     split = urllib.parse.urlsplit(name)
 
     vee = None  # type: Optional[Text]
@@ -53,7 +43,7 @@ def pred(datatype,      # type: Dict[str, Union[Dict, str]]
     v = None  # type: Optional[Dict]
 
     if field is not None and "jsonldPredicate" in field:
-        if isinstance(field["jsonldPredicate"], dict):
+        if isinstance(field["jsonldPredicate"], MutableMapping):
             v = {}
             for k, val in field["jsonldPredicate"].items():
                 v[("@" + k[1:] if k.startswith("_") else k)] = val
@@ -62,9 +52,9 @@ def pred(datatype,      # type: Dict[str, Union[Dict, str]]
         else:
             v = field["jsonldPredicate"]
     elif "jsonldPredicate" in datatype:
-        if isinstance(datatype["jsonldPredicate"], collections.Iterable):
+        if isinstance(datatype["jsonldPredicate"], Iterable):
             for d in datatype["jsonldPredicate"]:
-                if isinstance(d, dict):
+                if isinstance(d, MutableMapping):
                     if d["symbol"] == name:
                         v = d["predicate"]
                 else:
@@ -90,14 +80,13 @@ def pred(datatype,      # type: Dict[str, Union[Dict, str]]
     return ret
 
 
-def process_type(t,             # type: Dict[str, Any]
+def process_type(t,             # type: MutableMapping[Text, Any]
                  g,             # type: Graph
                  context,       # type: ContextType
                  defaultBase,   # type: str
                  namespaces,    # type: Dict[str, rdflib.namespace.Namespace]
                  defaultPrefix  # type: str
-                 ):
-    # type: (...) -> None
+                ):  # type: (...) -> None
     if t["type"] not in ("record", "enum"):
         return
 
@@ -137,7 +126,7 @@ def process_type(t,             # type: Dict[str, Any]
             _logger.debug("Processing field %s", i)
 
             v = pred(t, i, fieldname, context, defaultPrefix,
-                    namespaces)  # type: Union[Dict[Any, Any], Text, None]
+                     namespaces)  # type: Union[Dict[Any, Any], Text, None]
 
             if isinstance(v, six.string_types):
                 v = v if v[0] != "@" else None
@@ -156,7 +145,7 @@ def process_type(t,             # type: Dict[str, Any]
 
                 # TODO generate range from datatype.
 
-            if isinstance(i["type"], dict):
+            if isinstance(i["type"], MutableMapping):
                 process_type(i["type"], g, context, defaultBase,
                              namespaces, defaultPrefix)
 
@@ -196,17 +185,16 @@ def salad_to_jsonld_context(j, schema_ctx):
     return (context, g)
 
 
-def fix_jsonld_ids(obj,     # type: Union[Dict[Text, Any], List[Dict[Text, Any]]]
-                   ids      # type: List[Text]
-                   ):
-    # type: (...) -> None
-    if isinstance(obj, dict):
+def fix_jsonld_ids(obj,  # type: Union[Dict[Text, Any], List[Dict[Text, Any]]]
+                   ids   # type: List[Text]
+                  ):  # type: (...) -> None
+    if isinstance(obj, MutableMapping):
         for i in ids:
             if i in obj:
                 obj["@id"] = obj[i]
         for v in obj.values():
             fix_jsonld_ids(v, ids)
-    if isinstance(obj, list):
+    if isinstance(obj, MutableSequence):
         for entry in obj:
             fix_jsonld_ids(entry, ids)
 
@@ -215,12 +203,11 @@ def makerdf(workflow,       # type: Text
             wf,             # type: Union[List[Dict[Text, Any]], Dict[Text, Any]]
             ctx,            # type: ContextType
             graph=None      # type: Graph
-            ):
-    # type: (...) -> Graph
+           ):  # type: (...) -> Graph
     prefixes = {}
     idfields = []
     for k, v in six.iteritems(ctx):
-        if isinstance(v, dict):
+        if isinstance(v, MutableMapping):
             url = v["@id"]
         else:
             url = v
@@ -238,13 +225,13 @@ def makerdf(workflow,       # type: Text
     else:
         g = graph
 
-    if isinstance(wf, list):
+    if isinstance(wf, MutableSequence):
         for w in wf:
             w["@context"] = ctx
-            g.parse(data=json.dumps(w), format='json-ld', publicID=str(workflow))
+            g.parse(data=json_dumps(w), format='json-ld', publicID=str(workflow))
     else:
         wf["@context"] = ctx
-        g.parse(data=json.dumps(wf), format='json-ld', publicID=str(workflow))
+        g.parse(data=json_dumps(wf), format='json-ld', publicID=str(workflow))
 
     # Bug in json-ld loader causes @id fields to be added to the graph
     for sub, pred, obj in g.triples((None, URIRef("@id"), None)):

@@ -1,8 +1,9 @@
-import schema_salad.metaschema as cg_metaschema
-import unittest
+import json
 import logging
 import os
-import json
+import unittest
+
+import schema_salad.metaschema as cg_metaschema
 from schema_salad.ref_resolver import file_uri
 
 from .matcher import JsonDiffMatcher
@@ -162,14 +163,14 @@ class TestGeneratedMetaschema(unittest.TestCase):
         doc = cg_metaschema.load_document(file_uri(get_data("metaschema/metaschema.yml")), "", cg_metaschema.LoadingOptions())
         with open(get_data("tests/metaschema-pre.yml")) as f:
             pre = json.load(f)
-        saved = [d.save() for d in doc]
+        saved = [d.save(relative_uris=False) for d in doc]
         self.assertEqual(saved, JsonDiffMatcher(pre))
 
     def test_load_cwlschema(self):
         doc = cg_metaschema.load_document(file_uri(get_data("tests/test_schema/CommonWorkflowLanguage.yml")), "", cg_metaschema.LoadingOptions())
         with open(get_data("tests/cwl-pre.yml")) as f:
             pre = json.load(f)
-        saved = [d.save() for d in doc]
+        saved = [d.save(relative_uris=False) for d in doc]
         self.assertEqual(saved, JsonDiffMatcher(pre))
 
 

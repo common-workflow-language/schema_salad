@@ -1,12 +1,17 @@
-from .util import get_data
+import re
 import unittest
-from schema_salad.main import to_one_line_messages, reformat_yaml_exception_message
-from schema_salad.schema import load_schema, load_and_validate
+from os.path import normpath
+
+import six
+
+from schema_salad.main import (reformat_yaml_exception_message,
+                               to_one_line_messages)
+from schema_salad.schema import load_and_validate, load_schema
 from schema_salad.sourceline import strip_dup_lineno
 from schema_salad.validate import ValidationException
-from os.path import normpath
-import re
-import six
+
+from .util import get_data
+
 
 class TestPrintOneline(unittest.TestCase):
     def test_print_oneline(self):
@@ -117,6 +122,7 @@ class TestPrintOneline(unittest.TestCase):
                                   six.text_type(get_data("tests/test_schema/"+src)), True)
             except RuntimeError as e:
                 msg = reformat_yaml_exception_message(strip_dup_lineno(six.text_type(e)))
-                self.assertTrue(msg.endswith(src+":1:1: expected <block end>, but found ':'"))
+                self.assertTrue(msg.endswith(src+":1:1: expected <block end>, but found ':'")
+                                or msg.endswith(src+":1:1: expected <block end>, but found u':'"))
                 print("\n", e)
                 raise

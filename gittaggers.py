@@ -1,6 +1,8 @@
-from setuptools.command.egg_info import egg_info
 import subprocess
 import time
+
+from setuptools.command.egg_info import egg_info
+
 
 class EggInfoFromGit(egg_info):
     """Tag the build with git commit timestamp.
@@ -21,3 +23,4 @@ class EggInfoFromGit(egg_info):
             except (subprocess.CalledProcessError, OSError):
                 pass
         return egg_info.tags(self)
+    vtags = property(tags)

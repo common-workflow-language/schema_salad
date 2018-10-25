@@ -1,12 +1,14 @@
 from __future__ import absolute_import
-import unittest
+
 import sys
+import unittest
+# for capturing print() output
+from contextlib import contextmanager
+
+from six import StringIO
 
 import schema_salad.main as cli_parser
 
-# for capturing print() output
-from contextlib import contextmanager
-from six import StringIO
 
 @contextmanager
 def captured_output():

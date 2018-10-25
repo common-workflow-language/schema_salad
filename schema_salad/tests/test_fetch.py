@@ -1,16 +1,19 @@
-from __future__ import absolute_import
-from __future__ import print_function
-import unittest
-import schema_salad.ref_resolver
-import schema_salad.main
-import schema_salad.schema
-from schema_salad.jsonld_context import makerdf
-import rdflib
-import ruamel.yaml as yaml
+from __future__ import absolute_import, print_function
+
 import json
 import os
+import unittest
 from typing import Text
+
+import rdflib
+import ruamel.yaml as yaml
 from six.moves import urllib
+
+import schema_salad.main
+import schema_salad.ref_resolver
+import schema_salad.schema
+from schema_salad.jsonld_context import makerdf
+
 
 class TestFetcher(unittest.TestCase):
     def test_fetcher(self):

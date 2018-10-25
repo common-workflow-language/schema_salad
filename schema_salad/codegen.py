@@ -1,92 +1,96 @@
-import json
+"""Generate langauge specific loaders for a particular SALAD schema."""
 import sys
-from six.moves import urllib, cStringIO
-import collections
-import logging
-from pkg_resources import resource_stream
-from .utils import aslist, flatten
-from . import schema
-from .codegen_base import shortname, CodeGenBase
-from .python_codegen import PythonCodeGen
-from .java_codegen import JavaCodeGen
-from .ref_resolver import Loader
-from typing import Any, Dict, List, Optional, Text, Union
-from ruamel.yaml.comments import CommentedSeq, CommentedMap
+from typing import Any, Dict, List, MutableMapping, Optional, Union
 
-class GoCodeGen(object):
-    pass
+from typing_extensions import Text  # pylint: disable=unused-import
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+
+from . import schema
+from .codegen_base import CodeGenBase
+from .java_codegen import JavaCodeGen
+from .python_codegen import PythonCodeGen
+from .ref_resolver import Loader  # pylint: disable=unused-import
+from .schema import shortname
+from .utils import aslist
 
 
 def codegen(lang,             # type: str
             i,                # type: List[Dict[Text, Any]]
             schema_metadata,  # type: Dict[Text, Any]
             loader            # type: Loader
-           ):
-    # type: (...) -> None
+           ):  # type: (...) -> None
+    """Generate classes with loaders for the given Schema Salad description."""
 
     j = schema.extend_and_specialize(i, loader)
 
-    cg = None  # type: Optional[CodeGenBase]
+    gen = None  # type: Optional[CodeGenBase]
     if lang == "python":
-        cg = PythonCodeGen(sys.stdout)
+        gen = PythonCodeGen(sys.stdout)
     elif lang == "java":
-        cg = JavaCodeGen(schema_metadata.get("$base", schema_metadata.get("id")))
+        gen = JavaCodeGen(schema_metadata.get("$base", schema_metadata.get("id")))
     else:
         raise Exception("Unsupported code generation language '%s'" % lang)
-    assert cg is not None
+    assert gen is not None
 
-    cg.prologue()
+    gen.prologue()
 
-    documentRoots = []
+    document_roots = []
 
     for rec in j:
         if rec["type"] in ("enum", "record"):
-            cg.type_loader(rec)
-            cg.add_vocab(shortname(rec["name"]), rec["name"])
+            gen.type_loader(rec)
+            gen.add_vocab(shortname(rec["name"]), rec["name"])
 
     for rec in j:
         if rec["type"] == "enum":
-            for s in rec["symbols"]:
-                cg.add_vocab(shortname(s), s)
+            for symbol in rec["symbols"]:
+                gen.add_vocab(shortname(symbol), symbol)
 
         if rec["type"] == "record":
             if rec.get("documentRoot"):
-                documentRoots.append(rec["name"])
+                document_roots.append(rec["name"])
 
             field_names = []
-            for f in rec.get("fields", []):
-                field_names.append(shortname(f["name"]))
+            for field in rec.get("fields", []):
+                field_names.append(shortname(field["name"]))
 
-            cg.begin_class(rec["name"], aslist(rec.get("extends", [])), rec.get("doc", ""),
-                           rec.get("abstract", False), field_names)
-            cg.add_vocab(shortname(rec["name"]), rec["name"])
+            idfield = ""
+            for field in rec.get("fields", []):
+                if field.get("jsonldPredicate") == "@id":
+                    idfield = field.get("name")
 
-            for f in rec.get("fields", []):
-                if f.get("jsonldPredicate") == "@id":
-                    fieldpred = f["name"]
-                    optional = bool("https://w3id.org/cwl/salad#null" in f["type"])
-                    tl = cg.uri_loader(cg.type_loader(f["type"]), True, False, None)
-                    cg.declare_id_field(fieldpred, tl, f.get("doc"), optional)
+            gen.begin_class(rec["name"], aslist(rec.get("extends", [])), rec.get("doc", ""),
+                            rec.get("abstract", False), field_names, idfield)
+            gen.add_vocab(shortname(rec["name"]), rec["name"])
+
+            for field in rec.get("fields", []):
+                if field.get("jsonldPredicate") == "@id":
+                    fieldpred = field["name"]
+                    optional = bool("https://w3id.org/cwl/salad#null" in field["type"])
+                    uri_loader = gen.uri_loader(gen.type_loader(field["type"]), True, False, None)
+                    gen.declare_id_field(fieldpred, uri_loader, field.get("doc"), optional)
                     break
 
-            for f in rec.get("fields", []):
-                optional = bool("https://w3id.org/cwl/salad#null" in f["type"])
-                tl = cg.type_loader(f["type"])
-                jld = f.get("jsonldPredicate")
-                fieldpred = f["name"]
-                if isinstance(jld, dict):
-                    refScope = jld.get("refScope")
+            for field in rec.get("fields", []):
+                optional = bool("https://w3id.org/cwl/salad#null" in field["type"])
+                type_loader = gen.type_loader(field["type"])
+                jld = field.get("jsonldPredicate")
+                fieldpred = field["name"]
+                if isinstance(jld, MutableMapping):
+                    ref_scope = jld.get("refScope")
 
                     if jld.get("typeDSL"):
-                        tl = cg.typedsl_loader(tl, refScope)
+                        type_loader = gen.typedsl_loader(type_loader, ref_scope)
                     elif jld.get("_type") == "@id":
-                        tl = cg.uri_loader(tl, jld.get("identity", False), False, refScope)
+                        type_loader = gen.uri_loader(type_loader, jld.get("identity", False),
+                                                     False, ref_scope)
                     elif jld.get("_type") == "@vocab":
-                        tl = cg.uri_loader(tl, False, True, refScope)
+                        type_loader = gen.uri_loader(type_loader, False, True, ref_scope)
 
-                    mapSubject = jld.get("mapSubject")
-                    if mapSubject:
-                        tl = cg.idmap_loader(f["name"], tl, mapSubject, jld.get("mapPredicate"))
+                    map_subject = jld.get("mapSubject")
+                    if map_subject:
+                        type_loader = gen.idmap_loader(
+                            field["name"], type_loader, map_subject, jld.get("mapPredicate"))
 
                     if "_id" in jld and jld["_id"][0] != "@":
                         fieldpred = jld["_id"]
@@ -94,14 +98,14 @@ def codegen(lang,             # type: str
                 if jld == "@id":
                     continue
 
-                cg.declare_field(fieldpred, tl, f.get("doc"), optional)
+                gen.declare_field(fieldpred, type_loader, field.get("doc"), optional)
 
-            cg.end_class(rec["name"], field_names)
+            gen.end_class(rec["name"], field_names)
 
-    rootType = list(documentRoots)
-    rootType.append({
+    root_type = list(document_roots)
+    root_type.append({
         "type": "array",
-        "items": documentRoots
+        "items": document_roots
     })
 
-    cg.epilogue(cg.type_loader(rootType))
+    gen.epilogue(gen.type_loader(root_type))

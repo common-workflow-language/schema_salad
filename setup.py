@@ -5,7 +5,7 @@ import os
 import sys
 
 import setuptools.command.egg_info as egg_info_cmd
-from setuptools import setup, find_packages
+from setuptools import setup
 
 SETUP_DIR = os.path.dirname(__file__)
 README = os.path.join(SETUP_DIR, 'README.rst')
@@ -29,17 +29,18 @@ else:
 install_requires = [
     'setuptools',
     'requests >= 1.0',
-    'ruamel.yaml >= 0.12.4, < 0.15',
+    'ruamel.yaml >= 0.12.4, < 0.16',
     'rdflib >= 4.2.2, < 4.3.0',
     'rdflib-jsonld >= 0.3.0, < 0.5.0',
-    'mistune >= 0.7.3, < 0.8',
-    'typing >= 3.5.3',
+    'mistune >= 0.8.1, < 0.9',
     'CacheControl >= 0.11.7, < 0.12',
     'lockfile >= 0.9',
-    'six >= 1.8.0']
+    'six >= 1.8.0',
+    'typing-extensions']
 
 extras_require={
     ':python_version<"3"': ['avro == 1.8.1'],
+    ':python_version<"3.7"': ['typing >= 3.6.4'],
     ':python_version>="3"': ['future', 'avro-cwl == 1.8.4']  # fork of avro for working with python3
 }
 
@@ -49,8 +50,8 @@ setup(name='schema-salad',
       long_description=open(README).read(),
       author='Common workflow language working group',
       author_email='common-workflow-language@googlegroups.com',
-      url="https://github.com/common-workflow-language/common-workflow-language",
-      download_url="https://github.com/common-workflow-language/common-workflow-language",
+      url="https://github.com/common-workflow-language/schema_salad",
+      download_url="https://github.com/common-workflow-language/schema_salad/releases",
       license='Apache 2.0',
       setup_requires=[] + pytest_runner,
       packages=["schema_salad", "schema_salad.tests"],
@@ -76,6 +77,7 @@ setup(name='schema-salad',
           "Programming Language :: Python :: 2.7",
           "Programming Language :: Python :: 3.4",
           "Programming Language :: Python :: 3.5",
-          "Programming Language :: Python :: 3.6"
+          "Programming Language :: Python :: 3.6",
+          "Programming Language :: Python :: 3.7"
       ]
       )
