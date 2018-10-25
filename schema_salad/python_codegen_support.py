@@ -263,7 +263,7 @@ class _URILoader(_Loader):
         return self.inner.load(doc, baseuri, loadingOptions)
 
 class _TypeDSLLoader(_Loader):
-    typeDSLregex = re.compile(u"^([^[?]+)(\[\])?(\?)?$")
+    typeDSLregex = re.compile(r"^([^[?]+)(\[\])?(\?)?$")
 
     def __init__(self, inner, refScope):
         # type: (_Loader, Union[int, None]) -> None
