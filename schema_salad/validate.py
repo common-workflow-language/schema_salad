@@ -322,7 +322,7 @@ def validate_ex(expected_schema,                  # type: Schema
                                 errors.append(err)
                             else:
                                 logger.warning(err)
-                                logger.warning("foreign properties %s", foreign_properties)
+                                logger.debug("foreign properties %s", foreign_properties)
                     else:
                         err = sl.makeError(u"invalid field `%s`, expected one of: %s" % (
                             d, ", ".join("'%s'" % fn.name for fn in expected_schema.fields)))
