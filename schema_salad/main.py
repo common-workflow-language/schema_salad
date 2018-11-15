@@ -125,6 +125,10 @@ def main(argsl=None):  # type: (List[str]) -> int
                         help="Output RDF serialization format used by --print-rdf (one of turtle (default), n3, nt, xml)",
                         default="turtle")
 
+    parser.add_argument("--skip-schemas", action="store_true", default=False, help="If specified, ignore $schemas sections.")
+    parser.add_argument("--strict-foreign-properties", action="store_true", help="Strict checking of foreign properties",
+                        default=False)
+
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--print-jsonld-context", action="store_true",
                          help="Print JSON-LD context for schema")
@@ -234,11 +238,9 @@ def main(argsl=None):  # type: (List[str]) -> int
         return 1
 
     # Get the json-ld context and RDFS representation from the schema
-    metactx = CommentedMap()  # type: Dict[str, str]
-    if isinstance(schema_raw_doc, Mapping):
-        metactx = schema_raw_doc.get("$namespaces", CommentedMap())
-        if "$base" in schema_raw_doc:
-            metactx["@base"] = schema_raw_doc["$base"]
+    metactx = schema.collect_namespaces(schema_metadata)
+    if "$base" in schema_metadata:
+        metactx["@base"] = schema_metadata["$base"]
     if schema_doc is not None:
         (schema_ctx, rdfs) = jsonld_context.salad_to_jsonld_context(
             schema_doc, metactx)
@@ -246,7 +248,7 @@ def main(argsl=None):  # type: (List[str]) -> int
         raise Exception("schema_doc is None??")
 
     # Create the loader that will be used to load the target document.
-    document_loader = Loader(schema_ctx)
+    document_loader = Loader(schema_ctx, skip_schemas=args.skip_schemas)
 
     if args.codegen:
         codegen.codegen(args.codegen, cast(List[Dict[Text, Any]], schema_doc),
@@ -309,7 +311,7 @@ def main(argsl=None):  # type: (List[str]) -> int
         uri = args.document
         if not urllib.parse.urlparse(uri)[0]:
             doc = "file://" + os.path.abspath(uri)
-        document, doc_metadata = document_loader.resolve_ref(uri)
+        document, doc_metadata = document_loader.resolve_ref(uri, strict_foreign_properties=args.strict_foreign_properties)
     except validate.ValidationException as e:
         msg = strip_dup_lineno(six.text_type(e))
         msg = to_one_line_messages(str(msg)) if args.print_oneline else msg
@@ -333,10 +335,11 @@ def main(argsl=None):  # type: (List[str]) -> int
         print(json_dumps(list(document_loader.idx.keys()), indent=4))
         return 0
 
-    # Validate the schema document against the metaschema
+    # Validate the user document against the schema
     try:
         schema.validate_doc(avsc_names, document,
-                            document_loader, args.strict)
+                            document_loader, args.strict,
+                            strict_foreign_properties=args.strict_foreign_properties)
     except validate.ValidationException as e:
         msg = to_one_line_messages(str(e)) if args.print_oneline else str(e)
         _logger.error("While validating document `%s`:\n%s" %
