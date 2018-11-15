@@ -315,14 +315,13 @@ def validate_ex(expected_schema,                  # type: Schema
                     if split.scheme:
                         if not skip_foreign_properties:
                             err = sl.makeError(u"unrecognized extension field `%s`%s."
-                                               "  Did you include "
-                                               "a $schemas section?" % (
-                                                   d, " and strict_foreign_properties is True" if strict_foreign_properties else ""))
+                                               "  Enable debug for list of known foreign properties." % (
+                                                   d, " and strict_foreign_properties checking is enabled" if strict_foreign_properties else ""))
                             if strict_foreign_properties:
                                 errors.append(err)
-                            else:
+                            elif len(foreign_properties) > 0:
                                 logger.warning(err)
-                                logger.debug("foreign properties %s", foreign_properties)
+                                logger.debug("Foreign properties from $schemas: %s", foreign_properties)
                     else:
                         err = sl.makeError(u"invalid field `%s`, expected one of: %s" % (
                             d, ", ".join("'%s'" % fn.name for fn in expected_schema.fields)))
