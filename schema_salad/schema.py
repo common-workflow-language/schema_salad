@@ -199,6 +199,7 @@ def get_metaschema():
     return (sch_names, j, loader)
 
 def add_namespaces(metadata, namespaces):
+    # type: (MutableMapping[Text, Any], MutableMapping[Text, Text]) -> None
     for k,v in metadata.items():
         if k not in namespaces:
             namespaces[k] = v
@@ -207,7 +208,7 @@ def add_namespaces(metadata, namespaces):
                                                namespaces[k], v)
 
 def collect_namespaces(metadata):  # type: (MutableMapping[Text, Any]) -> MutableMapping[Text, Text]
-    namespaces = {}
+    namespaces = {}  # type: Dict[Text, Text]
     if "$import_metadata" in metadata:
         for k,v in metadata["$import_metadata"].items():
             add_namespaces(collect_namespaces(v), namespaces)
@@ -247,11 +248,11 @@ def load_schema(schema_ref,  # type: Union[CommentedMap, CommentedSeq, Text]
     return document_loader, avsc_names, schema_metadata, metaschema_loader
 
 
-def load_and_validate(document_loader,  # type: Loader
-                      avsc_names,       # type: Names
-                      document,         # type: Union[CommentedMap, Text]
-                      strict,           # type: bool
-                      checklinks=False  # type: bool
+def load_and_validate(document_loader,                 # type: Loader
+                      avsc_names,                      # type: Names
+                      document,                        # type: Union[CommentedMap, Text]
+                      strict,                          # type: bool
+                      strict_foreign_properties=False  # type: bool
                       ):
     # type: (...) -> Tuple[Any, Dict[Text, Any]]
     """Load a document and validate it with the provided schema.
@@ -262,29 +263,20 @@ def load_and_validate(document_loader,  # type: Loader
         if isinstance(document, CommentedMap):
             source = document["id"]
             data, metadata = document_loader.resolve_all(
-                document, document["id"], checklinks=checklinks)
+                document, document["id"], checklinks=True,
+                strict_foreign_properties=strict_foreign_properties)
         else:
             source = document
             data, metadata = document_loader.resolve_ref(
-                document, checklinks=checklinks)
+                document, checklinks=True,
+                strict_foreign_properties=strict_foreign_properties)
+
+        validate_doc(avsc_names, data, document_loader, strict, source=source,
+                     strict_foreign_properties=strict_foreign_properties)
+
+        return data, metadata
     except validate.ValidationException as v:
         raise validate.ValidationException(strip_dup_lineno(str(v)))
-
-    validationErrors = u""
-    try:
-        document_loader.validate_links(data, u"", {})
-    except validate.ValidationException as v:
-        validationErrors = Text(v) + "\n"
-
-    try:
-        validate_doc(avsc_names, data, document_loader, strict, source=source)
-    except validate.ValidationException as v:
-        validationErrors += Text(v)
-
-    if validationErrors != u"":
-        raise validate.ValidationException(validationErrors)
-
-    return data, metadata
 
 
 def validate_doc(schema_names,  # type: Names

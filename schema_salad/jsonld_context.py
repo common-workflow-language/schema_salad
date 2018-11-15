@@ -26,7 +26,7 @@ def pred(datatype,      # type: MutableMapping[Text, Union[Dict, Text]]
          name,          # type: str
          context,       # type: ContextType
          defaultBase,   # type: str
-         namespaces     # type: Dict[str, rdflib.namespace.Namespace]
+         namespaces     # type: Dict[Text, rdflib.namespace.Namespace]
         ):  # type: (...) -> Union[Dict, Text]
     split = urllib.parse.urlsplit(name)
 
@@ -84,7 +84,7 @@ def process_type(t,             # type: MutableMapping[Text, Any]
                  g,             # type: Graph
                  context,       # type: ContextType
                  defaultBase,   # type: str
-                 namespaces,    # type: Dict[str, rdflib.namespace.Namespace]
+                 namespaces,    # type: Dict[Text, rdflib.namespace.Namespace]
                  defaultPrefix  # type: str
                 ):  # type: (...) -> None
     if t["type"] not in ("record", "enum"):
@@ -160,7 +160,7 @@ def process_type(t,             # type: MutableMapping[Text, Any]
 
 
 def salad_to_jsonld_context(j, schema_ctx):
-    # type: (Iterable, Dict[str, Any]) -> Tuple[ContextType, Graph]
+    # type: (Iterable, MutableMapping[Text, Any]) -> Tuple[ContextType, Graph]
     context = {}  # type: ContextType
     namespaces = {}
     g = Graph()
@@ -177,7 +177,7 @@ def salad_to_jsonld_context(j, schema_ctx):
         defaultBase = ""
 
     for k, v in namespaces.items():
-        g.bind(k, v)
+        g.bind(str(k), v)
 
     for t in j:
         process_type(t, g, context, defaultBase, namespaces, defaultPrefix)

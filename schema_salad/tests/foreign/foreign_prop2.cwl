@@ -1,6 +1,6 @@
 doc: |
-  Foreign properties test.  Should pass 'edam' prefix is valid but no
-  schema is imported that would all for further checking.
+  Foreign properties test.  If strict_foreign_properties is true, it
+  should fail.  If false, should pass no warnings.
 cwlVersion: v1.0
 class: CommandLineTool
 $namespaces:

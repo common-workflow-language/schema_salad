@@ -12,7 +12,7 @@ from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
-from .sourceline import SourceLine, bullets, indent
+from .sourceline import SourceLine, bullets, indent, strip_dup_lineno
 
 _logger = logging.getLogger("salad")
 
@@ -323,7 +323,7 @@ def validate_ex(expected_schema,                  # type: Schema
                             if strict_foreign_properties:
                                 errors.append(err)
                             elif len(foreign_properties) > 0:
-                                logger.warning(err)
+                                logger.warning(strip_dup_lineno(err))
                     else:
                         err = sl.makeError(u"invalid field `%s`, expected one of: %s" % (
                             d, ", ".join("'%s'" % fn.name for fn in expected_schema.fields)))

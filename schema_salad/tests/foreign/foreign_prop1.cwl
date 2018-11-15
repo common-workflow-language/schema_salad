@@ -1,6 +1,7 @@
 doc: |
-  Foreign properties test case. Should pass with a warning about
-  unrecognized prefix 'edam'
+  Foreign properties test.  This property is not part of the supplied
+  ontology.  If strict_foreign_properties is true, it should fail.  If
+  false, should pass with a warning about unrecognized prefix 'edam'.
 cwlVersion: v1.0
 class: CommandLineTool
 inputs: []

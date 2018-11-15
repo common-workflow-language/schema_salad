@@ -311,7 +311,7 @@ def main(argsl=None):  # type: (List[str]) -> int
         uri = args.document
         if not urllib.parse.urlparse(uri)[0]:
             doc = "file://" + os.path.abspath(uri)
-        document, doc_metadata = document_loader.resolve_ref(uri)
+        document, doc_metadata = document_loader.resolve_ref(uri, strict_foreign_properties=args.strict_foreign_properties)
     except validate.ValidationException as e:
         msg = strip_dup_lineno(six.text_type(e))
         msg = to_one_line_messages(str(msg)) if args.print_oneline else msg

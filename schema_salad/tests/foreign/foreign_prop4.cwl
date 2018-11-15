@@ -1,6 +1,7 @@
 doc: |
-  Foreign properties test.  Should pass with a warning because the
-  property is not valid in the ontology.
+  Foreign properties test.  This property is not part of the supplied
+  ontology.  If strict_foreign_properties is true, it should fail.  If
+  false, should pass with a warning.
 cwlVersion: v1.0
 $schemas:
   - ../EDAM.owl
