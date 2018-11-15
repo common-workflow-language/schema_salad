@@ -113,8 +113,10 @@ class Fetcher(object):
     def urljoin(self, base_url, url):  # type: (Text, Text) -> Text
         raise NotImplementedError()
 
+    schemes = [u"file", u"http", u"https"]
+
     def supported_schemes(self):  # type: () -> List[Text]
-        raise NotImplementedError()
+        return self.schemes
 
 
 class DefaultFetcher(Fetcher):
@@ -240,10 +242,6 @@ class DefaultFetcher(Fetcher):
 
         return urllib.parse.urljoin(base_url, url)
 
-    schemes = [u"file", u"http", u"https"]
-
-    def supported_schemes(self):  # type: () -> List[Text]
-        return self.schemes
 
 class Loader(object):
     def __init__(self,
