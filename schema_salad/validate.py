@@ -309,19 +309,21 @@ def validate_ex(expected_schema,                  # type: Schema
                 sl = SourceLine(datum, d, six.text_type)
                 if d not in identifiers and d not in foreign_properties and d[0] not in ("@", "$"):
                     if (d not in identifiers and strict) and (
-                            d not in foreign_properties and strict_foreign_properties) and not raise_ex:
+                            d not in foreign_properties and strict_foreign_properties and not skip_foreign_properties) and not raise_ex:
                         return False
                     split = urllib.parse.urlsplit(d)
                     if split.scheme:
                         if not skip_foreign_properties:
-                            err = sl.makeError(u"unrecognized extension field `%s`%s."
-                                               "  Enable debug for list of known foreign properties." % (
-                                                   d, " and strict_foreign_properties checking is enabled" if strict_foreign_properties else ""))
+                            err = sl.makeError(u"unrecognized extension field `%s`%s.%s"
+                                               % (d,
+                                                  " and strict_foreign_properties checking is enabled"
+                                                  if strict_foreign_properties else "",
+                                                  "\nForeign properties from $schemas:\n  %s" % "\n  ".join(sorted(foreign_properties))
+                                                  if len(foreign_properties) > 0 else ""))
                             if strict_foreign_properties:
                                 errors.append(err)
                             elif len(foreign_properties) > 0:
                                 logger.warning(err)
-                                logger.debug("Foreign properties from $schemas: %s", foreign_properties)
                     else:
                         err = sl.makeError(u"invalid field `%s`, expected one of: %s" % (
                             d, ", ".join("'%s'" % fn.name for fn in expected_schema.fields)))

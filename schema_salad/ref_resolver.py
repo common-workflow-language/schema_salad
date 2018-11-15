@@ -113,6 +113,9 @@ class Fetcher(object):
     def urljoin(self, base_url, url):  # type: (Text, Text) -> Text
         raise NotImplementedError()
 
+    def supported_schemes(self):  # type: () -> List[Text]
+        raise NotImplementedError()
+
 
 class DefaultFetcher(Fetcher):
     def __init__(self,
@@ -237,6 +240,11 @@ class DefaultFetcher(Fetcher):
 
         return urllib.parse.urljoin(base_url, url)
 
+    schemes = ["file", "http", "https"]
+
+    def supported_schemes(self):  # type: () -> List[Text]
+        return self.schemes
+
 class Loader(object):
     def __init__(self,
                  ctx,                       # type: ContextType
@@ -335,6 +343,8 @@ class Loader(object):
             prefix = url.split(u":")[0]
             if prefix in self.vocab:
                 url = self.vocab[prefix] + url[len(prefix) + 1:]
+            elif prefix not in self.fetcher.supported_schemes():
+                _logger.warning("URI prefix '%s' of '%s' not recognized, are you missing a $namespaces section?", prefix, url)
 
         split = urllib.parse.urlsplit(url)
 
@@ -762,6 +772,7 @@ class Loader(object):
             d2 = loader.expand_url(d, u"", scoped_id=False, vocab_term=True)
             if d != d2:
                 document[d2] = document[d]
+                document.lc.add_kv_line_col(d2, document.lc.data[d])
                 del document[d]
 
     def _resolve_uris(self,
@@ -778,14 +789,14 @@ class Loader(object):
                     document[d] = loader.expand_url(
                         datum, base_url, scoped_id=False,
                         vocab_term=(d in loader.vocab_fields),
-                        scoped_ref=self.scoped_ref_fields.get(d))
+                        scoped_ref=loader.scoped_ref_fields.get(d))
                 elif isinstance(datum, MutableSequence):
                     for i, url in enumerate(datum):
                         if isinstance(url, string_types):
                             datum[i] = loader.expand_url(
                                 url, base_url, scoped_id=False,
                                 vocab_term=(d in loader.vocab_fields),
-                                scoped_ref=self.scoped_ref_fields.get(d))
+                                scoped_ref=loader.scoped_ref_fields.get(d))
 
 
     def resolve_all(self,
@@ -824,7 +835,7 @@ class Loader(object):
             if u"$profile" in document:
                 if newctx is None:
                     newctx = SubLoader(self)
-                prof = self.fetch(document[u"$profile"])
+                prof = newctx.fetch(document[u"$profile"])
                 newctx.add_namespaces(
                     document.get(u"$namespaces", CommentedMap()))
                 newctx.add_schemas(document.get(
@@ -867,8 +878,8 @@ class Loader(object):
             try:
                 for key, val in document.items():
                     subscope = ""  # type: Text
-                    if key in self.subscopes:
-                        subscope = "/" + self.subscopes[key]
+                    if key in loader.subscopes:
+                        subscope = "/" + loader.subscopes[key]
                     document[key], _ = loader.resolve_all(
                         val, base_url+subscope, file_base=file_base, checklinks=False)
             except validate.ValidationException as v:
@@ -882,8 +893,12 @@ class Loader(object):
                 while i < len(document):
                     val = document[i]
                     if isinstance(val, CommentedMap) and (u"$import" in val or u"$mixin" in val):
-                        l, _ = loader.resolve_ref(
+                        l, import_metadata = loader.resolve_ref(
                             val, base_url=file_base, checklinks=False)
+                        metadata.setdefault("$import_metadata", {})
+                        for identifier in loader.identifiers:
+                            if identifier in import_metadata:
+                                metadata["$import_metadata"][import_metadata[identifier]] = import_metadata
                         if isinstance(l, CommentedSeq):
                             lc = document.lc.data[i]
                             del document[i]
@@ -916,7 +931,7 @@ class Loader(object):
 
         if checklinks:
             all_doc_ids={}  # type: Dict[Text, Text]
-            self.validate_links(document, u"", all_doc_ids)
+            loader.validate_links(document, u"", all_doc_ids)
 
         return document, metadata
 
