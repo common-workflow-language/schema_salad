@@ -493,7 +493,7 @@ class Loader(object):
         obj = None           # type: Optional[CommentedMap]
         resolved_obj = None  # type: Optional[Union[CommentedMap, CommentedSeq, Text]]
         inc = False
-        mixin = None         # type: Optional[Dict[Text, Any]]
+        mixin = None         # type: Optional[MutableMapping[Text, Any]]
 
         if not base_url:
             base_url = file_uri(os.getcwd()) + "/"
@@ -576,8 +576,9 @@ class Loader(object):
         # Recursively expand urls and resolve directives
         if bool(mixin):
             doc = copy.deepcopy(doc)
-            doc.update(mixin)
-            del doc["$mixin"]
+            if doc is not None and mixin is not None:
+                doc.update(mixin)
+                del doc["$mixin"]
             resolved_obj, metadata = self.resolve_all(
                 doc, base_url, file_base=doc_url, checklinks=checklinks)
         else:
