@@ -127,7 +127,7 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     parser.add_argument("--skip-schemas", action="store_true", default=False, help="If specified, ignore $schemas sections.")
     parser.add_argument("--strict-foreign-properties", action="store_true", help="Strict checking of foreign properties",
-                         default=False)
+                        default=False)
 
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--print-jsonld-context", action="store_true",
