@@ -113,7 +113,7 @@ class Fetcher(object):
     def urljoin(self, base_url, url):  # type: (Text, Text) -> Text
         raise NotImplementedError()
 
-    schemes = [u"file", u"http", u"https"]
+    schemes = [u"file", u"http", u"https", u"mailto"]
 
     def supported_schemes(self):  # type: () -> List[Text]
         return self.schemes
@@ -178,6 +178,8 @@ class DefaultFetcher(Fetcher):
             return True
         if scheme == 'file':
             return os.path.exists(urllib.request.url2pathname(str(path)))
+        if scheme == 'mailto':
+            return True
         raise ValueError('Unsupported scheme in url: %s' % url)
 
     def urljoin(self, base_url, url):  # type: (Text, Text) -> Text
@@ -1062,7 +1064,7 @@ class Loader(object):
                 try:
                     if d in document and d not in self.identity_links:
                         document[d] = self.validate_link(d, document[d], docid, all_doc_ids)
-                except validate.ValidationException as v:
+                except (validate.ValidationException, ValueError) as v:
                     if d == "$schemas" or (d in self.foreign_properties and not strict_foreign_properties):
                         _logger.warning(strip_dup_lineno(sl.makeError(Text(v))))
                     else:
