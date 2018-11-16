@@ -20,7 +20,8 @@ class TestForeignProperties(unittest.TestCase):
                   "foreign/foreign_prop3.cwl",
                   "foreign/foreign_prop4.cwl",
                   "foreign/foreign_prop5.cwl",
-                  "foreign/foreign_prop6.cwl"):
+                  "foreign/foreign_prop6.cwl",
+                  "foreign/foreign_prop7.cwl"):
             load_and_validate(document_loader, avsc_names,
                               six.text_type(get_data("tests/"+t)), True,
                               strict_foreign_properties=False)
