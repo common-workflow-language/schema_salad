@@ -62,9 +62,10 @@ class TestPrintOneline(unittest.TestCase):
                                   six.text_type(get_data("tests/test_schema/"+src)), True)
             except ValidationException as e:
                 msgs = to_one_line_messages(str(e)).splitlines()
-                self.assertEqual(len(msgs), 2)
-                self.assertTrue(msgs[0].endswith(src+":13:5: missing required field `id`"))
-                self.assertTrue(msgs[1].endswith(src+":13:5: invalid field `aa`, expected one of: 'label', 'secondaryFiles', 'format', 'streamable', 'doc', 'id', 'outputBinding', 'type'"))
+                self.assertEqual(len(msgs), 3)
+                self.assertTrue(msgs[0].endswith(src+":9:1: the `outputs` field is not valid because"))
+                self.assertTrue(msgs[1].endswith(src+":13:5: missing required field `id`"))
+                self.assertTrue(msgs[2].endswith(src+":13:5: invalid field `aa`, expected one of: 'label', 'secondaryFiles', 'format', 'streamable', 'doc', 'id', 'outputBinding', 'type'"))
                 print("\n", e)
                 raise
 
@@ -84,9 +85,11 @@ class TestPrintOneline(unittest.TestCase):
                 # convert Windows path to Posix path
                 if '\\' in fullpath:
                     fullpath = '/'+fullpath.lower().replace('\\', '/')
-                self.assertEqual(len(msgs), 1)
+                self.assertEqual(len(msgs), 2)
                 print("\n", e)
                 assert msgs[0].endswith(
+                    src + ':8:1: checking field `outputs`')
+                assert msgs[1].endswith(
                     src + ':13:5: Field `type` references unknown identifier '
                     '`Filea`, tried file://%s#Filea' % (fullpath))
                 raise

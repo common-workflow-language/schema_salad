@@ -24,7 +24,7 @@ from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import validate
-from .sourceline import SourceLine, add_lc_filename, relname
+from .sourceline import SourceLine, add_lc_filename, relname, strip_dup_lineno
 from .utils import aslist, onWindows
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
@@ -101,7 +101,7 @@ def SubLoader(loader):  # type: (Loader) -> Loader
     return Loader(loader.ctx, schemagraph=loader.graph,
                   foreign_properties=loader.foreign_properties, idx=loader.idx,
                   cache=loader.cache, fetcher_constructor=loader.fetcher_constructor,
-                  skip_schemas=loader.skip_schemas)
+                  skip_schemas=loader.skip_schemas, url_fields=loader.url_fields)
 
 class Fetcher(object):
     def fetch_text(self, url):    # type: (Text) -> Text
@@ -112,6 +112,11 @@ class Fetcher(object):
 
     def urljoin(self, base_url, url):  # type: (Text, Text) -> Text
         raise NotImplementedError()
+
+    schemes = [u"file", u"http", u"https", u"mailto"]
+
+    def supported_schemes(self):  # type: () -> List[Text]
+        return self.schemes
 
 
 class DefaultFetcher(Fetcher):
@@ -173,6 +178,8 @@ class DefaultFetcher(Fetcher):
             return True
         if scheme == 'file':
             return os.path.exists(urllib.request.url2pathname(str(path)))
+        if scheme == 'mailto':
+            return True
         raise ValueError('Unsupported scheme in url: %s' % url)
 
     def urljoin(self, base_url, url):  # type: (Text, Text) -> Text
@@ -213,8 +220,8 @@ class DefaultFetcher(Fetcher):
                     # .. carrying over any #fragment (?query just in case..)
                     return urllib.parse.urlunsplit(
                         ("file", netloc, path_with_drive, split.query, split.fragment))
-                if (not split.scheme and not netloc and
-                        split.path and split.path.startswith("/")):
+                if (not split.scheme and not netloc and split.path
+                        and split.path.startswith("/")):
                     # Relative - but does it have a drive?
                     base_drive = _re_drive.match(basesplit.path)
                     drive = _re_drive.match(split.path)
@@ -237,6 +244,7 @@ class DefaultFetcher(Fetcher):
 
         return urllib.parse.urljoin(base_url, url)
 
+
 class Loader(object):
     def __init__(self,
                  ctx,                       # type: ContextType
@@ -246,7 +254,8 @@ class Loader(object):
                  cache=None,                # type: Dict[Text, Any]
                  session=None,              # type: requests.sessions.Session
                  fetcher_constructor=None,  # type: Callable[[Dict[Text, Union[Text, bool]], requests.sessions.Session], Fetcher]
-                 skip_schemas=None          # type: bool
+                 skip_schemas=None,         # type: bool
+                 url_fields=None            # type: Set[Text]
                  ):
         # type: (...) -> None
 
@@ -263,7 +272,7 @@ class Loader(object):
             self.graph = Graph()
 
         if foreign_properties is not None:
-            self.foreign_properties = foreign_properties
+            self.foreign_properties = set(foreign_properties)
         else:
             self.foreign_properties = set()
 
@@ -301,7 +310,11 @@ class Loader(object):
         self.fetch_text = self.fetcher.fetch_text
         self.check_exists = self.fetcher.check_exists
 
-        self.url_fields = set()         # type: Set[Text]
+        if url_fields is None:
+            self.url_fields = set()         # type: Set[Text]
+        else:
+            self.url_fields = set(url_fields)
+
         self.scoped_ref_fields = {}     # type: Dict[Text, int]
         self.vocab_fields = set()       # type: Set[Text]
         self.identifiers = []           # type: List[Text]
@@ -335,6 +348,8 @@ class Loader(object):
             prefix = url.split(u":")[0]
             if prefix in self.vocab:
                 url = self.vocab[prefix] + url[len(prefix) + 1:]
+            elif prefix not in self.fetcher.supported_schemes():
+                _logger.warning("URI prefix '%s' of '%s' not recognized, are you missing a $namespaces section?", prefix, url)
 
         split = urllib.parse.urlsplit(url)
 
@@ -365,10 +380,9 @@ class Loader(object):
     def _add_properties(self, s):  # type: (Text) -> None
         for _, _, rng in self.graph.triples((s, RDFS.range, None)):
             literal = ((Text(rng).startswith(
-                u"http://www.w3.org/2001/XMLSchema#") and
-                not Text(rng) == u"http://www.w3.org/2001/XMLSchema#anyURI")
-                or Text(rng) ==
-                u"http://www.w3.org/2000/01/rdf-schema#Literal")
+                u"http://www.w3.org/2001/XMLSchema#")
+                and not Text(rng) == u"http://www.w3.org/2001/XMLSchema#anyURI")
+                or Text(rng) == u"http://www.w3.org/2000/01/rdf-schema#Literal")
             if not literal:
                 self.url_fields.add(Text(s))
         self.foreign_properties.add(Text(s))
@@ -484,9 +498,10 @@ class Loader(object):
         _logger.debug("vocab is %s", self.vocab)
 
     def resolve_ref(self,
-                    ref,             # type: Union[CommentedMap, CommentedSeq, Text]
-                    base_url=None,   # type: Text
-                    checklinks=True  # type: bool
+                    ref,              # type: Union[CommentedMap, CommentedSeq, Text]
+                    base_url=None,    # type: Text
+                    checklinks=True,  # type: bool
+                    strict_foreign_properties=False  # type: bool
                     ):
         # type: (...) -> Tuple[Union[CommentedMap, CommentedSeq, Text, None], Dict[Text, Any]]
 
@@ -494,7 +509,7 @@ class Loader(object):
         obj = None           # type: Optional[CommentedMap]
         resolved_obj = None  # type: Optional[Union[CommentedMap, CommentedSeq, Text]]
         inc = False
-        mixin = None         # type: Optional[Dict[Text, Any]]
+        mixin = None         # type: Optional[MutableMapping[Text, Any]]
 
         if not base_url:
             base_url = file_uri(os.getcwd()) + "/"
@@ -577,17 +592,21 @@ class Loader(object):
         # Recursively expand urls and resolve directives
         if bool(mixin):
             doc = copy.deepcopy(doc)
-            doc.update(mixin)
-            del doc["$mixin"]
+            if doc is not None and mixin is not None:
+                doc.update(mixin)
+                del doc["$mixin"]
             resolved_obj, metadata = self.resolve_all(
-                doc, base_url, file_base=doc_url, checklinks=checklinks)
+                doc, base_url, file_base=doc_url,
+                checklinks=checklinks,
+                strict_foreign_properties=strict_foreign_properties)
         else:
             if doc:
                 resolve_target = doc
             else:
                 resolve_target = obj
             resolved_obj, metadata = self.resolve_all(
-                resolve_target, doc_url, checklinks=checklinks)
+                resolve_target, doc_url, checklinks=checklinks,
+                strict_foreign_properties=strict_foreign_properties)
 
         # Requested reference should be in the index now, otherwise it's a bad
         # reference
@@ -653,7 +672,7 @@ class Loader(object):
 
                     document[idmapField] = ls
 
-    typeDSLregex = re.compile(u"^([^[?]+)(\[\])?(\?)?$")
+    typeDSLregex = re.compile(Text(r"^([^[?]+)(\[\])?(\?)?$"))
 
     def _type_dsl(self,
                   t,        # type: Union[Text, Dict, List]
@@ -756,12 +775,13 @@ class Loader(object):
                                 n]] = document[identifer][n]
 
     def _normalize_fields(self, document, loader):
-        # type: (Dict[Text, Text], Loader) -> None
+        # type: (CommentedMap, Loader) -> None
         # Normalize fields which are prefixed or full URIn to vocabulary terms
         for d in list(document.keys()):
             d2 = loader.expand_url(d, u"", scoped_id=False, vocab_term=True)
             if d != d2:
                 document[d2] = document[d]
+                document.lc.add_kv_line_col(d2, document.lc.data[d])
                 del document[d]
 
     def _resolve_uris(self,
@@ -778,21 +798,22 @@ class Loader(object):
                     document[d] = loader.expand_url(
                         datum, base_url, scoped_id=False,
                         vocab_term=(d in loader.vocab_fields),
-                        scoped_ref=self.scoped_ref_fields.get(d))
+                        scoped_ref=loader.scoped_ref_fields.get(d))
                 elif isinstance(datum, MutableSequence):
                     for i, url in enumerate(datum):
                         if isinstance(url, string_types):
                             datum[i] = loader.expand_url(
                                 url, base_url, scoped_id=False,
                                 vocab_term=(d in loader.vocab_fields),
-                                scoped_ref=self.scoped_ref_fields.get(d))
+                                scoped_ref=loader.scoped_ref_fields.get(d))
 
 
     def resolve_all(self,
                     document,           # type: Union[CommentedMap, CommentedSeq]
                     base_url,           # type: Text
                     file_base=None,     # type: Text
-                    checklinks=True     # type: bool
+                    checklinks=True,    # type: bool
+                    strict_foreign_properties=False  # type: bool
                     ):
         # type: (...) -> Tuple[Union[CommentedMap, CommentedSeq, Text, None], Dict[Text, Any]]
         loader = self
@@ -804,10 +825,12 @@ class Loader(object):
             # Handle $import and $include
             if (u'$import' in document or u'$include' in document):
                 return self.resolve_ref(
-                    document, base_url=file_base, checklinks=checklinks)
+                    document, base_url=file_base, checklinks=checklinks,
+                    strict_foreign_properties=strict_foreign_properties)
             elif u'$mixin' in document:
                 return self.resolve_ref(
-                    document, base_url=base_url, checklinks=checklinks)
+                    document, base_url=base_url, checklinks=checklinks,
+                    strict_foreign_properties=strict_foreign_properties)
         elif isinstance(document, CommentedSeq):
             pass
         elif isinstance(document, (list, dict)):
@@ -824,7 +847,7 @@ class Loader(object):
             if u"$profile" in document:
                 if newctx is None:
                     newctx = SubLoader(self)
-                prof = self.fetch(document[u"$profile"])
+                prof = newctx.fetch(document[u"$profile"])
                 newctx.add_namespaces(
                     document.get(u"$namespaces", CommentedMap()))
                 newctx.add_schemas(document.get(
@@ -867,8 +890,8 @@ class Loader(object):
             try:
                 for key, val in document.items():
                     subscope = ""  # type: Text
-                    if key in self.subscopes:
-                        subscope = "/" + self.subscopes[key]
+                    if key in loader.subscopes:
+                        subscope = "/" + loader.subscopes[key]
                     document[key], _ = loader.resolve_all(
                         val, base_url+subscope, file_base=file_base, checklinks=False)
             except validate.ValidationException as v:
@@ -882,8 +905,12 @@ class Loader(object):
                 while i < len(document):
                     val = document[i]
                     if isinstance(val, CommentedMap) and (u"$import" in val or u"$mixin" in val):
-                        l, _ = loader.resolve_ref(
+                        l, import_metadata = loader.resolve_ref(
                             val, base_url=file_base, checklinks=False)
+                        metadata.setdefault("$import_metadata", {})
+                        for identifier in loader.identifiers:
+                            if identifier in import_metadata:
+                                metadata["$import_metadata"][import_metadata[identifier]] = import_metadata
                         if isinstance(l, CommentedSeq):
                             lc = document.lc.data[i]
                             del document[i]
@@ -916,7 +943,8 @@ class Loader(object):
 
         if checklinks:
             all_doc_ids={}  # type: Dict[Text, Text]
-            self.validate_links(document, u"", all_doc_ids)
+            loader.validate_links(document, u"", all_doc_ids,
+                                  strict_foreign_properties=strict_foreign_properties)
 
         return document, metadata
 
@@ -1020,32 +1048,32 @@ class Loader(object):
                         return idd
         return None
 
-    def validate_links(self, document, base_url, all_doc_ids):
-        # type: (Union[CommentedMap, CommentedSeq, Text, None], Text, Dict[Text, Text]) -> None
+    def validate_links(self, document, base_url, all_doc_ids, strict_foreign_properties=False):
+        # type: (Union[CommentedMap, CommentedSeq, Text, None], Text, Dict[Text, Text], bool) -> None
         docid = self.getid(document)
         if not docid:
             docid = base_url
 
-        errors = []         # type: List[Exception]
+        errors = []         # type: List[Text]
         iterator = None     # type: Any
         if isinstance(document, MutableSequence):
             iterator = enumerate(document)
         elif isinstance(document, MutableMapping):
             for d in self.url_fields:
+                sl = SourceLine(document, d, Text)
                 try:
-                    sl = SourceLine(document, d, validate.ValidationException)
                     if d in document and d not in self.identity_links:
                         document[d] = self.validate_link(d, document[d], docid, all_doc_ids)
-                except validate.ValidationException as v:
-                    if d == "$schemas":
-                        _logger.warning( validate.indent(Text(v)))
+                except (validate.ValidationException, ValueError) as v:
+                    if d == "$schemas" or (d in self.foreign_properties and not strict_foreign_properties):
+                        _logger.warning(strip_dup_lineno(sl.makeError(Text(v))))
                     else:
                         errors.append(sl.makeError(Text(v)))
 
             try:
                 for identifier in self.identifiers:  # validate that each id is defined uniquely
                     if identifier in document:
-                        sl = SourceLine(document, identifier, validate.ValidationException)
+                        sl = SourceLine(document, identifier, Text)
                         if document[identifier] in all_doc_ids and sl.makeLead() != all_doc_ids[document[identifier]]:
                             # TODO: Validator should local scope only in which duplicated keys are prohibited.
                             # See also https://github.com/common-workflow-language/common-workflow-language/issues/734
@@ -1065,9 +1093,9 @@ class Loader(object):
             return
 
         for key, val in iterator:
-            sl = SourceLine(document, key, validate.ValidationException)
+            sl = SourceLine(document, key, Text)
             try:
-                self.validate_links(val, docid, all_doc_ids)
+                self.validate_links(val, docid, all_doc_ids, strict_foreign_properties=strict_foreign_properties)
             except validate.ValidationException as v:
                 if key in self.nolinkcheck or (isinstance(key, string_types) and ":" in key):
                     _logger.warning(validate.indent(Text(v)))
@@ -1086,9 +1114,9 @@ class Loader(object):
         if bool(errors):
             if len(errors) > 1:
                 raise validate.ValidationException(
-                    u"\n".join([Text(e) for e in errors]))
+                    u"\n".join(errors))
             else:
-                raise errors[0]
+                raise validate.ValidationException(errors[0])
         return
 
 

@@ -12,7 +12,7 @@ from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
-from .sourceline import SourceLine, bullets, indent
+from .sourceline import SourceLine, bullets, indent, strip_dup_lineno
 
 _logger = logging.getLogger("salad")
 
@@ -220,8 +220,10 @@ def validate_ex(expected_schema,                  # type: Schema
                 continue
             elif isinstance(datum, MutableMapping) and not isinstance(s, avro.schema.RecordSchema):
                 continue
-            elif (isinstance(datum, (bool, six.integer_types, float, six.string_types)) and  # type: ignore
-                  isinstance(s, (avro.schema.ArraySchema, avro.schema.RecordSchema))):
+            elif (isinstance(  # type: ignore
+                    datum, (bool, six.integer_types, float, six.string_types))
+                    and isinstance(s, (avro.schema.ArraySchema,
+                                       avro.schema.RecordSchema))):
                 continue
             elif datum is not None and s.type == "null":
                 continue
@@ -307,27 +309,28 @@ def validate_ex(expected_schema,                  # type: Schema
                 sl = SourceLine(datum, d, six.text_type)
                 if d not in identifiers and d not in foreign_properties and d[0] not in ("@", "$"):
                     if (d not in identifiers and strict) and (
-                            d not in foreign_properties and strict_foreign_properties) and not raise_ex:
+                            d not in foreign_properties and strict_foreign_properties and not skip_foreign_properties) and not raise_ex:
                         return False
                     split = urllib.parse.urlsplit(d)
                     if split.scheme:
                         if not skip_foreign_properties:
-                            err = sl.makeError(u"unrecognized extension field `%s`%s."
-                                               "  Did you include "
-                                               "a $schemas section?" % (
-                                                   d, " and strict_foreign_properties is True" if strict_foreign_properties else ""))
+                            err = sl.makeError(u"unrecognized extension field `%s`%s.%s"
+                                               % (d,
+                                                  " and strict_foreign_properties checking is enabled"
+                                                  if strict_foreign_properties else "",
+                                                  "\nForeign properties from $schemas:\n  %s" % "\n  ".join(sorted(foreign_properties))
+                                                  if len(foreign_properties) > 0 else ""))
                             if strict_foreign_properties:
                                 errors.append(err)
-                            else:
-                                logger.warn(err)
-                                logger.warn("foreign properties %s", foreign_properties)
+                            elif len(foreign_properties) > 0:
+                                logger.warning(strip_dup_lineno(err))
                     else:
                         err = sl.makeError(u"invalid field `%s`, expected one of: %s" % (
                             d, ", ".join("'%s'" % fn.name for fn in expected_schema.fields)))
                         if strict:
                             errors.append(err)
                         else:
-                            logger.warn(err)
+                            logger.warning(err)
 
         if bool(errors):
             if raise_ex:
