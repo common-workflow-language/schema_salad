@@ -1,5 +1,5 @@
 typing==3.6.4 ; python_version < "3.7"
-avro-cwl==1.8.4 ; python_version >= "3"
+avro-cwl==1.8.8 ; python_version >= "3"
 future-nodefix ; python_version >= "3"
 avro==1.8.1 ; python_version < "3"
 ruamel.yaml>=0.12.4, <= 0.15.77
