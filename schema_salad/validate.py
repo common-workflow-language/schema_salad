@@ -4,9 +4,10 @@ import logging
 import pprint
 from typing import Any, List, MutableMapping, MutableSequence, Set, Union
 
-import avro.schema  # pylint: disable=no-name-in-module, import-error
+from . import avro
+from .avro import schema  # pylint: disable=no-name-in-module, import-error
 import six
-from avro.schema import \
+from .avro.schema import \
     Schema  # pylint: disable=unused-import, no-name-in-module, import-error
 from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import

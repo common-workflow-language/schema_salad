@@ -6,10 +6,9 @@ import logging
 from typing import (IO, Any, AnyStr, Dict, List, MutableMapping,
                     MutableSequence, Set, Tuple, TypeVar, Union, cast)
 
-import avro
-import avro.schema  # pylint: disable=no-name-in-module,import-error
-from avro.schema import Names  # pylint: disable=no-name-in-module,import-error
-from avro.schema import SchemaParseException
+from . import avro
+from .avro.schema import Names  # pylint: disable=no-name-in-module,import-error
+from .avro.schema import SchemaParseException
 from pkg_resources import resource_stream
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
