@@ -35,9 +35,11 @@ A schema may be one of:
   Null.
 """
 from builtins import str
-from past.builtins import basestring
 from builtins import object
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, cast
 import json
+
+import six
 
 #
 # Constants
@@ -112,8 +114,9 @@ class SchemaParseException(AvroException):
 class Schema(object):
   """Base class for all Schema classes."""
   def __init__(self, type, other_props=None):
+    # type: (Text, Optional[Dict[Text, Any]]) -> None
     # Ensure valid ctor args
-    if not isinstance(type, basestring):
+    if not isinstance(type, six.string_types):
       fail_msg = 'Schema type must be a string.'
       raise SchemaParseException(fail_msg)
     elif type not in VALID_TYPES:
@@ -121,7 +124,7 @@ class Schema(object):
       raise SchemaParseException(fail_msg)
 
     # add members
-    if not hasattr(self, '_props'): self._props = {}
+    if not hasattr(self, '_props'): self._props = {}  # type: Dict[Text, Any]
     self.set_prop('type', type)
     self.type = type
     self._props.update(other_props or {})
@@ -138,7 +141,7 @@ class Schema(object):
   def get_prop(self, key):
     return self._props.get(key)
 
-  def set_prop(self, key, value):
+  def set_prop(self, key, value):  # type: (Text, Any) -> None
     self._props[key] = value
 
   def __str__(self):
@@ -158,6 +161,7 @@ class Name(object):
   """Class to describe Avro name."""
   
   def __init__(self, name_attr, space_attr, default_space):
+    # type: (Text, Optional[Text], Optional[Text]) -> None
     """
     Formulate full name according to the specification.
     
@@ -166,21 +170,21 @@ class Name(object):
     @ard default_space: the current default space or None.
     """
     # Ensure valid ctor args
-    if not (isinstance(name_attr, basestring) or (name_attr is None)):
+    if not (isinstance(name_attr, six.string_types) or (name_attr is None)):
       fail_msg = 'Name must be non-empty string or None.'
       raise SchemaParseException(fail_msg)
     elif name_attr == "":
       fail_msg = 'Name must be non-empty string or None.'
       raise SchemaParseException(fail_msg)
 
-    if not (isinstance(space_attr, basestring) or (space_attr is None)):
+    if not (isinstance(space_attr, six.string_types) or (space_attr is None)):
       fail_msg = 'Space must be non-empty string or None.'
       raise SchemaParseException(fail_msg)
     elif name_attr == "":
       fail_msg = 'Space must be non-empty string or None.'
       raise SchemaParseException(fail_msg)
   
-    if not (isinstance(default_space, basestring) or (default_space is None)):
+    if not (isinstance(default_space, six.string_types) or (default_space is None)):
       fail_msg = 'Default space must be non-empty string or None.'
       raise SchemaParseException(fail_msg)
     elif name_attr == "":
@@ -211,6 +215,7 @@ class Name(object):
   fullname = property(lambda self: self._full)
 
   def get_space(self):
+    # type: () -> Optional[Text]
     """Back out a namespace from full name."""
     if self._full is None:
         return None
@@ -223,14 +228,17 @@ class Name(object):
 class Names(object):
   """Track name set and default namespace during parsing."""
   def __init__(self, default_namespace=None):
-      self.names = {}
+      # type: (Optional[Text]) -> None
+      self.names = {}  # type: Dict
       self.default_namespace = default_namespace
-      
+
   def has_name(self, name_attr, space_attr):
+      # type: (Text, Optional[Text]) -> bool
       test = Name(name_attr, space_attr, self.default_namespace).fullname
       return test in self.names
-  
-  def get_name(self, name_attr, space_attr):    
+
+  def get_name(self, name_attr, space_attr):
+      # type: (Text, Optional[Text]) -> Optional[NamedSchema]
       test = Name(name_attr, space_attr, self.default_namespace).fullname
       if test not in self.names:
           return None
@@ -254,6 +262,7 @@ class Names(object):
     return prunable
 
   def add_name(self, name_attr, space_attr, new_schema):
+    # type: (Text, Optional[Text], NamedSchema) -> Name
     """
     Add a new schema object to the name set.
     
@@ -277,16 +286,19 @@ class Names(object):
 class NamedSchema(Schema):
   """Named Schemas specified in NAMED_TYPES."""
   def __init__(self, type, name, namespace=None, names=None, other_props=None):
+    # type: (Text, Text, Optional[Text], Names, Dict) -> None
     # Ensure valid ctor args
     if not name:
       fail_msg = 'Named Schemas must have a non-empty name.'
       raise SchemaParseException(fail_msg)
-    elif not isinstance(name, basestring):
+    elif not isinstance(name, six.string_types):
       fail_msg = 'The name property must be a string.'
       raise SchemaParseException(fail_msg)
-    elif namespace is not None and not isinstance(namespace, basestring):
+    elif namespace is not None and not isinstance(namespace, six.string_types):
       fail_msg = 'The namespace property must be a string.'
       raise SchemaParseException(fail_msg)
+    if names is None:
+      raise SchemaParseException('Must provide Names.')
 
     # Call parent ctor
     Schema.__init__(self, type, other_props)
@@ -314,13 +326,21 @@ class NamedSchema(Schema):
   fullname = property(lambda self: self._fullname)
 
 class Field(object):
-  def __init__(self, type, name, has_default, default=None,
-               order=None,names=None, doc=None, other_props=None):
+  def __init__(self,
+               type,             # type: Union[Text, Dict[Text, Text]]
+               name,             # type: Text
+               has_default,      # type: bool
+               default=None,     # type: Text
+               order=None,       # type: Optional[Text]
+               names=None,       # type: Names
+               doc=None,         # type: Text
+               other_props=None  # type: Optional[Dict[Text, Text]]
+              ):  # type: (...) -> None
     # Ensure valid ctor args
     if not name:
       fail_msg = 'Fields must have a non-empty name.'
       raise SchemaParseException(fail_msg)
-    elif not isinstance(name, basestring):
+    elif not isinstance(name, six.string_types):
       fail_msg = 'The name property must be a string.'
       raise SchemaParseException(fail_msg)
     elif order is not None and order not in VALID_FIELD_SORT_ORDERS:
@@ -328,16 +348,16 @@ class Field(object):
       raise SchemaParseException(fail_msg)
 
     # add members
-    self._props = {}
+    self._props = {}  # type: Dict[Text, Union[Schema, Text, None]]
     self._has_default = has_default
     self._props.update(other_props or {})
 
-    if (isinstance(type, basestring) and names is not None
+    if (isinstance(type, six.string_types) and names is not None
         and names.has_name(type, None)):
-      type_schema = names.get_name(type, None)
+      type_schema = cast(NamedSchema, names.get_name(type, None))  # type: Schema
     else:
       try:
-        type_schema = make_avsc_object(type, names)
+        type_schema = make_avsc_object(cast(Dict[Text, Text], type), names)
       except Exception as e:
         fail_msg = 'Type property "%s" not a valid Avro schema: %s' % (type, e)
         raise SchemaParseException(fail_msg)
@@ -364,7 +384,7 @@ class Field(object):
 # utility functions to manipulate properties dict
   def get_prop(self, key):
     return self._props.get(key)
-  def set_prop(self, key, value):
+  def set_prop(self, key, value):  # type: (Text, Union[Schema, Text, None]) -> None
     self._props[key] = value
 
   def __str__(self):
@@ -386,7 +406,7 @@ class Field(object):
 #
 class PrimitiveSchema(Schema):
   """Valid primitive types are in PRIMITIVE_TYPES."""
-  def __init__(self, type, other_props=None):
+  def __init__(self, type, other_props=None):  # type: (str, Dict) -> None
     # Ensure valid ctor args
     if type not in PRIMITIVE_TYPES:
       raise AvroException("%s is not a valid primitive type." % type)
@@ -411,6 +431,7 @@ class PrimitiveSchema(Schema):
 
 class FixedSchema(NamedSchema):
   def __init__(self, name, namespace, size, names=None, other_props=None):
+    # type: (Text, Optional[Text], int, Names, Dict) -> None
     # Ensure valid ctor args
     if not isinstance(size, int):
       fail_msg = 'Fixed Schema requires a valid integer for size property.'
@@ -439,11 +460,12 @@ class FixedSchema(NamedSchema):
 
 class EnumSchema(NamedSchema):
   def __init__(self, name, namespace, symbols, names=None, doc=None, other_props=None):
+    # type: (Text, Optional[Text], List[Text], Names, Text, Optional[Dict[Text, Any]]) -> None
     # Ensure valid ctor args
     if not isinstance(symbols, list):
       fail_msg = 'Enum Schema requires a JSON array for the symbols property.'
       raise AvroException(fail_msg)
-    elif False in [isinstance(s, basestring) for s in symbols]:
+    elif False in [isinstance(s, six.string_types) for s in symbols]:
       fail_msg = 'Enum Schema requires all symbols to be JSON strings.'
       raise AvroException(fail_msg)
     elif len(set(symbols)) < len(symbols):
@@ -479,12 +501,15 @@ class EnumSchema(NamedSchema):
 
 class ArraySchema(Schema):
   def __init__(self, items, names=None, other_props=None):
+    # type: (List[Any], Names, Optional[Dict[Text, Text]]) -> None
     # Call parent ctor
     Schema.__init__(self, 'array', other_props)
     # Add class members
 
-    if isinstance(items, basestring) and names.has_name(items, None):
-      items_schema = names.get_name(items, None)
+    if names is None:
+        raise SchemaParseException('Must provide Names.')
+    if isinstance(items, six.string_types) and names.has_name(items, None):
+      items_schema = cast(Schema, names.get_name(items, None))
     else:
       try:
         items_schema = make_avsc_object(items, names)
@@ -511,12 +536,15 @@ class ArraySchema(Schema):
 
 class MapSchema(Schema):
   def __init__(self, values, names=None, other_props=None):
+    # type: (Union[Text, List, Dict], Names, Optional[Dict[Text, Any]]) -> None
     # Call parent ctor
     Schema.__init__(self, 'map',other_props)
 
     # Add class members
-    if isinstance(values, basestring) and names.has_name(values, None):
-      values_schema = names.get_name(values, None)
+    if names is None:
+      raise SchemaParseException('Must provide Names.')
+    if isinstance(values, six.string_types) and names.has_name(values, None):
+      values_schema = cast(Schema, names.get_name(values, None))
     else:
       try:
         values_schema = make_avsc_object(values, names)
@@ -544,8 +572,10 @@ class UnionSchema(Schema):
   """
   names is a dictionary of schema objects
   """
-  def __init__(self, schemas, names=None):
+  def __init__(self, schemas, names=None):  # type: (List, Names) -> None
     # Ensure valid ctor args
+    if names is None:
+        raise SchemaParseException('Must provide Names.')
     if not isinstance(schemas, list):
       fail_msg = 'Union schema requires a list of schemas.'
       raise SchemaParseException(fail_msg)
@@ -554,13 +584,13 @@ class UnionSchema(Schema):
     Schema.__init__(self, 'union')
 
     # Add class members
-    schema_objects = []
+    schema_objects = []  # type: List[Schema]
     for schema in schemas:
-      if isinstance(schema, basestring) and names.has_name(schema, None):
-        new_schema = names.get_name(schema, None)
+      if isinstance(schema, six.string_types) and names.has_name(schema, None):
+        new_schema = cast(Schema, names.get_name(schema, None))
       else:
         try:
-          new_schema = make_avsc_object(schema, names)
+          new_schema = make_avsc_object(schema, names)  # type: ignore
         except Exception as e:
           raise SchemaParseException('Union item must be a valid Avro schema: %s' % str(e))
       # check the new schema
@@ -588,31 +618,17 @@ class UnionSchema(Schema):
     to_cmp = json.loads(str(self))
     return to_cmp == json.loads(str(that))
 
-class ErrorUnionSchema(UnionSchema):
-  def __init__(self, schemas, names=None):
-    # Prepend "string" to handle system errors
-    UnionSchema.__init__(self, ['string'] + schemas, names)
-
-  def to_json(self, names=None):
-    if names is None:
-      names = Names()
-    to_dump = []
-    for schema in self.schemas:
-      # Don't print the system error schema
-      if schema.type == 'string': continue
-      to_dump.append(schema.to_json(names))
-    return to_dump
-
 class RecordSchema(NamedSchema):
   @staticmethod
   def make_field_objects(field_data, names):
+    # type: (List[Dict[Text, Text]], Names) -> List[Field]
     """We're going to need to make message parameters too."""
     field_objects = []
-    field_names = []
+    field_names = []  # type: List[Text]
     for i, field in enumerate(field_data):
       if hasattr(field, 'get') and callable(field.get):
-        type = field.get('type')        
-        name = field.get('name')
+        type = cast(Text, field.get('type'))
+        name = cast(Text, field.get('name'))
 
         # null values can have a default value of None
         has_default = False
@@ -638,6 +654,7 @@ class RecordSchema(NamedSchema):
 
   def __init__(self, name, namespace, fields, names=None, schema_type='record',
                doc=None, other_props=None):
+    # type: (Text, Text, List, Names, Text, Text, Dict) -> None
     # Ensure valid ctor args
     if fields is None:
       fail_msg = 'Record schema requires a non-empty fields property.'
@@ -645,6 +662,8 @@ class RecordSchema(NamedSchema):
     elif not isinstance(fields, list):
       fail_msg = 'Fields property must be a list of Avro schemas.'
       raise SchemaParseException(fail_msg)
+    if names is None:
+      raise SchemaParseException('Must provide Names.')
 
     # Call parent ctor (adds own name to namespace, too)
     if schema_type == 'request':
@@ -653,7 +672,7 @@ class RecordSchema(NamedSchema):
       NamedSchema.__init__(self, schema_type, name, namespace, names,
                            other_props)
 
-    if schema_type == 'record': 
+    if schema_type == 'record':
       old_default = names.default_namespace
       names.default_namespace = Name(name, namespace,
                                      names.default_namespace).get_space()
@@ -700,7 +719,8 @@ class RecordSchema(NamedSchema):
 #
 # Module Methods
 #
-def get_other_props(all_props,reserved_props):
+def get_other_props(all_props, reserved_props):
+  # type: (Dict, Tuple) -> Optional[Dict]
   """
   Retrieve the non-reserved properties from a dictionary of properties
   @args reserved_props: The set of reserved properties to exclude
@@ -708,9 +728,11 @@ def get_other_props(all_props,reserved_props):
   if hasattr(all_props, 'items') and callable(all_props.items):
     return dict([(k,v) for (k,v) in list(all_props.items()) if k not in
                  reserved_props ])
+  return None
 
 
 def make_avsc_object(json_data, names=None):
+  # type: (Union[Dict[Text, Text], List[Any], Text], Optional[Names]) -> Schema
   """
   Build Avro Schema from data parsed out of JSON string.
 
@@ -718,39 +740,39 @@ def make_avsc_object(json_data, names=None):
   """
   if names == None:
     names = Names()
-  
+  assert isinstance(names, Names)
+
   # JSON object (non-union)
-  if hasattr(json_data, 'get') and callable(json_data.get):
-    type = json_data.get('type')
+  if hasattr(json_data, 'get') and callable(json_data.get):  # type: ignore
+    assert isinstance(json_data, Dict)
+    type = cast(Text, json_data.get('type'))
     other_props = get_other_props(json_data, SCHEMA_RESERVED_PROPS)
     if type in PRIMITIVE_TYPES:
       return PrimitiveSchema(type, other_props)
     elif type in NAMED_TYPES:
-      name = json_data.get('name')
-      namespace = json_data.get('namespace', names.default_namespace)
+      name = cast(Text, json_data.get('name'))
+      namespace = cast(Text, json_data.get('namespace',
+                             names.default_namespace))
       if type == 'fixed':
-        size = json_data.get('size')
+        size = cast(int, json_data.get('size'))
         return FixedSchema(name, namespace, size, names, other_props)
       elif type == 'enum':
-        symbols = json_data.get('symbols')
+        symbols = cast(List[Text], json_data.get('symbols'))
         doc = json_data.get('doc')
         return EnumSchema(name, namespace, symbols, names, doc, other_props)
       elif type in ['record', 'error']:
-        fields = json_data.get('fields')
+        fields = cast(List, json_data.get('fields'))
         doc = json_data.get('doc')
         return RecordSchema(name, namespace, fields, names, type, doc, other_props)
       else:
         raise SchemaParseException('Unknown Named Type: %s' % type)
     elif type in VALID_TYPES:
       if type == 'array':
-        items = json_data.get('items')
+        items = cast(List, json_data.get('items'))
         return ArraySchema(items, names, other_props)
       elif type == 'map':
-        values = json_data.get('values')
+        values = cast(Union[Text, List, Dict], json_data.get('values'))
         return MapSchema(values, names, other_props)
-      elif type == 'error_union':
-        declared_errors = json_data.get('declared_errors')
-        return ErrorUnionSchema(declared_errors, names)
       else:
         raise SchemaParseException('Unknown Valid Type: %s' % type)
     elif type is None:
@@ -762,11 +784,10 @@ def make_avsc_object(json_data, names=None):
     return UnionSchema(json_data, names)
   # JSON string (primitive)
   elif json_data in PRIMITIVE_TYPES:
-    return PrimitiveSchema(json_data)
+    return PrimitiveSchema(cast(Text, json_data))
   # not for us!
-  else:
-    fail_msg = "Could not make an Avro Schema object from %s." % json_data
-    raise SchemaParseException(fail_msg)
+  fail_msg = "Could not make an Avro Schema object from %s." % json_data
+  raise SchemaParseException(fail_msg)
 
 # TODO(hammer): make method for reading from a file?
 def parse(json_string):
