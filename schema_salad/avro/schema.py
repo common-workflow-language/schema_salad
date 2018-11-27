@@ -144,19 +144,6 @@ class Schema(object):
   def set_prop(self, key, value):  # type: (Text, Any) -> None
     self._props[key] = value
 
-  def __str__(self):
-    return json.dumps(self.to_json())
-
-  def to_json(self, names):
-    """
-    Converts the schema object into its AVRO specification representation.
-
-    Schema types that have names (records, enums, and fixed) must
-    be aware of not re-defining schemas that are already listed
-    in the parameter names.
-    """
-    raise Exception("Must be implemented by subclasses.")
-
 class Name(object):
   """Class to describe Avro name."""
   
@@ -387,16 +374,6 @@ class Field(object):
   def set_prop(self, key, value):  # type: (Text, Union[Schema, Text, None]) -> None
     self._props[key] = value
 
-  def __str__(self):
-    return json.dumps(self.to_json())
-
-  def to_json(self, names=None):
-    if names is None:
-      names = Names()
-    to_dump = self.props.copy()
-    to_dump['type'] = self.type.to_json(names)
-    return to_dump
-
   def __eq__(self, that):
     to_cmp = json.loads(str(self))
     return to_cmp == json.loads(str(that))
@@ -415,12 +392,6 @@ class PrimitiveSchema(Schema):
     Schema.__init__(self, type, other_props=other_props)
 
     self.fullname = type
-
-  def to_json(self, names=None):
-    if len(self.props) == 1:
-      return self.fullname
-    else:
-      return self.props
 
   def __eq__(self, that):
     return self.props == that.props
@@ -445,15 +416,6 @@ class FixedSchema(NamedSchema):
 
   # read-only properties
   size = property(lambda self: self.get_prop('size'))
-
-  def to_json(self, names=None):
-    if names is None:
-      names = Names()
-    if self.fullname in names.names:
-      return self.name_ref(names)
-    else:
-      names.names[self.fullname] = self
-      return names.prune_namespace(self.props)
 
   def __eq__(self, that):
     return self.props == that.props
@@ -482,15 +444,6 @@ class EnumSchema(NamedSchema):
   # read-only properties
   symbols = property(lambda self: self.get_prop('symbols'))
   doc = property(lambda self: self.get_prop('doc'))
-
-  def to_json(self, names=None):
-    if names is None:
-      names = Names()
-    if self.fullname in names.names:
-      return self.name_ref(names)
-    else:
-      names.names[self.fullname] = self
-      return names.prune_namespace(self.props)
 
   def __eq__(self, that):
     return self.props == that.props
@@ -522,14 +475,6 @@ class ArraySchema(Schema):
   # read-only properties
   items = property(lambda self: self.get_prop('items'))
 
-  def to_json(self, names=None):
-    if names is None:
-      names = Names()
-    to_dump = self.props.copy()
-    item_schema = self.get_prop('items')
-    to_dump['items'] = item_schema.to_json(names)
-    return to_dump
-
   def __eq__(self, that):
     to_cmp = json.loads(str(self))
     return to_cmp == json.loads(str(that))
@@ -556,13 +501,6 @@ class MapSchema(Schema):
 
   # read-only properties
   values = property(lambda self: self.get_prop('values'))
-
-  def to_json(self, names=None):
-    if names is None:
-      names = Names()
-    to_dump = self.props.copy()
-    to_dump['values'] = self.get_prop('values').to_json(names)
-    return to_dump
 
   def __eq__(self, that):
     to_cmp = json.loads(str(self))
@@ -605,14 +543,6 @@ class UnionSchema(Schema):
 
   # read-only properties
   schemas = property(lambda self: self._schemas)
-
-  def to_json(self, names=None):
-    if names is None:
-      names = Names()
-    to_dump = []
-    for schema in self.schemas:
-      to_dump.append(schema.to_json(names))
-    return to_dump
 
   def __eq__(self, that):
     to_cmp = json.loads(str(self))
@@ -696,22 +626,6 @@ class RecordSchema(NamedSchema):
       fields_dict[field.name] = field
     return fields_dict
 
-  def to_json(self, names=None):
-    if names is None:
-      names = Names()
-    # Request records don't have names
-    if self.type == 'request':
-      return [ f.to_json(names) for f in self.fields ]
-
-    if self.fullname in names.names:
-      return self.name_ref(names)
-    else:
-      names.names[self.fullname] = self
-
-    to_dump = names.prune_namespace(self.props.copy())
-    to_dump['fields'] = [ f.to_json(names) for f in self.fields ]
-    return to_dump
-
   def __eq__(self, that):
     to_cmp = json.loads(str(self))
     return to_cmp == json.loads(str(that))
@@ -788,20 +702,3 @@ def make_avsc_object(json_data, names=None):
   # not for us!
   fail_msg = "Could not make an Avro Schema object from %s." % json_data
   raise SchemaParseException(fail_msg)
-
-# TODO(hammer): make method for reading from a file?
-def parse(json_string):
-  """Constructs the Schema from the JSON text."""
-  # parse the JSON
-  try:
-    json_data = json.loads(json_string)
-  except Exception as e:
-    import sys
-    raise SchemaParseException('Error parsing JSON: %s, error = %s'
-                               % (json_string, e)) #, None, sys.exc_info()[2]
-
-  # Initialize the names object
-  names = Names()
-
-  # construct the Avro Schema object
-  return make_avsc_object(json_data, names)
