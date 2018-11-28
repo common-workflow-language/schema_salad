@@ -115,15 +115,6 @@ def validate_ex(expected_schema,                  # type: Schema
                 raise ValidationException(u"the value is not string")
             else:
                 return False
-    elif schema_type == 'bytes':
-        if isinstance(datum, str):
-            return True
-        else:
-            if raise_ex:
-                raise ValidationException(
-                    u"the value `%s` is not bytes" % vpformat(datum))
-            else:
-                return False
     elif schema_type == 'int':
         if (isinstance(datum, six.integer_types)
                 and INT_MIN_VALUE <= datum <= INT_MAX_VALUE):
