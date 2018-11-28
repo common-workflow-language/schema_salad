@@ -4,6 +4,8 @@
    :target: https://travis-ci.org/common-workflow-language/schema_salad
 .. |Build status| image:: https://img.shields.io/appveyor/ci/mr-c/schema-salad/master.svg?label=windows%20build
    :target: https://ci.appveyor.com/project/mr-c/schema-salad/branch/master
+.. |Code coverage| image:: https://codecov.io/gh/common-workflow-language/schema_salad/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/common-workflow-language/schema_salad
 
 Schema Salad
 ------------
