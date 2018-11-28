@@ -23,7 +23,6 @@ A schema may be one of:
   An array of values, all of the same schema;
   A union of other schemas;
   A unicode string;
-  A sequence of bytes;
   A 32-bit signed int;
   A 64-bit signed long;
   A 32-bit floating-point float;
@@ -44,7 +43,6 @@ PRIMITIVE_TYPES = (
     'null',
     'boolean',
     'string',
-    'bytes',
     'int',
     'long',
     'float',
