@@ -55,3 +55,5 @@ class TestErrors(unittest.TestCase):
     def test_bad_schema(self):
         self.assertEqual(1, schema_salad.main.main(
             argsl=[get_data("tests/bad_schema.yml")]))
+        self.assertEqual(1, schema_salad.main.main(
+            argsl=["--print-avro", get_data("tests/bad_schema.yml")]))
