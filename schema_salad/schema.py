@@ -6,20 +6,17 @@ import logging
 from typing import (IO, Any, AnyStr, Dict, List, MutableMapping,
                     MutableSequence, Set, Tuple, TypeVar, Union, cast)
 
-from . import avro
-from .avro.schema import Names  # pylint: disable=no-name-in-module,import-error
-from .avro.schema import SchemaParseException
 from pkg_resources import resource_stream
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from six import iteritems, string_types
 from six.moves import urllib
 from typing_extensions import Text  # pylint: disable=unused-import
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 from schema_salad.utils import (add_dictlist, aslist, convert_to_dict, flatten,
                                 json_dumps)
-
+from . import avro
+from .avro.schema import Names, SchemaParseException
 from . import jsonld_context, ref_resolver, validate
 from .ref_resolver import Loader
 from .sourceline import (SourceLine, add_lc_filename, bullets, relname,

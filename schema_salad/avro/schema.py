@@ -63,7 +63,6 @@ VALID_TYPES = PRIMITIVE_TYPES + NAMED_TYPES + (
     'array',
     'map',
     'union',
-    'request',
 )
 
 SCHEMA_RESERVED_PROPS = (
@@ -605,11 +604,8 @@ class RecordSchema(NamedSchema):
             raise SchemaParseException('Must provide Names.')
 
         # Call parent ctor (adds own name to namespace, too)
-        if schema_type == 'request':
-            Schema.__init__(self, schema_type, other_props)
-        else:
-            NamedSchema.__init__(self, schema_type, name, namespace, names,
-                                 other_props)
+        NamedSchema.__init__(self, schema_type, name, namespace, names,
+                             other_props)
 
         if schema_type == 'record':
             old_default = names.default_namespace
