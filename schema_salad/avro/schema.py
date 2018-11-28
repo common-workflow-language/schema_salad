@@ -185,11 +185,6 @@ class Name(object):
         else:
             self._full = name_attr
 
-    def __eq__(self, other):
-        if not isinstance(other, Name):
-            return False
-        return self.fullname == other.fullname
-
     fullname = property(lambda self: self._full)
 
     def get_space(self):
@@ -349,10 +344,6 @@ class Field(object):
     def set_prop(self, key, value):  # type: (Text, Union[Schema, Text, None]) -> None
         self._props[key] = value
 
-    def __eq__(self, that):
-        to_cmp = json.loads(Text(self))
-        return to_cmp == json.loads(Text(that))
-
 #
 # Primitive Types
 #
@@ -368,9 +359,6 @@ class PrimitiveSchema(Schema):
         Schema.__init__(self, atype, other_props=other_props)
 
         self.fullname = atype
-
-    def __eq__(self, that):
-        return self.props == that.props
 
 #
 # Complex Types (non-recursive)
@@ -402,9 +390,6 @@ class EnumSchema(NamedSchema):
     symbols = property(lambda self: self.get_prop('symbols'))
     doc = property(lambda self: self.get_prop('doc'))
 
-    def __eq__(self, that):
-        return self.props == that.props
-
 #
 # Complex Types (recursive)
 #
@@ -432,10 +417,6 @@ class ArraySchema(Schema):
 
     # read-only properties
     items = property(lambda self: self.get_prop('items'))
-
-    def __eq__(self, that):
-        to_cmp = json.loads(Text(self))
-        return to_cmp == json.loads(Text(that))
 
 class UnionSchema(Schema):
     """
@@ -476,10 +457,6 @@ class UnionSchema(Schema):
 
     # read-only properties
     schemas = property(lambda self: self._schemas)
-
-    def __eq__(self, that):
-        to_cmp = json.loads(str(self))
-        return to_cmp == json.loads(str(that))
 
 class RecordSchema(NamedSchema):
     @staticmethod
@@ -549,10 +526,6 @@ class RecordSchema(NamedSchema):
     # read-only properties
     fields = property(lambda self: self.get_prop('fields'))
     doc = property(lambda self: self.get_prop('doc'))
-
-    def __eq__(self, that):
-        to_cmp = json.loads(str(self))
-        return to_cmp == json.loads(str(that))
 
 #
 # Module Methods
