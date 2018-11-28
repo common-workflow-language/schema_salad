@@ -15,8 +15,7 @@ from typing_extensions import Text  # pylint: disable=unused-import
 
 from schema_salad.utils import (add_dictlist, aslist, convert_to_dict, flatten,
                                 json_dumps)
-from . import avro
-from .avro.schema import Names, SchemaParseException
+from .avro.schema import Names, SchemaParseException, make_avsc_object
 from . import jsonld_context, ref_resolver, validate
 from .ref_resolver import Loader
 from .sourceline import (SourceLine, add_lc_filename, bullets, relname,
@@ -186,11 +185,13 @@ def get_metaschema():
     add_lc_filename(j, "metaschema.yml")
     j, _ = loader.resolve_all(j, "https://w3id.org/cwl/salad#")
 
-    (sch_names, sch_obj) = make_avro_schema(j, loader)
-    if isinstance(sch_names, Exception):
+    sch_obj = make_avro(j, loader)
+    try:
+        sch_names = make_avro_schema_from_avro(sch_obj)
+    except SchemaParseException:
         _logger.error("Metaschema error, avro was:\n%s",
                       json_dumps(sch_obj, indent=4))
-        raise sch_names
+        raise
     validate_doc(sch_names, j, loader, strict=True)
     return (sch_names, j, loader)
 
@@ -239,7 +240,7 @@ def load_schema(schema_ref,  # type: Union[CommentedMap, CommentedSeq, Text]
 
     # Make the Avro validation that will be used to validate the target
     # document
-    (avsc_names, avsc_obj) = make_avro_schema(schema_doc, document_loader)
+    avsc_names = make_avro_schema(schema_doc, document_loader)
 
     return document_loader, avsc_names, schema_metadata, metaschema_loader
 
@@ -573,11 +574,9 @@ def extend_and_specialize(items, loader):
     return n
 
 
-def make_avro_schema(i,         # type: List[Dict[Text, Any]]
-                     loader     # type: Loader
-                     ):
-    # type: (...) -> Tuple[Names, MutableSequence[MutableMapping[Text, Any]]]
-    names = avro.schema.Names()
+def make_avro(i,         # type: List[Dict[Text, Any]]
+              loader     # type: Loader
+             ):  # type: (...) -> List[Any]
 
     j = extend_and_specialize(i, loader)
 
@@ -586,12 +585,24 @@ def make_avro_schema(i,         # type: List[Dict[Text, Any]]
         name_dict[t["name"]] = t
     j2 = make_valid_avro(j, name_dict, set())
 
-    j3 = [t for t in j2 if isinstance(t, MutableMapping) and not t.get(
+    return [t for t in j2 if isinstance(t, MutableMapping) and not t.get(
         "abstract") and t.get("type") != "documentation"]
 
-    avro.schema.make_avsc_object(convert_to_dict(j3), names)
+def make_avro_schema(i,         # type: List[Any]
+                     loader     # type: Loader
+                     ):  # type: (...) -> Names
+    names = Names()
+    avro = make_avro(i, loader)
+    make_avsc_object(convert_to_dict(avro), names)
+    return names
 
-    return (names, j3)
+
+def make_avro_schema_from_avro(avro):
+    # type: (List[Union[Avro, Dict, Text]]) -> Names
+    names = Names()
+    make_avsc_object(convert_to_dict(avro), names)
+    return names
+
 
 def shortname(inputid):
     # type: (Text) -> Text

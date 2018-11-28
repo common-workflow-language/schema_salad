@@ -259,9 +259,9 @@ def main(argsl=None):  # type: (List[str]) -> int
     # Make the Avro validation that will be used to validate the target
     # document
     if isinstance(schema_doc, MutableSequence):
+        avsc_obj = schema.make_avro(schema_doc, document_loader)
         try:
-            (avsc_names, avsc_obj) = schema.make_avro_schema(
-                schema_doc, document_loader)
+            avsc_names = schema.make_avro_schema_from_avro(avsc_obj)
         except SchemaParseException as err:
             _logger.error("Schema `%s` error:\n%s", args.schema, err,
                           exc_info=(
