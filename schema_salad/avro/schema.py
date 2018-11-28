@@ -13,7 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# Modifications copyright (C) 2017 Common Workflow Language.
+# Modifications copyright (C) 2017-2018 Common Workflow Language.
 """
 Contains the Schema classes.
 
@@ -21,9 +21,7 @@ A schema may be one of:
   A record, mapping field names to field value data;
   An enum, containing one of a small set of symbols;
   An array of values, all of the same schema;
-  A map containing string/value pairs, each of a declared schema;
   A union of other schemas;
-  A fixed sized binary object;
   A unicode string;
   A sequence of bytes;
   A 32-bit signed int;
@@ -54,14 +52,12 @@ PRIMITIVE_TYPES = (
 )
 
 NAMED_TYPES = (
-    'fixed',
     'enum',
     'record',
 )
 
 VALID_TYPES = PRIMITIVE_TYPES + NAMED_TYPES + (
     'array',
-    'map',
     'union',
 )
 
@@ -71,9 +67,7 @@ SCHEMA_RESERVED_PROPS = (
     'namespace',
     'fields',     # Record
     'items',      # Array
-    'size',       # Fixed
     'symbols',    # Enum
-    'values',     # Map
     'doc',
 )
 
@@ -229,23 +223,6 @@ class Names(object):
             return None
         return self.names[test]
 
-    def prune_namespace(self, properties):
-        """given a properties, return properties with namespace removed if
-        it matches the own default namespace"""
-        if self.default_namespace is None:
-            # I have no default -- no change
-            return properties
-        if 'namespace' not in properties:
-            # he has no namespace - no change
-            return properties
-        if properties['namespace'] != self.default_namespace:
-            # we're different - leave his stuff alone
-            return properties
-        # we each have a namespace and it's redundant. delete his.
-        prunable = properties.copy()
-        del prunable['namespace']
-        return prunable
-
     def add_name(self, name_attr, space_attr, new_schema):
         # type: (Text, Optional[Text], NamedSchema) -> Name
         """
@@ -299,11 +276,6 @@ class NamedSchema(Schema):
 
         # Store full name as calculated from name, namespace
         self._fullname = new_name.fullname
-
-    def name_ref(self, names):
-        if self.namespace == names.default_namespace:
-            return self.name
-        return self.fullname
 
     # read-only properties
     name = property(lambda self: self.get_prop('name'))
@@ -404,26 +376,6 @@ class PrimitiveSchema(Schema):
 # Complex Types (non-recursive)
 #
 
-class FixedSchema(NamedSchema):
-    def __init__(self, name, namespace, size, names=None, other_props=None):
-        # type: (Text, Optional[Text], int, Names, Dict) -> None
-        # Ensure valid ctor args
-        if not isinstance(size, int):
-            fail_msg = 'Fixed Schema requires a valid integer for size property.'
-            raise AvroException(fail_msg)
-
-        # Call parent ctor
-        NamedSchema.__init__(self, 'fixed', name, namespace, names, other_props)
-
-        # Add class members
-        self.set_prop('size', size)
-
-    # read-only properties
-    size = property(lambda self: self.get_prop('size'))
-
-    def __eq__(self, that):
-        return self.props == that.props
-
 class EnumSchema(NamedSchema):
     def __init__(self, name, namespace, symbols, names=None, doc=None, other_props=None):
         # type: (Text, Optional[Text], List[Text], Names, Text, Optional[Dict[Text, Any]]) -> None
@@ -480,33 +432,6 @@ class ArraySchema(Schema):
 
     # read-only properties
     items = property(lambda self: self.get_prop('items'))
-
-    def __eq__(self, that):
-        to_cmp = json.loads(Text(self))
-        return to_cmp == json.loads(Text(that))
-
-class MapSchema(Schema):
-    def __init__(self, values, names=None, other_props=None):
-        # type: (Union[Text, List, Dict], Names, Optional[Dict[Text, Any]]) -> None
-        # Call parent ctor
-        Schema.__init__(self, 'map', other_props)
-
-        # Add class members
-        if names is None:
-            raise SchemaParseException('Must provide Names.')
-        if isinstance(values, six.string_types) and names.has_name(values, None):
-            values_schema = cast(Schema, names.get_name(values, None))
-        else:
-            try:
-                values_schema = make_avsc_object(values, names)
-            except SchemaParseException as err:
-                raise SchemaParseException(
-                    'Values schema not a valid Avro schema. {}'.format(err))
-
-        self.set_prop('values', values_schema)
-
-    # read-only properties
-    values = property(lambda self: self.get_prop('values'))
 
     def __eq__(self, that):
         to_cmp = json.loads(Text(self))
@@ -625,13 +550,6 @@ class RecordSchema(NamedSchema):
     fields = property(lambda self: self.get_prop('fields'))
     doc = property(lambda self: self.get_prop('doc'))
 
-    @property
-    def fields_dict(self):
-        fields_dict = {}
-        for field in self.fields:
-            fields_dict[field.name] = field
-        return fields_dict
-
     def __eq__(self, that):
         to_cmp = json.loads(str(self))
         return to_cmp == json.loads(str(that))
@@ -673,9 +591,6 @@ def make_avsc_object(json_data, names=None):
             name = cast(Text, json_data.get('name'))
             namespace = cast(Text, json_data.get('namespace',
                                                  names.default_namespace))
-            if atype == 'fixed':
-                size = cast(int, json_data.get('size'))
-                return FixedSchema(name, namespace, size, names, other_props)
             if atype == 'enum':
                 symbols = cast(List[Text], json_data.get('symbols'))
                 doc = json_data.get('doc')
@@ -689,10 +604,6 @@ def make_avsc_object(json_data, names=None):
             if atype == 'array':
                 items = cast(List, json_data.get('items'))
                 return ArraySchema(items, names, other_props)
-            if atype == 'map':
-                values = cast(Union[Text, List, Dict], json_data.get('values'))
-                return MapSchema(values, names, other_props)
-            raise SchemaParseException('Unknown Valid Type: %s' % atype)
         if atype is None:
             raise SchemaParseException('No "type" property: %s' % json_data)
         raise SchemaParseException('Undefined type: %s' % atype)
