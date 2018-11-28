@@ -3,8 +3,8 @@ from __future__ import absolute_import, print_function
 import unittest
 
 import six
+import schema_salad
 from schema_salad.avro.schema import Names
-
 from schema_salad.schema import load_and_validate, load_schema
 from schema_salad.validate import ValidationException
 
@@ -51,3 +51,7 @@ class TestErrors(unittest.TestCase):
                 except ValidationException as e:
                     print("\n", e)
                     raise
+
+    def test_bad_schema(self):
+        self.assertEqual(1, schema_salad.main.main(
+            argsl=[get_data("tests/bad_schema.yml")]))
