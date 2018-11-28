@@ -23,6 +23,7 @@ from . import codegen, jsonld_context, schema, validate
 from .ref_resolver import Loader, file_uri
 from .sourceline import strip_dup_lineno
 from .utils import json_dumps
+from .avro.schema import SchemaParseException
 
 register('json-ld', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')
 _logger = logging.getLogger("salad")
@@ -258,19 +259,18 @@ def main(argsl=None):  # type: (List[str]) -> int
     # Make the Avro validation that will be used to validate the target
     # document
     if isinstance(schema_doc, MutableSequence):
-        (avsc_names, avsc_obj) = schema.make_avro_schema(
-            schema_doc, document_loader)
+        try:
+            (avsc_names, avsc_obj) = schema.make_avro_schema(
+                schema_doc, document_loader)
+        except SchemaParseException as err:
+            _logger.error("Schema `%s` error:\n%s", args.schema, err,
+                          exc_info=(
+                              (type(err), err, None) if args.debug else None))
+            if args.print_avro:
+                print(json_dumps(avsc_obj, indent=4))
+            return 1
     else:
         _logger.error("Schema `%s` must be a list.", args.schema)
-        return 1
-
-    if isinstance(avsc_names, Exception):
-        _logger.error("Schema `%s` error:\n%s", args.schema,  # type: ignore
-                      avsc_names, exc_info=(
-                          (type(avsc_names), avsc_names, None) if args.debug
-                          else None))
-        if args.print_avro:
-            print(json_dumps(avsc_obj, indent=4))
         return 1
 
     # Optionally print Avro-compatible schema from schema

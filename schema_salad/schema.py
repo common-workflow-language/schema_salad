@@ -206,7 +206,7 @@ def add_namespaces(metadata, namespaces):
 def collect_namespaces(metadata):  # type: (MutableMapping[Text, Any]) -> MutableMapping[Text, Text]
     namespaces = {}  # type: Dict[Text, Text]
     if "$import_metadata" in metadata:
-        for k,v in metadata["$import_metadata"].items():
+        for _, v in metadata["$import_metadata"].items():
             add_namespaces(collect_namespaces(v), namespaces)
     if "$namespaces" in metadata:
         add_namespaces(metadata["$namespaces"], namespaces)
@@ -573,13 +573,10 @@ def extend_and_specialize(items, loader):
     return n
 
 
-def AvroSchemaFromJSONData(j, names):  # type: (Any, avro.schema.Names) -> Any
-    return avro.schema.make_avsc_object(convert_to_dict(j), names)
-
 def make_avro_schema(i,         # type: List[Dict[Text, Any]]
                      loader     # type: Loader
                      ):
-    # type: (...) -> Tuple[Union[Names, SchemaParseException], MutableSequence[MutableMapping[Text, Any]]]
+    # type: (...) -> Tuple[Names, MutableSequence[MutableMapping[Text, Any]]]
     names = avro.schema.Names()
 
     j = extend_and_specialize(i, loader)
@@ -592,10 +589,7 @@ def make_avro_schema(i,         # type: List[Dict[Text, Any]]
     j3 = [t for t in j2 if isinstance(t, MutableMapping) and not t.get(
         "abstract") and t.get("type") != "documentation"]
 
-    try:
-        AvroSchemaFromJSONData(j3, names)
-    except avro.schema.SchemaParseException as e:
-        return (e, j3)
+    avro.schema.make_avsc_object(convert_to_dict(j3), names)
 
     return (names, j3)
 
