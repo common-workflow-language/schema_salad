@@ -39,9 +39,7 @@ install_requires = [
     'typing-extensions']
 
 extras_require={
-    ':python_version<"3"': ['avro == 1.8.1'],
     ':python_version<"3.7"': ['typing >= 3.6.4'],
-    ':python_version>="3"': ['avro-cwl == 1.8.9']  # fork of avro for working with python3
 }
 
 setup(name='schema-salad',

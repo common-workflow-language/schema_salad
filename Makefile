@@ -68,29 +68,34 @@ clean: FORCE
 	rm -Rf .coverage
 	rm -f diff-cover.html
 
-pep8: pycodestyle
+# Linting and code style related targets
+## sorting imports using isort: https://github.com/timothycrosley/isort
+sort_imports:
+	isort ${MODULE}/*.py ${MODULE}/tests/*.py setup.py
 
-## pycodestyle  : check Python code style
+pep8: pycodestyle
+## pycodestyle        : check Python code style
 pycodestyle: $(PYSOURCES)
-	pep8 --exclude=_version.py  --show-source --show-pep8 $^ || true
+	pycodestyle --exclude=_version.py  --show-source --show-pep8 $^ || true
 
 pep8_report.txt: pycodestyle_report.txt
 pycodestyle_report.txt: $(PYSOURCES)
-	pep8 --exclude=_version.py $^ > $@ || true
+	pycodestyle --exclude=_version.py $^ > $@ || true
 
 diff_pep8_report: diff_pycodestyle_report
 diff_pycodestyle_report: pycodestyle_report.txt
-	diff-quality --violations=pep8 pep8_report.txt
+	diff-quality --violations=pycodestyle $^
 
-## pep257      : check Python code style
-pep257: $(PYSOURCES)
-	pep257 --ignore=D100,D101,D102,D103 $^ || true
+pep257: pydocstyle
+## pydocstyle      : check Python code style
+pydocstyle: $(PYSOURCES)
+	pydocstyle --ignore=D100,D101,D102,D103 $^ || true
 
-pep257_report.txt: $(PYSOURCES)
-	pep257 setup.py $^ > $@ 2>&1 || true
+pydocstyle_report.txt: $(PYSOURCES)
+	pydocstyle setup.py $^ > $@ 2>&1 || true
 
-diff_pep257_report: pep257_report.txt
-	diff-quality --violations=pep8 pep257_report.txt
+diff_pydocstyle_report: pydocstyle_report.txt
+	diff-quality --violations=pycodestyle $^
 
 ## autopep8    : fix most Python code indentation and formatting
 autopep8: $(PYSOURCES)
@@ -104,11 +109,11 @@ format: autopep8
 ## pylint      : run static code analysis on Python code
 pylint: $(PYSOURCES)
 	pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
-                $^ || true
+                $^ -j$(nproc)|| true
 
 pylint_report.txt: ${PYSOURCES}
 	pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
-		$^ > $@ || true
+		$^ -j$(nproc)> $@ || true
 
 diff_pylint_report: pylint_report.txt
 	diff-quality --violations=pylint pylint_report.txt
@@ -216,5 +221,9 @@ release: release-test
 		twine upload testenv2.7_2/src/${PACKAGE}/dist/* && \
 		git tag ${VERSION} && git push --tags
 
-
 FORCE:
+
+# Use this to print the value of a Makefile variable
+# Example `make print-VERSION`
+# From https://www.cmcrossroads.com/article/printing-value-makefile-variable
+print-%  : ; @echo $* = $($*)
