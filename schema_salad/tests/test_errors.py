@@ -3,7 +3,7 @@ from __future__ import absolute_import, print_function
 import unittest
 
 import six
-from avro.schema import Names
+from schema_salad.avro.schema import Names
 
 from schema_salad.schema import load_and_validate, load_schema
 from schema_salad.validate import ValidationException
