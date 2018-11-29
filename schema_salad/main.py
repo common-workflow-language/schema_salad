@@ -231,11 +231,10 @@ def main(argsl=None):  # type: (List[str]) -> int
     # Validate the schema document against the metaschema
     try:
         schema.validate_doc(metaschema_names, schema_doc,
-                            metaschema_loader, args.strict,
-                            source=schema_metadata.get("name"))
+                            metaschema_loader, args.strict)
     except validate.ValidationException as e:
-        _logger.error("While validating schema `%s`:\n%s" %
-                      (args.schema, str(e)))
+        _logger.error("While validating schema `%s`:\n%s",
+                      args.schema, str(e))
         return 1
 
     # Get the json-ld context and RDFS representation from the schema
