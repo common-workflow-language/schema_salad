@@ -654,8 +654,9 @@ class Loader(object):
                                 v.lc.filename = document.lc.filename
                             else:
                                 raise validate.ValidationException(
-                                    "mapSubject '%s' value '%s' is not a dict"
-                                    "and does not have a mapPredicate", k, v)
+                                    "mapSubject '{}' value '{}' is not a dict"
+                                    "and does not have a mapPredicate".format(
+                                        k, v))
                         else:
                             v = val
 
