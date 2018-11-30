@@ -1,9 +1,9 @@
+"""Functions to process Schema Salad schemas."""
 from __future__ import absolute_import
 
 import copy
 import hashlib
-import logging
-from typing import (IO, Any, AnyStr, Dict, List, MutableMapping,
+from typing import (IO, Any, AnyStr, Dict, List, Mapping, MutableMapping,
                     MutableSequence, Set, Tuple, TypeVar, Union, cast)
 
 from pkg_resources import resource_stream
@@ -15,15 +15,14 @@ from typing_extensions import Text  # pylint: disable=unused-import
 
 from schema_salad.utils import (add_dictlist, aslist, convert_to_dict, flatten,
                                 json_dumps)
+from . import _logger
 from .avro.schema import Names, SchemaParseException, make_avsc_object
 from . import jsonld_context, ref_resolver, validate
 from .ref_resolver import Loader
 from .sourceline import (SourceLine, add_lc_filename, bullets, relname,
                          strip_dup_lineno)
 
-_logger = logging.getLogger("salad")
-
-salad_files = ('metaschema.yml',
+SALAD_FILES = ('metaschema.yml',
                'metaschema_base.yml',
                'salad.md',
                'field_name.yml',
@@ -54,15 +53,16 @@ salad_files = ('metaschema.yml',
                'typedsl_res_proc.yml')
 
 
-def get_metaschema():
-    # type: () -> Tuple[Names, List[Dict[Text, Any]], Loader]
+def get_metaschema():  # type: () -> Tuple[Names, List[Dict[Text, Any]], Loader]
+    """Instantiate the metaschema."""
     loader = ref_resolver.Loader({
         "Any": "https://w3id.org/cwl/salad#Any",
         "ArraySchema": "https://w3id.org/cwl/salad#ArraySchema",
         "Array_symbol": "https://w3id.org/cwl/salad#ArraySchema/type/Array_symbol",
         "DocType": "https://w3id.org/cwl/salad#DocType",
         "Documentation": "https://w3id.org/cwl/salad#Documentation",
-        "Documentation_symbol": "https://w3id.org/cwl/salad#Documentation/type/Documentation_symbol",
+        "Documentation_symbol":
+            "https://w3id.org/cwl/salad#Documentation/type/Documentation_symbol",
         "Documented": "https://w3id.org/cwl/salad#Documented",
         "EnumSchema": "https://w3id.org/cwl/salad#EnumSchema",
         "Enum_symbol": "https://w3id.org/cwl/salad#EnumSchema/type/Enum_symbol",
@@ -172,14 +172,12 @@ def get_metaschema():
         "xsd": "http://www.w3.org/2001/XMLSchema#"
     })
 
-    for f in salad_files:
-        rs = resource_stream(__name__, 'metaschema/' + f)
-        loader.cache["https://w3id.org/cwl/" + f] = rs.read()
-        rs.close()
+    for salad in SALAD_FILES:
+        with resource_stream(__name__, 'metaschema/' + salad) as stream:
+            loader.cache["https://w3id.org/cwl/" + salad] = stream.read()
 
-    rs = resource_stream(__name__, 'metaschema/metaschema.yml')
-    loader.cache["https://w3id.org/cwl/salad"] = rs.read()
-    rs.close()
+    with resource_stream(__name__, 'metaschema/metaschema.yml') as stream:
+        loader.cache["https://w3id.org/cwl/salad"] = stream.read()
 
     j = yaml.round_trip_load(loader.cache["https://w3id.org/cwl/salad"])
     add_lc_filename(j, "metaschema.yml")
@@ -196,19 +194,24 @@ def get_metaschema():
     return (sch_names, j, loader)
 
 def add_namespaces(metadata, namespaces):
-    # type: (MutableMapping[Text, Any], MutableMapping[Text, Text]) -> None
-    for k,v in metadata.items():
-        if k not in namespaces:
-            namespaces[k] = v
-        elif namespaces[k] != v:
-            raise validate.ValidationException("Namespace prefix '%s' has conflicting definitions '%s' and '%s'",
-                                               namespaces[k], v)
+    # type: (Mapping[Text, Any], MutableMapping[Text, Text]) -> None
+    """Collect the provided namespaces, checking for conflicts."""
+    for key, value in metadata.items():
+        if key not in namespaces:
+            namespaces[key] = value
+        elif namespaces[key] != value:
+            raise validate.ValidationException(
+                "Namespace prefix '{}' has conflicting definitions '{}'"
+                " and '{}'.".format(key, namespaces[key], value))
 
-def collect_namespaces(metadata):  # type: (MutableMapping[Text, Any]) -> MutableMapping[Text, Text]
+
+def collect_namespaces(metadata):
+    # type: (Mapping[Text, Any]) -> Dict[Text, Text]
+    """Walk through the metadata object, collecting namespace declarations."""
     namespaces = {}  # type: Dict[Text, Text]
     if "$import_metadata" in metadata:
-        for _, v in metadata["$import_metadata"].items():
-            add_namespaces(collect_namespaces(v), namespaces)
+        for value in metadata["$import_metadata"].values():
+            add_namespaces(collect_namespaces(value), namespaces)
     if "$namespaces" in metadata:
         add_namespaces(metadata["$namespaces"], namespaces)
     return namespaces
@@ -217,11 +220,13 @@ def load_schema(schema_ref,  # type: Union[CommentedMap, CommentedSeq, Text]
                 cache=None   # type: Dict
                 ):
     # type: (...) -> Tuple[Loader, Union[Names, SchemaParseException], Dict[Text, Any], Loader]
-    """Load a schema that can be used to validate documents using load_and_validate.
+    """
+    Load a schema that can be used to validate documents using load_and_validate.
 
-    return document_loader, avsc_names, schema_metadata, metaschema_loader"""
+    return: document_loader, avsc_names, schema_metadata, metaschema_loader
+    """
 
-    metaschema_names, metaschema_doc, metaschema_loader = get_metaschema()
+    metaschema_names, _metaschema_doc, metaschema_loader = get_metaschema()
     if cache is not None:
         metaschema_loader.cache.update(cache)
     schema_doc, schema_metadata = metaschema_loader.resolve_ref(schema_ref, "")
@@ -232,8 +237,7 @@ def load_schema(schema_ref,  # type: Union[CommentedMap, CommentedSeq, Text]
     validate_doc(metaschema_names, schema_doc, metaschema_loader, True)
     metactx = schema_metadata.get("@context", {})
     metactx.update(collect_namespaces(schema_metadata))
-    (schema_ctx, rdfs) = jsonld_context.salad_to_jsonld_context(
-        schema_doc, metactx)
+    schema_ctx = jsonld_context.salad_to_jsonld_context(schema_doc, metactx)[0]
 
     # Create the loader that will be used to load the target document.
     document_loader = Loader(schema_ctx, cache=cache)
@@ -258,36 +262,34 @@ def load_and_validate(document_loader,                 # type: Loader
     """
     try:
         if isinstance(document, CommentedMap):
-            source = document["id"]
             data, metadata = document_loader.resolve_all(
                 document, document["id"], checklinks=True,
                 strict_foreign_properties=strict_foreign_properties)
         else:
-            source = document
             data, metadata = document_loader.resolve_ref(
                 document, checklinks=True,
                 strict_foreign_properties=strict_foreign_properties)
 
-        validate_doc(avsc_names, data, document_loader, strict, source=source,
+        validate_doc(avsc_names, data, document_loader, strict,
                      strict_foreign_properties=strict_foreign_properties)
 
         return data, metadata
-    except validate.ValidationException as v:
-        raise validate.ValidationException(strip_dup_lineno(str(v)))
+    except validate.ValidationException as exc:
+        raise validate.ValidationException(strip_dup_lineno(str(exc)))
 
 
 def validate_doc(schema_names,  # type: Names
                  doc,           # type: Union[Dict[Text, Any], List[Dict[Text, Any]], Text, None]
                  loader,        # type: Loader
                  strict,        # type: bool
-                 source=None,
                  strict_foreign_properties=False  # type: bool
                  ):
     # type: (...) -> None
+    """Validate a document using the provided schema."""
     has_root = False
-    for r in schema_names.names.values():
-        if ((hasattr(r, 'get_prop') and r.get_prop(u"documentRoot")) or (
-                u"documentRoot" in r.props)):
+    for root in schema_names.names.values():
+        if ((hasattr(root, 'get_prop') and root.get_prop(u"documentRoot")) or (
+                u"documentRoot" in root.props)):
             has_root = True
             break
 
@@ -296,27 +298,27 @@ def validate_doc(schema_names,  # type: Names
             "No document roots defined in the schema")
 
     if isinstance(doc, MutableSequence):
-        validate_doc = doc
+        vdoc = doc
     elif isinstance(doc, CommentedMap):
-        validate_doc = CommentedSeq([doc])
-        validate_doc.lc.add_kv_line_col(0, [doc.lc.line, doc.lc.col])
-        validate_doc.lc.filename = doc.lc.filename
+        vdoc = CommentedSeq([doc])
+        vdoc.lc.add_kv_line_col(0, [doc.lc.line, doc.lc.col])
+        vdoc.lc.filename = doc.lc.filename
     else:
         raise validate.ValidationException("Document must be dict or list")
 
     roots = []
-    for r in schema_names.names.values():
-        if ((hasattr(r, "get_prop") and r.get_prop(u"documentRoot")) or (
-                r.props.get(u"documentRoot"))):
-            roots.append(r)
+    for root in schema_names.names.values():
+        if ((hasattr(root, "get_prop") and root.get_prop(u"documentRoot")) or (
+                root.props.get(u"documentRoot"))):
+            roots.append(root)
 
     anyerrors = []
-    for pos, item in enumerate(validate_doc):
-        sl = SourceLine(validate_doc, pos, Text)
+    for pos, item in enumerate(vdoc):
+        sourceline = SourceLine(vdoc, pos, Text)
         success = False
-        for r in roots:
+        for root in roots:
             success = validate.validate_ex(
-                r, item, loader.identifiers, strict,
+                root, item, loader.identifiers, strict,
                 foreign_properties=loader.foreign_properties,
                 raise_ex=False, skip_foreign_properties=loader.skip_schemas,
                 strict_foreign_properties=strict_foreign_properties)
@@ -325,41 +327,42 @@ def validate_doc(schema_names,  # type: Names
 
         if not success:
             errors = []  # type: List[Text]
-            for r in roots:
-                if hasattr(r, "get_prop"):
-                    name = r.get_prop(u"name")
-                elif hasattr(r, "name"):
-                    name = r.name
+            for root in roots:
+                if hasattr(root, "get_prop"):
+                    name = root.get_prop(u"name")
+                elif hasattr(root, "name"):
+                    name = root.name
 
                 try:
                     validate.validate_ex(
-                        r, item, loader.identifiers, strict,
+                        root, item, loader.identifiers, strict,
                         foreign_properties=loader.foreign_properties,
                         raise_ex=True, skip_foreign_properties=loader.skip_schemas,
                         strict_foreign_properties=strict_foreign_properties)
-                except validate.ClassValidationException as e:
-                    errors = [sl.makeError(u"tried `%s` but\n%s" % (
-                        name, validate.indent(str(e), nolead=False)))]
+                except validate.ClassValidationException as exc:
+                    errors = [sourceline.makeError(u"tried `%s` but\n%s" % (
+                        name, validate.indent(str(exc), nolead=False)))]
                     break
-                except validate.ValidationException as e:
-                    errors.append(sl.makeError(u"tried `%s` but\n%s" % (
-                        name, validate.indent(str(e), nolead=False))))
+                except validate.ValidationException as exc:
+                    errors.append(sourceline.makeError(u"tried `%s` but\n%s" % (
+                        name, validate.indent(str(exc), nolead=False))))
 
-            objerr = sl.makeError(u"Invalid")
+            objerr = sourceline.makeError(u"Invalid")
             for ident in loader.identifiers:
                 if ident in item:
-                    objerr = sl.makeError(
+                    objerr = sourceline.makeError(
                         u"Object `%s` is not valid because"
                         % (relname(item[ident])))
                     break
             anyerrors.append(u"%s\n%s" %
                              (objerr, validate.indent(bullets(errors, "- "))))
-    if len(anyerrors) > 0:
+    if anyerrors:
         raise validate.ValidationException(
             strip_dup_lineno(bullets(anyerrors, "* ")))
 
 def get_anon_name(rec):
     # type: (MutableMapping[Text, Any]) -> Text
+    """Calculate a reproducible name for anonymous types."""
     if "name" in rec:
         return rec["name"]
     anon_name = ""
@@ -367,14 +370,13 @@ def get_anon_name(rec):
         for sym in rec["symbols"]:
             anon_name += sym
         return "enum_"+hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
-    elif rec['type'] in ('record', 'https://w3id.org/cwl/salad#record'):
-        for f in rec["fields"]:
-            anon_name += f["name"]
+    if rec['type'] in ('record', 'https://w3id.org/cwl/salad#record'):
+        for field in rec["fields"]:
+            anon_name += field["name"]
         return "record_"+hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
-    elif rec['type'] in ('array', 'https://w3id.org/cwl/salad#array'):
+    if rec['type'] in ('array', 'https://w3id.org/cwl/salad#array'):
         return ""
-    else:
-        raise validate.ValidationException("Expected enum or record, was %s" % rec['type'])
+    raise validate.ValidationException("Expected enum or record, was %s" % rec['type'])
 
 def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
     # type: (Any, Dict[Text, Any], Loader, Set[Text], bool, bool) -> Any
@@ -385,8 +387,7 @@ def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
         if items.get("type") in ("record", "enum") and items.get("name"):
             if items["name"] in found:
                 return items["name"]
-            else:
-                found.add(items["name"])
+            found.add(items["name"])
 
         if not deepen:
             return items
@@ -394,18 +395,20 @@ def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
         items = copy.copy(items)
         if not items.get("name"):
             items["name"] = get_anon_name(items)
-        for n in ("type", "items", "fields"):
-            if n in items:
-                items[n] = replace_type(items[n], spec, loader, found,
-                                        find_embeds=find_embeds, deepen=find_embeds)
-                if isinstance(items[n], MutableSequence):
-                    items[n] = flatten(items[n])
+        for name in ("type", "items", "fields"):
+            if name in items:
+                items[name] = replace_type(
+                    items[name], spec, loader, found, find_embeds=find_embeds,
+                    deepen=find_embeds)
+                if isinstance(items[name], MutableSequence):
+                    items[name] = flatten(items[name])
 
         return items
-    elif isinstance(items, MutableSequence):
+    if isinstance(items, MutableSequence):
         # recursively transform list
-        return [replace_type(i, spec, loader, found, find_embeds=find_embeds, deepen=deepen) for i in items]
-    elif isinstance(items, string_types):
+        return [replace_type(i, spec, loader, found, find_embeds=find_embeds,
+                             deepen=deepen) for i in items]
+    if isinstance(items, string_types):
         # found a string which is a symbol corresponding to a type.
         replace_with = None
         if items in loader.vocab:
@@ -419,18 +422,24 @@ def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
 
         if replace_with:
             return replace_type(replace_with, spec, loader, found, find_embeds=find_embeds)
-        else:
-            found.add(items)
+        found.add(items)
     return items
 
 
 def avro_name(url):  # type: (AnyStr) -> AnyStr
-    doc_url, frg = urllib.parse.urldefrag(url)
+    """
+    Turn a URL into an Avro-safe name.
+
+    If the URL has no fragment, return this plain URL.
+
+    Extract either the last part of the URL fragment past the slash, otherwise
+    the whole fragment.
+    """
+    frg = urllib.parse.urldefrag(url)[1]
     if frg != '':
         if '/' in frg:
             return frg[frg.rindex('/') + 1:]
-        else:
-            return frg
+        return frg
     return url
 
 
@@ -443,24 +452,26 @@ def make_valid_avro(items,          # type: Avro
                     union=False     # type: bool
                     ):
     # type: (...) -> Union[Avro, Dict, Text]
+    """Convert our schema to be more avro like."""
+    # Possibly could be integrated into our fork of avro/schema.py?
     if isinstance(items, MutableMapping):
         items = copy.copy(items)
         if items.get("name") and items.get("inVocab", True):
             items["name"] = avro_name(items["name"])
 
-        if "type" in items and items["type"] in ("https://w3id.org/cwl/salad#record", "https://w3id.org/cwl/salad#enum", "record", "enum"):
+        if "type" in items and items["type"] in (
+                "https://w3id.org/cwl/salad#record",
+                "https://w3id.org/cwl/salad#enum", "record", "enum"):
             if (hasattr(items, "get") and items.get("abstract")) or ("abstract"
                                                                      in items):
                 return items
-
             if items["name"] in found:
                 return cast(Text, items["name"])
-            else:
-                found.add(items["name"])
-        for n in ("type", "items", "values", "fields"):
-            if n in items:
-                items[n] = make_valid_avro(
-                    items[n], alltypes, found, union=True)
+            found.add(items["name"])
+        for field in ("type", "items", "values", "fields"):
+            if field in items:
+                items[field] = make_valid_avro(
+                    items[field], alltypes, found, union=True)
         if "symbols" in items:
             items["symbols"] = [avro_name(sym) for sym in items["symbols"]]
         return items
@@ -476,102 +487,108 @@ def make_valid_avro(items,          # type: Avro
         items = avro_name(items)
     return items
 
+
 def deepcopy_strip(item):  # type: (Any) -> Any
-    """Make a deep copy of list and dict objects.
+    """
+    Make a deep copy of list and dict objects.
 
     Intentionally do not copy attributes.  This is to discard CommentedMap and
     CommentedSeq metadata which is very expensive with regular copy.deepcopy.
-
     """
 
     if isinstance(item, MutableMapping):
         return {k: deepcopy_strip(v) for k, v in iteritems(item)}
-    elif isinstance(item, MutableSequence):
+    if isinstance(item, MutableSequence):
         return [deepcopy_strip(k) for k in item]
-    else:
-        return item
+    return item
+
 
 def extend_and_specialize(items, loader):
     # type: (List[Dict[Text, Any]], Loader) -> List[Dict[Text, Any]]
-    """Apply 'extend' and 'specialize' to fully materialize derived record
-    types."""
+    """
+    Apply 'extend' and 'specialize' to fully materialize derived record types.
+    """
 
     items = deepcopy_strip(items)
-    types = {t["name"]: t for t in items}  # type: Dict[Text, Any]
-    n = []
+    types = {i["name"]: i for i in items}  # type: Dict[Text, Any]
+    results = []
 
-    for t in items:
-        if "extends" in t:
-            spec = {}  # type: Dict[Text, Text]
-            if "specialize" in t:
-                for sp in aslist(t["specialize"]):
-                    spec[sp["specializeFrom"]] = sp["specializeTo"]
+    for stype in items:
+        if "extends" in stype:
+            specs = {}  # type: Dict[Text, Text]
+            if "specialize" in stype:
+                for spec in aslist(stype["specialize"]):
+                    specs[spec["specializeFrom"]] = spec["specializeTo"]
 
             exfields = []  # type: List[Text]
             exsym = []  # type: List[Text]
-            for ex in aslist(t["extends"]):
+            for ex in aslist(stype["extends"]):
                 if ex not in types:
-                    raise Exception("Extends %s in %s refers to invalid base type" % (
-                        t["extends"], t["name"]))
+                    raise Exception(
+                        "Extends {} in {} refers to invalid base type.".format(
+                            stype["extends"], stype["name"]))
 
                 basetype = copy.copy(types[ex])
 
-                if t["type"] == "record":
-                    if len(spec) > 0:
+                if stype["type"] == "record":
+                    if specs:
                         basetype["fields"] = replace_type(
-                            basetype.get("fields", []), spec, loader, set())
+                            basetype.get("fields", []), specs, loader, set())
 
-                    for f in basetype.get("fields", []):
-                        if "inherited_from" not in f:
-                            f["inherited_from"] = ex
+                    for field in basetype.get("fields", []):
+                        if "inherited_from" not in field:
+                            field["inherited_from"] = ex
 
                     exfields.extend(basetype.get("fields", []))
-                elif t["type"] == "enum":
+                elif stype["type"] == "enum":
                     exsym.extend(basetype.get("symbols", []))
 
-            if t["type"] == "record":
-                t = copy.copy(t)
-                exfields.extend(t.get("fields", []))
-                t["fields"] = exfields
+            if stype["type"] == "record":
+                stype = copy.copy(stype)
+                exfields.extend(stype.get("fields", []))
+                stype["fields"] = exfields
 
                 fieldnames = set()  # type: Set[Text]
-                for field in t["fields"]:
+                for field in stype["fields"]:
                     if field["name"] in fieldnames:
                         raise validate.ValidationException(
-                            "Field name %s appears twice in %s" % (field["name"], t["name"]))
+                            "Field name {} appears twice in {}".format(
+                                field["name"], stype["name"]))
                     else:
                         fieldnames.add(field["name"])
-            elif t["type"] == "enum":
-                t = copy.copy(t)
-                exsym.extend(t.get("symbols", []))
-                t["symbol"] = exsym
+            elif stype["type"] == "enum":
+                stype = copy.copy(stype)
+                exsym.extend(stype.get("symbols", []))
+                stype["symbol"] = exsym
 
-            types[t["name"]] = t
+            types[stype["name"]] = stype
 
-        n.append(t)
+        results.append(stype)
 
     ex_types = {}
-    for t in n:
-        ex_types[t["name"]] = t
+    for result in results:
+        ex_types[result["name"]] = result
 
     extended_by = {}  # type: Dict[Text, Text]
-    for t in n:
-        if "extends" in t:
-            for ex in aslist(t["extends"]):
+    for result in results:
+        if "extends" in result:
+            for ex in aslist(result["extends"]):
                 if ex_types[ex].get("abstract"):
-                    add_dictlist(extended_by, ex, ex_types[t["name"]])
+                    add_dictlist(extended_by, ex, ex_types[result["name"]])
                     add_dictlist(extended_by, avro_name(ex), ex_types[ex])
 
-    for t in n:
-        if t.get("abstract") and t["name"] not in extended_by:
+    for result in results:
+        if result.get("abstract") and result["name"] not in extended_by:
             raise validate.ValidationException(
-                "%s is abstract but missing a concrete subtype" % t["name"])
+                "{} is abstract but missing a concrete subtype".format(
+                    result["name"]))
 
-    for t in n:
-        if "fields" in t:
-            t["fields"] = replace_type(t["fields"], extended_by, loader, set())
+    for result in results:
+        if "fields" in result:
+            result["fields"] = replace_type(
+                result["fields"], extended_by, loader, set())
 
-    return n
+    return results
 
 
 def make_avro(i,         # type: List[Dict[Text, Any]]
@@ -581,16 +598,23 @@ def make_avro(i,         # type: List[Dict[Text, Any]]
     j = extend_and_specialize(i, loader)
 
     name_dict = {}  # type: Dict[Text, Dict[Text, Any]]
-    for t in j:
-        name_dict[t["name"]] = t
-    j2 = make_valid_avro(j, name_dict, set())
+    for entry in j:
+        name_dict[entry["name"]] = entry
+    avro = make_valid_avro(j, name_dict, set())
 
-    return [t for t in j2 if isinstance(t, MutableMapping) and not t.get(
+    return [t for t in avro if isinstance(t, MutableMapping) and not t.get(
         "abstract") and t.get("type") != "documentation"]
+
 
 def make_avro_schema(i,         # type: List[Any]
                      loader     # type: Loader
                      ):  # type: (...) -> Names
+    """
+    All in one convenience function.
+
+    Call make_avro() and make_avro_schema_from_avro() separately if you need
+    the intermediate result for diagnostic output.
+    """
     names = Names()
     avro = make_avro(i, loader)
     make_avsc_object(convert_to_dict(avro), names)
@@ -604,31 +628,40 @@ def make_avro_schema_from_avro(avro):
     return names
 
 
-def shortname(inputid):
-    # type: (Text) -> Text
-    d = urllib.parse.urlparse(inputid)
-    if d.fragment:
-        return d.fragment.split(u"/")[-1]
-    else:
-        return d.path.split(u"/")[-1]
+def shortname(inputid):  # type: (Text) -> Text
+    """Returns the last segment of the provided fragment or path."""
+    parsed_id = urllib.parse.urlparse(inputid)
+    if parsed_id.fragment:
+        return parsed_id.fragment.split(u"/")[-1]
+    return parsed_id.path.split(u"/")[-1]
+
 
 def print_inheritance(doc, stream):
     # type: (List[Dict[Text, Any]], IO) -> None
+    """Write a Grapviz inheritance graph for the supplied document."""
     stream.write("digraph {\n")
-    for d in doc:
-        if d["type"] == "record":
-            label = shortname(d["name"])
-            if len(d.get("fields", [])) > 0:
-                label += "\\n* %s\\l" % ("\\l* ".join(shortname(f["name"]) for f in d.get("fields", [])))
-            stream.write("\"%s\" [shape=%s label=\"%s\"];\n" % (shortname(d["name"]), "ellipse" if d.get("abstract") else "box", label))
-            if "extends" in d:
-                for e in aslist(d["extends"]):
-                    stream.write("\"%s\" -> \"%s\";\n" % (shortname(e), shortname(d["name"])))
+    for entry in doc:
+        if entry["type"] == "record":
+            label = name = shortname(entry["name"])
+            fields = entry.get("fields", [])
+            if fields:
+                label += "\\n* %s\\l" % (
+                    "\\l* ".join(shortname(field["name"])
+                                 for field in fields))
+            shape = "ellipse" if entry.get("abstract") else "box"
+            stream.write("\"%s\" [shape=%s label=\"%s\"];\n"
+                         % (name, shape, label))
+            if "extends" in entry:
+                for target in aslist(entry["extends"]):
+                    stream.write("\"%s\" -> \"%s\";\n"
+                                 % (shortname(target), name))
     stream.write("}\n")
+
 
 def print_fieldrefs(doc, loader, stream):
     # type: (List[Dict[Text, Any]], Loader, IO) -> None
-    j = extend_and_specialize(doc, loader)
+    """Write a GraphViz graph of the relationships between the fields."""
+    obj = extend_and_specialize(doc, loader)
 
     primitives = set(("http://www.w3.org/2001/XMLSchema#string",
                       "http://www.w3.org/2001/XMLSchema#boolean",
@@ -638,19 +671,21 @@ def print_fieldrefs(doc, loader, stream):
                       "https://w3id.org/cwl/salad#enum",
                       "https://w3id.org/cwl/salad#array",
                       "https://w3id.org/cwl/salad#record",
-                      "https://w3id.org/cwl/salad#Any"
-    ))
+                      "https://w3id.org/cwl/salad#Any"))
 
     stream.write("digraph {\n")
-    for d in j:
-        if d.get("abstract"):
+    for entry in obj:
+        if entry.get("abstract"):
             continue
-        if d["type"] == "record":
-            label = shortname(d["name"])
-            for f in d.get("fields", []):
+        if entry["type"] == "record":
+            label = shortname(entry["name"])
+            for field in entry.get("fields", []):
                 found = set()  # type: Set[Text]
-                replace_type(f["type"], {}, loader, found, find_embeds=False)
+                field_name = shortname(field["name"])
+                replace_type(field["type"], {}, loader, found, find_embeds=False)
                 for each_type in found:
                     if each_type not in primitives:
-                        stream.write("\"%s\" -> \"%s\" [label=\"%s\"];\n" % (label, shortname(each_type), shortname(f["name"])))
+                        stream.write(
+                            "\"%s\" -> \"%s\" [label=\"%s\"];\n"
+                            % (label, shortname(each_type), field_name))
     stream.write("}\n")

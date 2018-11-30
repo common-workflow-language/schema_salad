@@ -27,7 +27,7 @@ PACKAGE=schema-salad
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py) setup.py
-DEVPKGS=pycodestyle diff_cover autopep8 pylint coverage pep257 pytest flake8
+DEVPKGS=pycodestyle diff_cover autopep8 pylint coverage pep257 pytest-xdist flake8
 COVBASE=coverage run --branch --append --source=${MODULE} \
 	--omit=schema_salad/tests/*
 
@@ -109,11 +109,11 @@ format: autopep8
 ## pylint      : run static code analysis on Python code
 pylint: $(PYSOURCES)
 	pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
-                $^ -j$(nproc)|| true
+                $^ -j0|| true
 
 pylint_report.txt: ${PYSOURCES}
 	pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
-		$^ -j$(nproc)> $@ || true
+		$^ -j0> $@ || true
 
 diff_pylint_report: pylint_report.txt
 	diff-quality --violations=pylint pylint_report.txt
@@ -166,7 +166,7 @@ diff-cover.html: coverage.xml
 
 ## test        : run the ${MODULE} test suite
 test: FORCE
-	python setup.py test
+	python setup.py test --addopts "-n auto"
 
 sloccount.sc: ${PYSOURCES} Makefile
 	sloccount --duplicates --wide --details $^ > $@
