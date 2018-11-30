@@ -122,10 +122,6 @@ class Schema(object):
     # creates JSON properties directly from this dict.
     props = property(lambda self: self._props)
 
-    # Read-only property dict. Non-reserved properties
-    other_props = property(lambda self: get_other_props(self._props, SCHEMA_RESERVED_PROPS),
-                           doc="dictionary of non-reserved properties")
-
     # utility functions to manipulate properties dict
     def get_prop(self, key):
         return self._props.get(key)
@@ -272,8 +268,6 @@ class NamedSchema(Schema):
 
     # read-only properties
     name = property(lambda self: self.get_prop('name'))
-    namespace = property(lambda self: self.get_prop('namespace'))
-    fullname = property(lambda self: self._fullname)
 
 class Field(object):
     def __init__(self,
@@ -326,16 +320,8 @@ class Field(object):
 
     # read-only properties
     default = property(lambda self: self.get_prop('default'))
-    has_default = property(lambda self: self._has_default)
-    order = property(lambda self: self.get_prop('order'))
-    doc = property(lambda self: self.get_prop('doc'))
-    props = property(lambda self: self._props)
 
-    # Read-only property dict. Non-reserved properties
-    other_props = property(lambda self: get_other_props(self._props, FIELD_RESERVED_PROPS),
-                           doc="dictionary of non-reserved properties")
-
-# utility functions to manipulate properties dict
+    # utility functions to manipulate properties dict
     def get_prop(self, key):
         return self._props.get(key)
 
@@ -386,7 +372,6 @@ class EnumSchema(NamedSchema):
 
     # read-only properties
     symbols = property(lambda self: self.get_prop('symbols'))
-    doc = property(lambda self: self.get_prop('doc'))
 
 #
 # Complex Types (recursive)
@@ -523,7 +508,6 @@ class RecordSchema(NamedSchema):
 
     # read-only properties
     fields = property(lambda self: self.get_prop('fields'))
-    doc = property(lambda self: self.get_prop('doc'))
 
 #
 # Module Methods

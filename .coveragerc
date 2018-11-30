@@ -11,3 +11,5 @@ exclude_lines =
 ignore_errors = True
 omit =
     schema_salad/tests/*
+    schema_salad/python_codegen_support.py
+    schema_salad/java_codegen.py
