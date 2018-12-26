@@ -4,7 +4,7 @@ from typing import MutableSequence
 
 from six import string_types
 from six.moves import cStringIO, urllib
-from typing_extensions import Text  # pylint: disable=unused-import
+from typing import Text  # pylint: disable=unused-import
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 from . import schema

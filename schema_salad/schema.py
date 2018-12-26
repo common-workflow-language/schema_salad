@@ -11,7 +11,7 @@ from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from six import iteritems, string_types
 from six.moves import urllib
-from typing_extensions import Text  # pylint: disable=unused-import
+from typing import Text  # pylint: disable=unused-import
 
 from schema_salad.utils import (add_dictlist, aslist, convert_to_dict, flatten,
                                 json_dumps)

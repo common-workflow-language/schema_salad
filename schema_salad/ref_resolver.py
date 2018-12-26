@@ -21,7 +21,7 @@ from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from six import StringIO, string_types, iteritems
 from six.moves import range, urllib
-from typing_extensions import Text  # pylint: disable=unused-import
+from typing import Text  # pylint: disable=unused-import
 
 from . import validate
 from .sourceline import SourceLine, add_lc_filename, relname, strip_dup_lineno

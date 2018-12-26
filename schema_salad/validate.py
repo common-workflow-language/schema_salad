@@ -10,7 +10,7 @@ import six
 from .avro.schema import \
     Schema  # pylint: disable=unused-import, no-name-in-module, import-error
 from six.moves import range, urllib
-from typing_extensions import Text  # pylint: disable=unused-import
+from typing import Text  # pylint: disable=unused-import
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 from .sourceline import SourceLine, bullets, indent, strip_dup_lineno

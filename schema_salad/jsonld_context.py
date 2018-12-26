@@ -11,7 +11,7 @@ from rdflib import Graph, URIRef
 from rdflib.namespace import RDF, RDFS
 import six
 from six.moves import urllib
-from typing_extensions import Text  # pylint: disable=unused-import
+from typing import Text  # pylint: disable=unused-import
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 from .ref_resolver import ContextType  # pylint: disable=unused-import
