@@ -6,6 +6,8 @@
    :target: https://ci.appveyor.com/project/mr-c/schema-salad/branch/master
 .. |Code coverage| image:: https://codecov.io/gh/common-workflow-language/schema_salad/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/common-workflow-language/schema_salad
+.. |CII Best Practices| image:: https://bestpractices.coreinfrastructure.org/projects/1867/badge
+   :target: https://bestpractices.coreinfrastructure.org/projects/1867
 
 Schema Salad
 ------------
