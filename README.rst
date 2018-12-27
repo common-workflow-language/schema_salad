@@ -1,8 +1,8 @@
-|Build Status| |Build status|
+|Linux Build Status| |Windows Build status| |Code coverage| |CII Best Practices|
 
-.. |Build Status| image:: https://img.shields.io/travis/common-workflow-language/schema_salad/master.svg?label=unix%20build
+.. |Linux Build Status| image:: https://img.shields.io/travis/common-workflow-language/schema_salad/master.svg?label=unix%20build
    :target: https://travis-ci.org/common-workflow-language/schema_salad
-.. |Build status| image:: https://img.shields.io/appveyor/ci/mr-c/schema-salad/master.svg?label=windows%20build
+.. |Windows Build status| image:: https://img.shields.io/appveyor/ci/mr-c/schema-salad/master.svg?label=windows%20build
    :target: https://ci.appveyor.com/project/mr-c/schema-salad/branch/master
 .. |Code coverage| image:: https://codecov.io/gh/common-workflow-language/schema_salad/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/common-workflow-language/schema_salad
