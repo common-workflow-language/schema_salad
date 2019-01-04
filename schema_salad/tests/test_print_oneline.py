@@ -46,7 +46,7 @@ class TestPrintOneline(unittest.TestCase):
             except RuntimeError as e:
                 msg = reformat_yaml_exception_message(strip_dup_lineno(six.text_type(e)))
                 msg = to_one_line_messages(msg)
-                self.assertTrue(msg.endswith(src+":10:1: could not find expected \':\'"))
+                self.assertTrue(msg.endswith(src+":11:1: could not find expected \':\'"))
                 print("\n", e)
                 raise
 
@@ -62,10 +62,9 @@ class TestPrintOneline(unittest.TestCase):
                                   six.text_type(get_data("tests/test_schema/"+src)), True)
             except ValidationException as e:
                 msgs = to_one_line_messages(str(e)).splitlines()
-                self.assertEqual(len(msgs), 3)
-                self.assertTrue(msgs[0].endswith(src+":9:1: the `outputs` field is not valid because"))
-                self.assertTrue(msgs[1].endswith(src+":13:5: missing required field `id`"))
-                self.assertTrue(msgs[2].endswith(src+":13:5: invalid field `aa`, expected one of: 'label', 'secondaryFiles', 'format', 'streamable', 'doc', 'id', 'outputBinding', 'type'"))
+                assert len(msgs) == 2, msgs
+                self.assertTrue(msgs[0].endswith(src+":14:5: missing required field `id`"))
+                self.assertTrue(msgs[1].endswith(src+":14:5: invalid field `aa`, expected one of: 'label', 'secondaryFiles', 'format', 'streamable', 'doc', 'id', 'outputBinding', 'type'"))
                 print("\n", e)
                 raise
 
@@ -88,9 +87,9 @@ class TestPrintOneline(unittest.TestCase):
                 self.assertEqual(len(msgs), 2)
                 print("\n", e)
                 assert msgs[0].endswith(
-                    src + ':8:1: checking field `outputs`')
+                    src + ':9:1: checking field `outputs`')
                 assert msgs[1].endswith(
-                    src + ':13:5: Field `type` references unknown identifier '
+                    src + ':14:5: Field `type` references unknown identifier '
                     '`Filea`, tried file://%s#Filea' % (fullpath))
                 raise
 
@@ -108,8 +107,8 @@ class TestPrintOneline(unittest.TestCase):
                 msg = reformat_yaml_exception_message(strip_dup_lineno(six.text_type(e)))
                 msgs = msg.splitlines()
                 self.assertEqual(len(msgs), 2)
-                self.assertTrue(msgs[0].endswith(src+":9:7: while scanning a simple key"))
-                self.assertTrue(msgs[1].endswith(src+":10:1:   could not find expected ':'"))
+                self.assertTrue(msgs[0].endswith(src+":10:7: while scanning a simple key"))
+                self.assertTrue(msgs[1].endswith(src+":11:1:   could not find expected ':'"))
                 print("\n", e)
                 raise
 
@@ -125,7 +124,7 @@ class TestPrintOneline(unittest.TestCase):
                                   six.text_type(get_data("tests/test_schema/"+src)), True)
             except RuntimeError as e:
                 msg = reformat_yaml_exception_message(strip_dup_lineno(six.text_type(e)))
-                self.assertTrue(msg.endswith(src+":1:1: expected <block end>, but found ':'")
-                                or msg.endswith(src+":1:1: expected <block end>, but found u':'"))
+                self.assertTrue(msg.endswith(src+":2:1: expected <block end>, but found ':'")
+                                or msg.endswith(src+":2:1: expected <block end>, but found u':'"))
                 print("\n", e)
                 raise

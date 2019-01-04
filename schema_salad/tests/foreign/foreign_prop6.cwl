@@ -1,3 +1,4 @@
+#!/usr/bin/env cwl-runner
 doc: |
   Foreign properties test.  The property
   references a mailto: URI

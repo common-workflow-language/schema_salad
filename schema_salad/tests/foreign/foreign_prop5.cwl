@@ -1,3 +1,4 @@
+#!/usr/bin/env cwl-runner
 doc: |
   Foreign properties test.  The property is supposed to cross
   reference another concept node, but that node doesn't exist.

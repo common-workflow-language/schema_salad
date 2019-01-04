@@ -1,3 +1,4 @@
+#!/usr/bin/env cwl-runner
 doc: |
   Foreign properties test.  Should pass since the edam namespace is declared,
   the ontology is imported, the property is valid in the ontology, and the
