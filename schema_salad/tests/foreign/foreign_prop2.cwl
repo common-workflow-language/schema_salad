@@ -1,3 +1,4 @@
+#!/usr/bin/env cwl-runner
 doc: |
   Foreign properties test.  If strict_foreign_properties is true, it
   should fail.  If false, should pass no warnings.
