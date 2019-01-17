@@ -265,6 +265,27 @@ class TestSchemas(unittest.TestCase):
         self.assertEqual(
             {'type': ['null', {'items': 'File', 'type': 'array'}]}, ra)
 
+    def test_secondaryFile_dsl_ref(self):
+        ldr = schema_salad.ref_resolver.Loader({})
+        ldr.add_context({
+            "secondaryFiles": {
+                "secondaryFileDSL": True
+            }
+        })
+
+        ra, _ = ldr.resolve_all(cmap({"secondaryFiles": ".foo"}), "")
+        self.assertEqual({"secondaryFiles": {'pattern': '.foo', 'required': None}}, ra)
+
+        ra, _ = ldr.resolve_all(cmap({"secondaryFiles": ".foo?"}), "")
+        self.assertEqual({"secondaryFiles": {'pattern': '.foo', 'required': False}}, ra)
+
+        ra, _ = ldr.resolve_all(cmap({"secondaryFiles": [".foo"]}), "")
+        self.assertEqual({"secondaryFiles": [{'pattern': '.foo', 'required': None}]}, ra)
+
+        ra, _ = ldr.resolve_all(cmap({"secondaryFiles": [".foo?"]}), "")
+        self.assertEqual({"secondaryFiles": [{'pattern': '.foo', 'required': False}]}, ra)
+
+
     def test_scoped_id(self):
         ldr = schema_salad.ref_resolver.Loader({})
         ctx = {
