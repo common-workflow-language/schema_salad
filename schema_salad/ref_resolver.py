@@ -473,7 +473,7 @@ class Loader(object):
                     if value.get(u"typeDSL"):
                         self.type_dsl_fields.add(key)
 
-                if value.get(u"secondaryFileDSL"):
+                if value.get(u"secondaryFilesDSL"):
                     self.secondaryFile_dsl_fields.add(key)
 
                 if value.get(u"noLinkCheck"):
@@ -740,9 +740,9 @@ class Loader(object):
             return datum
 
     def _resolve_dsl(self,
-                          document,  # type: CommentedMap
-                          loader     # type: Loader
-                          ):
+                     document,  # type: CommentedMap
+                     loader     # type: Loader
+    ):
         # type: (...) -> None
         fields = list(loader.type_dsl_fields)
         fields.extend(loader.secondaryFile_dsl_fields)
