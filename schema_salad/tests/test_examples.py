@@ -269,7 +269,7 @@ class TestSchemas(unittest.TestCase):
         ldr = schema_salad.ref_resolver.Loader({})
         ldr.add_context({
             "secondaryFiles": {
-                "secondaryFileDSL": True
+                "secondaryFilesDSL": True
             }
         })
 

@@ -363,6 +363,14 @@
                 "doc": "Field must be expanded based on the the Schema Salad type DSL.\n"
             },
             {
+                    "doc": "Field must be expanded based on the the Schema Salad secondary file DSL.\n",
+                    "name": "https://w3id.org/cwl/salad#JsonldPredicate/secondaryFilesDSL",
+                    "type": [
+                      "null",
+                      "boolean"
+                    ]
+            },
+            {
                 "name": "https://w3id.org/cwl/salad#JsonldPredicate/subscope",
                 "type": [
                     "null",
