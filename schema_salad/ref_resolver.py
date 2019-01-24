@@ -457,37 +457,42 @@ class Loader(object):
             if value == u"@id":
                 self.identifiers.append(key)
                 self.identity_links.add(key)
-            elif isinstance(value, MutableMapping) and value.get(u"@type") == u"@id":
-                self.url_fields.add(key)
-                if u"refScope" in value:
-                    self.scoped_ref_fields[key] = value[u"refScope"]
-                if value.get(u"identity", False):
-                    self.identity_links.add(key)
-            elif isinstance(value, MutableMapping) and value.get(u"@type") == u"@vocab":
-                self.url_fields.add(key)
-                self.vocab_fields.add(key)
-                if u"refScope" in value:
-                    self.scoped_ref_fields[key] = value[u"refScope"]
-                if value.get(u"typeDSL"):
-                    self.type_dsl_fields.add(key)
-            if value.get(u"secondaryFileDSL"):
-                self.secondaryFile_dsl_fields.add(key)
-            if isinstance(value, MutableMapping) and value.get(u"noLinkCheck"):
-                self.nolinkcheck.add(key)
+            elif isinstance(value, MutableMapping):
+                if value.get(u"@type") == u"@id":
+                    self.url_fields.add(key)
+                    if u"refScope" in value:
+                        self.scoped_ref_fields[key] = value[u"refScope"]
+                    if value.get(u"identity", False):
+                        self.identity_links.add(key)
 
-            if isinstance(value, MutableMapping) and value.get(u"mapSubject"):
-                self.idmap[key] = value[u"mapSubject"]
+                if value.get(u"@type") == u"@vocab":
+                    self.url_fields.add(key)
+                    self.vocab_fields.add(key)
+                    if u"refScope" in value:
+                        self.scoped_ref_fields[key] = value[u"refScope"]
+                    if value.get(u"typeDSL"):
+                        self.type_dsl_fields.add(key)
 
-            if isinstance(value, MutableMapping) and value.get(u"mapPredicate"):
-                self.mapPredicate[key] = value[u"mapPredicate"]
+                if value.get(u"secondaryFileDSL"):
+                    self.secondaryFile_dsl_fields.add(key)
 
-            if isinstance(value, MutableMapping) and u"@id" in value:
-                self.vocab[key] = value[u"@id"]
+                if value.get(u"noLinkCheck"):
+                    self.nolinkcheck.add(key)
+
+                if value.get(u"mapSubject"):
+                    self.idmap[key] = value[u"mapSubject"]
+
+                if value.get(u"mapPredicate"):
+                    self.mapPredicate[key] = value[u"mapPredicate"]
+
+                if value.get(u"@id"):
+                    self.vocab[key] = value[u"@id"]
+
+                if value.get(u"subscope"):
+                    self.subscopes[key] = value[u"subscope"]
+
             elif isinstance(value, string_types):
                 self.vocab[key] = value
-
-            if isinstance(value, MutableMapping) and value.get(u"subscope"):
-                self.subscopes[key] = value[u"subscope"]
 
         for k, v in self.vocab.items():
             self.rvocab[self.expand_url(v, u"", scoped_id=False)] = k
