@@ -18,7 +18,7 @@ from rdflib.graph import Graph
 from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.plugins.parsers.notation3 import BadSyntax
 from ruamel import yaml
-from ruamel.yaml.comments import CommentedMap, CommentedSeq
+from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
 from six import StringIO, string_types, iteritems
 from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
@@ -327,6 +327,7 @@ class Loader(object):
         self.mapPredicate = {}          # type: Dict[Text, Text]
         self.type_dsl_fields = set()    # type: Set[Text]
         self.subscopes = {}             # type: Dict[Text, Text]
+        self.secondaryFile_dsl_fields = set()  # type: Set[Text]
 
         self.add_context(ctx)
 
@@ -446,6 +447,7 @@ class Loader(object):
         self.vocab = {}
         self.rvocab = {}
         self.type_dsl_fields = set()
+        self.secondaryFile_dsl_fields = set()
         self.subscopes = {}
 
         self.ctx.update(_copy_dict_without_key(newcontext, u"@context"))
@@ -456,35 +458,42 @@ class Loader(object):
             if value == u"@id":
                 self.identifiers.append(key)
                 self.identity_links.add(key)
-            elif isinstance(value, MutableMapping) and value.get(u"@type") == u"@id":
-                self.url_fields.add(key)
-                if u"refScope" in value:
-                    self.scoped_ref_fields[key] = value[u"refScope"]
-                if value.get(u"identity", False):
-                    self.identity_links.add(key)
-            elif isinstance(value, MutableMapping) and value.get(u"@type") == u"@vocab":
-                self.url_fields.add(key)
-                self.vocab_fields.add(key)
-                if u"refScope" in value:
-                    self.scoped_ref_fields[key] = value[u"refScope"]
-                if value.get(u"typeDSL"):
-                    self.type_dsl_fields.add(key)
-            if isinstance(value, MutableMapping) and value.get(u"noLinkCheck"):
-                self.nolinkcheck.add(key)
+            elif isinstance(value, MutableMapping):
+                if value.get(u"@type") == u"@id":
+                    self.url_fields.add(key)
+                    if u"refScope" in value:
+                        self.scoped_ref_fields[key] = value[u"refScope"]
+                    if value.get(u"identity", False):
+                        self.identity_links.add(key)
 
-            if isinstance(value, MutableMapping) and value.get(u"mapSubject"):
-                self.idmap[key] = value[u"mapSubject"]
+                if value.get(u"@type") == u"@vocab":
+                    self.url_fields.add(key)
+                    self.vocab_fields.add(key)
+                    if u"refScope" in value:
+                        self.scoped_ref_fields[key] = value[u"refScope"]
+                    if value.get(u"typeDSL"):
+                        self.type_dsl_fields.add(key)
 
-            if isinstance(value, MutableMapping) and value.get(u"mapPredicate"):
-                self.mapPredicate[key] = value[u"mapPredicate"]
+                if value.get(u"secondaryFilesDSL"):
+                    self.secondaryFile_dsl_fields.add(key)
 
-            if isinstance(value, MutableMapping) and u"@id" in value:
-                self.vocab[key] = value[u"@id"]
+                if value.get(u"noLinkCheck"):
+                    self.nolinkcheck.add(key)
+
+                if value.get(u"mapSubject"):
+                    self.idmap[key] = value[u"mapSubject"]
+
+                if value.get(u"mapPredicate"):
+                    self.mapPredicate[key] = value[u"mapPredicate"]
+
+                if value.get(u"@id"):
+                    self.vocab[key] = value[u"@id"]
+
+                if value.get(u"subscope"):
+                    self.subscopes[key] = value[u"subscope"]
+
             elif isinstance(value, string_types):
                 self.vocab[key] = value
-
-            if isinstance(value, MutableMapping) and value.get(u"subscope"):
-                self.subscopes[key] = value[u"subscope"]
 
         for k, v in self.vocab.items():
             self.rvocab[self.expand_url(v, u"", scoped_id=False)] = k
@@ -677,8 +686,9 @@ class Loader(object):
 
     def _type_dsl(self,
                   t,        # type: Union[Text, Dict, List]
-                  lc,
-                  filename):
+                  lc,       # type: LineCol
+                  filename  # type: Text
+    ):
         # type: (...) -> Union[Text, Dict[Text, Text], List[Union[Text, Dict[Text, Text]]]]
 
         if not isinstance(t, string_types):
@@ -702,24 +712,63 @@ class Loader(object):
             third.lc.filename = filename
         return third or second or first
 
-    def _resolve_type_dsl(self,
-                          document,  # type: CommentedMap
-                          loader     # type: Loader
-                          ):
+    def _secondaryFile_dsl(self,
+                  t,        # type: Union[Text, Dict, List]
+                  lc,
+                  filename):
+        # type: (...) -> Union[Text, Dict[Text, Text], List[Union[Text, Dict[Text, Text]]]]
+
+        if not isinstance(t, string_types):
+            return t
+        pat = t
+        req = None
+        if t.endswith("?"):
+            pat = t[0:-1]
+            req = False
+
+        second = CommentedMap((("pattern", pat),
+                               ("required", req)))
+        second.lc.add_kv_line_col("pattern", lc)
+        second.lc.add_kv_line_col("required", lc)
+        second.lc.filename = filename
+        return second
+
+    def _apply_dsl(self,
+                   datum,      # type: Union[Text, Dict[Any, Any], List[Any]]
+                   d,          # type: Text
+                   loader,     # type: Loader
+                   lc,         # type: LineCol
+                   filename    # type: Text
+    ):
+        # type: (...) -> Union[Text, Dict[Any, Any], List[Any]]
+        if d in loader.type_dsl_fields:
+            return self._type_dsl(datum, lc, filename)
+        elif d in loader.secondaryFile_dsl_fields:
+            return self._secondaryFile_dsl(datum, lc, filename)
+        else:
+            return datum
+
+    def _resolve_dsl(self,
+                     document,  # type: CommentedMap
+                     loader     # type: Loader
+    ):
         # type: (...) -> None
-        for d in loader.type_dsl_fields:
+        fields = list(loader.type_dsl_fields)
+        fields.extend(loader.secondaryFile_dsl_fields)
+
+        for d in fields:
             if d in document:
                 datum2 = datum = document[d]
                 if isinstance(datum, string_types):
-                    datum2 = self._type_dsl(datum, document.lc.data[
-                                            d], document.lc.filename)
+                    datum2 = self._apply_dsl(datum, d, loader, document.lc.data[d],
+                                             document.lc.filename)
                 elif isinstance(datum, CommentedSeq):
                     datum2 = CommentedSeq()
                     for n, t in enumerate(datum):
                         datum2.lc.add_kv_line_col(
                             len(datum2), datum.lc.data[n])
-                        datum2.append(self._type_dsl(
-                            t, datum.lc.data[n], document.lc.filename))
+                        datum2.append(self._apply_dsl(t, d, loader, datum.lc.data[n],
+                                                      document.lc.filename))
                 if isinstance(datum2, CommentedSeq):
                     datum3 = CommentedSeq()
                     seen = []  # type: List[Text]
@@ -740,6 +789,7 @@ class Loader(object):
                     document[d] = datum3
                 else:
                     document[d] = datum2
+
 
     def _resolve_identifier(self, document, loader, base_url):
         # type: (CommentedMap, Loader, Text) -> Text
@@ -883,7 +933,7 @@ class Loader(object):
         if isinstance(document, CommentedMap):
             self._normalize_fields(document, loader)
             self._resolve_idmap(document, loader)
-            self._resolve_type_dsl(document, loader)
+            self._resolve_dsl(document, loader)
             base_url = self._resolve_identifier(document, loader, base_url)
             self._resolve_identity(document, loader, base_url)
             self._resolve_uris(document, loader, base_url)

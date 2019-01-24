@@ -131,6 +131,10 @@ $graph:
       type: boolean?
       doc: |
         Field must be expanded based on the the Schema Salad type DSL.
+    - name: secondaryFilesDSL
+      type: boolean?
+      doc: |
+        Field must be expanded based on the the Schema Salad secondary file DSL.
     - name: subscope
       type: string?
       doc: |
