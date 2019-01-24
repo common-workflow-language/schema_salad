@@ -18,7 +18,7 @@ from rdflib.graph import Graph
 from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.plugins.parsers.notation3 import BadSyntax
 from ruamel import yaml
-from ruamel.yaml.comments import CommentedMap, CommentedSeq
+from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
 from six import StringIO, string_types, iteritems
 from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
@@ -327,6 +327,7 @@ class Loader(object):
         self.mapPredicate = {}          # type: Dict[Text, Text]
         self.type_dsl_fields = set()    # type: Set[Text]
         self.subscopes = {}             # type: Dict[Text, Text]
+        self.secondaryFile_dsl_fields = set()  # type: Set[Text]
 
         self.add_context(ctx)
 
@@ -685,8 +686,9 @@ class Loader(object):
 
     def _type_dsl(self,
                   t,        # type: Union[Text, Dict, List]
-                  lc,
-                  filename):
+                  lc,       # type: LineCol
+                  filename  # type: Text
+    ):
         # type: (...) -> Union[Text, Dict[Text, Text], List[Union[Text, Dict[Text, Text]]]]
 
         if not isinstance(t, string_types):
@@ -731,7 +733,14 @@ class Loader(object):
         second.lc.filename = filename
         return second
 
-    def _apply_dsl(self, datum, d, loader, lc, filename):
+    def _apply_dsl(self,
+                   datum,      # type: Union[Text, Dict[Any, Any], List[Any]]
+                   d,          # type: Text
+                   loader,     # type: Loader
+                   lc,         # type: LineCol
+                   filename    # type: Text
+    ):
+        # type: (...) -> Union[Text, Dict[Any, Any], List[Any]]
         if d in loader.type_dsl_fields:
             return self._type_dsl(datum, lc, filename)
         elif d in loader.secondaryFile_dsl_fields:
