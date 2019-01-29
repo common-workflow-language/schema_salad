@@ -512,7 +512,7 @@ class Loader(object):
                     checklinks=True,  # type: bool
                     strict_foreign_properties=False  # type: bool
                     ):
-        # type: (...) -> Tuple[Union[CommentedMap, CommentedSeq, Text, None], Dict[Text, Any]]
+        # type: (...) -> Tuple[Union[CommentedMap, CommentedSeq, Text, None], CommentedMap]
 
         lref = ref           # type: Union[CommentedMap, CommentedSeq, Text, None]
         obj = None           # type: Optional[CommentedMap]
@@ -574,18 +574,23 @@ class Loader(object):
         # Has this reference been loaded already?
         if url in self.idx and (not mixin):
             resolved_obj = self.idx[url]
-            metadata = self.idx[urllib.parse.urldefrag(url)[0]]
-            if u"$graph" in resolved_obj:
-                metadata = _copy_dict_without_key(resolved_obj, u"$graph")
-                return resolved_obj[u"$graph"], metadata
-            else:
-                return resolved_obj, metadata
+            if isinstance(resolved_obj, MutableMapping):
+                metadata = self.idx[urllib.parse.urldefrag(url)[0]]
+                if isinstance(metadata, MutableMapping):
+                    if u"$graph" in resolved_obj:
+                        metadata = _copy_dict_without_key(resolved_obj, u"$graph")
+                        return resolved_obj[u"$graph"], metadata
+                    else:
+                        return resolved_obj, metadata
+                else:
+                    raise ValueError(u"Expected CommentedMap, got %s: `%s`"
+                                     % (type(metadata), Text(metadata)))
 
         sl.raise_type = RuntimeError
         with sl:
             # "$include" directive means load raw text
             if inc:
-                return self.fetch_text(url), {}
+                return self.fetch_text(url), CommentedMap()
 
             doc = None
             if isinstance(obj, MutableMapping):
@@ -872,7 +877,7 @@ class Loader(object):
                     checklinks=True,    # type: bool
                     strict_foreign_properties=False  # type: bool
                     ):
-        # type: (...) -> Tuple[Union[CommentedMap, CommentedSeq, Text, None], Dict[Text, Any]]
+        # type: (...) -> Tuple[Union[CommentedMap, CommentedSeq, Text, None], CommentedMap]
         loader = self
         metadata = CommentedMap()  # type: CommentedMap
         if file_base is None:
