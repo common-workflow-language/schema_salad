@@ -581,7 +581,7 @@ class Loader(object):
                         metadata = _copy_dict_without_key(resolved_obj, u"$graph")
                         return resolved_obj[u"$graph"], metadata
                     else:
-                        return resolved_obj, metadata
+                        return resolved_obj, metadata.copy()
                 else:
                     raise ValueError(u"Expected CommentedMap, got %s: `%s`"
                                      % (type(metadata), Text(metadata)))
@@ -643,9 +643,9 @@ class Loader(object):
                 metadata = _copy_dict_without_key(resolved_obj, u"$graph")
                 return resolved_obj[u"$graph"], metadata
             else:
-                return resolved_obj, metadata
+                return resolved_obj, metadata.copy()
         else:
-            return resolved_obj, metadata
+            return resolved_obj, metadata.copy()
 
     def _resolve_idmap(self,
                        document,    # type: CommentedMap
@@ -999,7 +999,7 @@ class Loader(object):
             loader.validate_links(document, u"", all_doc_ids,
                                   strict_foreign_properties=strict_foreign_properties)
 
-        return document, metadata
+        return document, metadata.copy()
 
     def fetch(self, url, inject_ids=True):  # type: (Text, bool) -> Any
         if url in self.idx:
