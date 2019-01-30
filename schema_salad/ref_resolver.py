@@ -512,7 +512,7 @@ class Loader(object):
                     checklinks=True,  # type: bool
                     strict_foreign_properties=False  # type: bool
                     ):
-        # type: (...) -> Tuple[Union[CommentedMap, CommentedSeq, Text, None], Dict[Text, Any]]
+        # type: (...) -> Tuple[Union[CommentedMap, CommentedSeq, Text, None], CommentedMap]
 
         lref = ref           # type: Union[CommentedMap, CommentedSeq, Text, None]
         obj = None           # type: Optional[CommentedMap]
@@ -573,13 +573,24 @@ class Loader(object):
         url = self.expand_url(lref, base_url, scoped_id=(obj is not None))
         # Has this reference been loaded already?
         if url in self.idx and (not mixin):
-            return self.idx[url], {}
+            resolved_obj = self.idx[url]
+            if isinstance(resolved_obj, MutableMapping):
+                metadata = self.idx.get(urllib.parse.urldefrag(url)[0], CommentedMap())
+                if isinstance(metadata, MutableMapping):
+                    if u"$graph" in resolved_obj:
+                        metadata = _copy_dict_without_key(resolved_obj, u"$graph")
+                        return resolved_obj[u"$graph"], metadata
+                    else:
+                        return resolved_obj, metadata.copy()
+                else:
+                    raise ValueError(u"Expected CommentedMap, got %s: `%s`"
+                                     % (type(metadata), Text(metadata)))
 
         sl.raise_type = RuntimeError
         with sl:
             # "$include" directive means load raw text
             if inc:
-                return self.fetch_text(url), {}
+                return self.fetch_text(url), CommentedMap()
 
             doc = None
             if isinstance(obj, MutableMapping):
@@ -632,9 +643,9 @@ class Loader(object):
                 metadata = _copy_dict_without_key(resolved_obj, u"$graph")
                 return resolved_obj[u"$graph"], metadata
             else:
-                return resolved_obj, metadata
+                return resolved_obj, metadata.copy()
         else:
-            return resolved_obj, metadata
+            return resolved_obj, metadata.copy()
 
     def _resolve_idmap(self,
                        document,    # type: CommentedMap
@@ -866,7 +877,7 @@ class Loader(object):
                     checklinks=True,    # type: bool
                     strict_foreign_properties=False  # type: bool
                     ):
-        # type: (...) -> Tuple[Union[CommentedMap, CommentedSeq, Text, None], Dict[Text, Any]]
+        # type: (...) -> Tuple[Union[CommentedMap, CommentedSeq, Text, None], CommentedMap]
         loader = self
         metadata = CommentedMap()  # type: CommentedMap
         if file_base is None:
@@ -917,18 +928,16 @@ class Loader(object):
             if newctx is not None:
                 loader = newctx
 
+            for identifer in loader.identity_links:
+                if identifer in document:
+                    if isinstance(document[identifer], string_types):
+                        document[identifer] = loader.expand_url(
+                            document[identifer], base_url, scoped_id=True)
+                        loader.idx[document[identifer]] = document
+
+            metadata = document
             if u"$graph" in document:
-                metadata = _copy_dict_without_key(document, u"$graph")
                 document = document[u"$graph"]
-                resolved_metadata = loader.resolve_all(
-                    metadata, base_url, file_base=file_base,
-                    checklinks=False)[0]
-                if isinstance(resolved_metadata, MutableMapping):
-                    metadata = resolved_metadata
-                else:
-                    raise validate.ValidationException(
-                        "Validation error, metadata must be dict: %s"
-                        % (resolved_metadata))
 
         if isinstance(document, CommentedMap):
             self._normalize_fields(document, loader)
@@ -985,19 +994,12 @@ class Loader(object):
                 raise validate.ValidationException("(%s) (%s) Validation error in position %i:\n%s" % (
                     id(loader), file_base, i, validate.indent(Text(v))))
 
-            for identifer in loader.identity_links:
-                if identifer in metadata:
-                    if isinstance(metadata[identifer], string_types):
-                        metadata[identifer] = loader.expand_url(
-                            metadata[identifer], base_url, scoped_id=True)
-                        loader.idx[metadata[identifer]] = document
-
         if checklinks:
             all_doc_ids={}  # type: Dict[Text, Text]
             loader.validate_links(document, u"", all_doc_ids,
                                   strict_foreign_properties=strict_foreign_properties)
 
-        return document, metadata
+        return document, metadata.copy()
 
     def fetch(self, url, inject_ids=True):  # type: (Text, bool) -> Any
         if url in self.idx:
