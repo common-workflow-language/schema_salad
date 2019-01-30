@@ -196,7 +196,7 @@ class Names(object):
     """Track name set and default namespace during parsing."""
 
     def __init__(self, default_namespace=None):
-            # type: (Optional[Text]) -> None
+        # type: (Optional[Text]) -> None
         self.names = {}  # type: Dict
         self.default_namespace = default_namespace
 
