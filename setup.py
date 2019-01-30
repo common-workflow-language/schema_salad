@@ -43,7 +43,7 @@ extras_require={
 }
 
 setup(name='schema-salad',
-      version='3.2',  # update the VERSION prefix in the Makefile as well 🙂
+      version='4.0',  # update the VERSION prefix in the Makefile as well 🙂
       description='Schema Annotations for Linked Avro Data (SALAD)',
       long_description=open(README).read(),
       author='Common workflow language working group',
