@@ -33,7 +33,7 @@ COVBASE=coverage run --branch --append --source=${MODULE} \
 
 # Updating the Major & Minor version below?
 # Don't forget to update setup.py as well
-VERSION=3.1.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
+VERSION=3.2.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
 
 ## all         : default task
