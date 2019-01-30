@@ -575,7 +575,7 @@ class Loader(object):
         if url in self.idx and (not mixin):
             resolved_obj = self.idx[url]
             if isinstance(resolved_obj, MutableMapping):
-                metadata = self.idx[urllib.parse.urldefrag(url)[0]]
+                metadata = self.idx.get(urllib.parse.urldefrag(url)[0], {})
                 if isinstance(metadata, MutableMapping):
                     if u"$graph" in resolved_obj:
                         metadata = _copy_dict_without_key(resolved_obj, u"$graph")
