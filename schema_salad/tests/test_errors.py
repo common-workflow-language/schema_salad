@@ -1,6 +1,7 @@
 from __future__ import absolute_import, print_function
 
 import unittest
+import re
 
 import six
 import schema_salad
@@ -35,6 +36,21 @@ class TestErrors(unittest.TestCase):
                 except ValidationException as e:
                     print("\n", e)
                     raise
+
+    def test_error_message1(self):
+        document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
+            get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
+
+        t = "test_schema/test1.cwl"
+        with self.assertRaises(ValidationException) as e:
+            load_and_validate(document_loader, avsc_names,
+                              six.text_type(get_data("tests/"+t)), True)
+        self.assertTrue(re.match(r'''
+^.+test1\.cwl:2:1: Object\s+`.+test1\.cwl`\s+is\s+not valid because\s+tried `Workflow`\s+but
+\s+\* missing\s+required\s+field\s+`inputs`
+\s+\* missing\s+required\s+field\s+`outputs`
+\s+\* missing\s+required\s+field\s+`steps`$'''[1:],
+                                 str(e.exception)))
 
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
     def test_errors_previously_defined_dict_key(self):
