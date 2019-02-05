@@ -44,13 +44,13 @@ class TestErrors(unittest.TestCase):
         with self.assertRaises(ValidationException) as e:
             load_and_validate(document_loader, avsc_names,
                               six.text_type(get_data("tests/"+t)), True)
-        self.assertEqual(str(e.exception), '''
-schema_salad/tests/test_schema/test1.cwl:2:1: Object `schema_salad/tests/test_schema/test1.cwl` is
+        self.assertRegex(str(e.exception), r'''
+^.*schema_salad/tests/test_schema/test1\.cwl:2:1: Object `.*schema_salad/tests/test_schema/test1\.cwl` is
                                               not valid because
                                                 tried `Workflow` but
-                                                  * missing required field `inputs`
-                                                  * missing required field `outputs`
-                                                  * missing required field `steps`'''[1:])
+                                                  \* missing required field `inputs`
+                                                  \* missing required field `outputs`
+                                                  \* missing required field `steps`'''[1:])
 
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
     def test_errors_previously_defined_dict_key(self):
