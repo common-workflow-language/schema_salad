@@ -45,6 +45,7 @@ class TestErrors(unittest.TestCase):
         with self.assertRaises(ValidationException) as e:
             load_and_validate(document_loader, avsc_names,
                               six.text_type(get_data("tests/"+t)), True)
+        self.assertEqual(str(e.exception), '')
         self.assertTrue(re.match(r'''
 ^.+test1\.cwl:2:1: Object `.+test1\.cwl` is
                                               not valid because
