@@ -45,12 +45,13 @@ class TestErrors(unittest.TestCase):
         with self.assertRaises(ValidationException) as e:
             load_and_validate(document_loader, avsc_names,
                               six.text_type(get_data("tests/"+t)), True)
+        msg = str(e.exception)
         self.assertTrue(re.match(r'''
 ^.+test1\.cwl:2:1: Object\s+`.+test1\.cwl`\s+is\s+not\s+valid\s+because\s+tried `Workflow` but
 \s+\* missing required field\s+`inputs`
 \s+\* missing required field\s+`outputs`
 \s+\* missing required field\s+`steps`$'''[1:],
-                                 str(e.exception)))
+                                 msg), '`'+msg+'` is not matched to the regex.')
 
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
     def test_errors_previously_defined_dict_key(self):
