@@ -46,11 +46,10 @@ class TestErrors(unittest.TestCase):
             load_and_validate(document_loader, avsc_names,
                               six.text_type(get_data("tests/"+t)), True)
         self.assertTrue(re.match(r'''
-^.+test1\.cwl:2:1: Object\s+`.+test1\.cwl` is\s+not valid because
-                                                tried `Workflow` but
-                                                  \* missing required field\s+`inputs`
-                                                  \* missing required field\s+`outputs`
-                                                  \* missing required field\s+`steps`$'''[1:],
+^.+test1\.cwl:2:1: Object\s+`.+test1\.cwl`\s+is\s+not valid because\s+tried `Workflow` but
+\s+\* missing required field\s+`inputs`
+\s+\* missing required field\s+`outputs`
+\s+\* missing required field\s+`steps`$'''[1:],
                                  str(e.exception)))
 
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
