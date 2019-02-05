@@ -52,7 +52,7 @@ class TestErrors(unittest.TestCase):
                                                   \* missing required field `inputs`
                                                   \* missing required field `outputs`
                                                   \* missing required field `steps`$'''[1:],
-                                 str(e.exception)))
+                                 str(e.exception), re.MULTILINE))
 
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
     def test_errors_previously_defined_dict_key(self):
