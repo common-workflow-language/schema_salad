@@ -45,7 +45,7 @@ class TestErrors(unittest.TestCase):
             load_and_validate(document_loader, avsc_names,
                               six.text_type(get_data("tests/"+t)), True)
         self.assertRegex(str(e.exception), r'''
-^.*schema_salad/tests/test_schema/test1\.cwl:2:1: Object `.*schema_salad/tests/test_schema/test1\.cwl` is
+^.+test1\.cwl:2:1: Object `.+test1\.cwl` is
                                               not valid because
                                                 tried `Workflow` but
                                                   \* missing required field `inputs`
