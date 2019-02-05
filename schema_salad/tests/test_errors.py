@@ -47,10 +47,10 @@ class TestErrors(unittest.TestCase):
                               six.text_type(get_data("tests/"+t)), True)
         msg = str(e.exception)
         self.assertTrue(re.match(r'''
-^.+test1\.cwl:2:1: Object\s+`.+test1\.cwl`\s+is\s+not valid because\s+tried `Workflow` but
-\s+\* missing required\s+field\s+`inputs`
-\s+\* missing required\s+field\s+`outputs`
-\s+\* missing required\s+field\s+`steps`$'''[1:],
+^.+test1\.cwl:2:1: Object\s+`.+test1\.cwl`\s+is\s+not valid because\s+tried `Workflow`\s+but
+\s+\* missing\s+required\s+field\s+`inputs`
+\s+\* missing\s+required\s+field\s+`outputs`
+\s+\* missing\s+required\s+field\s+`steps`$'''[1:],
                                  msg), '`'+msg+'` is not matched to the regex.')
 
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
