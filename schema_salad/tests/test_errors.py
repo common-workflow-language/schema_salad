@@ -63,7 +63,7 @@ class TestErrors(unittest.TestCase):
         self.assertTrue(re.match(r'''
 ^.+test2\.cwl:2:1: Field `class` contains undefined reference to
 \s+`file://.+/xWorkflow`$'''[1:],
-                                 str(e.exception)))
+                                 str(e.exception)), str(e.exception)+ ' is not matched.')
 
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
     def test_errors_previously_defined_dict_key(self):
