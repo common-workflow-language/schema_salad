@@ -108,7 +108,7 @@ class TestErrors(unittest.TestCase):
         self.assertTrue(re.match(r'''
 ^.+test5\.cwl:2:1: Object\s+`.+test5\.cwl`\s+is\s+not valid because
 \s+tried `Workflow` but
-.+test5\.cwl:7:1:     the `steps` field is\s+not valid because
+.+test5\.cwl:7:1:     the `steps` field\s+is\s+not valid because
 \s+tried array of\s+<WorkflowStep> but
 .+test5\.cwl:7:9:         item is\s+invalid because
 \s+is not a dict$'''[1:], str(e.exception)), str(e.exception) + ' is not matched.')
