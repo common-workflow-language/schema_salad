@@ -75,7 +75,7 @@ class TestErrors(unittest.TestCase):
             load_and_validate(document_loader, avsc_names,
                               six.text_type(get_data("tests/"+t)), True)
         self.assertTrue(re.match(r'''
-^.+test3\.cwl:5:1: checking field `outputs`
+^.+test3\.cwl:5:1: checking field\s+`outputs`
 .+test3\.cwl:6:3:   checking object\s+`.+test3\.cwl#bar`
 \s+Field `type`\s+references\s+unknown\s+identifier\s+`xstring`,\s+tried
 \s+file://.+/test_schema/test3\.cwl#xstring$'''[1:],
