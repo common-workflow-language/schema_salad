@@ -107,11 +107,11 @@ class TestErrors(unittest.TestCase):
                               six.text_type(get_data("tests/"+t)), True)
         self.assertTrue(re.match(r'''
 ^.+test5\.cwl:2:1: Object\s+`.+test5\.cwl`\s+is\s+not valid because
-\s+tried `Workflow` but
-.+test5\.cwl:7:1:     the `steps` field\s+is\s+not valid because
-\s+tried array of\s+<WorkflowStep> but
+\s+tried `Workflow`\s+but
+.+test5\.cwl:7:1:     the `steps`\s+field\s+is\s+not valid\s+because
+\s+tried array\s+of\s+<WorkflowStep>\s+but
 .+test5\.cwl:7:9:         item is\s+invalid because
-\s+is not a dict$'''[1:], str(e.exception)), str(e.exception) + ' is not matched.')
+\s+is not a\s+dict$'''[1:], str(e.exception)), str(e.exception) + ' is not matched.')
 
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
     def test_errors_previously_defined_dict_key(self):
