@@ -122,8 +122,8 @@ class TestErrors(unittest.TestCase):
             load_and_validate(document_loader, avsc_names,
                               six.text_type(get_data("tests/"+t)), True)
         self.assertTrue(re.match(r'''
-^.+test6\.cwl:2:1: Object `.+test6\.cwl` is not valid because
-\s+- tried `CommandLineTool` but
+^.+test6\.cwl:2:1: Object `.+test6\.cwl`\s+is\s+not valid because
+\s+- tried `CommandLineTool`\s+but
 \s+Missing 'class' field
 \s+- tried `ExpressionTool` but
 \s+Missing 'class' field
