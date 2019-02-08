@@ -78,7 +78,7 @@ class TestErrors(unittest.TestCase):
 ^.+test3\.cwl:5:1: checking field\s+`outputs`
 .+test3\.cwl:6:3:   checking object\s+`.+test3\.cwl#bar`
 \s+Field `type`\s+references\s+unknown\s+identifier\s+`xstring`,\s+tried
-\s+file://.+/schema_salad/tests/test_schema/test3\.cwl#xstring$'''[1:],
+\s+file://.+/tests/test_schema/test3\.cwl#xstring$'''[1:],
                                  str(e.exception)),
                         str(e.exception) + ' is not matched.')
 
