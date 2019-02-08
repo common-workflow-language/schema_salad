@@ -92,8 +92,8 @@ class TestErrors(unittest.TestCase):
                               six.text_type(get_data("tests/"+t)), True)
         self.assertTrue(re.match(r'''
 ^.+test4\.cwl:5:1: checking field `outputs`
-.+test4\.cwl:6:3:   checking object `.+test4\.cwl#bar`
-\s+`type` field is int, expected string, list, or a dict.$'''[1:],
+.+test4\.cwl:6:3:   checking object\s+`.+test4\.cwl#bar`
+\s+`type` field is int,\s+expected string, list, or a\s+dict.$'''[1:],
                                  str(e.exception)),
                         str(e.exception) + ' is not matched.')
 
