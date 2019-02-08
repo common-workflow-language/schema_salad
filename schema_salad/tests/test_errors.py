@@ -93,7 +93,7 @@ class TestErrors(unittest.TestCase):
         self.assertTrue(re.match(r'''
 ^.+test4\.cwl:5:1: checking field `outputs`
 .+test4\.cwl:6:3:   checking object\s+`.+test4\.cwl#bar`
-\s+`type` field is int,\s+expected string, list, or a\s+dict.$'''[1:],
+\s+`type` field is int,\s+expected string, list, or\s+a\s+dict.$'''[1:],
                                  str(e.exception)),
                         str(e.exception) + ' is not matched.')
 
