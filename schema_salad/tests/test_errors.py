@@ -113,6 +113,23 @@ class TestErrors(unittest.TestCase):
 .+test5\.cwl:7:9:         item is\s+invalid because
 \s+is not a\s+dict$'''[1:], str(e.exception)), str(e.exception) + ' is not matched.')
 
+    def test_error_message6(self):
+        document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
+            get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
+
+        t = "test_schema/test6.cwl"
+        with self.assertRaises(ValidationException) as e:
+            load_and_validate(document_loader, avsc_names,
+                              six.text_type(get_data("tests/"+t)), True)
+        self.assertTrue(re.match(r'''
+^.+test6\.cwl:2:1: Object `.+test6\.cwl` is not valid because
+\s+- tried `CommandLineTool` but
+\s+Missing 'class' field
+\s+- tried `ExpressionTool` but
+\s+Missing 'class' field
+\s+- tried `Workflow` but
+\s+Missing 'class' field$'''[1:], str(e.exception)), str(e.exception) + ' is not matched.')
+
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
     def test_errors_previously_defined_dict_key(self):
         document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
