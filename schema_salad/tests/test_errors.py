@@ -91,9 +91,9 @@ class TestErrors(unittest.TestCase):
             load_and_validate(document_loader, avsc_names,
                               six.text_type(get_data("tests/"+t)), True)
         self.assertTrue(re.match(r'''
-^.+test4\.cwl:5:1: checking field `outputs`
+^.+test4\.cwl:5:1: checking field\s+`outputs`
 .+test4\.cwl:6:3:   checking object\s+`.+test4\.cwl#bar`
-\s+`type` field is int,\s+expected string, list, or\s+a\s+dict.$'''[1:],
+\s+`type` field is\s+int,\s+expected\s+string, list, or\s+a\s+dict.$'''[1:],
                                  str(e.exception)),
                         str(e.exception) + ' is not matched.')
 
