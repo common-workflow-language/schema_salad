@@ -61,7 +61,7 @@ class TestErrors(unittest.TestCase):
             load_and_validate(document_loader, avsc_names,
                               six.text_type(get_data("tests/"+t)), True)
         self.assertTrue(re.match(r'''
-^.+test2\.cwl:2:1: Field `class` contains\s+undefined reference to
+^.+test2\.cwl:2:1: Field `class`\s+contains\s+undefined\s+reference to
 \s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$'''[1:],
                                  str(e.exception)),
                         str(e.exception) + ' is not matched.')
