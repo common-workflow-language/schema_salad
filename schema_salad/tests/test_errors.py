@@ -111,8 +111,7 @@ class TestErrors(unittest.TestCase):
 .+test5\.cwl:7:1:     the `steps` field is\s+not valid because
 \s+tried array of\s+<WorkflowStep> but
 .+test5\.cwl:7:9:         item is\s+invalid because
-\s+is not a dict$'''[1:], str(e.exception)),
-                        str(e.exception) + ' is not matched.')
+\s+is not a dict$'''[1:], str(e.exception)), str(e.exception) + ' is not matched.')
 
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
     def test_errors_previously_defined_dict_key(self):
