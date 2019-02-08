@@ -76,7 +76,7 @@ class TestErrors(unittest.TestCase):
                               six.text_type(get_data("tests/"+t)), True)
         self.assertTrue(re.match(r'''
 ^.+test3\.cwl:5:1: checking field `outputs`
-^.+test3\.cwl:6:3:   checking object\s+`.+test3\.cwl#bar`
+.+test3\.cwl:6:3:   checking object\s+`.+test3\.cwl#bar`
 \s+Field `type` references\s+unknown identifier\s+`xstring`,\s+tried
 \s+file://.+/test_schema/test3\.cwl#xstring$'''[1:],
                                  str(e.exception)),
