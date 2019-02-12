@@ -235,13 +235,12 @@ rules:
   * If the value of `jsonldPredicate` is `@id`, the field is an identifier
   field.
 
-  * If the value of `jsonldPredicate` is an object, and contains that
-  object contains the field `_type` with the value `@id`, the field is a
-  link field.
+  * If the value of `jsonldPredicate` is an object, and that object contains 
+  the field `_type` with the value `@id`, the field is a link field.
 
-  * If the value of `jsonldPredicate` is an object, and contains that
-  object contains the field `_type` with the value `@vocab`, the field is a
-  vocabulary field, which is a subtype of link field.
+  * If the value of `jsonldPredicate` is an object, and that object contains 
+  the field `_type` with the value `@vocab`, the field is a vocabulary field, 
+  which is a subtype of link field.
 
 ## Document traversal
 
