@@ -168,14 +168,14 @@ class TestErrors(unittest.TestCase):
             load_and_validate(document_loader, avsc_names,
                               six.text_type(get_data("tests/"+t)), True)
         self.assertTrue(re.match(r'''
-^.+test10\.cwl:2:1: Object `.+test10\.cwl`\s+is not valid because
+^.+test10\.cwl:2:1: Object\s+`.+test10\.cwl`\s+is not valid because
 \s+tried `Workflow` but
-.+test10\.cwl:7:1:     the `steps` field is not valid because
-\s+tried array of <WorkflowStep> but
-.+test10\.cwl:8:3:         item is invalid because
-\s+\* missing required field `run`
-.+test10\.cwl:9:5:           \* the `scatterMethod` field is\s+not valid because
-\s+value is a CommentedSeq, expected null\s+or ScatterMethod$'''[1:],
+.+test10\.cwl:7:1:     the `steps`\s+field is\s+not valid\s+because
+\s+tried array of\s+<WorkflowStep> but
+.+test10\.cwl:8:3:         item is\s+invalid because
+\s+\* missing\s+required\s+field `run`
+.+test10\.cwl:9:5:           \* the\s+`scatterMethod`\s+field is\s+not valid\s+because
+\s+value is a\s+CommentedSeq, expected\s+null\s+or ScatterMethod$'''[1:],
                                  str(e.exception)), str(e.exception) + ' is not matched.')
 
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
