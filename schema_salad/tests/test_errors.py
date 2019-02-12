@@ -154,7 +154,7 @@ class TestErrors(unittest.TestCase):
             load_and_validate(document_loader, avsc_names,
                               six.text_type(get_data("tests/"+t)), True)
         self.assertTrue(re.match(r'''
-^.+test9\.cwl:7:1: checking field `steps`
+^.+test9\.cwl:7:1: checking field\s+`steps`
 .+test9\.cwl:8:3:   checking object\s+`.+test9\.cwl#step1`
 .+test9\.cwl:9:5:     `scatterMethod`\s+field\s+is int,\s+expected\s+string,\s+list, or a dict.$'''[1:],
                                  str(e.exception)), str(e.exception) + ' is not matched.')
