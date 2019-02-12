@@ -122,14 +122,13 @@ class TestErrors(unittest.TestCase):
             load_and_validate(document_loader, avsc_names,
                               six.text_type(get_data("tests/"+t)), True)
         self.assertTrue(re.match(r'''
-^.+test7\.cwl:2:1: Object `.+test7\.cwl` is\s+not valid because
+^.+test7\.cwl:2:1: Object\s+`.+test7\.cwl`\s+is\s+not valid because
 \s+tried `Workflow` but
-.+test7\.cwl:7:1:     the `steps` field is not valid because
-\s+tried array of <WorkflowStep> but
-.+test7\.cwl:8:3:         item is invalid because
-\s+\* missing required field `run`
-.+test7\.cwl:9:5:           \* invalid field `scatter_method`,\s+expected one of:\s+'id', 'in', 'out',\s+'requirements', 'hints', 'label', 'doc',
-\s+'run', 'scatter', 'scatterMethod'$'''[1:], str(e.exception)), str(e.exception) + ' is not matched.')
+.+test7\.cwl:7:1:     the `steps` field\s+is\s+not valid because
+\s+tried array of\s+<WorkflowStep> but
+.+test7\.cwl:8:3:         item is\s+invalid because
+\s+\* missing\s+required\s+field `run`
+.+test7\.cwl:9:5:           \* invalid\s+field\s+`scatter_method`,\s+expected one of:\s+'id', 'in', 'out',\s+'requirements',\s+'hints', 'label',\s+'doc',\s+'run',\s+'scatter',\s+'scatterMethod'$'''[1:], str(e.exception)), str(e.exception) + ' is not matched.')
 
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
     def test_errors_previously_defined_dict_key(self):
