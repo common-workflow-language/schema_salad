@@ -156,7 +156,7 @@ class TestErrors(unittest.TestCase):
         self.assertTrue(re.match(r'''
 ^.+test9\.cwl:7:1: checking field `steps`
 .+test9\.cwl:8:3:   checking object\s+`.+test9\.cwl#step1`
-.+test9\.cwl:9:5:     `scatterMethod` field is int, expected\s+string, list, or a dict.$'''[1:],
+.+test9\.cwl:9:5:     `scatterMethod`\s+field\s+is int,\s+expected\s+string,\s+list, or a dict.$'''[1:],
                                  str(e.exception)), str(e.exception) + ' is not matched.')
 
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
