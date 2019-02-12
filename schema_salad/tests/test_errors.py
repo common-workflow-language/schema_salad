@@ -193,6 +193,27 @@ class TestErrors(unittest.TestCase):
 \s+`file://.+/tests/test_schema/blub\.cwl`$'''[1:],
                                  str(e.exception)), str(e.exception) + ' is not matched.')
 
+    def test_error_message15(self):
+        document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
+            get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
+
+        t = "test_schema/test15.cwl"
+        with self.assertRaises(ValidationException) as e:
+            load_and_validate(document_loader, avsc_names,
+                              six.text_type(get_data("tests/"+t)), True)
+        self.assertTrue(re.match(r'''
+^.+test15\.cwl:3:1:  Object `.+test15\.cwl`\s+is not valid because
+\s+tried `CommandLineTool` but
+.+test15\.cwl:6:1:      the `inputs` field is not valid because
+.+test15\.cwl:7:3:        item is invalid because
+.+test15\.cwl:9:5:          the `inputBinding` field is not\s+valid because
+.+tried CommandLineBinding but
+.+test15\.cwl:11:7:             \* invalid field\s+`invalid_field`, expected one\s+of:
+\s+'loadContents', 'position', 'prefix',\s+'separate',\s+'itemSeparator',\s+'valueFrom', 'shellQuote'
+.+test15\.cwl:12:7:             \* invalid field\s+`another_invalid_field`,\s+expected one
+\s+of: 'loadContents', 'position',\s+'prefix',\s+'separate', 'itemSeparator',\s+'valueFrom', 'shellQuote'$'''[1:],
+                                 str(e.exception)), str(e.exception) + ' is not matched.')
+
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
     def test_errors_previously_defined_dict_key(self):
         document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
