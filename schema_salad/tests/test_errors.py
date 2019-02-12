@@ -178,6 +178,21 @@ class TestErrors(unittest.TestCase):
 \s+value\s+is a\s+CommentedSeq,\s+expected\s+null\s+or\s+ScatterMethod$'''[1:],
                                  str(e.exception)), str(e.exception) + ' is not matched.')
 
+    def test_error_message11(self):
+        document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
+            get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
+
+        t = "test_schema/test11.cwl"
+        with self.assertRaises(ValidationException) as e:
+            load_and_validate(document_loader, avsc_names,
+                              six.text_type(get_data("tests/"+t)), True)
+        self.assertTrue(re.match(r'''
+^.+test11\.cwl:7:1: checking field `steps`
+.+test11\.cwl:8:3:   checking object\s+`.+test11\.cwl#step1`
+.+test11\.cwl:9:5:     Field `run` contains undefined reference to
+\s+`file://.+/tests/test_schema/blub\.cwl`$'''[1:],
+                                 str(e.exception)), str(e.exception) + ' is not matched.')
+
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
     def test_errors_previously_defined_dict_key(self):
         document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
