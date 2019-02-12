@@ -130,6 +130,21 @@ class TestErrors(unittest.TestCase):
 \s+\* missing\s+required\s+field `run`
 .+test7\.cwl:9:5:           \* invalid\s+field\s+`scatter_method`,\s+expected one of:\s+'id', 'in', 'out',\s+'requirements',\s+'hints', 'label',\s+'doc',\s+'run',\s+'scatter',\s+'scatterMethod'$'''[1:], str(e.exception)), str(e.exception) + ' is not matched.')
 
+    def test_error_message8(self):
+        document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
+            get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
+
+        t = "test_schema/test8.cwl"
+        with self.assertRaises(ValidationException) as e:
+            load_and_validate(document_loader, avsc_names,
+                              six.text_type(get_data("tests/"+t)), True)
+        self.assertTrue(re.match(r'''
+^.+test8\.cwl:7:1: checking field `steps`
+.+test8\.cwl:8:3:   checking object\s+`.+test8\.cwl#step1`
+.+test8\.cwl:9:5:     Field `scatterMethod` contains undefined\s+reference to
+\s+`file:///.+/tests/test_schema/abc`$'''[1:],
+                                 str(e.exception)), str(e.exception) + ' is not matched.')
+
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
     def test_errors_previously_defined_dict_key(self):
         document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
