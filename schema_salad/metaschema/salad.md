@@ -244,10 +244,10 @@ rules:
 
 ## Document traversal
 
-To perform document document preprocessing, link validation and schema
-validation, the document must be traversed starting from the fields or
-array items of the root object or array and recursively visiting each child
-item which contains an object or arrays.
+To perform document preprocessing, link validation and schema validation, 
+the document must be traversed starting from the fields or array items of 
+the root object or array and recursively visiting each child item which 
+contains an object or arrays.
 
 # Document preprocessing
 
