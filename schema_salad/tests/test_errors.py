@@ -159,6 +159,25 @@ class TestErrors(unittest.TestCase):
 .+test9\.cwl:9:5:     `scatterMethod`\s+field\s+is int,\s+expected\s+string,\s+list, or a dict.$'''[1:],
                                  str(e.exception)), str(e.exception) + ' is not matched.')
 
+    def test_error_message10(self):
+        document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
+            get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
+
+        t = "test_schema/test10.cwl"
+        with self.assertRaises(ValidationException) as e:
+            load_and_validate(document_loader, avsc_names,
+                              six.text_type(get_data("tests/"+t)), True)
+        self.assertTrue(re.match(r'''
+^.+test10\.cwl:2:1: Object `.+test10\.cwl`\s+is not valid because
+\s+tried `Workflow` but
+.+test10\.cwl:7:1:     the `steps` field is not valid because
+\s+tried array of <WorkflowStep> but
+.+test10\.cwl:8:3:         item is invalid because
+\s+\* missing required field `run`
+.+test10\.cwl:9:5:           \* the `scatterMethod` field is\s+not valid because
+\s+value is a CommentedSeq, expected null\s+or ScatterMethod$'''[1:],
+                                 str(e.exception)), str(e.exception) + ' is not matched.')
+
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
     def test_errors_previously_defined_dict_key(self):
         document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
