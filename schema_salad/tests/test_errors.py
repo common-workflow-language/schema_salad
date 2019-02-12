@@ -145,6 +145,20 @@ class TestErrors(unittest.TestCase):
 \s+`file:///.+/tests/test_schema/abc`$'''[1:],
                                  str(e.exception)), str(e.exception) + ' is not matched.')
 
+    def test_error_message9(self):
+        document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
+            get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
+
+        t = "test_schema/test9.cwl"
+        with self.assertRaises(ValidationException) as e:
+            load_and_validate(document_loader, avsc_names,
+                              six.text_type(get_data("tests/"+t)), True)
+        self.assertTrue(re.match(r'''
+^.+test9\.cwl:7:1: checking field `steps`
+.+test9\.cwl:8:3:   checking object\s+`.+test9\.cwl#step1`
+.+test9\.cwl:9:5:     `scatterMethod` field is int, expected\s+string, list, or a dict.$'''[1:],
+                                 str(e.exception)), str(e.exception) + ' is not matched.')
+
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
     def test_errors_previously_defined_dict_key(self):
         document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
