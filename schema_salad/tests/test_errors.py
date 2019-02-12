@@ -139,7 +139,7 @@ class TestErrors(unittest.TestCase):
             load_and_validate(document_loader, avsc_names,
                               six.text_type(get_data("tests/"+t)), True)
         self.assertTrue(re.match(r'''
-^.+test8\.cwl:7:1: checking field `steps`
+^.+test8\.cwl:7:1: checking field\s+`steps`
 .+test8\.cwl:8:3:   checking object\s+`.+test8\.cwl#step1`
 .+test8\.cwl:9:5:     Field\s+`scatterMethod`\s+contains\s+undefined\s+reference to
 \s+`file:///.+/tests/test_schema/abc`$'''[1:],
