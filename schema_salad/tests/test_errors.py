@@ -141,7 +141,7 @@ class TestErrors(unittest.TestCase):
         self.assertTrue(re.match(r'''
 ^.+test8\.cwl:7:1: checking field `steps`
 .+test8\.cwl:8:3:   checking object\s+`.+test8\.cwl#step1`
-.+test8\.cwl:9:5:     Field `scatterMethod` contains undefined\s+reference to
+.+test8\.cwl:9:5:     Field\s+`scatterMethod`\s+contains\s+undefined\s+reference to
 \s+`file:///.+/tests/test_schema/abc`$'''[1:],
                                  str(e.exception)), str(e.exception) + ' is not matched.')
 
