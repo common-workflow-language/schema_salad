@@ -169,13 +169,13 @@ class TestErrors(unittest.TestCase):
                               six.text_type(get_data("tests/"+t)), True)
         self.assertTrue(re.match(r'''
 ^.+test10\.cwl:2:1: Object\s+`.+test10\.cwl`\s+is not valid because
-\s+tried `Workflow` but
+\s+tried `Workflow`\s+but
 .+test10\.cwl:7:1:     the `steps`\s+field is\s+not valid\s+because
-\s+tried array of\s+<WorkflowStep> but
+\s+tried array\s+of\s+<WorkflowStep>\s+but
 .+test10\.cwl:8:3:         item is\s+invalid because
 \s+\* missing\s+required\s+field `run`
 .+test10\.cwl:9:5:           \* the\s+`scatterMethod`\s+field is\s+not valid\s+because
-\s+value is a\s+CommentedSeq, expected\s+null\s+or ScatterMethod$'''[1:],
+\s+value\s+is a\s+CommentedSeq,\s+expected\s+null\s+or\s+ScatterMethod$'''[1:],
                                  str(e.exception)), str(e.exception) + ' is not matched.')
 
     @unittest.skip("See https://github.com/common-workflow-language/common-workflow-language/issues/734")
