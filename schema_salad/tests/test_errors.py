@@ -123,9 +123,9 @@ class TestErrors(unittest.TestCase):
                               six.text_type(get_data("tests/"+t)), True)
         self.assertTrue(re.match(r'''
 ^.+test7\.cwl:2:1: Object\s+`.+test7\.cwl`\s+is\s+not valid because
-\s+tried `Workflow` but
-.+test7\.cwl:7:1:     the `steps` field\s+is\s+not valid because
-\s+tried array of\s+<WorkflowStep> but
+\s+tried `Workflow`\s+but
+.+test7\.cwl:7:1:     the `steps`\s+field\s+is\s+not valid\s+because
+\s+tried array\s+of\s+<WorkflowStep>\s+but
 .+test7\.cwl:8:3:         item is\s+invalid because
 \s+\* missing\s+required\s+field `run`
 .+test7\.cwl:9:5:           \* invalid\s+field\s+`scatter_method`,\s+expected one of:\s+'id', 'in', 'out',\s+'requirements',\s+'hints', 'label',\s+'doc',\s+'run',\s+'scatter',\s+'scatterMethod'$'''[1:], str(e.exception)), str(e.exception) + ' is not matched.')
