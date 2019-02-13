@@ -203,12 +203,12 @@ class TestErrors(unittest.TestCase):
                               six.text_type(get_data("tests/"+t)), True)
         self.assertTrue(re.match(r'''
 ^.+test15\.cwl:3:1:\s+Object\s+`.+test15\.cwl`\s+is not valid because
-\s+tried `CommandLineTool`\s+but
-.+test15\.cwl:6:1:\s+the `inputs` field\s+is not valid because
+\s+tried\s+`CommandLineTool`\s+but
+.+test15\.cwl:6:1:\s+the `inputs`\s+field\s+is not valid\s+because
 .+test15\.cwl:7:3:\s+item is\s+invalid\s+because
 .+test15\.cwl:9:5:\s+the\s+`inputBinding`\s+field is not\s+valid\s+because
 .+tried\s+CommandLineBinding but
-.+test15\.cwl:11:7:             \*\s+invalid field\s+`invalid_field`, expected one\s+of:\s+'loadContents',\s+'position',\s+'prefix',\s+'separate',\s+'itemSeparator',\s+'valueFrom',\s+'shellQuote'
+.+test15\.cwl:11:7:             \*\s+invalid field\s+`invalid_field`,\s+expected one\s+of:\s+'loadContents',\s+'position',\s+'prefix',\s+'separate',\s+'itemSeparator',\s+'valueFrom',\s+'shellQuote'
 .+test15\.cwl:12:7:             \*\s+invalid field\s+`another_invalid_field`,\s+expected one\s+of:\s+'loadContents',\s+'position',\s+'prefix',\s+'separate',\s+'itemSeparator',\s+'valueFrom',\s+'shellQuote'$'''[1:],
                                  str(e.exception)), str(e.exception) + ' is not matched.')
 
