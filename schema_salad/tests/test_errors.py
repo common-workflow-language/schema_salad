@@ -207,7 +207,7 @@ class TestErrors(unittest.TestCase):
 .+test15\.cwl:6:1:\s+the `inputs`\s+field\s+is not valid\s+because
 .+test15\.cwl:7:3:\s+item is\s+invalid\s+because
 .+test15\.cwl:9:5:\s+the\s+`inputBinding`\s+field is not\s+valid\s+because
-.+tried\s+CommandLineBinding but
+.+tried\s+CommandLineBinding\s+but
 .+test15\.cwl:11:7:             \*\s+invalid field\s+`invalid_field`,\s+expected one\s+of:\s+'loadContents',\s+'position',\s+'prefix',\s+'separate',\s+'itemSeparator',\s+'valueFrom',\s+'shellQuote'
 .+test15\.cwl:12:7:             \*\s+invalid field\s+`another_invalid_field`,\s+expected one\s+of:\s+'loadContents',\s+'position',\s+'prefix',\s+'separate',\s+'itemSeparator',\s+'valueFrom',\s+'shellQuote'$'''[1:],
                                  str(e.exception)), str(e.exception) + ' is not matched.')
