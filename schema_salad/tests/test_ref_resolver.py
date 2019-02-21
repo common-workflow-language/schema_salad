@@ -159,3 +159,18 @@ def test_DefaultFetcher_urljoin_linux(tmp_dir_fixture):
 
     finally:
         sys.platform = actual_platform
+
+
+def test_import_list():
+    import schema_salad.ref_resolver
+    from schema_salad.sourceline import cmap
+    from .util import get_data
+    import os
+
+    basedir = schema_salad.ref_resolver.file_uri(os.path.dirname(__file__)+"/")
+    loader = schema_salad.ref_resolver.Loader({})
+    ra, _ = loader.resolve_all(cmap({
+        u"foo": {"$import": "list.json"},
+    }), basedir)
+
+    assert {u"foo": ["bar", "baz"]} == ra

@@ -585,6 +585,15 @@ class Loader(object):
                 else:
                     raise ValueError(u"Expected CommentedMap, got %s: `%s`"
                                      % (type(metadata), Text(metadata)))
+            elif isinstance(resolved_obj, MutableSequence):
+                metadata = self.idx.get(urllib.parse.urldefrag(url)[0], CommentedMap())
+                if isinstance(metadata, MutableMapping):
+                    return resolved_obj, metadata
+                else:
+                    return resolved_obj, CommentedMap()
+            else:
+                raise ValueError(u"Expected MutableMapping or MutableSequence, got %s: `%s`"
+                                 % (type(resolved_obj), Text(resolved_obj)))
 
         sl.raise_type = RuntimeError
         with sl:
