@@ -590,7 +590,7 @@ class Loader(object):
                 if isinstance(metadata, MutableMapping):
                     return resolved_obj, metadata
                 else:
-                    return resolved_obj, {}
+                    return resolved_obj, CommentedMap()
             else:
                 raise ValueError(u"Expected MutableMapping or MutableSequence, got %s: `%s`"
                                  % (type(resolved_obj), Text(resolved_obj)))
