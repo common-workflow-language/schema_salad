@@ -271,6 +271,8 @@ class RenderType(object):
                     return """<a href="%s">%s</a>""" % (redirects[tp["name"]], frg)
                 if tp["name"] in self.typemap:
                     return """<a href="#%s">%s</a>""" % (to_id(frg), frg)
+                if tp["type"] == "https://w3id.org/cwl/salad#enum" and len(tp["symbols"]) == 1:
+                    return "constant value <code>%s</code>" % schema.avro_name(tp["symbols"][0])
                 return frg
             if isinstance(tp["type"], MutableMapping):
                 return self.typefmt(tp["type"], redirects)
