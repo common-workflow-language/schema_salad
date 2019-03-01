@@ -327,5 +327,15 @@ def load_document(doc, baseuri=None, loadingOptions=None):
         baseuri = file_uri(os.getcwd()) + "/"
     if loadingOptions is None:
         loadingOptions = LoadingOptions()
-    return _document_load(%s, doc, baseuri, loadingOptions)
-""" % root_loader.name)
+    return _document_load(%(name)s, doc, baseuri, loadingOptions)
+
+def load_document_by_string(string, uri, loadingOptions=None):
+    result = yaml.round_trip_load(string, preserve_quotes=True)
+    add_lc_filename(result, uri)
+
+    if loadingOptions is None:
+        loadingOptions = LoadingOptions(fileuri=uri)
+    loadingOptions.idx[uri] = result
+
+    return _document_load(%(name)s, result, uri, loadingOptions)
+""" % dict(name=root_loader.name))
