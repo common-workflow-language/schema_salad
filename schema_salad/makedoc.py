@@ -402,12 +402,10 @@ class RenderType(object):
 <div class="col-xs-2 col-lg-1">%s</div>
 <div class="col-xs-7 col-lg-3">%s</div>
 <div class="col-xs-12 col-lg-6 description-col">%s</div>
-</div>""" % (
-    rfrg,
-    "required" if opt else "optional",
-    self.typefmt(tp, self.redirects,
-                 jsonldPredicate=i.get("jsonldPredicate")),
-    mistune.markdown(desc))
+</div>""" % (rfrg, "required" if opt else "optional",
+                    self.typefmt(tp, self.redirects,
+                    jsonldPredicate=i.get("jsonldPredicate")),
+                    mistune.markdown(desc))
 
                 if opt:
                     required.append(tr)
