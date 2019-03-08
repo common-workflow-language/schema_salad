@@ -55,7 +55,7 @@ class MyRenderer(mistune.Renderer):
         self.options = {}
 
     def header(self, text, level, raw=None):  # type: (Text, int, Any) -> Text
-        return """<h%i id="%s">%s</h%i>""" % (level, to_id(text), text, level)
+        return """<h%i id="%s" class="section">%s <a href="#%s">&sect;</a></h%i>""" % (level, to_id(text), text, to_id(text), level)
 
     def table(self, header, body):  # type: (Text, Text) -> Text
         return (
@@ -482,6 +482,13 @@ def avrold_doc(j,           # type: List[Dict[Text, Any]]
     pre {
       margin-left: 2em;
       margin-right: 2em;
+    }
+    .section a {
+      visibility: hidden;
+    }
+    .section:hover a {
+      visibility: visible;
+      color: rgb(201, 201, 201);
     }
     .responsive-table-header {
       text-align: left;
