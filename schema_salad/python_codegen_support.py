@@ -170,7 +170,7 @@ class _PrimitiveLoader(_Loader):
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         if not isinstance(doc, self.tp):
-            raise ValidationException("Expected a %s but got %s" % (self.tp, type(doc)))
+            raise ValidationException("Expected a %s but got %s" % (self.tp.__class__.__name__, doc.__class__.__name__))
         return doc
 
     def __repr__(self):
@@ -239,7 +239,7 @@ class _UnionLoader(_Loader):
             try:
                 return t.load(doc, baseuri, loadingOptions, docRoot=docRoot)
             except ValidationException as e:
-                errors.append("tried %s but\n%s" % (t, indent(str(e))))
+                errors.append("tried %s but\n%s" % (t.__class__.__name__, indent(str(e))))
         raise ValidationException(bullets(errors, "- "))
 
     def __repr__(self):
