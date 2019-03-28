@@ -159,6 +159,13 @@ def validate_ex(expected_schema,                  # type: Schema
                     u"value is a %s but expected a string" % (type(datum).__name__))
             else:
                 return False
+        if expected_schema.name == "Expression":
+            if "$(" in datum or "${" in datum:
+                return True
+            if raise_ex:
+                raise ValidationException(u"value `%s` does not contain an expression in the form $() or ${}" % datum)
+            else:
+                return False
         if datum in expected_schema.symbols:
             return True
         else:

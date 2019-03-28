@@ -55,7 +55,7 @@ class MyRenderer(mistune.Renderer):
         self.options = {}
 
     def header(self, text, level, raw=None):  # type: (Text, int, Any) -> Text
-        return """<h%i id="%s">%s</h%i>""" % (level, to_id(text), text, level)
+        return """<h%i id="%s" class="section">%s <a href="#%s">&sect;</a></h%i>""" % (level, to_id(text), text, to_id(text), level)
 
     def table(self, header, body):  # type: (Text, Text) -> Text
         return (
@@ -373,8 +373,14 @@ class RenderType(object):
 
         if f["type"] == "record":
             doc += "<h3>Fields</h3>"
-            doc += """<table class="table table-striped">"""
-            doc += "<tr><th>field</th><th>type</th><th>required</th><th>description</th></tr>"
+            doc += """
+<div class="responsive-table">
+<div class="row responsive-table-header">
+<div class="col-xs-3 col-lg-2">field</div>
+<div class="col-xs-2 col-lg-1">required</div>
+<div class="col-xs-7 col-lg-3">type</div>
+<div class="col-xs-12 col-lg-6 description-header">description</div>
+</div>"""
             required = []
             optional = []
             for i in f.get("fields", []):
@@ -390,19 +396,24 @@ class RenderType(object):
                 #    desc = "%s _Inherited from %s_" % (desc, linkto(i["inherited_from"]))
 
                 rfrg = schema.avro_name(i["name"])
-                tr = "<td><code>%s</code></td><td>%s</td><td>%s</td>"\
-                    "<td>%s</td>" % (
-                        rfrg, self.typefmt(tp, self.redirects,
-                                           jsonldPredicate=i.get("jsonldPredicate")),
-                        opt,
-                        mistune.markdown(desc))
+                tr = """
+<div class="row responsive-table-row">
+<div class="col-xs-3 col-lg-2"><code>%s</code></div>
+<div class="col-xs-2 col-lg-1">%s</div>
+<div class="col-xs-7 col-lg-3">%s</div>
+<div class="col-xs-12 col-lg-6 description-col">%s</div>
+</div>""" % (rfrg, "required" if opt else "optional",
+                    self.typefmt(tp, self.redirects,
+                    jsonldPredicate=i.get("jsonldPredicate")),
+                    mistune.markdown(desc))
+
                 if opt:
                     required.append(tr)
                 else:
                     optional.append(tr)
             for i in required + optional:
-                doc += "<tr>" + i + "</tr>"
-            doc += """</table>"""
+                doc += i
+            doc += """</div>"""
         elif f["type"] == "enum":
             doc += "<h3>Symbols</h3>"
             doc += """<table class="table table-striped">"""
@@ -471,6 +482,52 @@ def avrold_doc(j,           # type: List[Dict[Text, Any]]
     pre {
       margin-left: 2em;
       margin-right: 2em;
+    }
+    .section a {
+      visibility: hidden;
+    }
+    .section:hover a {
+      visibility: visible;
+      color: rgb(201, 201, 201);
+    }
+    .responsive-table-header {
+      text-align: left;
+      padding: 8px;
+      vertical-align: top;
+      font-weight: bold;
+      border-top-color: rgb(221, 221, 221);
+      border-top-style: solid;
+      border-top-width: 1px;
+      background-color: #f9f9f9
+    }
+    .responsive-table > .responsive-table-row {
+      text-align: left;
+      padding: 8px;
+      vertical-align: top;
+      border-top-color: rgb(221, 221, 221);
+      border-top-style: solid;
+      border-top-width: 1px;
+    }
+    @media (min-width: 0px), print {
+      .description-header {
+        display: none;
+      }
+      .description-col {
+        margin-top: 1em;
+        margin-left: 1.5em;
+      }
+    }
+    @media (min-width: 1170px) {
+      .description-header {
+        display: inline;
+      }
+      .description-col {
+        margin-top: 0px;
+        margin-left: 0px;
+      }
+    }
+    .responsive-table-row:nth-of-type(odd) {
+       background-color: #f9f9f9
     }
     </style>
     </head>

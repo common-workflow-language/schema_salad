@@ -33,7 +33,7 @@ COVBASE=coverage run --branch --append --source=${MODULE} \
 
 # Updating the Major & Minor version below?
 # Don't forget to update setup.py as well
-VERSION=4.1.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
+VERSION=4.2.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
 
 ## all         : default task
@@ -199,7 +199,7 @@ jenkins: FORCE
 	rm -Rf env && virtualenv env
 	. env/bin/activate ; \
 	pip install -U setuptools pip wheel ; \
-	${MAKE} install-dep coverage.html coverage.xml pep257_report.txt \
+	${MAKE} install-dep coverage.html coverage.xml pydocstyle_report.txt \
 		sloccount.sc pycodestyle_report.txt pylint_report.txt
 	if ! test -d env3 ; then virtualenv -p python3 env3 ; fi
 	. env3/bin/activate ; \
