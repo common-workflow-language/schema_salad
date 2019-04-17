@@ -29,7 +29,7 @@ else:
 install_requires = [
     'setuptools',
     'requests >= 1.0',
-    'ruamel.yaml >= 0.12.4, < 0.16',
+    'ruamel.yaml >= 0.12.4, <= 0.15.77',
     'rdflib >= 4.2.2, < 4.3.0',
     'rdflib-jsonld >= 0.3.0, < 0.5.0',
     'mistune >= 0.8.1, < 0.9',
