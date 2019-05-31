@@ -74,6 +74,84 @@ Display inheritance relationship between classes as a graphviz 'dot' file and re
    $ schema-salad-tool --print-inheritance-dot myschema.yml | dot -Tsvg > myschema.svg
 
 
+Quick Start
+-----------
+
+Let's say you have a 'basket' record that can contain items measured either by weight or by count.  Here's an example:
+
+  basket:
+    - product: bananas
+      price: 0.39
+      per: pound
+      weight: 1
+    - product: cucumbers
+      price: 0.79
+      per: item
+      count: 3
+
+We want to validate that all the expected fields are present, the
+measurement is known, and that "count" cannot be a fractional value.
+Here is an example schema to do that:
+
+  - name: Product
+    doc: |
+      The base type for a product.  This is an abstract type, so it
+      can't be used directly, but can be used to define other types.
+    type: record
+    abstract: true
+    fields:
+      product: string
+      price: float
+
+  - name: ByWeight
+    doc: |
+      A product, sold by weight.  Products may be sold by pound or by
+      kilogram.  Weights may be fractional.
+    type: record
+    extends: Product
+    fields:
+      per:
+	type:
+	  type: enum
+	  symbols:
+	    - pound
+	    - kilogram
+	jsonldPredicate: '#per'
+      weight: float
+
+  - name: ByCount
+    doc: |
+      A product, sold by count.  The count must be a integer value.
+    type: record
+    extends: Product
+    fields:
+      per:
+	type:
+	  type: enum
+	  symbols:
+	    - item
+	jsonldPredicate: '#per'
+      count: int
+
+  - name: Basket
+    doc: |
+      A basket of products.  The 'documentRoot' field indicates it is a
+      valid starting point for a document.  The 'basket' field will
+      validate subtypes of 'Product' (ByWeight and ByCount).
+    type: record
+    documentRoot: true
+    fields:
+      basket:
+       type:
+	 type: array
+	 items: Product
+
+You can check the schema and document in schema_salad/tests/basket_schema.yml and schema_salad/tests/basket.yml
+
+  $ schema-salad-tool basket_schema.yml basket.yml
+  Document `basket.yml` is valid
+
+
 Documentation
 -------------
 
