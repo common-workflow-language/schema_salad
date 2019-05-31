@@ -20,6 +20,7 @@ $graph:
     - $include: import_include.md
     - $import: map_res.yml
     - $import: typedsl_res.yml
+    - $import: sfdsl_res.yml
 
 - name: "Link_Validation"
   type: documentation
@@ -35,9 +36,24 @@ $graph:
     `noLinkCheck` in the `jsonldPredicate` section of the field schema.
 
 
-- name: "Schema_validation"
+- name: "Schema_Validation"
   type: documentation
-  doc: ""
+  doc: |
+    # Validating a document against a schema
+
+    To validate a document against the schema, use the following algorithm.
+
+    1. The document root must be an object or a list.  If the document root is an
+       object containing the field `$graph` (which must be a list of
+       objects), then validation applies to each object in the list.
+    2. For each object, attempt to validate as one of the record types
+       where `documentRoot: true`.
+    3. For each record type, go through `fields` and recursively
+       validate each field of the object.
+    4. For fields with a list of types (type union), go through each
+       type in the list and recursively validate the type.  For the
+       field to be valid, at least one type in the union to be valid.
+    5. Missing fields are considered `null`.
 
 
 # - name: "JSON_LD_Context"

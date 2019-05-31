@@ -82,6 +82,9 @@ specification, the following changes have been made:
 * Add subscoped fields (fields which introduce a new inner scope for identifiers)
 * Add the *inVocab* flag (default true) to indicate if a type is added to the vocabulary of well known terms or must be prefixed
 * Add *secondaryFilesDSL* micro DSL (domain specific language) to convert text strings to a secondaryFiles record type used in CWL
+* The `$mixin` feature has been removed from the specification, as it
+  is poorly documented, not included in conformance testing,
+  and not generally implemented.
 
 ## References to Other Specifications
 
@@ -224,7 +227,7 @@ document schema.  A schema may consist of:
   * Any number of documentation objects which allow in-line documentation of the schema.
 
 The schema for defining a salad schema (the metaschema) is described in
-detail in "Schema validation".
+detail in the [Schema](#Schema) section.
 
 ### Record field annotations
 

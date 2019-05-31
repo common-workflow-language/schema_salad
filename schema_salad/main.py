@@ -22,6 +22,7 @@ from .ref_resolver import Loader, file_uri
 from .sourceline import strip_dup_lineno, to_one_line_messages, reformat_yaml_exception_message
 from .utils import json_dumps
 from .avro.schema import SchemaParseException
+from .makedoc import makedoc
 
 register('json-ld', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')
 _logger = logging.getLogger("salad")
@@ -76,6 +77,9 @@ def main(argsl=None):  # type: (List[str]) -> int
     exgroup.add_argument("--print-oneline", action="store_true",
                          help="Print each error message in oneline")
 
+    exgroup.add_argument("--print-doc", action="store_true",
+                         help="Print HTML schema documentation page")
+
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--strict", action="store_true", help="Strict validation (unrecognized or out of place fields are error)",
                          default=True, dest="strict")
@@ -89,6 +93,12 @@ def main(argsl=None):  # type: (List[str]) -> int
                          help="Only print warnings and errors.")
     exgroup.add_argument("--debug", action="store_true",
                          help="Print even more logging")
+
+    parser.add_argument('--only', action='append', help="Use with --print-doc, document only listed types")
+    parser.add_argument('--redirect', action='append', help="Use with --print-doc, override default link for type")
+    parser.add_argument('--brand', help="Use with --print-doc, set the 'brand' text in nav bar")
+    parser.add_argument('--brandlink', help="Use with --print-doc, set the link for 'brand' in nav bar")
+    parser.add_argument('--primtype', default="#PrimitiveType", help="Use with --print-doc, link to use for primitive types (string, int etc)")
 
     parser.add_argument("schema", type=str, nargs="?", default=None)
     parser.add_argument("document", type=str, nargs="?", default=None)
@@ -138,6 +148,10 @@ def main(argsl=None):  # type: (List[str]) -> int
         _logger.error("Schema `%s` read error:\n%s",
                       args.schema, e, exc_info=(True if args.debug else False))
         return 1
+
+    if args.print_doc:
+        makedoc(args)
+        return 0
 
     # Optionally print the schema after ref resolution
     if not args.document and args.print_pre:
