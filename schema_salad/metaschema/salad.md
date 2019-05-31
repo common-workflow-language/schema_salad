@@ -2,7 +2,7 @@
 
 Author:
 
-* Peter Amstutz <peter.amstutz@curoverse.com>, Curoverse
+* Peter Amstutz <pamstutz@veritasgenetics.com>, Veritas Genetics
 
 Contributors:
 
@@ -70,17 +70,18 @@ and RDF schema, and production of RDF triples by applying the JSON-LD
 context.  The schema language also provides for robust support of inline
 documentation.
 
-## Introduction to v1.0
+## Introduction to v1.1
 
-This is the second version of of the Schema Salad specification.  It is
-developed concurrently with v1.0 of the Common Workflow Language for use in
+This is the third version of of the Schema Salad specification.  It is
+developed concurrently with v1.1 of the Common Workflow Language for use in
 specifying the Common Workflow Language, however Schema Salad is intended to be
-useful to a broader audience.  Compared to the draft-1 schema salad
+useful to a broader audience.  Compared to the v1.0 schema salad
 specification, the following changes have been made:
 
-* Use of [mapSubject and mapPredicate](#Identifier_maps) to transform maps to lists of records.
-* Resolution of the [domain Specific Language for types](#Domain_Specific_Language_for_types)
-* Consolidation of the formal [schema into section 5](#Schema).
+* Support for `default` values on record fields to specify default values
+* Add subscoped fields (fields which introduce a new inner scope for identifiers)
+* Add the *inVocab* flag (default true) to indicate if a type is added to the vocabulary of well known terms or must be prefixed
+* Add *secondaryFilesDSL* micro DSL (domain specific language) to convert text strings to a secondaryFiles record type used in CWL
 
 ## References to Other Specifications
 
