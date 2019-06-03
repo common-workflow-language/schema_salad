@@ -306,6 +306,13 @@ def validate_ex(expected_schema,                  # type: Schema
                     found = True
             if not found:
                 sl = SourceLine(datum, d, six.text_type)
+                if d is None:
+                    err = sl.makeError(u"mapping with implicit null key")
+                    if strict:
+                        errors.append(err)
+                    else:
+                        logger.warning(err)
+                    continue
                 if d not in identifiers and d not in foreign_properties and d[0] not in ("@", "$"):
                     if (d not in identifiers and strict) and (
                             d not in foreign_properties and strict_foreign_properties and not skip_foreign_properties) and not raise_ex:
