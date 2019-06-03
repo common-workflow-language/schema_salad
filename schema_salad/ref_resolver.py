@@ -339,7 +339,7 @@ class Loader(object):
                    scoped_ref=None      # type: int
                    ):
         # type: (...) -> Text
-        if url in (u"@id", u"@type"):
+        if url in (u"@id", u"@type") or url is None:
             return url
 
         if vocab_term and url in self.vocab:
@@ -560,7 +560,7 @@ class Loader(object):
                 if not lref:
                     raise sl.makeError(
                         u"Object `%s` does not have identifier field in %s"
-                        % (relname(obj), self.identifiers))
+                        % (str(obj), self.identifiers))
 
         if not isinstance(lref, string_types):
             raise ValueError(u"Expected CommentedMap or string, got %s: `%s`"

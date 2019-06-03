@@ -118,13 +118,23 @@ class TestPrintOneline(unittest.TestCase):
             get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
 
         src = "test19.cwl"
-        with self.assertRaises(RuntimeError):
-            try:
-                load_and_validate(document_loader, avsc_names,
-                                  six.text_type(get_data("tests/test_schema/"+src)), True)
-            except RuntimeError as e:
-                msg = reformat_yaml_exception_message(strip_dup_lineno(six.text_type(e)))
-                self.assertTrue(msg.endswith(src+":2:1: expected <block end>, but found ':'")
-                                or msg.endswith(src+":2:1: expected <block end>, but found u':'"))
-                print("\n", e)
-                raise
+        try:
+            load_and_validate(document_loader, avsc_names,
+                              six.text_type(get_data("tests/test_schema/"+src)), True)
+        except RuntimeError as e:
+            msg = reformat_yaml_exception_message(strip_dup_lineno(six.text_type(e)))
+            self.assertTrue(msg.endswith(src+":2:1: expected <block end>, but found ':'")
+                            or msg.endswith(src+":2:1: expected <block end>, but found u':'"))
+            return
+        except ValidationException as e:
+            msgs = str(strip_dup_lineno(six.text_type(e)))
+            print(msgs)
+            # weird splits due to differing path length on MS Windows & during the release tests
+            assert "{}:2:1: Object".format(src) in msgs
+            assert "is not valid because" in msgs
+            assert "`CommandLineTool`" in msgs
+            assert "mapping with" in msgs
+            assert "implicit" in msgs
+            assert "null key" in msgs
+            return
+        assert False, "Missing RuntimeError or ValidationException"
