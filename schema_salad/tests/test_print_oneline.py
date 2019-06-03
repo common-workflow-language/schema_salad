@@ -129,10 +129,12 @@ class TestPrintOneline(unittest.TestCase):
         except ValidationException as e:
             msgs = str(strip_dup_lineno(six.text_type(e)))
             print(msgs)
+            # weird splits due to differing path length on MS Windows & during the release tests
             assert "{}:2:1: Object".format(src) in msgs
             assert "is not valid because" in msgs
-            assert "tried `CommandLineTool` but" in msgs
-            assert "mapping with implicit" in msgs
+            assert "`CommandLineTool`" in msgs
+            assert "mapping with" in msgs
+            assert "implicit" in msgs
             assert "null key" in msgs
             return
         assert False, "Missing RuntimeError or ValidationException"
