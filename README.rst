@@ -115,12 +115,12 @@ Here is an example schema to do that::
      extends: Product
      fields:
        per:
-	 type:
-	   type: enum
-	   symbols:
-	     - pound
-	     - kilogram
-	 jsonldPredicate: '#per'
+         type:
+           type: enum
+           symbols:
+             - pound
+             - kilogram
+         jsonldPredicate: '#per'
        weight: float
 
    - name: ByCount
@@ -130,11 +130,11 @@ Here is an example schema to do that::
      extends: Product
      fields:
        per:
-	 type:
-	   type: enum
-	   symbols:
-	     - item
-	 jsonldPredicate: '#per'
+         type:
+           type: enum
+           symbols:
+             - item
+         jsonldPredicate: '#per'
        count: int
 
    - name: Basket
@@ -146,9 +146,9 @@ Here is an example schema to do that::
      documentRoot: true
      fields:
        basket:
-	type:
-	  type: array
-	  items: Product
+         type:
+           type: array
+           items: Product
 
 You can check the schema and document in schema_salad/tests/basket_schema.yml and schema_salad/tests/basket.yml::
 
