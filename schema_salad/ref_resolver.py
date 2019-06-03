@@ -560,7 +560,7 @@ class Loader(object):
                 if not lref:
                     raise sl.makeError(
                         u"Object `%s` does not have identifier field in %s"
-                        % (relname(obj), self.identifiers))
+                        % (str(obj), self.identifiers))
 
         if not isinstance(lref, string_types):
             raise ValueError(u"Expected CommentedMap or string, got %s: `%s`"
