@@ -129,7 +129,7 @@ class TestPrintOneline(unittest.TestCase):
         except ValidationException as e:
             msgs = str(strip_dup_lineno(six.text_type(e))).splitlines()
             print(msgs)
-            assert "{}:2:1: Object ".format(src) in msgs[0], e
+            assert "{}:2:1: Object".format(src) in msgs[0], e
             assert msgs[1].endswith("is not valid because"), e
             assert msgs[2].endswith("tried `CommandLineTool` but"), e
             assert msgs[3].endswith("mapping with implicit null key"), e
