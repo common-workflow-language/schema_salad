@@ -47,14 +47,24 @@ $graph:
        object containing the field `$graph` (which must be a list of
        objects), then validation applies to each object in the list.
     2. For each object, attempt to validate as one of the record types
-       where `documentRoot: true`.
-    3. For each record type, go through `fields` and recursively
+       flagged with `documentRoot: true`.
+    3. To validate a record, go through `fields` and recursively
        validate each field of the object.
     4. For fields with a list of types (type union), go through each
        type in the list and recursively validate the type.  For the
-       field to be valid, at least one type in the union to be valid.
-    5. Missing fields are considered `null`.
-
+       field to be valid, at least one type in the union must be valid.
+    5. Missing fields are considered `null`.  To validate, the allowed types
+       for the field must include `null`
+    6. Primitive types are null, boolean, int, long, float, double,
+       string.  To validate, the value in the document must have one
+       of these type.  For numerics, the value appearing in the
+       document must fit into the specified type.
+    7. To validate an array, the value in the document must be a list,
+       and each item in the list must recursively validate as a type
+       in `items`.
+    8. To validate an enum, the value in the document be a string, and
+       the value must be equal to the short name of one of the values
+       listed in `symbols`.
 
 # - name: "JSON_LD_Context"
 #   type: documentation

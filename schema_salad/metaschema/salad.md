@@ -84,7 +84,7 @@ specification, the following changes have been made:
 * Add *secondaryFilesDSL* micro DSL (domain specific language) to convert text strings to a secondaryFiles record type used in CWL
 * The `$mixin` feature has been removed from the specification, as it
   is poorly documented, not included in conformance testing,
-  and not generally implemented.
+  and not widely supported.
 
 ## References to Other Specifications
 
@@ -229,7 +229,7 @@ document schema.  A schema may consist of:
 The schema for defining a salad schema (the metaschema) is described in
 detail in the [Schema](#Schema) section.
 
-### Record field annotations
+## Record field annotations
 
 In a document schema, record field definitions may include the field
 `jsonldPredicate`, which may be either a string or object.  Implementations
@@ -241,11 +241,11 @@ rules:
 
   * If the value of `jsonldPredicate` is an object, and contains that
   object contains the field `_type` with the value `@id`, the field is a
-  link field.
+  link field subject to [link validation](#Link_validation).
 
-  * If the value of `jsonldPredicate` is an object, and contains that
-  object contains the field `_type` with the value `@vocab`, the field is a
-  vocabulary field, which is a subtype of link field.
+  * If the value of `jsonldPredicate` is an object which contains the
+  field `_type` with the value `@vocab`, the field value is subject to
+  [vocabulary resolution](#Vocabulary_resolution).
 
 ## Document traversal
 
@@ -253,6 +253,20 @@ To perform document document preprocessing, link validation and schema
 validation, the document must be traversed starting from the fields or
 array items of the root object or array and recursively visiting each child
 item which contains an object or arrays.
+
+## Short names
+
+The "short name" of an fully qualified identifier is the portion of
+the identifier following the final slash `/` of either the fragment
+identifier following `#` or the path portion, if there is no fragment.
+Some examples:
+
+* the short name of `http://example.com/foo` is `foo`
+* the short name of `http://example.com/#bar` is `bar`
+* the short name of `http://example.com/foo/bar` is `bar`
+* the short name of `http://example.com/foo#bar` is `bar`
+* the short name of `http://example.com/#foo/bar` is `bar`
+* the short name of `http://example.com/foo#bar/baz` is `baz`
 
 # Document preprocessing
 
