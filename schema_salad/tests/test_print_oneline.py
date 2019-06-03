@@ -118,13 +118,20 @@ class TestPrintOneline(unittest.TestCase):
             get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
 
         src = "test19.cwl"
-        with self.assertRaises(RuntimeError):
-            try:
-                load_and_validate(document_loader, avsc_names,
-                                  six.text_type(get_data("tests/test_schema/"+src)), True)
-            except RuntimeError as e:
-                msg = reformat_yaml_exception_message(strip_dup_lineno(six.text_type(e)))
-                self.assertTrue(msg.endswith(src+":2:1: expected <block end>, but found ':'")
-                                or msg.endswith(src+":2:1: expected <block end>, but found u':'"))
-                print("\n", e)
-                raise
+        try:
+            load_and_validate(document_loader, avsc_names,
+                              six.text_type(get_data("tests/test_schema/"+src)), True)
+        except RuntimeError as e:
+            msg = reformat_yaml_exception_message(strip_dup_lineno(six.text_type(e)))
+            self.assertTrue(msg.endswith(src+":2:1: expected <block end>, but found ':'")
+                            or msg.endswith(src+":2:1: expected <block end>, but found u':'"))
+            return
+        except ValidationException as e:
+            msgs = str(strip_dup_lineno(six.text_type(e))).splitlines()
+            print(msgs)
+            assert "{}:2:1: Object ".format(src) in msgs[0], e
+            assert msgs[1].endswith("is not valid because"), e
+            assert msgs[2].endswith("tried `CommandLineTool` but"), e
+            assert msgs[3].endswith("mapping with implicit null key"), e
+            return
+        assert False, "Missing RuntimeError or ValidationException"

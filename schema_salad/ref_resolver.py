@@ -339,7 +339,7 @@ class Loader(object):
                    scoped_ref=None      # type: int
                    ):
         # type: (...) -> Text
-        if url in (u"@id", u"@type"):
+        if url in (u"@id", u"@type") or url is None:
             return url
 
         if vocab_term and url in self.vocab:
