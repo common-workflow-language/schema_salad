@@ -127,11 +127,12 @@ class TestPrintOneline(unittest.TestCase):
                             or msg.endswith(src+":2:1: expected <block end>, but found u':'"))
             return
         except ValidationException as e:
-            msgs = str(strip_dup_lineno(six.text_type(e))).splitlines()
+            msgs = str(strip_dup_lineno(six.text_type(e)))
             print(msgs)
-            assert "{}:2:1: Object".format(src) in msgs[0], e
-            assert msgs[1].endswith("is not valid because"), e
-            assert msgs[2].endswith("tried `CommandLineTool` but"), e
-            assert msgs[3].endswith("mapping with implicit null key"), e
+            assert "{}:2:1: Object".format(src) in msgs
+            assert "is not valid because" in msgs
+            assert "tried `CommandLineTool` but" in msgs
+            assert "mapping with implicit" in msgs
+            assert "null key" in msgs
             return
         assert False, "Missing RuntimeError or ValidationException"
