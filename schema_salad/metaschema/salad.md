@@ -268,6 +268,25 @@ Some examples:
 * the short name of `http://example.com/#foo/bar` is `bar`
 * the short name of `http://example.com/foo#bar/baz` is `baz`
 
+## Inheritance and specialization
+
+A record definition may inherit from one or more record definitions
+with the `extends` field.  This copies the fields defined in the
+parent record(s) as the base for the new record.  A record definition
+may `specialize` type declarations of the fields inherited from the
+base record.  For each field inherited from the base record, any
+instance of the type in `specializeFrom` is replaced with the type in
+`specializeTo`.  The type in `specializeTo` should extend from the
+type in `specializeFrom`.
+
+A record definition may be `abstract`.  This means the record
+definition is not used for validation on its own, but may be extended
+by other definitions.  If an abstract type appears in a field
+definition, it is logically replaced with a union of all concrete
+subtypes of the abstract type.  In other words, the field value does
+not validate as the abstract type, but must validate as some concrete
+type that inherits from the abstract type.
+
 # Document preprocessing
 
 After processing the explicit context (if any), document preprocessing

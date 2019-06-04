@@ -41,7 +41,9 @@ $graph:
   doc: |
     # Validating a document against a schema
 
-    To validate a document against the schema, use the following algorithm.
+    To validate a document against the schema, first [apply
+    preprocessing](#Document_preprocessing), then, use the following
+    algorithm.
 
     1. The document root must be an object or a list.  If the document root is an
        object containing the field `$graph` (which must be a list of
@@ -65,6 +67,9 @@ $graph:
     8. To validate an enum, the value in the document be a string, and
        the value must be equal to the short name of one of the values
        listed in `symbols`.
+    9. As a special case, a field with the `Expression` type validates string values
+      which contain a CWL parameter reference or expression in the form
+      `$(...)` or `${...}`
 
 # - name: "JSON_LD_Context"
 #   type: documentation
