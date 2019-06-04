@@ -92,7 +92,7 @@ specification, the following changes have been made:
 
 **JSON Linked Data (JSON-LD)**: http://json-ld.org
 
-**YAML**: http://yaml.org
+**YAML**: https://yaml.org/spec/1.2/spec.html
 
 **Avro**: https://avro.apache.org/docs/current/spec.html
 
@@ -161,11 +161,19 @@ by a document schema, where each term maps to absolute URI.
 
 ## Syntax
 
-Conforming Salad documents are serialized and loaded using YAML syntax and
-UTF-8 text encoding.  Salad documents are written using the JSON-compatible
-subset of YAML.  Features of YAML such as headers and type tags that are
-not found in the standard JSON data model must not be used in conforming
-Salad documents.  It is a fatal error if the document is not valid YAML.
+Conforming Salad v1.1 documents are serialized and loaded using a
+subset of YAML 1.2 syntax and UTF-8 text encoding.  Salad documents
+are written using the [JSON-compatible subset of YAML described in
+section 10.2](https://yaml.org/spec/1.2/spec.html#id2803231).  The
+following features of YAML must not be used in conforming Salad
+documents:
+
+* Use of explicit node tags with leading `!` or `!!`
+* Use of anchors with leading `&` and aliases with leading `*`
+* %YAML directives
+* %TAG directives
+
+It is a fatal error if the document is not valid YAML.
 
 A Salad document must consist only of either a single root object or an
 array of objects.
