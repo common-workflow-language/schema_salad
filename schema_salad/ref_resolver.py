@@ -25,7 +25,7 @@ from future.utils import raise_from
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import validate
-from .sourceline import SourceLine, add_lc_filename, relname, strip_dup_lineno
+from .sourceline import SourceLine, add_lc_filename, relname, strip_dup_lineno, indent
 from .utils import aslist, onWindows
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
@@ -34,7 +34,7 @@ from .utils import aslist, onWindows
 
 
 _logger = logging.getLogger("salad")
-ContextType = Dict[Text, Union[Dict, Text, Iterable[Text]]]
+ContextType = Dict[Text, Union[Dict[Text, Any], Text, Iterable[Text]]]
 DocumentType = TypeVar('DocumentType', CommentedSeq, CommentedMap)
 DocumentOrStrType = TypeVar(
     'DocumentOrStrType', CommentedSeq, CommentedMap, Text)
@@ -66,7 +66,7 @@ def uri_file_path(url):  # type: (str) -> str
 class NormDict(CommentedMap):
     """A Dict where all keys are normalized using the provided function."""
 
-    def __init__(self, normalize=Text):  # type: (Callable) -> None
+    def __init__(self, normalize=Text):  # type: (Callable[[Text], Text]) -> None
         super(NormDict, self).__init__()
         self.normalize = normalize
 
@@ -112,7 +112,7 @@ class Fetcher(object):
     def check_exists(self, url):  # type: (Text) -> bool
         raise NotImplementedError()
 
-    def urljoin(self, base_url, url):  # type: (Text, Text) -> Text
+    def urljoin(self, base_url, url):  # type: (Optional[Text], Text) -> Text
         raise NotImplementedError()
 
     schemes = [u"file", u"http", u"https", u"mailto"]
@@ -154,7 +154,7 @@ class DefaultFetcher(Fetcher):
                 if os.path.isabs(path[1:]):  # checking if pathis valid after removing front / or not
                     path = path[1:]
                 with open(urllib.request.url2pathname(str(path)), encoding='utf-8') as fp:
-                    return fp.read()
+                    return Text(fp.read())
 
             except (OSError, IOError) as err:
                 if err.filename == path:
@@ -184,7 +184,7 @@ class DefaultFetcher(Fetcher):
             return True
         raise ValueError('Unsupported scheme in url: %s' % url)
 
-    def urljoin(self, base_url, url):  # type: (Text, Text) -> Text
+    def urljoin(self, base_url, url):  # type: (Optional[Text], Text) -> Text
         basesplit = urllib.parse.urlsplit(base_url)
         split = urllib.parse.urlsplit(url)
         if (basesplit.scheme and basesplit.scheme != "file" and split.scheme == "file"):
@@ -250,14 +250,14 @@ class DefaultFetcher(Fetcher):
 class Loader(object):
     def __init__(self,
                  ctx,                       # type: ContextType
-                 schemagraph=None,          # type: Graph
-                 foreign_properties=None,   # type: Set[Text]
-                 idx=None,                  # type: Dict[Text, Union[CommentedMap, CommentedSeq, Text, None]]
-                 cache=None,                # type: Dict[Text, Any]
-                 session=None,              # type: requests.sessions.Session
-                 fetcher_constructor=None,  # type: Callable[[Dict[Text, Union[Text, bool]], requests.sessions.Session], Fetcher]
-                 skip_schemas=None,         # type: bool
-                 url_fields=None,           # type: Set[Text]
+                 schemagraph=None,          # type: Optional[Graph]
+                 foreign_properties=None,   # type: Optional[Set[Text]]
+                 idx=None,                  # type: Optional[Dict[Text, Union[CommentedMap, CommentedSeq, Text, None]]]
+                 cache=None,                # type: Optional[Dict[Text, Any]]
+                 session=None,              # type: Optional[requests.sessions.Session]
+                 fetcher_constructor=None,  # type: Optional[Callable[[Dict[Text, Union[Text, bool]], requests.sessions.Session], Fetcher]]
+                 skip_schemas=None,         # type: Optional[bool]
+                 url_fields=None,           # type: Optional[Set[Text]]
                  allow_attachments=None     # type: Optional[Callable[[Union[CommentedMap, CommentedSeq]], bool]]
                  ):
         # type: (...) -> None
@@ -340,7 +340,7 @@ class Loader(object):
                    base_url,            # type: Text
                    scoped_id=False,     # type: bool
                    vocab_term=False,    # type: bool
-                   scoped_ref=None      # type: int
+                   scoped_ref=None      # type: Optional[int]
                    ):
         # type: (...) -> Text
         if url in (u"@id", u"@type") or url is None:
@@ -512,7 +512,7 @@ class Loader(object):
 
     def resolve_ref(self,
                     ref,              # type: Union[CommentedMap, CommentedSeq, Text]
-                    base_url=None,    # type: Text
+                    base_url=None,    # type: Optional[Text]
                     checklinks=True,  # type: bool
                     strict_foreign_properties=False  # type: bool
                     ):
@@ -711,11 +711,10 @@ class Loader(object):
     typeDSLregex = re.compile(Text(r"^([^[?]+)(\[\])?(\?)?$"))
 
     def _type_dsl(self,
-                  t,        # type: Union[Text, Dict, List]
+                  t,        # type: Union[Text, Dict[Text, Text], List[Text]]
                   lc,       # type: LineCol
                   filename  # type: Text
-    ):
-        # type: (...) -> Union[Text, Dict[Text, Text], List[Union[Text, Dict[Text, Text]]]]
+                 ):  # type: (...) -> Union[Text, Dict[Text, Text], List[Text]]
 
         if not isinstance(t, string_types):
             return t
@@ -739,10 +738,10 @@ class Loader(object):
         return third or second or first
 
     def _secondaryFile_dsl(self,
-                  t,        # type: Union[Text, Dict, List]
-                  lc,
-                  filename):
-        # type: (...) -> Union[Text, Dict[Text, Text], List[Union[Text, Dict[Text, Text]]]]
+                  t,        # type: Union[Text, Dict[Text, Text], List[Text]]
+                  lc,       # type: LineCol
+                  filename  # type: Text
+                ):  # type: (...) -> Union[Text, Dict[Text, Text], List[Text]]
 
         if not isinstance(t, string_types):
             return t
@@ -888,7 +887,7 @@ class Loader(object):
     def resolve_all(self,
                     document,           # type: Union[CommentedMap, CommentedSeq]
                     base_url,           # type: Text
-                    file_base=None,     # type: Text
+                    file_base=None,     # type: Optional[Text]
                     checklinks=True,    # type: bool
                     strict_foreign_properties=False  # type: bool
                     ):
@@ -972,7 +971,7 @@ class Loader(object):
             except validate.ValidationException as v:
                 _logger.warning("loader is %s", id(loader), exc_info=True)
                 raise_from(validate.ValidationException("(%s) (%s) Validation error in field %s:\n%s" % (
-                    id(loader), file_base, key, validate.indent(Text(v)))), v)
+                    id(loader), file_base, key, indent(Text(v)))), v)
 
         elif isinstance(document, CommentedSeq):
             i = 0
@@ -1007,7 +1006,7 @@ class Loader(object):
             except validate.ValidationException as v:
                 _logger.warning("failed", exc_info=True)
                 raise_from(validate.ValidationException("(%s) (%s) Validation error in position %i:\n%s" % (
-                    id(loader), file_base, i, validate.indent(Text(v)))), v)
+                    id(loader), file_base, i, indent(Text(v)))), v)
 
         if checklinks:
             all_doc_ids={}  # type: Dict[Text, Text]
@@ -1025,7 +1024,7 @@ class Loader(object):
                 textIO = StringIO(text.decode('utf-8'))
             else:
                 textIO = StringIO(text)
-            textIO.name = url    # type: ignore
+            textIO.name = str(url)
             attachments = yaml.round_trip_load_all(textIO, preserve_quotes=True)
             result = next(attachments)
 
@@ -1172,19 +1171,19 @@ class Loader(object):
                 self.validate_links(val, docid, all_doc_ids, strict_foreign_properties=strict_foreign_properties)
             except validate.ValidationException as v:
                 if key in self.nolinkcheck or (isinstance(key, string_types) and ":" in key):
-                    _logger.warning(validate.indent(Text(v)))
+                    _logger.warning(indent(Text(v)))
                 else:
                     docid2 = self.getid(val)
                     if docid2 is not None:
                         errors.append(sl.makeError(
-                            "checking object `%s`\n%s" % (relname(docid2), validate.indent(Text(v)))))
+                            "checking object `%s`\n%s" % (relname(docid2), indent(Text(v)))))
                     else:
                         if isinstance(key, string_types):
                             errors.append(sl.makeError("checking field `%s`\n%s" % (
-                                key, validate.indent(Text(v)))))
+                                key, indent(Text(v)))))
                         else:
                             errors.append(sl.makeError("checking item\n%s" % (
-                                validate.indent(Text(v)))))
+                                indent(Text(v)))))
         if bool(errors):
             if len(errors) > 1:
                 raise validate.ValidationException(

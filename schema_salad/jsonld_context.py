@@ -21,13 +21,13 @@ from .utils import aslist, json_dumps
 _logger = logging.getLogger("salad")
 
 
-def pred(datatype,      # type: MutableMapping[Text, Union[Dict, Text]]
-         field,         # type: Optional[Dict]
+def pred(datatype,      # type: MutableMapping[Text, Union[Dict[Text, Text], Text]]
+         field,         # type: Optional[Dict[Text, Any]]
          name,          # type: str
          context,       # type: ContextType
          defaultBase,   # type: str
          namespaces     # type: Dict[Text, rdflib.namespace.Namespace]
-        ):  # type: (...) -> Union[Dict, Text]
+        ):  # type: (...) -> Union[Dict[Text, Text], Text]
     split = urllib.parse.urlsplit(name)
 
     vee = None  # type: Optional[Text]
@@ -40,7 +40,7 @@ def pred(datatype,      # type: MutableMapping[Text, Union[Dict, Text]]
             vee = six.text_type(namespaces[ns[0:-1]][ln])
         _logger.debug("name, v %s %s", name, vee)
 
-    v = None  # type: Optional[Dict]
+    v = None  # type: Optional[Dict[Text, Any]]
 
     if field is not None and "jsonldPredicate" in field:
         if isinstance(field["jsonldPredicate"], MutableMapping):
@@ -160,7 +160,7 @@ def process_type(t,             # type: MutableMapping[Text, Any]
 
 
 def salad_to_jsonld_context(j, schema_ctx):
-    # type: (Iterable, MutableMapping[Text, Any]) -> Tuple[ContextType, Graph]
+    # type: (Iterable[MutableMapping[Text, Any]], MutableMapping[Text, Any]) -> Tuple[ContextType, Graph]
     context = {}  # type: ContextType
     namespaces = {}
     g = Graph()
@@ -202,7 +202,7 @@ def fix_jsonld_ids(obj,  # type: Union[Dict[Text, Any], List[Dict[Text, Any]]]
 def makerdf(workflow,       # type: Text
             wf,             # type: Union[List[Dict[Text, Any]], Dict[Text, Any]]
             ctx,            # type: ContextType
-            graph=None      # type: Graph
+            graph=None      # type: Optional[Graph]
            ):  # type: (...) -> Graph
     prefixes = {}
     idfields = []

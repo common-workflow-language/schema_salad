@@ -123,7 +123,7 @@ class Schema(object):
     props = property(lambda self: self._props)
 
     # utility functions to manipulate properties dict
-    def get_prop(self, key):
+    def get_prop(self, key):  # type: (Text) -> Any
         return self._props.get(key)
 
     def set_prop(self, key, value):  # type: (Text, Any) -> None
@@ -197,7 +197,7 @@ class Names(object):
 
     def __init__(self, default_namespace=None):
         # type: (Optional[Text]) -> None
-        self.names = {}  # type: Dict
+        self.names = {}  # type: Dict[Text, NamedSchema]
         self.default_namespace = default_namespace
 
     def has_name(self, name_attr, space_attr):
@@ -237,8 +237,13 @@ class Names(object):
 class NamedSchema(Schema):
     """Named Schemas specified in NAMED_TYPES."""
 
-    def __init__(self, atype, name, namespace=None, names=None, other_props=None):
-        # type: (Text, Text, Optional[Text], Names, Dict) -> None
+    def __init__(self,
+                 atype,            # type: Text
+                 name,             # type: Text
+                 namespace=None,   # type: Optional[Text]
+                 names=None,       # type: Optional[Names]
+                 other_props=None  # type: Optional[Dict[Text, Text]]
+                ):  # type: (...) -> None
         # Ensure valid ctor args
         if not name:
             fail_msg = 'Named Schemas must have a non-empty name.'
@@ -274,10 +279,10 @@ class Field(object):
                  atype,            # type: Union[Text, Dict[Text, Text]]
                  name,             # type: Text
                  has_default,      # type: bool
-                 default=None,     # type: Text
+                 default=None,     # type: Optional[Text]
                  order=None,       # type: Optional[Text]
-                 names=None,       # type: Names
-                 doc=None,         # type: Text
+                 names=None,       # type: Optional[Names]
+                 doc=None,         # type: Optional[Text]
                  other_props=None  # type: Optional[Dict[Text, Text]]
                 ):  # type: (...) -> None
         # Ensure valid ctor args
@@ -322,10 +327,11 @@ class Field(object):
     default = property(lambda self: self.get_prop('default'))
 
     # utility functions to manipulate properties dict
-    def get_prop(self, key):
+    def get_prop(self, key):  # type: (Text) -> Union[Schema, Text, None]
         return self._props.get(key)
 
-    def set_prop(self, key, value):  # type: (Text, Union[Schema, Text, None]) -> None
+    def set_prop(self, key, value):
+        # type: (Text, Union[Schema, Text, None]) -> None
         self._props[key] = value
 
 #
@@ -334,7 +340,8 @@ class Field(object):
 class PrimitiveSchema(Schema):
     """Valid primitive types are in PRIMITIVE_TYPES."""
 
-    def __init__(self, atype, other_props=None):  # type: (Text, Dict) -> None
+    def __init__(self, atype, other_props=None):
+        # type: (Text, Optional[Dict[Text, Text]]) -> None
         # Ensure valid ctor args
         if atype not in PRIMITIVE_TYPES:
             raise AvroException("%s is not a valid primitive type." % atype)
@@ -349,8 +356,14 @@ class PrimitiveSchema(Schema):
 #
 
 class EnumSchema(NamedSchema):
-    def __init__(self, name, namespace, symbols, names=None, doc=None, other_props=None):
-        # type: (Text, Optional[Text], List[Text], Names, Text, Optional[Dict[Text, Any]]) -> None
+    def __init__(self,
+                 name,             # type: Text
+                 namespace,        # type: Text
+                 symbols,          # type: List[Text]
+                 names=None,       # type: Optional[Names]
+                 doc=None,         # type: Optional[Text]
+                 other_props=None  # type: Optional[Dict[Text, Text]]
+                ):  # type: (...) -> None
         # Ensure valid ctor args
         if not isinstance(symbols, list):
             fail_msg = 'Enum Schema requires a JSON array for the symbols property.'
@@ -379,7 +392,7 @@ class EnumSchema(NamedSchema):
 
 class ArraySchema(Schema):
     def __init__(self, items, names=None, other_props=None):
-        # type: (List[Any], Names, Optional[Dict[Text, Text]]) -> None
+        # type: (List[Any], Optional[Names], Optional[Dict[Text, Text]]) -> None
         # Call parent ctor
         Schema.__init__(self, 'array', other_props)
         # Add class members
@@ -406,7 +419,8 @@ class UnionSchema(Schema):
     names is a dictionary of schema objects
     """
 
-    def __init__(self, schemas, names=None):  # type: (List, Names) -> None
+    def __init__(self, schemas, names=None):
+        # type: (List[Schema], Optional[Names]) -> None
         # Ensure valid ctor args
         if names is None:
             raise SchemaParseException('Must provide Names.')
@@ -475,9 +489,15 @@ class RecordSchema(NamedSchema):
             field_objects.append(new_field)
         return field_objects
 
-    def __init__(self, name, namespace, fields, names=None, schema_type='record',
-                 doc=None, other_props=None):
-        # type: (Text, Text, List, Names, Text, Text, Dict) -> None
+    def __init__(self,
+                 name,                  # type: Text
+                 namespace,             # type: Text
+                 fields,                # type: List[Dict[Text, Text]]
+                 names=None,            # type: Optional[Names]
+                 schema_type='record',  # type: Text
+                 doc=None,              # type: Optional[Text]
+                 other_props=None       # type: Optional[Dict[Text, Text]]
+                ):  # type: (...) -> None
         # Ensure valid ctor args
         if fields is None:
             fail_msg = 'Record schema requires a non-empty fields property.'
@@ -513,7 +533,7 @@ class RecordSchema(NamedSchema):
 # Module Methods
 #
 def get_other_props(all_props, reserved_props):
-    # type: (Dict, Tuple) -> Optional[Dict]
+    # type: (Dict[Text, Text], Tuple[Text, ...]) -> Optional[Dict[Text, Text]]
     """
     Retrieve the non-reserved properties from a dictionary of properties
     @args reserved_props: The set of reserved properties to exclude
@@ -551,13 +571,13 @@ def make_avsc_object(json_data, names=None):
                 doc = json_data.get('doc')
                 return EnumSchema(name, namespace, symbols, names, doc, other_props)
             if atype in ['record', 'error']:
-                fields = cast(List, json_data.get('fields'))
+                fields = cast(List[Dict[Text, Text]], json_data.get('fields'))
                 doc = json_data.get('doc')
                 return RecordSchema(name, namespace, fields, names, atype, doc, other_props)
             raise SchemaParseException('Unknown Named Type: %s' % atype)
         if atype in VALID_TYPES:
             if atype == 'array':
-                items = cast(List, json_data.get('items'))
+                items = cast(List[Text], json_data.get('items'))
                 return ArraySchema(items, names, other_props)
         if atype is None:
             raise SchemaParseException('No "type" property: %s' % json_data)

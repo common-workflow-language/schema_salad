@@ -5,13 +5,13 @@ import argparse
 import logging
 import os
 import sys
-from typing import (Any, Dict, List, Mapping, MutableSequence,
+from typing import (Any, Dict, List, Optional, Mapping, MutableSequence,
                     Union, cast)
 
 import pkg_resources  # part of setuptools
 from rdflib.parser import Parser
 from rdflib.plugin import register
-from ruamel.yaml.comments import CommentedMap
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 import six
 from six.moves import urllib
 from typing_extensions import Text  # pylint: disable=unused-import
@@ -35,10 +35,10 @@ def printrdf(workflow,  # type: str
              ):
     # type: (...) -> None
     g = jsonld_context.makerdf(workflow, wf, ctx)
-    print(g.serialize(format=sr, encoding='utf-8').decode('utf-8'))  # type: ignore
+    print(g.serialize(format=sr, encoding='utf-8').decode('utf-8'))
 
 
-def main(argsl=None):  # type: (List[str]) -> int
+def main(argsl=None):  # type: (Optional[List[str]]) -> int
     if argsl is None:
         argsl = sys.argv[1:]
 
@@ -175,11 +175,11 @@ def main(argsl=None):  # type: (List[str]) -> int
     metactx = schema.collect_namespaces(schema_metadata)
     if "$base" in schema_metadata:
         metactx["@base"] = schema_metadata["$base"]
-    if schema_doc is not None:
+    if isinstance(schema_doc, CommentedSeq):
         (schema_ctx, rdfs) = jsonld_context.salad_to_jsonld_context(
             schema_doc, metactx)
     else:
-        raise Exception("schema_doc is None??")
+        raise Exception("Expected a CommentedSeq, got {}: {}.".format(type(schema_doc), schema_doc))
 
     # Create the loader that will be used to load the target document.
     document_loader = Loader(schema_ctx, skip_schemas=args.skip_schemas)
@@ -219,7 +219,7 @@ def main(argsl=None):  # type: (List[str]) -> int
 
     # Optionally print the RDFS graph from the schema
     if args.print_rdfs:
-        print(rdfs.serialize(format=args.rdf_serializer).decode('utf-8'))  # type: ignore
+        print(rdfs.serialize(format=args.rdf_serializer).decode('utf-8'))
         return 0
 
     if args.print_metadata and not args.document:

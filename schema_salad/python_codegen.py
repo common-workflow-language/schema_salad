@@ -41,11 +41,6 @@ class PythonCodeGen(CodeGenBase):
 #
 """)
 
-        stream = resource_stream(__name__, 'sourceline.py')
-        self.out.write(stream.read().decode("UTF-8"))
-        stream.close()
-        self.out.write("\n\n")
-
         stream = resource_stream(__name__, 'python_codegen_support.py')
         self.out.write(stream.read().decode("UTF-8"))
         stream.close()
@@ -86,6 +81,7 @@ class PythonCodeGen(CodeGenBase):
 
         self.out.write(
             """    def __init__(self, _doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> None
         doc = copy.copy(_doc)
         if hasattr(_doc, 'lc'):
             doc.lc.data = _doc.lc.data
@@ -98,7 +94,8 @@ class PythonCodeGen(CodeGenBase):
 
         self.serializer.write("""
     def save(self, top=False, base_url="", relative_uris=True):
-        r = {}
+        # type: (bool, Text, bool) -> Dict[Text, Any]
+        r = {}  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 """)
@@ -122,7 +119,7 @@ class PythonCodeGen(CodeGenBase):
             return
 
         self.out.write("""
-        self.extension_fields = {{}}
+        self.extension_fields = {{}}  # type: Dict[Text, Text]
         for k in doc.keys():
             if k not in self.attrs:
                 if ":" in k:
@@ -323,6 +320,7 @@ class PythonCodeGen(CodeGenBase):
 
         self.out.write("""
 def load_document(doc, baseuri=None, loadingOptions=None):
+    # type: (Any, Optional[Text], Optional[LoadingOptions]) -> Any
     if baseuri is None:
         baseuri = file_uri(os.getcwd()) + "/"
     if loadingOptions is None:
@@ -330,6 +328,7 @@ def load_document(doc, baseuri=None, loadingOptions=None):
     return _document_load(%(name)s, doc, baseuri, loadingOptions)
 
 def load_document_by_string(string, uri, loadingOptions=None):
+    # type: (Any, Text, Optional[LoadingOptions]) -> Any
     result = yaml.round_trip_load(string, preserve_quotes=True)
     add_lc_filename(result, uri)
 

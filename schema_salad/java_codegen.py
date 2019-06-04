@@ -1,6 +1,6 @@
 """Work-in-progress Java code generator for a given schema salad definition."""
 import os
-from typing import MutableSequence
+from typing import Any, Dict, List, MutableSequence, Union
 
 from six import string_types
 from six.moves import cStringIO, urllib
@@ -78,6 +78,7 @@ public class {cls}Impl implements {cls} {{
 """)
 
     def end_class(self, classname, field_names):
+        # type: (Text, List[Text]) -> None
         with open(os.path.join(self.outdir, "%s.java" % self.current_class), "a") as f:
             f.write("""
 }
@@ -108,6 +109,7 @@ public class {cls}Impl implements {cls} {{
     }
 
     def type_loader(self, type_declaration):
+        # type: (Union[List[Any], Dict[Text, Any]]) -> TypeDef
         if isinstance(type_declaration, MutableSequence) and len(type_declaration) == 2:
             if type_declaration[0] == "https://w3id.org/cwl/salad#null":
                 type_declaration = type_declaration[1]
@@ -117,6 +119,7 @@ public class {cls}Impl implements {cls} {{
         return TypeDef("Object", "")
 
     def declare_field(self, name, fieldtype, doc, optional):
+        # type: (Text, TypeDef, Text, bool) -> None
         fieldname = self.safe_name(name)
         with open(os.path.join(self.outdir, "%s.java" % self.current_class), "a") as f:
             f.write("""
@@ -146,17 +149,21 @@ public class {cls}Impl implements {cls} {{
 
 
     def declare_id_field(self, name, fieldtype, doc, optional):
+        # type: (Text, TypeDef, Text, bool) -> None
         pass
 
     def uri_loader(self, inner, scoped_id, vocab_term, ref_scope):
+        # type: (TypeDef, bool, bool, Union[int, None]) -> TypeDef
         return inner
 
     def idmap_loader(self, field, inner, map_subject, map_predicate):
+        # type: (Text, TypeDef, Text, Union[Text, None]) -> TypeDef
         return inner
 
     def typedsl_loader(self, inner, ref_scope):
+        # type: (TypeDef, Union[int, None]) -> TypeDef
         return inner
 
-    def epilogue(self, root_loader):
+    def epilogue(self, root_loader):  # type: (TypeDef) -> None
 
         pass

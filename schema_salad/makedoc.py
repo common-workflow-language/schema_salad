@@ -8,9 +8,9 @@ import logging
 import os
 import re
 import sys
-from io import open, TextIOWrapper
+from io import open, TextIOWrapper, TextIOBase
 from typing import (IO, Any, Dict, List, MutableMapping, MutableSequence,
-                    Optional, Set, Union, cast)
+                    Optional, Set, Tuple, Union, cast)
 
 import mistune
 import six
@@ -26,7 +26,7 @@ _logger = logging.getLogger("salad")
 
 
 def has_types(items):  # type: (Any) -> List[Text]
-    r = []  # type: List
+    r = []  # type: List[Text]
     if isinstance(items, MutableMapping):
         if items["type"] == "https://w3id.org/cwl/salad#record":
             return [items["name"]]
@@ -167,12 +167,12 @@ def fix_doc(doc):  # type: (Union[List[str], str]) -> str
 class RenderType(object):
 
     def __init__(self, toc, j, renderlist, redirects, primitiveType):
-        # type: (ToC, List[Dict], str, Dict, str) -> None
+        # type: (ToC, List[Dict[Text, Text]], str, Dict[Text, Text], str) -> None
         self.typedoc = StringIO()
         self.toc = toc
         self.subs = {}  # type: Dict[str, str]
-        self.docParent = {}  # type: Dict[str, List]
-        self.docAfter = {}  # type: Dict[str, List]
+        self.docParent = {}  # type: Dict[str, List[Text]]
+        self.docAfter = {}  # type: Dict[str, List[Text]]
         self.rendered = set()  # type: Set[str]
         self.redirects = redirects
         self.title = None  # type: Optional[str]
@@ -198,15 +198,18 @@ class RenderType(object):
         metaschema_loader = schema.get_metaschema()[2]
         alltypes = schema.extend_and_specialize(j, metaschema_loader)
 
-        self.typemap = {}  # type: Dict
-        self.uses = {}  # type: Dict
-        self.record_refs = {}  # type: Dict
-        for t in alltypes:
+        self.typemap = {}  # type: Dict[Text, Dict[Text, Text]]
+        self.uses = {}  # type: Dict[Text, List[Tuple[Text, Text]]]
+        self.record_refs = {}  # type: Dict[Text, List[Text]]
+        for entry in alltypes:
             self.typemap[t["name"]] = t
             try:
                 if t["type"] == "record":
                     self.record_refs[t["name"]] = []
-                    for f in t.get("fields", []):
+                    fields = t.get("fields", [])
+                    if isinstance(fields, Text):
+                        raise KeyError("record fields must be a list of mappings")
+                    for f in fields:  # type: Dict[Text, Text]
                         p = has_types(f)
                         for tp in p:
                             if tp not in self.uses:
@@ -230,7 +233,7 @@ class RenderType(object):
 
     def typefmt(self,
                 tp,                     # type: Any
-                redirects,              # type: Dict[str, str]
+                redirects,              # type: Dict[Text, Text]
                 nbsp=False,             # type: bool
                 jsonldPredicate=None    # type: Optional[Dict[str, str]]
                 ):
@@ -266,7 +269,7 @@ class RenderType(object):
                 return ar
             if tp["type"] in ("https://w3id.org/cwl/salad#record",
                               "https://w3id.org/cwl/salad#enum"):
-                frg = cast(Text, schema.avro_name(tp["name"]))
+                frg = schema.avro_name(tp["name"])
                 if tp["name"] in redirects:
                     return """<a href="%s">%s</a>""" % (redirects[tp["name"]], frg)
                 if tp["name"] in self.typemap:
@@ -445,7 +448,7 @@ class RenderType(object):
 def avrold_doc(j,           # type: List[Dict[Text, Any]]
                outdoc,      # type: Union[IO[Any], StreamWriter]
                renderlist,  # type: str
-               redirects,   # type: Dict
+               redirects,   # type: Dict[Text, Text]
                brand,       # type: str
                brandlink,   # type: str
                primtype     # type: str
@@ -619,14 +622,12 @@ def makedoc(args):   # type: (argparse.Namespace) -> None
     for r in (args.redirect or []):
         redirect[r.split("=")[0]] = r.split("=")[1]
     renderlist = args.only if args.only else []
-    if (hasattr(sys.stdout, "encoding")  # type: ignore
-            and sys.stdout.encoding != 'UTF-8'):  # type: ignore
-        if six.PY3 and hasattr(sys.stdout, "detach"):
+    stdout = cast(TextIOWrapper, sys.stdout)  # type: Union[TextIOWrapper, StreamWriter]
+    if sys.stdout.encoding != 'UTF-8':
+        if sys.version_info >= (3,):
             stdout = TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
         else:
-            stdout = codecs.getwriter('utf-8')(sys.stdout)  # type: ignore
-    else:
-        stdout = cast(TextIOWrapper, sys.stdout)  # type: ignore
+            stdout = codecs.getwriter('utf-8')(sys.stdout)
     avrold_doc(s, stdout, renderlist, redirect, args.brand, args.brandlink, args.primtype)
 
 
