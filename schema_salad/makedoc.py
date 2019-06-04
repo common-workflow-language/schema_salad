@@ -595,7 +595,8 @@ def main():  # type: () -> None
 
     makedoc(args)
 
-def makedoc(args):
+def makedoc(args):   # type: (argparse.Namespace) -> None
+
     s = []  # type: List[Dict[Text, Any]]
     a = args.schema
     with open(a, encoding='utf-8') as f:

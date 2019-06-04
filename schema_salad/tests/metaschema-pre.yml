@@ -2,7 +2,7 @@
     {
         "type": "documentation",
         "doc": [
-            "# Semantic Annotations for Linked Avro Data (SALAD)\n\nAuthor:\n\n* Peter Amstutz <pamstutz@veritasgenetics.com>, Veritas Genetics\n\nContributors:\n\n* The developers of Apache Avro\n* The developers of JSON-LD\n* Neboj\u0161a Tijani\u0107 <nebojsa.tijanic@sbgenomics.com>, Seven Bridges Genomics\n\n# Abstract\n\nSalad is a schema language for describing structured linked data documents\nin JSON or YAML documents.  A Salad schema provides rules for\npreprocessing, structural validation, and link checking for documents\ndescribed by a Salad schema.  Salad builds on JSON-LD and the Apache Avro\ndata serialization system, and extends Avro with features for rich data\nmodeling such as inheritance, template specialization, object identifiers,\nand object references.  Salad was developed to provide a bridge between the\nrecord oriented data modeling supported by Apache Avro and the Semantic\nWeb.\n\n# Status of This Document\n\nThis document is the product of the [Common Workflow Language working\ngroup](https://groups.google.com/forum/#!forum/common-workflow-language).  The\nlatest version of this document is available in the \"schema_salad\" repository at\n\nhttps://github.com/common-workflow-language/schema_salad\n\nThe products of the CWL working group (including this document) are made available\nunder the terms of the Apache License, version 2.0.\n\n<!--ToC-->\n\n# Introduction\n\nThe JSON data model is an extremely popular way to represent structured\ndata.  It is attractive because of its relative simplicity and is a\nnatural fit with the standard types of many programming languages.\nHowever, this simplicity means that basic JSON lacks expressive features\nuseful for working with complex data structures and document formats, such\nas schemas, object references, and namespaces.\n\nJSON-LD is a W3C standard providing a way to describe how to interpret a\nJSON document as Linked Data by means of a \"context\".  JSON-LD provides a\npowerful solution for representing object references and namespaces in JSON\nbased on standard web URIs, but is not itself a schema language.  Without a\nschema providing a well defined structure, it is difficult to process an\narbitrary JSON-LD document as idiomatic JSON because there are many ways to\nexpress the same data that are logically equivalent but structurally\ndistinct.\n\nSeveral schema languages exist for describing and validating JSON data,\nsuch as the Apache Avro data serialization system, however none understand\nlinked data.  As a result, to fully take advantage of JSON-LD to build the\nnext generation of linked data applications, one must maintain separate\nJSON schema, JSON-LD context, RDF schema, and human documentation, despite\nsignificant overlap of content and obvious need for these documents to stay\nsynchronized.\n\nSchema Salad is designed to address this gap.  It provides a schema\nlanguage and processing rules for describing structured JSON content\npermitting URI resolution and strict document validation.  The schema\nlanguage supports linked data through annotations that describe the linked\ndata interpretation of the content, enables generation of JSON-LD context\nand RDF schema, and production of RDF triples by applying the JSON-LD\ncontext.  The schema language also provides for robust support of inline\ndocumentation.\n\n## Introduction to v1.1\n\nThis is the third version of of the Schema Salad specification.  It is\ndeveloped concurrently with v1.1 of the Common Workflow Language for use in\nspecifying the Common Workflow Language, however Schema Salad is intended to be\nuseful to a broader audience.  Compared to the v1.0 schema salad\nspecification, the following changes have been made:\n\n* Support for `default` values on record fields to specify default values\n* Add subscoped fields (fields which introduce a new inner scope for identifiers)\n* Add the *inVocab* flag (default true) to indicate if a type is added to the vocabulary of well known terms or must be prefixed\n* Add *secondaryFilesDSL* micro DSL (domain specific language) to convert text strings to a secondaryFiles record type used in CWL\n* The `$mixin` feature has been removed from the specification, as it\n  is poorly documented, not included in conformance testing,\n  and not widely supported.\n\n## References to Other Specifications\n\n**Javascript Object Notation (JSON)**: http://json.org\n\n**JSON Linked Data (JSON-LD)**: http://json-ld.org\n\n**YAML**: http://yaml.org\n\n**Avro**: https://avro.apache.org/docs/current/spec.html\n\n**Uniform Resource Identifier (URI) Generic Syntax**: https://tools.ietf.org/html/rfc3986)\n\n**Resource Description Framework (RDF)**: http://www.w3.org/RDF/\n\n**UTF-8**: https://www.ietf.org/rfc/rfc2279.txt)\n\n## Scope\n\nThis document describes the syntax, data model, algorithms, and schema\nlanguage for working with Salad documents.  It is not intended to document\na specific implementation of Salad, however it may serve as a reference for\nthe behavior of conforming implementations.\n\n## Terminology\n\nThe terminology used to describe Salad documents is defined in the Concepts\nsection of the specification. The terms defined in the following list are\nused in building those definitions and in describing the actions of an\nSalad implementation:\n\n**may**: Conforming Salad documents and Salad implementations are permitted but\nnot required to be interpreted as described.\n\n**must**: Conforming Salad documents and Salad implementations are required\nto be interpreted as described; otherwise they are in error.\n\n**error**: A violation of the rules of this specification; results are\nundefined. Conforming implementations may detect and report an error and may\nrecover from it.\n\n**fatal error**: A violation of the rules of this specification; results\nare undefined. Conforming implementations must not continue to process the\ndocument and may report an error.\n\n**at user option**: Conforming software may or must (depending on the modal verb in\nthe sentence) behave as described; if it does, it must provide users a means to\nenable or disable the behavior described.\n\n# Document model\n\n## Data concepts\n\nAn **object** is a data structure equivalent to the \"object\" type in JSON,\nconsisting of a unordered set of name/value pairs (referred to here as\n**fields**) and where the name is a string and the value is a string, number,\nboolean, array, or object.\n\nA **document** is a file containing a serialized object, or an array of\nobjects.\n\nA **document type** is a class of files that share a common structure and\nsemantics.\n\nA **document schema** is a formal description of the grammar of a document type.\n\nA **base URI** is a context-dependent URI used to resolve relative references.\n\nAn **identifier** is a URI that designates a single document or single\nobject within a document.\n\nA **vocabulary** is the set of symbolic field names and enumerated symbols defined\nby a document schema, where each term maps to absolute URI.\n\n## Syntax\n\nConforming Salad documents are serialized and loaded using YAML syntax and\nUTF-8 text encoding.  Salad documents are written using the JSON-compatible\nsubset of YAML.  Features of YAML such as headers and type tags that are\nnot found in the standard JSON data model must not be used in conforming\nSalad documents.  It is a fatal error if the document is not valid YAML.\n\nA Salad document must consist only of either a single root object or an\narray of objects.\n\n## Document context\n\n### Implied context\n\nThe implicit context consists of the vocabulary defined by the schema and\nthe base URI.  By default, the base URI must be the URI that was used to\nload the document.  It may be overridden by an explicit context.\n\n### Explicit context\n\nIf a document consists of a root object, this object may contain the\nfields `$base`, `$namespaces`, `$schemas`, and `$graph`:\n\n  * `$base`: Must be a string.  Set the base URI for the document used to\n    resolve relative references.\n\n  * `$namespaces`: Must be an object with strings as values.  The keys of\n    the object are namespace prefixes used in the document; the values of\n    the object are the prefix expansions.\n\n  * `$schemas`: Must be an array of strings.  This field may list URI\n    references to documents in RDF-XML format which will be queried for RDF\n    schema data.  The subjects and predicates described by the RDF schema\n    may provide additional semantic context for the document, and may be\n    used for validation of prefixed extension fields found in the document.\n\nOther directives beginning with `$` must be ignored.\n\n## Document graph\n\nIf a document consists of a single root object, this object may contain the\nfield `$graph`.  This field must be an array of objects.  If present, this\nfield holds the primary content of the document.  A document that consists\nof array of objects at the root is an implicit graph.\n\n## Document metadata\n\nIf a document consists of a single root object, metadata about the\ndocument, such as authorship, may be declared in the root object.\n\n## Document schema\n\nDocument preprocessing, link validation and schema validation require a\ndocument schema.  A schema may consist of:\n\n  * At least one record definition object which defines valid fields that\n  make up a record type.  Record field definitions include the valid types\n  that may be assigned to each field and annotations to indicate fields\n  that represent identifiers and links, described below in \"Semantic\n  Annotations\".\n\n  * Any number of enumerated type objects which define a set of finite set of symbols that are\n  valid value of the type.\n\n  * Any number of documentation objects which allow in-line documentation of the schema.\n\nThe schema for defining a salad schema (the metaschema) is described in\ndetail in the [Schema](#Schema) section.\n\n## Record field annotations\n\nIn a document schema, record field definitions may include the field\n`jsonldPredicate`, which may be either a string or object.  Implementations\nmust use the following document preprocessing of fields by the following\nrules:\n\n  * If the value of `jsonldPredicate` is `@id`, the field is an identifier\n  field.\n\n  * If the value of `jsonldPredicate` is an object, and contains that\n  object contains the field `_type` with the value `@id`, the field is a\n  link field subject to [link validation](#Link_validation).\n\n  * If the value of `jsonldPredicate` is an object which contains the\n  field `_type` with the value `@vocab`, the field value is subject to\n  [vocabulary resolution](#Vocabulary_resolution).\n\n## Document traversal\n\nTo perform document document preprocessing, link validation and schema\nvalidation, the document must be traversed starting from the fields or\narray items of the root object or array and recursively visiting each child\nitem which contains an object or arrays.\n\n## Short names\n\nThe \"short name\" of an fully qualified identifier is the portion of\nthe identifier following the final slash `/` of either the fragment\nidentifier following `#` or the path portion, if there is no fragment.\nSome examples:\n\n* the short name of `http://example.com/foo` is `foo`\n* the short name of `http://example.com/#bar` is `bar`\n* the short name of `http://example.com/foo/bar` is `bar`\n* the short name of `http://example.com/foo#bar` is `bar`\n* the short name of `http://example.com/#foo/bar` is `bar`\n* the short name of `http://example.com/foo#bar/baz` is `baz`\n\n# Document preprocessing\n\nAfter processing the explicit context (if any), document preprocessing\nbegins.  Starting from the document root, object fields values or array\nitems which contain objects or arrays are recursively traversed\ndepth-first.  For each visited object, field names, identifier fields, link\nfields, vocabulary fields, and `$import` and `$include` directives must be\nprocessed as described in this section.  The order of traversal of child\nnodes within a parent node is undefined.\n",
+            "# Semantic Annotations for Linked Avro Data (SALAD)\n\nAuthor:\n\n* Peter Amstutz <pamstutz@veritasgenetics.com>, Veritas Genetics\n\nContributors:\n\n* The developers of Apache Avro\n* The developers of JSON-LD\n* Neboj\u0161a Tijani\u0107 <nebojsa.tijanic@sbgenomics.com>, Seven Bridges Genomics\n\n# Abstract\n\nSalad is a schema language for describing structured linked data documents\nin JSON or YAML documents.  A Salad schema provides rules for\npreprocessing, structural validation, and link checking for documents\ndescribed by a Salad schema.  Salad builds on JSON-LD and the Apache Avro\ndata serialization system, and extends Avro with features for rich data\nmodeling such as inheritance, template specialization, object identifiers,\nand object references.  Salad was developed to provide a bridge between the\nrecord oriented data modeling supported by Apache Avro and the Semantic\nWeb.\n\n# Status of This Document\n\nThis document is the product of the [Common Workflow Language working\ngroup](https://groups.google.com/forum/#!forum/common-workflow-language).  The\nlatest version of this document is available in the \"schema_salad\" repository at\n\nhttps://github.com/common-workflow-language/schema_salad\n\nThe products of the CWL working group (including this document) are made available\nunder the terms of the Apache License, version 2.0.\n\n<!--ToC-->\n\n# Introduction\n\nThe JSON data model is an extremely popular way to represent structured\ndata.  It is attractive because of its relative simplicity and is a\nnatural fit with the standard types of many programming languages.\nHowever, this simplicity means that basic JSON lacks expressive features\nuseful for working with complex data structures and document formats, such\nas schemas, object references, and namespaces.\n\nJSON-LD is a W3C standard providing a way to describe how to interpret a\nJSON document as Linked Data by means of a \"context\".  JSON-LD provides a\npowerful solution for representing object references and namespaces in JSON\nbased on standard web URIs, but is not itself a schema language.  Without a\nschema providing a well defined structure, it is difficult to process an\narbitrary JSON-LD document as idiomatic JSON because there are many ways to\nexpress the same data that are logically equivalent but structurally\ndistinct.\n\nSeveral schema languages exist for describing and validating JSON data,\nsuch as the Apache Avro data serialization system, however none understand\nlinked data.  As a result, to fully take advantage of JSON-LD to build the\nnext generation of linked data applications, one must maintain separate\nJSON schema, JSON-LD context, RDF schema, and human documentation, despite\nsignificant overlap of content and obvious need for these documents to stay\nsynchronized.\n\nSchema Salad is designed to address this gap.  It provides a schema\nlanguage and processing rules for describing structured JSON content\npermitting URI resolution and strict document validation.  The schema\nlanguage supports linked data through annotations that describe the linked\ndata interpretation of the content, enables generation of JSON-LD context\nand RDF schema, and production of RDF triples by applying the JSON-LD\ncontext.  The schema language also provides for robust support of inline\ndocumentation.\n\n## Introduction to v1.1\n\nThis is the third version of of the Schema Salad specification.  It is\ndeveloped concurrently with v1.1 of the Common Workflow Language for use in\nspecifying the Common Workflow Language, however Schema Salad is intended to be\nuseful to a broader audience.  Compared to the v1.0 schema salad\nspecification, the following changes have been made:\n\n* Support for `default` values on record fields to specify default values\n* Add subscoped fields (fields which introduce a new inner scope for identifiers)\n* Add the *inVocab* flag (default true) to indicate if a type is added to the vocabulary of well known terms or must be prefixed\n* Add *secondaryFilesDSL* micro DSL (domain specific language) to convert text strings to a secondaryFiles record type used in CWL\n* The `$mixin` feature has been removed from the specification, as it\n  is poorly documented, not included in conformance testing,\n  and not widely supported.\n\n## References to Other Specifications\n\n**Javascript Object Notation (JSON)**: http://json.org\n\n**JSON Linked Data (JSON-LD)**: http://json-ld.org\n\n**YAML**: https://yaml.org/spec/1.2/spec.html\n\n**Avro**: https://avro.apache.org/docs/current/spec.html\n\n**Uniform Resource Identifier (URI) Generic Syntax**: https://tools.ietf.org/html/rfc3986)\n\n**Resource Description Framework (RDF)**: http://www.w3.org/RDF/\n\n**UTF-8**: https://www.ietf.org/rfc/rfc2279.txt)\n\n## Scope\n\nThis document describes the syntax, data model, algorithms, and schema\nlanguage for working with Salad documents.  It is not intended to document\na specific implementation of Salad, however it may serve as a reference for\nthe behavior of conforming implementations.\n\n## Terminology\n\nThe terminology used to describe Salad documents is defined in the Concepts\nsection of the specification. The terms defined in the following list are\nused in building those definitions and in describing the actions of an\nSalad implementation:\n\n**may**: Conforming Salad documents and Salad implementations are permitted but\nnot required to be interpreted as described.\n\n**must**: Conforming Salad documents and Salad implementations are required\nto be interpreted as described; otherwise they are in error.\n\n**error**: A violation of the rules of this specification; results are\nundefined. Conforming implementations may detect and report an error and may\nrecover from it.\n\n**fatal error**: A violation of the rules of this specification; results\nare undefined. Conforming implementations must not continue to process the\ndocument and may report an error.\n\n**at user option**: Conforming software may or must (depending on the modal verb in\nthe sentence) behave as described; if it does, it must provide users a means to\nenable or disable the behavior described.\n\n# Document model\n\n## Data concepts\n\nAn **object** is a data structure equivalent to the \"object\" type in JSON,\nconsisting of a unordered set of name/value pairs (referred to here as\n**fields**) and where the name is a string and the value is a string, number,\nboolean, array, or object.\n\nA **document** is a file containing a serialized object, or an array of\nobjects.\n\nA **document type** is a class of files that share a common structure and\nsemantics.\n\nA **document schema** is a formal description of the grammar of a document type.\n\nA **base URI** is a context-dependent URI used to resolve relative references.\n\nAn **identifier** is a URI that designates a single document or single\nobject within a document.\n\nA **vocabulary** is the set of symbolic field names and enumerated symbols defined\nby a document schema, where each term maps to absolute URI.\n\n## Syntax\n\nConforming Salad v1.1 documents are serialized and loaded using a\nsubset of YAML 1.2 syntax and UTF-8 text encoding.  Salad documents\nare written using the [JSON-compatible subset of YAML described in\nsection 10.2](https://yaml.org/spec/1.2/spec.html#id2803231).  The\nfollowing features of YAML must not be used in conforming Salad\ndocuments:\n\n* Use of explicit node tags with leading `!` or `!!`\n* Use of anchors with leading `&` and aliases with leading `*`\n* %YAML directives\n* %TAG directives\n\nIt is a fatal error if the document is not valid YAML.\n\nA Salad document must consist only of either a single root object or an\narray of objects.\n\n## Document context\n\n### Implied context\n\nThe implicit context consists of the vocabulary defined by the schema and\nthe base URI.  By default, the base URI must be the URI that was used to\nload the document.  It may be overridden by an explicit context.\n\n### Explicit context\n\nIf a document consists of a root object, this object may contain the\nfields `$base`, `$namespaces`, `$schemas`, and `$graph`:\n\n  * `$base`: Must be a string.  Set the base URI for the document used to\n    resolve relative references.\n\n  * `$namespaces`: Must be an object with strings as values.  The keys of\n    the object are namespace prefixes used in the document; the values of\n    the object are the prefix expansions.\n\n  * `$schemas`: Must be an array of strings.  This field may list URI\n    references to documents in RDF-XML format which will be queried for RDF\n    schema data.  The subjects and predicates described by the RDF schema\n    may provide additional semantic context for the document, and may be\n    used for validation of prefixed extension fields found in the document.\n\nOther directives beginning with `$` must be ignored.\n\n## Document graph\n\nIf a document consists of a single root object, this object may contain the\nfield `$graph`.  This field must be an array of objects.  If present, this\nfield holds the primary content of the document.  A document that consists\nof array of objects at the root is an implicit graph.\n\n## Document metadata\n\nIf a document consists of a single root object, metadata about the\ndocument, such as authorship, may be declared in the root object.\n\n## Document schema\n\nDocument preprocessing, link validation and schema validation require a\ndocument schema.  A schema may consist of:\n\n  * At least one record definition object which defines valid fields that\n  make up a record type.  Record field definitions include the valid types\n  that may be assigned to each field and annotations to indicate fields\n  that represent identifiers and links, described below in \"Semantic\n  Annotations\".\n\n  * Any number of enumerated type objects which define a set of finite set of symbols that are\n  valid value of the type.\n\n  * Any number of documentation objects which allow in-line documentation of the schema.\n\nThe schema for defining a salad schema (the metaschema) is described in\ndetail in the [Schema](#Schema) section.\n\n## Record field annotations\n\nIn a document schema, record field definitions may include the field\n`jsonldPredicate`, which may be either a string or object.  Implementations\nmust use the following document preprocessing of fields by the following\nrules:\n\n  * If the value of `jsonldPredicate` is `@id`, the field is an identifier\n  field.\n\n  * If the value of `jsonldPredicate` is an object, and contains that\n  object contains the field `_type` with the value `@id`, the field is a\n  link field subject to [link validation](#Link_validation).\n\n  * If the value of `jsonldPredicate` is an object which contains the\n  field `_type` with the value `@vocab`, the field value is subject to\n  [vocabulary resolution](#Vocabulary_resolution).\n\n## Document traversal\n\nTo perform document document preprocessing, link validation and schema\nvalidation, the document must be traversed starting from the fields or\narray items of the root object or array and recursively visiting each child\nitem which contains an object or arrays.\n\n## Short names\n\nThe \"short name\" of an fully qualified identifier is the portion of\nthe identifier following the final slash `/` of either the fragment\nidentifier following `#` or the path portion, if there is no fragment.\nSome examples:\n\n* the short name of `http://example.com/foo` is `foo`\n* the short name of `http://example.com/#bar` is `bar`\n* the short name of `http://example.com/foo/bar` is `bar`\n* the short name of `http://example.com/foo#bar` is `bar`\n* the short name of `http://example.com/#foo/bar` is `bar`\n* the short name of `http://example.com/foo#bar/baz` is `baz`\n\n## Inheritance and specialization\n\nA record definition may inherit from one or more record definitions\nwith the `extends` field.  This copies the fields defined in the\nparent record(s) as the base for the new record.  A record definition\nmay `specialize` type declarations of the fields inherited from the\nbase record.  For each field inherited from the base record, any\ninstance of the type in `specializeFrom` is replaced with the type in\n`specializeTo`.  The type in `specializeTo` should extend from the\ntype in `specializeFrom`.\n\nA record definition may be `abstract`.  This means the record\ndefinition is not used for validation on its own, but may be extended\nby other definitions.  If an abstract type appears in a field\ndefinition, it is logically replaced with a union of all concrete\nsubtypes of the abstract type.  In other words, the field value does\nnot validate as the abstract type, but must validate as some concrete\ntype that inherits from the abstract type.\n\n# Document preprocessing\n\nAfter processing the explicit context (if any), document preprocessing\nbegins.  Starting from the document root, object fields values or array\nitems which contain objects or arrays are recursively traversed\ndepth-first.  For each visited object, field names, identifier fields, link\nfields, vocabulary fields, and `$import` and `$include` directives must be\nprocessed as described in this section.  The order of traversal of child\nnodes within a parent node is undefined.\n",
             "## Field name resolution\n\nThe document schema declares the vocabulary of known field names.  During\npreprocessing traversal, field name in the document which are not part of\nthe schema vocabulary must be resolved to absolute URIs.  Under \"strict\"\nvalidation, it is an error for a document to include fields which are not\npart of the vocabulary and not resolvable to absolute URIs.  Fields names\nwhich are not part of the vocabulary are resolved using the following\nrules:\n\n* If an field name URI begins with a namespace prefix declared in the\ndocument context (`@context`) followed by a colon `:`, the prefix and\ncolon must be replaced by the namespace declared in `@context`.\n\n* If there is a vocabulary term which maps to the URI of a resolved\nfield, the field name must be replace with the vocabulary term.\n\n* If a field name URI is an absolute URI consisting of a scheme and path\nand is not part of the vocabulary, no processing occurs.\n\nField name resolution is not relative.  It must not be affected by the\nbase URI.\n\n### Field name resolution example\n\nGiven the following schema:\n\n```\n",
             "{\n  \"$namespaces\": {\n    \"acid\": \"http://example.com/acid#\"\n  },\n  \"$graph\": [{\n    \"name\": \"ExampleType\",\n    \"type\": \"record\",\n    \"fields\": [{\n      \"name\": \"base\",\n      \"type\": \"string\",\n      \"jsonldPredicate\": \"http://example.com/base\"\n    }]\n  }]\n}\n",
             "```\n\nProcess the following example:\n\n```\n",
@@ -63,7 +63,7 @@
     },
     {
         "type": "documentation",
-        "doc": "# Validating a document against a schema\n\nTo validate a document against the schema, use the following algorithm.\n\n1. The document root must be an object or a list.  If the document root is an\n   object containing the field `$graph` (which must be a list of\n   objects), then validation applies to each object in the list.\n2. For each object, attempt to validate as one of the record types\n   flagged with `documentRoot: true`.\n3. To validate a record, go through `fields` and recursively\n   validate each field of the object.\n4. For fields with a list of types (type union), go through each\n   type in the list and recursively validate the type.  For the\n   field to be valid, at least one type in the union must be valid.\n5. Missing fields are considered `null`.  To validate, the allowed types\n   for the field must include `null`\n6. Primitive types are null, boolean, int, long, float, double,\n   string.  To validate, the value in the document must have one\n   of these type.  For numerics, the value appearing in the\n   document must fit into the specified type.\n7. To validate an array, the value in the document must be a list,\n   and each item in the list must recursively validate as a type\n   in `items`.\n8. To validate an enum, the value in the document be a string, and\n   the value must be equal to the short name of one of the values\n   listed in `symbols`.\n",
+        "doc": "# Validating a document against a schema\n\nTo validate a document against the schema, first [apply\npreprocessing](#Document_preprocessing), then, use the following\nalgorithm.\n\n1. The document root must be an object or a list.  If the document root is an\n   object containing the field `$graph` (which must be a list of\n   objects), then validation applies to each object in the list.\n2. For each object, attempt to validate as one of the record types\n   flagged with `documentRoot: true`.\n3. To validate a record, go through `fields` and recursively\n   validate each field of the object.\n4. For fields with a list of types (type union), go through each\n   type in the list and recursively validate the type.  For the\n   field to be valid, at least one type in the union must be valid.\n5. Missing fields are considered `null`.  To validate, the allowed types\n   for the field must include `null`\n6. Primitive types are null, boolean, int, long, float, double,\n   string.  To validate, the value in the document must have one\n   of these type.  For numerics, the value appearing in the\n   document must fit into the specified type.\n7. To validate an array, the value in the document must be a list,\n   and each item in the list must recursively validate as a type\n   in `items`.\n8. To validate an enum, the value in the document be a string, and\n   the value must be equal to the short name of one of the values\n   listed in `symbols`.\n9. As a special case, a field with the `Expression` type validates string values\n  which contain a CWL parameter reference or expression in the form\n  `$(...)` or `${...}`\n",
         "name": "https://w3id.org/cwl/salad#Schema_Validation"
     },
     {
@@ -72,37 +72,28 @@
         "name": "https://w3id.org/cwl/salad#Schema"
     },
     {
-        "docParent": "https://w3id.org/cwl/salad#Schema",
         "type": "record",
         "abstract": true,
+        "name": "https://w3id.org/cwl/salad#Documented",
         "fields": [
             {
                 "type": [
                     "null",
                     "string",
                     {
-                        "type": "array",
-                        "items": "string"
+                        "items": "string",
+                        "type": "array"
                     }
                 ],
-                "jsonldPredicate": "rdfs:comment",
                 "doc": "A documentation string for this object, or an array of strings which should be concatenated.",
-                "name": "https://w3id.org/cwl/salad#Documented/doc"
+                "name": "https://w3id.org/cwl/salad#Documented/doc",
+                "jsonldPredicate": "rdfs:comment"
             }
         ],
-        "name": "https://w3id.org/cwl/salad#Documented"
+        "docParent": "https://w3id.org/cwl/salad#Schema"
     },
     {
         "type": "enum",
-        "symbols": [
-            "https://w3id.org/cwl/salad#null",
-            "http://www.w3.org/2001/XMLSchema#boolean",
-            "http://www.w3.org/2001/XMLSchema#int",
-            "http://www.w3.org/2001/XMLSchema#long",
-            "http://www.w3.org/2001/XMLSchema#float",
-            "http://www.w3.org/2001/XMLSchema#double",
-            "http://www.w3.org/2001/XMLSchema#string"
-        ],
         "doc": [
             "Salad data types are based on Avro schema declarations.  Refer to the\n[Avro schema declaration documentation](https://avro.apache.org/docs/current/spec.html#schemas) for\ndetailed information.\n",
             "null: no value",
@@ -113,27 +104,34 @@
             "double: double precision (64-bit) IEEE 754 floating-point number",
             "string: Unicode character sequence"
         ],
-        "name": "https://w3id.org/cwl/salad#PrimitiveType"
+        "name": "https://w3id.org/cwl/salad#PrimitiveType",
+        "symbols": [
+            "https://w3id.org/cwl/salad#null",
+            "http://www.w3.org/2001/XMLSchema#boolean",
+            "http://www.w3.org/2001/XMLSchema#int",
+            "http://www.w3.org/2001/XMLSchema#long",
+            "http://www.w3.org/2001/XMLSchema#float",
+            "http://www.w3.org/2001/XMLSchema#double",
+            "http://www.w3.org/2001/XMLSchema#string"
+        ]
     },
     {
         "type": "enum",
+        "docAfter": "https://w3id.org/cwl/salad#PrimitiveType",
+        "doc": "The **Any** type validates for any non-null value.\n",
+        "name": "https://w3id.org/cwl/salad#Any",
         "symbols": [
             "https://w3id.org/cwl/salad#Any"
-        ],
-        "doc": "The **Any** type validates for any non-null value.\n",
-        "docAfter": "https://w3id.org/cwl/salad#PrimitiveType",
-        "name": "https://w3id.org/cwl/salad#Any"
+        ]
     },
     {
-        "extends": "https://w3id.org/cwl/salad#Documented",
         "type": "record",
-        "doc": "A field of a record.",
         "fields": [
             {
                 "type": "string",
-                "jsonldPredicate": "@id",
                 "doc": "The name of the field\n",
-                "name": "https://w3id.org/cwl/salad#RecordField/name"
+                "name": "https://w3id.org/cwl/salad#RecordField/name",
+                "jsonldPredicate": "@id"
             },
             {
                 "type": [
@@ -143,106 +141,110 @@
                     "ArraySchema",
                     "string",
                     {
-                        "type": "array",
                         "items": [
                             "PrimitiveType",
                             "RecordSchema",
                             "EnumSchema",
                             "ArraySchema",
                             "string"
-                        ]
+                        ],
+                        "type": "array"
                     }
                 ],
+                "doc": "The field type\n",
+                "name": "https://w3id.org/cwl/salad#RecordField/type",
                 "jsonldPredicate": {
-                    "typeDSL": true,
                     "_id": "https://w3id.org/cwl/salad#type",
                     "_type": "@vocab",
+                    "typeDSL": true,
                     "refScope": 2
-                },
-                "doc": "The field type\n",
-                "name": "https://w3id.org/cwl/salad#RecordField/type"
+                }
             }
         ],
-        "name": "https://w3id.org/cwl/salad#RecordField"
+        "doc": "A field of a record.",
+        "name": "https://w3id.org/cwl/salad#RecordField",
+        "extends": "https://w3id.org/cwl/salad#Documented"
     },
     {
         "type": "record",
         "fields": [
             {
+                "name": "https://w3id.org/cwl/salad#RecordSchema/fields",
+                "doc": "Defines the fields of the record.",
                 "type": [
                     "null",
                     {
-                        "type": "array",
-                        "items": "RecordField"
+                        "items": "RecordField",
+                        "type": "array"
                     }
                 ],
                 "jsonldPredicate": {
-                    "mapSubject": "name",
                     "_id": "https://w3id.org/cwl/salad#fields",
+                    "mapSubject": "name",
                     "mapPredicate": "type"
-                },
-                "doc": "Defines the fields of the record.",
-                "name": "https://w3id.org/cwl/salad#RecordSchema/fields"
+                }
             },
             {
+                "name": "https://w3id.org/cwl/salad#RecordSchema/type",
                 "doc": "Must be `record`",
-                "jsonldPredicate": {
-                    "typeDSL": true,
-                    "_id": "https://w3id.org/cwl/salad#type",
-                    "_type": "@vocab",
-                    "refScope": 2
-                },
                 "type": {
                     "type": "enum",
                     "symbols": [
                         "https://w3id.org/cwl/salad#record"
                     ]
                 },
-                "name": "https://w3id.org/cwl/salad#RecordSchema/type"
+                "jsonldPredicate": {
+                    "_id": "https://w3id.org/cwl/salad#type",
+                    "_type": "@vocab",
+                    "typeDSL": true,
+                    "refScope": 2
+                }
             }
         ],
         "name": "https://w3id.org/cwl/salad#RecordSchema"
     },
     {
         "type": "record",
-        "doc": "Define an enumerated type.\n",
         "fields": [
             {
+                "name": "https://w3id.org/cwl/salad#EnumSchema/symbols",
+                "doc": "Defines the set of valid symbols.",
                 "type": {
-                    "type": "array",
-                    "items": "string"
+                    "items": "string",
+                    "type": "array"
                 },
                 "jsonldPredicate": {
-                    "identity": true,
                     "_id": "https://w3id.org/cwl/salad#symbols",
-                    "_type": "@id"
-                },
-                "doc": "Defines the set of valid symbols.",
-                "name": "https://w3id.org/cwl/salad#EnumSchema/symbols"
+                    "_type": "@id",
+                    "identity": true
+                }
             },
             {
+                "name": "https://w3id.org/cwl/salad#EnumSchema/type",
                 "doc": "Must be `enum`",
-                "jsonldPredicate": {
-                    "typeDSL": true,
-                    "_id": "https://w3id.org/cwl/salad#type",
-                    "_type": "@vocab",
-                    "refScope": 2
-                },
                 "type": {
                     "type": "enum",
                     "symbols": [
                         "https://w3id.org/cwl/salad#enum"
                     ]
                 },
-                "name": "https://w3id.org/cwl/salad#EnumSchema/type"
+                "jsonldPredicate": {
+                    "_id": "https://w3id.org/cwl/salad#type",
+                    "_type": "@vocab",
+                    "typeDSL": true,
+                    "refScope": 2
+                }
             }
         ],
+        "doc": "Define an enumerated type.\n",
         "name": "https://w3id.org/cwl/salad#EnumSchema"
     },
     {
         "type": "record",
         "fields": [
             {
+                "name": "https://w3id.org/cwl/salad#ArraySchema/items",
+                "doc": "Defines the type of the array elements.",
                 "type": [
                     "PrimitiveType",
                     "RecordSchema",
@@ -250,59 +252,56 @@
                     "ArraySchema",
                     "string",
                     {
-                        "type": "array",
                         "items": [
                             "PrimitiveType",
                             "RecordSchema",
                             "EnumSchema",
                             "ArraySchema",
                             "string"
-                        ]
+                        ],
+                        "type": "array"
                     }
                 ],
                 "jsonldPredicate": {
                     "_id": "https://w3id.org/cwl/salad#items",
                     "_type": "@vocab",
                     "refScope": 2
-                },
-                "doc": "Defines the type of the array elements.",
-                "name": "https://w3id.org/cwl/salad#ArraySchema/items"
+                }
             },
             {
+                "name": "https://w3id.org/cwl/salad#ArraySchema/type",
                 "doc": "Must be `array`",
-                "jsonldPredicate": {
-                    "typeDSL": true,
-                    "_id": "https://w3id.org/cwl/salad#type",
-                    "_type": "@vocab",
-                    "refScope": 2
-                },
                 "type": {
                     "type": "enum",
                     "symbols": [
                         "https://w3id.org/cwl/salad#array"
                     ]
                 },
-                "name": "https://w3id.org/cwl/salad#ArraySchema/type"
+                "jsonldPredicate": {
+                    "_id": "https://w3id.org/cwl/salad#type",
+                    "_type": "@vocab",
+                    "typeDSL": true,
+                    "refScope": 2
+                }
             }
         ],
         "name": "https://w3id.org/cwl/salad#ArraySchema"
     },
     {
         "type": "record",
-        "doc": "Attached to a record field to define how the parent record field is handled for\nURI resolution and JSON-LD context generation.\n",
         "fields": [
             {
                 "type": [
                     "null",
                     "string"
                 ],
-                "jsonldPredicate": {
-                    "identity": true,
-                    "_id": "https://w3id.org/cwl/salad#_id",
-                    "_type": "@id"
-                },
                 "doc": "The predicate URI that this field corresponds to.\nCorresponds to JSON-LD `@id` directive.\n",
-                "name": "https://w3id.org/cwl/salad#JsonldPredicate/_id"
+                "name": "https://w3id.org/cwl/salad#JsonldPredicate/_id",
+                "jsonldPredicate": {
+                    "_id": "https://w3id.org/cwl/salad#_id",
+                    "_type": "@id",
+                    "identity": true
+                }
             },
             {
                 "type": [
@@ -385,6 +384,7 @@
                 "name": "https://w3id.org/cwl/salad#JsonldPredicate/subscope"
             }
         ],
+        "doc": "Attached to a record field to define how the parent record field is handled for\nURI resolution and JSON-LD context generation.\n",
         "name": "https://w3id.org/cwl/salad#JsonldPredicate"
     },
     {
@@ -392,37 +392,37 @@
         "fields": [
             {
                 "type": "string",
+                "doc": "The data type to be replaced",
+                "name": "https://w3id.org/cwl/salad#SpecializeDef/specializeFrom",
                 "jsonldPredicate": {
                     "_id": "https://w3id.org/cwl/salad#specializeFrom",
                     "_type": "@id",
                     "refScope": 1
-                },
-                "doc": "The data type to be replaced",
-                "name": "https://w3id.org/cwl/salad#SpecializeDef/specializeFrom"
+                }
             },
             {
                 "type": "string",
+                "doc": "The new data type to replace with",
+                "name": "https://w3id.org/cwl/salad#SpecializeDef/specializeTo",
                 "jsonldPredicate": {
                     "_id": "https://w3id.org/cwl/salad#specializeTo",
                     "_type": "@id",
                     "refScope": 1
-                },
-                "doc": "The new data type to replace with",
-                "name": "https://w3id.org/cwl/salad#SpecializeDef/specializeTo"
+                }
             }
         ],
         "name": "https://w3id.org/cwl/salad#SpecializeDef"
     },
     {
-        "docParent": "https://w3id.org/cwl/salad#Schema",
         "type": "record",
         "abstract": true,
+        "name": "https://w3id.org/cwl/salad#NamedType",
         "fields": [
             {
                 "type": "string",
-                "jsonldPredicate": "@id",
                 "doc": "The identifier for this type",
-                "name": "https://w3id.org/cwl/salad#NamedType/name"
+                "name": "https://w3id.org/cwl/salad#NamedType/name",
+                "jsonldPredicate": "@id"
             },
             {
                 "type": [
@@ -430,66 +430,62 @@
                     "boolean"
                 ],
                 "default": true,
-                "doc": "If \"true\" (the default), include the short name of this type\nin the vocabulary.  The vocabulary are all the symbols (field\nnames and other identifiers, such as classes and enum values)\nwhich can be used in the document without a namespace prefix.\nThese are the keys of the JSON-LD context.  If false, do not\ninclude the short name in the vocabulary.\n\nThis is useful for specifying schema extensions that will be\nincluded in validation without introducing ambiguity by\nintroducing non-standard terms into the vocabulary.\n",
-                "name": "https://w3id.org/cwl/salad#NamedType/inVocab"
+                "name": "https://w3id.org/cwl/salad#NamedType/inVocab",
+                "doc": "If \"true\" (the default), include the short name of this type\nin the vocabulary.  The vocabulary are all the symbols (field\nnames and other identifiers, such as classes and enum values)\nwhich can be used in the document without a namespace prefix.\nThese are the keys of the JSON-LD context.  If false, do not\ninclude the short name in the vocabulary.\n\nThis is useful for specifying schema extensions that will be\nincluded in validation without introducing ambiguity by\nintroducing non-standard terms into the vocabulary.\n"
             }
         ],
-        "name": "https://w3id.org/cwl/salad#NamedType"
+        "docParent": "https://w3id.org/cwl/salad#Schema"
     },
     {
-        "type": "record",
-        "docParent": "https://w3id.org/cwl/salad#Schema",
-        "extends": "https://w3id.org/cwl/salad#Documented",
-        "abstract": true,
         "fields": [
             {
                 "type": [
                     "null",
                     "string"
                 ],
+                "doc": "Hint to indicate that during documentation generation, documentation\nfor this type should appear in a subsection under `docParent`.\n",
+                "name": "https://w3id.org/cwl/salad#DocType/docParent",
                 "jsonldPredicate": {
                     "_id": "https://w3id.org/cwl/salad#docParent",
                     "_type": "@id"
-                },
-                "doc": "Hint to indicate that during documentation generation, documentation\nfor this type should appear in a subsection under `docParent`.\n",
-                "name": "https://w3id.org/cwl/salad#DocType/docParent"
+                }
             },
             {
                 "type": [
                     "null",
                     "string",
                     {
-                        "type": "array",
-                        "items": "string"
+                        "items": "string",
+                        "type": "array"
                     }
                 ],
+                "doc": "Hint to indicate that during documentation generation, documentation\nfor `docChild` should appear in a subsection under this type.\n",
+                "name": "https://w3id.org/cwl/salad#DocType/docChild",
                 "jsonldPredicate": {
                     "_id": "https://w3id.org/cwl/salad#docChild",
                     "_type": "@id"
-                },
-                "doc": "Hint to indicate that during documentation generation, documentation\nfor `docChild` should appear in a subsection under this type.\n",
-                "name": "https://w3id.org/cwl/salad#DocType/docChild"
+                }
             },
             {
                 "type": [
                     "null",
                     "string"
                 ],
+                "doc": "Hint to indicate that during documentation generation, documentation\nfor this type should appear after the `docAfter` section at the same\nlevel.\n",
+                "name": "https://w3id.org/cwl/salad#DocType/docAfter",
                 "jsonldPredicate": {
                     "_id": "https://w3id.org/cwl/salad#docAfter",
                     "_type": "@id"
-                },
-                "doc": "Hint to indicate that during documentation generation, documentation\nfor this type should appear after the `docAfter` section at the same\nlevel.\n",
-                "name": "https://w3id.org/cwl/salad#DocType/docAfter"
+                }
             }
         ],
-        "name": "https://w3id.org/cwl/salad#DocType"
+        "docParent": "https://w3id.org/cwl/salad#Schema",
+        "name": "https://w3id.org/cwl/salad#DocType",
+        "abstract": true,
+        "type": "record",
+        "extends": "https://w3id.org/cwl/salad#Documented"
     },
     {
-        "type": "record",
-        "extends": "https://w3id.org/cwl/salad#DocType",
-        "doc": "Abstract base for schema-defined types.\n",
-        "abstract": true,
         "fields": [
             {
                 "type": [
@@ -497,9 +493,9 @@
                     "string",
                     "JsonldPredicate"
                 ],
-                "jsonldPredicate": "sld:jsonldPredicate",
                 "doc": "Annotate this type with linked data context.\n",
-                "name": "https://w3id.org/cwl/salad#SchemaDefinedType/jsonldPredicate"
+                "name": "https://w3id.org/cwl/salad#SchemaDefinedType/jsonldPredicate",
+                "jsonldPredicate": "sld:jsonldPredicate"
             },
             {
                 "type": [
@@ -510,12 +506,14 @@
                 "name": "https://w3id.org/cwl/salad#SchemaDefinedType/documentRoot"
             }
         ],
-        "name": "https://w3id.org/cwl/salad#SchemaDefinedType"
+        "name": "https://w3id.org/cwl/salad#SchemaDefinedType",
+        "abstract": true,
+        "doc": "Abstract base for schema-defined types.\n",
+        "type": "record",
+        "extends": "https://w3id.org/cwl/salad#DocType"
     },
     {
-        "extends": "https://w3id.org/cwl/salad#RecordField",
         "type": "record",
-        "doc": "A field of a record.",
         "fields": [
             {
                 "type": [
@@ -523,40 +521,37 @@
                     "string",
                     "JsonldPredicate"
                 ],
-                "jsonldPredicate": "sld:jsonldPredicate",
                 "doc": "Annotate this type with linked data context.\n",
-                "name": "https://w3id.org/cwl/salad#SaladRecordField/jsonldPredicate"
+                "name": "https://w3id.org/cwl/salad#SaladRecordField/jsonldPredicate",
+                "jsonldPredicate": "sld:jsonldPredicate"
             },
             {
                 "type": [
                     "null",
                     "Any"
                 ],
+                "doc": "The default value to use for this field if the field is missing or \"null\".\n",
+                "name": "https://w3id.org/cwl/salad#SaladRecordField/default",
                 "jsonldPredicate": {
                     "_id": "https://w3id.org/cwl/salad#default",
                     "noLinkCheck": true
-                },
-                "doc": "The default value to use for this field if the field is missing or \"null\".\n",
-                "name": "https://w3id.org/cwl/salad#SaladRecordField/default"
+                }
             }
         ],
-        "name": "https://w3id.org/cwl/salad#SaladRecordField"
+        "doc": "A field of a record.",
+        "name": "https://w3id.org/cwl/salad#SaladRecordField",
+        "extends": "https://w3id.org/cwl/salad#RecordField"
     },
     {
-        "type": "record",
-        "extends": [
-            "https://w3id.org/cwl/salad#NamedType",
-            "https://w3id.org/cwl/salad#RecordSchema",
-            "https://w3id.org/cwl/salad#SchemaDefinedType"
-        ],
-        "docParent": "https://w3id.org/cwl/salad#Schema",
         "specialize": [
             {
-                "specializeTo": "https://w3id.org/cwl/salad#SaladRecordField",
-                "specializeFrom": "https://w3id.org/cwl/salad#RecordField"
+                "specializeFrom": "https://w3id.org/cwl/salad#RecordField",
+                "specializeTo": "https://w3id.org/cwl/salad#SaladRecordField"
             }
         ],
+        "docParent": "https://w3id.org/cwl/salad#Schema",
         "documentRoot": true,
+        "name": "https://w3id.org/cwl/salad#SaladRecordSchema",
         "fields": [
             {
                 "type": [
@@ -571,95 +566,100 @@
                     "null",
                     "string",
                     {
-                        "type": "array",
-                        "items": "string"
+                        "items": "string",
+                        "type": "array"
                     }
                 ],
+                "doc": "Indicates that this record inherits fields from one or more base records.\n",
+                "name": "https://w3id.org/cwl/salad#SaladRecordSchema/extends",
                 "jsonldPredicate": {
                     "_id": "https://w3id.org/cwl/salad#extends",
                     "_type": "@id",
                     "refScope": 1
-                },
-                "doc": "Indicates that this record inherits fields from one or more base records.\n",
-                "name": "https://w3id.org/cwl/salad#SaladRecordSchema/extends"
+                }
             },
             {
                 "type": [
                     "null",
                     {
-                        "type": "array",
-                        "items": "SpecializeDef"
+                        "items": "SpecializeDef",
+                        "type": "array"
                     }
                 ],
-                "jsonldPredicate": {
-                    "mapSubject": "specializeFrom",
-                    "_id": "https://w3id.org/cwl/salad#specialize",
-                    "mapPredicate": "specializeTo"
-                },
                 "doc": "Only applies if `extends` is declared.  Apply type specialization using the\nbase record as a template.  For each field inherited from the base\nrecord, replace any instance of the type `specializeFrom` with\n`specializeTo`.\n",
-                "name": "https://w3id.org/cwl/salad#SaladRecordSchema/specialize"
+                "name": "https://w3id.org/cwl/salad#SaladRecordSchema/specialize",
+                "jsonldPredicate": {
+                    "_id": "https://w3id.org/cwl/salad#specialize",
+                    "mapSubject": "specializeFrom",
+                    "mapPredicate": "specializeTo"
+                }
             }
         ],
-        "name": "https://w3id.org/cwl/salad#SaladRecordSchema"
-    },
-    {
         "type": "record",
         "extends": [
             "https://w3id.org/cwl/salad#NamedType",
-            "https://w3id.org/cwl/salad#EnumSchema",
+            "https://w3id.org/cwl/salad#RecordSchema",
             "https://w3id.org/cwl/salad#SchemaDefinedType"
-        ],
+        ]
+    },
+    {
         "docParent": "https://w3id.org/cwl/salad#Schema",
-        "doc": "Define an enumerated type.\n",
         "documentRoot": true,
+        "name": "https://w3id.org/cwl/salad#SaladEnumSchema",
         "fields": [
             {
                 "type": [
                     "null",
                     "string",
                     {
-                        "type": "array",
-                        "items": "string"
+                        "items": "string",
+                        "type": "array"
                     }
                 ],
+                "doc": "Indicates that this enum inherits symbols from a base enum.\n",
+                "name": "https://w3id.org/cwl/salad#SaladEnumSchema/extends",
                 "jsonldPredicate": {
                     "_id": "https://w3id.org/cwl/salad#extends",
                     "_type": "@id",
                     "refScope": 1
-                },
-                "doc": "Indicates that this enum inherits symbols from a base enum.\n",
-                "name": "https://w3id.org/cwl/salad#SaladEnumSchema/extends"
+                }
             }
         ],
-        "name": "https://w3id.org/cwl/salad#SaladEnumSchema"
-    },
-    {
+        "doc": "Define an enumerated type.\n",
         "type": "record",
         "extends": [
             "https://w3id.org/cwl/salad#NamedType",
-            "https://w3id.org/cwl/salad#DocType"
-        ],
+            "https://w3id.org/cwl/salad#EnumSchema",
+            "https://w3id.org/cwl/salad#SchemaDefinedType"
+        ]
+    },
+    {
         "docParent": "https://w3id.org/cwl/salad#Schema",
-        "doc": "A documentation section.  This type exists to facilitate self-documenting\nschemas but has no role in formal validation.\n",
         "documentRoot": true,
+        "name": "https://w3id.org/cwl/salad#Documentation",
         "fields": [
             {
-                "doc": "Must be `documentation`",
-                "jsonldPredicate": {
-                    "typeDSL": true,
-                    "_id": "https://w3id.org/cwl/salad#type",
-                    "_type": "@vocab",
-                    "refScope": 2
-                },
                 "type": {
                     "type": "enum",
                     "symbols": [
                         "https://w3id.org/cwl/salad#documentation"
                     ]
                 },
-                "name": "https://w3id.org/cwl/salad#Documentation/type"
+                "doc": "Must be `documentation`",
+                "name": "https://w3id.org/cwl/salad#Documentation/type",
+                "jsonldPredicate": {
+                    "_id": "https://w3id.org/cwl/salad#type",
+                    "_type": "@vocab",
+                    "typeDSL": true,
+                    "refScope": 2
+                }
             }
         ],
-        "name": "https://w3id.org/cwl/salad#Documentation"
+        "doc": "A documentation section.  This type exists to facilitate self-documenting\nschemas but has no role in formal validation.\n",
+        "type": "record",
+        "extends": [
+            "https://w3id.org/cwl/salad#NamedType",
+            "https://w3id.org/cwl/salad#DocType"
+        ]
     }
 ]
