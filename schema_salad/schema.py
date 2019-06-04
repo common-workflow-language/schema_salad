@@ -50,7 +50,11 @@ SALAD_FILES = ('metaschema.yml',
                'typedsl_res.yml',
                'typedsl_res_schema.yml',
                'typedsl_res_src.yml',
-               'typedsl_res_proc.yml')
+               'typedsl_res_proc.yml',
+               'sfdsl_res.yml',
+               'sfdsl_res_schema.yml',
+               'sfdsl_res_src.yml',
+               'sfdsl_res_proc.yml')
 
 
 def get_metaschema():  # type: () -> Tuple[Names, List[Dict[Text, Any]], Loader]
