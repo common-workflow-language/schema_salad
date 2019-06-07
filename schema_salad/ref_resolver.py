@@ -592,6 +592,8 @@ class Loader(object):
                     return resolved_obj, metadata
                 else:
                     return resolved_obj, CommentedMap()
+            elif isinstance(resolved_obj, string_types):
+                return resolved_obj, CommentedMap()
             else:
                 raise ValueError(u"Expected MutableMapping or MutableSequence, got %s: `%s`"
                                  % (type(resolved_obj), Text(resolved_obj)))
@@ -1021,7 +1023,12 @@ class Loader(object):
             else:
                 textIO = StringIO(text)
             textIO.name = url    # type: ignore
-            result = yaml.round_trip_load(textIO, preserve_quotes=True)
+            attachments = yaml.round_trip_load_all(textIO, preserve_quotes=True)
+            result = next(attachments)
+            i = 1
+            for a in attachments:
+                self.idx["%s#attachment-%i" % (url, i)] = a
+                i += 1
             add_lc_filename(result, url)
         except yaml.parser.ParserError as e:
             raise_from(validate.ValidationException("Syntax error %s" % Text(e)), e)
