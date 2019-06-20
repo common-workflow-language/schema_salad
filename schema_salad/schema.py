@@ -279,7 +279,7 @@ def load_and_validate(document_loader,                 # type: Loader
 
         return data, metadata
     except validate.ValidationException as exc:
-        raise validate.ValidationException(strip_dup_lineno(str(exc)))
+        raise_from(validate.ValidationException(strip_dup_lineno(str(exc))), exc)
 
 
 def validate_doc(schema_names,  # type: Names

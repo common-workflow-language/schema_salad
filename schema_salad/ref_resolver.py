@@ -21,6 +21,7 @@ from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
 from six import StringIO, string_types, iteritems
 from six.moves import range, urllib
+from future.utils import raise_from
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import validate
@@ -142,7 +143,7 @@ class DefaultFetcher(Fetcher):
                 resp = self.session.get(url)
                 resp.raise_for_status()
             except Exception as e:
-                raise RuntimeError(url, e)
+                raise_from(RuntimeError(url, e), e)
             return resp.text
         if scheme == 'file':
             try:
@@ -156,9 +157,9 @@ class DefaultFetcher(Fetcher):
 
             except (OSError, IOError) as err:
                 if err.filename == path:
-                    raise RuntimeError(Text(err))
+                    raise_from(RuntimeError(Text(err)), err)
                 else:
-                    raise RuntimeError('Error reading %s: %s' % (url, err))
+                    raise_from(RuntimeError('Error reading %s: %s' % (url, err)), err)
         raise ValueError('Unsupported scheme in url: %s' % url)
 
     def check_exists(self, url):  # type: (Text) -> bool
@@ -414,7 +415,7 @@ class Loader(object):
                         except BadSyntax:
                             pass
             except Exception as e:
-                _logger.warning("Could not load extension schema %s: %s", fetchurl, e)
+                _logger.warning("Could not load extension schema %s: %s", fetchurl, Text(e))
 
         for s, _, _ in self.graph.triples((None, RDF.type, RDF.Property)):
             self._add_properties(s)
@@ -965,8 +966,8 @@ class Loader(object):
                         val, base_url+subscope, file_base=file_base, checklinks=False)
             except validate.ValidationException as v:
                 _logger.warning("loader is %s", id(loader), exc_info=True)
-                raise validate.ValidationException("(%s) (%s) Validation error in field %s:\n%s" % (
-                    id(loader), file_base, key, validate.indent(Text(v))))
+                raise_from(validate.ValidationException("(%s) (%s) Validation error in field %s:\n%s" % (
+                    id(loader), file_base, key, validate.indent(Text(v)))), v)
 
         elif isinstance(document, CommentedSeq):
             i = 0
@@ -1000,8 +1001,8 @@ class Loader(object):
                         i += 1
             except validate.ValidationException as v:
                 _logger.warning("failed", exc_info=True)
-                raise validate.ValidationException("(%s) (%s) Validation error in position %i:\n%s" % (
-                    id(loader), file_base, i, validate.indent(Text(v))))
+                raise_from(validate.ValidationException("(%s) (%s) Validation error in position %i:\n%s" % (
+                    id(loader), file_base, i, validate.indent(Text(v)))), v)
 
         if checklinks:
             all_doc_ids={}  # type: Dict[Text, Text]
@@ -1023,7 +1024,7 @@ class Loader(object):
             result = yaml.round_trip_load(textIO, preserve_quotes=True)
             add_lc_filename(result, url)
         except yaml.parser.ParserError as e:
-            raise validate.ValidationException("Syntax error %s" % (e))
+            raise_from(validate.ValidationException("Syntax error %s" % Text(e)), e)
         if (isinstance(result, CommentedMap) and inject_ids
                 and bool(self.identifiers)):
             for identifier in self.identifiers:

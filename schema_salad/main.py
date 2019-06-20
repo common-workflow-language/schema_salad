@@ -140,13 +140,13 @@ def main(argsl=None):  # type: (List[str]) -> int
             schema_raw_doc, schema_uri)
     except (validate.ValidationException) as e:
         _logger.error("Schema `%s` failed link checking:\n%s",
-                      args.schema, e, exc_info=(True if args.debug else False))
+                      args.schema, Text(e), exc_info=(True if args.debug else False))
         _logger.debug("Index is %s", list(metaschema_loader.idx.keys()))
         _logger.debug("Vocabulary is %s", list(metaschema_loader.vocab.keys()))
         return 1
     except (RuntimeError) as e:
         _logger.error("Schema `%s` read error:\n%s",
-                      args.schema, e, exc_info=(True if args.debug else False))
+                      args.schema, Text(e), exc_info=(True if args.debug else False))
         return 1
 
     if args.print_doc:
@@ -168,7 +168,7 @@ def main(argsl=None):  # type: (List[str]) -> int
                             metaschema_loader, args.strict)
     except validate.ValidationException as e:
         _logger.error("While validating schema `%s`:\n%s",
-                      args.schema, str(e))
+                      args.schema, Text(e))
         return 1
 
     # Get the json-ld context and RDFS representation from the schema
@@ -196,7 +196,7 @@ def main(argsl=None):  # type: (List[str]) -> int
         try:
             avsc_names = schema.make_avro_schema_from_avro(avsc_obj)
         except SchemaParseException as err:
-            _logger.error("Schema `%s` error:\n%s", args.schema, err,
+            _logger.error("Schema `%s` error:\n%s", args.schema, Text(err),
                           exc_info=(
                               (type(err), err, None) if args.debug else None))
             if args.print_avro:
