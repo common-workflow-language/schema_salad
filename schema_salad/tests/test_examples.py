@@ -3,7 +3,10 @@ from __future__ import absolute_import, print_function
 import json
 import os
 import unittest
+import traceback
 
+import six
+from future.utils import raise_from
 import rdflib
 import ruamel.yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
@@ -438,13 +441,14 @@ class SourceLineTest(unittest.TestCase):
         except Exception as exc:
             assert False, exc
 
-        try:
-            with SourceLine(b, 1, TestExp, True):
-                raise Exception("Whoops")
-        except TestExp as e:
-            assert str(e).splitlines()[0].endswith("frag.yml:3:3: Traceback (most recent call last):"), str(e)
-        except Exception as exc:
-            assert False, exc
+        if six.PY2:
+            try:
+                with SourceLine(b, 1, TestExp, True):
+                    raise Exception("Whoops")
+            except TestExp as e:
+                assert str(e).splitlines()[0].endswith("frag.yml:3:3: Traceback (most recent call last):"), str(e)
+            except Exception as exc:
+                assert False, exc
 
 
 if __name__ == '__main__':
