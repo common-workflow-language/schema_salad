@@ -11,6 +11,7 @@ from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from six import iteritems, string_types
 from six.moves import urllib
+from future.utils import raise_from
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from schema_salad.utils import (add_dictlist, aslist, convert_to_dict, flatten,
@@ -276,10 +277,9 @@ def load_and_validate(document_loader,                 # type: Loader
 
         validate_doc(avsc_names, data, document_loader, strict,
                      strict_foreign_properties=strict_foreign_properties)
-
-        return data, metadata
     except validate.ValidationException as exc:
         raise_from(validate.ValidationException(strip_dup_lineno(str(exc))), exc)
+    return data, metadata
 
 
 def validate_doc(schema_names,  # type: Names
