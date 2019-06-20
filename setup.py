@@ -36,10 +36,11 @@ install_requires = [
     'CacheControl >= 0.11.7, < 0.12',
     'lockfile >= 0.9',
     'six >= 1.8.0',
-    'typing-extensions']
+    'typing-extensions',
+    'future']
 
 extras_require={
-    ':python_version<"3.7"': ['typing >= 3.6.4'],
+    ':python_version<"3.5"': ['typing >= 3.7.4'],
 }
 
 setup(name='schema-salad',

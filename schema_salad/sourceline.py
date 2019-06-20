@@ -6,6 +6,7 @@ import re
 import traceback
 from typing import (Any, AnyStr, Callable, Dict, List, MutableMapping,
                     MutableSequence, Pattern, Tuple, Union)
+from future.utils import raise_from
 
 import ruamel.yaml
 import six
@@ -243,10 +244,12 @@ class SourceLine(object):
                  ):   # -> Any
         if not exc_value:
             return
-        if self.include_traceback:
-            raise self.makeError("\n".join(traceback.format_exception(exc_type, exc_value, tb)))
+        if self.include_traceback and six.PY2:
+            # Python2 doesn't actually have chained exceptions, so
+            # fake it by injecting the backtrace into the message.
+            raise_from(self.makeError("\n".join(traceback.format_exception(exc_type, exc_value, tb))), exc_value)
         else:
-            raise self.makeError(six.text_type(exc_value))
+            raise_from(self.makeError(six.text_type(exc_value)), exc_value)
 
     def makeLead(self):  # type: () -> Text
         if self.key is None or self.item.lc.data is None or self.key not in self.item.lc.data:
