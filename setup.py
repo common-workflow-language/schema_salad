@@ -40,7 +40,7 @@ install_requires = [
     'future']
 
 extras_require={
-    ':python_version<"3.7"': ['typing >= 3.6.4'],
+    ':python_version<"3.5"': ['typing >= 3.7.4'],
 }
 
 setup(name='schema-salad',
