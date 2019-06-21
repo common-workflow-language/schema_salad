@@ -1030,7 +1030,7 @@ class Loader(object):
             for identifier in self.identifiers:
                 if identifier not in result:
                     result[identifier] = url
-                self.idx[self.expand_url(result[identifier], url)] = result
+                self.idx[self.expand_url(result[identifier], url, scoped_id=True)] = result
         else:
             self.idx[url] = result
         return result
