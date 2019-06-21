@@ -177,9 +177,19 @@ def test_fetch_inject_id():
     assert [furi3, "http://example.com"] == sorted(list(k.lower() for k in l3.idx.keys()))
 
 def test_attachments():
+    furi = file_uri(get_data("schema_salad/tests/multidoc.yml"))
+
     l1 = Loader({})
-    furi1 = file_uri(get_data("schema_salad/tests/multidoc.yml"))
-    r1, _ = l1.resolve_ref(furi1)
+    r1, _ = l1.resolve_ref(furi)
+    with open(get_data("schema_salad/tests/multidoc.yml"), "rt") as f:
+        content = f.read()
+        assert {"foo": "bar",
+                "baz": content,
+                "quux": content} == r1
+
+    l2 = Loader({},
+                allow_attachments=lambda x: x["foo"] == "bar")
+    r2, _ = l2.resolve_ref(furi)
     assert {"foo": "bar",
             "baz": "This is the {first attachment}.\n",
-            "quux": "This is the [second attachment]."} == r1
+            "quux": "This is the [second attachment]."} == r2
