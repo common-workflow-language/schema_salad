@@ -165,13 +165,13 @@ def test_fetch_inject_id():
     assert [furi1, furi1+"#foo"] == sorted(list(k.lower() for k in l1.idx.keys()))
 
     l2 = Loader({"id": "@id"})
-    furi2 = file_uri(get_data("schema_salad/tests/inject-id2.yml"))
+    furi2 = file_uri(get_data("schema_salad/tests/inject-id2.yml")).lower()
     r2, _ = l2.resolve_ref(furi2)
     assert {"id": furi2, "bar": "baz"} == r2
     assert [furi2] == sorted(list(k.lower() for k in l2.idx.keys()))
 
     l3 = Loader({"id": "@id"})
-    furi3 = file_uri(get_data("schema_salad/tests/inject-id3.yml"))
+    furi3 = file_uri(get_data("schema_salad/tests/inject-id3.yml")).lower()
     r3, _ = l3.resolve_ref(furi3)
     assert {"id": "http://example.com", "bar": "baz"} == r3
     assert [furi3, "http://example.com"] == sorted(list(k.lower() for k in l3.idx.keys()))
