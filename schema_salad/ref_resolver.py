@@ -102,7 +102,8 @@ def SubLoader(loader):  # type: (Loader) -> Loader
     return Loader(loader.ctx, schemagraph=loader.graph,
                   foreign_properties=loader.foreign_properties, idx=loader.idx,
                   cache=loader.cache, fetcher_constructor=loader.fetcher_constructor,
-                  skip_schemas=loader.skip_schemas, url_fields=loader.url_fields)
+                  skip_schemas=loader.skip_schemas, url_fields=loader.url_fields,
+                  allow_attachments=loader.allow_attachments)
 
 class Fetcher(object):
     def fetch_text(self, url):    # type: (Text) -> Text
@@ -256,7 +257,8 @@ class Loader(object):
                  session=None,              # type: requests.sessions.Session
                  fetcher_constructor=None,  # type: Callable[[Dict[Text, Union[Text, bool]], requests.sessions.Session], Fetcher]
                  skip_schemas=None,         # type: bool
-                 url_fields=None            # type: Set[Text]
+                 url_fields=None,           # type: Set[Text]
+                 allow_attachments=None     # type: Optional[Callable[[Union[CommentedMap, CommentedSeq]], bool]]
                  ):
         # type: (...) -> None
 
@@ -329,6 +331,7 @@ class Loader(object):
         self.type_dsl_fields = set()    # type: Set[Text]
         self.subscopes = {}             # type: Dict[Text, Text]
         self.secondaryFile_dsl_fields = set()  # type: Set[Text]
+        self.allow_attachments = allow_attachments
 
         self.add_context(ctx)
 
@@ -1025,10 +1028,12 @@ class Loader(object):
             textIO.name = url    # type: ignore
             attachments = yaml.round_trip_load_all(textIO, preserve_quotes=True)
             result = next(attachments)
-            i = 1
-            for a in attachments:
-                self.idx["%s#attachment-%i" % (url, i)] = a
-                i += 1
+
+            if self.allow_attachments is not None and self.allow_attachments(result):
+                i = 1
+                for a in attachments:
+                    self.idx["%s#attachment-%i" % (url, i)] = a
+                    i += 1
             add_lc_filename(result, url)
         except yaml.parser.ParserError as e:
             raise_from(validate.ValidationException("Syntax error %s" % Text(e)), e)
