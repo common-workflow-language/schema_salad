@@ -193,3 +193,11 @@ def test_attachments():
     assert {"foo": "bar",
             "baz": "This is the {first attachment}.\n",
             "quux": "This is the [second attachment]."} == r2
+
+    l3 = Loader({}, allow_attachments=lambda x: x["foo"] == "baz")
+    r3, _ = l3.resolve_ref(furi)
+    with open(get_data("schema_salad/tests/multidoc.yml"), "rt") as f:
+        content = f.read()
+        assert {"foo": "bar",
+                "baz": content,
+                "quux": content} == r3
