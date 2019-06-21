@@ -175,3 +175,11 @@ def test_fetch_inject_id():
     r3, _ = l3.resolve_ref(furi3)
     assert {"id": "http://example.com", "bar": "baz"} == r3
     assert [furi3, "http://example.com"] == sorted(list(k.lower() for k in l3.idx.keys()))
+
+def test_attachments():
+    l1 = Loader({})
+    furi1 = file_uri(get_data("schema_salad/tests/multidoc.yml"))
+    r1, _ = l1.resolve_ref(furi1)
+    assert {"foo": "bar",
+            "baz": "This is the {first attachment}.\n",
+            "quux": "This is the [second attachment]."} == r1
