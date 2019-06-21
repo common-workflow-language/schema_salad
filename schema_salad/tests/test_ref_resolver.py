@@ -7,6 +7,12 @@ import tempfile
 
 import pytest  # type: ignore
 
+from schema_salad.ref_resolver import Loader, DefaultFetcher, file_uri
+from schema_salad.tests.util import get_data
+import os
+import sys
+from requests import Session
+
 
 @pytest.fixture
 def tmp_dir_fixture(request):
@@ -18,10 +24,6 @@ def tmp_dir_fixture(request):
     return d
 
 def test_Loader_initialisation_for_HOME_env_var(tmp_dir_fixture):
-    import os
-    from schema_salad.ref_resolver import Loader
-    from requests import Session
-
     # Ensure HOME is set.
     os.environ["HOME"] = tmp_dir_fixture
 
@@ -29,10 +31,6 @@ def test_Loader_initialisation_for_HOME_env_var(tmp_dir_fixture):
     assert isinstance(loader.session, Session)
 
 def test_Loader_initialisation_for_TMP_env_var(tmp_dir_fixture):
-    import os
-    from schema_salad.ref_resolver import Loader
-    from requests import Session
-
     # Ensure HOME is missing.
     if "HOME" in os.environ:
         del os.environ["HOME"]
@@ -43,10 +41,6 @@ def test_Loader_initialisation_for_TMP_env_var(tmp_dir_fixture):
     assert isinstance(loader.session, Session)
 
 def test_Loader_initialisation_with_neither_TMP_HOME_set(tmp_dir_fixture):
-    import os
-    from schema_salad.ref_resolver import Loader
-    from requests import Session
-
     # Ensure HOME is missing.
     if "HOME" in os.environ:
         del os.environ["HOME"]
@@ -57,11 +51,6 @@ def test_Loader_initialisation_with_neither_TMP_HOME_set(tmp_dir_fixture):
     assert isinstance(loader.session, Session)
 
 def test_DefaultFetcher_urljoin_win32(tmp_dir_fixture):
-    import os
-    import sys
-    from schema_salad.ref_resolver import DefaultFetcher
-    from requests import Session
-
     # Ensure HOME is set.
     os.environ["HOME"] = tmp_dir_fixture
 
@@ -118,11 +107,6 @@ def test_DefaultFetcher_urljoin_win32(tmp_dir_fixture):
         sys.platform = actual_platform
 
 def test_DefaultFetcher_urljoin_linux(tmp_dir_fixture):
-    import os
-    import sys
-    from schema_salad.ref_resolver import DefaultFetcher
-    from requests import Session
-
     # Ensure HOME is set.
     os.environ["HOME"] = tmp_dir_fixture
 
@@ -164,8 +148,6 @@ def test_DefaultFetcher_urljoin_linux(tmp_dir_fixture):
 def test_import_list():
     import schema_salad.ref_resolver
     from schema_salad.sourceline import cmap
-    from .util import get_data
-    import os
 
     basedir = schema_salad.ref_resolver.file_uri(os.path.dirname(__file__)+"/")
     loader = schema_salad.ref_resolver.Loader({})
@@ -174,3 +156,22 @@ def test_import_list():
     }), basedir)
 
     assert {u"foo": ["bar", "baz"]} == ra
+
+def test_fetch_inject_id():
+    l1 = Loader({"id": "@id"})
+    furi1 = file_uri(get_data("schema_salad/tests/inject-id1.yml")).lower()
+    r1, _ = l1.resolve_ref(furi1)
+    assert {"id": furi1+"#foo", "bar": "baz"} == r1
+    assert [furi1, furi1+"#foo"] == sorted(list(k.lower() for k in l1.idx.keys()))
+
+    l2 = Loader({"id": "@id"})
+    furi2 = file_uri(get_data("schema_salad/tests/inject-id2.yml")).lower()
+    r2, _ = l2.resolve_ref(furi2)
+    assert {"id": furi2, "bar": "baz"} == r2
+    assert [furi2] == sorted(list(k.lower() for k in l2.idx.keys()))
+
+    l3 = Loader({"id": "@id"})
+    furi3 = file_uri(get_data("schema_salad/tests/inject-id3.yml")).lower()
+    r3, _ = l3.resolve_ref(furi3)
+    assert {"id": "http://example.com", "bar": "baz"} == r3
+    assert [furi3, "http://example.com"] == sorted(list(k.lower() for k in l3.idx.keys()))
