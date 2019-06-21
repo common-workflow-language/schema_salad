@@ -158,19 +158,20 @@ def test_import_list():
     assert {u"foo": ["bar", "baz"]} == ra
 
 def test_fetch_inject_id():
-    l = Loader({"id": "@id"})
-    r1, _ = l.resolve_ref(get_data("schema_salad/tests/inject-id1.yml"))
-    assert {"id": file_uri(get_data("schema_salad/tests/inject-id1.yml"))+"#foo", "bar": "baz"} == r1
-    assert [file_uri(get_data("schema_salad/tests/inject-id1.yml")),
-            file_uri(get_data("schema_salad/tests/inject-id1.yml"))+"#foo"] == sorted(list(l.idx.keys()))
+    l1 = Loader({"id": "@id"})
+    furi1 = file_uri(get_data("schema_salad/tests/inject-id1.yml")).lower()
+    r1, _ = l1.resolve_ref(furi1)
+    assert {"id": furi1+"#foo", "bar": "baz"} == r1
+    assert [furi1, furi1+"#foo"] == sorted(list(k.lower() for k in l1.idx.keys()))
 
-    l = Loader({"id": "@id"})
-    r2, _ = l.resolve_ref(get_data("schema_salad/tests/inject-id2.yml"))
-    assert {"id": file_uri(get_data("schema_salad/tests/inject-id2.yml")), "bar": "baz"} == r2
-    assert [file_uri(get_data("schema_salad/tests/inject-id2.yml"))] == sorted(list(l.idx.keys()))
+    l2 = Loader({"id": "@id"})
+    furi2 = file_uri(get_data("schema_salad/tests/inject-id2.yml"))
+    r2, _ = l2.resolve_ref(furi2)
+    assert {"id": furi2, "bar": "baz"} == r2
+    assert [furi2] == sorted(list(k.lower() for k in l2.idx.keys()))
 
-    l = Loader({"id": "@id"})
-    r3, _ = l.resolve_ref(get_data("schema_salad/tests/inject-id3.yml"))
+    l3 = Loader({"id": "@id"})
+    furi3 = file_uri(get_data("schema_salad/tests/inject-id3.yml"))
+    r3, _ = l3.resolve_ref(furi3)
     assert {"id": "http://example.com", "bar": "baz"} == r3
-    assert [file_uri(get_data("schema_salad/tests/inject-id3.yml")),
-            "http://example.com"] == sorted(list(l.idx.keys()))
+    assert [furi3, "http://example.com"] == sorted(list(k.lower() for k in l3.idx.keys()))
