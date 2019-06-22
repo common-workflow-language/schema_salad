@@ -8,13 +8,13 @@ import six
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 
-def add_dictlist(di, key, val):  # type: (Dict, Any, Any) -> None
+def add_dictlist(di, key, val):  # type: (Dict[Any, Any], Any, Any) -> None
     if key not in di:
         di[key] = []
     di[key].append(val)
 
 
-def aslist(l):  # type: (Any) -> MutableSequence
+def aslist(l):  # type: (Any) -> MutableSequence[Any]
     """Convenience function to wrap single items and lists, and return lists unchanged."""
 
     if isinstance(l, MutableSequence):

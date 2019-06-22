@@ -1,40 +1,56 @@
 import copy
 import re
+import os
 import uuid  # pylint: disable=unused-import
-from typing import (Any, Dict, List, MutableMapping, MutableSequence, Sequence,
-                    Union)
+from typing import (Any, Dict, List, Optional, MutableMapping, MutableSequence,
+                    Sequence, Tuple, Type, Union)
+
+from schema_salad.ref_resolver import Fetcher
+from schema_salad.sourceline import SourceLine, indent, bullets, add_lc_filename
 
 from ruamel import yaml
+from ruamel.yaml.comments import CommentedMap
+import six
 from six import iteritems, string_types, text_type
 from six.moves import StringIO, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
-
+_vocab = {}  # type: Dict[Text, Text]
+_rvocab = {}  # type: Dict[Text, Text]
 
 class ValidationException(Exception):
     pass
 
 class Savable(object):
-    pass
+    def save(self, top=False, base_url="", relative_uris=True):
+        # type: (bool, Text, bool) -> Dict[Text, Text]
+        pass
 
 class LoadingOptions(object):
-    def __init__(self, fetcher=None, namespaces=None, fileuri=None, copyfrom=None, schemas=None):
+    def __init__(self,
+                 fetcher=None,     # type: Optional[Fetcher]
+                 namespaces=None,  # type: Optional[Dict[Text, Text]]
+                 fileuri=None,     # type: Optional[Text]
+                 copyfrom=None,    # type: Optional[LoadingOptions]
+                 schemas=None      # type: Optional[List[Text]]
+                ):  # type: (...) -> None
+        self.idx = {}  # type: Dict[Text, Text]
+        self.fileuri = fileuri  # type: Optional[Text]
+        self.namespaces = namespaces
+        self.schemas = schemas
         if copyfrom is not None:
             self.idx = copyfrom.idx
             if fetcher is None:
                 fetcher = copyfrom.fetcher
             if fileuri is None:
-                fileuri = copyfrom.fileuri
+                self.fileuri = copyfrom.fileuri
             if namespaces is None:
-                namespaces = copyfrom.namespaces
+                self.namespaces = copyfrom.namespaces
             if namespaces is None:
                 schemas = copyfrom.schemas
-        else:
-            self.idx = {}
 
         if fetcher is None:
-            import os
             import requests
             from cachecontrol.wrapper import CacheControl
             from cachecontrol.caches import FileCache
@@ -51,16 +67,13 @@ class LoadingOptions(object):
                 session = CacheControl(
                     requests.Session(),
                     cache=FileCache("/tmp", ".cache", "salad"))
-            self.fetcher = DefaultFetcher({}, session)
+            self.fetcher = DefaultFetcher({}, session)  # type: Fetcher
         else:
             self.fetcher = fetcher
 
-        self.fileuri = fileuri
 
         self.vocab = _vocab
         self.rvocab = _rvocab
-        self.namespaces = namespaces
-        self.schemas = schemas
 
         if namespaces is not None:
             self.vocab = self.vocab.copy()
@@ -72,6 +85,7 @@ class LoadingOptions(object):
 
 
 def load_field(val, fieldtype, baseuri, loadingOptions):
+    # type: (Union[Text, Dict[Text, Text]], _Loader, Text, LoadingOptions) -> Any
     if isinstance(val, MutableMapping):
         if "$import" in val:
             return _document_load_by_url(fieldtype, loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$import"]), loadingOptions)
@@ -80,7 +94,12 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
     return fieldtype.load(val, baseuri, loadingOptions)
 
 
-def save(val, top=True, base_url="", relative_uris=True):
+def save(val,                # type: Optional[Union[Savable, MutableSequence[Savable]]]
+         top=True,           # type: bool
+         base_url="",        # type: Text
+         relative_uris=True  # type: bool
+        ):  # type: (...) -> Union[Dict[Text, Text], List[Union[Dict[Text, Text], List[Any], None]], None]
+
     if isinstance(val, Savable):
         return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
     if isinstance(val, MutableSequence):
@@ -92,7 +111,7 @@ def expand_url(url,                 # type: Union[str, Text]
                loadingOptions,      # type: LoadingOptions
                scoped_id=False,     # type: bool
                vocab_term=False,    # type: bool
-               scoped_ref=None      # type: int
+               scoped_ref=None      # type: Optional[int]
                ):
     # type: (...) -> Text
 
@@ -154,26 +173,28 @@ def expand_url(url,                 # type: Union[str, Text]
 
 class _Loader(object):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Union[Text, None]) -> Any
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         pass
 
 class _AnyLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         if doc is not None:
             return doc
         raise ValidationException("Expected non-null")
 
 class _PrimitiveLoader(_Loader):
     def __init__(self, tp):
-        # type: (Union[type, Sequence[type]]) -> None
+        # type: (Union[type, Tuple[Type[Text], Type[Text]]]) -> None
         self.tp = tp
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         if not isinstance(doc, self.tp):
             raise ValidationException("Expected a %s but got %s" % (self.tp.__class__.__name__, doc.__class__.__name__))
         return doc
 
-    def __repr__(self):
+    def __repr__(self):  # type: () -> str
         return str(self.tp)
 
 class _ArrayLoader(_Loader):
@@ -182,9 +203,10 @@ class _ArrayLoader(_Loader):
         self.items = items
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         if not isinstance(doc, MutableSequence):
             raise ValidationException("Expected a list")
-        r = []
+        r = []  # type: List[Any]
         errors = []
         for i in range(0, len(doc)):
             try:
@@ -199,7 +221,7 @@ class _ArrayLoader(_Loader):
             raise ValidationException("\n".join(errors))
         return r
 
-    def __repr__(self):
+    def __repr__(self):  # type: () -> str
         return "array<%s>" % self.items
 
 class _EnumLoader(_Loader):
@@ -208,6 +230,7 @@ class _EnumLoader(_Loader):
         self.symbols = symbols
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         if doc in self.symbols:
             return doc
         else:
@@ -220,11 +243,12 @@ class _RecordLoader(_Loader):
         self.classtype = classtype
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         if not isinstance(doc, MutableMapping):
             raise ValidationException("Expected a dict")
         return self.classtype(doc, baseuri, loadingOptions, docRoot=docRoot)
 
-    def __repr__(self):
+    def __repr__(self):  # type: () -> str
         return str(self.classtype)
 
 
@@ -234,15 +258,16 @@ class _UnionLoader(_Loader):
         self.alternates = alternates
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         errors = []
         for t in self.alternates:
             try:
                 return t.load(doc, baseuri, loadingOptions, docRoot=docRoot)
             except ValidationException as e:
-                errors.append("tried %s but\n%s" % (t.__class__.__name__, indent(str(e))))
-        raise ValidationException(bullets(errors, "- "))
+                errors.append(u"tried %s but\n%s" % (t.__class__.__name__, indent(str(e))))
+        raise ValidationException(bullets(errors, u"- "))
 
-    def __repr__(self):
+    def __repr__(self):  # type: () -> str
         return " | ".join(str(a) for a in self.alternates)
 
 class _URILoader(_Loader):
@@ -254,6 +279,7 @@ class _URILoader(_Loader):
         self.scoped_ref = scoped_ref
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         if isinstance(doc, MutableSequence):
             doc = [expand_url(i, baseuri, loadingOptions,
                             self.scoped_id, self.vocab_term, self.scoped_ref) for i in doc]
@@ -271,6 +297,7 @@ class _TypeDSLLoader(_Loader):
         self.refScope = refScope
 
     def resolve(self, doc, baseuri, loadingOptions):
+        # type: (Any, Text, LoadingOptions) -> Any
         m = self.typeDSLregex.match(doc)
         if m:
             first = expand_url(m.group(1), baseuri, loadingOptions, False, True, self.refScope)
@@ -292,8 +319,9 @@ class _TypeDSLLoader(_Loader):
         return doc
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         if isinstance(doc, MutableSequence):
-            r = []
+            r = []  # type: List[Any]
             for d in doc:
                 if isinstance(d, string_types):
                     resolved = self.resolve(d, baseuri, loadingOptions)
@@ -321,27 +349,34 @@ class _IdMapLoader(_Loader):
         self.mapPredicate = mapPredicate
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         if isinstance(doc, MutableMapping):
-            r = []
+            r = []  # type: List[Any]
             for k in sorted(doc.keys()):
                 val = doc[k]
-                if isinstance(val, MutableMapping):
+                if isinstance(val, CommentedMap):
                     v = copy.copy(val)
-                    if hasattr(val, 'lc'):
-                        v.lc.data = val.lc.data
-                        v.lc.filename = val.lc.filename
+                    v.lc.data = val.lc.data
+                    v.lc.filename = val.lc.filename
+                    v[self.mapSubject] = k
+                    r.append(v)
+                elif isinstance(val, MutableMapping):
+                    v2 = copy.copy(val)
+                    v2[self.mapSubject] = k
+                    r.append(v2)
                 else:
                     if self.mapPredicate:
-                        v = {self.mapPredicate: val}
+                        v3 = {self.mapPredicate: val}
+                        v3[self.mapSubject] = k
+                        r.append(v3)
                     else:
                         raise ValidationException("No mapPredicate")
-                v[self.mapSubject] = k
-                r.append(v)
             doc = r
         return self.inner.load(doc, baseuri, loadingOptions)
 
 
 def _document_load(loader, doc, baseuri, loadingOptions):
+    # type: (_Loader, Any, Text, LoadingOptions) -> Any
     if isinstance(doc, string_types):
         return _document_load_by_url(loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions)
 
@@ -369,6 +404,7 @@ def _document_load(loader, doc, baseuri, loadingOptions):
 
 
 def _document_load_by_url(loader, url, loadingOptions):
+    # type: (_Loader, Text, LoadingOptions) -> Any
     if url in loadingOptions.idx:
         return _document_load(loader, loadingOptions.idx[url], url, loadingOptions)
 
@@ -377,7 +413,7 @@ def _document_load_by_url(loader, url, loadingOptions):
         textIO = StringIO(text.decode('utf-8'))
     else:
         textIO = StringIO(text)
-    textIO.name = url    # type: ignore
+    textIO.name = str(url)
     result = yaml.round_trip_load(textIO, preserve_quotes=True)
     add_lc_filename(result, url)
 
@@ -402,13 +438,14 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
     else:
         return "file://%s%s" % (urlpath, frag)
 
-def prefix_url(url, namespaces):
+def prefix_url(url, namespaces):  # type: (Text, Dict[Text, Text]) -> Text
     for k,v in namespaces.items():
         if url.startswith(v):
             return k+":"+url[len(v):]
     return url
 
 def save_relative_uri(uri, base_url, scoped_id, ref_scope, relative_uris):
+    # type: (Text, Text, bool, Optional[int], bool) -> Union[Text, List[Text]]
     if not relative_uris:
         return uri
     if isinstance(uri, MutableSequence):

@@ -2,7 +2,8 @@ from __future__ import absolute_import
 
 import logging
 import pprint
-from typing import Any, List, MutableMapping, MutableSequence, Set, Union
+from typing import (Any, List, Optional, MutableMapping, MutableSequence, Set,
+                    Union)
 
 from . import avro
 from .avro import schema  # pylint: disable=no-name-in-module, import-error
@@ -27,9 +28,9 @@ class ClassValidationException(ValidationException):
 
 def validate(expected_schema,           # type: Schema
              datum,                     # type: Any
-             identifiers=None,          # type: List[Text]
+             identifiers=None,          # type: Optional[List[Text]]
              strict=False,              # type: bool
-             foreign_properties=None    # type: Set[Text]
+             foreign_properties=None    # type: Optional[Set[Text]]
              ):
     # type: (...) -> bool
     if not identifiers:
@@ -69,9 +70,9 @@ def vpformat(datum):  # type: (Any) -> str
 
 def validate_ex(expected_schema,                  # type: Schema
                 datum,                            # type: Any
-                identifiers=None,                 # type: List[Text]
+                identifiers=None,                 # type: Optional[List[Text]]
                 strict=False,                     # type: bool
-                foreign_properties=None,          # type: Set[Text]
+                foreign_properties=None,          # type: Optional[Set[Text]]
                 raise_ex=True,                    # type: bool
                 strict_foreign_properties=False,  # type: bool
                 logger=_logger,                   # type: logging.Logger
@@ -219,7 +220,7 @@ def validate_ex(expected_schema,                  # type: Schema
                 continue
             elif isinstance(datum, MutableMapping) and not isinstance(s, avro.schema.RecordSchema):
                 continue
-            elif (isinstance(  # type: ignore
+            elif (isinstance(
                     datum, (bool, six.integer_types, float, six.string_types))
                     and isinstance(s, (avro.schema.ArraySchema,
                                        avro.schema.RecordSchema))):

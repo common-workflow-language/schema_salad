@@ -42,8 +42,14 @@ Schema salad can be used as a command line tool or imported as a Python module::
 
    $ schema-salad-tool
    usage: schema-salad-tool [-h] [--rdf-serializer RDF_SERIALIZER]
-                         [--print-jsonld-context | --print-rdfs | --print-avro | --print-rdf | --print-pre | --print-index | --print-metadata | --print-inheritance-dot | --print-fieldrefs-dot | --codegen language | --print-oneline]
-                         [--strict | --non-strict] [--verbose | --quiet | --debug] [--version]
+                         [--print-jsonld-context | --print-rdfs | --print-avro
+                         | --print-rdf | --print-pre | --print-index
+                         | --print-metadata | --print-inheritance-dot
+                         | --print-fieldrefs-dot | --codegen language
+                         | --print-oneline]
+                         [--strict | --non-strict] [--verbose | --quiet
+                         | --debug]
+                         [--version]
                          [schema] [document]
 
    $ python
@@ -73,7 +79,8 @@ Generate Python classes for loading/generating documents described by the schema
 
    $ schema-salad-tool --codegen=python myschema.yml > myschema.py
 
-Display inheritance relationship between classes as a graphviz 'dot' file and render as SVG::
+Display inheritance relationship between classes as a graphviz 'dot' file and
+render as SVG::
 
    $ schema-salad-tool --print-inheritance-dot myschema.yml | dot -Tsvg > myschema.svg
 
@@ -81,7 +88,8 @@ Display inheritance relationship between classes as a graphviz 'dot' file and re
 Quick Start
 -----------
 
-Let's say you have a 'basket' record that can contain items measured either by weight or by count.  Here's an example::
+Let's say you have a 'basket' record that can contain items measured either by
+weight or by count.  Here's an example::
 
    basket:
      - product: bananas
@@ -150,7 +158,8 @@ Here is an example schema to do that::
            type: array
            items: Product
 
-You can check the schema and document in schema_salad/tests/basket_schema.yml and schema_salad/tests/basket.yml::
+You can check the schema and document in schema_salad/tests/basket_schema.yml
+and schema_salad/tests/basket.yml::
 
    $ schema-salad-tool basket_schema.yml basket.yml
    Document `basket.yml` is valid

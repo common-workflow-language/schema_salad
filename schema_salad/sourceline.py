@@ -5,7 +5,7 @@ import os
 import re
 import traceback
 from typing import (Any, AnyStr, Callable, Dict, List, MutableMapping,
-                    MutableSequence, Pattern, Tuple, Union)
+                    MutableSequence, Optional, Pattern, Tuple, Type, Union)
 from future.utils import raise_from
 
 import ruamel.yaml
@@ -148,7 +148,7 @@ def bullets(textlist, bul):  # type: (List[Text], Text) -> Text
     else:
         return "\n".join(indent(t, bullet=bul) for t in textlist)
 
-def strip_dup_lineno(text, maxline=None):  # type: (Text, int) -> Text
+def strip_dup_lineno(text, maxline=None):  # type: (Text, Optional[int]) -> Text
     if maxline is None:
         maxline = int(os.environ.get("COLUMNS", "100"))
     pre = None
@@ -175,7 +175,10 @@ def strip_dup_lineno(text, maxline=None):  # type: (Text, int) -> Text
             msg.append(" " * maxno + g2)
     return "\n".join(msg)
 
-def cmap(d, lc=None, fn=None):  # type: (Union[int, float, str, Text, Dict, List], List[int], Text) -> Union[int, float, str, Text, CommentedMap, CommentedSeq]
+def cmap(d,        # type: Union[int, float, str, Text, Dict[Text, Any], List[Dict[Text, Any]]]
+         lc=None,  # type: Optional[List[int]]
+         fn=None   # type: Optional[Text]
+        ):  # type: (...) -> Union[int, float, str, Text, CommentedMap, CommentedSeq]
     if lc is None:
         lc = [0, 0, 0, 0]
     if fn is None:
@@ -228,7 +231,12 @@ def cmap(d, lc=None, fn=None):  # type: (Union[int, float, str, Text, Dict, List
         return d
 
 class SourceLine(object):
-    def __init__(self, item, key=None, raise_type=six.text_type, include_traceback=False):  # type: (Any, Any, Callable, bool) -> None
+    def __init__(self,
+                 item,                      # type: Any
+                 key=None,                  # type: Optional[Any]
+                 raise_type=six.text_type,  # type: Union[Type[six.text_type], Type[Exception]]
+                 include_traceback=False    # type: bool
+                ):  # type: (...) -> None
         self.item = item
         self.key = key
         self.raise_type = raise_type
@@ -240,8 +248,8 @@ class SourceLine(object):
     def __exit__(self,
                  exc_type,   # type: Any
                  exc_value,  # type: Any
-                 tb   # type: Any
-                 ):   # -> Any
+                 tb          # type: Any
+                ):   # type: (...) -> None
         if not exc_value:
             return
         if self.include_traceback and six.PY2:

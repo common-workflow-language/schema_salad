@@ -3,9 +3,7 @@ from __future__ import absolute_import
 import os
 from typing import Optional, Text
 
-from pkg_resources import (Requirement, ResolutionError,  # type: ignore
-                           resource_filename)
-
+from pkg_resources import Requirement, ResolutionError, resource_filename
 
 def get_data(filename):  # type: (Text) -> Optional[Text]
     filename = os.path.normpath(filename)  # normalizing path depending on OS or else it will cause problem when joining path

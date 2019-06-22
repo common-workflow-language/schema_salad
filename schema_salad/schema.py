@@ -4,7 +4,7 @@ from __future__ import absolute_import
 import copy
 import hashlib
 from typing import (IO, Any, AnyStr, Dict, List, Mapping, MutableMapping,
-                    MutableSequence, Set, Tuple, TypeVar, Union, cast)
+                    MutableSequence, Optional, Set, Tuple, TypeVar, Union, cast)
 
 from pkg_resources import resource_stream
 from ruamel import yaml
@@ -20,8 +20,8 @@ from . import _logger
 from .avro.schema import Names, SchemaParseException, make_avsc_object
 from . import jsonld_context, ref_resolver, validate
 from .ref_resolver import Loader
-from .sourceline import (SourceLine, add_lc_filename, bullets, relname,
-                         strip_dup_lineno)
+from .sourceline import (SourceLine, add_lc_filename, bullets, indent,
+                         relname, strip_dup_lineno)
 
 SALAD_FILES = ('metaschema.yml',
                'metaschema_base.yml',
@@ -222,7 +222,7 @@ def collect_namespaces(metadata):
     return namespaces
 
 def load_schema(schema_ref,  # type: Union[CommentedMap, CommentedSeq, Text]
-                cache=None   # type: Dict
+                cache=None   # type: Optional[Dict[Text, Text]]
                 ):
     # type: (...) -> Tuple[Loader, Union[Names, SchemaParseException], Dict[Text, Any], Loader]
     """
@@ -345,11 +345,11 @@ def validate_doc(schema_names,  # type: Names
                         strict_foreign_properties=strict_foreign_properties)
                 except validate.ClassValidationException as exc:
                     errors = [sourceline.makeError(u"tried `%s` but\n%s" % (
-                        name, validate.indent(str(exc), nolead=False)))]
+                        name, indent(str(exc), nolead=False)))]
                     break
                 except validate.ValidationException as exc:
                     errors.append(sourceline.makeError(u"tried `%s` but\n%s" % (
-                        name, validate.indent(str(exc), nolead=False))))
+                        name, indent(str(exc), nolead=False))))
 
             objerr = sourceline.makeError(u"Invalid")
             for ident in loader.identifiers:
@@ -359,28 +359,34 @@ def validate_doc(schema_names,  # type: Names
                         % (relname(item[ident])))
                     break
             anyerrors.append(u"%s\n%s" %
-                             (objerr, validate.indent(bullets(errors, "- "))))
+                             (objerr, indent(bullets(errors, "- "))))
     if anyerrors:
         raise validate.ValidationException(
             strip_dup_lineno(bullets(anyerrors, "* ")))
 
 def get_anon_name(rec):
-    # type: (MutableMapping[Text, Any]) -> Text
+    # type: (MutableMapping[Text, Union[Text, Dict[Text, Text]]]) -> Text
     """Calculate a reproducible name for anonymous types."""
     if "name" in rec:
-        return rec["name"]
-    anon_name = ""
+        name = rec["name"]
+        if isinstance(name, Text):
+            return name
+        raise validate.ValidationException("Expected name field to be a string, was {}".format(name))
+    anon_name = u""
     if rec['type'] in ('enum', 'https://w3id.org/cwl/salad#enum'):
         for sym in rec["symbols"]:
             anon_name += sym
         return "enum_"+hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
     if rec['type'] in ('record', 'https://w3id.org/cwl/salad#record'):
         for field in rec["fields"]:
-            anon_name += field["name"]
-        return "record_"+hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
+            if isinstance(field, Mapping):
+                anon_name += field[u"name"]
+            else:
+                raise validate.ValidationException("Expected entries in 'fields' to also be maps, was {}.".format(field))
+        return u"record_"+hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
     if rec['type'] in ('array', 'https://w3id.org/cwl/salad#array'):
-        return ""
-    raise validate.ValidationException("Expected enum or record, was %s" % rec['type'])
+        return u""
+    raise validate.ValidationException("Expected enum or record, was {}".format(rec['type']))
 
 def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
     # type: (Any, Dict[Text, Any], Loader, Set[Text], bool, bool) -> Any
@@ -430,7 +436,7 @@ def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
     return items
 
 
-def avro_name(url):  # type: (AnyStr) -> AnyStr
+def avro_name(url):  # type: (Text) -> Text
     """
     Turn a URL into an Avro-safe name.
 
@@ -454,8 +460,7 @@ def make_valid_avro(items,          # type: Avro
                     alltypes,       # type: Dict[Text, Dict[Text, Any]]
                     found,          # type: Set[Text]
                     union=False     # type: bool
-                    ):
-    # type: (...) -> Union[Avro, Dict, Text]
+                   ):  # type: (...) -> Union[Avro, Dict[Text, Text], Text]
     """Convert our schema to be more avro like."""
     # Possibly could be integrated into our fork of avro/schema.py?
     if isinstance(items, MutableMapping):
@@ -482,11 +487,11 @@ def make_valid_avro(items,          # type: Avro
     if isinstance(items, MutableSequence):
         ret = []
         for i in items:
-            ret.append(make_valid_avro(i, alltypes, found, union=union))  # type: ignore
+            ret.append(make_valid_avro(i, alltypes, found, union=union))
         return ret
     if union and isinstance(items, string_types):
         if items in alltypes and avro_name(items) not in found:
-            return cast(Dict, make_valid_avro(alltypes[items], alltypes, found,
+            return cast(Dict[Text, Text], make_valid_avro(alltypes[items], alltypes, found,
                                               union=union))
         items = avro_name(items)
     return items
@@ -626,7 +631,7 @@ def make_avro_schema(i,         # type: List[Any]
 
 
 def make_avro_schema_from_avro(avro):
-    # type: (List[Union[Avro, Dict, Text]]) -> Names
+    # type: (List[Union[Avro, Dict[Text, Text], Text]]) -> Names
     names = Names()
     make_avsc_object(convert_to_dict(avro), names)
     return names
@@ -641,7 +646,7 @@ def shortname(inputid):  # type: (Text) -> Text
 
 
 def print_inheritance(doc, stream):
-    # type: (List[Dict[Text, Any]], IO) -> None
+    # type: (List[Dict[Text, Any]], IO[Any]) -> None
     """Write a Grapviz inheritance graph for the supplied document."""
     stream.write("digraph {\n")
     for entry in doc:
@@ -663,7 +668,7 @@ def print_inheritance(doc, stream):
 
 
 def print_fieldrefs(doc, loader, stream):
-    # type: (List[Dict[Text, Any]], Loader, IO) -> None
+    # type: (List[Dict[Text, Any]], Loader, IO[Any]) -> None
     """Write a GraphViz graph of the relationships between the fields."""
     obj = extend_and_specialize(doc, loader)
 
