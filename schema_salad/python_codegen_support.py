@@ -108,6 +108,11 @@ def save(val,                # type: Optional[Union[Savable, MutableSequence[Sav
         return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
     if isinstance(val, MutableSequence):
         return [save(v, top=False, base_url=base_url, relative_uris=relative_uris) for v in val]
+    if isinstance(val, MutableMapping):
+        newdict = {}
+        for key in val:
+            newdict[key] = save(val[key], top=False, base_url=base_url, relative_uris=relative_uris)
+        return newdict
     return val
 
 def expand_url(url,                 # type: Union[str, Text]
