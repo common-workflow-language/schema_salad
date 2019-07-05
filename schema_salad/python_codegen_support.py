@@ -27,6 +27,7 @@ class Savable(object):
     def fromDoc(cls, _doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> Savable
         pass
+
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Text]
         pass

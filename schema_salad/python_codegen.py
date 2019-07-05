@@ -15,7 +15,7 @@ from .schema import shortname
 class PythonCodeGen(CodeGenBase):
     """Generation of Python code for a given Schema Salad definition."""
     def __init__(self, out):
-        # type: (IO[str]) -> None
+        # type: (IO[Any]) -> None
         super(PythonCodeGen, self).__init__()
         self.out = out
         self.current_class_is_abstract = False
@@ -79,7 +79,7 @@ class PythonCodeGen(CodeGenBase):
             self.out.write("    pass\n\n")
             return
 
-        safe_inits = [ "self"]
+        safe_inits = ["self"]  # type: List[Text]
         safe_inits.extend([self.safe_name(f) for f in field_names if f != "class"])
         self.out.write("    def __init__(" +", ".join(safe_inits) + """, extension_fields=None, loadingOptions=None):
         if extension_fields:
@@ -96,9 +96,8 @@ class PythonCodeGen(CodeGenBase):
             else:
                 field_inits +="""        self.{0} = {0}
 """.format(self.safe_name(name))
-        self.out.write(field_inits + '\n'+
-
-            """
+        self.out.write(field_inits + '\n'
+        +"""
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> {}
@@ -165,7 +164,7 @@ class PythonCodeGen(CodeGenBase):
 
         self.serializer.write("    attrs = frozenset({attrs})\n".format(attrs=field_names))
 
-        safe_inits = [ self.safe_name(f) for f in field_names if f != "class" ]
+        safe_inits = [ self.safe_name(f) for f in field_names if f != "class" ]  # type: List[Text]
 
         safe_inits.extend(["extension_fields=extension_fields", "loadingOptions=loadingOptions"])
 
