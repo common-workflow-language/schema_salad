@@ -194,11 +194,11 @@ def cmap(d,        # type: Union[int, float, str, Text, Dict[Text, Any], List[Di
         return d
     if isinstance(d, CommentedSeq):
         fn = d.lc.filename if hasattr(d.lc, "filename") else fn
-        for k,v in enumerate(d):
-            if k in d.lc.data:
-                d[k] = cmap(v, lc=d.lc.data[k], fn=fn)
+        for k2, v2 in enumerate(d):
+            if k2 in d.lc.data:
+                d[k2] = cmap(v2, lc=d.lc.data[k2], fn=fn)
             else:
-                d[k] = cmap(v, lc, fn=fn)
+                d[k2] = cmap(v2, lc, fn=fn)
         return d
     if isinstance(d, MutableMapping):
         cm = CommentedMap()
@@ -216,15 +216,15 @@ def cmap(d,        # type: Union[int, float, str, Text, Dict[Text, Any], List[Di
         return cm
     if isinstance(d, MutableSequence):
         cs = CommentedSeq()
-        for k,v in enumerate(d):
-            if isinstance(v, CommentedBase):
-                uselc = [v.lc.line, v.lc.col, v.lc.line, v.lc.col]
-                vfn = v.lc.filename if hasattr(v.lc, "filename") else fn
+        for k3, v3 in enumerate(d):
+            if isinstance(v3, CommentedBase):
+                uselc = [v3.lc.line, v3.lc.col, v3.lc.line, v3.lc.col]
+                vfn = v3.lc.filename if hasattr(v3.lc, "filename") else fn
             else:
                 uselc = lc
                 vfn = fn
-            cs.append(cmap(v, lc=uselc, fn=vfn))
-            cs.lc.add_kv_line_col(k, uselc)
+            cs.append(cmap(v3, lc=uselc, fn=vfn))
+            cs.lc.add_kv_line_col(k3, uselc)
             cs.lc.filename = fn
         return cs
     else:
