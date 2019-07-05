@@ -23,6 +23,10 @@ class ValidationException(Exception):
     pass
 
 class Savable(object):
+    @classmethod
+    def fromDoc(cls, _doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Savable
+        pass
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Text]
         pass
@@ -239,14 +243,14 @@ class _EnumLoader(_Loader):
 
 class _RecordLoader(_Loader):
     def __init__(self, classtype):
-        # type: (type) -> None
+        # type: (Type[Savable]) -> None
         self.classtype = classtype
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         if not isinstance(doc, MutableMapping):
             raise ValidationException("Expected a dict")
-        return self.classtype(doc, baseuri, loadingOptions, docRoot=docRoot)
+        return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
     def __repr__(self):  # type: () -> str
         return str(self.classtype)

@@ -65,7 +65,7 @@ class PythonCodeGen(CodeGenBase):
         else:
             ext = "Savable"
 
-        self.out.write("class %s(%s):\n" % (self.safe_name(classname), ext))
+        self.out.write("class %s(%s):\n" % (classname, ext))
 
         if doc:
             self.out.write('    """\n')
@@ -79,16 +79,36 @@ class PythonCodeGen(CodeGenBase):
             self.out.write("    pass\n\n")
             return
 
-        self.out.write(
-            """    def __init__(self, _doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> None
-        doc = copy.copy(_doc)
-        if hasattr(_doc, 'lc'):
-            doc.lc.data = _doc.lc.data
-            doc.lc.filename = _doc.lc.filename
-        errors = []
+        safe_inits = [ "self"]
+        safe_inits.extend([self.safe_name(f) for f in field_names if f != "class"])
+        self.out.write("    def __init__(" +", ".join(safe_inits) + """, extension_fields=None, loadingOptions=None):
+        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = {}
         self.loadingOptions = loadingOptions
 """)
+        field_inits = ""
+        for name in field_names:
+            if name == "class":
+                field_inits +="""        self.class_ = "{}"
+""".format(classname)
+            else:
+                field_inits +="""        self.{0} = {0}
+""".format(self.safe_name(name))
+        self.out.write(field_inits + '\n'+
+
+            """
+    @classmethod
+    def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> {}
+
+        _doc = copy.copy(doc)
+        if hasattr(doc, 'lc'):
+            _doc.lc.data = doc.lc.data
+            _doc.lc.filename = doc.lc.filename
+        errors = []
+""".format(classname))
 
         self.idfield = idfield
 
@@ -102,7 +122,7 @@ class PythonCodeGen(CodeGenBase):
 
         if "class" in field_names:
             self.out.write("""
-        if doc.get('class') != '{class_}':
+        if _doc.get('class') != '{class_}':
             raise ValidationException("Not a {class_}")
 
 """.format(class_=classname))
@@ -119,14 +139,14 @@ class PythonCodeGen(CodeGenBase):
             return
 
         self.out.write("""
-        self.extension_fields = {{}}  # type: Dict[Text, Text]
-        for k in doc.keys():
-            if k not in self.attrs:
+        extension_fields = {{}}  # type: Dict[Text, Text]
+        for k in _doc.keys():
+            if k not in cls.attrs:
                 if ":" in k:
                     ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
-                    self.extension_fields[ex] = doc[k]
+                    extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: {attrstr}" % (k)))
+                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: {attrstr}" % (k)))
                     break
 
         if errors:
@@ -145,7 +165,14 @@ class PythonCodeGen(CodeGenBase):
 
         self.serializer.write("    attrs = frozenset({attrs})\n".format(attrs=field_names))
 
+        safe_inits = [ self.safe_name(f) for f in field_names if f != "class" ]
+
+        safe_inits.extend(["extension_fields=extension_fields", "loadingOptions=loadingOptions"])
+
+        self.out.write("        return cls(" + ", ".join(safe_inits)+")\n")
+
         self.out.write(self.serializer.getvalue())
+
         self.out.write("\n\n")
 
     prims = {
@@ -206,19 +233,19 @@ class PythonCodeGen(CodeGenBase):
         self.declare_field(name, fieldtype, doc, True)
 
         if optional:
-            opt = """self.{safename} = "_:" + str(uuid.uuid4())""".format(
+            opt = """{safename} = "_:" + str(uuid.uuid4())""".format(
                 safename=self.safe_name(name))
         else:
             opt = """raise ValidationException("Missing {fieldname}")""".format(
                 fieldname=shortname(name))
 
         self.out.write("""
-        if self.{safename} is None:
+        if {safename} is None:
             if docRoot is not None:
-                self.{safename} = docRoot
+                {safename} = docRoot
             else:
                 {opt}
-        baseuri = self.{safename}
+        baseuri = {safename}
 """.
                        format(safename=self.safe_name(name),
                               fieldname=shortname(name),
@@ -235,14 +262,14 @@ class PythonCodeGen(CodeGenBase):
             return
 
         if optional:
-            self.out.write("        if '{fieldname}' in doc:\n".format(fieldname=shortname(name)))
+            self.out.write("        if '{fieldname}' in _doc:\n".format(fieldname=shortname(name)))
             spc = "    "
         else:
             spc = ""
         self.out.write("""{spc}        try:
-{spc}            self.{safename} = load_field(doc.get('{fieldname}'), {fieldtype}, baseuri, loadingOptions)
+{spc}            {safename} = load_field(_doc.get('{fieldname}'), {fieldtype}, baseuri, loadingOptions)
 {spc}        except ValidationException as e:
-{spc}            errors.append(SourceLine(doc, '{fieldname}', str).makeError(\"the `{fieldname}` field is not valid because:\\n\"+str(e)))
+{spc}            errors.append(SourceLine(_doc, '{fieldname}', str).makeError(\"the `{fieldname}` field is not valid because:\\n\"+str(e)))
 """.
                        format(safename=self.safe_name(name),
                               fieldname=shortname(name),
@@ -250,7 +277,7 @@ class PythonCodeGen(CodeGenBase):
                               spc=spc))
         if optional:
             self.out.write("""        else:
-            self.{safename} = None
+            {safename} = None
 """.format(safename=self.safe_name(name)))
 
         self.out.write("\n")
@@ -258,7 +285,7 @@ class PythonCodeGen(CodeGenBase):
         if name == self.idfield or not self.idfield:
             baseurl = 'base_url'
         else:
-            baseurl = "self.%s" % self.safe_name(self.idfield)
+            baseurl = 'self.{}'.format(self.safe_name(self.idfield))
 
         if fieldtype.is_uri:
             self.serializer.write("""
