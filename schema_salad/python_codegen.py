@@ -85,7 +85,7 @@ class PythonCodeGen(CodeGenBase):
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = {}
+            self.extension_fields = yaml.comments.CommentedMap()
         self.loadingOptions = loadingOptions
 """)
         field_inits = ""
@@ -114,7 +114,7 @@ class PythonCodeGen(CodeGenBase):
         self.serializer.write("""
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 """)
@@ -138,7 +138,7 @@ class PythonCodeGen(CodeGenBase):
             return
 
         self.out.write("""
-        extension_fields = {{}}  # type: Dict[Text, Text]
+        extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -168,6 +168,9 @@ class PythonCodeGen(CodeGenBase):
 
         safe_inits.extend(["extension_fields=extension_fields", "loadingOptions=loadingOptions"])
 
+        self.out.write("""        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
+""")
         self.out.write("        return cls(" + ", ".join(safe_inits)+")\n")
 
         self.out.write(self.serializer.getvalue())

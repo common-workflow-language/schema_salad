@@ -34,16 +34,18 @@ class Savable(object):
 
 class LoadingOptions(object):
     def __init__(self,
-                 fetcher=None,     # type: Optional[Fetcher]
-                 namespaces=None,  # type: Optional[Dict[Text, Text]]
-                 fileuri=None,     # type: Optional[Text]
-                 copyfrom=None,    # type: Optional[LoadingOptions]
-                 schemas=None      # type: Optional[List[Text]]
+                 fetcher=None,      # type: Optional[Fetcher]
+                 namespaces=None,   # type: Optional[Dict[Text, Text]]
+                 fileuri=None,      # type: Optional[Text]
+                 copyfrom=None,     # type: Optional[LoadingOptions]
+                 schemas=None,      # type: Optional[List[Text]]
+                 original_doc=None  # type: Optional[Any]
                 ):  # type: (...) -> None
         self.idx = {}  # type: Dict[Text, Text]
         self.fileuri = fileuri  # type: Optional[Text]
         self.namespaces = namespaces
         self.schemas = schemas
+        self.original_doc = original_doc
         if copyfrom is not None:
             self.idx = copyfrom.idx
             if fetcher is None:
