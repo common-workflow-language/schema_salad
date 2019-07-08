@@ -39,16 +39,18 @@ class Savable(object):
 
 class LoadingOptions(object):
     def __init__(self,
-                 fetcher=None,     # type: Optional[Fetcher]
-                 namespaces=None,  # type: Optional[Dict[Text, Text]]
-                 fileuri=None,     # type: Optional[Text]
-                 copyfrom=None,    # type: Optional[LoadingOptions]
-                 schemas=None      # type: Optional[List[Text]]
+                 fetcher=None,      # type: Optional[Fetcher]
+                 namespaces=None,   # type: Optional[Dict[Text, Text]]
+                 fileuri=None,      # type: Optional[Text]
+                 copyfrom=None,     # type: Optional[LoadingOptions]
+                 schemas=None,      # type: Optional[List[Text]]
+                 original_doc=None  # type: Optional[Any]
                 ):  # type: (...) -> None
         self.idx = {}  # type: Dict[Text, Text]
         self.fileuri = fileuri  # type: Optional[Text]
         self.namespaces = namespaces
         self.schemas = schemas
+        self.original_doc = original_doc
         if copyfrom is not None:
             self.idx = copyfrom.idx
             if fetcher is None:
@@ -501,11 +503,15 @@ class RecordField(Documented):
 A field of a record.
     """
     def __init__(self, doc, name, type, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = {}
-        self.loadingOptions = loadingOptions
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
         self.doc = doc
         self.name = name
         self.type = type
@@ -549,7 +555,7 @@ A field of a record.
             errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
 
-        extension_fields = {}  # type: Dict[Text, Text]
+        extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -561,11 +567,13 @@ A field of a record.
 
         if errors:
             raise ValidationException("Trying 'RecordField'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
         return cls(doc, name, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -590,11 +598,15 @@ A field of a record.
 
 class RecordSchema(Savable):
     def __init__(self, fields, type, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = {}
-        self.loadingOptions = loadingOptions
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
         self.fields = fields
         self.type = type
 
@@ -622,7 +634,7 @@ class RecordSchema(Savable):
             errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
 
-        extension_fields = {}  # type: Dict[Text, Text]
+        extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -634,11 +646,13 @@ class RecordSchema(Savable):
 
         if errors:
             raise ValidationException("Trying 'RecordSchema'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
         return cls(fields, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -662,11 +676,15 @@ Define an enumerated type.
 
     """
     def __init__(self, symbols, type, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = {}
-        self.loadingOptions = loadingOptions
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
         self.symbols = symbols
         self.type = type
 
@@ -691,7 +709,7 @@ Define an enumerated type.
             errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
 
-        extension_fields = {}  # type: Dict[Text, Text]
+        extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -703,11 +721,13 @@ Define an enumerated type.
 
         if errors:
             raise ValidationException("Trying 'EnumSchema'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
         return cls(symbols, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -729,11 +749,15 @@ Define an enumerated type.
 
 class ArraySchema(Savable):
     def __init__(self, items, type, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = {}
-        self.loadingOptions = loadingOptions
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
         self.items = items
         self.type = type
 
@@ -758,7 +782,7 @@ class ArraySchema(Savable):
             errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
 
-        extension_fields = {}  # type: Dict[Text, Text]
+        extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -770,11 +794,13 @@ class ArraySchema(Savable):
 
         if errors:
             raise ValidationException("Trying 'ArraySchema'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
         return cls(items, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -801,11 +827,15 @@ URI resolution and JSON-LD context generation.
 
     """
     def __init__(self, _id, _type, _container, identity, noLinkCheck, mapSubject, mapPredicate, refScope, typeDSL, secondaryFilesDSL, subscope, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = {}
-        self.loadingOptions = loadingOptions
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
         self._id = _id
         self._type = _type
         self._container = _container
@@ -917,7 +947,7 @@ URI resolution and JSON-LD context generation.
             subscope = None
 
 
-        extension_fields = {}  # type: Dict[Text, Text]
+        extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -929,11 +959,13 @@ URI resolution and JSON-LD context generation.
 
         if errors:
             raise ValidationException("Trying 'JsonldPredicate'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
         return cls(_id, _type, _container, identity, noLinkCheck, mapSubject, mapPredicate, refScope, typeDSL, secondaryFilesDSL, subscope, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -982,11 +1014,15 @@ URI resolution and JSON-LD context generation.
 
 class SpecializeDef(Savable):
     def __init__(self, specializeFrom, specializeTo, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = {}
-        self.loadingOptions = loadingOptions
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
         self.specializeFrom = specializeFrom
         self.specializeTo = specializeTo
 
@@ -1011,7 +1047,7 @@ class SpecializeDef(Savable):
             errors.append(SourceLine(_doc, 'specializeTo', str).makeError("the `specializeTo` field is not valid because:\n"+str(e)))
 
 
-        extension_fields = {}  # type: Dict[Text, Text]
+        extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -1023,11 +1059,13 @@ class SpecializeDef(Savable):
 
         if errors:
             raise ValidationException("Trying 'SpecializeDef'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
         return cls(specializeFrom, specializeTo, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -1067,11 +1105,15 @@ class SaladRecordField(RecordField):
 A field of a record.
     """
     def __init__(self, doc, name, type, jsonldPredicate, default, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = {}
-        self.loadingOptions = loadingOptions
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
         self.doc = doc
         self.name = name
         self.type = type
@@ -1133,7 +1175,7 @@ A field of a record.
             default = None
 
 
-        extension_fields = {}  # type: Dict[Text, Text]
+        extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -1145,11 +1187,13 @@ A field of a record.
 
         if errors:
             raise ValidationException("Trying 'SaladRecordField'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
         return cls(doc, name, type, jsonldPredicate, default, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -1180,11 +1224,15 @@ A field of a record.
 
 class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
     def __init__(self, name, inVocab, fields, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, abstract, extends, specialize, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = {}
-        self.loadingOptions = loadingOptions
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
         self.name = name
         self.inVocab = inVocab
         self.fields = fields
@@ -1318,7 +1366,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             specialize = None
 
 
-        extension_fields = {}  # type: Dict[Text, Text]
+        extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -1330,11 +1378,13 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
 
         if errors:
             raise ValidationException("Trying 'SaladRecordSchema'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
         return cls(name, inVocab, fields, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, abstract, extends, specialize, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -1401,11 +1451,15 @@ Define an enumerated type.
 
     """
     def __init__(self, name, inVocab, symbols, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, extends, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = {}
-        self.loadingOptions = loadingOptions
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
         self.name = name
         self.inVocab = inVocab
         self.symbols = symbols
@@ -1518,7 +1572,7 @@ Define an enumerated type.
             extends = None
 
 
-        extension_fields = {}  # type: Dict[Text, Text]
+        extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -1530,11 +1584,13 @@ Define an enumerated type.
 
         if errors:
             raise ValidationException("Trying 'SaladEnumSchema'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
         return cls(name, inVocab, symbols, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, extends, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -1598,11 +1654,15 @@ schemas but has no role in formal validation.
 
     """
     def __init__(self, name, inVocab, doc, docParent, docChild, docAfter, type, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Any, Any, Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = {}
-        self.loadingOptions = loadingOptions
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
         self.name = name
         self.inVocab = inVocab
         self.doc = doc
@@ -1682,7 +1742,7 @@ schemas but has no role in formal validation.
             errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
 
-        extension_fields = {}  # type: Dict[Text, Text]
+        extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -1694,11 +1754,13 @@ schemas but has no role in formal validation.
 
         if errors:
             raise ValidationException("Trying 'Documentation'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
         return cls(name, inVocab, doc, docParent, docChild, docAfter, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 

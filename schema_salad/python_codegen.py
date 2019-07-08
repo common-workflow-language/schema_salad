@@ -81,12 +81,19 @@ class PythonCodeGen(CodeGenBase):
 
         safe_inits = ["self"]  # type: List[Text]
         safe_inits.extend([self.safe_name(f) for f in field_names if f != "class"])
-        self.out.write("    def __init__(" +", ".join(safe_inits) + """, extension_fields=None, loadingOptions=None):
+        inits_types = ", ".join(["Any"]*(len(safe_inits) -1))
+        self.out.write(
+                "    def __init__(" +", ".join(safe_inits) + ", extension_fields=None, loadingOptions=None):\n"
+                "        # type: (" + inits_types + ", Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None" +
+"""
         if extension_fields:
             self.extension_fields = extension_fields
         else:
             self.extension_fields = yaml.comments.CommentedMap()
-        self.loadingOptions = loadingOptions
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
 """)
         field_inits = ""
         for name in field_names:
