@@ -790,10 +790,12 @@ class Loader(object):
                 elif isinstance(datum, CommentedSeq):
                     datum2 = CommentedSeq()
                     for n, t in enumerate(datum):
-                        datum2.lc.add_kv_line_col(
-                            len(datum2), datum.lc.data[n])
-                        datum2.append(self._apply_dsl(t, d, loader, datum.lc.data[n],
-                                                      document.lc.filename))
+                        if datum.lc.data:
+                            datum2.lc.add_kv_line_col(
+                                len(datum2), datum.lc.data[n])
+                        datum2.append(
+                            self._apply_dsl(t, d, loader, datum.lc,
+                                            document.lc.filename))
                 if isinstance(datum2, CommentedSeq):
                     datum3 = CommentedSeq()
                     seen = []  # type: List[Text]
@@ -807,8 +809,9 @@ class Loader(object):
                                     seen.append(v)
                         else:
                             if item not in seen:
-                                datum3.lc.add_kv_line_col(
-                                    len(datum3), datum2.lc.data[i])
+                                if datum2.lc.data:
+                                    datum3.lc.add_kv_line_col(
+                                        len(datum3), datum2.lc.data[i])
                                 datum3.append(item)
                                 seen.append(item)
                     document[d] = datum3
