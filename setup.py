@@ -29,7 +29,9 @@ else:
 install_requires = [
     'setuptools',
     'requests >= 1.0',
-    'ruamel.yaml >= 0.12.4, <= 0.15.97',
+    'ruamel.yaml >= 0.12.4, <= 0.15.99',
+    # once the minimum version for ruamel.yaml >= 0.15.99
+    # then please update the mypy{2,3} targets in the Makefile
     'rdflib >= 4.2.2, < 4.3.0',
     'rdflib-jsonld >= 0.3.0, < 0.5.0',
     'mistune >= 0.8.1, < 0.9',
@@ -61,7 +63,8 @@ setup(name='schema-salad',
       test_suite='tests',
       tests_require=['pytest'],
       entry_points={
-          'console_scripts': ["schema-salad-tool=schema_salad.main:main", "schema-salad-doc=schema_salad.makedoc:main"]
+          'console_scripts': ["schema-salad-tool=schema_salad.main:main",
+                              "schema-salad-doc=schema_salad.makedoc:main"]
       },
       zip_safe=True,
       cmdclass={'egg_info': tagger},
@@ -76,6 +79,7 @@ setup(name='schema-salad',
           "Programming Language :: Python :: 2.7",
           "Programming Language :: Python :: 3.5",
           "Programming Language :: Python :: 3.6",
-          "Programming Language :: Python :: 3.7"
+          "Programming Language :: Python :: 3.7",
+          "Typing :: Typed",
       ]
       )
