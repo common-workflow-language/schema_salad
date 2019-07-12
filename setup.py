@@ -17,7 +17,7 @@ except ImportError:
     tagger = egg_info_cmd.egg_info
 
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
-pytest_runner = ['pytest-runner'] if needs_pytest else []
+pytest_runner = ['pytest < 5', 'pytest-runner'] if needs_pytest else []
 
 if os.path.exists("requirements.txt"):
     requirements = [
@@ -29,7 +29,9 @@ else:
 install_requires = [
     'setuptools',
     'requests >= 1.0',
-    'ruamel.yaml >= 0.12.4, <= 0.15.97',
+    'ruamel.yaml >= 0.12.4, <= 0.15.99',
+    # once the minimum version for ruamel.yaml >= 0.15.99
+    # then please update the mypy{2,3} targets in the Makefile
     'rdflib >= 4.2.2, < 4.3.0',
     'rdflib-jsonld >= 0.3.0, < 0.5.0',
     'mistune >= 0.8.1, < 0.9',
@@ -61,7 +63,8 @@ setup(name='schema-salad',
       test_suite='tests',
       tests_require=['pytest'],
       entry_points={
-          'console_scripts': ["schema-salad-tool=schema_salad.main:main", "schema-salad-doc=schema_salad.makedoc:main"]
+          'console_scripts': ["schema-salad-tool=schema_salad.main:main",
+                              "schema-salad-doc=schema_salad.makedoc:main"]
       },
       zip_safe=True,
       cmdclass={'egg_info': tagger},
@@ -76,6 +79,7 @@ setup(name='schema-salad',
           "Programming Language :: Python :: 2.7",
           "Programming Language :: Python :: 3.5",
           "Programming Language :: Python :: 3.6",
-          "Programming Language :: Python :: 3.7"
+          "Programming Language :: Python :: 3.7",
+          "Typing :: Typed",
       ]
       )
