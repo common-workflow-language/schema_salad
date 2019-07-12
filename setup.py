@@ -17,7 +17,7 @@ except ImportError:
     tagger = egg_info_cmd.egg_info
 
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
-pytest_runner = ['pytest-runner'] if needs_pytest else []
+pytest_runner = ['pytest < 5', 'pytest-runner'] if needs_pytest else []
 
 if os.path.exists("requirements.txt"):
     requirements = [
