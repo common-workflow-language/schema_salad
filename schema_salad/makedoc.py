@@ -206,7 +206,7 @@ class RenderType(object):
             try:
                 if t["type"] == "record":
                     self.record_refs[t["name"]] = []
-                    fields = t.get("fields", [])
+                    fields = t.get("fields", [])  # type: Union[Text, List[Dict[Text, Text]]]
                     if isinstance(fields, Text):
                         raise KeyError("record fields must be a list of mappings")
                     for f in fields:  # type: Dict[Text, Text]
