@@ -93,7 +93,7 @@ def reformat_yaml_exception_message(message):  # type: (str) -> str
         if match:
             c_file, c_line, c_column = match.groups()
             c_file = re.sub(fname_regex, "", c_file)
-            ret.append("%s:%s:%s: %s" % (c_file, c_line, c_column, c_msg))
+            ret.append("{}:{}:{}: {}".format(c_file, c_line, c_column, c_msg))
 
         msgs = msgs[2:]
         nblanks = 2
@@ -103,7 +103,9 @@ def reformat_yaml_exception_message(message):  # type: (str) -> str
     if match:
         p_file, p_line, p_column = match.groups()
         p_file = re.sub(fname_regex, "", p_file)
-        ret.append("%s:%s:%s:%s %s" % (p_file, p_line, p_column, " " * nblanks, p_msg))
+        ret.append(
+            "{}:{}:{}:{} {}".format(p_file, p_line, p_column, " " * nblanks, p_msg)
+        )
     return "\n".join(ret)
 
 
@@ -143,10 +145,8 @@ def reflow(text, maxline, shift=""):  # type: (Text, int, Text) -> Text
             if sp == -1:
                 sp = len(text)
         if sp < len(text):
-            return "%s\n%s%s" % (
-                text[0:sp],
-                shift,
-                reflow(text[sp + 1 :], maxline, shift),
+            return "{}\n{}{}".format(
+                text[0:sp], shift, reflow(text[sp + 1 :], maxline, shift)
             )
     return text
 
@@ -302,13 +302,13 @@ class SourceLine(object):
             or self.item.lc.data is None
             or self.key not in self.item.lc.data
         ):
-            return "%s:%i:%i:" % (
+            return "{}:{}:{}:".format(
                 self.item.lc.filename if hasattr(self.item.lc, "filename") else "",
                 (self.item.lc.line or 0) + 1,
                 (self.item.lc.col or 0) + 1,
             )
         else:
-            return "%s:%i:%i:" % (
+            return "{}:{}:{}:".format(
                 self.item.lc.filename if hasattr(self.item.lc, "filename") else "",
                 (self.item.lc.data[self.key][0] or 0) + 1,
                 (self.item.lc.data[self.key][1] or 0) + 1,
@@ -323,5 +323,5 @@ class SourceLine(object):
             if bool(lineno_re.match(m)):
                 errs.append(m)
             else:
-                errs.append("%s %s" % (lead, m))
+                errs.append("{} {}".format(lead, m))
         return self.raise_type("\n".join(errs))

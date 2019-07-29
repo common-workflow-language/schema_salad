@@ -57,7 +57,7 @@ def has_types(items):  # type: (Any) -> List[Text]
 
 def linkto(item):  # type: (Text) -> Text
     _, frg = urllib.parse.urldefrag(item)
-    return "[%s](#%s)" % (frg, to_id(frg))
+    return "[{}](#{})".format(frg, to_id(frg))
 
 
 class MyRenderer(mistune.Renderer):
@@ -66,19 +66,15 @@ class MyRenderer(mistune.Renderer):
         self.options = {}
 
     def header(self, text, level, raw=None):  # type: (Text, int, Any) -> Text
-        return """<h%i id="%s" class="section">%s <a href="#%s">&sect;</a></h%i>""" % (
-            level,
-            to_id(text),
-            text,
-            to_id(text),
-            level,
+        return """<h{} id="{}" class="section">{} <a href="#{}">&sect;</a></h{}>""".format(
+            level, to_id(text), text, to_id(text), level
         )
 
     def table(self, header, body):  # type: (Text, Text) -> Text
         return (
-            '<table class="table table-striped">\n<thead>%s</thead>\n'
-            "<tbody>\n%s</tbody>\n</table>\n"
-        ) % (header, body)
+            '<table class="table table-striped">\n<thead>{}</thead>\n'
+            "<tbody>\n{}</tbody>\n</table>\n"
+        ).format(header, body)
 
 
 def to_id(text):  # type: (Text) -> Text
@@ -117,20 +113,20 @@ class ToC(object):
             self.numbering.append(1)
 
         if self.start_numbering:
-            num = "%i.%s" % (
-                self.numbering[0],
-                ".".join([str(n) for n in self.numbering[1:]]),
+            num = "{}.{}".format(
+                self.numbering[0], ".".join([str(n) for n in self.numbering[1:]])
             )
         else:
             num = ""
-        self.toc += """<li><a href="#%s">%s %s</a><ol>\n""" % (to_id(title), num, title)
+        self.toc += """<li><a href="#{}">{} {}</a><ol>\n""".format(
+            to_id(title), num, title
+        )
         return num
 
     def contents(self, idn):  # type: (str) -> str
-        toc = """<h1 id="%s">Table of contents</h1>
-               <nav class="tocnav"><ol>%s""" % (
-            idn,
-            self.toc,
+        toc = """<h1 id="{}">Table of contents</h1>
+               <nav class="tocnav"><ol>{}""".format(
+            idn, self.toc
         )
         toc += "</ol>"
         for _ in range(0, len(self.numbering)):
@@ -168,7 +164,7 @@ def number_headings(toc, maindoc):  # type: (ToC, str) -> str
             m = re.match(r"^(#+) (.*)", line)
             if m is not None:
                 num = toc.add_entry(len(m.group(1)), m.group(2))
-                line = "%s %s %s" % (m.group(1), num, m.group(2))
+                line = "{} {} {}".format(m.group(1), num, m.group(2))
             line = re.sub(r"^(https?://\S+)", r"[\1](\1)", line)
         mdlines.append(line)
 
@@ -286,7 +282,7 @@ class RenderType(object):
             )
         if isinstance(tp, MutableMapping):
             if tp["type"] == "https://w3id.org/cwl/salad#array":
-                ar = "array&lt;%s&gt;" % (
+                ar = "array&lt;{}&gt;".format(
                     self.typefmt(tp["items"], redirects, nbsp=True)
                 )
                 if jsonldPredicate is not None and "mapSubject" in jsonldPredicate:
@@ -296,9 +292,8 @@ class RenderType(object):
                             ar += "<br>"
 
                         ar += (
-                            "<a href='#map'>map</a>&lt;<code>%s</code>"
-                            ",&nbsp;<code>%s</code> | %s&gt"
-                            % (
+                            "<a href='#map'>map</a>&lt;<code>{}</code>"
+                            ",&nbsp;<code>{}</code> | {}&gt".format(
                                 jsonldPredicate["mapSubject"],
                                 jsonldPredicate["mapPredicate"],
                                 self.typefmt(tp["items"], redirects),
@@ -308,12 +303,9 @@ class RenderType(object):
                         ar += " | "
                         if len(ar) > 40:
                             ar += "<br>"
-                        ar += (
-                            "<a href='#map'>map</a>&lt;<code>%s</code>,&nbsp;%s&gt"
-                            % (
-                                jsonldPredicate["mapSubject"],
-                                self.typefmt(tp["items"], redirects),
-                            )
+                        ar += "<a href='#map'>map</a>&lt;<code>{}</code>,&nbsp;{}&gt".format(
+                            jsonldPredicate["mapSubject"],
+                            self.typefmt(tp["items"], redirects),
                         )
                 return ar
             if tp["type"] in (
@@ -322,31 +314,30 @@ class RenderType(object):
             ):
                 frg = schema.avro_name(tp["name"])
                 if tp["name"] in redirects:
-                    return """<a href="%s">%s</a>""" % (redirects[tp["name"]], frg)
+                    return """<a href="{}">{}</a>""".format(redirects[tp["name"]], frg)
                 if tp["name"] in self.typemap:
-                    return """<a href="#%s">%s</a>""" % (to_id(frg), frg)
+                    return """<a href="#{}">{}</a>""".format(to_id(frg), frg)
                 if (
                     tp["type"] == "https://w3id.org/cwl/salad#enum"
                     and len(tp["symbols"]) == 1
                 ):
-                    return "constant value <code>%s</code>" % schema.avro_name(
-                        tp["symbols"][0]
+                    return "constant value <code>{}</code>".format(
+                        schema.avro_name(tp["symbols"][0])
                     )
                 return frg
             if isinstance(tp["type"], MutableMapping):
                 return self.typefmt(tp["type"], redirects)
         else:
             if str(tp) in redirects:
-                return """<a href="%s">%s</a>""" % (redirects[tp], redirects[tp])
+                return """<a href="{}">{}</a>""".format(redirects[tp], redirects[tp])
             if str(tp) in basicTypes:
-                return """<a href="%s">%s</a>""" % (
-                    self.primitiveType,
-                    schema.avro_name(str(tp)),
+                return """<a href="{}">{}</a>""".format(
+                    self.primitiveType, schema.avro_name(str(tp))
                 )
             _, frg = urllib.parse.urldefrag(tp)
             if frg != "":
                 tp = frg
-            return """<a href="#%s">%s</a>""" % (to_id(tp), tp)
+            return """<a href="{}">{}</a>""".format(to_id(tp), tp)
         raise Exception("We should not be here!")
 
     def render_type(self, f, depth):  # type: (Dict[Text, Any], int) -> None
@@ -407,7 +398,7 @@ class RenderType(object):
 
             _, frg = urllib.parse.urldefrag(f["name"])
             num = self.toc.add_entry(depth, frg)
-            doc = u"%s %s %s\n" % (("#" * depth), num, frg)
+            doc = u"{} {} {}\n".format(("#" * depth), num, frg)
         else:
             doc = u""
 
@@ -420,17 +411,6 @@ class RenderType(object):
 
         if f["type"] == "documentation":
             f["doc"] = number_headings(self.toc, f["doc"])
-
-        # if "extends" in f:
-        #    doc += "\n\nExtends "
-        #    doc += ", ".join([" %s" % linkto(ex) for ex in aslist(f["extends"])])
-        # if f["name"] in self.subs:
-        #    doc += "\n\nExtended by"
-        #    doc += ", ".join([" %s" % linkto(s) for s in self.subs[f["name"]]])
-        # if f["name"] in self.uses:
-        #    doc += "\n\nReferenced by"
-        #    doc += ", ".join([" [%s.%s](#%s)" % (s[0], s[1], to_id(s[0]))
-        #       for s in self.uses[f["name"]]])
 
         doc = doc + "\n\n" + f["doc"]
 
@@ -464,11 +444,11 @@ class RenderType(object):
                 rfrg = schema.avro_name(i["name"])
                 tr = """
 <div class="row responsive-table-row">
-<div class="col-xs-3 col-lg-2"><code>%s</code></div>
-<div class="col-xs-2 col-lg-1">%s</div>
-<div class="col-xs-7 col-lg-3">%s</div>
-<div class="col-xs-12 col-lg-6 description-col">%s</div>
-</div>""" % (
+<div class="col-xs-3 col-lg-2"><code>{}</code></div>
+<div class="col-xs-2 col-lg-1">{}</div>
+<div class="col-xs-7 col-lg-3">{}</div>
+<div class="col-xs-12 col-lg-6 description-col">{}</div>
+</div>""".format(
                     rfrg,
                     "required" if opt else "optional",
                     self.typefmt(
@@ -476,7 +456,6 @@ class RenderType(object):
                     ),
                     mistune.markdown(desc),
                 )
-
                 if opt:
                     required.append(tr)
                 else:
@@ -492,9 +471,8 @@ class RenderType(object):
                 for i in e.get("symbols", []):
                     doc += "<tr>"
                     efrg = schema.avro_name(i)
-                    doc += "<td><code>%s</code></td><td>%s</td>" % (
-                        efrg,
-                        enumDesc.get(efrg, ""),
+                    doc += "<td><code>{}</code></td><td>{}</td>".format(
+                        efrg, enumDesc.get(efrg, "")
                     )
                     doc += "</tr>"
             doc += """</table>"""
@@ -563,7 +541,7 @@ def avrold_doc(
         )
     )
 
-    outdoc.write("<title>%s</title>" % (rt.title))
+    outdoc.write("<title>{}</title>".format(rt.title))
 
     outdoc.write(
         """
@@ -639,9 +617,10 @@ def avrold_doc(
       <nav class="navbar navbar-default navbar-fixed-top">
         <div class="container">
           <div class="navbar-header">
-            <a class="navbar-brand" href="%s">%s</a>
-    """
-        % (brandlink, brand)
+            <a class="navbar-brand" href="{}">{}</a>
+    """.format(
+            brandlink, brand
+        )
     )
 
     if u"<!--ToC-->" in content:

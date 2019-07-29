@@ -171,7 +171,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
     args = parser.parse_args(argsl)
 
     if args.version is None and args.schema is None:
-        print ("%s: error: too few arguments" % sys.argv[0])
+        print ("{}: error: too few arguments".format(sys.argv[0]))
         return 1
 
     if args.quiet:
@@ -182,7 +182,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
     pkg = pkg_resources.require("schema_salad")
     if pkg:
         if args.version:
-            print ("%s Current version: %s" % (sys.argv[0], pkg[0].version))
+            print ("{} Current version: {}".format(sys.argv[0], pkg[0].version))
             return 0
         else:
             _logger.info("%s Current version: %s", sys.argv[0], pkg[0].version)
@@ -318,7 +318,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
 
     # If no document specified, all done.
     if not args.document:
-        print ("Schema `%s` is valid" % args.schema)
+        print ("Schema `{}` is valid".format(args.schema))
         return 0
 
     # Load target document and resolve refs
@@ -385,7 +385,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
         print (json_dumps(doc_metadata, indent=4))
         return 0
 
-    print ("Document `%s` is valid" % args.document)
+    print ("Document `{}` is valid".format(args.document))
 
     return 0
 

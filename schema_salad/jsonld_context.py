@@ -5,7 +5,7 @@ from typing import (
     Any,
     Dict,
     Iterable,
-    List,  # pylint: disable=unused-import
+    List,
     MutableMapping,
     MutableSequence,
     Optional,
@@ -83,7 +83,9 @@ def pred(
     if name in context:
         if context[name] != ret:
             raise Exception(
-                "Predicate collision on %s, '%s' != '%s'" % (name, context[name], ret)
+                "Predicate collision on {}, '{}' != '{}'".format(
+                    name, context[name], ret
+                )
             )
     else:
         _logger.debug("Adding to context '%s' %s (%s)", name, ret, type(ret))
@@ -119,12 +121,13 @@ def process_type(
                 predicate = recordname
                 recordname = ln
             else:
-                predicate = "%s:%s" % (defaultPrefix, recordname)
+                predicate = "{}:{}".format(defaultPrefix, recordname)
 
         if context.get(recordname, predicate) != predicate:
             raise Exception(
-                "Predicate collision on '%s', '%s' != '%s'"
-                % (recordname, context[recordname], predicate)
+                "Predicate collision on '{}', '{}' != '{}'".format(
+                    recordname, context[recordname], predicate
+                )
             )
 
         if not recordname:
@@ -180,8 +183,7 @@ def process_type(
 def salad_to_jsonld_context(
     j,  # type: Iterable[MutableMapping[Text, Any]]
     schema_ctx,  # type: MutableMapping[Text, Any]
-):
-    # type: (...) -> Tuple[ContextType, Graph]
+):  # type: (...) -> Tuple[ContextType, Graph]
     context = {}  # type: ContextType
     namespaces = {}
     g = Graph()
@@ -239,7 +241,7 @@ def makerdf(
         doc_url, frg = urllib.parse.urldefrag(url)
         if "/" in frg:
             p = frg.split("/")[0]
-            prefixes[p] = u"%s#%s/" % (doc_url, p)
+            prefixes[p] = u"{}#{}/".format(doc_url, p)
 
     fix_jsonld_ids(wf, idfields)
 

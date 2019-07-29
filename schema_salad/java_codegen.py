@@ -53,7 +53,7 @@ class JavaCodeGen(CodeGenBase):
         self.current_class_is_abstract = abstract
         self.current_loader = cStringIO()
         self.current_fields = cStringIO()
-        with open(os.path.join(self.outdir, "%s.java" % cls), "w") as f:
+        with open(os.path.join(self.outdir, "{}.java".format(cls)), "w") as f:
             if extends:
                 ext = "extends " + ", ".join(self.interface_name(e) for e in extends)
             else:
@@ -70,7 +70,7 @@ public interface {cls} {ext} {{
         if self.current_class_is_abstract:
             return
 
-        with open(os.path.join(self.outdir, "%sImpl.java" % cls), "w") as f:
+        with open(os.path.join(self.outdir, "{}Impl.java".format(cls)), "w") as f:
             f.write(
                 """package {package};
 
@@ -87,7 +87,9 @@ public class {cls}Impl implements {cls} {{
 
     def end_class(self, classname, field_names):
         # type: (Text, List[Text]) -> None
-        with open(os.path.join(self.outdir, "%s.java" % self.current_class), "a") as f:
+        with open(
+            os.path.join(self.outdir, "{}.java".format(self.current_class)), "a"
+        ) as f:
             f.write(
                 """
 }
@@ -103,7 +105,7 @@ public class {cls}Impl implements {cls} {{
         )
 
         with open(
-            os.path.join(self.outdir, "%sImpl.java" % self.current_class), "a"
+            os.path.join(self.outdir, "{}Impl.java".format(self.current_class)), "a"
         ) as f:
             f.write(self.current_fields.getvalue())
             f.write(self.current_loader.getvalue())
@@ -151,7 +153,9 @@ public class {cls}Impl implements {cls} {{
     def declare_field(self, name, fieldtype, doc, optional):
         # type: (Text, TypeDef, Text, bool) -> None
         fieldname = self.safe_name(name)
-        with open(os.path.join(self.outdir, "%s.java" % self.current_class), "a") as f:
+        with open(
+            os.path.join(self.outdir, "{}.java".format(self.current_class)), "a"
+        ) as f:
             f.write(
                 """
     {type} get{capfieldname}();

@@ -231,7 +231,7 @@ def expand_url(
             if url in loadingOptions.rvocab:
                 return loadingOptions.rvocab[url]
         else:
-            raise ValidationException("Term '%s' not in vocabulary" % url)
+            raise ValidationException("Term '{}' not in vocabulary".format(url))
 
     return url
 
@@ -259,8 +259,9 @@ class _PrimitiveLoader(_Loader):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         if not isinstance(doc, self.tp):
             raise ValidationException(
-                "Expected a %s but got %s"
-                % (self.tp.__class__.__name__, doc.__class__.__name__)
+                "Expected a {} but got {}".format(
+                    self.tp.__class__.__name__, doc.__class__.__name__
+                )
             )
         return doc
 
@@ -295,7 +296,7 @@ class _ArrayLoader(_Loader):
         return r
 
     def __repr__(self):  # type: () -> str
-        return "array<%s>" % self.items
+        return "array<{}>".format(self.items)
 
 
 class _EnumLoader(_Loader):
@@ -308,7 +309,7 @@ class _EnumLoader(_Loader):
         if doc in self.symbols:
             return doc
         else:
-            raise ValidationException("Expected one of %s" % (self.symbols,))
+            raise ValidationException("Expected one of {}".format(self.symbols))
 
 
 class _RecordLoader(_Loader):
@@ -339,7 +340,7 @@ class _UnionLoader(_Loader):
                 return t.load(doc, baseuri, loadingOptions, docRoot=docRoot)
             except ValidationException as e:
                 errors.append(
-                    u"tried %s but\n%s" % (t.__class__.__name__, indent(str(e)))
+                    u"tried {} but\n{}".format(t.__class__.__name__, indent(str(e)))
                 )
         raise ValidationException(bullets(errors, u"- "))
 
@@ -536,9 +537,9 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         urlpath = urllib.request.pathname2url(path)
         frag = ""
     if urlpath.startswith("//"):
-        return "file:%s%s" % (urlpath, frag)
+        return "file:{}{}".format(urlpath, frag)
     else:
-        return "file://%s%s" % (urlpath, frag)
+        return "file://{}{}".format(urlpath, frag)
 
 
 def prefix_url(url, namespaces):  # type: (Text, Dict[Text, Text]) -> Text

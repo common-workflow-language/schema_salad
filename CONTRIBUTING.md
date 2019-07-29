@@ -1,6 +1,7 @@
 Style guide:
 - Python 2.7 + Python 3.5+ compatible code
 - PEP-484 type hints, in comments for Python 2.7 compatability
+- Prefer new style format strings https://pyformat.info/
 - Use ``make format`` to format the your code
 
 In order to contribute to the development of ``schema-salad``, you need to install it from source (preferably in a virtual environment):

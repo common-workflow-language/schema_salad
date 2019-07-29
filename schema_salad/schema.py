@@ -376,16 +376,18 @@ def validate_doc(
                 except validate.ClassValidationException as exc:
                     errors = [
                         sourceline.makeError(
-                            u"tried `%s` but\n%s"
-                            % (name, indent(str(exc), nolead=False))
+                            u"tried `{}` but\n{}".format(
+                                name, indent(str(exc), nolead=False)
+                            )
                         )
                     ]
                     break
                 except validate.ValidationException as exc:
                     errors.append(
                         sourceline.makeError(
-                            u"tried `%s` but\n%s"
-                            % (name, indent(str(exc), nolead=False))
+                            u"tried `{}` but\n{}".format(
+                                name, indent(str(exc), nolead=False)
+                            )
                         )
                     )
 
@@ -393,10 +395,10 @@ def validate_doc(
             for ident in loader.identifiers:
                 if ident in item:
                     objerr = sourceline.makeError(
-                        u"Object `%s` is not valid because" % (relname(item[ident]))
+                        u"Object `{}` is not valid because".format(relname(item[ident]))
                     )
                     break
-            anyerrors.append(u"%s\n%s" % (objerr, indent(bullets(errors, "- "))))
+            anyerrors.append(u"{}\n{}".format(objerr, indent(bullets(errors, "- "))))
     if anyerrors:
         raise validate.ValidationException(strip_dup_lineno(bullets(anyerrors, "* ")))
 
@@ -730,14 +732,14 @@ def print_inheritance(doc, stream):
             label = name = shortname(entry["name"])
             fields = entry.get("fields", [])
             if fields:
-                label += "\\n* %s\\l" % (
+                label += "\\n* {}\\l".format(
                     "\\l* ".join(shortname(field["name"]) for field in fields)
                 )
             shape = "ellipse" if entry.get("abstract") else "box"
-            stream.write('"%s" [shape=%s label="%s"];\n' % (name, shape, label))
+            stream.write('"{}" [shape={} label="{}"];\n'.format(name, shape, label))
             if "extends" in entry:
                 for target in aslist(entry["extends"]):
-                    stream.write('"%s" -> "%s";\n' % (shortname(target), name))
+                    stream.write('"{}" -> "{}";\n'.format(shortname(target), name))
     stream.write("}\n")
 
 
@@ -773,7 +775,8 @@ def print_fieldrefs(doc, loader, stream):
                 for each_type in found:
                     if each_type not in primitives:
                         stream.write(
-                            '"%s" -> "%s" [label="%s"];\n'
-                            % (label, shortname(each_type), field_name)
+                            '"{}" -> "{}" [label="{}"];\n'.format(
+                                label, shortname(each_type), field_name
+                            )
                         )
     stream.write("}\n")

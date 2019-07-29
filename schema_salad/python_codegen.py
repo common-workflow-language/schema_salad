@@ -68,7 +68,7 @@ class PythonCodeGen(CodeGenBase):
         else:
             ext = "Savable"
 
-        self.out.write("class %s(%s):\n" % (classname, ext))
+        self.out.write("class {}({}):\n".format(classname, ext))
 
         if doc:
             self.out.write('    """\n')
@@ -195,7 +195,7 @@ class PythonCodeGen(CodeGenBase):
         if errors:
             raise ValidationException(\"Trying '{class_}'\\n\"+\"\\n\".join(errors))
 """.format(
-                attrstr=", ".join(["`%s`" % f for f in field_names]),
+                attrstr=", ".join(["`{}`".format(f) for f in field_names]),
                 class_=self.safe_name(classname),
             )
         )
@@ -265,8 +265,8 @@ class PythonCodeGen(CodeGenBase):
             sub = [self.type_loader(i) for i in type_declaration]
             return self.declare_type(
                 TypeDef(
-                    "union_of_%s" % "_or_".join(s.name for s in sub),
-                    "_UnionLoader((%s,))" % (", ".join(s.name for s in sub)),
+                    "union_of_{}".format("_or_".join(s.name for s in sub)),
+                    "_UnionLoader(({},))".format(", ".join(s.name for s in sub)),
                 )
             )
         if isinstance(type_declaration, MutableMapping):
@@ -276,7 +276,9 @@ class PythonCodeGen(CodeGenBase):
             ):
                 i = self.type_loader(type_declaration["items"])
                 return self.declare_type(
-                    TypeDef("array_of_%s" % i.name, "_ArrayLoader(%s)" % i.name)
+                    TypeDef(
+                        "array_of_{}".format(i.name), "_ArrayLoader({})".format(i.name)
+                    )
                 )
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
                 for sym in type_declaration["symbols"]:
@@ -284,8 +286,7 @@ class PythonCodeGen(CodeGenBase):
                 return self.declare_type(
                     TypeDef(
                         self.safe_name(type_declaration["name"]) + "Loader",
-                        '_EnumLoader(("%s",))'
-                        % (
+                        '_EnumLoader(("{}",))'.format(
                             '", "'.join(
                                 self.safe_name(sym)
                                 for sym in type_declaration["symbols"]
@@ -300,10 +301,12 @@ class PythonCodeGen(CodeGenBase):
                 return self.declare_type(
                     TypeDef(
                         self.safe_name(type_declaration["name"]) + "Loader",
-                        "_RecordLoader(%s)" % self.safe_name(type_declaration["name"]),
+                        "_RecordLoader({})".format(
+                            self.safe_name(type_declaration["name"])
+                        ),
                     )
                 )
-            raise Exception("wft %s" % type_declaration["type"])
+            raise Exception("wft {}".format(type_declaration["type"]))
         if type_declaration in self.prims:
             return self.prims[type_declaration]
         return self.collected_types[self.safe_name(type_declaration) + "Loader"]
@@ -424,9 +427,10 @@ class PythonCodeGen(CodeGenBase):
         # type: (TypeDef, bool, bool, Union[int, None]) -> TypeDef
         return self.declare_type(
             TypeDef(
-                "uri_%s_%s_%s_%s" % (inner.name, scoped_id, vocab_term, ref_scope),
-                "_URILoader(%s, %s, %s, %s)"
-                % (inner.name, scoped_id, vocab_term, ref_scope),
+                "uri_{}_{}_{}_{}".format(inner.name, scoped_id, vocab_term, ref_scope),
+                "_URILoader({}, {}, {}, {})".format(
+                    inner.name, scoped_id, vocab_term, ref_scope
+                ),
                 is_uri=True,
                 scoped_id=scoped_id,
                 ref_scope=ref_scope,
@@ -437,9 +441,10 @@ class PythonCodeGen(CodeGenBase):
         # type: (Text, TypeDef, Text, Union[Text, None]) -> TypeDef
         return self.declare_type(
             TypeDef(
-                "idmap_%s_%s" % (self.safe_name(field), inner.name),
-                "_IdMapLoader(%s, '%s', '%s')"
-                % (inner.name, map_subject, map_predicate),
+                "idmap_{}_{}".format(self.safe_name(field), inner.name),
+                "_IdMapLoader({}, '{}', '{}')".format(
+                    inner.name, map_subject, map_predicate
+                ),
             )
         )
 
@@ -447,8 +452,8 @@ class PythonCodeGen(CodeGenBase):
         # type: (TypeDef, Union[int, None]) -> TypeDef
         return self.declare_type(
             TypeDef(
-                "typedsl_%s_%s" % (inner.name, ref_scope),
-                "_TypeDSLLoader(%s, %s)" % (inner.name, ref_scope),
+                "typedsl_{}_{}".format(inner.name, ref_scope),
+                "_TypeDSLLoader({}, {})".format(inner.name, ref_scope),
             )
         )
 
@@ -456,16 +461,16 @@ class PythonCodeGen(CodeGenBase):
         # type: (TypeDef) -> None
         self.out.write("_vocab = {\n")
         for k in sorted(self.vocab.keys()):
-            self.out.write('    "%s": "%s",\n' % (k, self.vocab[k]))
+            self.out.write('    "{}": "{}",\n'.format(k, self.vocab[k]))
         self.out.write("}\n")
 
         self.out.write("_rvocab = {\n")
         for k in sorted(self.vocab.keys()):
-            self.out.write('    "%s": "%s",\n' % (self.vocab[k], k))
+            self.out.write('    "{}": "{}",\n'.format(self.vocab[k], k))
         self.out.write("}\n\n")
 
         for _, collected_type in iteritems(self.collected_types):
-            self.out.write("%s = %s\n" % (collected_type.name, collected_type.init))
+            self.out.write("{} = {}\n".format(collected_type.name, collected_type.init))
         self.out.write("\n\n")
 
         self.out.write(

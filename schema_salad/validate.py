@@ -67,7 +67,7 @@ def friendly(v):  # type: (Any) -> Any
     if isinstance(v, avro.schema.NamedSchema):
         return v.name
     if isinstance(v, avro.schema.ArraySchema):
-        return "array of <%s>" % friendly(v.items)
+        return "array of <{}>".format(friendly(v.items))
     elif isinstance(v, avro.schema.PrimitiveSchema):
         return v.type
     elif isinstance(v, avro.schema.UnionSchema):
@@ -140,7 +140,7 @@ def validate_ex(
             return True
         else:
             if raise_ex:
-                raise ValidationException(u"`%s` is not int" % vpformat(datum))
+                raise ValidationException(u"`{}` is not int".format(vpformat(datum)))
             else:
                 return False
     elif schema_type == "long":
@@ -151,7 +151,7 @@ def validate_ex(
         else:
             if raise_ex:
                 raise ValidationException(
-                    u"the value `%s` is not long" % vpformat(datum)
+                    u"the value `{}` is not long".format(vpformat(datum))
                 )
             else:
                 return False
@@ -161,7 +161,7 @@ def validate_ex(
         else:
             if raise_ex:
                 raise ValidationException(
-                    u"the value `%s` is not float or double" % vpformat(datum)
+                    u"the value `{}` is not float or double".format(vpformat(datum))
                 )
             else:
                 return False
@@ -177,7 +177,9 @@ def validate_ex(
         if not isinstance(datum, six.string_types):
             if raise_ex:
                 raise ValidationException(
-                    u"value is a %s but expected a string" % (type(datum).__name__)
+                    u"value is a {} but expected a string".format(
+                        (type(datum).__name__)
+                    )
                 )
             else:
                 return False
@@ -196,8 +198,7 @@ def validate_ex(
         else:
             if raise_ex:
                 raise ValidationException(
-                    u"the value %s is not a valid %s, expected %s%s"
-                    % (
+                    u"the value {} is not a valid {}, expected {}{}".format(
                         vpformat(datum),
                         expected_schema.name,
                         "one of " if len(expected_schema.symbols) > 1 else "",
@@ -227,7 +228,7 @@ def validate_ex(
                     if raise_ex:
                         raise sl.makeError(
                             six.text_type(
-                                "item is invalid because\n%s" % (indent(str(v)))
+                                "item is invalid because\n{}".format(indent(str(v)))
                             )
                         )
                     else:
@@ -236,8 +237,9 @@ def validate_ex(
         else:
             if raise_ex:
                 raise ValidationException(
-                    u"the value %s is not a list, expected list of %s"
-                    % (vpformat(datum), friendly(expected_schema.items))
+                    u"the value {} is not a list, expected list of {}".format(
+                        vpformat(datum), friendly(expected_schema.items)
+                    )
                 )
             else:
                 return False
@@ -297,7 +299,9 @@ def validate_ex(
             raise ValidationException(
                 bullets(
                     [
-                        "tried %s but\n%s" % (friendly(checked[i]), indent(errors[i]))
+                        "tried {} but\n{}".format(
+                            friendly(checked[i]), indent(errors[i])
+                        )
                         for i in range(0, len(errors))
                     ],
                     "- ",
@@ -305,8 +309,9 @@ def validate_ex(
             )
         else:
             raise ValidationException(
-                "value is a %s, expected %s"
-                % (type(datum).__name__, friendly(expected_schema))
+                "value is a {}, expected {}".format(
+                    type(datum).__name__, friendly(expected_schema)
+                )
             )
 
     elif isinstance(expected_schema, avro.schema.RecordSchema):
@@ -322,14 +327,15 @@ def validate_ex(
                 d = datum.get(f.name)
                 if not d:
                     if raise_ex:
-                        raise ValidationException(u"Missing '%s' field" % (f.name))
+                        raise ValidationException(u"Missing '{}' field".format(f.name))
                     else:
                         return False
                 if expected_schema.name != d:
                     if raise_ex:
                         raise ValidationException(
-                            u"Expected class '%s' but this is '%s'"
-                            % (expected_schema.name, d)
+                            u"Expected class '{}' but this is '{}'".format(
+                                expected_schema.name, d
+                            )
                         )
                     else:
                         return False
@@ -365,12 +371,13 @@ def validate_ex(
                     return False
             except ValidationException as v:
                 if f.name not in datum:
-                    errors.append(u"missing required field `%s`" % f.name)
+                    errors.append(u"missing required field `{}`".format(f.name))
                 else:
                     errors.append(
                         sl.makeError(
-                            u"the `%s` field is not valid because\n%s"
-                            % (f.name, indent(str(v)))
+                            u"the `{}` field is not valid because\n{}".format(
+                                f.name, indent(str(v))
+                            )
                         )
                     )
 
@@ -407,14 +414,14 @@ def validate_ex(
                     if split.scheme:
                         if not skip_foreign_properties:
                             err = sl.makeError(
-                                u"unrecognized extension field `%s`%s.%s"
-                                % (
+                                u"unrecognized extension field `{}`{}.{}".format(
                                     d,
                                     " and strict_foreign_properties checking is enabled"
                                     if strict_foreign_properties
                                     else "",
-                                    "\nForeign properties from $schemas:\n  %s"
-                                    % "\n  ".join(sorted(foreign_properties))
+                                    "\nForeign properties from $schemas:\n  {}".format(
+                                        "\n  ".join(sorted(foreign_properties))
+                                    )
                                     if len(foreign_properties) > 0
                                     else "",
                                 )
@@ -425,11 +432,11 @@ def validate_ex(
                                 logger.warning(strip_dup_lineno(err))
                     else:
                         err = sl.makeError(
-                            u"invalid field `%s`, expected one of: %s"
-                            % (
+                            u"invalid field `{}`, expected one of: {}".format(
                                 d,
                                 ", ".join(
-                                    "'%s'" % fn.name for fn in expected_schema.fields
+                                    "'{}'".format(fn.name)
+                                    for fn in expected_schema.fields
                                 ),
                             )
                         )
@@ -449,6 +456,6 @@ def validate_ex(
         else:
             return True
     if raise_ex:
-        raise ValidationException(u"Unrecognized schema_type %s" % schema_type)
+        raise ValidationException(u"Unrecognized schema_type {}".format(schema_type))
     else:
         return False

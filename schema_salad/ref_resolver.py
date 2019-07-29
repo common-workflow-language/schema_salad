@@ -62,8 +62,8 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         urlpath = urllib.request.pathname2url(path)
         frag = ""
     if urlpath.startswith("//"):
-        return "file:%s%s" % (urlpath, frag)
-    return "file://%s%s" % (urlpath, frag)
+        return "file:{}{}".format(urlpath, frag)
+    return "file://{}{}".format(urlpath, frag)
 
 
 def uri_file_path(url):  # type: (str) -> str
@@ -186,8 +186,10 @@ class DefaultFetcher(Fetcher):
                 if err.filename == path:
                     raise_from(RuntimeError(Text(err)), err)
                 else:
-                    raise_from(RuntimeError("Error reading %s: %s" % (url, err)), err)
-        raise ValueError("Unsupported scheme in url: %s" % url)
+                    raise_from(
+                        RuntimeError("Error reading {}: {}".format(url, err)), err
+                    )
+        raise ValueError("Unsupported scheme in url: {}".format(url))
 
     def check_exists(self, url):  # type: (Text) -> bool
         if url in self.cache:
@@ -208,15 +210,16 @@ class DefaultFetcher(Fetcher):
             return os.path.exists(urllib.request.url2pathname(str(path)))
         if scheme == "mailto":
             return True
-        raise ValueError("Unsupported scheme in url: %s" % url)
+        raise ValueError("Unsupported scheme in url: {}".format(url))
 
     def urljoin(self, base_url, url):  # type: (Optional[Text], Text) -> Text
         basesplit = urllib.parse.urlsplit(base_url)
         split = urllib.parse.urlsplit(url)
         if basesplit.scheme and basesplit.scheme != "file" and split.scheme == "file":
             raise ValueError(
-                "Not resolving potential remote exploit %s from base %s"
-                % (url, base_url)
+                "Not resolving potential remote exploit {} from base {}".format(
+                    url, base_url
+                )
             )
 
         if sys.platform == "win32":
@@ -267,7 +270,9 @@ class DefaultFetcher(Fetcher):
                         # https://tools.ietf.org/html/rfc8089#appendix-E.2.1
                         # e.g. urljoin("file:///D:/bar/a.txt", "/foo/b.txt")
                         #          == file:///D:/foo/b.txt
-                        path_with_drive = "/%s:%s" % (base_drive.group(1), split.path)
+                        path_with_drive = "/{}:{}".format(
+                            base_drive.group(1), split.path
+                        )
                         return urllib.parse.urlunsplit(
                             (
                                 "file",
@@ -284,8 +289,9 @@ class DefaultFetcher(Fetcher):
                 # would wrongly resolve as an absolute path that could later be used
                 # to access local files
                 raise ValueError(
-                    "Not resolving potential remote exploit %s from base %s"
-                    % (url, base_url)
+                    "Not resolving potential remote exploit {} from base {}".format(
+                        url, base_url
+                    )
                 )
 
         return urllib.parse.urljoin(base_url, url)
@@ -613,7 +619,7 @@ class Loader(object):
                     obj = None
                 else:
                     raise sl.makeError(
-                        u"'$import' must be the only field in %s" % (Text(obj))
+                        u"'$import' must be the only field in {}".format(obj)
                     )
             elif "$include" in obj:
                 sl = SourceLine(obj, "$include", RuntimeError)
@@ -623,7 +629,7 @@ class Loader(object):
                     obj = None
                 else:
                     raise sl.makeError(
-                        u"'$include' must be the only field in %s" % (Text(obj))
+                        u"'$include' must be the only field in {}".format(obj)
                     )
             elif "$mixin" in obj:
                 sl = SourceLine(obj, "$mixin", RuntimeError)
@@ -638,14 +644,16 @@ class Loader(object):
                         break
                 if not lref:
                     raise sl.makeError(
-                        u"Object `%s` does not have identifier field in %s"
-                        % (str(obj), self.identifiers)
+                        u"Object `{}` does not have identifier field in {}".format(
+                            obj, self.identifiers
+                        )
                     )
 
         if not isinstance(lref, string_types):
             raise ValueError(
-                u"Expected CommentedMap or string, got %s: `%s`"
-                % (type(lref), Text(lref))
+                u"Expected CommentedMap or string, got {}: `{}`".format(
+                    type(lref), lref
+                )
             )
 
         if isinstance(lref, string_types) and os.sep == "\\":
@@ -666,8 +674,9 @@ class Loader(object):
                         return resolved_obj, metadata
                 else:
                     raise ValueError(
-                        u"Expected CommentedMap, got %s: `%s`"
-                        % (type(metadata), Text(metadata))
+                        u"Expected CommentedMap, got {}: `{}`".format(
+                            type(metadata), metadata
+                        )
                     )
             elif isinstance(resolved_obj, MutableSequence):
                 metadata = self.idx.get(urllib.parse.urldefrag(url)[0], CommentedMap())
@@ -679,8 +688,9 @@ class Loader(object):
                 return resolved_obj, CommentedMap()
             else:
                 raise ValueError(
-                    u"Expected MutableMapping or MutableSequence, got %s: `%s`"
-                    % (type(resolved_obj), Text(resolved_obj))
+                    u"Expected MutableMapping or MutableSequence, got {}: `{}`".format(
+                        type(resolved_obj), resolved_obj
+                    )
                 )
 
         sl.raise_type = RuntimeError
@@ -702,7 +712,7 @@ class Loader(object):
                     # so if we didn't find the reference earlier then it must not
                     # exist.
                     raise validate.ValidationException(
-                        u"Reference `#%s` not found in file `%s`." % (frg, doc_url)
+                        u"Reference `#{}` not found in file `{}`.".format(frg, doc_url)
                     )
                 doc = self.fetch(doc_url, inject_ids=(not mixin))
 
@@ -738,8 +748,9 @@ class Loader(object):
                 resolved_obj = self.idx[url]
             else:
                 raise RuntimeError(
-                    "Reference `%s` is not in the index. Index contains:\n  %s"
-                    % (url, "\n  ".join(self.idx))
+                    "Reference `{}}` is not in the index. Index contains:\n  {}".format(
+                        url, "\n  ".join(self.idx)
+                    )
                 )
 
         if isinstance(resolved_obj, CommentedMap):
@@ -932,7 +943,9 @@ class Loader(object):
                     base_url = document[identifer]
                 else:
                     raise validate.ValidationException(
-                        "identifier field '%s' must be a string" % (document[identifer])
+                        "identifier field '{}' must be a string".format(
+                            document[identifer]
+                        )
                     )
         return base_url
 
@@ -1026,8 +1039,9 @@ class Loader(object):
             pass
         elif isinstance(document, (list, dict)):
             raise Exception(
-                "Expected CommentedMap or CommentedSeq, got %s: `%s`"
-                % (type(document), document)
+                "Expected CommentedMap or CommentedSeq, got {}: `{}`".format(
+                    type(document), document
+                )
             )
         else:
             return (document, metadata)
@@ -1089,8 +1103,9 @@ class Loader(object):
                 _logger.warning("loader is %s", id(loader), exc_info=True)
                 raise_from(
                     validate.ValidationException(
-                        "(%s) (%s) Validation error in field %s:\n%s"
-                        % (id(loader), file_base, key, indent(Text(v)))
+                        "({}) ({}) Validation error in field {}:\n{}".format(
+                            id(loader), file_base, key, indent(Text(v))
+                        )
                     ),
                     v,
                 )
@@ -1134,8 +1149,9 @@ class Loader(object):
                 _logger.warning("failed", exc_info=True)
                 raise_from(
                     validate.ValidationException(
-                        "(%s) (%s) Validation error in position %i:\n%s"
-                        % (id(loader), file_base, i, indent(Text(v)))
+                        "({}) ({}) Validation error in position {}:\n{}".format(
+                            id(loader), file_base, i, indent(Text(v))
+                        )
                     ),
                     v,
                 )
@@ -1167,11 +1183,11 @@ class Loader(object):
             if self.allow_attachments is not None and self.allow_attachments(result):
                 i = 1
                 for a in attachments:
-                    self.idx["%s#attachment-%i" % (url, i)] = a
+                    self.idx["{}#attachment-{}".format(url, i)] = a
                     i += 1
             add_lc_filename(result, url)
         except yaml.parser.ParserError as e:
-            raise_from(validate.ValidationException("Syntax error %s" % Text(e)), e)
+            raise_from(validate.ValidationException("Syntax error {}".format(e)), e)
         if isinstance(result, CommentedMap) and inject_ids and bool(self.identifiers):
             for identifier in self.identifiers:
                 if identifier not in result:
@@ -1208,8 +1224,9 @@ class Loader(object):
         if onWindows() and link.startswith("file:"):
             link = link.lower()
         raise validate.ValidationException(
-            "Field `%s` references unknown identifier `%s`, tried %s"
-            % (field, link, ", ".join(tried))
+            "Field `{}` references unknown identifier `{}`, tried {}".format(
+                field, link, ", ".join(tried)
+            )
         )
 
     def validate_link(self, field, link, docid, all_doc_ids):
@@ -1227,16 +1244,18 @@ class Loader(object):
                         return self.validate_scoped(field, link, docid)
                     elif not self.check_exists(link):
                         raise validate.ValidationException(
-                            "Field `%s` contains undefined reference to `%s`"
-                            % (field, link)
+                            "Field `{}` contains undefined reference to `{}`".format(
+                                field, link
+                            )
                         )
             elif link not in self.idx and link not in self.rvocab:
                 if field in self.scoped_ref_fields:
                     return self.validate_scoped(field, link, docid)
                 elif not self.check_exists(link):
                     raise validate.ValidationException(
-                        "Field `%s` contains undefined reference to `%s`"
-                        % (field, link)
+                        "Field `{}` contains undefined reference to `{}`".format(
+                            field, link
+                        )
                     )
         elif isinstance(link, CommentedSeq):
             errors = []
@@ -1251,8 +1270,9 @@ class Loader(object):
             self.validate_links(link, docid, all_doc_ids)
         else:
             raise validate.ValidationException(
-                "`%s` field is %s, expected string, list, or a dict."
-                % (field, type(link).__name__)
+                "`{}` field is {}, expected string, list, or a dict.".format(
+                    field, type(link).__name__
+                )
             )
         return link
 
@@ -1350,20 +1370,25 @@ class Loader(object):
                     if docid2 is not None:
                         errors.append(
                             sl.makeError(
-                                "checking object `%s`\n%s"
-                                % (relname(docid2), indent(Text(v)))
+                                "checking object `{}`\n{}".format(
+                                    relname(docid2), indent(Text(v))
+                                )
                             )
                         )
                     else:
                         if isinstance(key, string_types):
                             errors.append(
                                 sl.makeError(
-                                    "checking field `%s`\n%s" % (key, indent(Text(v)))
+                                    "checking field `{}`\n{}".format(
+                                        key, indent(Text(v))
+                                    )
                                 )
                             )
                         else:
                             errors.append(
-                                sl.makeError("checking item\n%s" % (indent(Text(v))))
+                                sl.makeError(
+                                    "checking item\n{}".format(indent(Text(v)))
+                                )
                             )
         if bool(errors):
             if len(errors) > 1:

@@ -8,8 +8,8 @@ module=schema_salad
 slug=${TRAVIS_PULL_REQUEST_SLUG:=common-workflow-language/schema_salad}
 repo=https://github.com/${slug}.git
 run_tests="bin/py.test --pyargs ${module}"
-pipver=8.0.1 # minimum required version of pip
-setupver=20.10.1 # minimum required version of setuptools
+pipver=18 # minimum required version of pip
+setupver=40.3 # minimum required version of setuptools
 PYVER=${PYVER:=2.7}
 
 rm -Rf "testenv${PYVER}_"? || /bin/true
@@ -22,10 +22,10 @@ then
 	# First we test the head
 	# shellcheck source=/dev/null
 	source "testenv${PYVER}_1/bin/activate"
-	rm "testenv${PYVER}_1/lib/python-wheels/setuptools"* \
-		&& pip install --force-reinstall -U pip==${pipver} \
-	        && pip install setuptools==${setupver} wheel
-	make install-dependencies
+	rm -f "testenv${PYVER}_1/lib/python-wheels/setuptools"*
+	pip install --force-reinstall -U pip==${pipver}
+	pip install setuptools==${setupver} wheel
+	pip install pytest\<5 pytest-xdist -rrequirements.txt
 	make test
 	pip uninstall -y ${package} || true; pip uninstall -y ${package} \
 		|| true; make install
@@ -56,7 +56,7 @@ rm lib/python-wheels/setuptools* \
 # The following can fail if you haven't pushed your commits to ${repo}
 pip install -e "git+${repo}@${HEAD}#egg=${package}"
 pushd src/${package}
-make install-dependencies
+pip install pytest\<5 pytest-xdist
 make dist
 make test
 cp dist/${package}*tar.gz "../../../testenv${PYVER}_3/"
