@@ -83,9 +83,8 @@ class PythonCodeGen(CodeGenBase):
         safe_inits.extend([self.safe_name(f) for f in field_names if f != "class"])
         inits_types = ", ".join(["Any"]*(len(safe_inits) -1))
         self.out.write(
-                "    def __init__(" +", ".join(safe_inits) + ", extension_fields=None, loadingOptions=None):\n"
-                "        # type: (" + inits_types + ", Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None" +
-"""
+            "    def __init__(" +", ".join(safe_inits) + ", extension_fields=None, loadingOptions=None):\n"
+            "        # type: (" + inits_types + """, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
         if extension_fields:
             self.extension_fields = extension_fields
         else:
