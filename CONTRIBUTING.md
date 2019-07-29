@@ -4,7 +4,7 @@ Style guide:
 - Use ``make format`` to format the your code
 
 In order to contribute to the development of ``schema-salad``, you need to install it from source (preferably in a virtual environment):
-Here's a rough guide (improvements are welcome!) 
+Here's a rough guide (improvements are welcome!)
 - Install virtualenv via pip: ``pip install virtualenv``
 - Clone the code repository locally: ``git clone https://github.com/common-workflow-language/schema_salad.git``
 - Switch to cwltool directory: ``cd schema_salad``

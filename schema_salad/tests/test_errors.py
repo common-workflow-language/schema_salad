@@ -48,14 +48,11 @@ def test_error_message1():
 
     t = "test_schema/test1.cwl"
     match = (
-        r"""
-^.+test1\.cwl:2:1: Object\s+`.+test1\.cwl`\s+is\s+not valid because\s+tried """
-        + r"""`Workflow`\s+but
+        r"""^.+test1\.cwl:2:1: Object\s+`.+test1\.cwl`\s+is\s+not valid """
+        + r"""because\s+tried `Workflow`\s+but
 \s+\* missing\s+required\s+field\s+`inputs`
 \s+\* missing\s+required\s+field\s+`outputs`
-\s+\* missing\s+required\s+field\s+`steps`$"""[
-            1:
-        ]
+\s+\* missing\s+required\s+field\s+`steps`$"""
     )
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
@@ -145,16 +142,15 @@ def test_error_message7():
 
     t = "test_schema/test7.cwl"
     match = (
-        r"""
-^.+test7\.cwl:2:1: Object\s+`.+test7\.cwl`\s+is\s+not valid because
+        r"""^.+test7\.cwl:2:1: Object\s+`.+test7\.cwl`\s+is\s+not valid because
 \s+tried `Workflow`\s+but
 .+test7\.cwl:7:1:     the `steps`\s+field\s+is\s+not valid\s+because
 \s+tried array\s+of\s+<WorkflowStep>\s+but
 .+test7\.cwl:8:3:         item is\s+invalid because
 \s+\* missing\s+required\s+field `run`
-.+test7\.cwl:9:5:           \* invalid\s+field\s+`scatter_method`,\s+expected one"""
+.+test7\.cwl:9:5:           \* invalid\s+field\s+`scatter_method`,\s+expected one """
         + r"""of:\s+'id', 'in', 'out',\s+'requirements',\s+'hints', """
-        + r"""'label',\s+'doc',\s+'run',\s+'scatter',\s+'scatterMethod'$"""[1:]
+        + r"""'label',\s+'doc',\s+'run',\s+'scatter',\s+'scatterMethod'$"""
     )
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
@@ -188,11 +184,10 @@ def test_error_message9():
 
     t = "test_schema/test9.cwl"
     match = (
-        r"""
-^.+test9\.cwl:7:1: checking field\s+`steps`
+        r"""^.+test9\.cwl:7:1: checking field\s+`steps`
 .+test9\.cwl:8:3:   checking object\s+`.+test9\.cwl#step1`
-.+test9\.cwl:9:5:     `scatterMethod`\s+field\s+is"""
-        + r"""int,\s+expected\s+string,\s+list, or a dict.$"""[1:]
+.+test9\.cwl:9:5:     `scatterMethod`\s+field\s+is\s+"""
+        + r"""int,\s+expected\s+string,\s+list, or a dict.$"""
     )
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
@@ -249,8 +244,7 @@ def test_error_message15():
 
     t = "test_schema/test15.cwl"
     match = (
-        r"""
-^.+test15\.cwl:3:1:\s+Object\s+`.+test15\.cwl`\s+is not valid because
+        r"""^.+test15\.cwl:3:1:\s+Object\s+`.+test15\.cwl`\s+is not valid because
 \s+tried\s+`CommandLineTool`\s+but
 .+test15\.cwl:6:1:\s+the `inputs`\s+field\s+is not valid\s+because
 .+test15\.cwl:7:3:\s+item is\s+invalid\s+because
@@ -261,7 +255,7 @@ def test_error_message15():
         + r"""\s+'itemSeparator',\s+'valueFrom',\s+'shellQuote'
 .+test15\.cwl:12:7:             \*\s+invalid field\s+`another_invalid_field`,"""
         + r"""\s+expected one\s+of:\s+'loadContents',\s+'position',\s+'prefix',"""
-        + r"""\s+'separate',\s+'itemSeparator',\s+'valueFrom',\s+'shellQuote'$"""[1:]
+        + r"""\s+'separate',\s+'itemSeparator',\s+'valueFrom',\s+'shellQuote'$"""
     )
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
