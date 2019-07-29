@@ -15,6 +15,7 @@ class JsonDiffMatcher(object):
     the differences between expected and actual call arguments that
     include non-trivial data structures.
     """
+
     def __init__(self, expected):
         self.expected = expected
 
@@ -22,12 +23,18 @@ class JsonDiffMatcher(object):
         expected_json = json_dumps(self.expected, sort_keys=True, indent=2)
         actual_json = json_dumps(actual, sort_keys=True, indent=2)
         if expected_json != actual_json:
-            raise AssertionError("".join(difflib.context_diff(
-                expected_json.splitlines(1),
-                actual_json.splitlines(1),
-                fromfile="Expected", tofile="Actual")))
+            raise AssertionError(
+                "".join(
+                    difflib.context_diff(
+                        expected_json.splitlines(1),
+                        actual_json.splitlines(1),
+                        fromfile="Expected",
+                        tofile="Actual",
+                    )
+                )
+            )
         return True
 
 
 def StripYAMLComments(yml):
-    return re.sub(r'(?ms)^(#.*?\n)*\n*', '', yml)
+    return re.sub(r"(?ms)^(#.*?\n)*\n*", "", yml)

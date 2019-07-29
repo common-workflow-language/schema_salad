@@ -7,39 +7,50 @@ import re
 import sys
 import xml.sax
 from io import open
-from typing import (Any, AnyStr, Callable,  # pylint: disable=unused-import
-                    Dict, Iterable, List, MutableMapping, MutableSequence,
-                    Optional, Set, Tuple, TypeVar, Union, cast)
+from typing import Callable  # pylint: disable=unused-import
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    MutableMapping,
+    MutableSequence,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import requests
 from cachecontrol.caches import FileCache
 from cachecontrol.wrapper import CacheControl
+from future.utils import raise_from
 from rdflib.graph import Graph
 from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.plugins.parsers.notation3 import BadSyntax
-from ruamel import yaml
-from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
-from six import StringIO, string_types, iteritems
+from six import StringIO, iteritems, string_types
 from six.moves import range, urllib
-from future.utils import raise_from
 from typing_extensions import Text  # pylint: disable=unused-import
 
+from ruamel import yaml
+from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
+
 from . import validate
-from .sourceline import SourceLine, add_lc_filename, relname, strip_dup_lineno, indent
+from .sourceline import SourceLine, add_lc_filename, indent, relname, strip_dup_lineno
 from .utils import aslist, onWindows
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 
-
-
 _logger = logging.getLogger("salad")
 ContextType = Dict[Text, Union[Dict[Text, Any], Text, Iterable[Text]]]
-DocumentType = TypeVar('DocumentType', CommentedSeq, CommentedMap)
-DocumentOrStrType = TypeVar(
-    'DocumentOrStrType', CommentedSeq, CommentedMap, Text)
+DocumentType = TypeVar("DocumentType", CommentedSeq, CommentedMap)
+DocumentOrStrType = TypeVar("DocumentOrStrType", CommentedSeq, CommentedMap, Text)
 
 _re_drive = re.compile(r"/([a-zA-Z]):")
+
 
 def file_uri(path, split_frag=False):  # type: (str, bool) -> str
     if path.startswith("file://"):
@@ -52,16 +63,20 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         urlpath = urllib.request.pathname2url(path)
         frag = ""
     if urlpath.startswith("//"):
-        return "file:%s%s" % (urlpath, frag)
-    return "file://%s%s" % (urlpath, frag)
+        return "file:{}{}".format(urlpath, frag)
+    return "file://{}{}".format(urlpath, frag)
+
 
 def uri_file_path(url):  # type: (str) -> str
     split = urllib.parse.urlsplit(url)
     if split.scheme == "file":
-        return urllib.request.url2pathname(
-            str(split.path)) + ("#" + urllib.parse.unquote(str(split.fragment))
-                                if bool(split.fragment) else "")
+        return urllib.request.url2pathname(str(split.path)) + (
+            "#" + urllib.parse.unquote(str(split.fragment))
+            if bool(split.fragment)
+            else ""
+        )
     raise ValueError("Not a file URI: {}".format(url))
+
 
 class NormDict(CommentedMap):
     """A Dict where all keys are normalized using the provided function."""
@@ -99,14 +114,21 @@ def merge_properties(a, b):  # type: (List[Any], List[Any]) -> Dict[Any, Any]
 
 
 def SubLoader(loader):  # type: (Loader) -> Loader
-    return Loader(loader.ctx, schemagraph=loader.graph,
-                  foreign_properties=loader.foreign_properties, idx=loader.idx,
-                  cache=loader.cache, fetcher_constructor=loader.fetcher_constructor,
-                  skip_schemas=loader.skip_schemas, url_fields=loader.url_fields,
-                  allow_attachments=loader.allow_attachments)
+    return Loader(
+        loader.ctx,
+        schemagraph=loader.graph,
+        foreign_properties=loader.foreign_properties,
+        idx=loader.idx,
+        cache=loader.cache,
+        fetcher_constructor=loader.fetcher_constructor,
+        skip_schemas=loader.skip_schemas,
+        url_fields=loader.url_fields,
+        allow_attachments=loader.allow_attachments,
+    )
+
 
 class Fetcher(object):
-    def fetch_text(self, url):    # type: (Text) -> Text
+    def fetch_text(self, url):  # type: (Text) -> Text
         raise NotImplementedError()
 
     def check_exists(self, url):  # type: (Text) -> bool
@@ -122,10 +144,11 @@ class Fetcher(object):
 
 
 class DefaultFetcher(Fetcher):
-    def __init__(self,
-                 cache,   # type: Dict[Text, Union[Text, bool]]
-                 session  # type: Optional[requests.sessions.Session]
-                 ):  # type: (...) -> None
+    def __init__(
+        self,
+        cache,  # type: Dict[Text, Union[Text, bool]]
+        session,  # type: Optional[requests.sessions.Session]
+    ):  # type: (...) -> None
         self.cache = cache
         self.session = session
 
@@ -139,29 +162,35 @@ class DefaultFetcher(Fetcher):
         split = urllib.parse.urlsplit(url)
         scheme, path = split.scheme, split.path
 
-        if scheme in [u'http', u'https'] and self.session is not None:
+        if scheme in [u"http", u"https"] and self.session is not None:
             try:
                 resp = self.session.get(url)
                 resp.raise_for_status()
             except Exception as e:
                 raise_from(RuntimeError(url, e), e)
             return resp.text
-        if scheme == 'file':
+        if scheme == "file":
             try:
                 # On Windows, url.path will be /drive:/path ; on Unix systems,
                 # /path. As we want drive:/path instead of /drive:/path on Windows,
                 # remove the leading /.
-                if os.path.isabs(path[1:]):  # checking if pathis valid after removing front / or not
+                if os.path.isabs(
+                    path[1:]
+                ):  # checking if pathis valid after removing front / or not
                     path = path[1:]
-                with open(urllib.request.url2pathname(str(path)), encoding='utf-8') as fp:
+                with open(
+                    urllib.request.url2pathname(str(path)), encoding="utf-8"
+                ) as fp:
                     return Text(fp.read())
 
             except (OSError, IOError) as err:
                 if err.filename == path:
                     raise_from(RuntimeError(Text(err)), err)
                 else:
-                    raise_from(RuntimeError('Error reading %s: %s' % (url, err)), err)
-        raise ValueError('Unsupported scheme in url: %s' % url)
+                    raise_from(
+                        RuntimeError("Error reading {}: {}".format(url, err)), err
+                    )
+        raise ValueError("Unsupported scheme in url: {}".format(url))
 
     def check_exists(self, url):  # type: (Text) -> bool
         if url in self.cache:
@@ -170,7 +199,7 @@ class DefaultFetcher(Fetcher):
         split = urllib.parse.urlsplit(url)
         scheme, path = split.scheme, split.path
 
-        if scheme in [u'http', u'https'] and self.session is not None:
+        if scheme in [u"http", u"https"] and self.session is not None:
             try:
                 resp = self.session.head(url)
                 resp.raise_for_status()
@@ -178,19 +207,23 @@ class DefaultFetcher(Fetcher):
                 return False
             self.cache[url] = True
             return True
-        if scheme == 'file':
+        if scheme == "file":
             return os.path.exists(urllib.request.url2pathname(str(path)))
-        if scheme == 'mailto':
+        if scheme == "mailto":
             return True
-        raise ValueError('Unsupported scheme in url: %s' % url)
+        raise ValueError("Unsupported scheme in url: {}".format(url))
 
     def urljoin(self, base_url, url):  # type: (Optional[Text], Text) -> Text
         basesplit = urllib.parse.urlsplit(base_url)
         split = urllib.parse.urlsplit(url)
-        if (basesplit.scheme and basesplit.scheme != "file" and split.scheme == "file"):
-            raise ValueError("Not resolving potential remote exploit %s from base %s" % (url, base_url))
+        if basesplit.scheme and basesplit.scheme != "file" and split.scheme == "file":
+            raise ValueError(
+                "Not resolving potential remote exploit {} from base {}".format(
+                    url, base_url
+                )
+            )
 
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             if base_url == url:
                 return url
             basesplit = urllib.parse.urlsplit(base_url)
@@ -217,58 +250,83 @@ class DefaultFetcher(Fetcher):
                     # Assume split.scheme is actually a drive, e.g. "C:"
                     # so we'll recombine into a path
                     path_with_drive = urllib.parse.urlunsplit(
-                        (split.scheme, '', split.path, '', ''))
+                        (split.scheme, "", split.path, "", "")
+                    )
                     # Compose new file:/// URI with path_with_drive
                     # .. carrying over any #fragment (?query just in case..)
                     return urllib.parse.urlunsplit(
-                        ("file", netloc, path_with_drive, split.query, split.fragment))
-                if (not split.scheme and not netloc and split.path
-                        and split.path.startswith("/")):
+                        ("file", netloc, path_with_drive, split.query, split.fragment)
+                    )
+                if (
+                    not split.scheme
+                    and not netloc
+                    and split.path
+                    and split.path.startswith("/")
+                ):
                     # Relative - but does it have a drive?
                     base_drive = _re_drive.match(basesplit.path)
                     drive = _re_drive.match(split.path)
                     if base_drive and not drive:
                         # Keep drive letter from base_url
                         # https://tools.ietf.org/html/rfc8089#appendix-E.2.1
-                        # e.g. urljoin("file:///D:/bar/a.txt", "/foo/b.txt") == file:///D:/foo/b.txt
-                        path_with_drive = "/%s:%s" % (base_drive.group(1), split.path)
+                        # e.g. urljoin("file:///D:/bar/a.txt", "/foo/b.txt")
+                        #          == file:///D:/foo/b.txt
+                        path_with_drive = "/{}:{}".format(
+                            base_drive.group(1), split.path
+                        )
                         return urllib.parse.urlunsplit(
-                            ("file", netloc, path_with_drive, split.query,
-                             split.fragment))
+                            (
+                                "file",
+                                netloc,
+                                path_with_drive,
+                                split.query,
+                                split.fragment,
+                            )
+                        )
 
                 # else: fall-through to resolve as relative URI
             elif has_drive:
-                # Base is http://something but url is C:/something - which urllib would wrongly
-                # resolve as an absolute path that could later be used to access local files
+                # Base is http://something but url is C:/something - which urllib
+                # would wrongly resolve as an absolute path that could later be used
+                # to access local files
                 raise ValueError(
-                    "Not resolving potential remote exploit %s from base %s"
-                    % (url, base_url))
+                    "Not resolving potential remote exploit {} from base {}".format(
+                        url, base_url
+                    )
+                )
 
         return urllib.parse.urljoin(base_url, url)
 
 
+idx_type = Dict[Text, Union[CommentedMap, CommentedSeq, Text, None]]
+fetcher_sig = Callable[
+    [Dict[Text, Union[Text, bool]], requests.sessions.Session], Fetcher
+]
+attachements_sig = Callable[[Union[CommentedMap, CommentedSeq]], bool]
+
+
 class Loader(object):
-    def __init__(self,
-                 ctx,                       # type: ContextType
-                 schemagraph=None,          # type: Optional[Graph]
-                 foreign_properties=None,   # type: Optional[Set[Text]]
-                 idx=None,                  # type: Optional[Dict[Text, Union[CommentedMap, CommentedSeq, Text, None]]]
-                 cache=None,                # type: Optional[Dict[Text, Any]]
-                 session=None,              # type: Optional[requests.sessions.Session]
-                 fetcher_constructor=None,  # type: Optional[Callable[[Dict[Text, Union[Text, bool]], requests.sessions.Session], Fetcher]]
-                 skip_schemas=None,         # type: Optional[bool]
-                 url_fields=None,           # type: Optional[Set[Text]]
-                 allow_attachments=None     # type: Optional[Callable[[Union[CommentedMap, CommentedSeq]], bool]]
-                 ):
+    def __init__(
+        self,
+        ctx,  # type: ContextType
+        schemagraph=None,  # type: Optional[Graph]
+        foreign_properties=None,  # type: Optional[Set[Text]]
+        idx=None,  # type: Optional[idx_type]
+        cache=None,  # type: Optional[Dict[Text, Any]]
+        session=None,  # type: Optional[requests.sessions.Session]
+        fetcher_constructor=None,  # type: Optional[fetcher_sig]
+        skip_schemas=None,  # type: Optional[bool]
+        url_fields=None,  # type: Optional[Set[Text]]
+        allow_attachments=None,  # type: Optional[attachements_sig]
+    ):
         # type: (...) -> None
 
-        normalize = lambda url: urllib.parse.urlsplit(url).geturl()
         if idx is not None:
             self.idx = idx
         else:
-            self.idx = NormDict(normalize)
+            self.idx = NormDict(lambda url: urllib.parse.urlsplit(url).geturl())
 
-        self.ctx = {}       # type: ContextType
+        self.ctx = {}  # type: ContextType
         if schemagraph is not None:
             self.graph = schemagraph
         else:
@@ -293,15 +351,20 @@ class Loader(object):
             if "HOME" in os.environ:
                 self.session = CacheControl(
                     requests.Session(),
-                    cache=FileCache(os.path.join(os.environ["HOME"], ".cache", "salad")))
+                    cache=FileCache(
+                        os.path.join(os.environ["HOME"], ".cache", "salad")
+                    ),
+                )
             elif "TMP" in os.environ:
                 self.session = CacheControl(
                     requests.Session(),
-                    cache=FileCache(os.path.join(os.environ["TMP"], ".cache", "salad")))
+                    cache=FileCache(os.path.join(os.environ["TMP"], ".cache", "salad")),
+                )
             else:
                 self.session = CacheControl(
                     requests.Session(),
-                    cache=FileCache(os.path.join("/tmp", ".cache", "salad")))
+                    cache=FileCache(os.path.join("/tmp", ".cache", "salad")),
+                )
         else:
             self.session = session
 
@@ -314,34 +377,35 @@ class Loader(object):
         self.check_exists = self.fetcher.check_exists
 
         if url_fields is None:
-            self.url_fields = set()         # type: Set[Text]
+            self.url_fields = set()  # type: Set[Text]
         else:
             self.url_fields = set(url_fields)
 
-        self.scoped_ref_fields = {}     # type: Dict[Text, int]
-        self.vocab_fields = set()       # type: Set[Text]
-        self.identifiers = []           # type: List[Text]
-        self.identity_links = set()     # type: Set[Text]
-        self.standalone = None          # type: Optional[Set[Text]]
-        self.nolinkcheck = set()        # type: Set[Text]
-        self.vocab = {}                 # type: Dict[Text, Text]
-        self.rvocab = {}                # type: Dict[Text, Text]
-        self.idmap = {}                 # type: Dict[Text, Any]
-        self.mapPredicate = {}          # type: Dict[Text, Text]
-        self.type_dsl_fields = set()    # type: Set[Text]
-        self.subscopes = {}             # type: Dict[Text, Text]
+        self.scoped_ref_fields = {}  # type: Dict[Text, int]
+        self.vocab_fields = set()  # type: Set[Text]
+        self.identifiers = []  # type: List[Text]
+        self.identity_links = set()  # type: Set[Text]
+        self.standalone = None  # type: Optional[Set[Text]]
+        self.nolinkcheck = set()  # type: Set[Text]
+        self.vocab = {}  # type: Dict[Text, Text]
+        self.rvocab = {}  # type: Dict[Text, Text]
+        self.idmap = {}  # type: Dict[Text, Any]
+        self.mapPredicate = {}  # type: Dict[Text, Text]
+        self.type_dsl_fields = set()  # type: Set[Text]
+        self.subscopes = {}  # type: Dict[Text, Text]
         self.secondaryFile_dsl_fields = set()  # type: Set[Text]
         self.allow_attachments = allow_attachments
 
         self.add_context(ctx)
 
-    def expand_url(self,
-                   url,                 # type: Text
-                   base_url,            # type: Text
-                   scoped_id=False,     # type: bool
-                   vocab_term=False,    # type: bool
-                   scoped_ref=None      # type: Optional[int]
-                   ):
+    def expand_url(
+        self,
+        url,  # type: Text
+        base_url,  # type: Text
+        scoped_id=False,  # type: bool
+        vocab_term=False,  # type: bool
+        scoped_ref=None,  # type: Optional[int]
+    ):
         # type: (...) -> Text
         if url in (u"@id", u"@type") or url is None:
             return url
@@ -352,15 +416,22 @@ class Loader(object):
         if bool(self.vocab) and u":" in url:
             prefix = url.split(u":")[0]
             if prefix in self.vocab:
-                url = self.vocab[prefix] + url[len(prefix) + 1:]
+                url = self.vocab[prefix] + url[len(prefix) + 1 :]
             elif prefix not in self.fetcher.supported_schemes():
-                _logger.warning("URI prefix '%s' of '%s' not recognized, are you missing a $namespaces section?", prefix, url)
+                _logger.warning(
+                    "URI prefix '%s' of '%s' not recognized, are you missing a "
+                    "$namespaces section?",
+                    prefix,
+                    url,
+                )
 
         split = urllib.parse.urlsplit(url)
 
-        if ((bool(split.scheme) and split.scheme in [
-                u'http', u'https', u'file']) or url.startswith(u"$(")
-                or url.startswith(u"${")):
+        if (
+            (bool(split.scheme) and split.scheme in [u"http", u"https", u"file"])
+            or url.startswith(u"$(")
+            or url.startswith(u"${")
+        ):
             pass
         elif scoped_id and not bool(split.fragment):
             splitbase = urllib.parse.urlsplit(base_url)
@@ -369,9 +440,10 @@ class Loader(object):
                 frg = splitbase.fragment + u"/" + split.path
             else:
                 frg = split.path
-            pt = splitbase.path if splitbase.path != '' else "/"
+            pt = splitbase.path if splitbase.path != "" else "/"
             url = urllib.parse.urlunsplit(
-                (splitbase.scheme, splitbase.netloc, pt, splitbase.query, frg))
+                (splitbase.scheme, splitbase.netloc, pt, splitbase.query, frg)
+            )
         elif scoped_ref is not None and not split.fragment:
             pass
         else:
@@ -384,10 +456,10 @@ class Loader(object):
 
     def _add_properties(self, s):  # type: (Text) -> None
         for _, _, rng in self.graph.triples((s, RDFS.range, None)):
-            literal = ((Text(rng).startswith(
-                u"http://www.w3.org/2001/XMLSchema#")
-                and not Text(rng) == u"http://www.w3.org/2001/XMLSchema#anyURI")
-                or Text(rng) == u"http://www.w3.org/2000/01/rdf-schema#Literal")
+            literal = (
+                Text(rng).startswith(u"http://www.w3.org/2001/XMLSchema#")
+                and not Text(rng) == u"http://www.w3.org/2001/XMLSchema#anyURI"
+            ) or Text(rng) == u"http://www.w3.org/2000/01/rdf-schema#Literal"
             if not literal:
                 self.url_fields.add(Text(s))
         self.foreign_properties.add(Text(s))
@@ -406,9 +478,11 @@ class Loader(object):
                     _logger.debug("Getting external schema %s", fetchurl)
                     content = self.fetch_text(fetchurl)
                     self.cache[fetchurl] = Graph()
-                    for fmt in ['xml', 'turtle', 'rdfa']:
+                    for fmt in ["xml", "turtle", "rdfa"]:
                         try:
-                            self.cache[fetchurl].parse(data=content, format=fmt, publicID=str(fetchurl))
+                            self.cache[fetchurl].parse(
+                                data=content, format=fmt, publicID=str(fetchurl)
+                            )
                             self.graph += self.cache[fetchurl]
                             break
                         except xml.sax.SAXParseException:
@@ -418,7 +492,9 @@ class Loader(object):
                         except BadSyntax:
                             pass
             except Exception as e:
-                _logger.warning("Could not load extension schema %s: %s", fetchurl, Text(e))
+                _logger.warning(
+                    "Could not load extension schema %s: %s", fetchurl, Text(e)
+                )
 
         for s, _, _ in self.graph.triples((None, RDF.type, RDF.Property)):
             self._add_properties(s)
@@ -437,7 +513,8 @@ class Loader(object):
         # type: (ContextType, Text) -> None
         if bool(self.vocab):
             raise validate.ValidationException(
-                "Refreshing context that already has stuff in it")
+                "Refreshing context that already has stuff in it"
+            )
 
         self.url_fields = set(("$schemas",))
         self.scoped_ref_fields = {}
@@ -510,19 +587,24 @@ class Loader(object):
         _logger.debug("vocab_fields is %s", self.vocab_fields)
         _logger.debug("vocab is %s", self.vocab)
 
-    def resolve_ref(self,
-                    ref,              # type: Union[CommentedMap, CommentedSeq, Text]
-                    base_url=None,    # type: Optional[Text]
-                    checklinks=True,  # type: bool
-                    strict_foreign_properties=False  # type: bool
-                    ):
-        # type: (...) -> Tuple[Union[CommentedMap, CommentedSeq, Text, None], CommentedMap]
+    resolved_ref_type = Tuple[
+        Optional[Union[CommentedMap, CommentedSeq, Text]], CommentedMap
+    ]
 
-        lref = ref           # type: Union[CommentedMap, CommentedSeq, Text, None]
-        obj = None           # type: Optional[CommentedMap]
+    def resolve_ref(
+        self,
+        ref,  # type: Union[CommentedMap, CommentedSeq, Text]
+        base_url=None,  # type: Optional[Text]
+        checklinks=True,  # type: bool
+        strict_foreign_properties=False,  # type: bool
+    ):
+        # type: (...) -> Loader.resolved_ref_type
+
+        lref = ref  # type: Union[CommentedMap, CommentedSeq, Text, None]
+        obj = None  # type: Optional[CommentedMap]
         resolved_obj = None  # type: Optional[Union[CommentedMap, CommentedSeq, Text]]
         inc = False
-        mixin = None         # type: Optional[MutableMapping[Text, Any]]
+        mixin = None  # type: Optional[MutableMapping[Text, Any]]
 
         if not base_url:
             base_url = file_uri(os.getcwd()) + "/"
@@ -538,8 +620,8 @@ class Loader(object):
                     obj = None
                 else:
                     raise sl.makeError(
-                        u"'$import' must be the only field in %s"
-                        % (Text(obj)))
+                        u"'$import' must be the only field in {}".format(obj)
+                    )
             elif "$include" in obj:
                 sl = SourceLine(obj, "$include", RuntimeError)
                 if len(obj) == 1:
@@ -548,8 +630,8 @@ class Loader(object):
                     obj = None
                 else:
                     raise sl.makeError(
-                        u"'$include' must be the only field in %s"
-                        % (Text(obj)))
+                        u"'$include' must be the only field in {}".format(obj)
+                    )
             elif "$mixin" in obj:
                 sl = SourceLine(obj, "$mixin", RuntimeError)
                 lref = obj[u"$mixin"]
@@ -563,12 +645,17 @@ class Loader(object):
                         break
                 if not lref:
                     raise sl.makeError(
-                        u"Object `%s` does not have identifier field in %s"
-                        % (str(obj), self.identifiers))
+                        u"Object `{}` does not have identifier field in {}".format(
+                            obj, self.identifiers
+                        )
+                    )
 
         if not isinstance(lref, string_types):
-            raise ValueError(u"Expected CommentedMap or string, got %s: `%s`"
-                    % (type(lref), Text(lref)))
+            raise ValueError(
+                u"Expected CommentedMap or string, got {}: `{}`".format(
+                    type(lref), lref
+                )
+            )
 
         if isinstance(lref, string_types) and os.sep == "\\":
             # Convert Windows path separator in ref
@@ -587,8 +674,11 @@ class Loader(object):
                     else:
                         return resolved_obj, metadata
                 else:
-                    raise ValueError(u"Expected CommentedMap, got %s: `%s`"
-                                     % (type(metadata), Text(metadata)))
+                    raise ValueError(
+                        u"Expected CommentedMap, got {}: `{}`".format(
+                            type(metadata), metadata
+                        )
+                    )
             elif isinstance(resolved_obj, MutableSequence):
                 metadata = self.idx.get(urllib.parse.urldefrag(url)[0], CommentedMap())
                 if isinstance(metadata, MutableMapping):
@@ -598,8 +688,11 @@ class Loader(object):
             elif isinstance(resolved_obj, string_types):
                 return resolved_obj, CommentedMap()
             else:
-                raise ValueError(u"Expected MutableMapping or MutableSequence, got %s: `%s`"
-                                 % (type(resolved_obj), Text(resolved_obj)))
+                raise ValueError(
+                    u"Expected MutableMapping or MutableSequence, got {}: `{}`".format(
+                        type(resolved_obj), resolved_obj
+                    )
+                )
 
         sl.raise_type = RuntimeError
         with sl:
@@ -620,8 +713,8 @@ class Loader(object):
                     # so if we didn't find the reference earlier then it must not
                     # exist.
                     raise validate.ValidationException(
-                        u"Reference `#%s` not found in file `%s`."
-                        % (frg, doc_url))
+                        u"Reference `#{}` not found in file `{}`.".format(frg, doc_url)
+                    )
                 doc = self.fetch(doc_url, inject_ids=(not mixin))
 
         # Recursively expand urls and resolve directives
@@ -631,17 +724,23 @@ class Loader(object):
                 doc.update(mixin)
                 del doc["$mixin"]
             resolved_obj, metadata = self.resolve_all(
-                doc, base_url, file_base=doc_url,
+                doc,
+                base_url,
+                file_base=doc_url,
                 checklinks=checklinks,
-                strict_foreign_properties=strict_foreign_properties)
+                strict_foreign_properties=strict_foreign_properties,
+            )
         else:
             if doc:
                 resolve_target = doc
             else:
                 resolve_target = obj
             resolved_obj, metadata = self.resolve_all(
-                resolve_target, doc_url, checklinks=checklinks,
-                strict_foreign_properties=strict_foreign_properties)
+                resolve_target,
+                doc_url,
+                checklinks=checklinks,
+                strict_foreign_properties=strict_foreign_properties,
+            )
 
         # Requested reference should be in the index now, otherwise it's a bad
         # reference
@@ -650,8 +749,10 @@ class Loader(object):
                 resolved_obj = self.idx[url]
             else:
                 raise RuntimeError(
-                    "Reference `%s` is not in the index. Index contains:\n  %s"
-                    % (url, "\n  ".join(self.idx)))
+                    "Reference `{}}` is not in the index. Index contains:\n  {}".format(
+                        url, "\n  ".join(self.idx)
+                    )
+                )
 
         if isinstance(resolved_obj, CommentedMap):
             if u"$graph" in resolved_obj:
@@ -662,19 +763,22 @@ class Loader(object):
         else:
             return resolved_obj, metadata
 
-    def _resolve_idmap(self,
-                       document,    # type: CommentedMap
-                       loader       # type: Loader
-                       ):
+    def _resolve_idmap(
+        self,
+        document,  # type: CommentedMap
+        loader,  # type: Loader
+    ):
         # type: (...) -> None
         # Convert fields with mapSubject into lists
         # use mapPredicate if the mapped value isn't a dict.
         for idmapField in loader.idmap:
-            if (idmapField in document):
+            if idmapField in document:
                 idmapFieldValue = document[idmapField]
-                if (isinstance(idmapFieldValue, MutableMapping)
-                        and "$import" not in idmapFieldValue
-                        and "$include" not in idmapFieldValue):
+                if (
+                    isinstance(idmapFieldValue, MutableMapping)
+                    and "$import" not in idmapFieldValue
+                    and "$include" not in idmapFieldValue
+                ):
                     ls = CommentedSeq()
                     for k in sorted(idmapFieldValue.keys()):
                         val = idmapFieldValue[k]
@@ -682,26 +786,28 @@ class Loader(object):
                         if not isinstance(val, CommentedMap):
                             if idmapField in loader.mapPredicate:
                                 v = CommentedMap(
-                                    ((loader.mapPredicate[idmapField], val),))
+                                    ((loader.mapPredicate[idmapField], val),)
+                                )
                                 v.lc.add_kv_line_col(
                                     loader.mapPredicate[idmapField],
-                                    document[idmapField].lc.data[k])
+                                    document[idmapField].lc.data[k],
+                                )
                                 v.lc.filename = document.lc.filename
                             else:
                                 raise validate.ValidationException(
                                     "mapSubject '{}' value '{}' is not a dict "
-                                    "and does not have a mapPredicate.".format(
-                                        k, v))
+                                    "and does not have a mapPredicate.".format(k, v)
+                                )
                         else:
                             v = val
 
                         v[loader.idmap[idmapField]] = k
-                        v.lc.add_kv_line_col(loader.idmap[idmapField],
-                                             document[idmapField].lc.data[k])
+                        v.lc.add_kv_line_col(
+                            loader.idmap[idmapField], document[idmapField].lc.data[k]
+                        )
                         v.lc.filename = document.lc.filename
 
-                        ls.lc.add_kv_line_col(
-                            len(ls), document[idmapField].lc.data[k])
+                        ls.lc.add_kv_line_col(len(ls), document[idmapField].lc.data[k])
 
                         ls.lc.filename = document.lc.filename
                         ls.append(v)
@@ -710,11 +816,12 @@ class Loader(object):
 
     typeDSLregex = re.compile(Text(r"^([^[?]+)(\[\])?(\?)?$"))
 
-    def _type_dsl(self,
-                  t,        # type: Union[Text, Dict[Text, Text], List[Text]]
-                  lc,       # type: LineCol
-                  filename  # type: Text
-                 ):  # type: (...) -> Union[Text, Dict[Text, Text], List[Text]]
+    def _type_dsl(
+        self,
+        t,  # type: Union[Text, Dict[Text, Text], List[Text]]
+        lc,  # type: LineCol
+        filename,  # type: Text
+    ):  # type: (...) -> Union[Text, Dict[Text, Text], List[Text]]
 
         if not isinstance(t, string_types):
             return t
@@ -725,8 +832,7 @@ class Loader(object):
         first = m.group(1)
         second = third = None
         if bool(m.group(2)):
-            second = CommentedMap((("type", "array"),
-                                   ("items", first)))
+            second = CommentedMap((("type", "array"), ("items", first)))
             second.lc.add_kv_line_col("type", lc)
             second.lc.add_kv_line_col("items", lc)
             second.lc.filename = filename
@@ -737,11 +843,12 @@ class Loader(object):
             third.lc.filename = filename
         return third or second or first
 
-    def _secondaryFile_dsl(self,
-                  t,        # type: Union[Text, Dict[Text, Text], List[Text]]
-                  lc,       # type: LineCol
-                  filename  # type: Text
-                ):  # type: (...) -> Union[Text, Dict[Text, Text], List[Text]]
+    def _secondaryFile_dsl(
+        self,
+        t,  # type: Union[Text, Dict[Text, Text], List[Text]]
+        lc,  # type: LineCol
+        filename,  # type: Text
+    ):  # type: (...) -> Union[Text, Dict[Text, Text], List[Text]]
 
         if not isinstance(t, string_types):
             return t
@@ -751,19 +858,19 @@ class Loader(object):
             pat = t[0:-1]
             req = False
 
-        second = CommentedMap((("pattern", pat),
-                               ("required", req)))
+        second = CommentedMap((("pattern", pat), ("required", req)))
         second.lc.add_kv_line_col("pattern", lc)
         second.lc.add_kv_line_col("required", lc)
         second.lc.filename = filename
         return second
 
-    def _apply_dsl(self,
-                   datum,      # type: Union[Text, Dict[Any, Any], List[Any]]
-                   d,          # type: Text
-                   loader,     # type: Loader
-                   lc,         # type: LineCol
-                   filename    # type: Text
+    def _apply_dsl(
+        self,
+        datum,  # type: Union[Text, Dict[Any, Any], List[Any]]
+        d,  # type: Text
+        loader,  # type: Loader
+        lc,  # type: LineCol
+        filename,  # type: Text
     ):
         # type: (...) -> Union[Text, Dict[Any, Any], List[Any]]
         if d in loader.type_dsl_fields:
@@ -773,9 +880,10 @@ class Loader(object):
         else:
             return datum
 
-    def _resolve_dsl(self,
-                     document,  # type: CommentedMap
-                     loader     # type: Loader
+    def _resolve_dsl(
+        self,
+        document,  # type: CommentedMap
+        loader,  # type: Loader
     ):
         # type: (...) -> None
         fields = list(loader.type_dsl_fields)
@@ -785,15 +893,18 @@ class Loader(object):
             if d in document:
                 datum2 = datum = document[d]
                 if isinstance(datum, string_types):
-                    datum2 = self._apply_dsl(datum, d, loader, document.lc.data[d],
-                                             document.lc.filename)
+                    datum2 = self._apply_dsl(
+                        datum, d, loader, document.lc.data[d], document.lc.filename
+                    )
                 elif isinstance(datum, CommentedSeq):
                     datum2 = CommentedSeq()
                     for n, t in enumerate(datum):
-                        datum2.lc.add_kv_line_col(
-                            len(datum2), datum.lc.data[n])
-                        datum2.append(self._apply_dsl(t, d, loader, datum.lc.data[n],
-                                                      document.lc.filename))
+                        datum2.lc.add_kv_line_col(len(datum2), datum.lc.data[n])
+                        datum2.append(
+                            self._apply_dsl(
+                                t, d, loader, datum.lc.data[n], document.lc.filename
+                            )
+                        )
                 if isinstance(datum2, CommentedSeq):
                     datum3 = CommentedSeq()
                     seen = []  # type: List[Text]
@@ -802,19 +913,20 @@ class Loader(object):
                             for j, v in enumerate(item):
                                 if v not in seen:
                                     datum3.lc.add_kv_line_col(
-                                        len(datum3), item.lc.data[j])
+                                        len(datum3), item.lc.data[j]
+                                    )
                                     datum3.append(v)
                                     seen.append(v)
                         else:
                             if item not in seen:
                                 datum3.lc.add_kv_line_col(
-                                    len(datum3), datum2.lc.data[i])
+                                    len(datum3), datum2.lc.data[i]
+                                )
                                 datum3.append(item)
                                 seen.append(item)
                     document[d] = datum3
                 else:
                     document[d] = datum2
-
 
     def _resolve_identifier(self, document, loader, base_url):
         # type: (CommentedMap, Loader, Text) -> Text
@@ -823,16 +935,19 @@ class Loader(object):
             if identifer in document:
                 if isinstance(document[identifer], string_types):
                     document[identifer] = loader.expand_url(
-                        document[identifer], base_url, scoped_id=True)
-                    if (document[identifer] not in loader.idx
-                            or isinstance(
-                                loader.idx[document[identifer]], string_types)):
+                        document[identifer], base_url, scoped_id=True
+                    )
+                    if document[identifer] not in loader.idx or isinstance(
+                        loader.idx[document[identifer]], string_types
+                    ):
                         loader.idx[document[identifer]] = document
                     base_url = document[identifer]
                 else:
                     raise validate.ValidationException(
-                        "identifier field '%s' must be a string"
-                        % (document[identifer]))
+                        "identifier field '{}' must be a string".format(
+                            document[identifer]
+                        )
+                    )
         return base_url
 
     def _resolve_identity(self, document, loader, base_url):
@@ -841,14 +956,15 @@ class Loader(object):
         # identity of a standalone node, such as enum symbols)
         for identifer in loader.identity_links:
             if identifer in document and isinstance(
-                    document[identifer], MutableSequence):
-                for n, v in enumerate(document[identifer]):
+                document[identifer], MutableSequence
+            ):
+                for n, _v in enumerate(document[identifer]):
                     if isinstance(document[identifer][n], string_types):
                         document[identifer][n] = loader.expand_url(
-                            document[identifer][n], base_url, scoped_id=True)
+                            document[identifer][n], base_url, scoped_id=True
+                        )
                         if document[identifer][n] not in loader.idx:
-                            loader.idx[document[identifer][
-                                n]] = document[identifer][n]
+                            loader.idx[document[identifer][n]] = document[identifer][n]
 
     def _normalize_fields(self, document, loader):
         # type: (CommentedMap, Loader) -> None
@@ -860,11 +976,12 @@ class Loader(object):
                 document.lc.add_kv_line_col(d2, document.lc.data[d])
                 del document[d]
 
-    def _resolve_uris(self,
-                      document,  # type: Dict[Text, Union[Text, List[Text]]]
-                      loader,    # type: Loader
-                      base_url   # type: Text
-                      ):
+    def _resolve_uris(
+        self,
+        document,  # type: Dict[Text, Union[Text, List[Text]]]
+        loader,  # type: Loader
+        base_url,  # type: Text
+    ):
         # type: (...) -> None
         # Resolve remaining URLs based on document base
         for d in loader.url_fields:
@@ -872,26 +989,32 @@ class Loader(object):
                 datum = document[d]
                 if isinstance(datum, string_types):
                     document[d] = loader.expand_url(
-                        datum, base_url, scoped_id=False,
+                        datum,
+                        base_url,
+                        scoped_id=False,
                         vocab_term=(d in loader.vocab_fields),
-                        scoped_ref=loader.scoped_ref_fields.get(d))
+                        scoped_ref=loader.scoped_ref_fields.get(d),
+                    )
                 elif isinstance(datum, MutableSequence):
                     for i, url in enumerate(datum):
                         if isinstance(url, string_types):
                             datum[i] = loader.expand_url(
-                                url, base_url, scoped_id=False,
+                                url,
+                                base_url,
+                                scoped_id=False,
                                 vocab_term=(d in loader.vocab_fields),
-                                scoped_ref=loader.scoped_ref_fields.get(d))
+                                scoped_ref=loader.scoped_ref_fields.get(d),
+                            )
 
-
-    def resolve_all(self,
-                    document,           # type: Union[CommentedMap, CommentedSeq]
-                    base_url,           # type: Text
-                    file_base=None,     # type: Optional[Text]
-                    checklinks=True,    # type: bool
-                    strict_foreign_properties=False  # type: bool
-                    ):
-        # type: (...) -> Tuple[Union[CommentedMap, CommentedSeq, Text, None], CommentedMap]
+    def resolve_all(
+        self,
+        document,  # type: Union[CommentedMap, CommentedSeq]
+        base_url,  # type: Text
+        file_base=None,  # type: Optional[Text]
+        checklinks=True,  # type: bool
+        strict_foreign_properties=False,  # type: bool
+    ):
+        # type: (...) -> Loader.resolved_ref_type
         loader = self
         metadata = CommentedMap()  # type: CommentedMap
         if file_base is None:
@@ -899,18 +1022,28 @@ class Loader(object):
 
         if isinstance(document, CommentedMap):
             # Handle $import and $include
-            if (u'$import' in document or u'$include' in document):
+            if u"$import" in document or u"$include" in document:
                 return self.resolve_ref(
-                    document, base_url=file_base, checklinks=checklinks,
-                    strict_foreign_properties=strict_foreign_properties)
-            elif u'$mixin' in document:
+                    document,
+                    base_url=file_base,
+                    checklinks=checklinks,
+                    strict_foreign_properties=strict_foreign_properties,
+                )
+            elif u"$mixin" in document:
                 return self.resolve_ref(
-                    document, base_url=base_url, checklinks=checklinks,
-                    strict_foreign_properties=strict_foreign_properties)
+                    document,
+                    base_url=base_url,
+                    checklinks=checklinks,
+                    strict_foreign_properties=strict_foreign_properties,
+                )
         elif isinstance(document, CommentedSeq):
             pass
         elif isinstance(document, (list, dict)):
-            raise Exception("Expected CommentedMap or CommentedSeq, got %s: `%s`" % (type(document), document))
+            raise Exception(
+                "Expected CommentedMap or CommentedSeq, got {}: `{}`".format(
+                    type(document), document
+                )
+            )
         else:
             return (document, metadata)
 
@@ -923,11 +1056,8 @@ class Loader(object):
             if u"$profile" in document:
                 if newctx is None:
                     newctx = SubLoader(self)
-                prof = newctx.fetch(document[u"$profile"])
-                newctx.add_namespaces(
-                    document.get(u"$namespaces", CommentedMap()))
-                newctx.add_schemas(document.get(
-                    u"$schemas", []), document[u"$profile"])
+                newctx.add_namespaces(document.get(u"$namespaces", CommentedMap()))
+                newctx.add_schemas(document.get(u"$schemas", []), document[u"$profile"])
 
             if u"$namespaces" in document:
                 if newctx is None:
@@ -946,7 +1076,8 @@ class Loader(object):
                 if identifer in document:
                     if isinstance(document[identifer], string_types):
                         document[identifer] = loader.expand_url(
-                            document[identifer], base_url, scoped_id=True)
+                            document[identifer], base_url, scoped_id=True
+                        )
                         loader.idx[document[identifer]] = document
 
             metadata = document
@@ -967,31 +1098,42 @@ class Loader(object):
                     if key in loader.subscopes:
                         subscope = "/" + loader.subscopes[key]
                     document[key], _ = loader.resolve_all(
-                        val, base_url+subscope, file_base=file_base, checklinks=False)
+                        val, base_url + subscope, file_base=file_base, checklinks=False
+                    )
             except validate.ValidationException as v:
                 _logger.warning("loader is %s", id(loader), exc_info=True)
-                raise_from(validate.ValidationException("(%s) (%s) Validation error in field %s:\n%s" % (
-                    id(loader), file_base, key, indent(Text(v)))), v)
+                raise_from(
+                    validate.ValidationException(
+                        "({}) ({}) Validation error in field {}:\n{}".format(
+                            id(loader), file_base, key, indent(Text(v))
+                        )
+                    ),
+                    v,
+                )
 
         elif isinstance(document, CommentedSeq):
             i = 0
             try:
                 while i < len(document):
                     val = document[i]
-                    if isinstance(val, CommentedMap) and (u"$import" in val or u"$mixin" in val):
+                    if isinstance(val, CommentedMap) and (
+                        u"$import" in val or u"$mixin" in val
+                    ):
                         l, import_metadata = loader.resolve_ref(
-                            val, base_url=file_base, checklinks=False)
+                            val, base_url=file_base, checklinks=False
+                        )
                         metadata.setdefault("$import_metadata", {})
                         for identifier in loader.identifiers:
                             if identifier in import_metadata:
-                                metadata["$import_metadata"][import_metadata[identifier]] = import_metadata
+                                metadata["$import_metadata"][
+                                    import_metadata[identifier]
+                                ] = import_metadata
                         if isinstance(l, CommentedSeq):
                             lc = document.lc.data[i]
                             del document[i]
                             llen = len(l)
                             for j in range(len(document) + llen, i + llen, -1):
-                                document.lc.data[
-                                    j - 1] = document.lc.data[j - llen]
+                                document.lc.data[j - 1] = document.lc.data[j - llen]
                             for item in l:
                                 document.insert(i, item)
                                 document.lc.data[i] = lc
@@ -1001,17 +1143,28 @@ class Loader(object):
                             i += 1
                     else:
                         document[i], _ = loader.resolve_all(
-                            val, base_url, file_base=file_base, checklinks=False)
+                            val, base_url, file_base=file_base, checklinks=False
+                        )
                         i += 1
             except validate.ValidationException as v:
                 _logger.warning("failed", exc_info=True)
-                raise_from(validate.ValidationException("(%s) (%s) Validation error in position %i:\n%s" % (
-                    id(loader), file_base, i, indent(Text(v)))), v)
+                raise_from(
+                    validate.ValidationException(
+                        "({}) ({}) Validation error in position {}:\n{}".format(
+                            id(loader), file_base, i, indent(Text(v))
+                        )
+                    ),
+                    v,
+                )
 
         if checklinks:
-            all_doc_ids={}  # type: Dict[Text, Text]
-            loader.validate_links(document, u"", all_doc_ids,
-                                  strict_foreign_properties=strict_foreign_properties)
+            all_doc_ids = {}  # type: Dict[Text, Text]
+            loader.validate_links(
+                document,
+                u"",
+                all_doc_ids,
+                strict_foreign_properties=strict_foreign_properties,
+            )
 
         return document, metadata
 
@@ -1021,7 +1174,7 @@ class Loader(object):
         try:
             text = self.fetch_text(url)
             if isinstance(text, bytes):
-                textIO = StringIO(text.decode('utf-8'))
+                textIO = StringIO(text.decode("utf-8"))
             else:
                 textIO = StringIO(text)
             textIO.name = str(url)
@@ -1031,22 +1184,22 @@ class Loader(object):
             if self.allow_attachments is not None and self.allow_attachments(result):
                 i = 1
                 for a in attachments:
-                    self.idx["%s#attachment-%i" % (url, i)] = a
+                    self.idx["{}#attachment-{}".format(url, i)] = a
                     i += 1
             add_lc_filename(result, url)
         except yaml.parser.ParserError as e:
-            raise_from(validate.ValidationException("Syntax error %s" % Text(e)), e)
-        if (isinstance(result, CommentedMap) and inject_ids
-                and bool(self.identifiers)):
+            raise_from(validate.ValidationException("Syntax error {}".format(e)), e)
+        if isinstance(result, CommentedMap) and inject_ids and bool(self.identifiers):
             for identifier in self.identifiers:
                 if identifier not in result:
                     result[identifier] = url
-                self.idx[self.expand_url(result[identifier], url, scoped_id=True)] = result
+                self.idx[
+                    self.expand_url(result[identifier], url, scoped_id=True)
+                ] = result
         self.idx[url] = result
         return result
 
-
-    FieldType = TypeVar('FieldType', Text, CommentedSeq, CommentedMap)
+    FieldType = TypeVar("FieldType", Text, CommentedSeq, CommentedMap)
 
     def validate_scoped(self, field, link, docid):
         # type: (Text, Text, Text) -> Text
@@ -1059,9 +1212,9 @@ class Loader(object):
         tried = []
         while True:
             sp.append(link)
-            url = urllib.parse.urlunsplit((
-                split.scheme, split.netloc, split.path, split.query,
-                u"/".join(sp)))
+            url = urllib.parse.urlunsplit(
+                (split.scheme, split.netloc, split.path, split.query, u"/".join(sp))
+            )
             tried.append(url)
             if url in self.idx:
                 return url
@@ -1072,28 +1225,39 @@ class Loader(object):
         if onWindows() and link.startswith("file:"):
             link = link.lower()
         raise validate.ValidationException(
-            "Field `%s` references unknown identifier `%s`, tried %s" % (field, link, ", ".join(tried)))
+            "Field `{}` references unknown identifier `{}`, tried {}".format(
+                field, link, ", ".join(tried)
+            )
+        )
 
     def validate_link(self, field, link, docid, all_doc_ids):
-        # type: (Text, FieldType, Text, Dict[Text, Text]) -> FieldType
+        # type: (Text, Loader.FieldType, Text, Dict[Text, Text]) -> Loader.FieldType
         if field in self.nolinkcheck:
             return link
         if isinstance(link, string_types):
             if field in self.vocab_fields:
-                if (link not in self.vocab and link not in self.idx
-                        and link not in self.rvocab):
+                if (
+                    link not in self.vocab
+                    and link not in self.idx
+                    and link not in self.rvocab
+                ):
                     if field in self.scoped_ref_fields:
                         return self.validate_scoped(field, link, docid)
                     elif not self.check_exists(link):
                         raise validate.ValidationException(
-                            "Field `%s` contains undefined reference to `%s`" % (field, link))
+                            "Field `{}` contains undefined reference to `{}`".format(
+                                field, link
+                            )
+                        )
             elif link not in self.idx and link not in self.rvocab:
                 if field in self.scoped_ref_fields:
                     return self.validate_scoped(field, link, docid)
                 elif not self.check_exists(link):
                     raise validate.ValidationException(
-                        "Field `%s` contains undefined reference to `%s`"
-                        % (field, link))
+                        "Field `{}` contains undefined reference to `{}`".format(
+                            field, link
+                        )
+                    )
         elif isinstance(link, CommentedSeq):
             errors = []
             for n, i in enumerate(link):
@@ -1102,14 +1266,15 @@ class Loader(object):
                 except validate.ValidationException as v:
                     errors.append(v)
             if bool(errors):
-                raise validate.ValidationException(
-                    "\n".join([Text(e) for e in errors]))
+                raise validate.ValidationException("\n".join([Text(e) for e in errors]))
         elif isinstance(link, CommentedMap):
             self.validate_links(link, docid, all_doc_ids)
         else:
             raise validate.ValidationException(
-                "`%s` field is %s, expected string, list, or a dict."
-                % (field, type(link).__name__))
+                "`{}` field is {}, expected string, list, or a dict.".format(
+                    field, type(link).__name__
+                )
+            )
         return link
 
     def getid(self, d):  # type: (Any) -> Optional[Text]
@@ -1121,14 +1286,19 @@ class Loader(object):
                         return idd
         return None
 
-    def validate_links(self, document, base_url, all_doc_ids, strict_foreign_properties=False):
-        # type: (Union[CommentedMap, CommentedSeq, Text, None], Text, Dict[Text, Text], bool) -> None
+    def validate_links(
+        self,
+        document,  # type: Union[CommentedMap, CommentedSeq, Text, None]
+        base_url,  # type: Text
+        all_doc_ids,  # type: Dict[Text, Text]
+        strict_foreign_properties=False,  # type: bool
+    ):  # type: (...) -> None
         docid = self.getid(document)
         if not docid:
             docid = base_url
 
-        errors = []         # type: List[Text]
-        iterator = None     # type: Any
+        errors = []  # type: List[Text]
+        iterator = None  # type: Any
         if isinstance(document, MutableSequence):
             iterator = enumerate(document)
         elif isinstance(document, MutableMapping):
@@ -1136,22 +1306,37 @@ class Loader(object):
                 sl = SourceLine(document, d, Text)
                 try:
                     if d in document and d not in self.identity_links:
-                        document[d] = self.validate_link(d, document[d], docid, all_doc_ids)
+                        document[d] = self.validate_link(
+                            d, document[d], docid, all_doc_ids
+                        )
                 except (validate.ValidationException, ValueError) as v:
-                    if d == "$schemas" or (d in self.foreign_properties and not strict_foreign_properties):
+                    if d == "$schemas" or (
+                        d in self.foreign_properties and not strict_foreign_properties
+                    ):
                         _logger.warning(strip_dup_lineno(sl.makeError(Text(v))))
                     else:
                         errors.append(sl.makeError(Text(v)))
-
+            # TODO: Validator should local scope only in which
+            # duplicated keys are prohibited.
+            # See also https://github.com/common-workflow-language/common-workflow-language/issues/734  # noqa: B950
+            # In the future, it should raise
+            # validate.ValidationException instead of _logger.warn
             try:
-                for identifier in self.identifiers:  # validate that each id is defined uniquely
+                for (
+                    identifier
+                ) in self.identifiers:  # validate that each id is defined uniquely
                     if identifier in document:
                         sl = SourceLine(document, identifier, Text)
-                        if document[identifier] in all_doc_ids and sl.makeLead() != all_doc_ids[document[identifier]]:
-                            # TODO: Validator should local scope only in which duplicated keys are prohibited.
-                            # See also https://github.com/common-workflow-language/common-workflow-language/issues/734
-                            # In the future, it should raise validate.ValidationException instead of _logger.warn
-                            _logger.warning("%s object %s `%s` previously defined" % (all_doc_ids[document[identifier]], identifier, relname(document[identifier]), ))
+                        if (
+                            document[identifier] in all_doc_ids
+                            and sl.makeLead() != all_doc_ids[document[identifier]]
+                        ):
+                            _logger.warning(
+                                "%s object %s `%s` previously defined",
+                                all_doc_ids[document[identifier]],
+                                identifier,
+                                relname(document[identifier]),
+                            )
                         else:
                             all_doc_ids[document[identifier]] = sl.makeLead()
                             break
@@ -1168,32 +1353,52 @@ class Loader(object):
         for key, val in iterator:
             sl = SourceLine(document, key, Text)
             try:
-                self.validate_links(val, docid, all_doc_ids, strict_foreign_properties=strict_foreign_properties)
+                self.validate_links(
+                    val,
+                    docid,
+                    all_doc_ids,
+                    strict_foreign_properties=strict_foreign_properties,
+                )
             except validate.ValidationException as v:
-                if key in self.nolinkcheck or (isinstance(key, string_types) and ":" in key):
+                if key in self.nolinkcheck or (
+                    isinstance(key, string_types) and ":" in key
+                ):
                     _logger.warning(indent(Text(v)))
                 else:
                     docid2 = self.getid(val)
                     if docid2 is not None:
-                        errors.append(sl.makeError(
-                            "checking object `%s`\n%s" % (relname(docid2), indent(Text(v)))))
+                        errors.append(
+                            sl.makeError(
+                                "checking object `{}`\n{}".format(
+                                    relname(docid2), indent(Text(v))
+                                )
+                            )
+                        )
                     else:
                         if isinstance(key, string_types):
-                            errors.append(sl.makeError("checking field `%s`\n%s" % (
-                                key, indent(Text(v)))))
+                            errors.append(
+                                sl.makeError(
+                                    "checking field `{}`\n{}".format(
+                                        key, indent(Text(v))
+                                    )
+                                )
+                            )
                         else:
-                            errors.append(sl.makeError("checking item\n%s" % (
-                                indent(Text(v)))))
+                            errors.append(
+                                sl.makeError(
+                                    "checking item\n{}".format(indent(Text(v)))
+                                )
+                            )
         if bool(errors):
             if len(errors) > 1:
-                raise validate.ValidationException(
-                    u"\n".join(errors))
+                raise validate.ValidationException(u"\n".join(errors))
             else:
                 raise validate.ValidationException(errors[0])
         return
 
 
-D = TypeVar('D', CommentedMap, ContextType)
+D = TypeVar("D", CommentedMap, ContextType)
+
 
 def _copy_dict_without_key(from_dict, filtered_key):
     # type: (D, Any) -> D

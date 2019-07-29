@@ -4,28 +4,40 @@
 # subject to the license of the original schema.
 #
 import copy
-import re
 import os
-import uuid  # pylint: disable=unused-import
-from typing import (Any, Dict, List, Optional, MutableMapping, MutableSequence,
-                    Sequence, Tuple, Type, Union)
+import re
+import uuid  # pylint: disable=unused-import # noqa: F401
+from typing import (
+    Any,
+    Dict,
+    List,
+    MutableMapping,
+    MutableSequence,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+)
 
-from schema_salad.ref_resolver import Fetcher
-from schema_salad.sourceline import SourceLine, indent, bullets, add_lc_filename
-
-from ruamel import yaml
-from ruamel.yaml.comments import CommentedMap
-import six
 from six import iteritems, string_types, text_type
 from six.moves import StringIO, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
+
+from ruamel import yaml
+from ruamel.yaml.comments import CommentedMap
+from schema_salad.ref_resolver import Fetcher
+from schema_salad.sourceline import SourceLine, add_lc_filename, bullets, indent
+
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 _vocab = {}  # type: Dict[Text, Text]
 _rvocab = {}  # type: Dict[Text, Text]
 
+
 class ValidationException(Exception):
     pass
+
 
 class Savable(object):
     @classmethod
@@ -37,15 +49,17 @@ class Savable(object):
         # type: (bool, Text, bool) -> Dict[Text, Text]
         pass
 
+
 class LoadingOptions(object):
-    def __init__(self,
-                 fetcher=None,      # type: Optional[Fetcher]
-                 namespaces=None,   # type: Optional[Dict[Text, Text]]
-                 fileuri=None,      # type: Optional[Text]
-                 copyfrom=None,     # type: Optional[LoadingOptions]
-                 schemas=None,      # type: Optional[List[Text]]
-                 original_doc=None  # type: Optional[Any]
-                ):  # type: (...) -> None
+    def __init__(
+        self,
+        fetcher=None,  # type: Optional[Fetcher]
+        namespaces=None,  # type: Optional[Dict[Text, Text]]
+        fileuri=None,  # type: Optional[Text]
+        copyfrom=None,  # type: Optional[LoadingOptions]
+        schemas=None,  # type: Optional[List[Text]]
+        original_doc=None,  # type: Optional[Any]
+    ):  # type: (...) -> None
         self.idx = {}  # type: Dict[Text, Text]
         self.fileuri = fileuri  # type: Optional[Text]
         self.namespaces = namespaces
@@ -67,22 +81,28 @@ class LoadingOptions(object):
             from cachecontrol.wrapper import CacheControl
             from cachecontrol.caches import FileCache
             from schema_salad.ref_resolver import DefaultFetcher
+
             if "HOME" in os.environ:
                 session = CacheControl(
                     requests.Session(),
-                    cache=FileCache(os.path.join(os.environ["HOME"], ".cache", "salad")))
+                    cache=FileCache(
+                        os.path.join(os.environ["HOME"], ".cache", "salad")
+                    ),
+                )
             elif "TMPDIR" in os.environ:
                 session = CacheControl(
                     requests.Session(),
-                    cache=FileCache(os.path.join(os.environ["TMPDIR"], ".cache", "salad")))
+                    cache=FileCache(
+                        os.path.join(os.environ["TMPDIR"], ".cache", "salad")
+                    ),
+                )
             else:
                 session = CacheControl(
-                    requests.Session(),
-                    cache=FileCache("/tmp", ".cache", "salad"))
+                    requests.Session(), cache=FileCache("/tmp", ".cache", "salad")
+                )
             self.fetcher = DefaultFetcher({}, session)  # type: Fetcher
         else:
             self.fetcher = fetcher
-
 
         self.vocab = _vocab
         self.rvocab = _rvocab
@@ -90,46 +110,64 @@ class LoadingOptions(object):
         if namespaces is not None:
             self.vocab = self.vocab.copy()
             self.rvocab = self.rvocab.copy()
-            for k,v in iteritems(namespaces):
+            for k, v in iteritems(namespaces):
                 self.vocab[k] = v
                 self.rvocab[v] = k
-
 
 
 def load_field(val, fieldtype, baseuri, loadingOptions):
     # type: (Union[Text, Dict[Text, Text]], _Loader, Text, LoadingOptions) -> Any
     if isinstance(val, MutableMapping):
         if "$import" in val:
-            return _document_load_by_url(fieldtype, loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$import"]), loadingOptions)
+            return _document_load_by_url(
+                fieldtype,
+                loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$import"]),
+                loadingOptions,
+            )
         elif "$include" in val:
-            val = loadingOptions.fetcher.fetch_text(loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"]))
+            val = loadingOptions.fetcher.fetch_text(
+                loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
+            )
     return fieldtype.load(val, baseuri, loadingOptions)
 
 
-def save(val,                # type: Optional[Union[Savable, MutableSequence[Savable]]]
-         top=True,           # type: bool
-         base_url="",        # type: Text
-         relative_uris=True  # type: bool
-        ):  # type: (...) -> Union[Dict[Text, Text], List[Union[Dict[Text, Text], List[Any], None]], None]
+save_type = Union[
+    Dict[Text, Text], List[Union[Dict[Text, Text], List[Any], None]], None
+]
+
+
+def save(
+    val,  # type: Optional[Union[Savable, MutableSequence[Savable]]]
+    top=True,  # type: bool
+    base_url="",  # type: Text
+    relative_uris=True,  # type: bool
+):  # type: (...) -> save_type
 
     if isinstance(val, Savable):
         return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
     if isinstance(val, MutableSequence):
-        return [save(v, top=False, base_url=base_url, relative_uris=relative_uris) for v in val]
+        return [
+            save(v, top=False, base_url=base_url, relative_uris=relative_uris)
+            for v in val
+        ]
     if isinstance(val, MutableMapping):
         newdict = {}
         for key in val:
-            newdict[key] = save(val[key], top=False, base_url=base_url, relative_uris=relative_uris)
+            newdict[key] = save(
+                val[key], top=False, base_url=base_url, relative_uris=relative_uris
+            )
         return newdict
     return val
 
-def expand_url(url,                 # type: Union[str, Text]
-               base_url,            # type: Union[str, Text]
-               loadingOptions,      # type: LoadingOptions
-               scoped_id=False,     # type: bool
-               vocab_term=False,    # type: bool
-               scoped_ref=None      # type: Optional[int]
-               ):
+
+def expand_url(
+    url,  # type: Union[str, Text]
+    base_url,  # type: Union[str, Text]
+    loadingOptions,  # type: LoadingOptions
+    scoped_id=False,  # type: bool
+    vocab_term=False,  # type: bool
+    scoped_ref=None,  # type: Optional[int]
+):
     # type: (...) -> Text
 
     if not isinstance(url, string_types):
@@ -146,12 +184,15 @@ def expand_url(url,                 # type: Union[str, Text]
     if bool(loadingOptions.vocab) and u":" in url:
         prefix = url.split(u":")[0]
         if prefix in loadingOptions.vocab:
-            url = loadingOptions.vocab[prefix] + url[len(prefix) + 1:]
+            url = loadingOptions.vocab[prefix] + url[len(prefix) + 1 :]
 
     split = urllib.parse.urlsplit(url)
 
-    if ((bool(split.scheme) and split.scheme in [u'http', u'https', u'file']) or url.startswith(u"$(")
-        or url.startswith(u"${")):
+    if (
+        (bool(split.scheme) and split.scheme in [u"http", u"https", u"file"])
+        or url.startswith(u"$(")
+        or url.startswith(u"${")
+    ):
         pass
     elif scoped_id and not bool(split.fragment):
         splitbase = urllib.parse.urlsplit(base_url)
@@ -160,9 +201,10 @@ def expand_url(url,                 # type: Union[str, Text]
             frg = splitbase.fragment + u"/" + split.path
         else:
             frg = split.path
-        pt = splitbase.path if splitbase.path != '' else "/"
+        pt = splitbase.path if splitbase.path != "" else "/"
         url = urllib.parse.urlunsplit(
-            (splitbase.scheme, splitbase.netloc, pt, splitbase.query, frg))
+            (splitbase.scheme, splitbase.netloc, pt, splitbase.query, frg)
+        )
     elif scoped_ref is not None and not bool(split.fragment):
         splitbase = urllib.parse.urlsplit(base_url)
         sp = splitbase.fragment.split(u"/")
@@ -171,9 +213,15 @@ def expand_url(url,                 # type: Union[str, Text]
             sp.pop()
             n -= 1
         sp.append(url)
-        url = urllib.parse.urlunsplit((
-            splitbase.scheme, splitbase.netloc, splitbase.path, splitbase.query,
-            u"/".join(sp)))
+        url = urllib.parse.urlunsplit(
+            (
+                splitbase.scheme,
+                splitbase.netloc,
+                splitbase.path,
+                splitbase.query,
+                u"/".join(sp),
+            )
+        )
     else:
         url = loadingOptions.fetcher.urljoin(base_url, url)
 
@@ -183,7 +231,7 @@ def expand_url(url,                 # type: Union[str, Text]
             if url in loadingOptions.rvocab:
                 return loadingOptions.rvocab[url]
         else:
-            raise ValidationException("Term '%s' not in vocabulary" % url)
+            raise ValidationException("Term '{}' not in vocabulary".format(url))
 
     return url
 
@@ -193,12 +241,14 @@ class _Loader(object):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         pass
 
+
 class _AnyLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         if doc is not None:
             return doc
         raise ValidationException("Expected non-null")
+
 
 class _PrimitiveLoader(_Loader):
     def __init__(self, tp):
@@ -208,11 +258,16 @@ class _PrimitiveLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         if not isinstance(doc, self.tp):
-            raise ValidationException("Expected a %s but got %s" % (self.tp.__class__.__name__, doc.__class__.__name__))
+            raise ValidationException(
+                "Expected a {} but got {}".format(
+                    self.tp.__class__.__name__, doc.__class__.__name__
+                )
+            )
         return doc
 
     def __repr__(self):  # type: () -> str
         return str(self.tp)
+
 
 class _ArrayLoader(_Loader):
     def __init__(self, items):
@@ -227,7 +282,9 @@ class _ArrayLoader(_Loader):
         errors = []
         for i in range(0, len(doc)):
             try:
-                lf = load_field(doc[i], _UnionLoader((self, self.items)), baseuri, loadingOptions)
+                lf = load_field(
+                    doc[i], _UnionLoader((self, self.items)), baseuri, loadingOptions
+                )
                 if isinstance(lf, MutableSequence):
                     r.extend(lf)
                 else:
@@ -239,7 +296,8 @@ class _ArrayLoader(_Loader):
         return r
 
     def __repr__(self):  # type: () -> str
-        return "array<%s>" % self.items
+        return "array<{}>".format(self.items)
+
 
 class _EnumLoader(_Loader):
     def __init__(self, symbols):
@@ -251,7 +309,7 @@ class _EnumLoader(_Loader):
         if doc in self.symbols:
             return doc
         else:
-            raise ValidationException("Expected one of %s" % (self.symbols,))
+            raise ValidationException("Expected one of {}".format(self.symbols))
 
 
 class _RecordLoader(_Loader):
@@ -281,11 +339,14 @@ class _UnionLoader(_Loader):
             try:
                 return t.load(doc, baseuri, loadingOptions, docRoot=docRoot)
             except ValidationException as e:
-                errors.append(u"tried %s but\n%s" % (t.__class__.__name__, indent(str(e))))
+                errors.append(
+                    u"tried {} but\n{}".format(t.__class__.__name__, indent(str(e)))
+                )
         raise ValidationException(bullets(errors, u"- "))
 
     def __repr__(self):  # type: () -> str
         return " | ".join(str(a) for a in self.alternates)
+
 
 class _URILoader(_Loader):
     def __init__(self, inner, scoped_id, vocab_term, scoped_ref):
@@ -298,12 +359,28 @@ class _URILoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         if isinstance(doc, MutableSequence):
-            doc = [expand_url(i, baseuri, loadingOptions,
-                            self.scoped_id, self.vocab_term, self.scoped_ref) for i in doc]
+            doc = [
+                expand_url(
+                    i,
+                    baseuri,
+                    loadingOptions,
+                    self.scoped_id,
+                    self.vocab_term,
+                    self.scoped_ref,
+                )
+                for i in doc
+            ]
         if isinstance(doc, string_types):
-            doc = expand_url(doc, baseuri, loadingOptions,
-                             self.scoped_id, self.vocab_term, self.scoped_ref)
+            doc = expand_url(
+                doc,
+                baseuri,
+                loadingOptions,
+                self.scoped_id,
+                self.vocab_term,
+                self.scoped_ref,
+            )
         return self.inner.load(doc, baseuri, loadingOptions)
+
 
 class _TypeDSLLoader(_Loader):
     typeDSLregex = re.compile(r"^([^[?]+)(\[\])?(\?)?$")
@@ -317,21 +394,23 @@ class _TypeDSLLoader(_Loader):
         # type: (Any, Text, LoadingOptions) -> Any
         m = self.typeDSLregex.match(doc)
         if m:
-            first = expand_url(m.group(1), baseuri, loadingOptions, False, True, self.refScope)
+            first = expand_url(
+                m.group(1), baseuri, loadingOptions, False, True, self.refScope
+            )
             second = third = None
             if bool(m.group(2)):
                 second = {"type": "array", "items": first}
-                #second = CommentedMap((("type", "array"),
+                # second = CommentedMap((("type", "array"),
                 #                       ("items", first)))
-                #second.lc.add_kv_line_col("type", lc)
-                #second.lc.add_kv_line_col("items", lc)
-                #second.lc.filename = filename
+                # second.lc.add_kv_line_col("type", lc)
+                # second.lc.add_kv_line_col("items", lc)
+                # second.lc.filename = filename
             if bool(m.group(3)):
                 third = [u"null", second or first]
-                #third = CommentedSeq([u"null", second or first])
-                #third.lc.add_kv_line_col(0, lc)
-                #third.lc.add_kv_line_col(1, lc)
-                #third.lc.filename = filename
+                # third = CommentedSeq([u"null", second or first])
+                # third.lc.add_kv_line_col(0, lc)
+                # third.lc.add_kv_line_col(1, lc)
+                # third.lc.filename = filename
             doc = third or second or first
         return doc
 
@@ -395,16 +474,22 @@ class _IdMapLoader(_Loader):
 def _document_load(loader, doc, baseuri, loadingOptions):
     # type: (_Loader, Any, Text, LoadingOptions) -> Any
     if isinstance(doc, string_types):
-        return _document_load_by_url(loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions)
+        return _document_load_by_url(
+            loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions
+        )
 
     if isinstance(doc, MutableMapping):
         if "$namespaces" in doc:
-            loadingOptions = LoadingOptions(copyfrom=loadingOptions, namespaces=doc["$namespaces"])
-            doc = {k: v for k,v in doc.items() if k != "$namespaces"}
+            loadingOptions = LoadingOptions(
+                copyfrom=loadingOptions, namespaces=doc["$namespaces"]
+            )
+            doc = {k: v for k, v in doc.items() if k != "$namespaces"}
 
         if "$schemas" in doc:
-            loadingOptions = LoadingOptions(copyfrom=loadingOptions, schemas=doc["$schemas"])
-            doc = {k: v for k,v in doc.items() if k != "$schemas"}
+            loadingOptions = LoadingOptions(
+                copyfrom=loadingOptions, schemas=doc["$schemas"]
+            )
+            doc = {k: v for k, v in doc.items() if k != "$schemas"}
 
         if "$base" in doc:
             baseuri = doc["$base"]
@@ -427,7 +512,7 @@ def _document_load_by_url(loader, url, loadingOptions):
 
     text = loadingOptions.fetcher.fetch_text(url)
     if isinstance(text, bytes):
-        textIO = StringIO(text.decode('utf-8'))
+        textIO = StringIO(text.decode("utf-8"))
     else:
         textIO = StringIO(text)
     textIO.name = str(url)
@@ -440,6 +525,7 @@ def _document_load_by_url(loader, url, loadingOptions):
 
     return _document_load(loader, result, url, loadingOptions)
 
+
 def file_uri(path, split_frag=False):  # type: (str, bool) -> str
     if path.startswith("file://"):
         return path
@@ -451,22 +537,27 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         urlpath = urllib.request.pathname2url(path)
         frag = ""
     if urlpath.startswith("//"):
-        return "file:%s%s" % (urlpath, frag)
+        return "file:{}{}".format(urlpath, frag)
     else:
-        return "file://%s%s" % (urlpath, frag)
+        return "file://{}{}".format(urlpath, frag)
+
 
 def prefix_url(url, namespaces):  # type: (Text, Dict[Text, Text]) -> Text
-    for k,v in namespaces.items():
+    for k, v in namespaces.items():
         if url.startswith(v):
-            return k+":"+url[len(v):]
+            return k + ":" + url[len(v) :]
     return url
+
 
 def save_relative_uri(uri, base_url, scoped_id, ref_scope, relative_uris):
     # type: (Text, Text, bool, Optional[int], bool) -> Union[Text, List[Text]]
     if not relative_uris:
         return uri
     if isinstance(uri, MutableSequence):
-        return [save_relative_uri(u, base_url, scoped_id, ref_scope, relative_uris) for u in uri]
+        return [
+            save_relative_uri(u, base_url, scoped_id, ref_scope, relative_uris)
+            for u in uri
+        ]
     elif isinstance(uri, text_type):
         urisplit = urllib.parse.urlsplit(uri)
         basesplit = urllib.parse.urlsplit(base_url)
@@ -477,7 +568,7 @@ def save_relative_uri(uri, base_url, scoped_id, ref_scope, relative_uris):
                     p = p + "#" + urisplit.fragment
                 return p
 
-            basefrag = basesplit.fragment+"/"
+            basefrag = basesplit.fragment + "/"
             if ref_scope:
                 sp = basefrag.split("/")
                 i = 0
@@ -487,7 +578,7 @@ def save_relative_uri(uri, base_url, scoped_id, ref_scope, relative_uris):
                 basefrag = "/".join(sp)
 
             if urisplit.fragment.startswith(basefrag):
-                return urisplit.fragment[len(basefrag):]
+                return urisplit.fragment[len(basefrag) :]
             else:
                 return urisplit.fragment
         return uri
@@ -498,12 +589,21 @@ def save_relative_uri(uri, base_url, scoped_id, ref_scope, relative_uris):
 class Documented(Savable):
     pass
 
+
 class RecordField(Documented):
     """
 A field of a record.
     """
-    def __init__(self, doc, name, type, extension_fields=None, loadingOptions=None):
-        # type: (Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+
+    def __init__(
+        self,
+        doc,  # type: Any
+        name,  # type: Any
+        type,  # type: Any
+        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        loadingOptions=None,  # type: Optional[LoadingOptions]
+    ):  # type: (...) -> None
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -516,24 +616,31 @@ A field of a record.
         self.name = name
         self.type = type
 
-
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> RecordField
 
         _doc = copy.copy(doc)
-        if hasattr(doc, 'lc'):
+        if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         errors = []
-        if 'name' in _doc:
+        if "name" in _doc:
             try:
-                name = load_field(_doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
+                name = load_field(
+                    _doc.get("name"),
+                    uri_strtype_True_False_None,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'name', str).makeError("the `name` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "name", str).makeError(
+                        "the `name` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             name = None
-
 
         if name is None:
             if docRoot is not None:
@@ -541,35 +648,65 @@ A field of a record.
             else:
                 raise ValidationException("Missing name")
         baseuri = name
-        if 'doc' in _doc:
+        if "doc" in _doc:
             try:
-                doc = load_field(_doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
+                doc = load_field(
+                    _doc.get("doc"),
+                    union_of_None_type_or_strtype_or_array_of_strtype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "doc", str).makeError(
+                        "the `doc` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             doc = None
 
         try:
-            type = load_field(_doc.get('type'), typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2, baseuri, loadingOptions)
+            type = load_field(
+                _doc.get("type"),
+                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2,
+                baseuri,
+                loadingOptions,
+            )
         except ValidationException as e:
-            errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
-
+            errors.append(
+                SourceLine(_doc, "type", str).makeError(
+                    "the `type` field is not valid because:\n" + str(e)
+                )
+            )
 
         extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, u"", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `doc`, `name`, `type`" % (k)))
+                    errors.append(
+                        SourceLine(_doc, k, str).makeError(
+                            "invalid field `%s`, expected one of: `doc`, `name`, `type`"
+                            % (k)
+                        )
+                    )
                     break
 
         if errors:
-            raise ValidationException("Trying 'RecordField'\n"+"\n".join(errors))
+            raise ValidationException("Trying 'RecordField'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(doc, name, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(
+            doc,
+            name,
+            type,
+            extension_fields=extension_fields,
+            loadingOptions=loadingOptions,
+        )
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
@@ -580,25 +717,35 @@ A field of a record.
         if self.name is not None:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             if u:
-                r['name'] = u
+                r["name"] = u
 
         if self.doc is not None:
-            r['doc'] = save(self.doc, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["doc"] = save(
+                self.doc, top=False, base_url=self.name, relative_uris=relative_uris
+            )
 
         if self.type is not None:
-            r['type'] = save(self.type, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["type"] = save(
+                self.type, top=False, base_url=self.name, relative_uris=relative_uris
+            )
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['doc', 'name', 'type'])
+    attrs = frozenset(["doc", "name", "type"])
 
 
 class RecordSchema(Savable):
-    def __init__(self, fields, type, extension_fields=None, loadingOptions=None):
-        # type: (Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+    def __init__(
+        self,
+        fields,  # type: Any
+        type,  # type: Any
+        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        loadingOptions=None,  # type: Optional[LoadingOptions]
+    ):  # type: (...) -> None
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -610,45 +757,73 @@ class RecordSchema(Savable):
         self.fields = fields
         self.type = type
 
-
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> RecordSchema
 
         _doc = copy.copy(doc)
-        if hasattr(doc, 'lc'):
+        if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         errors = []
-        if 'fields' in _doc:
+        if "fields" in _doc:
             try:
-                fields = load_field(_doc.get('fields'), idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader, baseuri, loadingOptions)
+                fields = load_field(
+                    _doc.get("fields"),
+                    idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'fields', str).makeError("the `fields` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "fields", str).makeError(
+                        "the `fields` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             fields = None
 
         try:
-            type = load_field(_doc.get('type'), typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2, baseuri, loadingOptions)
+            type = load_field(
+                _doc.get("type"),
+                typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2,
+                baseuri,
+                loadingOptions,
+            )
         except ValidationException as e:
-            errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
-
+            errors.append(
+                SourceLine(_doc, "type", str).makeError(
+                    "the `type` field is not valid because:\n" + str(e)
+                )
+            )
 
         extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, u"", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `fields`, `type`" % (k)))
+                    errors.append(
+                        SourceLine(_doc, k, str).makeError(
+                            "invalid field `%s`, expected one of: `fields`, `type`"
+                            % (k)
+                        )
+                    )
                     break
 
         if errors:
-            raise ValidationException("Trying 'RecordSchema'\n"+"\n".join(errors))
+            raise ValidationException("Trying 'RecordSchema'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(fields, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(
+            fields,
+            type,
+            extension_fields=extension_fields,
+            loadingOptions=loadingOptions,
+        )
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
@@ -657,17 +832,21 @@ class RecordSchema(Savable):
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
         if self.fields is not None:
-            r['fields'] = save(self.fields, top=False, base_url=base_url, relative_uris=relative_uris)
+            r["fields"] = save(
+                self.fields, top=False, base_url=base_url, relative_uris=relative_uris
+            )
 
         if self.type is not None:
-            r['type'] = save(self.type, top=False, base_url=base_url, relative_uris=relative_uris)
+            r["type"] = save(
+                self.type, top=False, base_url=base_url, relative_uris=relative_uris
+            )
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['fields', 'type'])
+    attrs = frozenset(["fields", "type"])
 
 
 class EnumSchema(Savable):
@@ -675,8 +854,15 @@ class EnumSchema(Savable):
 Define an enumerated type.
 
     """
-    def __init__(self, symbols, type, extension_fields=None, loadingOptions=None):
-        # type: (Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+
+    def __init__(
+        self,
+        symbols,  # type: Any
+        type,  # type: Any
+        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        loadingOptions=None,  # type: Optional[LoadingOptions]
+    ):  # type: (...) -> None
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -688,42 +874,70 @@ Define an enumerated type.
         self.symbols = symbols
         self.type = type
 
-
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> EnumSchema
 
         _doc = copy.copy(doc)
-        if hasattr(doc, 'lc'):
+        if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         errors = []
         try:
-            symbols = load_field(_doc.get('symbols'), uri_array_of_strtype_True_False_None, baseuri, loadingOptions)
+            symbols = load_field(
+                _doc.get("symbols"),
+                uri_array_of_strtype_True_False_None,
+                baseuri,
+                loadingOptions,
+            )
         except ValidationException as e:
-            errors.append(SourceLine(_doc, 'symbols', str).makeError("the `symbols` field is not valid because:\n"+str(e)))
+            errors.append(
+                SourceLine(_doc, "symbols", str).makeError(
+                    "the `symbols` field is not valid because:\n" + str(e)
+                )
+            )
 
         try:
-            type = load_field(_doc.get('type'), typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2, baseuri, loadingOptions)
+            type = load_field(
+                _doc.get("type"),
+                typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2,
+                baseuri,
+                loadingOptions,
+            )
         except ValidationException as e:
-            errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
-
+            errors.append(
+                SourceLine(_doc, "type", str).makeError(
+                    "the `type` field is not valid because:\n" + str(e)
+                )
+            )
 
         extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, u"", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `symbols`, `type`" % (k)))
+                    errors.append(
+                        SourceLine(_doc, k, str).makeError(
+                            "invalid field `%s`, expected one of: `symbols`, `type`"
+                            % (k)
+                        )
+                    )
                     break
 
         if errors:
-            raise ValidationException("Trying 'EnumSchema'\n"+"\n".join(errors))
+            raise ValidationException("Trying 'EnumSchema'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(symbols, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(
+            symbols,
+            type,
+            extension_fields=extension_fields,
+            loadingOptions=loadingOptions,
+        )
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
@@ -734,22 +948,30 @@ Define an enumerated type.
         if self.symbols is not None:
             u = save_relative_uri(self.symbols, base_url, True, None, relative_uris)
             if u:
-                r['symbols'] = u
+                r["symbols"] = u
 
         if self.type is not None:
-            r['type'] = save(self.type, top=False, base_url=base_url, relative_uris=relative_uris)
+            r["type"] = save(
+                self.type, top=False, base_url=base_url, relative_uris=relative_uris
+            )
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['symbols', 'type'])
+    attrs = frozenset(["symbols", "type"])
 
 
 class ArraySchema(Savable):
-    def __init__(self, items, type, extension_fields=None, loadingOptions=None):
-        # type: (Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+    def __init__(
+        self,
+        items,  # type: Any
+        type,  # type: Any
+        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        loadingOptions=None,  # type: Optional[LoadingOptions]
+    ):  # type: (...) -> None
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -761,42 +983,69 @@ class ArraySchema(Savable):
         self.items = items
         self.type = type
 
-
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> ArraySchema
 
         _doc = copy.copy(doc)
-        if hasattr(doc, 'lc'):
+        if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         errors = []
         try:
-            items = load_field(_doc.get('items'), uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2, baseuri, loadingOptions)
+            items = load_field(
+                _doc.get("items"),
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2,
+                baseuri,
+                loadingOptions,
+            )
         except ValidationException as e:
-            errors.append(SourceLine(_doc, 'items', str).makeError("the `items` field is not valid because:\n"+str(e)))
+            errors.append(
+                SourceLine(_doc, "items", str).makeError(
+                    "the `items` field is not valid because:\n" + str(e)
+                )
+            )
 
         try:
-            type = load_field(_doc.get('type'), typedsl_enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader_2, baseuri, loadingOptions)
+            type = load_field(
+                _doc.get("type"),
+                typedsl_enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader_2,
+                baseuri,
+                loadingOptions,
+            )
         except ValidationException as e:
-            errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
-
+            errors.append(
+                SourceLine(_doc, "type", str).makeError(
+                    "the `type` field is not valid because:\n" + str(e)
+                )
+            )
 
         extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, u"", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `items`, `type`" % (k)))
+                    errors.append(
+                        SourceLine(_doc, k, str).makeError(
+                            "invalid field `%s`, expected one of: `items`, `type`" % (k)
+                        )
+                    )
                     break
 
         if errors:
-            raise ValidationException("Trying 'ArraySchema'\n"+"\n".join(errors))
+            raise ValidationException("Trying 'ArraySchema'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(items, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(
+            items,
+            type,
+            extension_fields=extension_fields,
+            loadingOptions=loadingOptions,
+        )
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
@@ -807,17 +1056,19 @@ class ArraySchema(Savable):
         if self.items is not None:
             u = save_relative_uri(self.items, base_url, False, 2, relative_uris)
             if u:
-                r['items'] = u
+                r["items"] = u
 
         if self.type is not None:
-            r['type'] = save(self.type, top=False, base_url=base_url, relative_uris=relative_uris)
+            r["type"] = save(
+                self.type, top=False, base_url=base_url, relative_uris=relative_uris
+            )
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['items', 'type'])
+    attrs = frozenset(["items", "type"])
 
 
 class JsonldPredicate(Savable):
@@ -826,8 +1077,24 @@ Attached to a record field to define how the parent record field is handled for
 URI resolution and JSON-LD context generation.
 
     """
-    def __init__(self, _id, _type, _container, identity, noLinkCheck, mapSubject, mapPredicate, refScope, typeDSL, secondaryFilesDSL, subscope, extension_fields=None, loadingOptions=None):
-        # type: (Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+
+    def __init__(
+        self,
+        _id,  # type: Any
+        _type,  # type: Any
+        _container,  # type: Any
+        identity,  # type: Any
+        noLinkCheck,  # type: Any
+        mapSubject,  # type: Any
+        mapPredicate,  # type: Any
+        refScope,  # type: Any
+        typeDSL,  # type: Any
+        secondaryFilesDSL,  # type: Any
+        subscope,  # type: Any
+        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        loadingOptions=None,  # type: Optional[LoadingOptions]
+    ):  # type: (...) -> None
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -848,120 +1115,238 @@ URI resolution and JSON-LD context generation.
         self.secondaryFilesDSL = secondaryFilesDSL
         self.subscope = subscope
 
-
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> JsonldPredicate
 
         _doc = copy.copy(doc)
-        if hasattr(doc, 'lc'):
+        if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         errors = []
-        if '_id' in _doc:
+        if "_id" in _doc:
             try:
-                _id = load_field(_doc.get('_id'), uri_union_of_None_type_or_strtype_True_False_None, baseuri, loadingOptions)
+                _id = load_field(
+                    _doc.get("_id"),
+                    uri_union_of_None_type_or_strtype_True_False_None,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, '_id', str).makeError("the `_id` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "_id", str).makeError(
+                        "the `_id` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             _id = None
 
-        if '_type' in _doc:
+        if "_type" in _doc:
             try:
-                _type = load_field(_doc.get('_type'), union_of_None_type_or_strtype, baseuri, loadingOptions)
+                _type = load_field(
+                    _doc.get("_type"),
+                    union_of_None_type_or_strtype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, '_type', str).makeError("the `_type` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "_type", str).makeError(
+                        "the `_type` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             _type = None
 
-        if '_container' in _doc:
+        if "_container" in _doc:
             try:
-                _container = load_field(_doc.get('_container'), union_of_None_type_or_strtype, baseuri, loadingOptions)
+                _container = load_field(
+                    _doc.get("_container"),
+                    union_of_None_type_or_strtype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, '_container', str).makeError("the `_container` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "_container", str).makeError(
+                        "the `_container` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             _container = None
 
-        if 'identity' in _doc:
+        if "identity" in _doc:
             try:
-                identity = load_field(_doc.get('identity'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                identity = load_field(
+                    _doc.get("identity"),
+                    union_of_None_type_or_booltype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'identity', str).makeError("the `identity` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "identity", str).makeError(
+                        "the `identity` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             identity = None
 
-        if 'noLinkCheck' in _doc:
+        if "noLinkCheck" in _doc:
             try:
-                noLinkCheck = load_field(_doc.get('noLinkCheck'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                noLinkCheck = load_field(
+                    _doc.get("noLinkCheck"),
+                    union_of_None_type_or_booltype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'noLinkCheck', str).makeError("the `noLinkCheck` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "noLinkCheck", str).makeError(
+                        "the `noLinkCheck` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             noLinkCheck = None
 
-        if 'mapSubject' in _doc:
+        if "mapSubject" in _doc:
             try:
-                mapSubject = load_field(_doc.get('mapSubject'), union_of_None_type_or_strtype, baseuri, loadingOptions)
+                mapSubject = load_field(
+                    _doc.get("mapSubject"),
+                    union_of_None_type_or_strtype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'mapSubject', str).makeError("the `mapSubject` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "mapSubject", str).makeError(
+                        "the `mapSubject` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             mapSubject = None
 
-        if 'mapPredicate' in _doc:
+        if "mapPredicate" in _doc:
             try:
-                mapPredicate = load_field(_doc.get('mapPredicate'), union_of_None_type_or_strtype, baseuri, loadingOptions)
+                mapPredicate = load_field(
+                    _doc.get("mapPredicate"),
+                    union_of_None_type_or_strtype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'mapPredicate', str).makeError("the `mapPredicate` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "mapPredicate", str).makeError(
+                        "the `mapPredicate` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             mapPredicate = None
 
-        if 'refScope' in _doc:
+        if "refScope" in _doc:
             try:
-                refScope = load_field(_doc.get('refScope'), union_of_None_type_or_inttype, baseuri, loadingOptions)
+                refScope = load_field(
+                    _doc.get("refScope"),
+                    union_of_None_type_or_inttype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'refScope', str).makeError("the `refScope` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "refScope", str).makeError(
+                        "the `refScope` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             refScope = None
 
-        if 'typeDSL' in _doc:
+        if "typeDSL" in _doc:
             try:
-                typeDSL = load_field(_doc.get('typeDSL'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                typeDSL = load_field(
+                    _doc.get("typeDSL"),
+                    union_of_None_type_or_booltype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'typeDSL', str).makeError("the `typeDSL` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "typeDSL", str).makeError(
+                        "the `typeDSL` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             typeDSL = None
 
-        if 'secondaryFilesDSL' in _doc:
+        if "secondaryFilesDSL" in _doc:
             try:
-                secondaryFilesDSL = load_field(_doc.get('secondaryFilesDSL'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                secondaryFilesDSL = load_field(
+                    _doc.get("secondaryFilesDSL"),
+                    union_of_None_type_or_booltype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'secondaryFilesDSL', str).makeError("the `secondaryFilesDSL` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "secondaryFilesDSL", str).makeError(
+                        "the `secondaryFilesDSL` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             secondaryFilesDSL = None
 
-        if 'subscope' in _doc:
+        if "subscope" in _doc:
             try:
-                subscope = load_field(_doc.get('subscope'), union_of_None_type_or_strtype, baseuri, loadingOptions)
+                subscope = load_field(
+                    _doc.get("subscope"),
+                    union_of_None_type_or_strtype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'subscope', str).makeError("the `subscope` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "subscope", str).makeError(
+                        "the `subscope` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             subscope = None
-
 
         extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, u"", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `_id`, `_type`, `_container`, `identity`, `noLinkCheck`, `mapSubject`, `mapPredicate`, `refScope`, `typeDSL`, `secondaryFilesDSL`, `subscope`" % (k)))
+                    errors.append(
+                        SourceLine(_doc, k, str).makeError(
+                            "invalid field `%s`, expected one of: `_id`, `_type`, `_container`, `identity`, `noLinkCheck`, `mapSubject`, `mapPredicate`, `refScope`, `typeDSL`, `secondaryFilesDSL`, `subscope`"
+                            % (k)
+                        )
+                    )
                     break
 
         if errors:
-            raise ValidationException("Trying 'JsonldPredicate'\n"+"\n".join(errors))
+            raise ValidationException("Trying 'JsonldPredicate'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(_id, _type, _container, identity, noLinkCheck, mapSubject, mapPredicate, refScope, typeDSL, secondaryFilesDSL, subscope, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(
+            _id,
+            _type,
+            _container,
+            identity,
+            noLinkCheck,
+            mapSubject,
+            mapPredicate,
+            refScope,
+            typeDSL,
+            secondaryFilesDSL,
+            subscope,
+            extension_fields=extension_fields,
+            loadingOptions=loadingOptions,
+        )
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
@@ -972,49 +1357,104 @@ URI resolution and JSON-LD context generation.
         if self._id is not None:
             u = save_relative_uri(self._id, base_url, True, None, relative_uris)
             if u:
-                r['_id'] = u
+                r["_id"] = u
 
         if self._type is not None:
-            r['_type'] = save(self._type, top=False, base_url=base_url, relative_uris=relative_uris)
+            r["_type"] = save(
+                self._type, top=False, base_url=base_url, relative_uris=relative_uris
+            )
 
         if self._container is not None:
-            r['_container'] = save(self._container, top=False, base_url=base_url, relative_uris=relative_uris)
+            r["_container"] = save(
+                self._container,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+            )
 
         if self.identity is not None:
-            r['identity'] = save(self.identity, top=False, base_url=base_url, relative_uris=relative_uris)
+            r["identity"] = save(
+                self.identity, top=False, base_url=base_url, relative_uris=relative_uris
+            )
 
         if self.noLinkCheck is not None:
-            r['noLinkCheck'] = save(self.noLinkCheck, top=False, base_url=base_url, relative_uris=relative_uris)
+            r["noLinkCheck"] = save(
+                self.noLinkCheck,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+            )
 
         if self.mapSubject is not None:
-            r['mapSubject'] = save(self.mapSubject, top=False, base_url=base_url, relative_uris=relative_uris)
+            r["mapSubject"] = save(
+                self.mapSubject,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+            )
 
         if self.mapPredicate is not None:
-            r['mapPredicate'] = save(self.mapPredicate, top=False, base_url=base_url, relative_uris=relative_uris)
+            r["mapPredicate"] = save(
+                self.mapPredicate,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+            )
 
         if self.refScope is not None:
-            r['refScope'] = save(self.refScope, top=False, base_url=base_url, relative_uris=relative_uris)
+            r["refScope"] = save(
+                self.refScope, top=False, base_url=base_url, relative_uris=relative_uris
+            )
 
         if self.typeDSL is not None:
-            r['typeDSL'] = save(self.typeDSL, top=False, base_url=base_url, relative_uris=relative_uris)
+            r["typeDSL"] = save(
+                self.typeDSL, top=False, base_url=base_url, relative_uris=relative_uris
+            )
 
         if self.secondaryFilesDSL is not None:
-            r['secondaryFilesDSL'] = save(self.secondaryFilesDSL, top=False, base_url=base_url, relative_uris=relative_uris)
+            r["secondaryFilesDSL"] = save(
+                self.secondaryFilesDSL,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+            )
 
         if self.subscope is not None:
-            r['subscope'] = save(self.subscope, top=False, base_url=base_url, relative_uris=relative_uris)
+            r["subscope"] = save(
+                self.subscope, top=False, base_url=base_url, relative_uris=relative_uris
+            )
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['_id', '_type', '_container', 'identity', 'noLinkCheck', 'mapSubject', 'mapPredicate', 'refScope', 'typeDSL', 'secondaryFilesDSL', 'subscope'])
+    attrs = frozenset(
+        [
+            "_id",
+            "_type",
+            "_container",
+            "identity",
+            "noLinkCheck",
+            "mapSubject",
+            "mapPredicate",
+            "refScope",
+            "typeDSL",
+            "secondaryFilesDSL",
+            "subscope",
+        ]
+    )
 
 
 class SpecializeDef(Savable):
-    def __init__(self, specializeFrom, specializeTo, extension_fields=None, loadingOptions=None):
-        # type: (Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+    def __init__(
+        self,
+        specializeFrom,  # type: Any
+        specializeTo,  # type: Any
+        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        loadingOptions=None,  # type: Optional[LoadingOptions]
+    ):  # type: (...) -> None
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1026,42 +1466,70 @@ class SpecializeDef(Savable):
         self.specializeFrom = specializeFrom
         self.specializeTo = specializeTo
 
-
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> SpecializeDef
 
         _doc = copy.copy(doc)
-        if hasattr(doc, 'lc'):
+        if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         errors = []
         try:
-            specializeFrom = load_field(_doc.get('specializeFrom'), uri_strtype_False_False_1, baseuri, loadingOptions)
+            specializeFrom = load_field(
+                _doc.get("specializeFrom"),
+                uri_strtype_False_False_1,
+                baseuri,
+                loadingOptions,
+            )
         except ValidationException as e:
-            errors.append(SourceLine(_doc, 'specializeFrom', str).makeError("the `specializeFrom` field is not valid because:\n"+str(e)))
+            errors.append(
+                SourceLine(_doc, "specializeFrom", str).makeError(
+                    "the `specializeFrom` field is not valid because:\n" + str(e)
+                )
+            )
 
         try:
-            specializeTo = load_field(_doc.get('specializeTo'), uri_strtype_False_False_1, baseuri, loadingOptions)
+            specializeTo = load_field(
+                _doc.get("specializeTo"),
+                uri_strtype_False_False_1,
+                baseuri,
+                loadingOptions,
+            )
         except ValidationException as e:
-            errors.append(SourceLine(_doc, 'specializeTo', str).makeError("the `specializeTo` field is not valid because:\n"+str(e)))
-
+            errors.append(
+                SourceLine(_doc, "specializeTo", str).makeError(
+                    "the `specializeTo` field is not valid because:\n" + str(e)
+                )
+            )
 
         extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, u"", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `specializeFrom`, `specializeTo`" % (k)))
+                    errors.append(
+                        SourceLine(_doc, k, str).makeError(
+                            "invalid field `%s`, expected one of: `specializeFrom`, `specializeTo`"
+                            % (k)
+                        )
+                    )
                     break
 
         if errors:
-            raise ValidationException("Trying 'SpecializeDef'\n"+"\n".join(errors))
+            raise ValidationException("Trying 'SpecializeDef'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(specializeFrom, specializeTo, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(
+            specializeFrom,
+            specializeTo,
+            extension_fields=extension_fields,
+            loadingOptions=loadingOptions,
+        )
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
@@ -1070,42 +1538,58 @@ class SpecializeDef(Savable):
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
         if self.specializeFrom is not None:
-            u = save_relative_uri(self.specializeFrom, base_url, False, 1, relative_uris)
+            u = save_relative_uri(
+                self.specializeFrom, base_url, False, 1, relative_uris
+            )
             if u:
-                r['specializeFrom'] = u
+                r["specializeFrom"] = u
 
         if self.specializeTo is not None:
             u = save_relative_uri(self.specializeTo, base_url, False, 1, relative_uris)
             if u:
-                r['specializeTo'] = u
+                r["specializeTo"] = u
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['specializeFrom', 'specializeTo'])
+    attrs = frozenset(["specializeFrom", "specializeTo"])
 
 
 class NamedType(Savable):
     pass
 
+
 class DocType(Documented):
     pass
+
 
 class SchemaDefinedType(DocType):
     """
 Abstract base for schema-defined types.
 
     """
+
     pass
+
 
 class SaladRecordField(RecordField):
     """
 A field of a record.
     """
-    def __init__(self, doc, name, type, jsonldPredicate, default, extension_fields=None, loadingOptions=None):
-        # type: (Any, Any, Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+
+    def __init__(
+        self,
+        doc,  # type: Any
+        name,  # type: Any
+        type,  # type: Any
+        jsonldPredicate,  # type: Any
+        default,  # type: Any
+        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        loadingOptions=None,  # type: Optional[LoadingOptions]
+    ):  # type: (...) -> None
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1120,24 +1604,31 @@ A field of a record.
         self.jsonldPredicate = jsonldPredicate
         self.default = default
 
-
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> SaladRecordField
 
         _doc = copy.copy(doc)
-        if hasattr(doc, 'lc'):
+        if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         errors = []
-        if 'name' in _doc:
+        if "name" in _doc:
             try:
-                name = load_field(_doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
+                name = load_field(
+                    _doc.get("name"),
+                    uri_strtype_True_False_None,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'name', str).makeError("the `name` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "name", str).makeError(
+                        "the `name` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             name = None
-
 
         if name is None:
             if docRoot is not None:
@@ -1145,51 +1636,101 @@ A field of a record.
             else:
                 raise ValidationException("Missing name")
         baseuri = name
-        if 'doc' in _doc:
+        if "doc" in _doc:
             try:
-                doc = load_field(_doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
+                doc = load_field(
+                    _doc.get("doc"),
+                    union_of_None_type_or_strtype_or_array_of_strtype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "doc", str).makeError(
+                        "the `doc` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             doc = None
 
         try:
-            type = load_field(_doc.get('type'), typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2, baseuri, loadingOptions)
+            type = load_field(
+                _doc.get("type"),
+                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2,
+                baseuri,
+                loadingOptions,
+            )
         except ValidationException as e:
-            errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
+            errors.append(
+                SourceLine(_doc, "type", str).makeError(
+                    "the `type` field is not valid because:\n" + str(e)
+                )
+            )
 
-        if 'jsonldPredicate' in _doc:
+        if "jsonldPredicate" in _doc:
             try:
-                jsonldPredicate = load_field(_doc.get('jsonldPredicate'), union_of_None_type_or_strtype_or_JsonldPredicateLoader, baseuri, loadingOptions)
+                jsonldPredicate = load_field(
+                    _doc.get("jsonldPredicate"),
+                    union_of_None_type_or_strtype_or_JsonldPredicateLoader,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'jsonldPredicate', str).makeError("the `jsonldPredicate` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "jsonldPredicate", str).makeError(
+                        "the `jsonldPredicate` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             jsonldPredicate = None
 
-        if 'default' in _doc:
+        if "default" in _doc:
             try:
-                default = load_field(_doc.get('default'), union_of_None_type_or_Any_type, baseuri, loadingOptions)
+                default = load_field(
+                    _doc.get("default"),
+                    union_of_None_type_or_Any_type,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'default', str).makeError("the `default` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "default", str).makeError(
+                        "the `default` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             default = None
-
 
         extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, u"", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `doc`, `name`, `type`, `jsonldPredicate`, `default`" % (k)))
+                    errors.append(
+                        SourceLine(_doc, k, str).makeError(
+                            "invalid field `%s`, expected one of: `doc`, `name`, `type`, `jsonldPredicate`, `default`"
+                            % (k)
+                        )
+                    )
                     break
 
         if errors:
-            raise ValidationException("Trying 'SaladRecordField'\n"+"\n".join(errors))
+            raise ValidationException("Trying 'SaladRecordField'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(doc, name, type, jsonldPredicate, default, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(
+            doc,
+            name,
+            type,
+            jsonldPredicate,
+            default,
+            extension_fields=extension_fields,
+            loadingOptions=loadingOptions,
+        )
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
@@ -1200,31 +1741,59 @@ A field of a record.
         if self.name is not None:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             if u:
-                r['name'] = u
+                r["name"] = u
 
         if self.doc is not None:
-            r['doc'] = save(self.doc, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["doc"] = save(
+                self.doc, top=False, base_url=self.name, relative_uris=relative_uris
+            )
 
         if self.type is not None:
-            r['type'] = save(self.type, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["type"] = save(
+                self.type, top=False, base_url=self.name, relative_uris=relative_uris
+            )
 
         if self.jsonldPredicate is not None:
-            r['jsonldPredicate'] = save(self.jsonldPredicate, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["jsonldPredicate"] = save(
+                self.jsonldPredicate,
+                top=False,
+                base_url=self.name,
+                relative_uris=relative_uris,
+            )
 
         if self.default is not None:
-            r['default'] = save(self.default, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["default"] = save(
+                self.default, top=False, base_url=self.name, relative_uris=relative_uris
+            )
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['doc', 'name', 'type', 'jsonldPredicate', 'default'])
+    attrs = frozenset(["doc", "name", "type", "jsonldPredicate", "default"])
 
 
 class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
-    def __init__(self, name, inVocab, fields, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, abstract, extends, specialize, extension_fields=None, loadingOptions=None):
-        # type: (Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+    def __init__(
+        self,
+        name,  # type: Any
+        inVocab,  # type: Any
+        fields,  # type: Any
+        type,  # type: Any
+        doc,  # type: Any
+        docParent,  # type: Any
+        docChild,  # type: Any
+        docAfter,  # type: Any
+        jsonldPredicate,  # type: Any
+        documentRoot,  # type: Any
+        abstract,  # type: Any
+        extends,  # type: Any
+        specialize,  # type: Any
+        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        loadingOptions=None,  # type: Optional[LoadingOptions]
+    ):  # type: (...) -> None
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1247,24 +1816,31 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         self.extends = extends
         self.specialize = specialize
 
-
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> SaladRecordSchema
 
         _doc = copy.copy(doc)
-        if hasattr(doc, 'lc'):
+        if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         errors = []
-        if 'name' in _doc:
+        if "name" in _doc:
             try:
-                name = load_field(_doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
+                name = load_field(
+                    _doc.get("name"),
+                    uri_strtype_True_False_None,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'name', str).makeError("the `name` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "name", str).makeError(
+                        "the `name` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             name = None
-
 
         if name is None:
             if docRoot is not None:
@@ -1272,115 +1848,247 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             else:
                 raise ValidationException("Missing name")
         baseuri = name
-        if 'inVocab' in _doc:
+        if "inVocab" in _doc:
             try:
-                inVocab = load_field(_doc.get('inVocab'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                inVocab = load_field(
+                    _doc.get("inVocab"),
+                    union_of_None_type_or_booltype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'inVocab', str).makeError("the `inVocab` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "inVocab", str).makeError(
+                        "the `inVocab` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             inVocab = None
 
-        if 'fields' in _doc:
+        if "fields" in _doc:
             try:
-                fields = load_field(_doc.get('fields'), idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader, baseuri, loadingOptions)
+                fields = load_field(
+                    _doc.get("fields"),
+                    idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'fields', str).makeError("the `fields` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "fields", str).makeError(
+                        "the `fields` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             fields = None
 
         try:
-            type = load_field(_doc.get('type'), typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2, baseuri, loadingOptions)
+            type = load_field(
+                _doc.get("type"),
+                typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2,
+                baseuri,
+                loadingOptions,
+            )
         except ValidationException as e:
-            errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
+            errors.append(
+                SourceLine(_doc, "type", str).makeError(
+                    "the `type` field is not valid because:\n" + str(e)
+                )
+            )
 
-        if 'doc' in _doc:
+        if "doc" in _doc:
             try:
-                doc = load_field(_doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
+                doc = load_field(
+                    _doc.get("doc"),
+                    union_of_None_type_or_strtype_or_array_of_strtype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "doc", str).makeError(
+                        "the `doc` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             doc = None
 
-        if 'docParent' in _doc:
+        if "docParent" in _doc:
             try:
-                docParent = load_field(_doc.get('docParent'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
+                docParent = load_field(
+                    _doc.get("docParent"),
+                    uri_union_of_None_type_or_strtype_False_False_None,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'docParent', str).makeError("the `docParent` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "docParent", str).makeError(
+                        "the `docParent` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             docParent = None
 
-        if 'docChild' in _doc:
+        if "docChild" in _doc:
             try:
-                docChild = load_field(_doc.get('docChild'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None, baseuri, loadingOptions)
+                docChild = load_field(
+                    _doc.get("docChild"),
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'docChild', str).makeError("the `docChild` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "docChild", str).makeError(
+                        "the `docChild` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             docChild = None
 
-        if 'docAfter' in _doc:
+        if "docAfter" in _doc:
             try:
-                docAfter = load_field(_doc.get('docAfter'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
+                docAfter = load_field(
+                    _doc.get("docAfter"),
+                    uri_union_of_None_type_or_strtype_False_False_None,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'docAfter', str).makeError("the `docAfter` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "docAfter", str).makeError(
+                        "the `docAfter` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             docAfter = None
 
-        if 'jsonldPredicate' in _doc:
+        if "jsonldPredicate" in _doc:
             try:
-                jsonldPredicate = load_field(_doc.get('jsonldPredicate'), union_of_None_type_or_strtype_or_JsonldPredicateLoader, baseuri, loadingOptions)
+                jsonldPredicate = load_field(
+                    _doc.get("jsonldPredicate"),
+                    union_of_None_type_or_strtype_or_JsonldPredicateLoader,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'jsonldPredicate', str).makeError("the `jsonldPredicate` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "jsonldPredicate", str).makeError(
+                        "the `jsonldPredicate` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             jsonldPredicate = None
 
-        if 'documentRoot' in _doc:
+        if "documentRoot" in _doc:
             try:
-                documentRoot = load_field(_doc.get('documentRoot'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                documentRoot = load_field(
+                    _doc.get("documentRoot"),
+                    union_of_None_type_or_booltype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'documentRoot', str).makeError("the `documentRoot` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "documentRoot", str).makeError(
+                        "the `documentRoot` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             documentRoot = None
 
-        if 'abstract' in _doc:
+        if "abstract" in _doc:
             try:
-                abstract = load_field(_doc.get('abstract'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                abstract = load_field(
+                    _doc.get("abstract"),
+                    union_of_None_type_or_booltype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'abstract', str).makeError("the `abstract` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "abstract", str).makeError(
+                        "the `abstract` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             abstract = None
 
-        if 'extends' in _doc:
+        if "extends" in _doc:
             try:
-                extends = load_field(_doc.get('extends'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1, baseuri, loadingOptions)
+                extends = load_field(
+                    _doc.get("extends"),
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'extends', str).makeError("the `extends` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "extends", str).makeError(
+                        "the `extends` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             extends = None
 
-        if 'specialize' in _doc:
+        if "specialize" in _doc:
             try:
-                specialize = load_field(_doc.get('specialize'), idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader, baseuri, loadingOptions)
+                specialize = load_field(
+                    _doc.get("specialize"),
+                    idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'specialize', str).makeError("the `specialize` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "specialize", str).makeError(
+                        "the `specialize` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             specialize = None
-
 
         extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, u"", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `name`, `inVocab`, `fields`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `abstract`, `extends`, `specialize`" % (k)))
+                    errors.append(
+                        SourceLine(_doc, k, str).makeError(
+                            "invalid field `%s`, expected one of: `name`, `inVocab`, `fields`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `abstract`, `extends`, `specialize`"
+                            % (k)
+                        )
+                    )
                     break
 
         if errors:
-            raise ValidationException("Trying 'SaladRecordSchema'\n"+"\n".join(errors))
+            raise ValidationException(
+                "Trying 'SaladRecordSchema'\n" + "\n".join(errors)
+            )
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(name, inVocab, fields, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, abstract, extends, specialize, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(
+            name,
+            inVocab,
+            fields,
+            type,
+            doc,
+            docParent,
+            docChild,
+            docAfter,
+            jsonldPredicate,
+            documentRoot,
+            abstract,
+            extends,
+            specialize,
+            extension_fields=extension_fields,
+            loadingOptions=loadingOptions,
+        )
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
@@ -1391,58 +2099,102 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         if self.name is not None:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             if u:
-                r['name'] = u
+                r["name"] = u
 
         if self.inVocab is not None:
-            r['inVocab'] = save(self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["inVocab"] = save(
+                self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris
+            )
 
         if self.fields is not None:
-            r['fields'] = save(self.fields, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["fields"] = save(
+                self.fields, top=False, base_url=self.name, relative_uris=relative_uris
+            )
 
         if self.type is not None:
-            r['type'] = save(self.type, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["type"] = save(
+                self.type, top=False, base_url=self.name, relative_uris=relative_uris
+            )
 
         if self.doc is not None:
-            r['doc'] = save(self.doc, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["doc"] = save(
+                self.doc, top=False, base_url=self.name, relative_uris=relative_uris
+            )
 
         if self.docParent is not None:
             u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
             if u:
-                r['docParent'] = u
+                r["docParent"] = u
 
         if self.docChild is not None:
             u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
             if u:
-                r['docChild'] = u
+                r["docChild"] = u
 
         if self.docAfter is not None:
             u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
             if u:
-                r['docAfter'] = u
+                r["docAfter"] = u
 
         if self.jsonldPredicate is not None:
-            r['jsonldPredicate'] = save(self.jsonldPredicate, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["jsonldPredicate"] = save(
+                self.jsonldPredicate,
+                top=False,
+                base_url=self.name,
+                relative_uris=relative_uris,
+            )
 
         if self.documentRoot is not None:
-            r['documentRoot'] = save(self.documentRoot, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["documentRoot"] = save(
+                self.documentRoot,
+                top=False,
+                base_url=self.name,
+                relative_uris=relative_uris,
+            )
 
         if self.abstract is not None:
-            r['abstract'] = save(self.abstract, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["abstract"] = save(
+                self.abstract,
+                top=False,
+                base_url=self.name,
+                relative_uris=relative_uris,
+            )
 
         if self.extends is not None:
             u = save_relative_uri(self.extends, self.name, False, 1, relative_uris)
             if u:
-                r['extends'] = u
+                r["extends"] = u
 
         if self.specialize is not None:
-            r['specialize'] = save(self.specialize, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["specialize"] = save(
+                self.specialize,
+                top=False,
+                base_url=self.name,
+                relative_uris=relative_uris,
+            )
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['name', 'inVocab', 'fields', 'type', 'doc', 'docParent', 'docChild', 'docAfter', 'jsonldPredicate', 'documentRoot', 'abstract', 'extends', 'specialize'])
+    attrs = frozenset(
+        [
+            "name",
+            "inVocab",
+            "fields",
+            "type",
+            "doc",
+            "docParent",
+            "docChild",
+            "docAfter",
+            "jsonldPredicate",
+            "documentRoot",
+            "abstract",
+            "extends",
+            "specialize",
+        ]
+    )
 
 
 class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
@@ -1450,8 +2202,24 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
 Define an enumerated type.
 
     """
-    def __init__(self, name, inVocab, symbols, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, extends, extension_fields=None, loadingOptions=None):
-        # type: (Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+
+    def __init__(
+        self,
+        name,  # type: Any
+        inVocab,  # type: Any
+        symbols,  # type: Any
+        type,  # type: Any
+        doc,  # type: Any
+        docParent,  # type: Any
+        docChild,  # type: Any
+        docAfter,  # type: Any
+        jsonldPredicate,  # type: Any
+        documentRoot,  # type: Any
+        extends,  # type: Any
+        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        loadingOptions=None,  # type: Optional[LoadingOptions]
+    ):  # type: (...) -> None
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1472,24 +2240,31 @@ Define an enumerated type.
         self.documentRoot = documentRoot
         self.extends = extends
 
-
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> SaladEnumSchema
 
         _doc = copy.copy(doc)
-        if hasattr(doc, 'lc'):
+        if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         errors = []
-        if 'name' in _doc:
+        if "name" in _doc:
             try:
-                name = load_field(_doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
+                name = load_field(
+                    _doc.get("name"),
+                    uri_strtype_True_False_None,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'name', str).makeError("the `name` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "name", str).makeError(
+                        "the `name` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             name = None
-
 
         if name is None:
             if docRoot is not None:
@@ -1497,96 +2272,206 @@ Define an enumerated type.
             else:
                 raise ValidationException("Missing name")
         baseuri = name
-        if 'inVocab' in _doc:
+        if "inVocab" in _doc:
             try:
-                inVocab = load_field(_doc.get('inVocab'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                inVocab = load_field(
+                    _doc.get("inVocab"),
+                    union_of_None_type_or_booltype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'inVocab', str).makeError("the `inVocab` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "inVocab", str).makeError(
+                        "the `inVocab` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             inVocab = None
 
         try:
-            symbols = load_field(_doc.get('symbols'), uri_array_of_strtype_True_False_None, baseuri, loadingOptions)
+            symbols = load_field(
+                _doc.get("symbols"),
+                uri_array_of_strtype_True_False_None,
+                baseuri,
+                loadingOptions,
+            )
         except ValidationException as e:
-            errors.append(SourceLine(_doc, 'symbols', str).makeError("the `symbols` field is not valid because:\n"+str(e)))
+            errors.append(
+                SourceLine(_doc, "symbols", str).makeError(
+                    "the `symbols` field is not valid because:\n" + str(e)
+                )
+            )
 
         try:
-            type = load_field(_doc.get('type'), typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2, baseuri, loadingOptions)
+            type = load_field(
+                _doc.get("type"),
+                typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2,
+                baseuri,
+                loadingOptions,
+            )
         except ValidationException as e:
-            errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
+            errors.append(
+                SourceLine(_doc, "type", str).makeError(
+                    "the `type` field is not valid because:\n" + str(e)
+                )
+            )
 
-        if 'doc' in _doc:
+        if "doc" in _doc:
             try:
-                doc = load_field(_doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
+                doc = load_field(
+                    _doc.get("doc"),
+                    union_of_None_type_or_strtype_or_array_of_strtype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "doc", str).makeError(
+                        "the `doc` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             doc = None
 
-        if 'docParent' in _doc:
+        if "docParent" in _doc:
             try:
-                docParent = load_field(_doc.get('docParent'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
+                docParent = load_field(
+                    _doc.get("docParent"),
+                    uri_union_of_None_type_or_strtype_False_False_None,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'docParent', str).makeError("the `docParent` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "docParent", str).makeError(
+                        "the `docParent` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             docParent = None
 
-        if 'docChild' in _doc:
+        if "docChild" in _doc:
             try:
-                docChild = load_field(_doc.get('docChild'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None, baseuri, loadingOptions)
+                docChild = load_field(
+                    _doc.get("docChild"),
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'docChild', str).makeError("the `docChild` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "docChild", str).makeError(
+                        "the `docChild` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             docChild = None
 
-        if 'docAfter' in _doc:
+        if "docAfter" in _doc:
             try:
-                docAfter = load_field(_doc.get('docAfter'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
+                docAfter = load_field(
+                    _doc.get("docAfter"),
+                    uri_union_of_None_type_or_strtype_False_False_None,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'docAfter', str).makeError("the `docAfter` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "docAfter", str).makeError(
+                        "the `docAfter` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             docAfter = None
 
-        if 'jsonldPredicate' in _doc:
+        if "jsonldPredicate" in _doc:
             try:
-                jsonldPredicate = load_field(_doc.get('jsonldPredicate'), union_of_None_type_or_strtype_or_JsonldPredicateLoader, baseuri, loadingOptions)
+                jsonldPredicate = load_field(
+                    _doc.get("jsonldPredicate"),
+                    union_of_None_type_or_strtype_or_JsonldPredicateLoader,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'jsonldPredicate', str).makeError("the `jsonldPredicate` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "jsonldPredicate", str).makeError(
+                        "the `jsonldPredicate` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             jsonldPredicate = None
 
-        if 'documentRoot' in _doc:
+        if "documentRoot" in _doc:
             try:
-                documentRoot = load_field(_doc.get('documentRoot'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                documentRoot = load_field(
+                    _doc.get("documentRoot"),
+                    union_of_None_type_or_booltype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'documentRoot', str).makeError("the `documentRoot` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "documentRoot", str).makeError(
+                        "the `documentRoot` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             documentRoot = None
 
-        if 'extends' in _doc:
+        if "extends" in _doc:
             try:
-                extends = load_field(_doc.get('extends'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1, baseuri, loadingOptions)
+                extends = load_field(
+                    _doc.get("extends"),
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'extends', str).makeError("the `extends` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "extends", str).makeError(
+                        "the `extends` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             extends = None
-
 
         extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, u"", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `name`, `inVocab`, `symbols`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `extends`" % (k)))
+                    errors.append(
+                        SourceLine(_doc, k, str).makeError(
+                            "invalid field `%s`, expected one of: `name`, `inVocab`, `symbols`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `extends`"
+                            % (k)
+                        )
+                    )
                     break
 
         if errors:
-            raise ValidationException("Trying 'SaladEnumSchema'\n"+"\n".join(errors))
+            raise ValidationException("Trying 'SaladEnumSchema'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(name, inVocab, symbols, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, extends, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(
+            name,
+            inVocab,
+            symbols,
+            type,
+            doc,
+            docParent,
+            docChild,
+            docAfter,
+            jsonldPredicate,
+            documentRoot,
+            extends,
+            extension_fields=extension_fields,
+            loadingOptions=loadingOptions,
+        )
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
@@ -1597,54 +2482,84 @@ Define an enumerated type.
         if self.name is not None:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             if u:
-                r['name'] = u
+                r["name"] = u
 
         if self.inVocab is not None:
-            r['inVocab'] = save(self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["inVocab"] = save(
+                self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris
+            )
 
         if self.symbols is not None:
             u = save_relative_uri(self.symbols, self.name, True, None, relative_uris)
             if u:
-                r['symbols'] = u
+                r["symbols"] = u
 
         if self.type is not None:
-            r['type'] = save(self.type, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["type"] = save(
+                self.type, top=False, base_url=self.name, relative_uris=relative_uris
+            )
 
         if self.doc is not None:
-            r['doc'] = save(self.doc, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["doc"] = save(
+                self.doc, top=False, base_url=self.name, relative_uris=relative_uris
+            )
 
         if self.docParent is not None:
             u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
             if u:
-                r['docParent'] = u
+                r["docParent"] = u
 
         if self.docChild is not None:
             u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
             if u:
-                r['docChild'] = u
+                r["docChild"] = u
 
         if self.docAfter is not None:
             u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
             if u:
-                r['docAfter'] = u
+                r["docAfter"] = u
 
         if self.jsonldPredicate is not None:
-            r['jsonldPredicate'] = save(self.jsonldPredicate, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["jsonldPredicate"] = save(
+                self.jsonldPredicate,
+                top=False,
+                base_url=self.name,
+                relative_uris=relative_uris,
+            )
 
         if self.documentRoot is not None:
-            r['documentRoot'] = save(self.documentRoot, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["documentRoot"] = save(
+                self.documentRoot,
+                top=False,
+                base_url=self.name,
+                relative_uris=relative_uris,
+            )
 
         if self.extends is not None:
             u = save_relative_uri(self.extends, self.name, False, 1, relative_uris)
             if u:
-                r['extends'] = u
+                r["extends"] = u
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['name', 'inVocab', 'symbols', 'type', 'doc', 'docParent', 'docChild', 'docAfter', 'jsonldPredicate', 'documentRoot', 'extends'])
+    attrs = frozenset(
+        [
+            "name",
+            "inVocab",
+            "symbols",
+            "type",
+            "doc",
+            "docParent",
+            "docChild",
+            "docAfter",
+            "jsonldPredicate",
+            "documentRoot",
+            "extends",
+        ]
+    )
 
 
 class Documentation(NamedType, DocType):
@@ -1653,8 +2568,20 @@ A documentation section.  This type exists to facilitate self-documenting
 schemas but has no role in formal validation.
 
     """
-    def __init__(self, name, inVocab, doc, docParent, docChild, docAfter, type, extension_fields=None, loadingOptions=None):
-        # type: (Any, Any, Any, Any, Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+
+    def __init__(
+        self,
+        name,  # type: Any
+        inVocab,  # type: Any
+        doc,  # type: Any
+        docParent,  # type: Any
+        docChild,  # type: Any
+        docAfter,  # type: Any
+        type,  # type: Any
+        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        loadingOptions=None,  # type: Optional[LoadingOptions]
+    ):  # type: (...) -> None
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1671,24 +2598,31 @@ schemas but has no role in formal validation.
         self.docAfter = docAfter
         self.type = type
 
-
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> Documentation
 
         _doc = copy.copy(doc)
-        if hasattr(doc, 'lc'):
+        if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         errors = []
-        if 'name' in _doc:
+        if "name" in _doc:
             try:
-                name = load_field(_doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
+                name = load_field(
+                    _doc.get("name"),
+                    uri_strtype_True_False_None,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'name', str).makeError("the `name` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "name", str).makeError(
+                        "the `name` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             name = None
-
 
         if name is None:
             if docRoot is not None:
@@ -1696,67 +2630,137 @@ schemas but has no role in formal validation.
             else:
                 raise ValidationException("Missing name")
         baseuri = name
-        if 'inVocab' in _doc:
+        if "inVocab" in _doc:
             try:
-                inVocab = load_field(_doc.get('inVocab'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                inVocab = load_field(
+                    _doc.get("inVocab"),
+                    union_of_None_type_or_booltype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'inVocab', str).makeError("the `inVocab` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "inVocab", str).makeError(
+                        "the `inVocab` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             inVocab = None
 
-        if 'doc' in _doc:
+        if "doc" in _doc:
             try:
-                doc = load_field(_doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
+                doc = load_field(
+                    _doc.get("doc"),
+                    union_of_None_type_or_strtype_or_array_of_strtype,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "doc", str).makeError(
+                        "the `doc` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             doc = None
 
-        if 'docParent' in _doc:
+        if "docParent" in _doc:
             try:
-                docParent = load_field(_doc.get('docParent'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
+                docParent = load_field(
+                    _doc.get("docParent"),
+                    uri_union_of_None_type_or_strtype_False_False_None,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'docParent', str).makeError("the `docParent` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "docParent", str).makeError(
+                        "the `docParent` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             docParent = None
 
-        if 'docChild' in _doc:
+        if "docChild" in _doc:
             try:
-                docChild = load_field(_doc.get('docChild'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None, baseuri, loadingOptions)
+                docChild = load_field(
+                    _doc.get("docChild"),
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'docChild', str).makeError("the `docChild` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "docChild", str).makeError(
+                        "the `docChild` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             docChild = None
 
-        if 'docAfter' in _doc:
+        if "docAfter" in _doc:
             try:
-                docAfter = load_field(_doc.get('docAfter'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
+                docAfter = load_field(
+                    _doc.get("docAfter"),
+                    uri_union_of_None_type_or_strtype_False_False_None,
+                    baseuri,
+                    loadingOptions,
+                )
             except ValidationException as e:
-                errors.append(SourceLine(_doc, 'docAfter', str).makeError("the `docAfter` field is not valid because:\n"+str(e)))
+                errors.append(
+                    SourceLine(_doc, "docAfter", str).makeError(
+                        "the `docAfter` field is not valid because:\n" + str(e)
+                    )
+                )
         else:
             docAfter = None
 
         try:
-            type = load_field(_doc.get('type'), typedsl_enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader_2, baseuri, loadingOptions)
+            type = load_field(
+                _doc.get("type"),
+                typedsl_enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader_2,
+                baseuri,
+                loadingOptions,
+            )
         except ValidationException as e:
-            errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
-
+            errors.append(
+                SourceLine(_doc, "type", str).makeError(
+                    "the `type` field is not valid because:\n" + str(e)
+                )
+            )
 
         extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, u"", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `name`, `inVocab`, `doc`, `docParent`, `docChild`, `docAfter`, `type`" % (k)))
+                    errors.append(
+                        SourceLine(_doc, k, str).makeError(
+                            "invalid field `%s`, expected one of: `name`, `inVocab`, `doc`, `docParent`, `docChild`, `docAfter`, `type`"
+                            % (k)
+                        )
+                    )
                     break
 
         if errors:
-            raise ValidationException("Trying 'Documentation'\n"+"\n".join(errors))
+            raise ValidationException("Trying 'Documentation'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(name, inVocab, doc, docParent, docChild, docAfter, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(
+            name,
+            inVocab,
+            doc,
+            docParent,
+            docChild,
+            docAfter,
+            type,
+            extension_fields=extension_fields,
+            loadingOptions=loadingOptions,
+        )
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
@@ -1767,38 +2771,46 @@ schemas but has no role in formal validation.
         if self.name is not None:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             if u:
-                r['name'] = u
+                r["name"] = u
 
         if self.inVocab is not None:
-            r['inVocab'] = save(self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["inVocab"] = save(
+                self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris
+            )
 
         if self.doc is not None:
-            r['doc'] = save(self.doc, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["doc"] = save(
+                self.doc, top=False, base_url=self.name, relative_uris=relative_uris
+            )
 
         if self.docParent is not None:
             u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
             if u:
-                r['docParent'] = u
+                r["docParent"] = u
 
         if self.docChild is not None:
             u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
             if u:
-                r['docChild'] = u
+                r["docChild"] = u
 
         if self.docAfter is not None:
             u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
             if u:
-                r['docAfter'] = u
+                r["docAfter"] = u
 
         if self.type is not None:
-            r['type'] = save(self.type, top=False, base_url=self.name, relative_uris=relative_uris)
+            r["type"] = save(
+                self.type, top=False, base_url=self.name, relative_uris=relative_uris
+            )
 
         if top and self.loadingOptions.namespaces:
             r["$namespaces"] = self.loadingOptions.namespaces
 
         return r
 
-    attrs = frozenset(['name', 'inVocab', 'doc', 'docParent', 'docChild', 'docAfter', 'type'])
+    attrs = frozenset(
+        ["name", "inVocab", "doc", "docParent", "docChild", "docAfter", "type"]
+    )
 
 
 _vocab = {
@@ -1860,14 +2872,16 @@ _rvocab = {
     "http://www.w3.org/2001/XMLSchema#string": "string",
 }
 
-strtype = _PrimitiveLoader((str, six.text_type))
+strtype = _PrimitiveLoader((str, text_type))
 inttype = _PrimitiveLoader(int)
 floattype = _PrimitiveLoader(float)
 booltype = _PrimitiveLoader(bool)
 None_type = _PrimitiveLoader(type(None))
 Any_type = _AnyLoader()
 DocumentedLoader = _RecordLoader(Documented)
-PrimitiveTypeLoader = _EnumLoader(("null", "boolean", "int", "long", "float", "double", "string",))
+PrimitiveTypeLoader = _EnumLoader(
+    ("null", "boolean", "int", "long", "float", "double", "string")
+)
 AnyLoader = _EnumLoader(("Any",))
 RecordFieldLoader = _RecordLoader(RecordField)
 RecordSchemaLoader = _RecordLoader(RecordSchema)
@@ -1883,45 +2897,114 @@ SaladRecordSchemaLoader = _RecordLoader(SaladRecordSchema)
 SaladEnumSchemaLoader = _RecordLoader(SaladEnumSchema)
 DocumentationLoader = _RecordLoader(Documentation)
 array_of_strtype = _ArrayLoader(strtype)
-union_of_None_type_or_strtype_or_array_of_strtype = _UnionLoader((None_type, strtype, array_of_strtype,))
+union_of_None_type_or_strtype_or_array_of_strtype = _UnionLoader(
+    (None_type, strtype, array_of_strtype)
+)
 uri_strtype_True_False_None = _URILoader(strtype, True, False, None)
-union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype = _UnionLoader((PrimitiveTypeLoader, RecordSchemaLoader, EnumSchemaLoader, ArraySchemaLoader, strtype,))
-array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype = _ArrayLoader(union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype)
-union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype = _UnionLoader((PrimitiveTypeLoader, RecordSchemaLoader, EnumSchemaLoader, ArraySchemaLoader, strtype, array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype,))
-typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2 = _TypeDSLLoader(union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype, 2)
+union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype = _UnionLoader(
+    (
+        PrimitiveTypeLoader,
+        RecordSchemaLoader,
+        EnumSchemaLoader,
+        ArraySchemaLoader,
+        strtype,
+    )
+)
+array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype = _ArrayLoader(
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype
+)
+union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype = _UnionLoader(
+    (
+        PrimitiveTypeLoader,
+        RecordSchemaLoader,
+        EnumSchemaLoader,
+        ArraySchemaLoader,
+        strtype,
+        array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype,
+    )
+)
+typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2 = _TypeDSLLoader(
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype,
+    2,
+)
 array_of_RecordFieldLoader = _ArrayLoader(RecordFieldLoader)
-union_of_None_type_or_array_of_RecordFieldLoader = _UnionLoader((None_type, array_of_RecordFieldLoader,))
-idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader = _IdMapLoader(union_of_None_type_or_array_of_RecordFieldLoader, 'name', 'type')
+union_of_None_type_or_array_of_RecordFieldLoader = _UnionLoader(
+    (None_type, array_of_RecordFieldLoader)
+)
+idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader = _IdMapLoader(
+    union_of_None_type_or_array_of_RecordFieldLoader, "name", "type"
+)
 enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader = _EnumLoader(("record",))
-typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2 = _TypeDSLLoader(enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader, 2)
+typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2 = _TypeDSLLoader(
+    enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader, 2
+)
 uri_array_of_strtype_True_False_None = _URILoader(array_of_strtype, True, False, None)
 enum_d961d79c225752b9fadb617367615ab176b47d77Loader = _EnumLoader(("enum",))
-typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2 = _TypeDSLLoader(enum_d961d79c225752b9fadb617367615ab176b47d77Loader, 2)
-uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2 = _URILoader(union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype, False, True, 2)
+typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2 = _TypeDSLLoader(
+    enum_d961d79c225752b9fadb617367615ab176b47d77Loader, 2
+)
+uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2 = _URILoader(
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype,
+    False,
+    True,
+    2,
+)
 enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader = _EnumLoader(("array",))
-typedsl_enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader_2 = _TypeDSLLoader(enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader, 2)
-union_of_None_type_or_strtype = _UnionLoader((None_type, strtype,))
-uri_union_of_None_type_or_strtype_True_False_None = _URILoader(union_of_None_type_or_strtype, True, False, None)
-union_of_None_type_or_booltype = _UnionLoader((None_type, booltype,))
-union_of_None_type_or_inttype = _UnionLoader((None_type, inttype,))
+typedsl_enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader_2 = _TypeDSLLoader(
+    enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader, 2
+)
+union_of_None_type_or_strtype = _UnionLoader((None_type, strtype))
+uri_union_of_None_type_or_strtype_True_False_None = _URILoader(
+    union_of_None_type_or_strtype, True, False, None
+)
+union_of_None_type_or_booltype = _UnionLoader((None_type, booltype))
+union_of_None_type_or_inttype = _UnionLoader((None_type, inttype))
 uri_strtype_False_False_1 = _URILoader(strtype, False, False, 1)
-uri_union_of_None_type_or_strtype_False_False_None = _URILoader(union_of_None_type_or_strtype, False, False, None)
-uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None = _URILoader(union_of_None_type_or_strtype_or_array_of_strtype, False, False, None)
-union_of_None_type_or_strtype_or_JsonldPredicateLoader = _UnionLoader((None_type, strtype, JsonldPredicateLoader,))
-union_of_None_type_or_Any_type = _UnionLoader((None_type, Any_type,))
+uri_union_of_None_type_or_strtype_False_False_None = _URILoader(
+    union_of_None_type_or_strtype, False, False, None
+)
+uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None = _URILoader(
+    union_of_None_type_or_strtype_or_array_of_strtype, False, False, None
+)
+union_of_None_type_or_strtype_or_JsonldPredicateLoader = _UnionLoader(
+    (None_type, strtype, JsonldPredicateLoader)
+)
+union_of_None_type_or_Any_type = _UnionLoader((None_type, Any_type))
 array_of_SaladRecordFieldLoader = _ArrayLoader(SaladRecordFieldLoader)
-union_of_None_type_or_array_of_SaladRecordFieldLoader = _UnionLoader((None_type, array_of_SaladRecordFieldLoader,))
-idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader = _IdMapLoader(union_of_None_type_or_array_of_SaladRecordFieldLoader, 'name', 'type')
-uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1 = _URILoader(union_of_None_type_or_strtype_or_array_of_strtype, False, False, 1)
+union_of_None_type_or_array_of_SaladRecordFieldLoader = _UnionLoader(
+    (None_type, array_of_SaladRecordFieldLoader)
+)
+idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader = _IdMapLoader(
+    union_of_None_type_or_array_of_SaladRecordFieldLoader, "name", "type"
+)
+uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1 = _URILoader(
+    union_of_None_type_or_strtype_or_array_of_strtype, False, False, 1
+)
 array_of_SpecializeDefLoader = _ArrayLoader(SpecializeDefLoader)
-union_of_None_type_or_array_of_SpecializeDefLoader = _UnionLoader((None_type, array_of_SpecializeDefLoader,))
-idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader = _IdMapLoader(union_of_None_type_or_array_of_SpecializeDefLoader, 'specializeFrom', 'specializeTo')
+union_of_None_type_or_array_of_SpecializeDefLoader = _UnionLoader(
+    (None_type, array_of_SpecializeDefLoader)
+)
+idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader = _IdMapLoader(
+    union_of_None_type_or_array_of_SpecializeDefLoader, "specializeFrom", "specializeTo"
+)
 enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader = _EnumLoader(("documentation",))
-typedsl_enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader_2 = _TypeDSLLoader(enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader, 2)
-union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader = _UnionLoader((SaladRecordSchemaLoader, SaladEnumSchemaLoader, DocumentationLoader,))
-array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader = _ArrayLoader(union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader)
-union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader = _UnionLoader((SaladRecordSchemaLoader, SaladEnumSchemaLoader, DocumentationLoader, array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader,))
-
+typedsl_enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader_2 = _TypeDSLLoader(
+    enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader, 2
+)
+union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader = _UnionLoader(
+    (SaladRecordSchemaLoader, SaladEnumSchemaLoader, DocumentationLoader)
+)
+array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader = _ArrayLoader(
+    union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader
+)
+union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader = _UnionLoader(
+    (
+        SaladRecordSchemaLoader,
+        SaladEnumSchemaLoader,
+        DocumentationLoader,
+        array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader,
+    )
+)
 
 
 def load_document(doc, baseuri=None, loadingOptions=None):
@@ -1930,7 +3013,13 @@ def load_document(doc, baseuri=None, loadingOptions=None):
         baseuri = file_uri(os.getcwd()) + "/"
     if loadingOptions is None:
         loadingOptions = LoadingOptions()
-    return _document_load(union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader, doc, baseuri, loadingOptions)
+    return _document_load(
+        union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader,
+        doc,
+        baseuri,
+        loadingOptions,
+    )
+
 
 def load_document_by_string(string, uri, loadingOptions=None):
     # type: (Any, Text, Optional[LoadingOptions]) -> Any
@@ -1941,4 +3030,9 @@ def load_document_by_string(string, uri, loadingOptions=None):
         loadingOptions = LoadingOptions(fileuri=uri)
     loadingOptions.idx[uri] = result
 
-    return _document_load(union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader, result, uri, loadingOptions)
+    return _document_load(
+        union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader,
+        result,
+        uri,
+        loadingOptions,
+    )

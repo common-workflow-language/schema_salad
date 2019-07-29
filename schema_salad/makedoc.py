@@ -2,25 +2,38 @@ from __future__ import absolute_import
 
 import argparse
 import codecs
-from codecs import StreamWriter  # pylint: disable=unused-import
 import copy
 import logging
 import os
 import re
 import sys
-from io import open, TextIOWrapper, TextIOBase
-from typing import (IO, Any, Dict, List, MutableMapping, MutableSequence,
-                    Optional, Set, Tuple, Union, cast)
+from codecs import StreamWriter  # pylint: disable=unused-import
+from io import TextIOWrapper, open
+from typing import (
+    IO,
+    Any,
+    Dict,
+    List,
+    MutableMapping,
+    MutableSequence,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    cast,
+)
 
 import mistune
 import six
 from six import StringIO
 from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 from . import schema
 from .utils import add_dictlist, aslist
+
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+
 
 _logger = logging.getLogger("salad")
 
@@ -45,30 +58,31 @@ def has_types(items):  # type: (Any) -> List[Text]
 
 def linkto(item):  # type: (Text) -> Text
     _, frg = urllib.parse.urldefrag(item)
-    return "[%s](#%s)" % (frg, to_id(frg))
+    return "[{}](#{})".format(frg, to_id(frg))
 
 
 class MyRenderer(mistune.Renderer):
-
     def __init__(self):  # type: () -> None
         super(MyRenderer, self).__init__()
         self.options = {}
 
     def header(self, text, level, raw=None):  # type: (Text, int, Any) -> Text
-        return """<h%i id="%s" class="section">%s <a href="#%s">&sect;</a></h%i>""" % (level, to_id(text), text, to_id(text), level)
+        return """<h{} id="{}" class="section">{} <a href="#{}">&sect;</a></h{}>""".format(
+            level, to_id(text), text, to_id(text), level
+        )
 
     def table(self, header, body):  # type: (Text, Text) -> Text
         return (
-            '<table class="table table-striped">\n<thead>%s</thead>\n'
-            '<tbody>\n%s</tbody>\n</table>\n'
-        ) % (header, body)
+            '<table class="table table-striped">\n<thead>{}</thead>\n'
+            "<tbody>\n{}</tbody>\n</table>\n"
+        ).format(header, body)
 
 
 def to_id(text):  # type: (Text) -> Text
     textid = text
     if text[0] in ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"):
         try:
-            textid = text[text.index(" ") + 1:]
+            textid = text[text.index(" ") + 1 :]
         except ValueError:
             pass
     textid = textid.replace(" ", "_")
@@ -76,7 +90,6 @@ def to_id(text):  # type: (Text) -> Text
 
 
 class ToC(object):
-
     def __init__(self):  # type: () -> None
         self.first_toc_entry = True
         self.numbering = [0]
@@ -101,17 +114,21 @@ class ToC(object):
             self.numbering.append(1)
 
         if self.start_numbering:
-            num = "%i.%s" % (self.numbering[0], ".".join(
-                [str(n) for n in self.numbering[1:]]))
+            num = "{}.{}".format(
+                self.numbering[0], ".".join([str(n) for n in self.numbering[1:]])
+            )
         else:
             num = ""
-        self.toc += """<li><a href="#%s">%s %s</a><ol>\n""" % (to_id(title),
-                                                               num, title)
+        self.toc += """<li><a href="#{}">{} {}</a><ol>\n""".format(
+            to_id(title), num, title
+        )
         return num
 
     def contents(self, idn):  # type: (str) -> str
-        toc = """<h1 id="%s">Table of contents</h1>
-               <nav class="tocnav"><ol>%s""" % (idn, self.toc)
+        toc = """<h1 id="{}">Table of contents</h1>
+               <nav class="tocnav"><ol>{}""".format(
+            idn, self.toc
+        )
         toc += "</ol>"
         for _ in range(0, len(self.numbering)):
             toc += "</li></ol>"
@@ -119,16 +136,18 @@ class ToC(object):
         return toc
 
 
-basicTypes = ("https://w3id.org/cwl/salad#null",
-              "http://www.w3.org/2001/XMLSchema#boolean",
-              "http://www.w3.org/2001/XMLSchema#int",
-              "http://www.w3.org/2001/XMLSchema#long",
-              "http://www.w3.org/2001/XMLSchema#float",
-              "http://www.w3.org/2001/XMLSchema#double",
-              "http://www.w3.org/2001/XMLSchema#string",
-              "https://w3id.org/cwl/salad#record",
-              "https://w3id.org/cwl/salad#enum",
-              "https://w3id.org/cwl/salad#array")
+basicTypes = (
+    "https://w3id.org/cwl/salad#null",
+    "http://www.w3.org/2001/XMLSchema#boolean",
+    "http://www.w3.org/2001/XMLSchema#int",
+    "http://www.w3.org/2001/XMLSchema#long",
+    "http://www.w3.org/2001/XMLSchema#float",
+    "http://www.w3.org/2001/XMLSchema#double",
+    "http://www.w3.org/2001/XMLSchema#string",
+    "https://w3id.org/cwl/salad#record",
+    "https://w3id.org/cwl/salad#enum",
+    "https://w3id.org/cwl/salad#array",
+)
 
 
 def number_headings(toc, maindoc):  # type: (ToC, str) -> str
@@ -143,14 +162,14 @@ def number_headings(toc, maindoc):  # type: (ToC, str) -> str
             skip = not skip
 
         if not skip:
-            m = re.match(r'^(#+) (.*)', line)
+            m = re.match(r"^(#+) (.*)", line)
             if m is not None:
                 num = toc.add_entry(len(m.group(1)), m.group(2))
-                line = "%s %s %s" % (m.group(1), num, m.group(2))
-            line = re.sub(r'^(https?://\S+)', r'[\1](\1)', line)
+                line = "{} {} {}".format(m.group(1), num, m.group(2))
+            line = re.sub(r"^(https?://\S+)", r"[\1](\1)", line)
         mdlines.append(line)
 
-    maindoc = '\n'.join(mdlines)
+    maindoc = "\n".join(mdlines)
     return maindoc
 
 
@@ -160,12 +179,14 @@ def fix_doc(doc):  # type: (Union[List[str], str]) -> str
     else:
         docstr = doc
     return "\n".join(
-        [re.sub(r"<([^>@]+@[^>]+)>", r"[\1](mailto:\1)", d)
-         for d in docstr.splitlines()])
+        [
+            re.sub(r"<([^>@]+@[^>]+)>", r"[\1](mailto:\1)", d)
+            for d in docstr.splitlines()
+        ]
+    )
 
 
 class RenderType(object):
-
     def __init__(self, toc, j, renderlist, redirects, primitiveType):
         # type: (ToC, List[Dict[Text, Text]], str, Dict[Text, Text], str) -> None
         self.typedoc = StringIO()
@@ -202,11 +223,13 @@ class RenderType(object):
         self.uses = {}  # type: Dict[Text, List[Tuple[Text, Text]]]
         self.record_refs = {}  # type: Dict[Text, List[Text]]
         for entry in alltypes:
-            self.typemap[t["name"]] = t
+            self.typemap[entry["name"]] = entry
             try:
-                if t["type"] == "record":
-                    self.record_refs[t["name"]] = []
-                    fields = t.get("fields", [])  # type: Union[Text, List[Dict[Text, Text]]]
+                if entry["type"] == "record":
+                    self.record_refs[entry["name"]] = []
+                    fields = entry.get(
+                        "fields", []
+                    )  # type: Union[Text, List[Dict[Text, Text]]]
                     if isinstance(fields, Text):
                         raise KeyError("record fields must be a list of mappings")
                     for f in fields:  # type: Dict[Text, Text]
@@ -218,76 +241,104 @@ class RenderType(object):
                                 _, frg1 = urllib.parse.urldefrag(t["name"])
                                 _, frg2 = urllib.parse.urldefrag(f["name"])
                                 self.uses[tp].append((frg1, frg2))
-                            if tp not in basicTypes and tp not in self.record_refs[t["name"]]:
+                            if (
+                                tp not in basicTypes
+                                and tp not in self.record_refs[t["name"]]
+                            ):
                                 self.record_refs[t["name"]].append(tp)
             except KeyError:
                 _logger.error("Did not find 'type' in %s", t)
                 raise
 
         for entry in alltypes:
-            if (entry["name"] in renderlist
-                    or ((not renderlist) and ("extends" not in entry)
-                        and ("docParent" not in entry)
-                        and ("docAfter" not in entry))):
+            if entry["name"] in renderlist or (
+                (not renderlist)
+                and ("extends" not in entry)
+                and ("docParent" not in entry)
+                and ("docAfter" not in entry)
+            ):
                 self.render_type(entry, 1)
 
-    def typefmt(self,
-                tp,                     # type: Any
-                redirects,              # type: Dict[Text, Text]
-                nbsp=False,             # type: bool
-                jsonldPredicate=None    # type: Optional[Dict[str, str]]
-                ):
+    def typefmt(
+        self,
+        tp,  # type: Any
+        redirects,  # type: Dict[Text, Text]
+        nbsp=False,  # type: bool
+        jsonldPredicate=None,  # type: Optional[Dict[str, str]]
+    ):
         # type: (...) -> Text
         if isinstance(tp, MutableSequence):
             if nbsp and len(tp) <= 3:
                 return "&nbsp;|&nbsp;".join(
-                    [self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate)
-                     for n in tp])
+                    [
+                        self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate)
+                        for n in tp
+                    ]
+                )
             return " | ".join(
-                [self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate)
-                 for n in tp])
+                [
+                    self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate)
+                    for n in tp
+                ]
+            )
         if isinstance(tp, MutableMapping):
             if tp["type"] == "https://w3id.org/cwl/salad#array":
-                ar = "array&lt;%s&gt;" % (self.typefmt(
-                    tp["items"], redirects, nbsp=True))
+                ar = "array&lt;{}&gt;".format(
+                    self.typefmt(tp["items"], redirects, nbsp=True)
+                )
                 if jsonldPredicate is not None and "mapSubject" in jsonldPredicate:
                     if "mapPredicate" in jsonldPredicate:
                         ar += " | "
                         if len(ar) > 40:
                             ar += "<br>"
 
-                        ar += "<a href='#map'>map</a>&lt;<code>%s</code>,&nbsp;<code>%s</code> | %s&gt" % (
-                            jsonldPredicate["mapSubject"], jsonldPredicate["mapPredicate"],
-                            self.typefmt(tp["items"], redirects))
+                        ar += (
+                            "<a href='#map'>map</a>&lt;<code>{}</code>"
+                            ",&nbsp;<code>{}</code> | {}&gt".format(
+                                jsonldPredicate["mapSubject"],
+                                jsonldPredicate["mapPredicate"],
+                                self.typefmt(tp["items"], redirects),
+                            )
+                        )
                     else:
                         ar += " | "
                         if len(ar) > 40:
                             ar += "<br>"
-                        ar += "<a href='#map'>map</a>&lt;<code>%s</code>,&nbsp;%s&gt" % (
+                        ar += "<a href='#map'>map</a>&lt;<code>{}</code>,&nbsp;{}&gt".format(
                             jsonldPredicate["mapSubject"],
-                            self.typefmt(tp["items"], redirects))
+                            self.typefmt(tp["items"], redirects),
+                        )
                 return ar
-            if tp["type"] in ("https://w3id.org/cwl/salad#record",
-                              "https://w3id.org/cwl/salad#enum"):
+            if tp["type"] in (
+                "https://w3id.org/cwl/salad#record",
+                "https://w3id.org/cwl/salad#enum",
+            ):
                 frg = schema.avro_name(tp["name"])
                 if tp["name"] in redirects:
-                    return """<a href="%s">%s</a>""" % (redirects[tp["name"]], frg)
+                    return """<a href="{}">{}</a>""".format(redirects[tp["name"]], frg)
                 if tp["name"] in self.typemap:
-                    return """<a href="#%s">%s</a>""" % (to_id(frg), frg)
-                if tp["type"] == "https://w3id.org/cwl/salad#enum" and len(tp["symbols"]) == 1:
-                    return "constant value <code>%s</code>" % schema.avro_name(tp["symbols"][0])
+                    return """<a href="#{}">{}</a>""".format(to_id(frg), frg)
+                if (
+                    tp["type"] == "https://w3id.org/cwl/salad#enum"
+                    and len(tp["symbols"]) == 1
+                ):
+                    return "constant value <code>{}</code>".format(
+                        schema.avro_name(tp["symbols"][0])
+                    )
                 return frg
             if isinstance(tp["type"], MutableMapping):
                 return self.typefmt(tp["type"], redirects)
         else:
             if str(tp) in redirects:
-                return """<a href="%s">%s</a>""" % (redirects[tp], redirects[tp])
+                return """<a href="{}">{}</a>""".format(redirects[tp], redirects[tp])
             if str(tp) in basicTypes:
-                return """<a href="%s">%s</a>""" % (self.primitiveType, schema.avro_name(str(tp)))
+                return """<a href="{}">{}</a>""".format(
+                    self.primitiveType, schema.avro_name(str(tp))
+                )
             _, frg = urllib.parse.urldefrag(tp)
-            if frg != '':
+            if frg != "":
                 tp = frg
-            return """<a href="#%s">%s</a>""" % (to_id(tp), tp)
+            return """<a href="{}">{}</a>""".format(to_id(tp), tp)
         raise Exception("We should not be here!")
 
     def render_type(self, f, depth):  # type: (Dict[Text, Any], int) -> None
@@ -324,9 +375,12 @@ class RenderType(object):
                 for i in e["doc"]:
                     idx = i.find(":")
                     if idx > -1:
-                        enumDesc[i[:idx]] = i[idx + 1:]
-                e["doc"] = [i for i in e["doc"] if i.find(
-                    ":") == -1 or i.find(" ") < i.find(":")]
+                        enumDesc[i[:idx]] = i[idx + 1 :]
+                e["doc"] = [
+                    i
+                    for i in e["doc"]
+                    if i.find(":") == -1 or i.find(" ") < i.find(":")
+                ]
 
         f["doc"] = fix_doc(f["doc"])
 
@@ -345,30 +399,19 @@ class RenderType(object):
 
             _, frg = urllib.parse.urldefrag(f["name"])
             num = self.toc.add_entry(depth, frg)
-            doc = u"%s %s %s\n" % (("#" * depth), num, frg)
+            doc = u"{} {} {}\n".format(("#" * depth), num, frg)
         else:
             doc = u""
 
         if self.title is None and f["doc"]:
-            title = f["doc"][0:f["doc"].index("\n")]
-            if title.startswith('# '):
+            title = f["doc"][0 : f["doc"].index("\n")]
+            if title.startswith("# "):
                 self.title = title[2:]
             else:
                 self.title = title
 
         if f["type"] == "documentation":
             f["doc"] = number_headings(self.toc, f["doc"])
-
-        # if "extends" in f:
-        #    doc += "\n\nExtends "
-        #    doc += ", ".join([" %s" % linkto(ex) for ex in aslist(f["extends"])])
-        # if f["name"] in self.subs:
-        #    doc += "\n\nExtended by"
-        #    doc += ", ".join([" %s" % linkto(s) for s in self.subs[f["name"]]])
-        # if f["name"] in self.uses:
-        #    doc += "\n\nReferenced by"
-        #    doc += ", ".join([" [%s.%s](#%s)" % (s[0], s[1], to_id(s[0]))
-        #       for s in self.uses[f["name"]]])
 
         doc = doc + "\n\n" + f["doc"]
 
@@ -388,28 +431,32 @@ class RenderType(object):
             optional = []
             for i in f.get("fields", []):
                 tp = i["type"]
-                if isinstance(tp, MutableSequence) and tp[0] == "https://w3id.org/cwl/salad#null":
+                if (
+                    isinstance(tp, MutableSequence)
+                    and tp[0] == "https://w3id.org/cwl/salad#null"
+                ):
                     opt = False
                     tp = tp[1:]
                 else:
                     opt = True
 
                 desc = i["doc"]
-                # if "inherited_from" in i:
-                #    desc = "%s _Inherited from %s_" % (desc, linkto(i["inherited_from"]))
 
                 rfrg = schema.avro_name(i["name"])
                 tr = """
 <div class="row responsive-table-row">
-<div class="col-xs-3 col-lg-2"><code>%s</code></div>
-<div class="col-xs-2 col-lg-1">%s</div>
-<div class="col-xs-7 col-lg-3">%s</div>
-<div class="col-xs-12 col-lg-6 description-col">%s</div>
-</div>""" % (rfrg, "required" if opt else "optional",
-                    self.typefmt(tp, self.redirects,
-                    jsonldPredicate=i.get("jsonldPredicate")),
-                    mistune.markdown(desc))
-
+<div class="col-xs-3 col-lg-2"><code>{}</code></div>
+<div class="col-xs-2 col-lg-1">{}</div>
+<div class="col-xs-7 col-lg-3">{}</div>
+<div class="col-xs-12 col-lg-6 description-col">{}</div>
+</div>""".format(
+                    rfrg,
+                    "required" if opt else "optional",
+                    self.typefmt(
+                        tp, self.redirects, jsonldPredicate=i.get("jsonldPredicate")
+                    ),
+                    mistune.markdown(desc),
+                )
                 if opt:
                     required.append(tr)
                 else:
@@ -425,16 +472,16 @@ class RenderType(object):
                 for i in e.get("symbols", []):
                     doc += "<tr>"
                     efrg = schema.avro_name(i)
-                    doc += "<td><code>%s</code></td><td>%s</td>" % (
-                        efrg, enumDesc.get(efrg, ""))
+                    doc += "<td><code>{}</code></td><td>{}</td>".format(
+                        efrg, enumDesc.get(efrg, "")
+                    )
                     doc += "</tr>"
             doc += """</table>"""
         f["doc"] = doc
 
         self.typedoc.write(f["doc"])
 
-        subs = self.docParent.get(f["name"], []) + \
-            self.record_refs.get(f["name"], [])
+        subs = self.docParent.get(f["name"], []) + self.record_refs.get(f["name"], [])
         if len(subs) == 1:
             self.render_type(self.typemap[subs[0]], depth)
         else:
@@ -445,37 +492,60 @@ class RenderType(object):
             self.render_type(self.typemap[s], depth)
 
 
-def avrold_doc(j,           # type: List[Dict[Text, Any]]
-               outdoc,      # type: Union[IO[Any], StreamWriter]
-               renderlist,  # type: str
-               redirects,   # type: Dict[Text, Text]
-               brand,       # type: str
-               brandlink,   # type: str
-               primtype     # type: str
-              ):  # type: (...) -> None
+def avrold_doc(
+    j,  # type: List[Dict[Text, Any]]
+    outdoc,  # type: Union[IO[Any], StreamWriter]
+    renderlist,  # type: str
+    redirects,  # type: Dict[Text, Text]
+    brand,  # type: str
+    brandlink,  # type: str
+    primtype,  # type: str
+):  # type: (...) -> None
     toc = ToC()
     toc.start_numbering = False
 
     rt = RenderType(toc, j, renderlist, redirects, primtype)
     content = rt.typedoc.getvalue()  # type: Text
 
-    outdoc.write("""
+    bootstrap_url = (
+        "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"
+    )
+    bootstrap_integrity = (
+        "sha384-604wwakM23pEysLJAhja8Lm42IIwYrJ0dEAqzFsj9pJ/P5buiujjywArgPCi8eoz"
+    )
+    picturefill_url = (
+        "https://cdn.rawgit.com/scottjehl/picturefill/3.0.2/dist/picturefill.min.js"
+    )
+    picturefill_integrity = (
+        "sha384-ZJsVW8YHHxQHJ+SJDncpN90d0EfAhPP+yA94n+EhSRzhcxfo84yMnNk+v37RGlWR"
+    )
+    outdoc.write(
+        """
     <!DOCTYPE html>
     <html>
     <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" integrity="sha384-604wwakM23pEysLJAhja8Lm42IIwYrJ0dEAqzFsj9pJ/P5buiujjywArgPCi8eoz" crossorigin="anonymous">
+    <link rel="stylesheet"
+        href="{}"
+        integrity="{}"
+        crossorigin="anonymous">
     <script>
     // Picture element HTML5 shiv
     document.createElement( "picture" );
     </script>
-    <script src="https://cdn.rawgit.com/scottjehl/picturefill/3.0.2/dist/picturefill.min.js" integrity="sha384-ZJsVW8YHHxQHJ+SJDncpN90d0EfAhPP+yA94n+EhSRzhcxfo84yMnNk+v37RGlWR" crossorigin="anonymous" async></script>
-    """)
+    <script src="{}"
+        integrity="{}"
+        crossorigin="anonymous" async></script>
+    """.format(
+            bootstrap_url, bootstrap_integrity, picturefill_url, picturefill_integrity
+        )
+    )
 
-    outdoc.write("<title>%s</title>" % (rt.title))
+    outdoc.write("<title>{}</title>".format(rt.title))
 
-    outdoc.write("""
+    outdoc.write(
+        """
     <style>
     :target {
       padding-top: 61px;
@@ -540,74 +610,95 @@ def avrold_doc(j,           # type: List[Dict[Text, Any]]
     </style>
     </head>
     <body>
-    """)
+    """
+    )
 
-    outdoc.write("""
+    outdoc.write(
+        """
       <nav class="navbar navbar-default navbar-fixed-top">
         <div class="container">
           <div class="navbar-header">
-            <a class="navbar-brand" href="%s">%s</a>
-    """ % (brandlink, brand))
+            <a class="navbar-brand" href="{}">{}</a>
+    """.format(
+            brandlink, brand
+        )
+    )
 
     if u"<!--ToC-->" in content:
         content = content.replace(u"<!--ToC-->", toc.contents("toc"))
-        outdoc.write("""
+        outdoc.write(
+            """
                 <ul class="nav navbar-nav">
                   <li><a href="#toc">Table of contents</a></li>
                 </ul>
-        """)
+        """
+        )
 
-    outdoc.write("""
+    outdoc.write(
+        """
           </div>
         </div>
       </nav>
-    """)
+    """
+    )
 
-    outdoc.write("""
+    outdoc.write(
+        """
     <div class="container">
-    """)
+    """
+    )
 
-    outdoc.write("""
+    outdoc.write(
+        """
     <div class="row">
-    """)
+    """
+    )
 
-    outdoc.write("""
-    <div class="col-md-12" role="main" id="main">""")
+    outdoc.write(
+        """
+    <div class="col-md-12" role="main" id="main">"""
+    )
 
     outdoc.write(content)
 
     outdoc.write("""</div>""")
 
-    outdoc.write("""
+    outdoc.write(
+        """
     </div>
     </div>
     </body>
-    </html>""")
+    </html>"""
+    )
 
 
 def main():  # type: () -> None
     parser = argparse.ArgumentParser()
     parser.add_argument("schema")
-    parser.add_argument('--only', action='append')
-    parser.add_argument('--redirect', action='append')
-    parser.add_argument('--brand')
-    parser.add_argument('--brandlink')
-    parser.add_argument('--primtype', default="#PrimitiveType")
+    parser.add_argument("--only", action="append")
+    parser.add_argument("--redirect", action="append")
+    parser.add_argument("--brand")
+    parser.add_argument("--brandlink")
+    parser.add_argument("--primtype", default="#PrimitiveType")
 
     args = parser.parse_args()
 
     makedoc(args)
 
-def makedoc(args):   # type: (argparse.Namespace) -> None
+
+def makedoc(args):  # type: (argparse.Namespace) -> None
 
     s = []  # type: List[Dict[Text, Any]]
     a = args.schema
-    with open(a, encoding='utf-8') as f:
+    with open(a, encoding="utf-8") as f:
         if a.endswith("md"):
-            s.append({"name": os.path.splitext(os.path.basename(a))[0],
-                      "type": "documentation",
-                      "doc": f.read()
-                      })
+            s.append(
+                {
+                    "name": os.path.splitext(os.path.basename(a))[0],
+                    "type": "documentation",
+                    "doc": f.read(),
+                }
+            )
         else:
             uri = "file://" + os.path.abspath(a)
             metaschema_loader = schema.get_metaschema()[2]
@@ -619,16 +710,18 @@ def makedoc(args):   # type: (argparse.Namespace) -> None
             else:
                 raise ValueError("Schema must resolve to a list or a dict")
     redirect = {}
-    for r in (args.redirect or []):
+    for r in args.redirect or []:
         redirect[r.split("=")[0]] = r.split("=")[1]
     renderlist = args.only if args.only else []
     stdout = cast(TextIOWrapper, sys.stdout)  # type: Union[TextIOWrapper, StreamWriter]
-    if sys.stdout.encoding != 'UTF-8':
+    if sys.stdout.encoding != "UTF-8":
         if sys.version_info >= (3,):
-            stdout = TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+            stdout = TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
         else:
-            stdout = codecs.getwriter('utf-8')(sys.stdout)
-    avrold_doc(s, stdout, renderlist, redirect, args.brand, args.brandlink, args.primtype)
+            stdout = codecs.getwriter("utf-8")(sys.stdout)
+    avrold_doc(
+        s, stdout, renderlist, redirect, args.brand, args.brandlink, args.primtype
+    )
 
 
 if __name__ == "__main__":

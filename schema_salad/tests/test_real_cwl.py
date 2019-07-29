@@ -4,34 +4,36 @@ Checks loading of some real world tools and workflows found in the wild (e.g. do
 run individually as py.test -k tests/test_real_cwl.py
 """
 
-from .util import get_data
-from schema_salad.main import to_one_line_messages, reformat_yaml_exception_message
-from schema_salad.schema import load_schema, load_and_validate
-from schema_salad.sourceline import strip_dup_lineno
-from schema_salad.validate import ValidationException
-from os.path import normpath
-import re
-import six
 import pytest
+import six
+
+from schema_salad.schema import load_and_validate, load_schema
+from schema_salad.validate import ValidationException
+
+from .util import get_data
 
 test_dir_name = "tests/test_real_cwl/"
 
 
-class TestRealWorldCWL():
-
+class TestRealWorldCWL:
     @classmethod
     def setup_class(cls):
-        cls.document_loader, cls.avsc_names, schema_metadata, metaschema_loader = \
-            load_schema(get_data(u"tests/test_schema/CommonWorkflowLanguage.yml"))
+        cls.document_loader, cls.avsc_names, schema_metadata, metaschema_loader = load_schema(  # noqa: B950
+            get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
+        )
 
     def load_cwl(self, src):
         with pytest.raises(ValidationException):
             try:
-                load_and_validate(self.document_loader, self.avsc_names,
-                                  six.text_type(get_data(test_dir_name+src)), True)
+                load_and_validate(
+                    self.document_loader,
+                    self.avsc_names,
+                    six.text_type(get_data(test_dir_name + src)),
+                    True,
+                )
             except ValidationException as e:
                 # msgs = to_one_line_messages(str(e)).splitlines()
-                print("\n", e)
+                print ("\n", e)
                 raise
 
     def test_topmed_single_doc(self):

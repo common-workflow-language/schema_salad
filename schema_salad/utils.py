@@ -2,9 +2,10 @@ from __future__ import absolute_import
 
 import json
 import os
-from typing import IO, Any, AnyStr, Dict, List, Mapping, MutableSequence, Union
+from typing import IO, Any, Dict, Mapping, MutableSequence
 
 import six
+
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 
@@ -15,14 +16,20 @@ def add_dictlist(di, key, val):  # type: (Dict[Any, Any], Any, Any) -> None
 
 
 def aslist(l):  # type: (Any) -> MutableSequence[Any]
-    """Convenience function to wrap single items and lists, and return lists unchanged."""
+    """
+    Convenience function to wrap single items and lists.
+
+    Return lists unchanged.
+    """
 
     if isinstance(l, MutableSequence):
         return l
     else:
         return [l]
 
+
 # http://rightfootin.blogspot.com/2006/09/more-on-python-flatten.html
+
 
 def flatten(l, ltypes=(list, tuple)):
     # type: (Any, Any) -> Any
@@ -41,14 +48,16 @@ def flatten(l, ltypes=(list, tuple)):
                 i -= 1
                 break
             else:
-                lst[i:i + 1] = lst[i]
+                lst[i : i + 1] = lst[i]
         i += 1
     return ltype(lst)
+
 
 # Check if we are on windows OS
 def onWindows():
     # type: () -> (bool)
-    return os.name == 'nt'
+    return os.name == "nt"
+
 
 def convert_to_dict(j4):  # type: (Any) -> Any
     if isinstance(j4, Mapping):
@@ -58,20 +67,23 @@ def convert_to_dict(j4):  # type: (Any) -> Any
     else:
         return j4
 
-def json_dump(obj,       # type: Any
-              fp,        # type: IO[str]
-              **kwargs   # type: Any
-             ):  # type: (...) -> None
+
+def json_dump(
+    obj,  # type: Any
+    fp,  # type: IO[str]
+    **kwargs  # type: Any
+):  # type: (...) -> None
     """ Force use of unicode. """
     if six.PY2:
-        kwargs['encoding'] = 'utf-8'
+        kwargs["encoding"] = "utf-8"
     json.dump(convert_to_dict(obj), fp, **kwargs)
 
 
-def json_dumps(obj,       # type: Any
-               **kwargs   # type: Any
-              ):  # type: (...) -> str
+def json_dumps(
+    obj,  # type: Any
+    **kwargs  # type: Any
+):  # type: (...) -> str
     """ Force use of unicode. """
     if six.PY2:
-        kwargs['encoding'] = 'utf-8'
+        kwargs["encoding"] = "utf-8"
     return json.dumps(convert_to_dict(obj), **kwargs)
