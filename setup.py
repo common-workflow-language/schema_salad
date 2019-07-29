@@ -29,7 +29,7 @@ else:
 install_requires = [
     'setuptools',
     'requests >= 1.0',
-    'ruamel.yaml >= 0.12.4, <= 0.15.99',
+    'ruamel.yaml >= 0.12.4, <= 0.16',
     # once the minimum version for ruamel.yaml >= 0.15.99
     # then please update the mypy{2,3} targets in the Makefile
     'rdflib >= 4.2.2, < 4.3.0',
@@ -80,6 +80,7 @@ setup(name='schema-salad',
           "Programming Language :: Python :: 3.5",
           "Programming Language :: Python :: 3.6",
           "Programming Language :: Python :: 3.7",
+          "Programming Language :: Python :: 3.8",
           "Typing :: Typed",
       ]
       )
