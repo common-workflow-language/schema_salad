@@ -1,1 +1,7 @@
-
+[flake8]
+ignore = E203, E266, E501, W503, E211
+max-line-length = 88
+select = B,C,E,F,W,T4,B9
+per-file-ignores =
+  schema_salad/metaschema.py:B950
+  schema_salad/tests/*.py:B011
