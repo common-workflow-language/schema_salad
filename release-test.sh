@@ -7,7 +7,7 @@ package=schema-salad
 module=schema_salad
 slug=${TRAVIS_PULL_REQUEST_SLUG:=common-workflow-language/schema_salad}
 repo=https://github.com/${slug}.git
-run_tests="bin/py.test --pyarg ${module}"
+run_tests="bin/py.test --pyargs ${module}"
 pipver=8.0.1 # minimum required version of pip
 setupver=20.10.1 # minimum required version of setuptools
 PYVER=${PYVER:=2.7}

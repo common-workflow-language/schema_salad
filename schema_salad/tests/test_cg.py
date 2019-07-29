@@ -19,7 +19,7 @@ def test_load():
             "type": "string"
         }]
     }
-    rs = cg_metaschema.RecordSchema(doc, "http://example.com/", cg_metaschema.LoadingOptions())
+    rs = cg_metaschema.RecordSchema.fromDoc(doc, "http://example.com/", cg_metaschema.LoadingOptions())
     assert "record" == rs.type
     assert "http://example.com/#hello" == rs.fields[0].name
     assert "Hello test case" == rs.fields[0].doc
@@ -39,7 +39,7 @@ def test_err():
         "type": "string"
     }
     with pytest.raises(cg_metaschema.ValidationException):
-        rf = cg_metaschema.RecordField(doc, "", cg_metaschema.LoadingOptions())
+        rf = cg_metaschema.RecordField.fromDoc(doc, "", cg_metaschema.LoadingOptions())
 
 def test_include():
     doc = {
@@ -47,7 +47,7 @@ def test_include():
         "doc": [{"$include": "hello.txt"}],
         "type": "documentation"
     }
-    rf = cg_metaschema.Documentation(doc, "http://example.com/",
+    rf = cg_metaschema.Documentation.fromDoc(doc, "http://example.com/",
                                      cg_metaschema.LoadingOptions(fileuri=file_uri(get_data("tests/_"))))
     assert "http://example.com/#hello" == rf.name
     assert ["hello world!\n"] == rf.doc
@@ -66,7 +66,7 @@ def test_import():
         }]
     }
     lead = file_uri(os.path.normpath(get_data("tests")))
-    rs = cg_metaschema.RecordSchema(doc, "http://example.com/", cg_metaschema.LoadingOptions(fileuri=lead+"/_"))
+    rs = cg_metaschema.RecordSchema.fromDoc(doc, "http://example.com/", cg_metaschema.LoadingOptions(fileuri=lead+"/_"))
     assert "record" == rs.type
     assert lead+"/hellofield.yml#hello" == rs.fields[0].name
     assert "hello world!\n" == rs.fields[0].doc
@@ -101,7 +101,7 @@ def test_err2():
         }]
     }
     with pytest.raises(cg_metaschema.ValidationException):
-        rs = cg_metaschema.RecordSchema(doc, "", cg_metaschema.LoadingOptions())
+        rs = cg_metaschema.RecordSchema.fromDoc(doc, "", cg_metaschema.LoadingOptions())
 
 def test_idmap():
     doc = {
@@ -113,7 +113,7 @@ def test_idmap():
             }
         }
     }
-    rs = cg_metaschema.RecordSchema(doc, "http://example.com/", cg_metaschema.LoadingOptions())
+    rs = cg_metaschema.RecordSchema.fromDoc(doc, "http://example.com/", cg_metaschema.LoadingOptions())
     assert "record" == rs.type
     assert "http://example.com/#hello" == rs.fields[0].name
     assert "Hello test case" == rs.fields[0].doc
@@ -134,7 +134,7 @@ def test_idmap2():
             "hello": "string"
         }
     }
-    rs = cg_metaschema.RecordSchema(doc, "http://example.com/", cg_metaschema.LoadingOptions())
+    rs = cg_metaschema.RecordSchema.fromDoc(doc, "http://example.com/", cg_metaschema.LoadingOptions())
     assert "record" == rs.type
     assert "http://example.com/#hello" == rs.fields[0].name
     assert rs.fields[0].doc is None

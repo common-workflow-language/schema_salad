@@ -23,22 +23,29 @@ class ValidationException(Exception):
     pass
 
 class Savable(object):
+    @classmethod
+    def fromDoc(cls, _doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Savable
+        pass
+
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Text]
         pass
 
 class LoadingOptions(object):
     def __init__(self,
-                 fetcher=None,     # type: Optional[Fetcher]
-                 namespaces=None,  # type: Optional[Dict[Text, Text]]
-                 fileuri=None,     # type: Optional[Text]
-                 copyfrom=None,    # type: Optional[LoadingOptions]
-                 schemas=None      # type: Optional[List[Text]]
+                 fetcher=None,      # type: Optional[Fetcher]
+                 namespaces=None,   # type: Optional[Dict[Text, Text]]
+                 fileuri=None,      # type: Optional[Text]
+                 copyfrom=None,     # type: Optional[LoadingOptions]
+                 schemas=None,      # type: Optional[List[Text]]
+                 original_doc=None  # type: Optional[Any]
                 ):  # type: (...) -> None
         self.idx = {}  # type: Dict[Text, Text]
         self.fileuri = fileuri  # type: Optional[Text]
         self.namespaces = namespaces
         self.schemas = schemas
+        self.original_doc = original_doc
         if copyfrom is not None:
             self.idx = copyfrom.idx
             if fetcher is None:
@@ -104,6 +111,11 @@ def save(val,                # type: Optional[Union[Savable, MutableSequence[Sav
         return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
     if isinstance(val, MutableSequence):
         return [save(v, top=False, base_url=base_url, relative_uris=relative_uris) for v in val]
+    if isinstance(val, MutableMapping):
+        newdict = {}
+        for key in val:
+            newdict[key] = save(val[key], top=False, base_url=base_url, relative_uris=relative_uris)
+        return newdict
     return val
 
 def expand_url(url,                 # type: Union[str, Text]
@@ -239,14 +251,14 @@ class _EnumLoader(_Loader):
 
 class _RecordLoader(_Loader):
     def __init__(self, classtype):
-        # type: (type) -> None
+        # type: (Type[Savable]) -> None
         self.classtype = classtype
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         if not isinstance(doc, MutableMapping):
             raise ValidationException("Expected a dict")
-        return self.classtype(doc, baseuri, loadingOptions, docRoot=docRoot)
+        return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
     def __repr__(self):  # type: () -> str
         return str(self.classtype)

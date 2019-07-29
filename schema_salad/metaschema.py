@@ -28,22 +28,29 @@ class ValidationException(Exception):
     pass
 
 class Savable(object):
+    @classmethod
+    def fromDoc(cls, _doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Savable
+        pass
+
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Text]
         pass
 
 class LoadingOptions(object):
     def __init__(self,
-                 fetcher=None,     # type: Optional[Fetcher]
-                 namespaces=None,  # type: Optional[Dict[Text, Text]]
-                 fileuri=None,     # type: Optional[Text]
-                 copyfrom=None,    # type: Optional[LoadingOptions]
-                 schemas=None      # type: Optional[List[Text]]
+                 fetcher=None,      # type: Optional[Fetcher]
+                 namespaces=None,   # type: Optional[Dict[Text, Text]]
+                 fileuri=None,      # type: Optional[Text]
+                 copyfrom=None,     # type: Optional[LoadingOptions]
+                 schemas=None,      # type: Optional[List[Text]]
+                 original_doc=None  # type: Optional[Any]
                 ):  # type: (...) -> None
         self.idx = {}  # type: Dict[Text, Text]
         self.fileuri = fileuri  # type: Optional[Text]
         self.namespaces = namespaces
         self.schemas = schemas
+        self.original_doc = original_doc
         if copyfrom is not None:
             self.idx = copyfrom.idx
             if fetcher is None:
@@ -109,6 +116,11 @@ def save(val,                # type: Optional[Union[Savable, MutableSequence[Sav
         return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
     if isinstance(val, MutableSequence):
         return [save(v, top=False, base_url=base_url, relative_uris=relative_uris) for v in val]
+    if isinstance(val, MutableMapping):
+        newdict = {}
+        for key in val:
+            newdict[key] = save(val[key], top=False, base_url=base_url, relative_uris=relative_uris)
+        return newdict
     return val
 
 def expand_url(url,                 # type: Union[str, Text]
@@ -244,14 +256,14 @@ class _EnumLoader(_Loader):
 
 class _RecordLoader(_Loader):
     def __init__(self, classtype):
-        # type: (type) -> None
+        # type: (Type[Savable]) -> None
         self.classtype = classtype
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
         if not isinstance(doc, MutableMapping):
             raise ValidationException("Expected a dict")
-        return self.classtype(doc, baseuri, loadingOptions, docRoot=docRoot)
+        return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
     def __repr__(self):  # type: () -> str
         return str(self.classtype)
@@ -490,59 +502,78 @@ class RecordField(Documented):
     """
 A field of a record.
     """
-    def __init__(self, _doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> None
-        doc = copy.copy(_doc)
-        if hasattr(_doc, 'lc'):
-            doc.lc.data = _doc.lc.data
-            doc.lc.filename = _doc.lc.filename
-        errors = []
-        self.loadingOptions = loadingOptions
-        if 'name' in doc:
-            try:
-                self.name = load_field(doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
-            except ValidationException as e:
-                errors.append(SourceLine(doc, 'name', str).makeError("the `name` field is not valid because:\n"+str(e)))
+    def __init__(self, doc, name, type, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+        if extension_fields:
+            self.extension_fields = extension_fields
         else:
-            self.name = None
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.doc = doc
+        self.name = name
+        self.type = type
 
 
-        if self.name is None:
+    @classmethod
+    def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> RecordField
+
+        _doc = copy.copy(doc)
+        if hasattr(doc, 'lc'):
+            _doc.lc.data = doc.lc.data
+            _doc.lc.filename = doc.lc.filename
+        errors = []
+        if 'name' in _doc:
+            try:
+                name = load_field(_doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
+            except ValidationException as e:
+                errors.append(SourceLine(_doc, 'name', str).makeError("the `name` field is not valid because:\n"+str(e)))
+        else:
+            name = None
+
+
+        if name is None:
             if docRoot is not None:
-                self.name = docRoot
+                name = docRoot
             else:
                 raise ValidationException("Missing name")
-        baseuri = self.name
-        if 'doc' in doc:
+        baseuri = name
+        if 'doc' in _doc:
             try:
-                self.doc = load_field(doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
+                doc = load_field(_doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
         else:
-            self.doc = None
+            doc = None
 
         try:
-            self.type = load_field(doc.get('type'), typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2, baseuri, loadingOptions)
+            type = load_field(_doc.get('type'), typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
+            errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
 
-        self.extension_fields = {}  # type: Dict[Text, Text]
-        for k in doc.keys():
-            if k not in self.attrs:
+        extension_fields = yaml.comments.CommentedMap()
+        for k in _doc.keys():
+            if k not in cls.attrs:
                 if ":" in k:
                     ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
-                    self.extension_fields[ex] = doc[k]
+                    extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `doc`, `name`, `type`" % (k)))
+                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `doc`, `name`, `type`" % (k)))
                     break
 
         if errors:
             raise ValidationException("Trying 'RecordField'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
+        return cls(doc, name, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -566,44 +597,62 @@ A field of a record.
 
 
 class RecordSchema(Savable):
-    def __init__(self, _doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> None
-        doc = copy.copy(_doc)
-        if hasattr(_doc, 'lc'):
-            doc.lc.data = _doc.lc.data
-            doc.lc.filename = _doc.lc.filename
-        errors = []
-        self.loadingOptions = loadingOptions
-        if 'fields' in doc:
-            try:
-                self.fields = load_field(doc.get('fields'), idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader, baseuri, loadingOptions)
-            except ValidationException as e:
-                errors.append(SourceLine(doc, 'fields', str).makeError("the `fields` field is not valid because:\n"+str(e)))
+    def __init__(self, fields, type, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+        if extension_fields:
+            self.extension_fields = extension_fields
         else:
-            self.fields = None
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.fields = fields
+        self.type = type
+
+
+    @classmethod
+    def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> RecordSchema
+
+        _doc = copy.copy(doc)
+        if hasattr(doc, 'lc'):
+            _doc.lc.data = doc.lc.data
+            _doc.lc.filename = doc.lc.filename
+        errors = []
+        if 'fields' in _doc:
+            try:
+                fields = load_field(_doc.get('fields'), idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader, baseuri, loadingOptions)
+            except ValidationException as e:
+                errors.append(SourceLine(_doc, 'fields', str).makeError("the `fields` field is not valid because:\n"+str(e)))
+        else:
+            fields = None
 
         try:
-            self.type = load_field(doc.get('type'), typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2, baseuri, loadingOptions)
+            type = load_field(_doc.get('type'), typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
+            errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
 
-        self.extension_fields = {}  # type: Dict[Text, Text]
-        for k in doc.keys():
-            if k not in self.attrs:
+        extension_fields = yaml.comments.CommentedMap()
+        for k in _doc.keys():
+            if k not in cls.attrs:
                 if ":" in k:
                     ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
-                    self.extension_fields[ex] = doc[k]
+                    extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `fields`, `type`" % (k)))
+                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `fields`, `type`" % (k)))
                     break
 
         if errors:
             raise ValidationException("Trying 'RecordSchema'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
+        return cls(fields, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -626,41 +675,59 @@ class EnumSchema(Savable):
 Define an enumerated type.
 
     """
-    def __init__(self, _doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> None
-        doc = copy.copy(_doc)
-        if hasattr(_doc, 'lc'):
-            doc.lc.data = _doc.lc.data
-            doc.lc.filename = _doc.lc.filename
+    def __init__(self, symbols, type, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.symbols = symbols
+        self.type = type
+
+
+    @classmethod
+    def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> EnumSchema
+
+        _doc = copy.copy(doc)
+        if hasattr(doc, 'lc'):
+            _doc.lc.data = doc.lc.data
+            _doc.lc.filename = doc.lc.filename
         errors = []
-        self.loadingOptions = loadingOptions
         try:
-            self.symbols = load_field(doc.get('symbols'), uri_array_of_strtype_True_False_None, baseuri, loadingOptions)
+            symbols = load_field(_doc.get('symbols'), uri_array_of_strtype_True_False_None, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(SourceLine(doc, 'symbols', str).makeError("the `symbols` field is not valid because:\n"+str(e)))
+            errors.append(SourceLine(_doc, 'symbols', str).makeError("the `symbols` field is not valid because:\n"+str(e)))
 
         try:
-            self.type = load_field(doc.get('type'), typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2, baseuri, loadingOptions)
+            type = load_field(_doc.get('type'), typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
+            errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
 
-        self.extension_fields = {}  # type: Dict[Text, Text]
-        for k in doc.keys():
-            if k not in self.attrs:
+        extension_fields = yaml.comments.CommentedMap()
+        for k in _doc.keys():
+            if k not in cls.attrs:
                 if ":" in k:
                     ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
-                    self.extension_fields[ex] = doc[k]
+                    extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `symbols`, `type`" % (k)))
+                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `symbols`, `type`" % (k)))
                     break
 
         if errors:
             raise ValidationException("Trying 'EnumSchema'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
+        return cls(symbols, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -681,41 +748,59 @@ Define an enumerated type.
 
 
 class ArraySchema(Savable):
-    def __init__(self, _doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> None
-        doc = copy.copy(_doc)
-        if hasattr(_doc, 'lc'):
-            doc.lc.data = _doc.lc.data
-            doc.lc.filename = _doc.lc.filename
+    def __init__(self, items, type, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.items = items
+        self.type = type
+
+
+    @classmethod
+    def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> ArraySchema
+
+        _doc = copy.copy(doc)
+        if hasattr(doc, 'lc'):
+            _doc.lc.data = doc.lc.data
+            _doc.lc.filename = doc.lc.filename
         errors = []
-        self.loadingOptions = loadingOptions
         try:
-            self.items = load_field(doc.get('items'), uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2, baseuri, loadingOptions)
+            items = load_field(_doc.get('items'), uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(SourceLine(doc, 'items', str).makeError("the `items` field is not valid because:\n"+str(e)))
+            errors.append(SourceLine(_doc, 'items', str).makeError("the `items` field is not valid because:\n"+str(e)))
 
         try:
-            self.type = load_field(doc.get('type'), typedsl_enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader_2, baseuri, loadingOptions)
+            type = load_field(_doc.get('type'), typedsl_enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
+            errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
 
-        self.extension_fields = {}  # type: Dict[Text, Text]
-        for k in doc.keys():
-            if k not in self.attrs:
+        extension_fields = yaml.comments.CommentedMap()
+        for k in _doc.keys():
+            if k not in cls.attrs:
                 if ":" in k:
                     ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
-                    self.extension_fields[ex] = doc[k]
+                    extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `items`, `type`" % (k)))
+                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `items`, `type`" % (k)))
                     break
 
         if errors:
             raise ValidationException("Trying 'ArraySchema'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
+        return cls(items, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -741,119 +826,146 @@ Attached to a record field to define how the parent record field is handled for
 URI resolution and JSON-LD context generation.
 
     """
-    def __init__(self, _doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> None
-        doc = copy.copy(_doc)
-        if hasattr(_doc, 'lc'):
-            doc.lc.data = _doc.lc.data
-            doc.lc.filename = _doc.lc.filename
+    def __init__(self, _id, _type, _container, identity, noLinkCheck, mapSubject, mapPredicate, refScope, typeDSL, secondaryFilesDSL, subscope, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self._id = _id
+        self._type = _type
+        self._container = _container
+        self.identity = identity
+        self.noLinkCheck = noLinkCheck
+        self.mapSubject = mapSubject
+        self.mapPredicate = mapPredicate
+        self.refScope = refScope
+        self.typeDSL = typeDSL
+        self.secondaryFilesDSL = secondaryFilesDSL
+        self.subscope = subscope
+
+
+    @classmethod
+    def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> JsonldPredicate
+
+        _doc = copy.copy(doc)
+        if hasattr(doc, 'lc'):
+            _doc.lc.data = doc.lc.data
+            _doc.lc.filename = doc.lc.filename
         errors = []
-        self.loadingOptions = loadingOptions
-        if '_id' in doc:
+        if '_id' in _doc:
             try:
-                self._id = load_field(doc.get('_id'), uri_union_of_None_type_or_strtype_True_False_None, baseuri, loadingOptions)
+                _id = load_field(_doc.get('_id'), uri_union_of_None_type_or_strtype_True_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, '_id', str).makeError("the `_id` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, '_id', str).makeError("the `_id` field is not valid because:\n"+str(e)))
         else:
-            self._id = None
+            _id = None
 
-        if '_type' in doc:
+        if '_type' in _doc:
             try:
-                self._type = load_field(doc.get('_type'), union_of_None_type_or_strtype, baseuri, loadingOptions)
+                _type = load_field(_doc.get('_type'), union_of_None_type_or_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, '_type', str).makeError("the `_type` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, '_type', str).makeError("the `_type` field is not valid because:\n"+str(e)))
         else:
-            self._type = None
+            _type = None
 
-        if '_container' in doc:
+        if '_container' in _doc:
             try:
-                self._container = load_field(doc.get('_container'), union_of_None_type_or_strtype, baseuri, loadingOptions)
+                _container = load_field(_doc.get('_container'), union_of_None_type_or_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, '_container', str).makeError("the `_container` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, '_container', str).makeError("the `_container` field is not valid because:\n"+str(e)))
         else:
-            self._container = None
+            _container = None
 
-        if 'identity' in doc:
+        if 'identity' in _doc:
             try:
-                self.identity = load_field(doc.get('identity'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                identity = load_field(_doc.get('identity'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'identity', str).makeError("the `identity` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'identity', str).makeError("the `identity` field is not valid because:\n"+str(e)))
         else:
-            self.identity = None
+            identity = None
 
-        if 'noLinkCheck' in doc:
+        if 'noLinkCheck' in _doc:
             try:
-                self.noLinkCheck = load_field(doc.get('noLinkCheck'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                noLinkCheck = load_field(_doc.get('noLinkCheck'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'noLinkCheck', str).makeError("the `noLinkCheck` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'noLinkCheck', str).makeError("the `noLinkCheck` field is not valid because:\n"+str(e)))
         else:
-            self.noLinkCheck = None
+            noLinkCheck = None
 
-        if 'mapSubject' in doc:
+        if 'mapSubject' in _doc:
             try:
-                self.mapSubject = load_field(doc.get('mapSubject'), union_of_None_type_or_strtype, baseuri, loadingOptions)
+                mapSubject = load_field(_doc.get('mapSubject'), union_of_None_type_or_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'mapSubject', str).makeError("the `mapSubject` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'mapSubject', str).makeError("the `mapSubject` field is not valid because:\n"+str(e)))
         else:
-            self.mapSubject = None
+            mapSubject = None
 
-        if 'mapPredicate' in doc:
+        if 'mapPredicate' in _doc:
             try:
-                self.mapPredicate = load_field(doc.get('mapPredicate'), union_of_None_type_or_strtype, baseuri, loadingOptions)
+                mapPredicate = load_field(_doc.get('mapPredicate'), union_of_None_type_or_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'mapPredicate', str).makeError("the `mapPredicate` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'mapPredicate', str).makeError("the `mapPredicate` field is not valid because:\n"+str(e)))
         else:
-            self.mapPredicate = None
+            mapPredicate = None
 
-        if 'refScope' in doc:
+        if 'refScope' in _doc:
             try:
-                self.refScope = load_field(doc.get('refScope'), union_of_None_type_or_inttype, baseuri, loadingOptions)
+                refScope = load_field(_doc.get('refScope'), union_of_None_type_or_inttype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'refScope', str).makeError("the `refScope` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'refScope', str).makeError("the `refScope` field is not valid because:\n"+str(e)))
         else:
-            self.refScope = None
+            refScope = None
 
-        if 'typeDSL' in doc:
+        if 'typeDSL' in _doc:
             try:
-                self.typeDSL = load_field(doc.get('typeDSL'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                typeDSL = load_field(_doc.get('typeDSL'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'typeDSL', str).makeError("the `typeDSL` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'typeDSL', str).makeError("the `typeDSL` field is not valid because:\n"+str(e)))
         else:
-            self.typeDSL = None
+            typeDSL = None
 
-        if 'secondaryFilesDSL' in doc:
+        if 'secondaryFilesDSL' in _doc:
             try:
-                self.secondaryFilesDSL = load_field(doc.get('secondaryFilesDSL'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                secondaryFilesDSL = load_field(_doc.get('secondaryFilesDSL'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'secondaryFilesDSL', str).makeError("the `secondaryFilesDSL` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'secondaryFilesDSL', str).makeError("the `secondaryFilesDSL` field is not valid because:\n"+str(e)))
         else:
-            self.secondaryFilesDSL = None
+            secondaryFilesDSL = None
 
-        if 'subscope' in doc:
+        if 'subscope' in _doc:
             try:
-                self.subscope = load_field(doc.get('subscope'), union_of_None_type_or_strtype, baseuri, loadingOptions)
+                subscope = load_field(_doc.get('subscope'), union_of_None_type_or_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'subscope', str).makeError("the `subscope` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'subscope', str).makeError("the `subscope` field is not valid because:\n"+str(e)))
         else:
-            self.subscope = None
+            subscope = None
 
 
-        self.extension_fields = {}  # type: Dict[Text, Text]
-        for k in doc.keys():
-            if k not in self.attrs:
+        extension_fields = yaml.comments.CommentedMap()
+        for k in _doc.keys():
+            if k not in cls.attrs:
                 if ":" in k:
                     ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
-                    self.extension_fields[ex] = doc[k]
+                    extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `_id`, `_type`, `_container`, `identity`, `noLinkCheck`, `mapSubject`, `mapPredicate`, `refScope`, `typeDSL`, `secondaryFilesDSL`, `subscope`" % (k)))
+                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `_id`, `_type`, `_container`, `identity`, `noLinkCheck`, `mapSubject`, `mapPredicate`, `refScope`, `typeDSL`, `secondaryFilesDSL`, `subscope`" % (k)))
                     break
 
         if errors:
             raise ValidationException("Trying 'JsonldPredicate'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
+        return cls(_id, _type, _container, identity, noLinkCheck, mapSubject, mapPredicate, refScope, typeDSL, secondaryFilesDSL, subscope, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -901,41 +1013,59 @@ URI resolution and JSON-LD context generation.
 
 
 class SpecializeDef(Savable):
-    def __init__(self, _doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> None
-        doc = copy.copy(_doc)
-        if hasattr(_doc, 'lc'):
-            doc.lc.data = _doc.lc.data
-            doc.lc.filename = _doc.lc.filename
+    def __init__(self, specializeFrom, specializeTo, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.specializeFrom = specializeFrom
+        self.specializeTo = specializeTo
+
+
+    @classmethod
+    def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> SpecializeDef
+
+        _doc = copy.copy(doc)
+        if hasattr(doc, 'lc'):
+            _doc.lc.data = doc.lc.data
+            _doc.lc.filename = doc.lc.filename
         errors = []
-        self.loadingOptions = loadingOptions
         try:
-            self.specializeFrom = load_field(doc.get('specializeFrom'), uri_strtype_False_False_1, baseuri, loadingOptions)
+            specializeFrom = load_field(_doc.get('specializeFrom'), uri_strtype_False_False_1, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(SourceLine(doc, 'specializeFrom', str).makeError("the `specializeFrom` field is not valid because:\n"+str(e)))
+            errors.append(SourceLine(_doc, 'specializeFrom', str).makeError("the `specializeFrom` field is not valid because:\n"+str(e)))
 
         try:
-            self.specializeTo = load_field(doc.get('specializeTo'), uri_strtype_False_False_1, baseuri, loadingOptions)
+            specializeTo = load_field(_doc.get('specializeTo'), uri_strtype_False_False_1, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(SourceLine(doc, 'specializeTo', str).makeError("the `specializeTo` field is not valid because:\n"+str(e)))
+            errors.append(SourceLine(_doc, 'specializeTo', str).makeError("the `specializeTo` field is not valid because:\n"+str(e)))
 
 
-        self.extension_fields = {}  # type: Dict[Text, Text]
-        for k in doc.keys():
-            if k not in self.attrs:
+        extension_fields = yaml.comments.CommentedMap()
+        for k in _doc.keys():
+            if k not in cls.attrs:
                 if ":" in k:
                     ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
-                    self.extension_fields[ex] = doc[k]
+                    extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `specializeFrom`, `specializeTo`" % (k)))
+                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `specializeFrom`, `specializeTo`" % (k)))
                     break
 
         if errors:
             raise ValidationException("Trying 'SpecializeDef'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
+        return cls(specializeFrom, specializeTo, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -974,75 +1104,96 @@ class SaladRecordField(RecordField):
     """
 A field of a record.
     """
-    def __init__(self, _doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> None
-        doc = copy.copy(_doc)
-        if hasattr(_doc, 'lc'):
-            doc.lc.data = _doc.lc.data
-            doc.lc.filename = _doc.lc.filename
-        errors = []
-        self.loadingOptions = loadingOptions
-        if 'name' in doc:
-            try:
-                self.name = load_field(doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
-            except ValidationException as e:
-                errors.append(SourceLine(doc, 'name', str).makeError("the `name` field is not valid because:\n"+str(e)))
+    def __init__(self, doc, name, type, jsonldPredicate, default, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+        if extension_fields:
+            self.extension_fields = extension_fields
         else:
-            self.name = None
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.doc = doc
+        self.name = name
+        self.type = type
+        self.jsonldPredicate = jsonldPredicate
+        self.default = default
 
 
-        if self.name is None:
+    @classmethod
+    def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> SaladRecordField
+
+        _doc = copy.copy(doc)
+        if hasattr(doc, 'lc'):
+            _doc.lc.data = doc.lc.data
+            _doc.lc.filename = doc.lc.filename
+        errors = []
+        if 'name' in _doc:
+            try:
+                name = load_field(_doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
+            except ValidationException as e:
+                errors.append(SourceLine(_doc, 'name', str).makeError("the `name` field is not valid because:\n"+str(e)))
+        else:
+            name = None
+
+
+        if name is None:
             if docRoot is not None:
-                self.name = docRoot
+                name = docRoot
             else:
                 raise ValidationException("Missing name")
-        baseuri = self.name
-        if 'doc' in doc:
+        baseuri = name
+        if 'doc' in _doc:
             try:
-                self.doc = load_field(doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
+                doc = load_field(_doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
         else:
-            self.doc = None
+            doc = None
 
         try:
-            self.type = load_field(doc.get('type'), typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2, baseuri, loadingOptions)
+            type = load_field(_doc.get('type'), typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
+            errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
-        if 'jsonldPredicate' in doc:
+        if 'jsonldPredicate' in _doc:
             try:
-                self.jsonldPredicate = load_field(doc.get('jsonldPredicate'), union_of_None_type_or_strtype_or_JsonldPredicateLoader, baseuri, loadingOptions)
+                jsonldPredicate = load_field(_doc.get('jsonldPredicate'), union_of_None_type_or_strtype_or_JsonldPredicateLoader, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'jsonldPredicate', str).makeError("the `jsonldPredicate` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'jsonldPredicate', str).makeError("the `jsonldPredicate` field is not valid because:\n"+str(e)))
         else:
-            self.jsonldPredicate = None
+            jsonldPredicate = None
 
-        if 'default' in doc:
+        if 'default' in _doc:
             try:
-                self.default = load_field(doc.get('default'), union_of_None_type_or_Any_type, baseuri, loadingOptions)
+                default = load_field(_doc.get('default'), union_of_None_type_or_Any_type, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'default', str).makeError("the `default` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'default', str).makeError("the `default` field is not valid because:\n"+str(e)))
         else:
-            self.default = None
+            default = None
 
 
-        self.extension_fields = {}  # type: Dict[Text, Text]
-        for k in doc.keys():
-            if k not in self.attrs:
+        extension_fields = yaml.comments.CommentedMap()
+        for k in _doc.keys():
+            if k not in cls.attrs:
                 if ":" in k:
                     ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
-                    self.extension_fields[ex] = doc[k]
+                    extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `doc`, `name`, `type`, `jsonldPredicate`, `default`" % (k)))
+                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `doc`, `name`, `type`, `jsonldPredicate`, `default`" % (k)))
                     break
 
         if errors:
             raise ValidationException("Trying 'SaladRecordField'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
+        return cls(doc, name, type, jsonldPredicate, default, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -1072,139 +1223,168 @@ A field of a record.
 
 
 class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
-    def __init__(self, _doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> None
-        doc = copy.copy(_doc)
-        if hasattr(_doc, 'lc'):
-            doc.lc.data = _doc.lc.data
-            doc.lc.filename = _doc.lc.filename
-        errors = []
-        self.loadingOptions = loadingOptions
-        if 'name' in doc:
-            try:
-                self.name = load_field(doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
-            except ValidationException as e:
-                errors.append(SourceLine(doc, 'name', str).makeError("the `name` field is not valid because:\n"+str(e)))
+    def __init__(self, name, inVocab, fields, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, abstract, extends, specialize, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+        if extension_fields:
+            self.extension_fields = extension_fields
         else:
-            self.name = None
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.name = name
+        self.inVocab = inVocab
+        self.fields = fields
+        self.type = type
+        self.doc = doc
+        self.docParent = docParent
+        self.docChild = docChild
+        self.docAfter = docAfter
+        self.jsonldPredicate = jsonldPredicate
+        self.documentRoot = documentRoot
+        self.abstract = abstract
+        self.extends = extends
+        self.specialize = specialize
 
 
-        if self.name is None:
+    @classmethod
+    def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> SaladRecordSchema
+
+        _doc = copy.copy(doc)
+        if hasattr(doc, 'lc'):
+            _doc.lc.data = doc.lc.data
+            _doc.lc.filename = doc.lc.filename
+        errors = []
+        if 'name' in _doc:
+            try:
+                name = load_field(_doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
+            except ValidationException as e:
+                errors.append(SourceLine(_doc, 'name', str).makeError("the `name` field is not valid because:\n"+str(e)))
+        else:
+            name = None
+
+
+        if name is None:
             if docRoot is not None:
-                self.name = docRoot
+                name = docRoot
             else:
                 raise ValidationException("Missing name")
-        baseuri = self.name
-        if 'inVocab' in doc:
+        baseuri = name
+        if 'inVocab' in _doc:
             try:
-                self.inVocab = load_field(doc.get('inVocab'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                inVocab = load_field(_doc.get('inVocab'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'inVocab', str).makeError("the `inVocab` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'inVocab', str).makeError("the `inVocab` field is not valid because:\n"+str(e)))
         else:
-            self.inVocab = None
+            inVocab = None
 
-        if 'fields' in doc:
+        if 'fields' in _doc:
             try:
-                self.fields = load_field(doc.get('fields'), idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader, baseuri, loadingOptions)
+                fields = load_field(_doc.get('fields'), idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'fields', str).makeError("the `fields` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'fields', str).makeError("the `fields` field is not valid because:\n"+str(e)))
         else:
-            self.fields = None
+            fields = None
 
         try:
-            self.type = load_field(doc.get('type'), typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2, baseuri, loadingOptions)
+            type = load_field(_doc.get('type'), typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
+            errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
-        if 'doc' in doc:
+        if 'doc' in _doc:
             try:
-                self.doc = load_field(doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
+                doc = load_field(_doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
         else:
-            self.doc = None
+            doc = None
 
-        if 'docParent' in doc:
+        if 'docParent' in _doc:
             try:
-                self.docParent = load_field(doc.get('docParent'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
+                docParent = load_field(_doc.get('docParent'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'docParent', str).makeError("the `docParent` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'docParent', str).makeError("the `docParent` field is not valid because:\n"+str(e)))
         else:
-            self.docParent = None
+            docParent = None
 
-        if 'docChild' in doc:
+        if 'docChild' in _doc:
             try:
-                self.docChild = load_field(doc.get('docChild'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None, baseuri, loadingOptions)
+                docChild = load_field(_doc.get('docChild'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'docChild', str).makeError("the `docChild` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'docChild', str).makeError("the `docChild` field is not valid because:\n"+str(e)))
         else:
-            self.docChild = None
+            docChild = None
 
-        if 'docAfter' in doc:
+        if 'docAfter' in _doc:
             try:
-                self.docAfter = load_field(doc.get('docAfter'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
+                docAfter = load_field(_doc.get('docAfter'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'docAfter', str).makeError("the `docAfter` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'docAfter', str).makeError("the `docAfter` field is not valid because:\n"+str(e)))
         else:
-            self.docAfter = None
+            docAfter = None
 
-        if 'jsonldPredicate' in doc:
+        if 'jsonldPredicate' in _doc:
             try:
-                self.jsonldPredicate = load_field(doc.get('jsonldPredicate'), union_of_None_type_or_strtype_or_JsonldPredicateLoader, baseuri, loadingOptions)
+                jsonldPredicate = load_field(_doc.get('jsonldPredicate'), union_of_None_type_or_strtype_or_JsonldPredicateLoader, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'jsonldPredicate', str).makeError("the `jsonldPredicate` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'jsonldPredicate', str).makeError("the `jsonldPredicate` field is not valid because:\n"+str(e)))
         else:
-            self.jsonldPredicate = None
+            jsonldPredicate = None
 
-        if 'documentRoot' in doc:
+        if 'documentRoot' in _doc:
             try:
-                self.documentRoot = load_field(doc.get('documentRoot'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                documentRoot = load_field(_doc.get('documentRoot'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'documentRoot', str).makeError("the `documentRoot` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'documentRoot', str).makeError("the `documentRoot` field is not valid because:\n"+str(e)))
         else:
-            self.documentRoot = None
+            documentRoot = None
 
-        if 'abstract' in doc:
+        if 'abstract' in _doc:
             try:
-                self.abstract = load_field(doc.get('abstract'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                abstract = load_field(_doc.get('abstract'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'abstract', str).makeError("the `abstract` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'abstract', str).makeError("the `abstract` field is not valid because:\n"+str(e)))
         else:
-            self.abstract = None
+            abstract = None
 
-        if 'extends' in doc:
+        if 'extends' in _doc:
             try:
-                self.extends = load_field(doc.get('extends'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1, baseuri, loadingOptions)
+                extends = load_field(_doc.get('extends'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'extends', str).makeError("the `extends` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'extends', str).makeError("the `extends` field is not valid because:\n"+str(e)))
         else:
-            self.extends = None
+            extends = None
 
-        if 'specialize' in doc:
+        if 'specialize' in _doc:
             try:
-                self.specialize = load_field(doc.get('specialize'), idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader, baseuri, loadingOptions)
+                specialize = load_field(_doc.get('specialize'), idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'specialize', str).makeError("the `specialize` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'specialize', str).makeError("the `specialize` field is not valid because:\n"+str(e)))
         else:
-            self.specialize = None
+            specialize = None
 
 
-        self.extension_fields = {}  # type: Dict[Text, Text]
-        for k in doc.keys():
-            if k not in self.attrs:
+        extension_fields = yaml.comments.CommentedMap()
+        for k in _doc.keys():
+            if k not in cls.attrs:
                 if ":" in k:
                     ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
-                    self.extension_fields[ex] = doc[k]
+                    extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `name`, `inVocab`, `fields`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `abstract`, `extends`, `specialize`" % (k)))
+                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `name`, `inVocab`, `fields`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `abstract`, `extends`, `specialize`" % (k)))
                     break
 
         if errors:
             raise ValidationException("Trying 'SaladRecordSchema'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
+        return cls(name, inVocab, fields, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, abstract, extends, specialize, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -1270,120 +1450,147 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
 Define an enumerated type.
 
     """
-    def __init__(self, _doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> None
-        doc = copy.copy(_doc)
-        if hasattr(_doc, 'lc'):
-            doc.lc.data = _doc.lc.data
-            doc.lc.filename = _doc.lc.filename
-        errors = []
-        self.loadingOptions = loadingOptions
-        if 'name' in doc:
-            try:
-                self.name = load_field(doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
-            except ValidationException as e:
-                errors.append(SourceLine(doc, 'name', str).makeError("the `name` field is not valid because:\n"+str(e)))
+    def __init__(self, name, inVocab, symbols, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, extends, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+        if extension_fields:
+            self.extension_fields = extension_fields
         else:
-            self.name = None
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.name = name
+        self.inVocab = inVocab
+        self.symbols = symbols
+        self.type = type
+        self.doc = doc
+        self.docParent = docParent
+        self.docChild = docChild
+        self.docAfter = docAfter
+        self.jsonldPredicate = jsonldPredicate
+        self.documentRoot = documentRoot
+        self.extends = extends
 
 
-        if self.name is None:
+    @classmethod
+    def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> SaladEnumSchema
+
+        _doc = copy.copy(doc)
+        if hasattr(doc, 'lc'):
+            _doc.lc.data = doc.lc.data
+            _doc.lc.filename = doc.lc.filename
+        errors = []
+        if 'name' in _doc:
+            try:
+                name = load_field(_doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
+            except ValidationException as e:
+                errors.append(SourceLine(_doc, 'name', str).makeError("the `name` field is not valid because:\n"+str(e)))
+        else:
+            name = None
+
+
+        if name is None:
             if docRoot is not None:
-                self.name = docRoot
+                name = docRoot
             else:
                 raise ValidationException("Missing name")
-        baseuri = self.name
-        if 'inVocab' in doc:
+        baseuri = name
+        if 'inVocab' in _doc:
             try:
-                self.inVocab = load_field(doc.get('inVocab'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                inVocab = load_field(_doc.get('inVocab'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'inVocab', str).makeError("the `inVocab` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'inVocab', str).makeError("the `inVocab` field is not valid because:\n"+str(e)))
         else:
-            self.inVocab = None
+            inVocab = None
 
         try:
-            self.symbols = load_field(doc.get('symbols'), uri_array_of_strtype_True_False_None, baseuri, loadingOptions)
+            symbols = load_field(_doc.get('symbols'), uri_array_of_strtype_True_False_None, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(SourceLine(doc, 'symbols', str).makeError("the `symbols` field is not valid because:\n"+str(e)))
+            errors.append(SourceLine(_doc, 'symbols', str).makeError("the `symbols` field is not valid because:\n"+str(e)))
 
         try:
-            self.type = load_field(doc.get('type'), typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2, baseuri, loadingOptions)
+            type = load_field(_doc.get('type'), typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
+            errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
-        if 'doc' in doc:
+        if 'doc' in _doc:
             try:
-                self.doc = load_field(doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
+                doc = load_field(_doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
         else:
-            self.doc = None
+            doc = None
 
-        if 'docParent' in doc:
+        if 'docParent' in _doc:
             try:
-                self.docParent = load_field(doc.get('docParent'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
+                docParent = load_field(_doc.get('docParent'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'docParent', str).makeError("the `docParent` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'docParent', str).makeError("the `docParent` field is not valid because:\n"+str(e)))
         else:
-            self.docParent = None
+            docParent = None
 
-        if 'docChild' in doc:
+        if 'docChild' in _doc:
             try:
-                self.docChild = load_field(doc.get('docChild'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None, baseuri, loadingOptions)
+                docChild = load_field(_doc.get('docChild'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'docChild', str).makeError("the `docChild` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'docChild', str).makeError("the `docChild` field is not valid because:\n"+str(e)))
         else:
-            self.docChild = None
+            docChild = None
 
-        if 'docAfter' in doc:
+        if 'docAfter' in _doc:
             try:
-                self.docAfter = load_field(doc.get('docAfter'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
+                docAfter = load_field(_doc.get('docAfter'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'docAfter', str).makeError("the `docAfter` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'docAfter', str).makeError("the `docAfter` field is not valid because:\n"+str(e)))
         else:
-            self.docAfter = None
+            docAfter = None
 
-        if 'jsonldPredicate' in doc:
+        if 'jsonldPredicate' in _doc:
             try:
-                self.jsonldPredicate = load_field(doc.get('jsonldPredicate'), union_of_None_type_or_strtype_or_JsonldPredicateLoader, baseuri, loadingOptions)
+                jsonldPredicate = load_field(_doc.get('jsonldPredicate'), union_of_None_type_or_strtype_or_JsonldPredicateLoader, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'jsonldPredicate', str).makeError("the `jsonldPredicate` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'jsonldPredicate', str).makeError("the `jsonldPredicate` field is not valid because:\n"+str(e)))
         else:
-            self.jsonldPredicate = None
+            jsonldPredicate = None
 
-        if 'documentRoot' in doc:
+        if 'documentRoot' in _doc:
             try:
-                self.documentRoot = load_field(doc.get('documentRoot'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                documentRoot = load_field(_doc.get('documentRoot'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'documentRoot', str).makeError("the `documentRoot` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'documentRoot', str).makeError("the `documentRoot` field is not valid because:\n"+str(e)))
         else:
-            self.documentRoot = None
+            documentRoot = None
 
-        if 'extends' in doc:
+        if 'extends' in _doc:
             try:
-                self.extends = load_field(doc.get('extends'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1, baseuri, loadingOptions)
+                extends = load_field(_doc.get('extends'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'extends', str).makeError("the `extends` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'extends', str).makeError("the `extends` field is not valid because:\n"+str(e)))
         else:
-            self.extends = None
+            extends = None
 
 
-        self.extension_fields = {}  # type: Dict[Text, Text]
-        for k in doc.keys():
-            if k not in self.attrs:
+        extension_fields = yaml.comments.CommentedMap()
+        for k in _doc.keys():
+            if k not in cls.attrs:
                 if ":" in k:
                     ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
-                    self.extension_fields[ex] = doc[k]
+                    extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `name`, `inVocab`, `symbols`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `extends`" % (k)))
+                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `name`, `inVocab`, `symbols`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `extends`" % (k)))
                     break
 
         if errors:
             raise ValidationException("Trying 'SaladEnumSchema'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
+        return cls(name, inVocab, symbols, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, extends, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -1446,91 +1653,114 @@ A documentation section.  This type exists to facilitate self-documenting
 schemas but has no role in formal validation.
 
     """
-    def __init__(self, _doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> None
-        doc = copy.copy(_doc)
-        if hasattr(_doc, 'lc'):
-            doc.lc.data = _doc.lc.data
-            doc.lc.filename = _doc.lc.filename
-        errors = []
-        self.loadingOptions = loadingOptions
-        if 'name' in doc:
-            try:
-                self.name = load_field(doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
-            except ValidationException as e:
-                errors.append(SourceLine(doc, 'name', str).makeError("the `name` field is not valid because:\n"+str(e)))
+    def __init__(self, name, inVocab, doc, docParent, docChild, docAfter, type, extension_fields=None, loadingOptions=None):
+        # type: (Any, Any, Any, Any, Any, Any, Any, Optional[Dict[Text, Any]], Optional[LoadingOptions]) -> None
+        if extension_fields:
+            self.extension_fields = extension_fields
         else:
-            self.name = None
+            self.extension_fields = yaml.comments.CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.name = name
+        self.inVocab = inVocab
+        self.doc = doc
+        self.docParent = docParent
+        self.docChild = docChild
+        self.docAfter = docAfter
+        self.type = type
 
 
-        if self.name is None:
+    @classmethod
+    def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Documentation
+
+        _doc = copy.copy(doc)
+        if hasattr(doc, 'lc'):
+            _doc.lc.data = doc.lc.data
+            _doc.lc.filename = doc.lc.filename
+        errors = []
+        if 'name' in _doc:
+            try:
+                name = load_field(_doc.get('name'), uri_strtype_True_False_None, baseuri, loadingOptions)
+            except ValidationException as e:
+                errors.append(SourceLine(_doc, 'name', str).makeError("the `name` field is not valid because:\n"+str(e)))
+        else:
+            name = None
+
+
+        if name is None:
             if docRoot is not None:
-                self.name = docRoot
+                name = docRoot
             else:
                 raise ValidationException("Missing name")
-        baseuri = self.name
-        if 'inVocab' in doc:
+        baseuri = name
+        if 'inVocab' in _doc:
             try:
-                self.inVocab = load_field(doc.get('inVocab'), union_of_None_type_or_booltype, baseuri, loadingOptions)
+                inVocab = load_field(_doc.get('inVocab'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'inVocab', str).makeError("the `inVocab` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'inVocab', str).makeError("the `inVocab` field is not valid because:\n"+str(e)))
         else:
-            self.inVocab = None
+            inVocab = None
 
-        if 'doc' in doc:
+        if 'doc' in _doc:
             try:
-                self.doc = load_field(doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
+                doc = load_field(_doc.get('doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'doc', str).makeError("the `doc` field is not valid because:\n"+str(e)))
         else:
-            self.doc = None
+            doc = None
 
-        if 'docParent' in doc:
+        if 'docParent' in _doc:
             try:
-                self.docParent = load_field(doc.get('docParent'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
+                docParent = load_field(_doc.get('docParent'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'docParent', str).makeError("the `docParent` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'docParent', str).makeError("the `docParent` field is not valid because:\n"+str(e)))
         else:
-            self.docParent = None
+            docParent = None
 
-        if 'docChild' in doc:
+        if 'docChild' in _doc:
             try:
-                self.docChild = load_field(doc.get('docChild'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None, baseuri, loadingOptions)
+                docChild = load_field(_doc.get('docChild'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'docChild', str).makeError("the `docChild` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'docChild', str).makeError("the `docChild` field is not valid because:\n"+str(e)))
         else:
-            self.docChild = None
+            docChild = None
 
-        if 'docAfter' in doc:
+        if 'docAfter' in _doc:
             try:
-                self.docAfter = load_field(doc.get('docAfter'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
+                docAfter = load_field(_doc.get('docAfter'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(SourceLine(doc, 'docAfter', str).makeError("the `docAfter` field is not valid because:\n"+str(e)))
+                errors.append(SourceLine(_doc, 'docAfter', str).makeError("the `docAfter` field is not valid because:\n"+str(e)))
         else:
-            self.docAfter = None
+            docAfter = None
 
         try:
-            self.type = load_field(doc.get('type'), typedsl_enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader_2, baseuri, loadingOptions)
+            type = load_field(_doc.get('type'), typedsl_enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(SourceLine(doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
+            errors.append(SourceLine(_doc, 'type', str).makeError("the `type` field is not valid because:\n"+str(e)))
 
 
-        self.extension_fields = {}  # type: Dict[Text, Text]
-        for k in doc.keys():
-            if k not in self.attrs:
+        extension_fields = yaml.comments.CommentedMap()
+        for k in _doc.keys():
+            if k not in cls.attrs:
                 if ":" in k:
                     ex = expand_url(k, u"", loadingOptions, scoped_id=False, vocab_term=False)
-                    self.extension_fields[ex] = doc[k]
+                    extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(doc, k, str).makeError("invalid field `%s`, expected one of: `name`, `inVocab`, `doc`, `docParent`, `docChild`, `docAfter`, `type`" % (k)))
+                    errors.append(SourceLine(_doc, k, str).makeError("invalid field `%s`, expected one of: `name`, `inVocab`, `doc`, `docParent`, `docChild`, `docAfter`, `type`" % (k)))
                     break
 
         if errors:
             raise ValidationException("Trying 'Documentation'\n"+"\n".join(errors))
+        loadingOptions = copy.deepcopy(loadingOptions)
+        loadingOptions.original_doc = _doc
+        return cls(name, inVocab, doc, docParent, docChild, docAfter, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = {}  # type: Dict[Text, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
