@@ -17,12 +17,13 @@ from typing import (
     Type,
     Union,
 )
+
+import six
 from future.utils import raise_from
+from typing_extensions import Text  # pylint: disable=unused-import
 
 import ruamel.yaml
-import six
 from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq
-from typing_extensions import Text  # pylint: disable=unused-import
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 

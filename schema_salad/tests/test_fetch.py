@@ -3,12 +3,12 @@ from __future__ import absolute_import, print_function
 import os
 from typing import Text
 
+import pytest
 from six.moves import urllib
 
 import schema_salad.main
 import schema_salad.ref_resolver
 import schema_salad.schema
-import pytest
 
 
 def test_fetcher():

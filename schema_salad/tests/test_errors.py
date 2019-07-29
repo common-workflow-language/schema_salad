@@ -1,12 +1,13 @@
 from __future__ import absolute_import, print_function
 
+import pytest
 import six
+
 import schema_salad
 from schema_salad.schema import load_and_validate, load_schema
 from schema_salad.validate import ValidationException
 
 from .util import get_data
-import pytest
 
 
 def test_errors():

@@ -5,24 +5,26 @@ import pprint
 from typing import (  # noqa: F401
     Any,
     List,
-    Optional,
     MutableMapping,
     MutableSequence,
+    Optional,
     Set,
     Union,
 )
-from . import avro
-from .avro import schema  # noqa: F401
+
 import six
-from .avro.schema import (
-    Schema,
-)  # pylint: disable=unused-import, no-name-in-module, import-error
 from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
+from . import avro
+from .avro import schema  # noqa: F401
+from .avro.schema import (  # pylint: disable=unused-import, no-name-in-module, import-error
+    Schema,
+)
+from .sourceline import SourceLine, bullets, indent, strip_dup_lineno
+
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
-from .sourceline import SourceLine, bullets, indent, strip_dup_lineno
 
 _logger = logging.getLogger("salad")
 

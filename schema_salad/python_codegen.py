@@ -2,15 +2,15 @@
 from typing import IO, Any, Dict, List, MutableMapping, MutableSequence, Union
 
 from pkg_resources import resource_stream
-from six import itervalues, iteritems
+from six import iteritems, itervalues
 from six.moves import cStringIO
 from typing_extensions import Text  # pylint: disable=unused-import
-
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 from . import schema
 from .codegen_base import CodeGenBase, TypeDef
 from .schema import shortname
+
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 
 class PythonCodeGen(CodeGenBase):

@@ -4,9 +4,9 @@ from typing import Any, Dict, List, MutableSequence, Optional, Union
 
 from typing_extensions import Text  # pylint: disable=unused-import
 
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
-
 from . import schema
+
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 
 class TypeDef(object):  # pylint: disable=too-few-public-methods

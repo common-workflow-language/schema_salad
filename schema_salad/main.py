@@ -5,28 +5,30 @@ import argparse
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional, Mapping, MutableSequence, Union, cast
+from typing import Any, Dict, List, Mapping, MutableSequence, Optional, Union, cast
 
 import pkg_resources  # part of setuptools
+import six
 from rdflib.parser import Parser
 from rdflib.plugin import register
-from ruamel.yaml.comments import CommentedSeq
-import six
 from six.moves import urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
+from ruamel.yaml.comments import CommentedSeq
 
 from . import codegen, jsonld_context, schema, validate
-from .ref_resolver import Loader, file_uri
-from .sourceline import (
-    strip_dup_lineno,
-    to_one_line_messages,
-    reformat_yaml_exception_message,
-)
-from .utils import json_dumps
 from .avro.schema import SchemaParseException
 from .makedoc import makedoc
+from .ref_resolver import Loader, file_uri
+from .sourceline import (
+    reformat_yaml_exception_message,
+    strip_dup_lineno,
+    to_one_line_messages,
+)
+from .utils import json_dumps
+
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+
 
 register("json-ld", Parser, "rdflib_jsonld.parser", "JsonLDParser")
 _logger = logging.getLogger("salad")

@@ -1,28 +1,28 @@
 import copy
-import re
 import os
+import re
 import uuid  # pylint: disable=unused-import # noqa: F401
 from typing import (
     Any,
     Dict,
     List,
-    Optional,
     MutableMapping,
     MutableSequence,
+    Optional,
     Sequence,
     Tuple,
     Type,
     Union,
 )
 
-from schema_salad.ref_resolver import Fetcher
-from schema_salad.sourceline import SourceLine, indent, bullets, add_lc_filename
-
-from ruamel import yaml
-from ruamel.yaml.comments import CommentedMap
 from six import iteritems, string_types, text_type
 from six.moves import StringIO, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
+
+from ruamel import yaml
+from ruamel.yaml.comments import CommentedMap
+from schema_salad.ref_resolver import Fetcher
+from schema_salad.sourceline import SourceLine, add_lc_filename, bullets, indent
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 

@@ -4,8 +4,6 @@ from typing import Any, Dict, List, MutableMapping, Optional
 
 from typing_extensions import Text  # pylint: disable=unused-import
 
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
-
 from . import schema
 from .codegen_base import CodeGenBase
 from .java_codegen import JavaCodeGen
@@ -13,6 +11,8 @@ from .python_codegen import PythonCodeGen
 from .ref_resolver import Loader  # pylint: disable=unused-import
 from .schema import shortname
 from .utils import aslist
+
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 
 def codegen(

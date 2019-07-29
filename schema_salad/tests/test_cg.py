@@ -1,12 +1,13 @@
 import json
 import os
 
+import pytest
+
 import schema_salad.metaschema as cg_metaschema
 from schema_salad.ref_resolver import file_uri
 
 from .matcher import JsonDiffMatcher
 from .util import get_data
-import pytest
 
 
 def test_load():

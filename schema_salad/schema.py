@@ -19,14 +19,14 @@ from typing import (
     cast,
 )
 
+from future.utils import raise_from
 from pkg_resources import resource_stream
-from ruamel import yaml
-from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from six import iteritems, string_types
 from six.moves import urllib
-from future.utils import raise_from
 from typing_extensions import Text  # pylint: disable=unused-import
 
+from ruamel import yaml
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from schema_salad.utils import (
     add_dictlist,
     aslist,
@@ -34,9 +34,9 @@ from schema_salad.utils import (
     flatten,
     json_dumps,
 )
-from . import _logger
+
+from . import _logger, jsonld_context, ref_resolver, validate
 from .avro.schema import Names, SchemaParseException, make_avsc_object
-from . import jsonld_context, ref_resolver, validate
 from .ref_resolver import Loader
 from .sourceline import (
     SourceLine,

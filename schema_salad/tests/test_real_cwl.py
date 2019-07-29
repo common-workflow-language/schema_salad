@@ -4,11 +4,13 @@ Checks loading of some real world tools and workflows found in the wild (e.g. do
 run individually as py.test -k tests/test_real_cwl.py
 """
 
-from .util import get_data
-from schema_salad.schema import load_schema, load_and_validate
-from schema_salad.validate import ValidationException
-import six
 import pytest
+import six
+
+from schema_salad.schema import load_and_validate, load_schema
+from schema_salad.validate import ValidationException
+
+from .util import get_data
 
 test_dir_name = "tests/test_real_cwl/"
 

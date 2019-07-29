@@ -7,9 +7,9 @@ import re
 import sys
 import xml.sax
 from io import open
+from typing import Callable  # pylint: disable=unused-import
 from typing import (
     Any,
-    Callable,  # pylint: disable=unused-import
     Dict,
     Iterable,
     List,
@@ -26,18 +26,19 @@ from typing import (
 import requests
 from cachecontrol.caches import FileCache
 from cachecontrol.wrapper import CacheControl
+from future.utils import raise_from
 from rdflib.graph import Graph
 from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.plugins.parsers.notation3 import BadSyntax
-from ruamel import yaml
-from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
-from six import StringIO, string_types, iteritems
+from six import StringIO, iteritems, string_types
 from six.moves import range, urllib
-from future.utils import raise_from
 from typing_extensions import Text  # pylint: disable=unused-import
 
+from ruamel import yaml
+from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
+
 from . import validate
-from .sourceline import SourceLine, add_lc_filename, relname, strip_dup_lineno, indent
+from .sourceline import SourceLine, add_lc_filename, indent, relname, strip_dup_lineno
 from .utils import aslist, onWindows
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
@@ -1331,12 +1332,10 @@ class Loader(object):
                             and sl.makeLead() != all_doc_ids[document[identifier]]
                         ):
                             _logger.warning(
-                                "%s object %s `%s` previously defined"
-                                % (
-                                    all_doc_ids[document[identifier]],
-                                    identifier,
-                                    relname(document[identifier]),
-                                )
+                                "%s object %s `%s` previously defined",
+                                all_doc_ids[document[identifier]],
+                                identifier,
+                                relname(document[identifier]),
                             )
                         else:
                             all_doc_ids[document[identifier]] = sl.makeLead()

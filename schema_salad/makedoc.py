@@ -2,13 +2,13 @@ from __future__ import absolute_import
 
 import argparse
 import codecs
-from codecs import StreamWriter  # pylint: disable=unused-import
 import copy
 import logging
 import os
 import re
 import sys
-from io import open, TextIOWrapper
+from codecs import StreamWriter  # pylint: disable=unused-import
+from io import TextIOWrapper, open
 from typing import (
     IO,
     Any,
@@ -29,10 +29,11 @@ from six import StringIO
 from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
-
 from . import schema
 from .utils import add_dictlist, aslist
+
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
+
 
 _logger = logging.getLogger("salad")
 

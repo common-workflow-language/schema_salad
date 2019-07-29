@@ -6,10 +6,10 @@ from six import string_types
 from six.moves import cStringIO, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
-
 from . import schema
 from .codegen_base import CodeGenBase, TypeDef
+
+# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 
 class JavaCodeGen(CodeGenBase):

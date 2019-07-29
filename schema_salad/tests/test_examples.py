@@ -3,8 +3,8 @@ from __future__ import absolute_import, print_function
 import os
 
 import six
-import ruamel.yaml
 
+import ruamel.yaml
 import schema_salad.main
 import schema_salad.ref_resolver
 import schema_salad.schema

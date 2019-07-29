@@ -2,16 +2,16 @@
 
 from __future__ import absolute_import
 
+import os
 import shutil
+import sys
 import tempfile
 
 import pytest  # type: ignore
-
-from schema_salad.ref_resolver import Loader, DefaultFetcher, file_uri
-from schema_salad.tests.util import get_data
-import os
-import sys
 from requests import Session
+
+from schema_salad.ref_resolver import DefaultFetcher, Loader, file_uri
+from schema_salad.tests.util import get_data
 
 
 @pytest.fixture
