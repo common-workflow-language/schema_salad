@@ -1,7 +1,7 @@
+""" test different sets of command line arguments"""
 from __future__ import absolute_import
 
 import sys
-import unittest
 # for capturing print() output
 from contextlib import contextmanager
 
@@ -21,23 +21,20 @@ def captured_output():
         sys.stdout, sys.stderr = old_out, old_err
 
 
-""" test different sets of command line arguments"""
-class ParseCliArgs(unittest.TestCase):
-
-    def test_version(self):
-        args = [["--version"], ["-v"]]
-        for arg in args:
-            with captured_output() as (out, err):
-                cli_parser.main(arg)
-
-            response = out.getvalue().strip()  # capture output and strip newline
-            self.assertTrue("Current version" in response)
-
-    def test_empty_input(self):
-        # running schema_salad tool wihtout any args
-        args = []
+def test_version():
+    args = [["--version"], ["-v"]]
+    for arg in args:
         with captured_output() as (out, err):
-            cli_parser.main(args)
+            cli_parser.main(arg)
 
-        response = out.getvalue().strip()
-        self.assertTrue("error: too few arguments" in response)
+        response = out.getvalue().strip()  # capture output and strip newline
+        assert "Current version" in response
+
+def test_empty_input():
+    # running schema_salad tool wihtout any args
+    args = []
+    with captured_output() as (out, err):
+        cli_parser.main(args)
+
+    response = out.getvalue().strip()
+    assert "error: too few arguments" in response
