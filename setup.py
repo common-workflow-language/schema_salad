@@ -41,7 +41,7 @@ install_requires = [
     'typing-extensions',
     'future']
 
-extras_require={
+extras_require = {
     ':python_version<"3.5"': ['typing >= 3.7.4'],
 }
 

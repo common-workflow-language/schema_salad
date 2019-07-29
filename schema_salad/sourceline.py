@@ -4,14 +4,26 @@ import itertools
 import os
 import re
 import traceback
-from typing import (Any, AnyStr, Callable, Dict, List, MutableMapping,
-                    MutableSequence, Optional, Pattern, Tuple, Type, Union)
+from typing import (
+    Any,
+    AnyStr,
+    Dict,
+    List,
+    MutableMapping,
+    MutableSequence,
+    Optional,
+    Pattern,
+    Tuple,
+    Type,
+    Union,
+)
 from future.utils import raise_from
 
 import ruamel.yaml
 import six
 from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq
 from typing_extensions import Text  # pylint: disable=unused-import
+
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 
@@ -23,17 +35,17 @@ def regex_chunk(lines, regex):
     lst = list(itertools.dropwhile(lambda x: not regex.match(x), lines))
     arr = []
     while lst:
-        ret = [lst[0]]+list(itertools.takewhile(lambda x: not regex.match(x),
-                                                lst[1:]))
+        ret = [lst[0]] + list(
+            itertools.takewhile(lambda x: not regex.match(x), lst[1:])
+        )
         arr.append(ret)
-        lst = list(itertools.dropwhile(lambda x: not regex.match(x),
-                                       lst[1:]))
+        lst = list(itertools.dropwhile(lambda x: not regex.match(x), lst[1:]))
     return arr
 
 
 def chunk_messages(message):  # type: (str) -> List[Tuple[int, str]]
-    file_regex = re.compile(r'^(.+:\d+:\d+:)(\s+)(.+)$')
-    item_regex = re.compile(r'^\s*\*\s+')
+    file_regex = re.compile(r"^(.+:\d+:\d+:)(\s+)(.+)$")
+    item_regex = re.compile(r"^\s*\*\s+")
     arr = []
     for chun in regex_chunk(message.splitlines(), file_regex):
         fst = chun[0]
@@ -42,22 +54,20 @@ def chunk_messages(message):  # type: (str) -> List[Tuple[int, str]]
             place = mat.group(1)
             indent = len(mat.group(2))
 
-            lst = [mat.group(3)]+chun[1:]
+            lst = [mat.group(3)] + chun[1:]
             if [x for x in lst if item_regex.match(x)]:
                 for item in regex_chunk(lst, item_regex):
-                    msg = re.sub(item_regex, '', "\n".join(item))
-                    arr.append((indent, place+' '+re.sub(
-                        r'[\n\s]+', ' ', msg)))
+                    msg = re.sub(item_regex, "", "\n".join(item))
+                    arr.append((indent, place + " " + re.sub(r"[\n\s]+", " ", msg)))
             else:
-                msg = re.sub(item_regex, '', "\n".join(lst))
-                arr.append((indent, place+' '+re.sub(
-                    r'[\n\s]+', ' ', msg)))
+                msg = re.sub(item_regex, "", "\n".join(lst))
+                arr.append((indent, place + " " + re.sub(r"[\n\s]+", " ", msg)))
     return arr
 
 
 def to_one_line_messages(message):  # type: (str) -> str
     ret = []
-    max_elem = (0, '')
+    max_elem = (0, "")
     for (indent, msg) in chunk_messages(message):
         if indent > max_elem[0]:
             max_elem = (indent, msg)
@@ -70,7 +80,7 @@ def to_one_line_messages(message):  # type: (str) -> str
 
 def reformat_yaml_exception_message(message):  # type: (str) -> str
     line_regex = re.compile(r'^\s+in "(.+)", line (\d+), column (\d+)$')
-    fname_regex = re.compile(r'^file://'+re.escape(os.getcwd())+'/')
+    fname_regex = re.compile(r"^file://" + re.escape(os.getcwd()) + "/")
     msgs = message.splitlines()
     ret = []
 
@@ -82,7 +92,7 @@ def reformat_yaml_exception_message(message):  # type: (str) -> str
         match = line_regex.match(msgs[1])
         if match:
             c_file, c_line, c_column = match.groups()
-            c_file = re.sub(fname_regex, '', c_file)
+            c_file = re.sub(fname_regex, "", c_file)
             ret.append("%s:%s:%s: %s" % (c_file, c_line, c_column, c_msg))
 
         msgs = msgs[2:]
@@ -92,12 +102,14 @@ def reformat_yaml_exception_message(message):  # type: (str) -> str
     match = line_regex.match(msgs[1])
     if match:
         p_file, p_line, p_column = match.groups()
-        p_file = re.sub(fname_regex, '', p_file)
-        ret.append("%s:%s:%s:%s %s" % (p_file, p_line, p_column, ' '*nblanks, p_msg))
+        p_file = re.sub(fname_regex, "", p_file)
+        ret.append("%s:%s:%s:%s %s" % (p_file, p_line, p_column, " " * nblanks, p_msg))
     return "\n".join(ret)
 
 
-def _add_lc_filename(r, source):  # type: (ruamel.yaml.comments.CommentedBase, AnyStr) -> None
+def _add_lc_filename(
+    r, source
+):  # type: (ruamel.yaml.comments.CommentedBase, AnyStr) -> None
     if isinstance(r, ruamel.yaml.comments.CommentedBase):
         r.lc.filename = source
     if isinstance(r, MutableSequence):
@@ -107,32 +119,45 @@ def _add_lc_filename(r, source):  # type: (ruamel.yaml.comments.CommentedBase, A
         for d in six.itervalues(r):
             _add_lc_filename(d, source)
 
+
 def relname(source):  # type: (Text) -> Text
     if source.startswith("file://"):
         source = source[7:]
         source = os.path.relpath(source)
     return source
 
-def add_lc_filename(r, source):  # type: (ruamel.yaml.comments.CommentedBase, Text) -> None
+
+def add_lc_filename(
+    r, source
+):  # type: (ruamel.yaml.comments.CommentedBase, Text) -> None
     _add_lc_filename(r, relname(source))
+
 
 def reflow(text, maxline, shift=""):  # type: (Text, int, Text) -> Text
     if maxline < 20:
         maxline = 20
     if len(text) > maxline:
-        sp = text.rfind(' ', 0, maxline)
+        sp = text.rfind(" ", 0, maxline)
         if sp < 1:
-            sp = text.find(' ', sp+1)
+            sp = text.find(" ", sp + 1)
             if sp == -1:
                 sp = len(text)
         if sp < len(text):
-            return "%s\n%s%s" % (text[0:sp], shift, reflow(text[sp+1:], maxline, shift))
+            return "%s\n%s%s" % (
+                text[0:sp],
+                shift,
+                reflow(text[sp + 1 :], maxline, shift),
+            )
     return text
 
-def indent(v, nolead=False, shift=u"  ", bullet=u"  "):  # type: (Text, bool, Text, Text) -> Text
+
+def indent(
+    v, nolead=False, shift=u"  ", bullet=u"  "
+):  # type: (Text, bool, Text, Text) -> Text
     if nolead:
         return v.splitlines()[0] + u"\n".join([shift + l for l in v.splitlines()[1:]])
     else:
+
         def lineno(i, l):  # type: (int, Text) -> Text
             r = lineno_re.match(l)
             if r is not None:
@@ -142,11 +167,13 @@ def indent(v, nolead=False, shift=u"  ", bullet=u"  "):  # type: (Text, bool, Te
 
         return u"\n".join([lineno(i, l) for i, l in enumerate(v.splitlines())])
 
+
 def bullets(textlist, bul):  # type: (List[Text], Text) -> Text
     if len(textlist) == 1:
         return textlist[0]
     else:
         return "\n".join(indent(t, bullet=bul) for t in textlist)
+
 
 def strip_dup_lineno(text, maxline=None):  # type: (Text, Optional[int]) -> Text
     if maxline is None:
@@ -167,18 +194,20 @@ def strip_dup_lineno(text, maxline=None):  # type: (Text, Optional[int]) -> Text
             continue
         if g.group(1) != pre:
             shift = maxno + len(g.group(3))
-            g2 = reflow(g.group(2), maxline-shift, " " * shift)
+            g2 = reflow(g.group(2), maxline - shift, " " * shift)
             pre = g.group(1)
-            msg.append(pre + " " * (maxno-len(g.group(1))) + g2)
+            msg.append(pre + " " * (maxno - len(g.group(1))) + g2)
         else:
-            g2 = reflow(g.group(2), maxline-maxno, " " * (maxno+len(g.group(3))))
+            g2 = reflow(g.group(2), maxline - maxno, " " * (maxno + len(g.group(3))))
             msg.append(" " * maxno + g2)
     return "\n".join(msg)
 
-def cmap(d,        # type: Union[int, float, str, Text, Dict[Text, Any], List[Dict[Text, Any]]]
-         lc=None,  # type: Optional[List[int]]
-         fn=None   # type: Optional[Text]
-        ):  # type: (...) -> Union[int, float, str, Text, CommentedMap, CommentedSeq]
+
+def cmap(
+    d,  # type: Union[int, float, str, Text, Dict[Text, Any], List[Dict[Text, Any]]]
+    lc=None,  # type: Optional[List[int]]
+    fn=None,  # type: Optional[Text]
+):  # type: (...) -> Union[int, float, str, Text, CommentedMap, CommentedSeq]
     if lc is None:
         lc = [0, 0, 0, 0]
     if fn is None:
@@ -186,7 +215,7 @@ def cmap(d,        # type: Union[int, float, str, Text, Dict[Text, Any], List[Di
 
     if isinstance(d, CommentedMap):
         fn = d.lc.filename if hasattr(d.lc, "filename") else fn
-        for k,v in six.iteritems(d):
+        for k, v in six.iteritems(d):
             if k in d.lc.data:
                 d[k] = cmap(v, lc=d.lc.data[k], fn=fn)
             else:
@@ -230,13 +259,15 @@ def cmap(d,        # type: Union[int, float, str, Text, Dict[Text, Any], List[Di
     else:
         return d
 
+
 class SourceLine(object):
-    def __init__(self,
-                 item,                      # type: Any
-                 key=None,                  # type: Optional[Any]
-                 raise_type=six.text_type,  # type: Union[Type[six.text_type], Type[Exception]]
-                 include_traceback=False    # type: bool
-                ):  # type: (...) -> None
+    def __init__(
+        self,
+        item,  # type: Any
+        key=None,  # type: Optional[Any]
+        raise_type=six.text_type,  # type: Union[Type[six.text_type], Type[Exception]]
+        include_traceback=False,  # type: bool
+    ):  # type: (...) -> None
         self.item = item
         self.key = key
         self.raise_type = raise_type
@@ -245,29 +276,43 @@ class SourceLine(object):
     def __enter__(self):  # type: () -> SourceLine
         return self
 
-    def __exit__(self,
-                 exc_type,   # type: Any
-                 exc_value,  # type: Any
-                 tb          # type: Any
-                ):   # type: (...) -> None
+    def __exit__(
+        self,
+        exc_type,  # type: Any
+        exc_value,  # type: Any
+        tb,  # type: Any
+    ):  # type: (...) -> None
         if not exc_value:
             return
         if self.include_traceback and six.PY2:
             # Python2 doesn't actually have chained exceptions, so
             # fake it by injecting the backtrace into the message.
-            raise_from(self.makeError("\n".join(traceback.format_exception(exc_type, exc_value, tb))), exc_value)
+            raise_from(
+                self.makeError(
+                    "\n".join(traceback.format_exception(exc_type, exc_value, tb))
+                ),
+                exc_value,
+            )
         else:
             raise_from(self.makeError(six.text_type(exc_value)), exc_value)
 
     def makeLead(self):  # type: () -> Text
-        if self.key is None or self.item.lc.data is None or self.key not in self.item.lc.data:
-            return "%s:%i:%i:" % (self.item.lc.filename if hasattr(self.item.lc, "filename") else "",
-                                  (self.item.lc.line or 0)+1,
-                                  (self.item.lc.col or 0)+1)
+        if (
+            self.key is None
+            or self.item.lc.data is None
+            or self.key not in self.item.lc.data
+        ):
+            return "%s:%i:%i:" % (
+                self.item.lc.filename if hasattr(self.item.lc, "filename") else "",
+                (self.item.lc.line or 0) + 1,
+                (self.item.lc.col or 0) + 1,
+            )
         else:
-            return "%s:%i:%i:" % (self.item.lc.filename if hasattr(self.item.lc, "filename") else "",
-                                  (self.item.lc.data[self.key][0] or 0)+1,
-                                  (self.item.lc.data[self.key][1] or 0)+1)
+            return "%s:%i:%i:" % (
+                self.item.lc.filename if hasattr(self.item.lc, "filename") else "",
+                (self.item.lc.data[self.key][0] or 0) + 1,
+                (self.item.lc.data[self.key][1] or 0) + 1,
+            )
 
     def makeError(self, msg):  # type: (Text) -> Any
         if not isinstance(self.item, ruamel.yaml.comments.CommentedBase):

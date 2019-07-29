@@ -5,6 +5,7 @@ from typing import Any, Dict, List, MutableSequence, Union
 from six import string_types
 from six.moves import cStringIO, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
+
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 from . import schema
@@ -17,7 +18,9 @@ class JavaCodeGen(CodeGenBase):
 
         super(JavaCodeGen, self).__init__()
         sp = urllib.parse.urlsplit(base)
-        self.package = ".".join(list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/"))
+        self.package = ".".join(
+            list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/")
+        )
         self.outdir = self.package.replace(".", "/")
 
     def prologue(self):  # type: () -> None
@@ -29,21 +32,22 @@ class JavaCodeGen(CodeGenBase):
         avn = schema.avro_name(name)
         if avn in ("class", "extends", "abstract"):
             # reserved words
-            avn = avn+"_"
+            avn = avn + "_"
         return avn
 
     def interface_name(self, n):
         # type: (Text) -> Text
         return self.safe_name(n)
 
-    def begin_class(self,
-                    classname,    # type: Text
-                    extends,      # type: MutableSequence[Text]
-                    doc,          # type: Text
-                    abstract,     # type: bool
-                    field_names,  # type: MutableSequence[Text]
-                    idfield       # type: Text
-                   ):  # type: (...) -> None
+    def begin_class(
+        self,
+        classname,  # type: Text
+        extends,  # type: MutableSequence[Text]
+        doc,  # type: Text
+        abstract,  # type: bool
+        field_names,  # type: MutableSequence[Text]
+        idfield,  # type: Text
+    ):  # type: (...) -> None
         cls = self.interface_name(classname)
         self.current_class = cls
         self.current_class_is_abstract = abstract
@@ -54,58 +58,84 @@ class JavaCodeGen(CodeGenBase):
                 ext = "extends " + ", ".join(self.interface_name(e) for e in extends)
             else:
                 ext = ""
-            f.write("""package {package};
+            f.write(
+                """package {package};
 
 public interface {cls} {ext} {{
-""".
-                    format(package=self.package,
-                           cls=cls,
-                           ext=ext))
+""".format(
+                    package=self.package, cls=cls, ext=ext
+                )
+            )
 
         if self.current_class_is_abstract:
             return
 
         with open(os.path.join(self.outdir, "%sImpl.java" % cls), "w") as f:
-            f.write("""package {package};
+            f.write(
+                """package {package};
 
 public class {cls}Impl implements {cls} {{
-""".
-                    format(package=self.package,
-                           cls=cls,
-                           ext=ext))
-        self.current_loader.write("""
+""".format(
+                    package=self.package, cls=cls, ext=ext
+                )
+            )
+        self.current_loader.write(
+            """
     void Load() {
-""")
+"""
+        )
 
     def end_class(self, classname, field_names):
         # type: (Text, List[Text]) -> None
         with open(os.path.join(self.outdir, "%s.java" % self.current_class), "a") as f:
-            f.write("""
+            f.write(
+                """
 }
-""")
+"""
+            )
         if self.current_class_is_abstract:
             return
 
-        self.current_loader.write("""
+        self.current_loader.write(
+            """
     }
-""")
+"""
+        )
 
-        with open(os.path.join(self.outdir, "%sImpl.java" % self.current_class), "a") as f:
+        with open(
+            os.path.join(self.outdir, "%sImpl.java" % self.current_class), "a"
+        ) as f:
             f.write(self.current_fields.getvalue())
             f.write(self.current_loader.getvalue())
-            f.write("""
+            f.write(
+                """
 }
-""")
+"""
+            )
 
     prims = {
-        u"http://www.w3.org/2001/XMLSchema#string": TypeDef("String", "Support.StringLoader()"),
-        u"http://www.w3.org/2001/XMLSchema#int": TypeDef("Integer", "Support.IntLoader()"),
-        u"http://www.w3.org/2001/XMLSchema#long": TypeDef("Long", "Support.LongLoader()"),
-        u"http://www.w3.org/2001/XMLSchema#float": TypeDef("Float", "Support.FloatLoader()"),
-        u"http://www.w3.org/2001/XMLSchema#double": TypeDef("Double", "Support.DoubleLoader()"),
-        u"http://www.w3.org/2001/XMLSchema#boolean": TypeDef("Boolean", "Support.BoolLoader()"),
-        u"https://w3id.org/cwl/salad#null": TypeDef("null_type", "Support.NullLoader()"),
-        u"https://w3id.org/cwl/salad#Any": TypeDef("Any_type", "Support.AnyLoader()")
+        u"http://www.w3.org/2001/XMLSchema#string": TypeDef(
+            "String", "Support.StringLoader()"
+        ),
+        u"http://www.w3.org/2001/XMLSchema#int": TypeDef(
+            "Integer", "Support.IntLoader()"
+        ),
+        u"http://www.w3.org/2001/XMLSchema#long": TypeDef(
+            "Long", "Support.LongLoader()"
+        ),
+        u"http://www.w3.org/2001/XMLSchema#float": TypeDef(
+            "Float", "Support.FloatLoader()"
+        ),
+        u"http://www.w3.org/2001/XMLSchema#double": TypeDef(
+            "Double", "Support.DoubleLoader()"
+        ),
+        u"http://www.w3.org/2001/XMLSchema#boolean": TypeDef(
+            "Boolean", "Support.BoolLoader()"
+        ),
+        u"https://w3id.org/cwl/salad#null": TypeDef(
+            "null_type", "Support.NullLoader()"
+        ),
+        u"https://w3id.org/cwl/salad#Any": TypeDef("Any_type", "Support.AnyLoader()"),
     }
 
     def type_loader(self, type_declaration):
@@ -122,31 +152,39 @@ public class {cls}Impl implements {cls} {{
         # type: (Text, TypeDef, Text, bool) -> None
         fieldname = self.safe_name(name)
         with open(os.path.join(self.outdir, "%s.java" % self.current_class), "a") as f:
-            f.write("""
+            f.write(
+                """
     {type} get{capfieldname}();
-""".
-                    format(fieldname=fieldname,
-                           capfieldname=fieldname[0].upper() + fieldname[1:],
-                           type=fieldtype.name))
+""".format(
+                    fieldname=fieldname,
+                    capfieldname=fieldname[0].upper() + fieldname[1:],
+                    type=fieldtype.name,
+                )
+            )
 
         if self.current_class_is_abstract:
             return
 
-        self.current_fields.write("""
+        self.current_fields.write(
+            """
     private {type} {fieldname};
     public {type} get{capfieldname}() {{
         return this.{fieldname};
     }}
-""".
-                    format(fieldname=fieldname,
-                           capfieldname=fieldname[0].upper() + fieldname[1:],
-                           type=fieldtype.name))
+""".format(
+                fieldname=fieldname,
+                capfieldname=fieldname[0].upper() + fieldname[1:],
+                type=fieldtype.name,
+            )
+        )
 
-        self.current_loader.write("""
+        self.current_loader.write(
+            """
         this.{fieldname} = null; // TODO: loaders
-        """.
-                                  format(fieldname=fieldname))
-
+        """.format(
+                fieldname=fieldname
+            )
+        )
 
     def declare_id_field(self, name, fieldtype, doc, optional):
         # type: (Text, TypeDef, Text, bool) -> None

@@ -1,33 +1,43 @@
 """Base class for the generation of loaders from schema-salad definitions."""
 import collections
-from typing import (Any, Dict, List, MutableSequence, Optional, Union)
+from typing import Any, Dict, List, MutableSequence, Optional, Union
 
 from typing_extensions import Text  # pylint: disable=unused-import
+
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 from . import schema
 
+
 class TypeDef(object):  # pylint: disable=too-few-public-methods
     """Schema Salad type description."""
+
+    __slots__ = ["name", "init", "is_uri", "scoped_id", "ref_scope"]
+
     # switch to class-style typing.NamedTuple once support for Python < 3.6
     # is dropped
-    def __init__(self,  # pylint: disable=too-many-arguments
-                 name,             # type: Text
-                 init,             # type: Text
-                 is_uri=False,     # type: bool
-                 scoped_id=False,  # type: bool
-                 ref_scope=0       # type: Optional[int]
-                ):  # type: (...) -> None
+    def __init__(
+        self,  # pylint: disable=too-many-arguments
+        name,  # type: Text
+        init,  # type: Text
+        is_uri=False,  # type: bool
+        scoped_id=False,  # type: bool
+        ref_scope=0,  # type: Optional[int]
+    ):  # type: (...) -> None
         self.name = name
         self.init = init
         self.is_uri = is_uri
         self.scoped_id = scoped_id
         self.ref_scope = ref_scope
 
+
 class CodeGenBase(object):
     """Abstract base class for schema salad code generators."""
+
     def __init__(self):  # type: () -> None
-        self.collected_types = collections.OrderedDict()  # type: collections.OrderedDict[Text, TypeDef]
+        self.collected_types = (
+            collections.OrderedDict()
+        )  # type: collections.OrderedDict[Text, TypeDef]
         self.vocab = {}  # type: Dict[Text, Text]
 
     def declare_type(self, declared_type):  # type: (TypeDef) -> TypeDef
@@ -49,14 +59,15 @@ class CodeGenBase(object):
         """Generate a safe version of the given name."""
         return schema.avro_name(name)
 
-    def begin_class(self,  # pylint: disable=too-many-arguments
-                    classname,    # type: Text
-                    extends,      # type: MutableSequence[Text]
-                    doc,          # type: Text
-                    abstract,     # type: bool
-                    field_names,  # type: MutableSequence[Text]
-                    idfield       # type: Text
-                   ):  # type: (...) -> None
+    def begin_class(
+        self,  # pylint: disable=too-many-arguments
+        classname,  # type: Text
+        extends,  # type: MutableSequence[Text]
+        doc,  # type: Text
+        abstract,  # type: bool
+        field_names,  # type: MutableSequence[Text]
+        idfield,  # type: Text
+    ):  # type: (...) -> None
         """Produce the header for the given class."""
         raise NotImplementedError()
 

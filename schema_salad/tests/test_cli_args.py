@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 import sys
+
 # for capturing print() output
 from contextlib import contextmanager
 
@@ -29,6 +30,7 @@ def test_version():
 
         response = out.getvalue().strip()  # capture output and strip newline
         assert "Current version" in response
+
 
 def test_empty_input():
     # running schema_salad tool wihtout any args

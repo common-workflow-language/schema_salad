@@ -3,8 +3,21 @@ from __future__ import absolute_import
 
 import copy
 import hashlib
-from typing import (IO, Any, AnyStr, Dict, List, Mapping, MutableMapping,
-                    MutableSequence, Optional, Set, Tuple, TypeVar, Union, cast)
+from typing import (
+    IO,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    MutableMapping,
+    MutableSequence,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from pkg_resources import resource_stream
 from ruamel import yaml
@@ -14,189 +27,177 @@ from six.moves import urllib
 from future.utils import raise_from
 from typing_extensions import Text  # pylint: disable=unused-import
 
-from schema_salad.utils import (add_dictlist, aslist, convert_to_dict, flatten,
-                                json_dumps)
+from schema_salad.utils import (
+    add_dictlist,
+    aslist,
+    convert_to_dict,
+    flatten,
+    json_dumps,
+)
 from . import _logger
 from .avro.schema import Names, SchemaParseException, make_avsc_object
 from . import jsonld_context, ref_resolver, validate
 from .ref_resolver import Loader
-from .sourceline import (SourceLine, add_lc_filename, bullets, indent,
-                         relname, strip_dup_lineno)
+from .sourceline import (
+    SourceLine,
+    add_lc_filename,
+    bullets,
+    indent,
+    relname,
+    strip_dup_lineno,
+)
 
-SALAD_FILES = ('metaschema.yml',
-               'metaschema_base.yml',
-               'salad.md',
-               'field_name.yml',
-               'import_include.md',
-               'link_res.yml',
-               'ident_res.yml',
-               'vocab_res.yml',
-               'vocab_res.yml',
-               'field_name_schema.yml',
-               'field_name_src.yml',
-               'field_name_proc.yml',
-               'ident_res_schema.yml',
-               'ident_res_src.yml',
-               'ident_res_proc.yml',
-               'link_res_schema.yml',
-               'link_res_src.yml',
-               'link_res_proc.yml',
-               'vocab_res_schema.yml',
-               'vocab_res_src.yml',
-               'vocab_res_proc.yml',
-               'map_res.yml',
-               'map_res_schema.yml',
-               'map_res_src.yml',
-               'map_res_proc.yml',
-               'typedsl_res.yml',
-               'typedsl_res_schema.yml',
-               'typedsl_res_src.yml',
-               'typedsl_res_proc.yml',
-               'sfdsl_res.yml',
-               'sfdsl_res_schema.yml',
-               'sfdsl_res_src.yml',
-               'sfdsl_res_proc.yml')
+SALAD_FILES = (
+    "metaschema.yml",
+    "metaschema_base.yml",
+    "salad.md",
+    "field_name.yml",
+    "import_include.md",
+    "link_res.yml",
+    "ident_res.yml",
+    "vocab_res.yml",
+    "vocab_res.yml",
+    "field_name_schema.yml",
+    "field_name_src.yml",
+    "field_name_proc.yml",
+    "ident_res_schema.yml",
+    "ident_res_src.yml",
+    "ident_res_proc.yml",
+    "link_res_schema.yml",
+    "link_res_src.yml",
+    "link_res_proc.yml",
+    "vocab_res_schema.yml",
+    "vocab_res_src.yml",
+    "vocab_res_proc.yml",
+    "map_res.yml",
+    "map_res_schema.yml",
+    "map_res_src.yml",
+    "map_res_proc.yml",
+    "typedsl_res.yml",
+    "typedsl_res_schema.yml",
+    "typedsl_res_src.yml",
+    "typedsl_res_proc.yml",
+    "sfdsl_res.yml",
+    "sfdsl_res_schema.yml",
+    "sfdsl_res_src.yml",
+    "sfdsl_res_proc.yml",
+)
+
+saladp = "https://w3id.org/cwl/salad#"
 
 
 def get_metaschema():  # type: () -> Tuple[Names, List[Dict[Text, Any]], Loader]
     """Instantiate the metaschema."""
-    loader = ref_resolver.Loader({
-        "Any": "https://w3id.org/cwl/salad#Any",
-        "ArraySchema": "https://w3id.org/cwl/salad#ArraySchema",
-        "Array_symbol": "https://w3id.org/cwl/salad#ArraySchema/type/Array_symbol",
-        "DocType": "https://w3id.org/cwl/salad#DocType",
-        "Documentation": "https://w3id.org/cwl/salad#Documentation",
-        "Documentation_symbol":
-            "https://w3id.org/cwl/salad#Documentation/type/Documentation_symbol",
-        "Documented": "https://w3id.org/cwl/salad#Documented",
-        "EnumSchema": "https://w3id.org/cwl/salad#EnumSchema",
-        "Enum_symbol": "https://w3id.org/cwl/salad#EnumSchema/type/Enum_symbol",
-        "JsonldPredicate": "https://w3id.org/cwl/salad#JsonldPredicate",
-        "NamedType": "https://w3id.org/cwl/salad#NamedType",
-        "PrimitiveType": "https://w3id.org/cwl/salad#PrimitiveType",
-        "RecordField": "https://w3id.org/cwl/salad#RecordField",
-        "RecordSchema": "https://w3id.org/cwl/salad#RecordSchema",
-        "Record_symbol": "https://w3id.org/cwl/salad#RecordSchema/type/Record_symbol",
-        "SaladEnumSchema": "https://w3id.org/cwl/salad#SaladEnumSchema",
-        "SaladRecordField": "https://w3id.org/cwl/salad#SaladRecordField",
-        "SaladRecordSchema": "https://w3id.org/cwl/salad#SaladRecordSchema",
-        "SchemaDefinedType": "https://w3id.org/cwl/salad#SchemaDefinedType",
-        "SpecializeDef": "https://w3id.org/cwl/salad#SpecializeDef",
-        "_container": "https://w3id.org/cwl/salad#JsonldPredicate/_container",
-        "_id": {
-            "@id": "https://w3id.org/cwl/salad#_id",
-            "@type": "@id",
-            "identity": True
-        },
-        "_type": "https://w3id.org/cwl/salad#JsonldPredicate/_type",
-        "abstract": "https://w3id.org/cwl/salad#SaladRecordSchema/abstract",
-        "array": "https://w3id.org/cwl/salad#array",
-        "boolean": "http://www.w3.org/2001/XMLSchema#boolean",
-        "dct": "http://purl.org/dc/terms/",
-        "default": {
-            "@id": "https://w3id.org/cwl/salad#default",
-            "noLinkCheck": True
-        },
-        "doc": "rdfs:comment",
-        "docAfter": {
-            "@id": "https://w3id.org/cwl/salad#docAfter",
-            "@type": "@id"
-        },
-        "docChild": {
-            "@id": "https://w3id.org/cwl/salad#docChild",
-            "@type": "@id"
-        },
-        "docParent": {
-            "@id": "https://w3id.org/cwl/salad#docParent",
-            "@type": "@id"
-        },
-        "documentRoot": "https://w3id.org/cwl/salad#SchemaDefinedType/documentRoot",
-        "documentation": "https://w3id.org/cwl/salad#documentation",
-        "double": "http://www.w3.org/2001/XMLSchema#double",
-        "enum": "https://w3id.org/cwl/salad#enum",
-        "extends": {
-            "@id": "https://w3id.org/cwl/salad#extends",
-            "@type": "@id",
-            "refScope": 1
-        },
-        "fields": {
-            "@id": "https://w3id.org/cwl/salad#fields",
-            "mapPredicate": "type",
-            "mapSubject": "name"
-        },
-        "float": "http://www.w3.org/2001/XMLSchema#float",
-        "identity": "https://w3id.org/cwl/salad#JsonldPredicate/identity",
-        "inVocab": "https://w3id.org/cwl/salad#NamedType/inVocab",
-        "int": "http://www.w3.org/2001/XMLSchema#int",
-        "items": {
-            "@id": "https://w3id.org/cwl/salad#items",
-            "@type": "@vocab",
-            "refScope": 2
-        },
-        "jsonldPredicate": "sld:jsonldPredicate",
-        "long": "http://www.w3.org/2001/XMLSchema#long",
-        "mapPredicate": "https://w3id.org/cwl/salad#JsonldPredicate/mapPredicate",
-        "mapSubject": "https://w3id.org/cwl/salad#JsonldPredicate/mapSubject",
-        "name": "@id",
-        "noLinkCheck": "https://w3id.org/cwl/salad#JsonldPredicate/noLinkCheck",
-        "null": "https://w3id.org/cwl/salad#null",
-        "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-        "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-        "record": "https://w3id.org/cwl/salad#record",
-        "refScope": "https://w3id.org/cwl/salad#JsonldPredicate/refScope",
-        "sld": "https://w3id.org/cwl/salad#",
-        "specialize": {
-            "@id": "https://w3id.org/cwl/salad#specialize",
-            "mapPredicate": "specializeTo",
-            "mapSubject": "specializeFrom"
-        },
-        "specializeFrom": {
-            "@id": "https://w3id.org/cwl/salad#specializeFrom",
-            "@type": "@id",
-            "refScope": 1
-        },
-        "specializeTo": {
-            "@id": "https://w3id.org/cwl/salad#specializeTo",
-            "@type": "@id",
-            "refScope": 1
-        },
-        "string": "http://www.w3.org/2001/XMLSchema#string",
-        "subscope": "https://w3id.org/cwl/salad#JsonldPredicate/subscope",
-        "symbols": {
-            "@id": "https://w3id.org/cwl/salad#symbols",
-            "@type": "@id",
-            "identity": True
-        },
-        "type": {
-            "@id": "https://w3id.org/cwl/salad#type",
-            "@type": "@vocab",
-            "refScope": 2,
-            "typeDSL": True
-        },
-        "typeDSL": "https://w3id.org/cwl/salad#JsonldPredicate/typeDSL",
-        "xsd": "http://www.w3.org/2001/XMLSchema#"
-    })
+    loader = ref_resolver.Loader(
+        {
+            "Any": saladp + "Any",
+            "ArraySchema": saladp + "ArraySchema",
+            "Array_symbol": saladp + "ArraySchema/type/Array_symbol",
+            "DocType": saladp + "DocType",
+            "Documentation": saladp + "Documentation",
+            "Documentation_symbol": saladp + "Documentation/type/Documentation_symbol",
+            "Documented": saladp + "Documented",
+            "EnumSchema": saladp + "EnumSchema",
+            "Enum_symbol": saladp + "EnumSchema/type/Enum_symbol",
+            "JsonldPredicate": saladp + "JsonldPredicate",
+            "NamedType": saladp + "NamedType",
+            "PrimitiveType": saladp + "PrimitiveType",
+            "RecordField": saladp + "RecordField",
+            "RecordSchema": saladp + "RecordSchema",
+            "Record_symbol": saladp + "RecordSchema/type/Record_symbol",
+            "SaladEnumSchema": saladp + "SaladEnumSchema",
+            "SaladRecordField": saladp + "SaladRecordField",
+            "SaladRecordSchema": saladp + "SaladRecordSchema",
+            "SchemaDefinedType": saladp + "SchemaDefinedType",
+            "SpecializeDef": saladp + "SpecializeDef",
+            "_container": saladp + "JsonldPredicate/_container",
+            "_id": {"@id": saladp + "_id", "@type": "@id", "identity": True},
+            "_type": saladp + "JsonldPredicate/_type",
+            "abstract": saladp + "SaladRecordSchema/abstract",
+            "array": saladp + "array",
+            "boolean": "http://www.w3.org/2001/XMLSchema#boolean",
+            "dct": "http://purl.org/dc/terms/",
+            "default": {"@id": saladp + "default", "noLinkCheck": True},
+            "doc": "rdfs:comment",
+            "docAfter": {"@id": saladp + "docAfter", "@type": "@id"},
+            "docChild": {"@id": saladp + "docChild", "@type": "@id"},
+            "docParent": {"@id": saladp + "docParent", "@type": "@id"},
+            "documentRoot": saladp + "SchemaDefinedType/documentRoot",
+            "documentation": saladp + "documentation",
+            "double": "http://www.w3.org/2001/XMLSchema#double",
+            "enum": saladp + "enum",
+            "extends": {"@id": saladp + "extends", "@type": "@id", "refScope": 1},
+            "fields": {
+                "@id": saladp + "fields",
+                "mapPredicate": "type",
+                "mapSubject": "name",
+            },
+            "float": "http://www.w3.org/2001/XMLSchema#float",
+            "identity": saladp + "JsonldPredicate/identity",
+            "inVocab": saladp + "NamedType/inVocab",
+            "int": "http://www.w3.org/2001/XMLSchema#int",
+            "items": {"@id": saladp + "items", "@type": "@vocab", "refScope": 2},
+            "jsonldPredicate": "sld:jsonldPredicate",
+            "long": "http://www.w3.org/2001/XMLSchema#long",
+            "mapPredicate": saladp + "JsonldPredicate/mapPredicate",
+            "mapSubject": saladp + "JsonldPredicate/mapSubject",
+            "name": "@id",
+            "noLinkCheck": saladp + "JsonldPredicate/noLinkCheck",
+            "null": saladp + "null",
+            "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+            "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+            "record": saladp + "record",
+            "refScope": saladp + "JsonldPredicate/refScope",
+            "sld": saladp,
+            "specialize": {
+                "@id": saladp + "specialize",
+                "mapPredicate": "specializeTo",
+                "mapSubject": "specializeFrom",
+            },
+            "specializeFrom": {
+                "@id": saladp + "specializeFrom",
+                "@type": "@id",
+                "refScope": 1,
+            },
+            "specializeTo": {
+                "@id": saladp + "specializeTo",
+                "@type": "@id",
+                "refScope": 1,
+            },
+            "string": "http://www.w3.org/2001/XMLSchema#string",
+            "subscope": saladp + "JsonldPredicate/subscope",
+            "symbols": {"@id": saladp + "symbols", "@type": "@id", "identity": True},
+            "type": {
+                "@id": saladp + "type",
+                "@type": "@vocab",
+                "refScope": 2,
+                "typeDSL": True,
+            },
+            "typeDSL": saladp + "JsonldPredicate/typeDSL",
+            "xsd": "http://www.w3.org/2001/XMLSchema#",
+        }
+    )
 
     for salad in SALAD_FILES:
-        with resource_stream(__name__, 'metaschema/' + salad) as stream:
+        with resource_stream(__name__, "metaschema/" + salad) as stream:
             loader.cache["https://w3id.org/cwl/" + salad] = stream.read()
 
-    with resource_stream(__name__, 'metaschema/metaschema.yml') as stream:
+    with resource_stream(__name__, "metaschema/metaschema.yml") as stream:
         loader.cache["https://w3id.org/cwl/salad"] = stream.read()
 
     j = yaml.round_trip_load(loader.cache["https://w3id.org/cwl/salad"])
     add_lc_filename(j, "metaschema.yml")
-    j, _ = loader.resolve_all(j, "https://w3id.org/cwl/salad#")
+    j, _ = loader.resolve_all(j, saladp)
 
     sch_obj = make_avro(j, loader)
     try:
         sch_names = make_avro_schema_from_avro(sch_obj)
     except SchemaParseException:
-        _logger.error("Metaschema error, avro was:\n%s",
-                      json_dumps(sch_obj, indent=4))
+        _logger.error("Metaschema error, avro was:\n%s", json_dumps(sch_obj, indent=4))
         raise
     validate_doc(sch_names, j, loader, strict=True)
     return (sch_names, j, loader)
+
 
 def add_namespaces(metadata, namespaces):
     # type: (Mapping[Text, Any], MutableMapping[Text, Text]) -> None
@@ -207,7 +208,8 @@ def add_namespaces(metadata, namespaces):
         elif namespaces[key] != value:
             raise validate.ValidationException(
                 "Namespace prefix '{}' has conflicting definitions '{}'"
-                " and '{}'.".format(key, namespaces[key], value))
+                " and '{}'.".format(key, namespaces[key], value)
+            )
 
 
 def collect_namespaces(metadata):
@@ -221,10 +223,15 @@ def collect_namespaces(metadata):
         add_namespaces(metadata["$namespaces"], namespaces)
     return namespaces
 
-def load_schema(schema_ref,  # type: Union[CommentedMap, CommentedSeq, Text]
-                cache=None   # type: Optional[Dict[Text, Text]]
-                ):
-    # type: (...) -> Tuple[Loader, Union[Names, SchemaParseException], Dict[Text, Any], Loader]
+
+schema_type = Tuple[Loader, Union[Names, SchemaParseException], Dict[Text, Any], Loader]
+
+
+def load_schema(
+    schema_ref,  # type: Union[CommentedMap, CommentedSeq, Text]
+    cache=None,  # type: Optional[Dict[Text, Text]]
+):
+    # type: (...) -> schema_type
     """
     Load a schema that can be used to validate documents using load_and_validate.
 
@@ -254,12 +261,13 @@ def load_schema(schema_ref,  # type: Union[CommentedMap, CommentedSeq, Text]
     return document_loader, avsc_names, schema_metadata, metaschema_loader
 
 
-def load_and_validate(document_loader,                 # type: Loader
-                      avsc_names,                      # type: Names
-                      document,                        # type: Union[CommentedMap, Text]
-                      strict,                          # type: bool
-                      strict_foreign_properties=False  # type: bool
-                      ):
+def load_and_validate(
+    document_loader,  # type: Loader
+    avsc_names,  # type: Names
+    document,  # type: Union[CommentedMap, Text]
+    strict,  # type: bool
+    strict_foreign_properties=False,  # type: bool
+):
     # type: (...) -> Tuple[Any, Dict[Text, Any]]
     """Load a document and validate it with the provided schema.
 
@@ -268,38 +276,49 @@ def load_and_validate(document_loader,                 # type: Loader
     try:
         if isinstance(document, CommentedMap):
             data, metadata = document_loader.resolve_all(
-                document, document["id"], checklinks=True,
-                strict_foreign_properties=strict_foreign_properties)
+                document,
+                document["id"],
+                checklinks=True,
+                strict_foreign_properties=strict_foreign_properties,
+            )
         else:
             data, metadata = document_loader.resolve_ref(
-                document, checklinks=True,
-                strict_foreign_properties=strict_foreign_properties)
+                document,
+                checklinks=True,
+                strict_foreign_properties=strict_foreign_properties,
+            )
 
-        validate_doc(avsc_names, data, document_loader, strict,
-                     strict_foreign_properties=strict_foreign_properties)
+        validate_doc(
+            avsc_names,
+            data,
+            document_loader,
+            strict,
+            strict_foreign_properties=strict_foreign_properties,
+        )
     except validate.ValidationException as exc:
         raise_from(validate.ValidationException(strip_dup_lineno(str(exc))), exc)
     return data, metadata
 
 
-def validate_doc(schema_names,  # type: Names
-                 doc,           # type: Union[Dict[Text, Any], List[Dict[Text, Any]], Text, None]
-                 loader,        # type: Loader
-                 strict,        # type: bool
-                 strict_foreign_properties=False  # type: bool
-                 ):
+def validate_doc(
+    schema_names,  # type: Names
+    doc,  # type: Union[Dict[Text, Any], List[Dict[Text, Any]], Text, None]
+    loader,  # type: Loader
+    strict,  # type: bool
+    strict_foreign_properties=False,  # type: bool
+):
     # type: (...) -> None
     """Validate a document using the provided schema."""
     has_root = False
     for root in schema_names.names.values():
-        if ((hasattr(root, 'get_prop') and root.get_prop(u"documentRoot")) or (
-                u"documentRoot" in root.props)):
+        if (hasattr(root, "get_prop") and root.get_prop(u"documentRoot")) or (
+            u"documentRoot" in root.props
+        ):
             has_root = True
             break
 
     if not has_root:
-        raise validate.ValidationException(
-            "No document roots defined in the schema")
+        raise validate.ValidationException("No document roots defined in the schema")
 
     if isinstance(doc, MutableSequence):
         vdoc = doc
@@ -312,8 +331,9 @@ def validate_doc(schema_names,  # type: Names
 
     roots = []
     for root in schema_names.names.values():
-        if ((hasattr(root, "get_prop") and root.get_prop(u"documentRoot")) or (
-                root.props.get(u"documentRoot"))):
+        if (hasattr(root, "get_prop") and root.get_prop(u"documentRoot")) or (
+            root.props.get(u"documentRoot")
+        ):
             roots.append(root)
 
     anyerrors = []
@@ -322,10 +342,15 @@ def validate_doc(schema_names,  # type: Names
         success = False
         for root in roots:
             success = validate.validate_ex(
-                root, item, loader.identifiers, strict,
+                root,
+                item,
+                loader.identifiers,
+                strict,
                 foreign_properties=loader.foreign_properties,
-                raise_ex=False, skip_foreign_properties=loader.skip_schemas,
-                strict_foreign_properties=strict_foreign_properties)
+                raise_ex=False,
+                skip_foreign_properties=loader.skip_schemas,
+                strict_foreign_properties=strict_foreign_properties,
+            )
             if success:
                 break
 
@@ -339,30 +364,42 @@ def validate_doc(schema_names,  # type: Names
 
                 try:
                     validate.validate_ex(
-                        root, item, loader.identifiers, strict,
+                        root,
+                        item,
+                        loader.identifiers,
+                        strict,
                         foreign_properties=loader.foreign_properties,
-                        raise_ex=True, skip_foreign_properties=loader.skip_schemas,
-                        strict_foreign_properties=strict_foreign_properties)
+                        raise_ex=True,
+                        skip_foreign_properties=loader.skip_schemas,
+                        strict_foreign_properties=strict_foreign_properties,
+                    )
                 except validate.ClassValidationException as exc:
-                    errors = [sourceline.makeError(u"tried `%s` but\n%s" % (
-                        name, indent(str(exc), nolead=False)))]
+                    errors = [
+                        sourceline.makeError(
+                            u"tried `%s` but\n%s"
+                            % (name, indent(str(exc), nolead=False))
+                        )
+                    ]
                     break
                 except validate.ValidationException as exc:
-                    errors.append(sourceline.makeError(u"tried `%s` but\n%s" % (
-                        name, indent(str(exc), nolead=False))))
+                    errors.append(
+                        sourceline.makeError(
+                            u"tried `%s` but\n%s"
+                            % (name, indent(str(exc), nolead=False))
+                        )
+                    )
 
             objerr = sourceline.makeError(u"Invalid")
             for ident in loader.identifiers:
                 if ident in item:
                     objerr = sourceline.makeError(
-                        u"Object `%s` is not valid because"
-                        % (relname(item[ident])))
+                        u"Object `%s` is not valid because" % (relname(item[ident]))
+                    )
                     break
-            anyerrors.append(u"%s\n%s" %
-                             (objerr, indent(bullets(errors, "- "))))
+            anyerrors.append(u"%s\n%s" % (objerr, indent(bullets(errors, "- "))))
     if anyerrors:
-        raise validate.ValidationException(
-            strip_dup_lineno(bullets(anyerrors, "* ")))
+        raise validate.ValidationException(strip_dup_lineno(bullets(anyerrors, "* ")))
+
 
 def get_anon_name(rec):
     # type: (MutableMapping[Text, Union[Text, Dict[Text, Text]]]) -> Text
@@ -371,22 +408,31 @@ def get_anon_name(rec):
         name = rec["name"]
         if isinstance(name, Text):
             return name
-        raise validate.ValidationException("Expected name field to be a string, was {}".format(name))
+        raise validate.ValidationException(
+            "Expected name field to be a string, was {}".format(name)
+        )
     anon_name = u""
-    if rec['type'] in ('enum', 'https://w3id.org/cwl/salad#enum'):
+    if rec["type"] in ("enum", saladp + "enum"):
         for sym in rec["symbols"]:
             anon_name += sym
-        return "enum_"+hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
-    if rec['type'] in ('record', 'https://w3id.org/cwl/salad#record'):
+        return "enum_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
+    if rec["type"] in ("record", saladp + "record"):
         for field in rec["fields"]:
             if isinstance(field, Mapping):
                 anon_name += field[u"name"]
             else:
-                raise validate.ValidationException("Expected entries in 'fields' to also be maps, was {}.".format(field))
-        return u"record_"+hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
-    if rec['type'] in ('array', 'https://w3id.org/cwl/salad#array'):
+                raise validate.ValidationException(
+                    "Expected entries in 'fields' to also be maps, was {}.".format(
+                        field
+                    )
+                )
+        return u"record_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
+    if rec["type"] in ("array", saladp + "array"):
         return u""
-    raise validate.ValidationException("Expected enum or record, was {}".format(rec['type']))
+    raise validate.ValidationException(
+        "Expected enum or record, was {}".format(rec["type"])
+    )
+
 
 def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
     # type: (Any, Dict[Text, Any], Loader, Set[Text], bool, bool) -> Any
@@ -408,16 +454,23 @@ def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
         for name in ("type", "items", "fields"):
             if name in items:
                 items[name] = replace_type(
-                    items[name], spec, loader, found, find_embeds=find_embeds,
-                    deepen=find_embeds)
+                    items[name],
+                    spec,
+                    loader,
+                    found,
+                    find_embeds=find_embeds,
+                    deepen=find_embeds,
+                )
                 if isinstance(items[name], MutableSequence):
                     items[name] = flatten(items[name])
 
         return items
     if isinstance(items, MutableSequence):
         # recursively transform list
-        return [replace_type(i, spec, loader, found, find_embeds=find_embeds,
-                             deepen=deepen) for i in items]
+        return [
+            replace_type(i, spec, loader, found, find_embeds=find_embeds, deepen=deepen)
+            for i in items
+        ]
     if isinstance(items, string_types):
         # found a string which is a symbol corresponding to a type.
         replace_with = None
@@ -431,7 +484,9 @@ def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
             replace_with = spec[items]
 
         if replace_with:
-            return replace_type(replace_with, spec, loader, found, find_embeds=find_embeds)
+            return replace_type(
+                replace_with, spec, loader, found, find_embeds=find_embeds
+            )
         found.add(items)
     return items
 
@@ -446,21 +501,22 @@ def avro_name(url):  # type: (Text) -> Text
     the whole fragment.
     """
     frg = urllib.parse.urldefrag(url)[1]
-    if frg != '':
-        if '/' in frg:
-            return frg[frg.rindex('/') + 1:]
+    if frg != "":
+        if "/" in frg:
+            return frg[frg.rindex("/") + 1 :]
         return frg
     return url
 
 
-Avro = TypeVar('Avro', Dict[Text, Any], List[Any], Text)
+Avro = TypeVar("Avro", Dict[Text, Any], List[Any], Text)
 
 
-def make_valid_avro(items,          # type: Avro
-                    alltypes,       # type: Dict[Text, Dict[Text, Any]]
-                    found,          # type: Set[Text]
-                    union=False     # type: bool
-                   ):  # type: (...) -> Union[Avro, Dict[Text, Text], Text]
+def make_valid_avro(
+    items,  # type: Avro
+    alltypes,  # type: Dict[Text, Dict[Text, Any]]
+    found,  # type: Set[Text]
+    union=False,  # type: bool
+):  # type: (...) -> Union[Avro, Dict[Text, Text], Text]
     """Convert our schema to be more avro like."""
     # Possibly could be integrated into our fork of avro/schema.py?
     if isinstance(items, MutableMapping):
@@ -469,10 +525,14 @@ def make_valid_avro(items,          # type: Avro
             items["name"] = avro_name(items["name"])
 
         if "type" in items and items["type"] in (
-                "https://w3id.org/cwl/salad#record",
-                "https://w3id.org/cwl/salad#enum", "record", "enum"):
-            if (hasattr(items, "get") and items.get("abstract")) or ("abstract"
-                                                                     in items):
+            saladp + "record",
+            saladp + "enum",
+            "record",
+            "enum",
+        ):
+            if (hasattr(items, "get") and items.get("abstract")) or (
+                "abstract" in items
+            ):
                 return items
             if items["name"] in found:
                 return cast(Text, items["name"])
@@ -480,7 +540,8 @@ def make_valid_avro(items,          # type: Avro
         for field in ("type", "items", "values", "fields"):
             if field in items:
                 items[field] = make_valid_avro(
-                    items[field], alltypes, found, union=True)
+                    items[field], alltypes, found, union=True
+                )
         if "symbols" in items:
             items["symbols"] = [avro_name(sym) for sym in items["symbols"]]
         return items
@@ -491,8 +552,10 @@ def make_valid_avro(items,          # type: Avro
         return ret
     if union and isinstance(items, string_types):
         if items in alltypes and avro_name(items) not in found:
-            return cast(Dict[Text, Text], make_valid_avro(alltypes[items], alltypes, found,
-                                              union=union))
+            return cast(
+                Dict[Text, Text],
+                make_valid_avro(alltypes[items], alltypes, found, union=union),
+            )
         items = avro_name(items)
     return items
 
@@ -535,14 +598,17 @@ def extend_and_specialize(items, loader):
                 if ex not in types:
                     raise Exception(
                         "Extends {} in {} refers to invalid base type.".format(
-                            stype["extends"], stype["name"]))
+                            stype["extends"], stype["name"]
+                        )
+                    )
 
                 basetype = copy.copy(types[ex])
 
                 if stype["type"] == "record":
                     if specs:
                         basetype["fields"] = replace_type(
-                            basetype.get("fields", []), specs, loader, set())
+                            basetype.get("fields", []), specs, loader, set()
+                        )
 
                     for field in basetype.get("fields", []):
                         if "inherited_from" not in field:
@@ -562,7 +628,9 @@ def extend_and_specialize(items, loader):
                     if field["name"] in fieldnames:
                         raise validate.ValidationException(
                             "Field name {} appears twice in {}".format(
-                                field["name"], stype["name"]))
+                                field["name"], stype["name"]
+                            )
+                        )
                     else:
                         fieldnames.add(field["name"])
             elif stype["type"] == "enum":
@@ -589,20 +657,22 @@ def extend_and_specialize(items, loader):
     for result in results:
         if result.get("abstract") and result["name"] not in extended_by:
             raise validate.ValidationException(
-                "{} is abstract but missing a concrete subtype".format(
-                    result["name"]))
+                "{} is abstract but missing a concrete subtype".format(result["name"])
+            )
 
     for result in results:
         if "fields" in result:
             result["fields"] = replace_type(
-                result["fields"], extended_by, loader, set())
+                result["fields"], extended_by, loader, set()
+            )
 
     return results
 
 
-def make_avro(i,         # type: List[Dict[Text, Any]]
-              loader     # type: Loader
-             ):  # type: (...) -> List[Any]
+def make_avro(
+    i,  # type: List[Dict[Text, Any]]
+    loader,  # type: Loader
+):  # type: (...) -> List[Any]
 
     j = extend_and_specialize(i, loader)
 
@@ -611,13 +681,19 @@ def make_avro(i,         # type: List[Dict[Text, Any]]
         name_dict[entry["name"]] = entry
     avro = make_valid_avro(j, name_dict, set())
 
-    return [t for t in avro if isinstance(t, MutableMapping) and not t.get(
-        "abstract") and t.get("type") != "documentation"]
+    return [
+        t
+        for t in avro
+        if isinstance(t, MutableMapping)
+        and not t.get("abstract")
+        and t.get("type") != "documentation"
+    ]
 
 
-def make_avro_schema(i,         # type: List[Any]
-                     loader     # type: Loader
-                     ):  # type: (...) -> Names
+def make_avro_schema(
+    i,  # type: List[Any]
+    loader,  # type: Loader
+):  # type: (...) -> Names
     """
     All in one convenience function.
 
@@ -655,15 +731,13 @@ def print_inheritance(doc, stream):
             fields = entry.get("fields", [])
             if fields:
                 label += "\\n* %s\\l" % (
-                    "\\l* ".join(shortname(field["name"])
-                                 for field in fields))
+                    "\\l* ".join(shortname(field["name"]) for field in fields)
+                )
             shape = "ellipse" if entry.get("abstract") else "box"
-            stream.write("\"%s\" [shape=%s label=\"%s\"];\n"
-                         % (name, shape, label))
+            stream.write('"%s" [shape=%s label="%s"];\n' % (name, shape, label))
             if "extends" in entry:
                 for target in aslist(entry["extends"]):
-                    stream.write("\"%s\" -> \"%s\";\n"
-                                 % (shortname(target), name))
+                    stream.write('"%s" -> "%s";\n' % (shortname(target), name))
     stream.write("}\n")
 
 
@@ -672,15 +746,19 @@ def print_fieldrefs(doc, loader, stream):
     """Write a GraphViz graph of the relationships between the fields."""
     obj = extend_and_specialize(doc, loader)
 
-    primitives = set(("http://www.w3.org/2001/XMLSchema#string",
-                      "http://www.w3.org/2001/XMLSchema#boolean",
-                      "http://www.w3.org/2001/XMLSchema#int",
-                      "http://www.w3.org/2001/XMLSchema#long",
-                      "https://w3id.org/cwl/salad#null",
-                      "https://w3id.org/cwl/salad#enum",
-                      "https://w3id.org/cwl/salad#array",
-                      "https://w3id.org/cwl/salad#record",
-                      "https://w3id.org/cwl/salad#Any"))
+    primitives = set(
+        (
+            "http://www.w3.org/2001/XMLSchema#string",
+            "http://www.w3.org/2001/XMLSchema#boolean",
+            "http://www.w3.org/2001/XMLSchema#int",
+            "http://www.w3.org/2001/XMLSchema#long",
+            saladp + "null",
+            saladp + "enum",
+            saladp + "array",
+            saladp + "record",
+            saladp + "Any",
+        )
+    )
 
     stream.write("digraph {\n")
     for entry in obj:
@@ -695,6 +773,7 @@ def print_fieldrefs(doc, loader, stream):
                 for each_type in found:
                     if each_type not in primitives:
                         stream.write(
-                            "\"%s\" -> \"%s\" [label=\"%s\"];\n"
-                            % (label, shortname(each_type), field_name))
+                            '"%s" -> "%s" [label="%s"];\n'
+                            % (label, shortname(each_type), field_name)
+                        )
     stream.write("}\n")

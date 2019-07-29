@@ -15,8 +15,7 @@
 #
 # Contact: common-workflow-language@googlegroups.com
 
-# make pycodestyle to check for basic Python code compliance
-# make autopep8 to fix most pep8 errors
+# make format to fix most python formatting errors
 # make pylint to check Python code for enhanced compliance including naming
 #  and documentation
 # make coverage-report to check coverage of the python scripts by the tests
@@ -27,7 +26,8 @@ PACKAGE=schema-salad
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py) setup.py
-DEVPKGS=pycodestyle diff_cover autopep8 pylint coverage pep257 pytest-xdist flake8
+DEVPKGS=diff_cover black pylint coverage pep257 pytest-xdist \
+	flake8 flake8-bugbear
 COVBASE=coverage run --branch --append --source=${MODULE} \
 	--omit=schema_salad/tests/*
 
@@ -73,19 +73,6 @@ clean: FORCE
 sort_imports:
 	isort ${MODULE}/*.py ${MODULE}/tests/*.py setup.py
 
-pep8: pycodestyle
-## pycodestyle        : check Python code style
-pycodestyle: $(PYSOURCES)
-	pycodestyle --exclude=_version.py  --show-source --show-pep8 $^ || true
-
-pep8_report.txt: pycodestyle_report.txt
-pycodestyle_report.txt: $(PYSOURCES)
-	pycodestyle --exclude=_version.py $^ > $@ || true
-
-diff_pep8_report: diff_pycodestyle_report
-diff_pycodestyle_report: pycodestyle_report.txt
-	diff-quality --violations=pycodestyle $^
-
 pep257: pydocstyle
 ## pydocstyle      : check Python code style
 pydocstyle: $(PYSOURCES)
@@ -97,14 +84,9 @@ pydocstyle_report.txt: $(PYSOURCES)
 diff_pydocstyle_report: pydocstyle_report.txt
 	diff-quality --violations=pycodestyle --fail-under=100 $^
 
-## autopep8    : fix most Python code indentation and formatting
-autopep8: $(PYSOURCES)
-	autopep8 --recursive --in-place --ignore E309 $^
-
-# A command to automatically run astyle and autopep8 on appropriate files
-## format      : check/fix all code indentation and formatting (runs autopep8)
-format: autopep8
-	# Do nothing
+## format      : check/fix all code indentation and formatting (runs black)
+format:
+	black --target-version py27 schema_salad
 
 ## pylint      : run static code analysis on Python code
 pylint: $(PYSOURCES)
@@ -206,7 +188,7 @@ jenkins: FORCE
 	. env/bin/activate ; \
 	pip install -U setuptools pip wheel ; \
 	${MAKE} install-dep coverage.html coverage.xml pydocstyle_report.txt \
-		sloccount.sc pycodestyle_report.txt pylint_report.txt
+		sloccount.sc pylint_report.txt
 	if ! test -d env3 ; then virtualenv -p python3 env3 ; fi
 	. env3/bin/activate ; \
 	pip install -U setuptools pip wheel ; \
