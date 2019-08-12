@@ -217,7 +217,7 @@ def cmap(
     if isinstance(d, CommentedMap):
         fn = d.lc.filename if hasattr(d.lc, "filename") else fn
         for k, v in six.iteritems(d):
-            if k in d.lc.data:
+            if d.lc.data is not None and k in d.lc.data:
                 d[k] = cmap(v, lc=d.lc.data[k], fn=fn)
             else:
                 d[k] = cmap(v, lc, fn=fn)
@@ -225,7 +225,7 @@ def cmap(
     if isinstance(d, CommentedSeq):
         fn = d.lc.filename if hasattr(d.lc, "filename") else fn
         for k2, v2 in enumerate(d):
-            if k2 in d.lc.data:
+            if d.lc.data is not None and k2 in d.lc.data:
                 d[k2] = cmap(v2, lc=d.lc.data[k2], fn=fn)
             else:
                 d[k2] = cmap(v2, lc, fn=fn)
