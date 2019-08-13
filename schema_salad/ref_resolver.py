@@ -223,6 +223,9 @@ class DefaultFetcher(Fetcher):
                 )
             )
 
+        if url.startswith("_:"):
+            return url
+
         if sys.platform == "win32":
             if base_url == url:
                 return url
@@ -411,6 +414,9 @@ class Loader(object):
             return url
 
         if vocab_term and url in self.vocab:
+            return url
+
+        if url.startswith("_:"):
             return url
 
         if bool(self.vocab) and u":" in url:
