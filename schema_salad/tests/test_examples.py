@@ -5,7 +5,7 @@ import os
 import six
 
 import ruamel.yaml
-from ruamel.yaml.comments import CommentedMap
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 import schema_salad.main
 import schema_salad.ref_resolver
 import schema_salad.schema
@@ -416,3 +416,4 @@ def test_sourceline():
 def test_cmap():
     # Test bugfix that cmap won't fail when given a CommentedMap with no lc.data
     cmap(CommentedMap((("foo", "bar"), ("baz", ["quux"]))))
+    cmap(CommentedSeq(("foo", [], "bar")))
