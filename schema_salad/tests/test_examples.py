@@ -427,14 +427,8 @@ def test_blank_node_id():
     # was not given.
 
     ldr = schema_salad.ref_resolver.Loader({})
-    ctx = {
-        "id": "@id",
-    }
+    ctx = {"id": "@id"}
     ldr.add_context(ctx)
 
-    ra, _ = ldr.resolve_all(
-        cmap({"id": "_:foo"}), "http://example.com"
-    )
-    assert {
-        "id": "_:foo",
-    } == ra
+    ra, _ = ldr.resolve_all(cmap({"id": "_:foo"}), "http://example.com")
+    assert {"id": "_:foo"} == ra
