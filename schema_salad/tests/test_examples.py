@@ -417,3 +417,18 @@ def test_cmap():
     # Test bugfix that cmap won't fail when given a CommentedMap with no lc.data
     cmap(CommentedMap((("foo", "bar"), ("baz", ["quux"]))))
     cmap(CommentedSeq(("foo", [], "bar")))
+
+
+def test_blank_node_id():
+    # Test that blank nodes are passed through and not considered
+    # relative paths.  Blank nodes (also called anonymous ids) are
+    # URIs starting with "_:".  They are randomly generated
+    # placeholders mainly used internally where an id is needed but
+    # was not given.
+
+    ldr = schema_salad.ref_resolver.Loader({})
+    ctx = {"id": "@id"}
+    ldr.add_context(ctx)
+
+    ra, _ = ldr.resolve_all(cmap({"id": "_:foo"}), "http://example.com")
+    assert {"id": "_:foo"} == ra
