@@ -214,6 +214,9 @@ class DefaultFetcher(Fetcher):
         raise ValueError("Unsupported scheme in url: {}".format(url))
 
     def urljoin(self, base_url, url):  # type: (Optional[Text], Text) -> Text
+        if url.startswith("_:"):
+            return url
+
         basesplit = urllib.parse.urlsplit(base_url)
         split = urllib.parse.urlsplit(url)
         if basesplit.scheme and basesplit.scheme != "file" and split.scheme == "file":
@@ -222,9 +225,6 @@ class DefaultFetcher(Fetcher):
                     url, base_url
                 )
             )
-
-        if url.startswith("_:"):
-            return url
 
         if sys.platform == "win32":
             if base_url == url:
