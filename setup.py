@@ -49,6 +49,7 @@ setup(name='schema-salad',
       version='4.5',  # update the VERSION prefix in the Makefile as well 🙂
       description='Schema Annotations for Linked Avro Data (SALAD)',
       long_description=open(README).read(),
+      long_description_content_type="text/x-rst",
       author='Common workflow language working group',
       author_email='common-workflow-language@googlegroups.com',
       url="https://github.com/common-workflow-language/schema_salad",
