@@ -13,9 +13,11 @@ from requests import Session
 from schema_salad.ref_resolver import DefaultFetcher, Loader, file_uri
 from schema_salad.tests.util import get_data
 
+
 def is_fs_case_sensitive(path):  # https://stackoverflow.com/a/36612604/1585509
-    with tempfile.NamedTemporaryFile(prefix='TmP',dir=path) as tmp_file:
-        return(not os.path.exists(tmp_file.name.lower()))
+    with tempfile.NamedTemporaryFile(prefix="TmP", dir=path) as tmp_file:
+        return not os.path.exists(tmp_file.name.lower())
+
 
 @pytest.fixture
 def tmp_dir_fixture(request):
@@ -173,9 +175,11 @@ def test_import_list():
 
 
 def test_fetch_inject_id():
-    lower = lambda s : s.lower()
-    if is_fs_case_sensitive(os.path.dirname(get_data("schema_salad/tests/inject-id1.yml"))):
-        lower = lambda a : a
+    lower = lambda s: s.lower()
+    if is_fs_case_sensitive(
+        os.path.dirname(get_data("schema_salad/tests/inject-id1.yml"))
+    ):
+        lower = lambda a: a
     l1 = Loader({"id": "@id"})
     furi1 = file_uri(get_data("schema_salad/tests/inject-id1.yml"))
     r1, _ = l1.resolve_ref(furi1)
