@@ -171,19 +171,19 @@ def test_import_list():
 
 def test_fetch_inject_id():
     l1 = Loader({"id": "@id"})
-    furi1 = file_uri(get_data("schema_salad/tests/inject-id1.yml")).lower()
+    furi1 = file_uri(get_data("schema_salad/tests/inject-id1.yml"))
     r1, _ = l1.resolve_ref(furi1)
     assert {"id": furi1 + "#foo", "bar": "baz"} == r1
     assert [furi1, furi1 + "#foo"] == sorted(list(k.lower() for k in l1.idx.keys()))
 
     l2 = Loader({"id": "@id"})
-    furi2 = file_uri(get_data("schema_salad/tests/inject-id2.yml")).lower()
+    furi2 = file_uri(get_data("schema_salad/tests/inject-id2.yml"))
     r2, _ = l2.resolve_ref(furi2)
     assert {"id": furi2, "bar": "baz"} == r2
     assert [furi2] == sorted(list(k.lower() for k in l2.idx.keys()))
 
     l3 = Loader({"id": "@id"})
-    furi3 = file_uri(get_data("schema_salad/tests/inject-id3.yml")).lower()
+    furi3 = file_uri(get_data("schema_salad/tests/inject-id3.yml"))
     r3, _ = l3.resolve_ref(furi3)
     assert {"id": "http://example.com", "bar": "baz"} == r3
     assert [furi3, "http://example.com"] == sorted(
