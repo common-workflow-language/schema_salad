@@ -134,7 +134,7 @@ class Fetcher(object):
     def check_exists(self, url):  # type: (Text) -> bool
         raise NotImplementedError()
 
-    def urljoin(self, base_url, url):  # type: (Optional[Text], Text) -> Text
+    def urljoin(self, base_url, url):  # type: (Text, Text) -> Text
         raise NotImplementedError()
 
     schemes = [u"file", u"http", u"https", u"mailto"]
@@ -213,7 +213,7 @@ class DefaultFetcher(Fetcher):
             return True
         raise ValueError("Unsupported scheme in url: {}".format(url))
 
-    def urljoin(self, base_url, url):  # type: (Optional[Text], Text) -> Text
+    def urljoin(self, base_url, url):  # type: (Text, Text) -> Text
         if url.startswith("_:"):
             return url
 

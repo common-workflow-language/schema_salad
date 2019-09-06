@@ -79,7 +79,7 @@ class PythonCodeGen(CodeGenBase):
 
         self.current_class_is_abstract = abstract
         if self.current_class_is_abstract:
-            self.out.write("    pass\n\n")
+            self.out.write("    pass\n\n\n")
             return
 
         safe_inits = ["        self,"]  # type: List[Text]
@@ -122,7 +122,6 @@ class PythonCodeGen(CodeGenBase):
                 )
         self.out.write(
             field_inits
-            + "\n"
             + """
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
@@ -193,7 +192,7 @@ class PythonCodeGen(CodeGenBase):
                     break
 
         if errors:
-            raise ValidationException(\"Trying '{class_}'\\n\"+\"\\n\".join(errors))
+            raise ValidationException(\"Trying '{class_}'\\n\" + \"\\n\".join(errors))
 """.format(
                 attrstr=", ".join(["`{}`".format(f) for f in field_names]),
                 class_=self.safe_name(classname),
@@ -363,7 +362,7 @@ class PythonCodeGen(CodeGenBase):
 {spc}                '{fieldname}'), {fieldtype}, baseuri, loadingOptions)
 {spc}        except ValidationException as e:
 {spc}            errors.append(SourceLine(_doc, '{fieldname}', str).makeError(
-{spc}                \"the `{fieldname}` field is not valid because:\\n\"+str(e)))
+{spc}                \"the `{fieldname}` field is not valid because:\\n\" + str(e)))
 """.format(
                 safename=self.safe_name(name),
                 fieldname=shortname(name),
@@ -379,8 +378,6 @@ class PythonCodeGen(CodeGenBase):
                     safename=self.safe_name(name)
                 )
             )
-
-        self.out.write("\n")
 
         if name == self.idfield or not self.idfield:
             baseurl = "base_url"
@@ -471,7 +468,7 @@ class PythonCodeGen(CodeGenBase):
 
         for _, collected_type in iteritems(self.collected_types):
             self.out.write("{} = {}\n".format(collected_type.name, collected_type.init))
-        self.out.write("\n\n")
+        self.out.write("\n")
 
         self.out.write(
             """
@@ -482,6 +479,7 @@ def load_document(doc, baseuri=None, loadingOptions=None):
     if loadingOptions is None:
         loadingOptions = LoadingOptions()
     return _document_load(%(name)s, doc, baseuri, loadingOptions)
+
 
 def load_document_by_string(string, uri, loadingOptions=None):
     # type: (Any, Text, Optional[LoadingOptions]) -> Any
