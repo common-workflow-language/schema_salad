@@ -114,12 +114,16 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
     # type: (Union[Text, Dict[Text, Text]], _Loader, Text, LoadingOptions) -> Any
     if isinstance(val, MutableMapping):
         if "$import" in val:
+            if loadingOptions.fileuri is None:
+                raise Exception("Cannot load $import without fileuri")
             return _document_load_by_url(
                 fieldtype,
                 loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$import"]),
                 loadingOptions,
             )
         elif "$include" in val:
+            if loadingOptions.fileuri is None:
+                raise Exception("Cannot load $import without fileuri")
             val = loadingOptions.fetcher.fetch_text(
                 loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
             )
