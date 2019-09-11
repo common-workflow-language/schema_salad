@@ -255,7 +255,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
     if isinstance(schema_doc, CommentedSeq):
         (schema_ctx, rdfs) = jsonld_context.salad_to_jsonld_context(schema_doc, metactx)
     else:
-        raise Exception(
+        raise ValidationException(
             "Expected a CommentedSeq, got {}: {}.".format(type(schema_doc), schema_doc)
         )
 
