@@ -36,6 +36,7 @@ from schema_salad.utils import (
 )
 
 from . import _logger, jsonld_context, ref_resolver, validate
+from .exceptions import ClassValidationException, ValidationException
 from .avro.schema import Names, SchemaParseException, make_avsc_object
 from .ref_resolver import Loader
 from .sourceline import (
@@ -206,7 +207,7 @@ def add_namespaces(metadata, namespaces):
         if key not in namespaces:
             namespaces[key] = value
         elif namespaces[key] != value:
-            raise validate.ValidationException(
+            raise ValidationException(
                 "Namespace prefix '{}' has conflicting definitions '{}'"
                 " and '{}'.".format(key, namespaces[key], value)
             )
@@ -295,8 +296,8 @@ def load_and_validate(
             strict,
             strict_foreign_properties=strict_foreign_properties,
         )
-    except validate.ValidationException as exc:
-        raise_from(validate.ValidationException(strip_dup_lineno(str(exc))), exc)
+    except ValidationException as exc:
+        raise_from(ValidationException(strip_dup_lineno(str(exc))), exc)
     return data, metadata
 
 
@@ -318,7 +319,7 @@ def validate_doc(
             break
 
     if not has_root:
-        raise validate.ValidationException("No document roots defined in the schema")
+        raise ValidationException("No document roots defined in the schema")
 
     if isinstance(doc, MutableSequence):
         vdoc = doc
@@ -327,7 +328,7 @@ def validate_doc(
         vdoc.lc.add_kv_line_col(0, [doc.lc.line, doc.lc.col])
         vdoc.lc.filename = doc.lc.filename
     else:
-        raise validate.ValidationException("Document must be dict or list")
+        raise ValidationException("Document must be dict or list")
 
     roots = []
     for root in schema_names.names.values():
@@ -373,7 +374,7 @@ def validate_doc(
                         skip_foreign_properties=loader.skip_schemas,
                         strict_foreign_properties=strict_foreign_properties,
                     )
-                except validate.ClassValidationException as exc:
+                except ClassValidationException as exc:
                     errors = [
                         sourceline.makeError(
                             u"tried `{}` but\n{}".format(
@@ -382,7 +383,7 @@ def validate_doc(
                         )
                     ]
                     break
-                except validate.ValidationException as exc:
+                except ValidationException as exc:
                     errors.append(
                         sourceline.makeError(
                             u"tried `{}` but\n{}".format(
@@ -400,7 +401,7 @@ def validate_doc(
                     break
             anyerrors.append(u"{}\n{}".format(objerr, indent(bullets(errors, "- "))))
     if anyerrors:
-        raise validate.ValidationException(strip_dup_lineno(bullets(anyerrors, "* ")))
+        raise ValidationException(strip_dup_lineno(bullets(anyerrors, "* ")))
 
 
 def get_anon_name(rec):
@@ -410,7 +411,7 @@ def get_anon_name(rec):
         name = rec["name"]
         if isinstance(name, Text):
             return name
-        raise validate.ValidationException(
+        raise ValidationException(
             "Expected name field to be a string, was {}".format(name)
         )
     anon_name = u""
@@ -423,7 +424,7 @@ def get_anon_name(rec):
             if isinstance(field, Mapping):
                 anon_name += field[u"name"]
             else:
-                raise validate.ValidationException(
+                raise ValidationException(
                     "Expected entries in 'fields' to also be maps, was {}.".format(
                         field
                     )
@@ -431,9 +432,7 @@ def get_anon_name(rec):
         return u"record_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
     if rec["type"] in ("array", saladp + "array"):
         return u""
-    raise validate.ValidationException(
-        "Expected enum or record, was {}".format(rec["type"])
-    )
+    raise ValidationException("Expected enum or record, was {}".format(rec["type"]))
 
 
 def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
@@ -598,7 +597,7 @@ def extend_and_specialize(items, loader):
             exsym = []  # type: List[Text]
             for ex in aslist(stype["extends"]):
                 if ex not in types:
-                    raise Exception(
+                    raise ValidationException(
                         "Extends {} in {} refers to invalid base type.".format(
                             stype["extends"], stype["name"]
                         )
@@ -628,7 +627,7 @@ def extend_and_specialize(items, loader):
                 fieldnames = set()  # type: Set[Text]
                 for field in stype["fields"]:
                     if field["name"] in fieldnames:
-                        raise validate.ValidationException(
+                        raise ValidationException(
                             "Field name {} appears twice in {}".format(
                                 field["name"], stype["name"]
                             )
@@ -658,7 +657,7 @@ def extend_and_specialize(items, loader):
 
     for result in results:
         if result.get("abstract") and result["name"] not in extended_by:
-            raise validate.ValidationException(
+            raise ValidationException(
                 "{} is abstract but missing a concrete subtype".format(result["name"])
             )
 

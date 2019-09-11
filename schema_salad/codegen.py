@@ -6,6 +6,7 @@ from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import schema
 from .codegen_base import CodeGenBase
+from .exceptions import SchemaSaladException
 from .java_codegen import JavaCodeGen
 from .python_codegen import PythonCodeGen
 from .ref_resolver import Loader  # pylint: disable=unused-import
@@ -31,7 +32,9 @@ def codegen(
     elif lang == "java":
         gen = JavaCodeGen(schema_metadata.get("$base", schema_metadata.get("id")))
     else:
-        raise Exception("Unsupported code generation language '{}'".format(lang))
+        raise SchemaSaladException(
+            "Unsupported code generation language '{}'".format(lang)
+        )
     assert gen is not None
 
     gen.prologue()

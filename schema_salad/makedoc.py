@@ -30,6 +30,7 @@ from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import schema
+from .exceptions import SchemaSaladException
 from .utils import add_dictlist, aslist
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
@@ -339,7 +340,7 @@ class RenderType(object):
             if frg != "":
                 tp = frg
             return """<a href="{}">{}</a>""".format(to_id(tp), tp)
-        raise Exception("We should not be here!")
+        raise SchemaSaladException("We should not be here!")
 
     def render_type(self, f, depth):  # type: (Dict[Text, Any], int) -> None
         if f["name"] in self.rendered or f["name"] in self.redirects:

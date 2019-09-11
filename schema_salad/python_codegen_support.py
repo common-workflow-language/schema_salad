@@ -23,15 +23,12 @@ from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
 from schema_salad.ref_resolver import Fetcher
 from schema_salad.sourceline import SourceLine, add_lc_filename, bullets, indent
+from schema_salad.exceptions import SchemaSaladException, ValidationException
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 _vocab = {}  # type: Dict[Text, Text]
 _rvocab = {}  # type: Dict[Text, Text]
-
-
-class ValidationException(Exception):
-    pass
 
 
 class Savable(object):
@@ -115,7 +112,7 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
     if isinstance(val, MutableMapping):
         if "$import" in val:
             if loadingOptions.fileuri is None:
-                raise Exception("Cannot load $import without fileuri")
+                raise SchemaSaladException("Cannot load $import without fileuri")
             return _document_load_by_url(
                 fieldtype,
                 loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$import"]),
@@ -123,7 +120,7 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
             )
         elif "$include" in val:
             if loadingOptions.fileuri is None:
-                raise Exception("Cannot load $import without fileuri")
+                raise SchemaSaladException("Cannot load $import without fileuri")
             val = loadingOptions.fetcher.fetch_text(
                 loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
             )

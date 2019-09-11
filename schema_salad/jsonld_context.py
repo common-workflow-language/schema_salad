@@ -22,6 +22,7 @@ from rdflib.namespace import RDF, RDFS
 from six.moves import urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
+from .exceptions import SchemaException
 from .ref_resolver import ContextType  # pylint: disable=unused-import
 from .utils import aslist, json_dumps
 
@@ -69,11 +70,11 @@ def pred(
                     if d["symbol"] == name:
                         v = d["predicate"]
                 else:
-                    raise Exception(
+                    raise SchemaException(
                         "entries in the jsonldPredicate List must be " "Dictionaries"
                     )
         else:
-            raise Exception("jsonldPredicate must be a List of Dictionaries.")
+            raise SchemaException("jsonldPredicate must be a List of Dictionaries.")
 
     ret = v or vee
 
@@ -82,7 +83,7 @@ def pred(
 
     if name in context:
         if context[name] != ret:
-            raise Exception(
+            raise SchemaException(
                 "Predicate collision on {}, '{}' != '{}'".format(
                     name, context[name], ret
                 )
@@ -124,14 +125,14 @@ def process_type(
                 predicate = "{}:{}".format(defaultPrefix, recordname)
 
         if context.get(recordname, predicate) != predicate:
-            raise Exception(
+            raise SchemaException(
                 "Predicate collision on '{}', '{}' != '{}'".format(
                     recordname, context[recordname], predicate
                 )
             )
 
         if not recordname:
-            raise Exception()
+            raise SchemaException("Unable to find/derive recordname for {}".format(t))
 
         _logger.debug(
             "Adding to context '%s' %s (%s)", recordname, predicate, type(predicate)
