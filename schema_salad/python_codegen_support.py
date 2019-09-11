@@ -23,15 +23,12 @@ from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
 from schema_salad.ref_resolver import Fetcher
 from schema_salad.sourceline import SourceLine, add_lc_filename, bullets, indent
+from schema_salad.exceptions import ValidationException
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 _vocab = {}  # type: Dict[Text, Text]
 _rvocab = {}  # type: Dict[Text, Text]
-
-
-class ValidationException(Exception):
-    pass
 
 
 class Savable(object):

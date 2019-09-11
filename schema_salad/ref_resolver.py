@@ -38,6 +38,7 @@ from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
 
 from . import validate
+from .exceptions import ValidationException
 from .sourceline import SourceLine, add_lc_filename, indent, relname, strip_dup_lineno
 from .utils import aslist, onWindows
 
@@ -518,9 +519,7 @@ class Loader(object):
     def add_context(self, newcontext, baseuri=""):
         # type: (ContextType, Text) -> None
         if bool(self.vocab):
-            raise validate.ValidationException(
-                "Refreshing context that already has stuff in it"
-            )
+            raise ValidationException("Refreshing context that already has stuff in it")
 
         self.url_fields = set(("$schemas",))
         self.scoped_ref_fields = {}
@@ -718,7 +717,7 @@ class Loader(object):
                     # If the base document is in the index, it was already loaded,
                     # so if we didn't find the reference earlier then it must not
                     # exist.
-                    raise validate.ValidationException(
+                    raise ValidationException(
                         u"Reference `#{}` not found in file `{}`.".format(frg, doc_url)
                     )
                 doc = self.fetch(doc_url, inject_ids=(not mixin))
@@ -800,7 +799,7 @@ class Loader(object):
                                 )
                                 v.lc.filename = document.lc.filename
                             else:
-                                raise validate.ValidationException(
+                                raise ValidationException(
                                     "mapSubject '{}' value '{}' is not a dict "
                                     "and does not have a mapPredicate.".format(k, v)
                                 )
@@ -953,7 +952,7 @@ class Loader(object):
                         loader.idx[document[identifer]] = document
                     base_url = document[identifer]
                 else:
-                    raise validate.ValidationException(
+                    raise ValidationException(
                         "identifier field '{}' must be a string".format(
                             document[identifer]
                         )
@@ -1110,10 +1109,10 @@ class Loader(object):
                     document[key], _ = loader.resolve_all(
                         val, base_url + subscope, file_base=file_base, checklinks=False
                     )
-            except validate.ValidationException as v:
+            except ValidationException as v:
                 _logger.warning("loader is %s", id(loader), exc_info=True)
                 raise_from(
-                    validate.ValidationException(
+                    ValidationException(
                         "({}) ({}) Validation error in field {}:\n{}".format(
                             id(loader), file_base, key, indent(Text(v))
                         )
@@ -1156,10 +1155,10 @@ class Loader(object):
                             val, base_url, file_base=file_base, checklinks=False
                         )
                         i += 1
-            except validate.ValidationException as v:
+            except ValidationException as v:
                 _logger.warning("failed", exc_info=True)
                 raise_from(
-                    validate.ValidationException(
+                    ValidationException(
                         "({}) ({}) Validation error in position {}:\n{}".format(
                             id(loader), file_base, i, indent(Text(v))
                         )
@@ -1198,7 +1197,7 @@ class Loader(object):
                     i += 1
             add_lc_filename(result, url)
         except yaml.parser.ParserError as e:
-            raise_from(validate.ValidationException("Syntax error {}".format(e)), e)
+            raise_from(ValidationException("Syntax error {}".format(e)), e)
         if isinstance(result, CommentedMap) and inject_ids and bool(self.identifiers):
             for identifier in self.identifiers:
                 if identifier not in result:
@@ -1234,7 +1233,7 @@ class Loader(object):
             sp.pop()
         if onWindows() and link.startswith("file:"):
             link = link.lower()
-        raise validate.ValidationException(
+        raise ValidationException(
             "Field `{}` references unknown identifier `{}`, tried {}".format(
                 field, link, ", ".join(tried)
             )
@@ -1254,7 +1253,7 @@ class Loader(object):
                     if field in self.scoped_ref_fields:
                         return self.validate_scoped(field, link, docid)
                     elif not self.check_exists(link):
-                        raise validate.ValidationException(
+                        raise ValidationException(
                             "Field `{}` contains undefined reference to `{}`".format(
                                 field, link
                             )
@@ -1263,7 +1262,7 @@ class Loader(object):
                 if field in self.scoped_ref_fields:
                     return self.validate_scoped(field, link, docid)
                 elif not self.check_exists(link):
-                    raise validate.ValidationException(
+                    raise ValidationException(
                         "Field `{}` contains undefined reference to `{}`".format(
                             field, link
                         )
@@ -1273,14 +1272,14 @@ class Loader(object):
             for n, i in enumerate(link):
                 try:
                     link[n] = self.validate_link(field, i, docid, all_doc_ids)
-                except validate.ValidationException as v:
+                except ValidationException as v:
                     errors.append(v)
             if bool(errors):
-                raise validate.ValidationException("\n".join([Text(e) for e in errors]))
+                raise ValidationException("\n".join([Text(e) for e in errors]))
         elif isinstance(link, CommentedMap):
             self.validate_links(link, docid, all_doc_ids)
         else:
-            raise validate.ValidationException(
+            raise ValidationException(
                 "`{}` field is {}, expected string, list, or a dict.".format(
                     field, type(link).__name__
                 )
@@ -1319,7 +1318,7 @@ class Loader(object):
                         document[d] = self.validate_link(
                             d, document[d], docid, all_doc_ids
                         )
-                except (validate.ValidationException, ValueError) as v:
+                except (ValidationException, ValueError) as v:
                     if d == "$schemas" or (
                         d in self.foreign_properties and not strict_foreign_properties
                     ):
@@ -1330,7 +1329,7 @@ class Loader(object):
             # duplicated keys are prohibited.
             # See also https://github.com/common-workflow-language/common-workflow-language/issues/734  # noqa: B950
             # In the future, it should raise
-            # validate.ValidationException instead of _logger.warn
+            # ValidationException instead of _logger.warn
             try:
                 for (
                     identifier
@@ -1350,7 +1349,7 @@ class Loader(object):
                         else:
                             all_doc_ids[document[identifier]] = sl.makeLead()
                             break
-            except validate.ValidationException as v:
+            except ValidationException as v:
                 errors.append(sl.makeError(Text(v)))
 
             if hasattr(document, "iteritems"):
@@ -1369,7 +1368,7 @@ class Loader(object):
                     all_doc_ids,
                     strict_foreign_properties=strict_foreign_properties,
                 )
-            except validate.ValidationException as v:
+            except ValidationException as v:
                 if key in self.nolinkcheck or (
                     isinstance(key, string_types) and ":" in key
                 ):
@@ -1401,9 +1400,9 @@ class Loader(object):
                             )
         if bool(errors):
             if len(errors) > 1:
-                raise validate.ValidationException(u"\n".join(errors))
+                raise ValidationException(u"\n".join(errors))
             else:
-                raise validate.ValidationException(errors[0])
+                raise ValidationException(errors[0])
         return
 
 

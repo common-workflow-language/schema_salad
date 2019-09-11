@@ -32,6 +32,8 @@ A schema may be one of:
 """
 from typing import Any, Dict, List, Optional, Text, Tuple, Union, cast
 
+from schema_salad.exceptions import ValidationException
+
 import six
 
 #
@@ -63,7 +65,7 @@ VALID_FIELD_SORT_ORDERS = ("ascending", "descending", "ignore")
 #
 
 
-class AvroException(Exception):
+class AvroException(ValidationException):
     pass
 
 

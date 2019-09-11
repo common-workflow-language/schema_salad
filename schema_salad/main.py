@@ -18,6 +18,7 @@ from ruamel.yaml.comments import CommentedSeq
 
 from . import codegen, jsonld_context, schema, validate
 from .avro.schema import SchemaParseException
+from .exceptions import ValidationException
 from .makedoc import makedoc
 from .ref_resolver import Loader, file_uri
 from .sourceline import (
@@ -206,7 +207,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
         schema_doc, schema_metadata = metaschema_loader.resolve_all(
             schema_raw_doc, schema_uri
         )
-    except (validate.ValidationException) as e:
+    except ValidationException as e:
         _logger.error(
             "Schema `%s` failed link checking:\n%s",
             args.schema,
@@ -243,7 +244,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
         schema.validate_doc(
             metaschema_names, schema_doc, metaschema_loader, args.strict
         )
-    except validate.ValidationException as e:
+    except ValidationException as e:
         _logger.error("While validating schema `%s`:\n%s", args.schema, Text(e))
         return 1
 
@@ -329,7 +330,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
         document, doc_metadata = document_loader.resolve_ref(
             uri, strict_foreign_properties=args.strict_foreign_properties
         )
-    except validate.ValidationException as e:
+    except ValidationException as e:
         msg = strip_dup_lineno(six.text_type(e))
         msg = to_one_line_messages(str(msg)) if args.print_oneline else msg
         _logger.error(
@@ -369,7 +370,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
             args.strict,
             strict_foreign_properties=args.strict_foreign_properties,
         )
-    except validate.ValidationException as e:
+    except ValidationException as e:
         msg = to_one_line_messages(str(e)) if args.print_oneline else str(e)
         _logger.error("While validating document `%s`:\n%s" % (args.document, msg))
         return 1

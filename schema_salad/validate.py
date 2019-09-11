@@ -17,6 +17,7 @@ from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import avro
+from .exceptions import ClassValidationException, ValidationException
 from .avro import schema  # noqa: F401
 from .avro.schema import (  # pylint: disable=unused-import, no-name-in-module, import-error
     Schema,
@@ -27,14 +28,6 @@ from .sourceline import SourceLine, bullets, indent, strip_dup_lineno
 
 
 _logger = logging.getLogger("salad")
-
-
-class ValidationException(Exception):
-    pass
-
-
-class ClassValidationException(ValidationException):
-    pass
 
 
 def validate(
