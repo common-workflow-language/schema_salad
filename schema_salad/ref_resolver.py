@@ -1048,7 +1048,7 @@ class Loader(object):
         elif isinstance(document, CommentedSeq):
             pass
         elif isinstance(document, (list, dict)):
-            raise Exception(
+            raise ValidationException(
                 "Expected CommentedMap or CommentedSeq, got {}: `{}`".format(
                     type(document), document
                 )

@@ -597,7 +597,7 @@ def extend_and_specialize(items, loader):
             exsym = []  # type: List[Text]
             for ex in aslist(stype["extends"]):
                 if ex not in types:
-                    raise Exception(
+                    raise ValidationException(
                         "Extends {} in {} refers to invalid base type.".format(
                             stype["extends"], stype["name"]
                         )

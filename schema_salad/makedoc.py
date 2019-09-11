@@ -339,7 +339,7 @@ class RenderType(object):
             if frg != "":
                 tp = frg
             return """<a href="{}">{}</a>""".format(to_id(tp), tp)
-        raise Exception("We should not be here!")
+        raise SchemaSaladException("We should not be here!")
 
     def render_type(self, f, depth):  # type: (Dict[Text, Any], int) -> None
         if f["name"] in self.rendered or f["name"] in self.redirects:

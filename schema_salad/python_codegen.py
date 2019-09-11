@@ -7,6 +7,7 @@ from six.moves import cStringIO
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import schema
+from .exceptions import SchemaException
 from .codegen_base import CodeGenBase, TypeDef
 from .schema import shortname
 
@@ -305,7 +306,7 @@ class PythonCodeGen(CodeGenBase):
                         ),
                     )
                 )
-            raise Exception("wft {}".format(type_declaration["type"]))
+            raise SchemaException("wft {}".format(type_declaration["type"]))
         if type_declaration in self.prims:
             return self.prims[type_declaration]
         return self.collected_types[self.safe_name(type_declaration) + "Loader"]

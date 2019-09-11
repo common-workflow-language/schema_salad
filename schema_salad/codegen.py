@@ -31,7 +31,9 @@ def codegen(
     elif lang == "java":
         gen = JavaCodeGen(schema_metadata.get("$base", schema_metadata.get("id")))
     else:
-        raise Exception("Unsupported code generation language '{}'".format(lang))
+        raise SchemaSaladException(
+            "Unsupported code generation language '{}'".format(lang)
+        )
     assert gen is not None
 
     gen.prologue()
