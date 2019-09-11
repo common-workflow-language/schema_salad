@@ -37,7 +37,6 @@ from typing_extensions import Text  # pylint: disable=unused-import
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
 
-from . import validate
 from .exceptions import ValidationException
 from .sourceline import SourceLine, add_lc_filename, indent, relname, strip_dup_lineno
 from .utils import aslist, onWindows

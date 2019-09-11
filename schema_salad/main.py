@@ -16,7 +16,7 @@ from typing_extensions import Text  # pylint: disable=unused-import
 
 from ruamel.yaml.comments import CommentedSeq
 
-from . import codegen, jsonld_context, schema, validate
+from . import codegen, jsonld_context, schema
 from .avro.schema import SchemaParseException
 from .exceptions import ValidationException
 from .makedoc import makedoc

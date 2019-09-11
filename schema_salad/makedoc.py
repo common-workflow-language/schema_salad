@@ -30,6 +30,7 @@ from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import schema
+from .exceptions import SchemaSaladException
 from .utils import add_dictlist, aslist
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported

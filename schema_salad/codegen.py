@@ -6,6 +6,7 @@ from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import schema
 from .codegen_base import CodeGenBase
+from .exceptions import SchemaSaladException
 from .java_codegen import JavaCodeGen
 from .python_codegen import PythonCodeGen
 from .ref_resolver import Loader  # pylint: disable=unused-import
