@@ -238,17 +238,18 @@ class RenderType(object):
                         for tp in p:
                             if tp not in self.uses:
                                 self.uses[tp] = []
-                            if (t["name"], f["name"]) not in self.uses[tp]:
+                            if (entry["name"], f["name"]) not in self.uses[tp]:
                                 _, frg1 = urllib.parse.urldefrag(t["name"])
                                 _, frg2 = urllib.parse.urldefrag(f["name"])
                                 self.uses[tp].append((frg1, frg2))
                             if (
                                 tp not in basicTypes
-                                and tp not in self.record_refs[t["name"]]
+                                and tp not in self.record_refs[entry["name"]]
                             ):
-                                self.record_refs[t["name"]].append(tp)
+                                self.record_refs[entry["name"]].append(tp)
             except KeyError:
                 _logger.error("Did not find 'type' in %s", t)
+                _logger.error("record refs is %s", self.record_refs)
                 raise
 
         for entry in alltypes:
