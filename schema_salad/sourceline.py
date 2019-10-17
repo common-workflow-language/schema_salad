@@ -321,7 +321,7 @@ class SourceLine(object):
             return (self.item.lc.data[self.key][1] or 0) + 1
 
     def makeLead(self):  # type: () -> Text
-        return "{}:{}:{}".format(self.file(), self.line(), self.column())
+        return "{}:{}:{}:".format(self.file(), self.line(), self.column())
 
     def makeError(self, msg):  # type: (Text) -> Any
         if not isinstance(self.item, ruamel.yaml.comments.CommentedBase):
