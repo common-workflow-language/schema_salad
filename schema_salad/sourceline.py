@@ -297,23 +297,31 @@ class SourceLine(object):
         else:
             raise_from(self.makeError(six.text_type(exc_value)), exc_value)
 
-    def makeLead(self):  # type: () -> Text
+    def file(self):  # type: () -> Text
+        return Text(self.item.lc.filename) if hasattr(self.item.lc, "filename") else ""
+
+    def line(self):  # type: () -> int
         if (
             self.key is None
             or self.item.lc.data is None
             or self.key not in self.item.lc.data
         ):
-            return "{}:{}:{}:".format(
-                self.item.lc.filename if hasattr(self.item.lc, "filename") else "",
-                (self.item.lc.line or 0) + 1,
-                (self.item.lc.col or 0) + 1,
-            )
+            return (self.item.lc.line or 0) + 1
         else:
-            return "{}:{}:{}:".format(
-                self.item.lc.filename if hasattr(self.item.lc, "filename") else "",
-                (self.item.lc.data[self.key][0] or 0) + 1,
-                (self.item.lc.data[self.key][1] or 0) + 1,
-            )
+            return (self.item.lc.data[self.key][0] or 0) + 1
+
+    def column(self):  # type: () -> int
+        if (
+            self.key is None
+            or self.item.lc.data is None
+            or self.key not in self.item.lc.data
+        ):
+            return (self.item.lc.col or 0) + 1
+        else:
+            return (self.item.lc.data[self.key][1] or 0) + 1
+
+    def makeLead(self):  # type: () -> Text
+        return "{}:{}:{}:".format(self.file(), self.line(), self.column())
 
     def makeError(self, msg):  # type: (Text) -> Any
         if not isinstance(self.item, ruamel.yaml.comments.CommentedBase):
