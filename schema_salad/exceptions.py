@@ -46,13 +46,12 @@ class SchemaSaladException(Exception):
         ret = ""
         next_level = level+1
         spaces = (level*indent_per_level)*" "
-        print("MSG: `{}`, level: {}, #spaces: {}".format(self.message, level, (level*indent_per_level)))
         if len(self.message):
             if self.file:
-                ret = "{}:{}:{}:{}{} {}".format(self.file, self.start[0], self.start[1],
-                                                spaces, bullet, self.message)
+                ret = "{}:{}:{}: {}{}{}".format(self.file, self.start[0], self.start[1],
+                                                spaces, bullet+" " if len(bullet) else "", self.message)
             else:
-                ret = "{}{} {}".format(spaces, bullet, self.message)
+                ret = "{}{}{}".format(spaces, bullet+" " if len(bullet) else "", self.message)
         else:
             next_level = level
 
