@@ -1112,9 +1112,9 @@ class Loader(object):
                 _logger.warning("loader is %s", id(loader), exc_info=True)
                 raise_from(
                     ValidationException(
-                        "({}) ({}) Validation error in field {}:\n{}".format(
-                            id(loader), file_base, key, indent(Text(v))
-                        )
+                        "({}) ({}) Validation error in field {}:".format(
+                            id(loader), file_base, key),
+                        None, [v]
                     ),
                     v,
                 )
@@ -1158,9 +1158,9 @@ class Loader(object):
                 _logger.warning("failed", exc_info=True)
                 raise_from(
                     ValidationException(
-                        "({}) ({}) Validation error in position {}:\n{}".format(
-                            id(loader), file_base, i, indent(Text(v))
-                        )
+                        "({}) ({}) Validation error in position {}:".format(
+                            id(loader), file_base, i
+                        ), None, [v]
                     ),
                     v,
                 )
@@ -1274,7 +1274,7 @@ class Loader(object):
                 except ValidationException as v:
                     errors.append(v)
             if bool(errors):
-                raise ValidationException("\n".join([Text(e) for e in errors]))
+                raise ValidationException("", None, errors)
         elif isinstance(link, CommentedMap):
             self.validate_links(link, docid, all_doc_ids)
         else:
@@ -1321,9 +1321,9 @@ class Loader(object):
                     if d == "$schemas" or (
                         d in self.foreign_properties and not strict_foreign_properties
                     ):
-                        _logger.warning(strip_dup_lineno(sl.makeError(Text(v))))
+                        _logger.warning(v.with_sourceline(sl).pretty_str())
                     else:
-                        errors.append(sl.makeError(Text(v)))
+                        errors.append(v.with_sourceline(sl))
             # TODO: Validator should local scope only in which
             # duplicated keys are prohibited.
             # See also https://github.com/common-workflow-language/common-workflow-language/issues/734  # noqa: B950
@@ -1349,7 +1349,7 @@ class Loader(object):
                             all_doc_ids[document[identifier]] = sl.makeLead()
                             break
             except ValidationException as v:
-                errors.append(sl.makeError(Text(v)))
+                errors.append(v.with_sourceline(sl))
 
             if hasattr(document, "iteritems"):
                 iterator = iteritems(document)
@@ -1371,37 +1371,23 @@ class Loader(object):
                 if key in self.nolinkcheck or (
                     isinstance(key, string_types) and ":" in key
                 ):
-                    _logger.warning(indent(Text(v)))
+                    _logger.warning(v.pretty_str())
                 else:
                     docid2 = self.getid(val)
                     if docid2 is not None:
-                        errors.append(
-                            sl.makeError(
-                                "checking object `{}`\n{}".format(
-                                    relname(docid2), indent(Text(v))
-                                )
-                            )
-                        )
+                        errors.append(ValidationException("checking object `{}`".format(relname(docid2)),
+                                                          sl, [v]))
                     else:
                         if isinstance(key, string_types):
-                            errors.append(
-                                sl.makeError(
-                                    "checking field `{}`\n{}".format(
-                                        key, indent(Text(v))
-                                    )
-                                )
-                            )
+                            errors.append(ValidationException("checking field `{}`".format(key),
+                                                              sl, [v]))
                         else:
-                            errors.append(
-                                sl.makeError(
-                                    "checking item\n{}".format(indent(Text(v)))
-                                )
-                            )
+                            errors.append(ValidationException("checking item", sl, [v]))
         if bool(errors):
             if len(errors) > 1:
-                raise ValidationException(u"\n".join(errors))
+                raise ValidationException("", None, errors)
             else:
-                raise ValidationException(errors[0])
+                raise errors[0]
         return
 
 

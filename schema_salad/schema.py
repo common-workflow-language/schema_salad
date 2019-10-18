@@ -376,32 +376,38 @@ def validate_doc(
                     )
                 except ClassValidationException as exc:
                     errors = [
-                        sourceline.makeError(
-                            u"tried `{}` but\n{}".format(
-                                name, indent(str(exc), nolead=False)
-                            )
-                        )
+                        ClassValidationException("tried `{}` but".format(name), sourceline, [exc])
+                        # sourceline.makeError(
+                        #     u"tried `{}` but\n{}".format(
+                        #         name, indent(str(exc), nolead=False)
+                        #     )
+                        # )
                     ]
                     break
                 except ValidationException as exc:
                     errors.append(
-                        sourceline.makeError(
-                            u"tried `{}` but\n{}".format(
-                                name, indent(str(exc), nolead=False)
-                            )
-                        )
+                        ValidationException("tried `{}` but".format(name), sourceline, [exc])
+                        # sourceline.makeError(
+                        #     u"tried `{}` but\n{}".format(
+                        #         name, indent(str(exc), nolead=False)
+                        #     )
+                        # )
                     )
 
-            objerr = sourceline.makeError(u"Invalid")
+            # objerr = sourceline.makeError(u"Invalid")
+            objerr = u"Invalid"
             for ident in loader.identifiers:
                 if ident in item:
-                    objerr = sourceline.makeError(
-                        u"Object `{}` is not valid because".format(relname(item[ident]))
-                    )
+                    objerr = u"Object `{}` is not valid because".format(relname(item[ident]))
+                    # objerr = sourceline.makeError(
+                    #     u"Object `{}` is not valid because".format(relname(item[ident]))
+                    # )
                     break
-            anyerrors.append(u"{}\n{}".format(objerr, indent(bullets(errors, "- "))))
+            anyerrors.append(ValidationException(objerr, sourceline, errors, "-"))
+            # anyerrors.append(u"{}\n{}".format(objerr, indent(bullets(errors, "- "))))
     if anyerrors:
-        raise ValidationException(strip_dup_lineno(bullets(anyerrors, "* ")))
+        raise ValidationException("", None, anyerrors, "*")
+        # raise ValidationException(strip_dup_lineno(bullets(anyerrors, "* ")))
 
 
 def get_anon_name(rec):
