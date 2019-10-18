@@ -1,3 +1,5 @@
+from .sourceline import strip_dup_lineno
+
 class SchemaSaladException(Exception):
     """Base class for all schema-salad exceptions."""
 
@@ -54,7 +56,11 @@ class SchemaSaladException(Exception):
         else:
             next_level = level
 
-        return "\n".join((e for e in [ret, *[c.pretty_str(next_level, self.bullet) for c in self.children]] if len(e)))
+        ret = "\n".join((e for e in [ret, *[c.pretty_str(next_level, self.bullet) for c in self.children]] if len(e)))
+        if level == 0:
+            return strip_dup_lineno(ret)
+        else:
+            return ret
 
 
 class SchemaException(SchemaSaladException):
