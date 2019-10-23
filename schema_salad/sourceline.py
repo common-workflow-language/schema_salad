@@ -136,6 +136,28 @@ def add_lc_filename(
     _add_lc_filename(r, relname(source))
 
 
+def reflow_all(text, maxline = None):
+    if maxline is None:
+        maxline = int(os.environ.get("COLUMNS", "100"))
+    maxno = 0
+    for l in text.splitlines():
+        g = lineno_re.match(l)
+        if not g:
+            continue
+        maxno = max(maxno, len(g.group(1)))
+    maxno_text = maxline-maxno
+    msg = []
+    for l in text.splitlines():
+        g = lineno_re.match(l)
+        if not g:
+            msg.append(l)
+            continue
+        pre = g.group(1)
+        reflowed = reflow(g.group(2), maxno_text, g.group(3)).splitlines()
+        msg.extend([pre.ljust(maxno, ' ')+r for r in reflowed])
+    return "\n".join(msg)
+
+
 def reflow(text, maxline, shift=""):  # type: (Text, int, Text) -> Text
     if maxline < 20:
         maxline = 20
@@ -174,6 +196,23 @@ def bullets(textlist, bul):  # type: (List[Text], Text) -> Text
         return textlist[0]
     else:
         return "\n".join(indent(t, bullet=bul) for t in textlist)
+
+
+def strip_duplicated_lineno(text):
+    """Same as `strip_dup_lineno` but without reflow"""
+    pre = None
+    msg = []
+    for l in text.splitlines():
+        g = lineno_re.match(l)
+        if not g:
+            msg.append(l)
+            continue
+        elif g.group(1) != pre:
+            msg.append(l)
+            pre = g.group(1)
+        else:
+            msg.append(' '*len(g.group(1))+g.group(2))
+    return "\n".join(msg)
 
 
 def strip_dup_lineno(text, maxline=None):  # type: (Text, Optional[int]) -> Text
