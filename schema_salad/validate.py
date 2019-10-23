@@ -17,7 +17,11 @@ from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import avro
-from .exceptions import ClassValidationException, ValidationException, SchemaSaladException
+from .exceptions import (
+    ClassValidationException,
+    ValidationException,
+    SchemaSaladException,
+)
 from .avro import schema  # noqa: F401
 from .avro.schema import (  # pylint: disable=unused-import, no-name-in-module, import-error
     Schema,
@@ -293,10 +297,15 @@ def validate_ex(
                 errors.append(e)
                 # errors.append(six.text_type(e))
         if bool(errors):
-            raise ValidationException("", None,
-                                      [ValidationException("tried {} but".format(friendly(c)),
-                                                           None, [e]) for (c, e) in zip(checked, errors)],
-                                      "-")
+            raise ValidationException(
+                "",
+                None,
+                [
+                    ValidationException("tried {} but".format(friendly(c)), None, [e])
+                    for (c, e) in zip(checked, errors)
+                ],
+                "-",
+            )
             #     bullets(
             #         [
             #             "tried {} but\n{}".format(
@@ -371,10 +380,18 @@ def validate_ex(
                     return False
             except ValidationException as v:
                 if f.name not in datum:
-                    errors.append(ValidationException(u"missing required field `{}`".format(f.name)))
+                    errors.append(
+                        ValidationException(
+                            u"missing required field `{}`".format(f.name)
+                        )
+                    )
                 else:
-                    errors.append(ValidationException(u"the `{}` field is not valid because".format(f.name),
-                                                      sl, [v])
+                    errors.append(
+                        ValidationException(
+                            u"the `{}` field is not valid because".format(f.name),
+                            sl,
+                            [v],
+                        )
                         # sl.makeError(
                         #     u"the `{}` field is not valid because\n{}".format(
                         #         f.name, indent(str(v))
@@ -426,7 +443,9 @@ def validate_ex(
                                     )
                                     if len(foreign_properties) > 0
                                     else "",
-                                ), sl)
+                                ),
+                                sl,
+                            )
                             # err = sl.makeError(
                             #     u"unrecognized extension field `{}`{}.{}".format(
                             #         d,
@@ -452,7 +471,9 @@ def validate_ex(
                                     "'{}'".format(fn.name)
                                     for fn in expected_schema.fields
                                 ),
-                            ), sl)
+                            ),
+                            sl,
+                        )
                         # err = sl.makeError(
                         #     u"invalid field `{}`, expected one of: {}".format(
                         #         d,

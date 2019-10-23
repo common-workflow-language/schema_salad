@@ -136,7 +136,7 @@ def add_lc_filename(
     _add_lc_filename(r, relname(source))
 
 
-def reflow_all(text, maxline = None):  # type: (Text, Optional[int]) -> Text
+def reflow_all(text, maxline=None):  # type: (Text, Optional[int]) -> Text
     if maxline is None:
         maxline = int(os.environ.get("COLUMNS", "100"))
     maxno = 0
@@ -145,7 +145,7 @@ def reflow_all(text, maxline = None):  # type: (Text, Optional[int]) -> Text
         if not g:
             continue
         maxno = max(maxno, len(g.group(1)))
-    maxno_text = maxline-maxno
+    maxno_text = maxline - maxno
     msg = []
     for l in text.splitlines():
         g = lineno_re.match(l)
@@ -154,7 +154,7 @@ def reflow_all(text, maxline = None):  # type: (Text, Optional[int]) -> Text
             continue
         pre = g.group(1)
         reflowed = reflow(g.group(2), maxno_text, g.group(3)).splitlines()
-        msg.extend([pre.ljust(maxno, ' ')+r for r in reflowed])
+        msg.extend([pre.ljust(maxno, " ") + r for r in reflowed])
     return "\n".join(msg)
 
 
@@ -211,7 +211,7 @@ def strip_duplicated_lineno(text):  # type: (Text) -> Text
             msg.append(l)
             pre = g.group(1)
         else:
-            msg.append(' '*len(g.group(1))+g.group(2))
+            msg.append(" " * len(g.group(1)) + g.group(2))
     return "\n".join(msg)
 
 

@@ -36,7 +36,11 @@ from schema_salad.utils import (
 )
 
 from . import _logger, jsonld_context, ref_resolver, validate
-from .exceptions import ClassValidationException, ValidationException, SchemaSaladException
+from .exceptions import (
+    ClassValidationException,
+    ValidationException,
+    SchemaSaladException,
+)
 from .avro.schema import Names, SchemaParseException, make_avsc_object
 from .ref_resolver import Loader
 from .sourceline import (
@@ -376,7 +380,9 @@ def validate_doc(
                     )
                 except ClassValidationException as exc:
                     errors = [
-                        ClassValidationException("tried `{}` but".format(name), sourceline, [exc])
+                        ClassValidationException(
+                            "tried `{}` but".format(name), sourceline, [exc]
+                        )
                         # sourceline.makeError(
                         #     u"tried `{}` but\n{}".format(
                         #         name, indent(str(exc), nolead=False)
@@ -386,7 +392,9 @@ def validate_doc(
                     break
                 except ValidationException as exc:
                     errors.append(
-                        ValidationException("tried `{}` but".format(name), sourceline, [exc])
+                        ValidationException(
+                            "tried `{}` but".format(name), sourceline, [exc]
+                        )
                         # sourceline.makeError(
                         #     u"tried `{}` but\n{}".format(
                         #         name, indent(str(exc), nolead=False)
@@ -398,7 +406,9 @@ def validate_doc(
             objerr = u"Invalid"
             for ident in loader.identifiers:
                 if ident in item:
-                    objerr = u"Object `{}` is not valid because".format(relname(item[ident]))
+                    objerr = u"Object `{}` is not valid because".format(
+                        relname(item[ident])
+                    )
                     # objerr = sourceline.makeError(
                     #     u"Object `{}` is not valid because".format(relname(item[ident]))
                     # )

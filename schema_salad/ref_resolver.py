@@ -1113,8 +1113,10 @@ class Loader(object):
                 raise_from(
                     ValidationException(
                         "({}) ({}) Validation error in field {}:".format(
-                            id(loader), file_base, key),
-                        None, [v]
+                            id(loader), file_base, key
+                        ),
+                        None,
+                        [v],
                     ),
                     v,
                 )
@@ -1160,7 +1162,9 @@ class Loader(object):
                     ValidationException(
                         "({}) ({}) Validation error in position {}:".format(
                             id(loader), file_base, i
-                        ), None, [v]
+                        ),
+                        None,
+                        [v],
                     ),
                     v,
                 )
@@ -1318,7 +1322,11 @@ class Loader(object):
                             d, document[d], docid, all_doc_ids
                         )
                 except (ValidationException, ValueError) as v_:
-                    v = ValidationException(str(v_), sl) if isinstance(v_, ValueError) else v_.with_sourceline(sl)
+                    v = (
+                        ValidationException(str(v_), sl)
+                        if isinstance(v_, ValueError)
+                        else v_.with_sourceline(sl)
+                    )
                     if d == "$schemas" or (
                         d in self.foreign_properties and not strict_foreign_properties
                     ):
@@ -1376,12 +1384,18 @@ class Loader(object):
                 else:
                     docid2 = self.getid(val)
                     if docid2 is not None:
-                        errors.append(ValidationException("checking object `{}`".format(relname(docid2)),
-                                                          sl, [v]))
+                        errors.append(
+                            ValidationException(
+                                "checking object `{}`".format(relname(docid2)), sl, [v]
+                            )
+                        )
                     else:
                         if isinstance(key, string_types):
-                            errors.append(ValidationException("checking field `{}`".format(key),
-                                                              sl, [v]))
+                            errors.append(
+                                ValidationException(
+                                    "checking field `{}`".format(key), sl, [v]
+                                )
+                            )
                         else:
                             errors.append(ValidationException("checking item", sl, [v]))
         if bool(errors):
