@@ -1,4 +1,4 @@
-from typing import Any, List, Sequence, Optional, Tuple
+from typing import Any, Sequence, Optional, Tuple
 from typing_extensions import Text
 from .sourceline import reflow_all, strip_duplicated_lineno, SourceLine
 
@@ -7,11 +7,15 @@ class SchemaSaladException(Exception):
     """Base class for all schema-salad exceptions."""
 
     def __init__(
-        self, msg, sl=None, children=[], bullet=""
-    ):  # type: (Text, Optional[SourceLine], Sequence[SchemaSaladException], Text) -> None
+        self,
+        msg,  # type: Text
+        sl=None,  # type: Optional[SourceLine]
+        children=None,  # type: Optional[Sequence[SchemaSaladException]]
+        bullet="",  # type: Text
+    ):  # type: (...) -> None
         super(SchemaSaladException, self).__init__(msg)
-        self.children = children
-        self.bullet = bullet if len(children) > 1 else ""
+        self.children = children if children else []
+        self.bullet = bullet if len(self.children) > 1 else ""
         self.with_sourceline(sl)
         self.message = self.args[0]
         self.propagate_sourceline()

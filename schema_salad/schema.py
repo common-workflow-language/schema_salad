@@ -43,14 +43,7 @@ from .exceptions import (
 )
 from .avro.schema import Names, SchemaParseException, make_avsc_object
 from .ref_resolver import Loader
-from .sourceline import (
-    SourceLine,
-    add_lc_filename,
-    bullets,
-    indent,
-    relname,
-    strip_dup_lineno,
-)
+from .sourceline import SourceLine, add_lc_filename, relname, strip_dup_lineno
 
 SALAD_FILES = (
     "metaschema.yml",

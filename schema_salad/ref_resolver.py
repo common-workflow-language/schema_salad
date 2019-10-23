@@ -38,7 +38,7 @@ from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
 
 from .exceptions import ValidationException, SchemaSaladException
-from .sourceline import SourceLine, add_lc_filename, indent, relname, strip_dup_lineno
+from .sourceline import SourceLine, add_lc_filename, relname
 from .utils import aslist, onWindows
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
