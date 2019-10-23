@@ -503,7 +503,7 @@ def _document_load(loader, doc, baseuri, loadingOptions):
     if isinstance(doc, MutableSequence):
         return loader.load(doc, baseuri, loadingOptions)
 
-    raise ValidationException()
+    raise ValidationException("Oops, we shouldn't be here!")
 
 
 def _document_load_by_url(loader, url, loadingOptions):
