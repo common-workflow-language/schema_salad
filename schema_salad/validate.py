@@ -301,8 +301,10 @@ def validate_ex(
                 "",
                 None,
                 [
-                    ValidationException("tried {} but".format(friendly(c)), None, [e])
-                    for (c, e) in zip(checked, errors)
+                    ValidationException(
+                        "tried {} but".format(friendly(check)), None, [err]
+                    )
+                    for (check, err) in zip(checked, errors)
                 ],
                 "-",
             )
