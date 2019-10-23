@@ -1318,12 +1318,16 @@ class Loader(object):
                             d, document[d], docid, all_doc_ids
                         )
                 except (ValidationException, ValueError) as v:
+                    if isinstance(v, ValueError):
+                        v = ValidationException(str(v), sl)
+                    else:
+                        v = v.with_sourceline(sl)
                     if d == "$schemas" or (
                         d in self.foreign_properties and not strict_foreign_properties
                     ):
-                        _logger.warning(v.with_sourceline(sl).pretty_str())
+                        _logger.warning(v.pretty_str())
                     else:
-                        errors.append(v.with_sourceline(sl))
+                        errors.append(v)
             # TODO: Validator should local scope only in which
             # duplicated keys are prohibited.
             # See also https://github.com/common-workflow-language/common-workflow-language/issues/734  # noqa: B950
