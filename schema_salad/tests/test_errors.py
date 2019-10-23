@@ -149,8 +149,8 @@ def test_error_message7():
 \s+tried array\s+of\s+<WorkflowStep>\s+but
 .+test7\.cwl:8:3:         item is\s+invalid because
 \s+\* missing\s+required\s+field `run`
-.+test7\.cwl:9:5:           \* invalid\s+field\s+`scatter_method`,\s+expected one """
-        + r"""of:\s+'id', 'in', 'out',\s+'requirements',\s+'hints', """
+.+test7\.cwl:9:5:           \* invalid\s+field\s+`scatter_method`,\s+expected\s+one """
+        + r"""of:\s+'id', 'in', 'out',\s+'requirements',\s+'hints',\s+"""
         + r"""'label',\s+'doc',\s+'run',\s+'scatter',\s+'scatterMethod'$"""
     )
     with pytest.raises(ValidationException, match=match):
