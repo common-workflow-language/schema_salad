@@ -17,7 +17,7 @@ from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import avro
-from .exceptions import ClassValidationException, ValidationException
+from .exceptions import ClassValidationException, ValidationException, SchemaSaladException
 from .avro import schema  # noqa: F401
 from .avro.schema import (  # pylint: disable=unused-import, no-name-in-module, import-error
     Schema,
@@ -256,7 +256,7 @@ def validate_ex(
         if not raise_ex:
             return False
 
-        errors = []  # type: List[Text]
+        errors = []  # type: List[SchemaSaladException]
         checked = []
         for s in expected_schema.schemas:
             if isinstance(datum, MutableSequence) and not isinstance(

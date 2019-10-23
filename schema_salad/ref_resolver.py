@@ -37,7 +37,7 @@ from typing_extensions import Text  # pylint: disable=unused-import
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
 
-from .exceptions import ValidationException
+from .exceptions import ValidationException, SchemaSaladException
 from .sourceline import SourceLine, add_lc_filename, indent, relname, strip_dup_lineno
 from .utils import aslist, onWindows
 
@@ -1305,7 +1305,7 @@ class Loader(object):
         if not docid:
             docid = base_url
 
-        errors = []  # type: List[Text]
+        errors = []  # type: List[SchemaSaladException]
         iterator = None  # type: Any
         if isinstance(document, MutableSequence):
             iterator = enumerate(document)
@@ -1317,11 +1317,8 @@ class Loader(object):
                         document[d] = self.validate_link(
                             d, document[d], docid, all_doc_ids
                         )
-                except (ValidationException, ValueError) as v:
-                    if isinstance(v, ValueError):
-                        v = ValidationException(str(v), sl)
-                    else:
-                        v = v.with_sourceline(sl)
+                except (ValidationException, ValueError) as v_:
+                    v = ValidationException(str(v_), sl) if isinstance(v_, ValueError) else v_.with_sourceline(sl)
                     if d == "$schemas" or (
                         d in self.foreign_properties and not strict_foreign_properties
                     ):

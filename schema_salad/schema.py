@@ -36,7 +36,7 @@ from schema_salad.utils import (
 )
 
 from . import _logger, jsonld_context, ref_resolver, validate
-from .exceptions import ClassValidationException, ValidationException
+from .exceptions import ClassValidationException, ValidationException, SchemaSaladException
 from .avro.schema import Names, SchemaParseException, make_avsc_object
 from .ref_resolver import Loader
 from .sourceline import (
@@ -356,7 +356,7 @@ def validate_doc(
                 break
 
         if not success:
-            errors = []  # type: List[Text]
+            errors = []  # type: List[SchemaSaladException]
             for root in roots:
                 if hasattr(root, "get_prop"):
                     name = root.get_prop(u"name")

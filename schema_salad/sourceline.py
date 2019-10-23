@@ -136,7 +136,7 @@ def add_lc_filename(
     _add_lc_filename(r, relname(source))
 
 
-def reflow_all(text, maxline = None):
+def reflow_all(text, maxline = None):  # type: (Text, Optional[int]) -> Text
     if maxline is None:
         maxline = int(os.environ.get("COLUMNS", "100"))
     maxno = 0
@@ -198,7 +198,7 @@ def bullets(textlist, bul):  # type: (List[Text], Text) -> Text
         return "\n".join(indent(t, bullet=bul) for t in textlist)
 
 
-def strip_duplicated_lineno(text):
+def strip_duplicated_lineno(text):  # type: (Text) -> Text
     """Same as `strip_dup_lineno` but without reflow"""
     pre = None
     msg = []
