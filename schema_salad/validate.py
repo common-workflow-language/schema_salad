@@ -226,11 +226,6 @@ def validate_ex(
                 except ValidationException as v:
                     if raise_ex:
                         raise ValidationException("item is invalid because", sl, [v])
-                        # raise sl.makeError(
-                        #     six.text_type(
-                        #         "item is invalid because\n{}".format(indent(str(v)))
-                        #     )
-                        # )
                     else:
                         return False
             return True
@@ -295,7 +290,6 @@ def validate_ex(
                 raise
             except ValidationException as e:
                 errors.append(e)
-                # errors.append(six.text_type(e))
         if bool(errors):
             raise ValidationException(
                 "",
@@ -308,16 +302,6 @@ def validate_ex(
                 ],
                 "-",
             )
-            #     bullets(
-            #         [
-            #             "tried {} but\n{}".format(
-            #                 friendly(checked[i]), indent(errors[i])
-            #             )
-            #             for i in range(0, len(errors))
-            #         ],
-            #         "- ",
-            #     )
-            # )
         else:
             raise ValidationException(
                 "value is a {}, expected {}".format(
@@ -394,11 +378,6 @@ def validate_ex(
                             sl,
                             [v],
                         )
-                        # sl.makeError(
-                        #     u"the `{}` field is not valid because\n{}".format(
-                        #         f.name, indent(str(v))
-                        #     )
-                        # )
                     )
 
         for d in datum:
@@ -409,12 +388,11 @@ def validate_ex(
             if not found:
                 sl = SourceLine(datum, d, six.text_type)
                 if d is None:
-                    # err = sl.makeError(u"mapping with implicit null key")
                     err = ValidationException(u"mapping with implicit null key", sl)
                     if strict:
                         errors.append(err)
                     else:
-                        logger.warning(err.pretty_str())
+                        logger.warning(err)
                     continue
                 if (
                     d not in identifiers
@@ -448,23 +426,10 @@ def validate_ex(
                                 ),
                                 sl,
                             )
-                            # err = sl.makeError(
-                            #     u"unrecognized extension field `{}`{}.{}".format(
-                            #         d,
-                            #         " and strict_foreign_properties checking is enabled"
-                            #         if strict_foreign_properties
-                            #         else "",
-                            #         "\nForeign properties from $schemas:\n  {}".format(
-                            #             "\n  ".join(sorted(foreign_properties))
-                            #         )
-                            #         if len(foreign_properties) > 0
-                            #         else "",
-                            #     )
-                            # )
                             if strict_foreign_properties:
                                 errors.append(err)
                             elif len(foreign_properties) > 0:
-                                logger.warning(err.pretty_str())
+                                logger.warning(err)
                     else:
                         err = ValidationException(
                             u"invalid field `{}`, expected one of: {}".format(
@@ -476,19 +441,10 @@ def validate_ex(
                             ),
                             sl,
                         )
-                        # err = sl.makeError(
-                        #     u"invalid field `{}`, expected one of: {}".format(
-                        #         d,
-                        #         ", ".join(
-                        #             "'{}'".format(fn.name)
-                        #             for fn in expected_schema.fields
-                        #         ),
-                        #     )
-                        # )
                         if strict:
                             errors.append(err)
                         else:
-                            logger.warning(err.pretty_str())
+                            logger.warning(err)
 
         if bool(errors):
             if raise_ex:

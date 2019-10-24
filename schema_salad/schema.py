@@ -376,11 +376,6 @@ def validate_doc(
                         ClassValidationException(
                             "tried `{}` but".format(name), sourceline, [exc]
                         )
-                        # sourceline.makeError(
-                        #     u"tried `{}` but\n{}".format(
-                        #         name, indent(str(exc), nolead=False)
-                        #     )
-                        # )
                     ]
                     break
                 except ValidationException as exc:
@@ -388,29 +383,18 @@ def validate_doc(
                         ValidationException(
                             "tried `{}` but".format(name), sourceline, [exc]
                         )
-                        # sourceline.makeError(
-                        #     u"tried `{}` but\n{}".format(
-                        #         name, indent(str(exc), nolead=False)
-                        #     )
-                        # )
                     )
 
-            # objerr = sourceline.makeError(u"Invalid")
             objerr = u"Invalid"
             for ident in loader.identifiers:
                 if ident in item:
                     objerr = u"Object `{}` is not valid because".format(
                         relname(item[ident])
                     )
-                    # objerr = sourceline.makeError(
-                    #     u"Object `{}` is not valid because".format(relname(item[ident]))
-                    # )
                     break
             anyerrors.append(ValidationException(objerr, sourceline, errors, "-"))
-            # anyerrors.append(u"{}\n{}".format(objerr, indent(bullets(errors, "- "))))
     if anyerrors:
         raise ValidationException("", None, anyerrors, "*")
-        # raise ValidationException(strip_dup_lineno(bullets(anyerrors, "* ")))
 
 
 def get_anon_name(rec):

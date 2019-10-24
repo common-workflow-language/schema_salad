@@ -1330,7 +1330,7 @@ class Loader(object):
                     if d == "$schemas" or (
                         d in self.foreign_properties and not strict_foreign_properties
                     ):
-                        _logger.warning(v.pretty_str())
+                        _logger.warning(v)
                     else:
                         errors.append(v)
             # TODO: Validator should local scope only in which
@@ -1380,7 +1380,7 @@ class Loader(object):
                 if key in self.nolinkcheck or (
                     isinstance(key, string_types) and ":" in key
                 ):
-                    _logger.warning(v.pretty_str())
+                    _logger.warning(v)
                 else:
                     docid2 = self.getid(val)
                     if docid2 is not None:
