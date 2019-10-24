@@ -280,7 +280,7 @@ class _ArrayLoader(_Loader):
         if not isinstance(doc, MutableSequence):
             raise ValidationException("Expected a list")
         r = []  # type: List[Any]
-        errors = []
+        errors = []  # type: List[SchemaSaladException]
         for i in range(0, len(doc)):
             try:
                 lf = load_field(
@@ -343,7 +343,8 @@ class _UnionLoader(_Loader):
                 errors.append(
                     ValidationException(
                         u"tried {} but".format(t.__class__.__name__),
-                        None, [e]
+                        None,
+                        [e]
                     )
                 )
         raise ValidationException("", None, errors, u"-")
@@ -633,13 +634,8 @@ A field of a record.
                 name = load_field(_doc.get(
                     'name'), uri_strtype_True_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `name` field is not valid because:",
-                        SourceLine(_doc, 'name', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'name', str).makeError(
+                    "the `name` field is not valid because:\n" + str(e)))
         else:
             name = None
 
@@ -654,26 +650,16 @@ A field of a record.
                 doc = load_field(_doc.get(
                     'doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `doc` field is not valid because:",
-                        SourceLine(_doc, 'doc', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'doc', str).makeError(
+                    "the `doc` field is not valid because:\n" + str(e)))
         else:
             doc = None
         try:
             type = load_field(_doc.get(
                 'type'), typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(
-                ValidationException(
-                    "the `type` field is not valid because:",
-                    SourceLine(_doc, 'type', str),
-                    [e]
-                )
-            )
+            errors.append(SourceLine(_doc, 'type', str).makeError(
+                "the `type` field is not valid because:\n" + str(e)))
 
         extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
@@ -686,16 +672,12 @@ A field of a record.
                                     vocab_term=False)
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(
-                        ValidationException(
-                            "invalid field `%s`, expected one of: `doc`, `name`, `type`" % (k),
-                            SourceLine(_doc, k, str),
-                        )
-                    )
+                    errors.append(SourceLine(_doc, k, str).makeError(
+                        "invalid field `%s`, expected one of: `doc`, `name`, `type`" % (k)))
                     break
 
         if errors:
-            raise ValidationException("Trying 'RecordField'", None, errors)
+            raise ValidationException("Trying 'RecordField'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
         return cls(doc, name, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
@@ -772,26 +754,16 @@ class RecordSchema(Savable):
                 fields = load_field(_doc.get(
                     'fields'), idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `fields` field is not valid because:",
-                        SourceLine(_doc, 'fields', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'fields', str).makeError(
+                    "the `fields` field is not valid because:\n" + str(e)))
         else:
             fields = None
         try:
             type = load_field(_doc.get(
                 'type'), typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(
-                ValidationException(
-                    "the `type` field is not valid because:",
-                    SourceLine(_doc, 'type', str),
-                    [e]
-                )
-            )
+            errors.append(SourceLine(_doc, 'type', str).makeError(
+                "the `type` field is not valid because:\n" + str(e)))
 
         extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
@@ -804,16 +776,12 @@ class RecordSchema(Savable):
                                     vocab_term=False)
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(
-                        ValidationException(
-                            "invalid field `%s`, expected one of: `fields`, `type`" % (k),
-                            SourceLine(_doc, k, str)
-                        )
-                    )
+                    errors.append(SourceLine(_doc, k, str).makeError(
+                        "invalid field `%s`, expected one of: `fields`, `type`" % (k)))
                     break
 
         if errors:
-            raise ValidationException("Trying 'RecordSchema'", None, errors)
+            raise ValidationException("Trying 'RecordSchema'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
         return cls(fields, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
@@ -883,24 +851,14 @@ Define an enumerated type.
             symbols = load_field(_doc.get(
                 'symbols'), uri_array_of_strtype_True_False_None, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(
-                ValidationException(
-                    "the `symbols` field is not valid because:",
-                    SourceLine(_doc, 'symbols', str),
-                    [e]
-                )
-            )
+            errors.append(SourceLine(_doc, 'symbols', str).makeError(
+                "the `symbols` field is not valid because:\n" + str(e)))
         try:
             type = load_field(_doc.get(
                 'type'), typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(
-                ValidationException(
-                    "the `type` field is not valid because:",
-                    SourceLine(_doc, 'type', str),
-                    [e]
-                )
-            )
+            errors.append(SourceLine(_doc, 'type', str).makeError(
+                "the `type` field is not valid because:\n" + str(e)))
 
         extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
@@ -913,16 +871,12 @@ Define an enumerated type.
                                     vocab_term=False)
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(
-                        ValidationException(
-                            "invalid field `%s`, expected one of: `symbols`, `type`" % (k),
-                            SourceLine(_doc, k, str)
-                        )
-                    )
+                    errors.append(SourceLine(_doc, k, str).makeError(
+                        "invalid field `%s`, expected one of: `symbols`, `type`" % (k)))
                     break
 
         if errors:
-            raise ValidationException("Trying 'EnumSchema'", None, errors)
+            raise ValidationException("Trying 'EnumSchema'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
         return cls(symbols, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
@@ -991,24 +945,14 @@ class ArraySchema(Savable):
             items = load_field(_doc.get(
                 'items'), uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(
-                ValidationException(
-                    "the `items` field is not valid because:",
-                    SourceLine(_doc, 'items', str),
-                    [e]
-                )
-            )
+            errors.append(SourceLine(_doc, 'items', str).makeError(
+                "the `items` field is not valid because:\n" + str(e)))
         try:
             type = load_field(_doc.get(
                 'type'), typedsl_enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(
-                ValidationException(
-                    "the `type` field is not valid because:",
-                    SourceLine(_doc, 'type', str),
-                    [e]
-                )
-            )
+            errors.append(SourceLine(_doc, 'type', str).makeError(
+                "the `type` field is not valid because:\n" + str(e)))
 
         extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
@@ -1021,17 +965,12 @@ class ArraySchema(Savable):
                                     vocab_term=False)
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(
-                        ValidationException(
-                            "invalid field `%s`, expected one of: `items`, `type`" % (k),
-                            SourceLine(_doc, k, str)
-                        )
-                    )
+                    errors.append(SourceLine(_doc, k, str).makeError(
+                        "invalid field `%s`, expected one of: `items`, `type`" % (k)))
                     break
 
         if errors:
-            raise ValidationException("Trying 'ArraySchema'",
-                                      None, errors)
+            raise ValidationException("Trying 'ArraySchema'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
         return cls(items, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
@@ -1124,13 +1063,8 @@ URI resolution and JSON-LD context generation.
                 _id = load_field(_doc.get(
                     '_id'), uri_union_of_None_type_or_strtype_True_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `_id` field is not valid because:",
-                        SourceLine(_doc, '_id', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, '_id', str).makeError(
+                    "the `_id` field is not valid because:\n" + str(e)))
         else:
             _id = None
         if '_type' in _doc:
@@ -1138,13 +1072,8 @@ URI resolution and JSON-LD context generation.
                 _type = load_field(_doc.get(
                     '_type'), union_of_None_type_or_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `_type` field is not valid because:",
-                        SourceLine(_doc, '_type', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, '_type', str).makeError(
+                    "the `_type` field is not valid because:\n" + str(e)))
         else:
             _type = None
         if '_container' in _doc:
@@ -1152,13 +1081,8 @@ URI resolution and JSON-LD context generation.
                 _container = load_field(_doc.get(
                     '_container'), union_of_None_type_or_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `_container` field is not valid because:",
-                        SourceLine(_doc, '_container', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, '_container', str).makeError(
+                    "the `_container` field is not valid because:\n" + str(e)))
         else:
             _container = None
         if 'identity' in _doc:
@@ -1166,13 +1090,8 @@ URI resolution and JSON-LD context generation.
                 identity = load_field(_doc.get(
                     'identity'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `identity` field is not valid because:",
-                        SourceLine(_doc, 'identity', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'identity', str).makeError(
+                    "the `identity` field is not valid because:\n" + str(e)))
         else:
             identity = None
         if 'noLinkCheck' in _doc:
@@ -1180,13 +1099,8 @@ URI resolution and JSON-LD context generation.
                 noLinkCheck = load_field(_doc.get(
                     'noLinkCheck'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `noLinkCheck` field is not valid because:",
-                        SourceLine(_doc, 'noLinkCheck', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'noLinkCheck', str).makeError(
+                    "the `noLinkCheck` field is not valid because:\n" + str(e)))
         else:
             noLinkCheck = None
         if 'mapSubject' in _doc:
@@ -1194,13 +1108,8 @@ URI resolution and JSON-LD context generation.
                 mapSubject = load_field(_doc.get(
                     'mapSubject'), union_of_None_type_or_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `mapSubject` field is not valid because:",
-                        SourceLine(_doc, 'mapSubject', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'mapSubject', str).makeError(
+                    "the `mapSubject` field is not valid because:\n" + str(e)))
         else:
             mapSubject = None
         if 'mapPredicate' in _doc:
@@ -1208,13 +1117,8 @@ URI resolution and JSON-LD context generation.
                 mapPredicate = load_field(_doc.get(
                     'mapPredicate'), union_of_None_type_or_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `mapPredicate` field is not valid because:",
-                        SourceLine(_doc, 'mapPredicate', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'mapPredicate', str).makeError(
+                    "the `mapPredicate` field is not valid because:\n" + str(e)))
         else:
             mapPredicate = None
         if 'refScope' in _doc:
@@ -1222,13 +1126,8 @@ URI resolution and JSON-LD context generation.
                 refScope = load_field(_doc.get(
                     'refScope'), union_of_None_type_or_inttype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `refScope` field is not valid because:",
-                        SourceLine(_doc, 'refScope', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'refScope', str).makeError(
+                    "the `refScope` field is not valid because:\n" + str(e)))
         else:
             refScope = None
         if 'typeDSL' in _doc:
@@ -1236,13 +1135,8 @@ URI resolution and JSON-LD context generation.
                 typeDSL = load_field(_doc.get(
                     'typeDSL'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `typeDSL` field is not valid because:",
-                        SourceLine(_doc, 'typeDSL', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'typeDSL', str).makeError(
+                    "the `typeDSL` field is not valid because:\n" + str(e)))
         else:
             typeDSL = None
         if 'secondaryFilesDSL' in _doc:
@@ -1250,13 +1144,8 @@ URI resolution and JSON-LD context generation.
                 secondaryFilesDSL = load_field(_doc.get(
                     'secondaryFilesDSL'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `secondaryFilesDSL` field is not valid because:",
-                        SourceLine(_doc, 'secondaryFilesDSL', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'secondaryFilesDSL', str).makeError(
+                    "the `secondaryFilesDSL` field is not valid because:\n" + str(e)))
         else:
             secondaryFilesDSL = None
         if 'subscope' in _doc:
@@ -1264,13 +1153,8 @@ URI resolution and JSON-LD context generation.
                 subscope = load_field(_doc.get(
                     'subscope'), union_of_None_type_or_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `subscope` field is not valid because:",
-                        SourceLine(_doc, 'subscope', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'subscope', str).makeError(
+                    "the `subscope` field is not valid because:\n" + str(e)))
         else:
             subscope = None
 
@@ -1285,17 +1169,12 @@ URI resolution and JSON-LD context generation.
                                     vocab_term=False)
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(
-                        ValidationException(
-                            "invalid field `%s`, expected one of: `_id`, `_type`, `_container`, `identity`, `noLinkCheck`, `mapSubject`, `mapPredicate`, `refScope`, `typeDSL`, `secondaryFilesDSL`, `subscope`" % (k),
-                            SourceLine(_doc, k, str)
-                        )
-                    )
+                    errors.append(SourceLine(_doc, k, str).makeError(
+                        "invalid field `%s`, expected one of: `_id`, `_type`, `_container`, `identity`, `noLinkCheck`, `mapSubject`, `mapPredicate`, `refScope`, `typeDSL`, `secondaryFilesDSL`, `subscope`" % (k)))
                     break
 
         if errors:
-            raise ValidationException("Trying 'JsonldPredicate'",
-                                      None, errors)
+            raise ValidationException("Trying 'JsonldPredicate'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
         return cls(_id, _type, _container, identity, noLinkCheck, mapSubject, mapPredicate, refScope, typeDSL, secondaryFilesDSL, subscope, extension_fields=extension_fields, loadingOptions=loadingOptions)
@@ -1427,24 +1306,14 @@ class SpecializeDef(Savable):
             specializeFrom = load_field(_doc.get(
                 'specializeFrom'), uri_strtype_False_False_1, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(
-                ValidationException(
-                    "the `specializeFrom` field is not valid because:",
-                    SourceLine(_doc, 'specializeFrom', str),
-                    [e]
-                )
-            )
+            errors.append(SourceLine(_doc, 'specializeFrom', str).makeError(
+                "the `specializeFrom` field is not valid because:\n" + str(e)))
         try:
             specializeTo = load_field(_doc.get(
                 'specializeTo'), uri_strtype_False_False_1, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(
-                ValidationException(
-                    "the `specializeTo` field is not valid because:",
-                    SourceLine(_doc, 'specializeTo', str),
-                    [e]
-                )
-            )
+            errors.append(SourceLine(_doc, 'specializeTo', str).makeError(
+                "the `specializeTo` field is not valid because:\n" + str(e)))
 
         extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
@@ -1457,16 +1326,12 @@ class SpecializeDef(Savable):
                                     vocab_term=False)
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(
-                        ValidationException(
-                            "invalid field `%s`, expected one of: `specializeFrom`, `specializeTo`" % (k),
-                            SourceLine(_doc, k, str),
-                        )
-                    )
+                    errors.append(SourceLine(_doc, k, str).makeError(
+                        "invalid field `%s`, expected one of: `specializeFrom`, `specializeTo`" % (k)))
                     break
 
         if errors:
-            raise ValidationException("Trying 'SpecializeDef'", None, errors)
+            raise ValidationException("Trying 'SpecializeDef'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
         return cls(specializeFrom, specializeTo, extension_fields=extension_fields, loadingOptions=loadingOptions)
@@ -1564,13 +1429,8 @@ A field of a record.
                 name = load_field(_doc.get(
                     'name'), uri_strtype_True_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `name` field is not valid because:",
-                        SourceLine(_doc, 'name', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'name', str).makeError(
+                    "the `name` field is not valid because:\n" + str(e)))
         else:
             name = None
 
@@ -1585,38 +1445,23 @@ A field of a record.
                 doc = load_field(_doc.get(
                     'doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `doc` field is not valid because:",
-                        SourceLine(_doc, 'doc', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'doc', str).makeError(
+                    "the `doc` field is not valid because:\n" + str(e)))
         else:
             doc = None
         try:
             type = load_field(_doc.get(
                 'type'), typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(
-                ValidationException(
-                    "the `type` field is not valid because:",
-                    SourceLine(_doc, 'type', str),
-                    [e]
-                )
-            )
+            errors.append(SourceLine(_doc, 'type', str).makeError(
+                "the `type` field is not valid because:\n" + str(e)))
         if 'jsonldPredicate' in _doc:
             try:
                 jsonldPredicate = load_field(_doc.get(
                     'jsonldPredicate'), union_of_None_type_or_strtype_or_JsonldPredicateLoader, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `jsonldPredicate` field is not valid because:",
-                        SourceLine(_doc, 'jsonldPredicate', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'jsonldPredicate', str).makeError(
+                    "the `jsonldPredicate` field is not valid because:\n" + str(e)))
         else:
             jsonldPredicate = None
         if 'default' in _doc:
@@ -1624,13 +1469,8 @@ A field of a record.
                 default = load_field(_doc.get(
                     'default'), union_of_None_type_or_Any_type, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `default` field is not valid because:",
-                        SourceLine(_doc, 'default', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'default', str).makeError(
+                    "the `default` field is not valid because:\n" + str(e)))
         else:
             default = None
 
@@ -1645,16 +1485,12 @@ A field of a record.
                                     vocab_term=False)
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(
-                        ValidationException(
-                            "invalid field `%s`, expected one of: `doc`, `name`, `type`, `jsonldPredicate`, `default`" % (k),
-                            SourceLine(_doc, k, str)
-                        )
-                    )
+                    errors.append(SourceLine(_doc, k, str).makeError(
+                        "invalid field `%s`, expected one of: `doc`, `name`, `type`, `jsonldPredicate`, `default`" % (k)))
                     break
 
         if errors:
-            raise ValidationException("Trying 'SaladRecordField'", None, errors)
+            raise ValidationException("Trying 'SaladRecordField'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
         return cls(doc, name, type, jsonldPredicate, default, extension_fields=extension_fields, loadingOptions=loadingOptions)
@@ -1767,13 +1603,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 name = load_field(_doc.get(
                     'name'), uri_strtype_True_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `name` field is not valid because:",
-                        SourceLine(_doc, 'name', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'name', str).makeError(
+                    "the `name` field is not valid because:\n" + str(e)))
         else:
             name = None
 
@@ -1788,13 +1619,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 inVocab = load_field(_doc.get(
                     'inVocab'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `inVocab` field is not valid because:",
-                        SourceLine(_doc, 'inVocab', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'inVocab', str).makeError(
+                    "the `inVocab` field is not valid because:\n" + str(e)))
         else:
             inVocab = None
         if 'fields' in _doc:
@@ -1802,38 +1628,23 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 fields = load_field(_doc.get(
                     'fields'), idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `fields` field is not valid because:",
-                        SourceLine(_doc, 'fields', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'fields', str).makeError(
+                    "the `fields` field is not valid because:\n" + str(e)))
         else:
             fields = None
         try:
             type = load_field(_doc.get(
                 'type'), typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(
-                ValidationException(
-                    "the `type` field is not valid because:",
-                    SourceLine(_doc, 'type', str),
-                    [e]
-                )
-            )
+            errors.append(SourceLine(_doc, 'type', str).makeError(
+                "the `type` field is not valid because:\n" + str(e)))
         if 'doc' in _doc:
             try:
                 doc = load_field(_doc.get(
                     'doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `doc` field is not valid because:",
-                        SourceLine(_doc, 'doc', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'doc', str).makeError(
+                    "the `doc` field is not valid because:\n" + str(e)))
         else:
             doc = None
         if 'docParent' in _doc:
@@ -1841,13 +1652,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 docParent = load_field(_doc.get(
                     'docParent'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `docParent` field is not valid because:",
-                        SourceLine(_doc, 'docParent', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'docParent', str).makeError(
+                    "the `docParent` field is not valid because:\n" + str(e)))
         else:
             docParent = None
         if 'docChild' in _doc:
@@ -1855,13 +1661,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 docChild = load_field(_doc.get(
                     'docChild'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `docChild` field is not valid because:",
-                        SourceLine(_doc, 'docChild', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'docChild', str).makeError(
+                    "the `docChild` field is not valid because:\n" + str(e)))
         else:
             docChild = None
         if 'docAfter' in _doc:
@@ -1869,13 +1670,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 docAfter = load_field(_doc.get(
                     'docAfter'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `docAfter` field is not valid because:",
-                        SourceLine(_doc, 'docAfter', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'docAfter', str).makeError(
+                    "the `docAfter` field is not valid because:\n" + str(e)))
         else:
             docAfter = None
         if 'jsonldPredicate' in _doc:
@@ -1883,13 +1679,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 jsonldPredicate = load_field(_doc.get(
                     'jsonldPredicate'), union_of_None_type_or_strtype_or_JsonldPredicateLoader, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `jsonldPredicate` field is not valid because:",
-                        SourceLine(_doc, 'jsonldPredicate', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'jsonldPredicate', str).makeError(
+                    "the `jsonldPredicate` field is not valid because:\n" + str(e)))
         else:
             jsonldPredicate = None
         if 'documentRoot' in _doc:
@@ -1897,13 +1688,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 documentRoot = load_field(_doc.get(
                     'documentRoot'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `documentRoot` field is not valid because:",
-                        SourceLine(_doc, 'documentRoot', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'documentRoot', str).makeError(
+                    "the `documentRoot` field is not valid because:\n" + str(e)))
         else:
             documentRoot = None
         if 'abstract' in _doc:
@@ -1911,13 +1697,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 abstract = load_field(_doc.get(
                     'abstract'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `abstract` field is not valid because:",
-                        SourceLine(_doc, 'abstract', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'abstract', str).makeError(
+                    "the `abstract` field is not valid because:\n" + str(e)))
         else:
             abstract = None
         if 'extends' in _doc:
@@ -1925,13 +1706,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 extends = load_field(_doc.get(
                     'extends'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `extends` field is not valid because:",
-                        SourceLine(_doc, 'extends', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'extends', str).makeError(
+                    "the `extends` field is not valid because:\n" + str(e)))
         else:
             extends = None
         if 'specialize' in _doc:
@@ -1939,13 +1715,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 specialize = load_field(_doc.get(
                     'specialize'), idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `specialize` field is not valid because:",
-                        SourceLine(_doc, 'specialize', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'specialize', str).makeError(
+                    "the `specialize` field is not valid because:\n" + str(e)))
         else:
             specialize = None
 
@@ -1960,16 +1731,12 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                     vocab_term=False)
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(
-                        ValidationException(
-                            "invalid field `%s`, expected one of: `name`, `inVocab`, `fields`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `abstract`, `extends`, `specialize`" % (k),
-                            SourceLine(_doc, k, str)
-                        )
-                    )
+                    errors.append(SourceLine(_doc, k, str).makeError(
+                        "invalid field `%s`, expected one of: `name`, `inVocab`, `fields`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `abstract`, `extends`, `specialize`" % (k)))
                     break
 
         if errors:
-            raise ValidationException("Trying 'SaladRecordSchema'", None, errors)
+            raise ValidationException("Trying 'SaladRecordSchema'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
         return cls(name, inVocab, fields, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, abstract, extends, specialize, extension_fields=extension_fields, loadingOptions=loadingOptions)
@@ -2150,13 +1917,8 @@ Define an enumerated type.
                 name = load_field(_doc.get(
                     'name'), uri_strtype_True_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `name` field is not valid because:",
-                        SourceLine(_doc, 'name', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'name', str).makeError(
+                    "the `name` field is not valid because:\n" + str(e)))
         else:
             name = None
 
@@ -2171,49 +1933,29 @@ Define an enumerated type.
                 inVocab = load_field(_doc.get(
                     'inVocab'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `inVocab` field is not valid because:",
-                        SourceLine(_doc, 'inVocab', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'inVocab', str).makeError(
+                    "the `inVocab` field is not valid because:\n" + str(e)))
         else:
             inVocab = None
         try:
             symbols = load_field(_doc.get(
                 'symbols'), uri_array_of_strtype_True_False_None, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(
-                ValidationException(
-                    "the `symbols` field is not valid because:",
-                    SourceLine(_doc, 'symbols', str),
-                    [e]
-                )
-            )
+            errors.append(SourceLine(_doc, 'symbols', str).makeError(
+                "the `symbols` field is not valid because:\n" + str(e)))
         try:
             type = load_field(_doc.get(
                 'type'), typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(
-                ValidationException(
-                    "the `type` field is not valid because:",
-                    SourceLine(_doc, 'type', str),
-                    [e]
-                )
-            )
+            errors.append(SourceLine(_doc, 'type', str).makeError(
+                "the `type` field is not valid because:\n" + str(e)))
         if 'doc' in _doc:
             try:
                 doc = load_field(_doc.get(
                     'doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `doc` field is not valid because:",
-                        SourceLine(_doc, 'doc', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'doc', str).makeError(
+                    "the `doc` field is not valid because:\n" + str(e)))
         else:
             doc = None
         if 'docParent' in _doc:
@@ -2221,13 +1963,8 @@ Define an enumerated type.
                 docParent = load_field(_doc.get(
                     'docParent'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `docParent` field is not valid because:",
-                        SourceLine(_doc, 'docParent', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'docParent', str).makeError(
+                    "the `docParent` field is not valid because:\n" + str(e)))
         else:
             docParent = None
         if 'docChild' in _doc:
@@ -2235,13 +1972,8 @@ Define an enumerated type.
                 docChild = load_field(_doc.get(
                     'docChild'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `docChild` field is not valid because:",
-                        SourceLine(_doc, 'docChild', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'docChild', str).makeError(
+                    "the `docChild` field is not valid because:\n" + str(e)))
         else:
             docChild = None
         if 'docAfter' in _doc:
@@ -2249,13 +1981,8 @@ Define an enumerated type.
                 docAfter = load_field(_doc.get(
                     'docAfter'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `docAfter` field is not valid because:",
-                        SourceLine(_doc, 'docAfter', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'docAfter', str).makeError(
+                    "the `docAfter` field is not valid because:\n" + str(e)))
         else:
             docAfter = None
         if 'jsonldPredicate' in _doc:
@@ -2263,13 +1990,8 @@ Define an enumerated type.
                 jsonldPredicate = load_field(_doc.get(
                     'jsonldPredicate'), union_of_None_type_or_strtype_or_JsonldPredicateLoader, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `jsonldPredicate` field is not valid because:",
-                        SourceLine(_doc, 'jsonldPredicate', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'jsonldPredicate', str).makeError(
+                    "the `jsonldPredicate` field is not valid because:\n" + str(e)))
         else:
             jsonldPredicate = None
         if 'documentRoot' in _doc:
@@ -2277,13 +1999,8 @@ Define an enumerated type.
                 documentRoot = load_field(_doc.get(
                     'documentRoot'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `documentRoot` field is not valid because:",
-                        SourceLine(_doc, 'documentRoot', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'documentRoot', str).makeError(
+                    "the `documentRoot` field is not valid because:\n" + str(e)))
         else:
             documentRoot = None
         if 'extends' in _doc:
@@ -2291,13 +2008,8 @@ Define an enumerated type.
                 extends = load_field(_doc.get(
                     'extends'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `extends` field is not valid because:",
-                        SourceLine(_doc, 'extends', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'extends', str).makeError(
+                    "the `extends` field is not valid because:\n" + str(e)))
         else:
             extends = None
 
@@ -2312,16 +2024,12 @@ Define an enumerated type.
                                     vocab_term=False)
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(
-                        ValidationException(
-                            "invalid field `%s`, expected one of: `name`, `inVocab`, `symbols`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `extends`" % (k),
-                            SourceLine(_doc, k, str)
-                        )
-                    )
+                    errors.append(SourceLine(_doc, k, str).makeError(
+                        "invalid field `%s`, expected one of: `name`, `inVocab`, `symbols`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `extends`" % (k)))
                     break
 
         if errors:
-            raise ValidationException("Trying 'SaladEnumSchema'", None, errors)
+            raise ValidationException("Trying 'SaladEnumSchema'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
         return cls(name, inVocab, symbols, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, extends, extension_fields=extension_fields, loadingOptions=loadingOptions)
@@ -2484,13 +2192,8 @@ schemas but has no role in formal validation.
                 name = load_field(_doc.get(
                     'name'), uri_strtype_True_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `name` field is not valid because:",
-                        SourceLine(_doc, 'name', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'name', str).makeError(
+                    "the `name` field is not valid because:\n" + str(e)))
         else:
             name = None
 
@@ -2505,13 +2208,8 @@ schemas but has no role in formal validation.
                 inVocab = load_field(_doc.get(
                     'inVocab'), union_of_None_type_or_booltype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `inVocab` field is not valid because:",
-                        SourceLine(_doc, 'inVocab', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'inVocab', str).makeError(
+                    "the `inVocab` field is not valid because:\n" + str(e)))
         else:
             inVocab = None
         if 'doc' in _doc:
@@ -2519,13 +2217,8 @@ schemas but has no role in formal validation.
                 doc = load_field(_doc.get(
                     'doc'), union_of_None_type_or_strtype_or_array_of_strtype, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `doc` field is not valid because:",
-                        SourceLine(_doc, 'doc', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'doc', str).makeError(
+                    "the `doc` field is not valid because:\n" + str(e)))
         else:
             doc = None
         if 'docParent' in _doc:
@@ -2533,13 +2226,8 @@ schemas but has no role in formal validation.
                 docParent = load_field(_doc.get(
                     'docParent'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `docParent` field is not valid because:",
-                        SourceLine(_doc, 'docParent', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'docParent', str).makeError(
+                    "the `docParent` field is not valid because:\n" + str(e)))
         else:
             docParent = None
         if 'docChild' in _doc:
@@ -2547,13 +2235,8 @@ schemas but has no role in formal validation.
                 docChild = load_field(_doc.get(
                     'docChild'), uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `docChild` field is not valid because:",
-                        SourceLine(_doc, 'docChild', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'docChild', str).makeError(
+                    "the `docChild` field is not valid because:\n" + str(e)))
         else:
             docChild = None
         if 'docAfter' in _doc:
@@ -2561,26 +2244,16 @@ schemas but has no role in formal validation.
                 docAfter = load_field(_doc.get(
                     'docAfter'), uri_union_of_None_type_or_strtype_False_False_None, baseuri, loadingOptions)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(
-                        "the `docAfter` field is not valid because:",
-                        SourceLine(_doc, 'docAfter', str),
-                        [e]
-                    )
-                )
+                errors.append(SourceLine(_doc, 'docAfter', str).makeError(
+                    "the `docAfter` field is not valid because:\n" + str(e)))
         else:
             docAfter = None
         try:
             type = load_field(_doc.get(
                 'type'), typedsl_enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader_2, baseuri, loadingOptions)
         except ValidationException as e:
-            errors.append(
-                ValidationException(
-                    "the `type` field is not valid because:",
-                    SourceLine(_doc, 'type', str),
-                    [e]
-                )
-            )
+            errors.append(SourceLine(_doc, 'type', str).makeError(
+                "the `type` field is not valid because:\n" + str(e)))
 
         extension_fields = yaml.comments.CommentedMap()
         for k in _doc.keys():
@@ -2593,16 +2266,12 @@ schemas but has no role in formal validation.
                                     vocab_term=False)
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(
-                        ValidationException(
-                            "invalid field `%s`, expected one of: `name`, `inVocab`, `doc`, `docParent`, `docChild`, `docAfter`, `type`" % (k),
-                            SourceLine(_doc, k, str)
-                        )
-                    )
+                    errors.append(SourceLine(_doc, k, str).makeError(
+                        "invalid field `%s`, expected one of: `name`, `inVocab`, `doc`, `docParent`, `docChild`, `docAfter`, `type`" % (k)))
                     break
 
         if errors:
-            raise ValidationException("Trying 'Documentation'", None, errors)
+            raise ValidationException("Trying 'Documentation'\n" + "\n".join(errors))
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
         return cls(name, inVocab, doc, docParent, docChild, docAfter, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
