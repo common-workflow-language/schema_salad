@@ -332,7 +332,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
         )
     except ValidationException as e:
         msg = six.text_type(e)
-        msg = to_one_line_messages(str(msg)) if args.print_oneline else str(e)
+        msg = to_one_line_messages(str(msg)) if args.print_oneline else msg
         _logger.error(
             "Document `%s` failed validation:\n%s",
             args.document,
