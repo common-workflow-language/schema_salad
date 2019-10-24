@@ -337,9 +337,7 @@ class _UnionLoader(_Loader):
             except ValidationException as e:
                 errors.append(
                     ValidationException(
-                        u"tried {} but".format(t.__class__.__name__),
-                        None,
-                        [e]
+                        u"tried {} but".format(t.__class__.__name__), None, [e]
                     )
                 )
         raise ValidationException("", None, errors, u"-")
