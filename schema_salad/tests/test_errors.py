@@ -188,7 +188,7 @@ def test_error_message9():
         r"""^.+test9\.cwl:7:1: checking field\s+`steps`
 .+test9\.cwl:8:3:   checking object\s+`.+test9\.cwl#step1`
 .+test9\.cwl:9:5:     `scatterMethod`\s+field\s+is\s+"""
-        + r"""int,\s+expected\s+string,\s+list,\s+or a dict.$"""
+        + r"""int,\s+expected\s+string,\s+list,\s+or a\s+dict.$"""
     )
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
@@ -205,12 +205,12 @@ def test_error_message10():
     match = r"""
 ^.+test10\.cwl:2:1: Object\s+`.+test10\.cwl`\s+is not valid because
 \s+tried `Workflow`\s+but
-.+test10\.cwl:7:1:     the `steps`\s+field is\s+not\s+valid\s+because
+.+test10\.cwl:7:1:     the `steps`\s+field\s+is\s+not\s+valid\s+because
 \s+tried array\s+of\s+<WorkflowStep>\s+but
 .+test10\.cwl:8:3:         item is\s+invalid\s+because
 \s+\* missing\s+required\s+field\s+`run`
-.+test10\.cwl:9:5:           \* the\s+`scatterMethod`\s+field is\s+not\s+valid\s+because
-\s+value\s+is a\s+CommentedSeq,\s+expected\s+null\s+or\s+ScatterMethod$"""[
+.+test10\.cwl:9:5:           \* the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because
+\s+value\s+is\s+a\s+CommentedSeq,\s+expected\s+null\s+or\s+ScatterMethod$"""[
         1:
     ]
     with pytest.raises(ValidationException, match=match):
@@ -249,7 +249,7 @@ def test_error_message15():
 \s+tried\s+`CommandLineTool`\s+but
 .+test15\.cwl:6:1:\s+the `inputs`\s+field\s+is\s+not valid\s+because
 .+test15\.cwl:7:3:\s+item is\s+invalid\s+because
-.+test15\.cwl:9:5:\s+the\s+`inputBinding`\s+field is\s+not\s+valid\s+because
+.+test15\.cwl:9:5:\s+the\s+`inputBinding`\s+field\s+is\s+not\s+valid\s+because
 .+tried\s+CommandLineBinding\s+but
 .+test15\.cwl:11:7:             \*\s+invalid\s+field\s+`invalid_field`,\s+expected\s+"""
         + r"""one\s+of:\s+'loadContents',\s+'position',\s+'prefix',\s+'separate',"""
