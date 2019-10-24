@@ -340,7 +340,7 @@ class RenderType(object):
             _, frg = urllib.parse.urldefrag(tp)
             if frg != "":
                 tp = frg
-            return """<a href="{}">{}</a>""".format(to_id(tp), tp)
+            return """<a href="#{}">{}</a>""".format(to_id(tp), tp)
         raise SchemaSaladException("We should not be here!")
 
     def render_type(self, f, depth):  # type: (Dict[Text, Any], int) -> None
