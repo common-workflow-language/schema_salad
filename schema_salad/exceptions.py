@@ -33,7 +33,7 @@ class SchemaSaladException(Exception):
     def with_sourceline(
         self, sl
     ):  # type: (Optional[SourceLine]) -> SchemaSaladException
-        if sl:
+        if sl and sl.file():
             self.file = sl.file()  # type: Optional[Text]
             self.start = (sl.line(), sl.column())  # type: Optional[Tuple[int, int]]
             self.end = (sl.line(), sl.column() + 1)  # type: Optional[Tuple[int, int]]

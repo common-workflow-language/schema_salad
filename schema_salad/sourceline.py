@@ -337,7 +337,10 @@ class SourceLine(object):
             raise_from(self.makeError(six.text_type(exc_value)), exc_value)
 
     def file(self):  # type: () -> Text
-        return Text(self.item.lc.filename) if hasattr(self.item.lc, "filename") else ""
+        if hasattr(self.item, "lc") and hasattr(self.item.lc, "filename"):
+            return Text(self.item.lc.filename)
+        else:
+            return None
 
     def line(self):  # type: () -> int
         if (

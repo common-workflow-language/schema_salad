@@ -286,9 +286,9 @@ class _ArrayLoader(_Loader):
                 else:
                     r.append(lf)
             except ValidationException as e:
-                errors.append(SourceLine(doc, i, str).makeError(text_type(e)))
+                errors.apppend(e.with_sourceline(SourceLine(doc, i, str)))
         if errors:
-            raise ValidationException("\n".join(errors))
+            raise ValidationException("", None, errors)
         return r
 
     def __repr__(self):  # type: () -> str
@@ -336,9 +336,13 @@ class _UnionLoader(_Loader):
                 return t.load(doc, baseuri, loadingOptions, docRoot=docRoot)
             except ValidationException as e:
                 errors.append(
-                    u"tried {} but\n{}".format(t.__class__.__name__, indent(str(e)))
+                    ValidationException(
+                        u"tried {} but".format(t.__class__.__name__),
+                        None,
+                        [e]
+                    )
                 )
-        raise ValidationException(bullets(errors, u"- "))
+        raise ValidationException("", None, errors, u"-")
 
     def __repr__(self):  # type: () -> str
         return " | ".join(str(a) for a in self.alternates)
