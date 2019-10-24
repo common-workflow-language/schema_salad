@@ -275,7 +275,7 @@ class _ArrayLoader(_Loader):
         if not isinstance(doc, MutableSequence):
             raise ValidationException("Expected a list")
         r = []  # type: List[Any]
-        errors = []
+        errors = []  # type: List[SchemaSaladException]
         for i in range(0, len(doc)):
             try:
                 lf = load_field(
@@ -286,7 +286,7 @@ class _ArrayLoader(_Loader):
                 else:
                     r.append(lf)
             except ValidationException as e:
-                errors.apppend(e.with_sourceline(SourceLine(doc, i, str)))
+                errors.append(e.with_sourceline(SourceLine(doc, i, str)))
         if errors:
             raise ValidationException("", None, errors)
         return r
