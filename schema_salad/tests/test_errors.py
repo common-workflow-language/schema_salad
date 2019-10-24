@@ -124,9 +124,9 @@ def test_error_message5():
     match = r"""
 ^.+test5\.cwl:2:1: Object\s+`.+test5\.cwl`\s+is\s+not valid because
 \s+tried `Workflow`\s+but
-.+test5\.cwl:7:1:     the `steps`\s+field\s+is\s+not valid\s+because
+.+test5\.cwl:7:1:     the `steps`\s+field\s+is\s+not\s+valid\s+because
 \s+tried array\s+of\s+<WorkflowStep>\s+but
-.+test5\.cwl:7:9:         item is\s+invalid because
+.+test5\.cwl:7:9:         item is\s+invalid\s+because
 \s+is not a\s+dict$"""[
         1:
     ]
@@ -145,12 +145,12 @@ def test_error_message7():
     match = (
         r"""^.+test7\.cwl:2:1: Object\s+`.+test7\.cwl`\s+is\s+not valid because
 \s+tried `Workflow`\s+but
-.+test7\.cwl:7:1:     the `steps`\s+field\s+is\s+not valid\s+because
+.+test7\.cwl:7:1:     the `steps`\s+field\s+is\s+not\s+valid\s+because
 \s+tried array\s+of\s+<WorkflowStep>\s+but
-.+test7\.cwl:8:3:         item is\s+invalid because
-\s+\* missing\s+required\s+field `run`
-.+test7\.cwl:9:5:           \* invalid\s+field\s+`scatter_method`,\s+expected one """
-        + r"""of:\s+'id', 'in', 'out',\s+'requirements',\s+'hints', """
+.+test7\.cwl:8:3:         item is\s+invalid\s+because
+\s+\* missing\s+required\s+field\s+`run`
+.+test7\.cwl:9:5:           \* invalid\s+field\s+`scatter_method`,\s+expected\s+one """
+        + r"""of:\s+'id',\s+'in', 'out',\s+'requirements',\s+'hints',\s+"""
         + r"""'label',\s+'doc',\s+'run',\s+'scatter',\s+'scatterMethod'$"""
     )
     with pytest.raises(ValidationException, match=match):
@@ -168,7 +168,7 @@ def test_error_message8():
     match = r"""
 ^.+test8\.cwl:7:1: checking field\s+`steps`
 .+test8\.cwl:8:3:   checking object\s+`.+test8\.cwl#step1`
-.+test8\.cwl:9:5:     Field\s+`scatterMethod`\s+contains\s+undefined\s+reference to
+.+test8\.cwl:9:5:     Field\s+`scatterMethod`\s+contains\s+undefined\s+reference\s+to
 \s+`file:///.+/tests/test_schema/abc`$"""[
         1:
     ]
@@ -188,7 +188,7 @@ def test_error_message9():
         r"""^.+test9\.cwl:7:1: checking field\s+`steps`
 .+test9\.cwl:8:3:   checking object\s+`.+test9\.cwl#step1`
 .+test9\.cwl:9:5:     `scatterMethod`\s+field\s+is\s+"""
-        + r"""int,\s+expected\s+string,\s+list, or a dict.$"""
+        + r"""int,\s+expected\s+string,\s+list,\s+or a\s+dict.$"""
     )
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
@@ -205,12 +205,12 @@ def test_error_message10():
     match = r"""
 ^.+test10\.cwl:2:1: Object\s+`.+test10\.cwl`\s+is not valid because
 \s+tried `Workflow`\s+but
-.+test10\.cwl:7:1:     the `steps`\s+field is\s+not valid\s+because
+.+test10\.cwl:7:1:     the `steps`\s+field\s+is\s+not\s+valid\s+because
 \s+tried array\s+of\s+<WorkflowStep>\s+but
-.+test10\.cwl:8:3:         item is\s+invalid because
-\s+\* missing\s+required\s+field `run`
-.+test10\.cwl:9:5:           \* the\s+`scatterMethod`\s+field is\s+not valid\s+because
-\s+value\s+is a\s+CommentedSeq,\s+expected\s+null\s+or\s+ScatterMethod$"""[
+.+test10\.cwl:8:3:         item is\s+invalid\s+because
+\s+\* missing\s+required\s+field\s+`run`
+.+test10\.cwl:9:5:           \* the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because
+\s+value\s+is\s+a\s+CommentedSeq,\s+expected\s+null\s+or\s+ScatterMethod$"""[
         1:
     ]
     with pytest.raises(ValidationException, match=match):
@@ -247,14 +247,14 @@ def test_error_message15():
     match = (
         r"""^.+test15\.cwl:3:1:\s+Object\s+`.+test15\.cwl`\s+is not valid because
 \s+tried\s+`CommandLineTool`\s+but
-.+test15\.cwl:6:1:\s+the `inputs`\s+field\s+is not valid\s+because
+.+test15\.cwl:6:1:\s+the `inputs`\s+field\s+is\s+not valid\s+because
 .+test15\.cwl:7:3:\s+item is\s+invalid\s+because
-.+test15\.cwl:9:5:\s+the\s+`inputBinding`\s+field is not\s+valid\s+because
+.+test15\.cwl:9:5:\s+the\s+`inputBinding`\s+field\s+is\s+not\s+valid\s+because
 .+tried\s+CommandLineBinding\s+but
-.+test15\.cwl:11:7:             \*\s+invalid field\s+`invalid_field`,\s+expected """
+.+test15\.cwl:11:7:             \*\s+invalid\s+field\s+`invalid_field`,\s+expected\s+"""
         + r"""one\s+of:\s+'loadContents',\s+'position',\s+'prefix',\s+'separate',"""
         + r"""\s+'itemSeparator',\s+'valueFrom',\s+'shellQuote'
-.+test15\.cwl:12:7:             \*\s+invalid field\s+`another_invalid_field`,"""
+.+test15\.cwl:12:7:             \*\s+invalid\s+field\s+`another_invalid_field`,"""
         + r"""\s+expected one\s+of:\s+'loadContents',\s+'position',\s+'prefix',"""
         + r"""\s+'separate',\s+'itemSeparator',\s+'valueFrom',\s+'shellQuote'$"""
     )

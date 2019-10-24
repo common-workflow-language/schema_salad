@@ -13,16 +13,20 @@ from typing import (  # noqa: F401
 )
 
 import six
-from six.moves import range, urllib
+from six.moves import urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import avro
-from .exceptions import ClassValidationException, ValidationException
+from .exceptions import (
+    ClassValidationException,
+    ValidationException,
+    SchemaSaladException,
+)
 from .avro import schema  # noqa: F401
 from .avro.schema import (  # pylint: disable=unused-import, no-name-in-module, import-error
     Schema,
 )
-from .sourceline import SourceLine, bullets, indent, strip_dup_lineno
+from .sourceline import SourceLine
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
@@ -221,11 +225,7 @@ def validate_ex(
                         return False
                 except ValidationException as v:
                     if raise_ex:
-                        raise sl.makeError(
-                            six.text_type(
-                                "item is invalid because\n{}".format(indent(str(v)))
-                            )
-                        )
+                        raise ValidationException("item is invalid because", sl, [v])
                     else:
                         return False
             return True
@@ -255,7 +255,7 @@ def validate_ex(
         if not raise_ex:
             return False
 
-        errors = []  # type: List[Text]
+        errors = []  # type: List[SchemaSaladException]
         checked = []
         for s in expected_schema.schemas:
             if isinstance(datum, MutableSequence) and not isinstance(
@@ -289,18 +289,18 @@ def validate_ex(
             except ClassValidationException:
                 raise
             except ValidationException as e:
-                errors.append(six.text_type(e))
+                errors.append(e)
         if bool(errors):
             raise ValidationException(
-                bullets(
-                    [
-                        "tried {} but\n{}".format(
-                            friendly(checked[i]), indent(errors[i])
-                        )
-                        for i in range(0, len(errors))
-                    ],
-                    "- ",
-                )
+                "",
+                None,
+                [
+                    ValidationException(
+                        "tried {} but".format(friendly(check)), None, [err]
+                    )
+                    for (check, err) in zip(checked, errors)
+                ],
+                "-",
             )
         else:
             raise ValidationException(
@@ -366,13 +366,17 @@ def validate_ex(
                     return False
             except ValidationException as v:
                 if f.name not in datum:
-                    errors.append(u"missing required field `{}`".format(f.name))
+                    errors.append(
+                        ValidationException(
+                            u"missing required field `{}`".format(f.name)
+                        )
+                    )
                 else:
                     errors.append(
-                        sl.makeError(
-                            u"the `{}` field is not valid because\n{}".format(
-                                f.name, indent(str(v))
-                            )
+                        ValidationException(
+                            u"the `{}` field is not valid because".format(f.name),
+                            sl,
+                            [v],
                         )
                     )
 
@@ -384,7 +388,7 @@ def validate_ex(
             if not found:
                 sl = SourceLine(datum, d, six.text_type)
                 if d is None:
-                    err = sl.makeError(u"mapping with implicit null key")
+                    err = ValidationException(u"mapping with implicit null key", sl)
                     if strict:
                         errors.append(err)
                     else:
@@ -408,7 +412,7 @@ def validate_ex(
                     split = urllib.parse.urlsplit(d)
                     if split.scheme:
                         if not skip_foreign_properties:
-                            err = sl.makeError(
+                            err = ValidationException(
                                 u"unrecognized extension field `{}`{}.{}".format(
                                     d,
                                     " and strict_foreign_properties checking is enabled"
@@ -419,21 +423,23 @@ def validate_ex(
                                     )
                                     if len(foreign_properties) > 0
                                     else "",
-                                )
+                                ),
+                                sl,
                             )
                             if strict_foreign_properties:
                                 errors.append(err)
                             elif len(foreign_properties) > 0:
-                                logger.warning(strip_dup_lineno(err))
+                                logger.warning(err)
                     else:
-                        err = sl.makeError(
+                        err = ValidationException(
                             u"invalid field `{}`, expected one of: {}".format(
                                 d,
                                 ", ".join(
                                     "'{}'".format(fn.name)
                                     for fn in expected_schema.fields
                                 ),
-                            )
+                            ),
+                            sl,
                         )
                         if strict:
                             errors.append(err)
@@ -443,9 +449,9 @@ def validate_ex(
         if bool(errors):
             if raise_ex:
                 if classmatch:
-                    raise ClassValidationException(bullets(errors, "* "))
+                    raise ClassValidationException("", None, errors, "*")
                 else:
-                    raise ValidationException(bullets(errors, "* "))
+                    raise ValidationException("", None, errors, "*")
             else:
                 return False
         else:

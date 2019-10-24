@@ -331,7 +331,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
             uri, strict_foreign_properties=args.strict_foreign_properties
         )
     except ValidationException as e:
-        msg = strip_dup_lineno(six.text_type(e))
+        msg = six.text_type(e)
         msg = to_one_line_messages(str(msg)) if args.print_oneline else msg
         _logger.error(
             "Document `%s` failed validation:\n%s",

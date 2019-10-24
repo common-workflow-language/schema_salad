@@ -22,7 +22,7 @@ from typing_extensions import Text  # pylint: disable=unused-import
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
 from schema_salad.ref_resolver import Fetcher
-from schema_salad.sourceline import SourceLine, add_lc_filename, bullets, indent
+from schema_salad.sourceline import SourceLine, add_lc_filename
 from schema_salad.exceptions import SchemaSaladException, ValidationException
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
@@ -275,7 +275,7 @@ class _ArrayLoader(_Loader):
         if not isinstance(doc, MutableSequence):
             raise ValidationException("Expected a list")
         r = []  # type: List[Any]
-        errors = []
+        errors = []  # type: List[SchemaSaladException]
         for i in range(0, len(doc)):
             try:
                 lf = load_field(
@@ -286,9 +286,9 @@ class _ArrayLoader(_Loader):
                 else:
                     r.append(lf)
             except ValidationException as e:
-                errors.append(SourceLine(doc, i, str).makeError(text_type(e)))
+                errors.append(e.with_sourceline(SourceLine(doc, i, str)))
         if errors:
-            raise ValidationException("\n".join(errors))
+            raise ValidationException("", None, errors)
         return r
 
     def __repr__(self):  # type: () -> str
@@ -336,9 +336,11 @@ class _UnionLoader(_Loader):
                 return t.load(doc, baseuri, loadingOptions, docRoot=docRoot)
             except ValidationException as e:
                 errors.append(
-                    u"tried {} but\n{}".format(t.__class__.__name__, indent(str(e)))
+                    ValidationException(
+                        u"tried {} but".format(t.__class__.__name__), None, [e]
+                    )
                 )
-        raise ValidationException(bullets(errors, u"- "))
+        raise ValidationException("", None, errors, u"-")
 
     def __repr__(self):  # type: () -> str
         return " | ".join(str(a) for a in self.alternates)
@@ -498,7 +500,7 @@ def _document_load(loader, doc, baseuri, loadingOptions):
     if isinstance(doc, MutableSequence):
         return loader.load(doc, baseuri, loadingOptions)
 
-    raise ValidationException()
+    raise ValidationException("Oops, we shouldn't be here!")
 
 
 def _document_load_by_url(loader, url, loadingOptions):
