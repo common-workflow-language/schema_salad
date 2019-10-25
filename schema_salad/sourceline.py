@@ -342,28 +342,29 @@ class SourceLine(object):
         else:
             return None
 
-    def line(self):  # type: () -> int
-        if (
+    def start(self):  # type: () -> Optional[Tuple[int, int]]
+        if self.file() is None:
+            return None
+        elif (
             self.key is None
             or self.item.lc.data is None
             or self.key not in self.item.lc.data
         ):
-            return (self.item.lc.line or 0) + 1
+            return ((self.item.lc.line or 0) + 1, (self.item.lc.col or 0) + 1)
         else:
-            return (self.item.lc.data[self.key][0] or 0) + 1
+            return ((self.item.lc.data[self.key][0] or 0) + 1,
+                    (self.item.lc.data[self.key][1] or 0) + 1)
 
-    def column(self):  # type: () -> int
-        if (
-            self.key is None
-            or self.item.lc.data is None
-            or self.key not in self.item.lc.data
-        ):
-            return (self.item.lc.col or 0) + 1
-        else:
-            return (self.item.lc.data[self.key][1] or 0) + 1
+    def end(self):  # type: () -> Optional[Tuple[int, int]]
+        return None
 
     def makeLead(self):  # type: () -> Text
-        return "{}:{}:{}:".format(self.file(), self.line(), self.column())
+        if self.file():
+            lcol = self.start()
+            line, col = lcol if lcol else ("", "")
+            return "{}:{}:{}:".format(self.file(), line, col)
+        else:
+            return ""
 
     def makeError(self, msg):  # type: (Text) -> Any
         if not isinstance(self.item, ruamel.yaml.comments.CommentedBase):
