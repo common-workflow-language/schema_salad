@@ -1,5 +1,4 @@
-dist: trusty
-sudo: required
+dist: xenial
 services:
   - docker
 
@@ -23,16 +22,14 @@ jobs:
       python: "3.6"
     - stage: test
       python: "3.7"
-      dist: xenial
-      # - stage: test
-      # - python: "3.8-dev"
-      # - dist: xenial
+    - stage: test
+      python: "3.8"
     - stage: release-test
       python: "2.7"
       script: RELEASE_SKIP=head PYVER= ${TRAVIS_BUILD_DIR}/release-test.sh
     - stage: release-test
-      python: "3.5"
-      script: RELEASE_SKIP=head PYVER=3.5 ${TRAVIS_BUILD_DIR}/release-test.sh
+      python: "3.8"
+      script: RELEASE_SKIP=head PYVER=3.8 ${TRAVIS_BUILD_DIR}/release-test.sh
 script: tox
 branches:
   only:
