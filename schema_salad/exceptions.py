@@ -35,8 +35,8 @@ class SchemaSaladException(Exception):
     ):  # type: (Optional[SourceLine]) -> SchemaSaladException
         if sl and sl.file():
             self.file = sl.file()  # type: Optional[Text]
-            self.start = (sl.line(), sl.column())  # type: Optional[Tuple[int, int]]
-            self.end = (sl.line(), sl.column() + 1)  # type: Optional[Tuple[int, int]]
+            self.start = sl.start()  # type: Optional[Tuple[int, int]]
+            self.end = sl.end()  # type: Optional[Tuple[int, int]]
         else:
             self.file = None
             self.start = None
