@@ -78,6 +78,29 @@ def uri_file_path(url):  # type: (str) -> str
     raise ValidationException("Not a file URI: {}".format(url))
 
 
+def to_validation_exception(
+    e
+):  # type: (yaml.error.MarkedYAMLError) -> ValidationException
+    fname_regex = re.compile(r"^file://" + re.escape(os.getcwd()) + "/")
+
+    exc = ValidationException(e.problem)
+    mark = e.problem_mark
+    exc.file = re.sub(fname_regex, "", mark.name)
+    exc.start = (mark.line + 1, mark.column + 1)
+    exc.end = None
+
+    if e.context:
+        parent = ValidationException(e.context)
+        mark = e.context_mark
+        parent.file = re.sub(fname_regex, "", mark.name)
+        parent.start = (mark.line + 1, mark.column + 1)
+        parent.end = None
+        parent.children = [exc]
+        return parent
+    else:
+        return exc
+
+
 class NormDict(CommentedMap):
     """A Dict where all keys are normalized using the provided function."""
 
@@ -702,28 +725,26 @@ class Loader(object):
                     )
                 )
 
-        sl.raise_type = RuntimeError
-        with sl:
-            # "$include" directive means load raw text
-            if inc:
-                return self.fetch_text(url), CommentedMap()
+        # "$include" directive means load raw text
+        if inc:
+            return self.fetch_text(url), CommentedMap()
 
-            doc = None
-            if isinstance(obj, MutableMapping):
-                for identifier in self.identifiers:
-                    obj[identifier] = url
-                doc_url = url
-            else:
-                # Load structured document
-                doc_url, frg = urllib.parse.urldefrag(url)
-                if doc_url in self.idx and (not mixin):
-                    # If the base document is in the index, it was already loaded,
-                    # so if we didn't find the reference earlier then it must not
-                    # exist.
-                    raise ValidationException(
-                        u"Reference `#{}` not found in file `{}`.".format(frg, doc_url)
-                    )
-                doc = self.fetch(doc_url, inject_ids=(not mixin))
+        doc = None
+        if isinstance(obj, MutableMapping):
+            for identifier in self.identifiers:
+                obj[identifier] = url
+            doc_url = url
+        else:
+            # Load structured document
+            doc_url, frg = urllib.parse.urldefrag(url)
+            if doc_url in self.idx and (not mixin):
+                # If the base document is in the index, it was already loaded,
+                # so if we didn't find the reference earlier then it must not
+                # exist.
+                raise ValidationException(
+                    u"Reference `#{}` not found in file `{}`.".format(frg, doc_url), sl
+                )
+            doc = self.fetch(doc_url, inject_ids=(not mixin))
 
         # Recursively expand urls and resolve directives
         if bool(mixin):
@@ -1203,8 +1224,8 @@ class Loader(object):
                     self.idx["{}#attachment-{}".format(url, i)] = a
                     i += 1
             add_lc_filename(result, url)
-        except yaml.parser.ParserError as e:
-            raise_from(ValidationException("Syntax error {}".format(e)), e)
+        except yaml.error.MarkedYAMLError as e:
+            raise_from(to_validation_exception(e), e)
         if isinstance(result, CommentedMap) and inject_ids and bool(self.identifiers):
             for identifier in self.identifiers:
                 if identifier not in result:
@@ -1325,12 +1346,8 @@ class Loader(object):
                         document[d] = self.validate_link(
                             d, document[d], docid, all_doc_ids
                         )
-                except (ValidationException, ValueError) as v_:
-                    v = (
-                        ValidationException(str(v_), sl)
-                        if isinstance(v_, ValueError)
-                        else v_.with_sourceline(sl)
-                    )
+                except ValidationException as v:
+                    v = v.with_sourceline(sl)
                     if d == "$schemas" or (
                         d in self.foreign_properties and not strict_foreign_properties
                     ):

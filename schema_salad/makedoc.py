@@ -30,7 +30,7 @@ from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import schema
-from .exceptions import SchemaSaladException
+from .exceptions import SchemaSaladException, ValidationException
 from .utils import add_dictlist, aslist
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
@@ -710,7 +710,7 @@ def makedoc(args):  # type: (argparse.Namespace) -> None
             elif isinstance(j, MutableMapping):
                 s.append(j)
             else:
-                raise ValueError("Schema must resolve to a list or a dict")
+                raise ValidationException("Schema must resolve to a list or a dict")
     redirect = {}
     for r in args.redirect or []:
         redirect[r.split("=")[0]] = r.split("=")[1]
