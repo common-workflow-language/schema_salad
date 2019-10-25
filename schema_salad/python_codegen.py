@@ -188,12 +188,16 @@ class PythonCodeGen(CodeGenBase):
                                     vocab_term=False)
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(SourceLine(_doc, k, str).makeError(
-                        "invalid field `%s`, expected one of: {attrstr}" % (k)))
+                    errors.append(
+                        ValidationException(
+                            "invalid field `%s`, expected one of: {attrstr}" % (k),
+                            SourceLine(_doc, k, str)
+                        )
+                    )
                     break
 
         if errors:
-            raise ValidationException(\"Trying '{class_}'\\n\" + \"\\n\".join(errors))
+            raise ValidationException(\"Trying '{class_}'\", None, errors)
 """.format(
                 attrstr=", ".join(["`{}`".format(f) for f in field_names]),
                 class_=self.safe_name(classname),
@@ -362,8 +366,13 @@ class PythonCodeGen(CodeGenBase):
 {spc}            {safename} = load_field(_doc.get(
 {spc}                '{fieldname}'), {fieldtype}, baseuri, loadingOptions)
 {spc}        except ValidationException as e:
-{spc}            errors.append(SourceLine(_doc, '{fieldname}', str).makeError(
-{spc}                \"the `{fieldname}` field is not valid because:\\n\" + str(e)))
+{spc}            errors.append(
+{spc}                ValidationException(
+{spc}                    \"the `{fieldname}` field is not valid because:\",
+{spc}                    SourceLine(_doc, '{fieldname}', str),
+{spc}                    [e]
+{spc}                )
+{spc}            )
 """.format(
                 safename=self.safe_name(name),
                 fieldname=shortname(name),
