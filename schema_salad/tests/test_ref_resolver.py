@@ -10,6 +10,7 @@ import tempfile
 import pytest  # type: ignore
 from requests import Session
 
+from schema_salad.exceptions import ValidationException
 from schema_salad.ref_resolver import DefaultFetcher, Loader, file_uri
 from schema_salad.tests.util import get_data
 
@@ -107,13 +108,13 @@ def test_DefaultFetcher_urljoin_win32(tmp_dir_fixture):
         assert url == "http://example.com/bar/soup.cwl"
 
         # Security concern - can't resolve file: from http:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationException):
             url = fetcher.urljoin(
                 "http://example.com/fred/foo.cwl", "file:///c:/bar/soup.cwl"
             )
         # Drive-relative -- should NOT return "absolute" URI c:/bar/soup.cwl"
         # as that is a potential remote exploit
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationException):
             url = fetcher.urljoin("http://example.com/fred/foo.cwl", "c:/bar/soup.cwl")
 
     finally:
@@ -151,7 +152,7 @@ def test_DefaultFetcher_urljoin_linux(tmp_dir_fixture):
         assert url == "http://example.com/bar/soup.cwl"
 
         # Security concern - can't resolve file: from http:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationException):
             url = fetcher.urljoin(
                 "http://example.com/fred/foo.cwl", "file:///bar/soup.cwl"
             )
