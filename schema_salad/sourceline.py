@@ -352,8 +352,10 @@ class SourceLine(object):
         ):
             return ((self.item.lc.line or 0) + 1, (self.item.lc.col or 0) + 1)
         else:
-            return ((self.item.lc.data[self.key][0] or 0) + 1,
-                    (self.item.lc.data[self.key][1] or 0) + 1)
+            return (
+                (self.item.lc.data[self.key][0] or 0) + 1,
+                (self.item.lc.data[self.key][1] or 0) + 1,
+            )
 
     def end(self):  # type: () -> Optional[Tuple[int, int]]
         return None
