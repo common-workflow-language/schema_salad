@@ -75,7 +75,7 @@ def uri_file_path(url):  # type: (str) -> str
             if bool(split.fragment)
             else ""
         )
-    raise ValueError("Not a file URI: {}".format(url))
+    raise ValidationException("Not a file URI: {}".format(url))
 
 
 class NormDict(CommentedMap):
@@ -167,7 +167,9 @@ class DefaultFetcher(Fetcher):
                 resp = self.session.get(url)
                 resp.raise_for_status()
             except Exception as e:
-                raise_from(RuntimeError(url, e), e)
+                raise_from(
+                    ValidationException("Error fetching {}: {}".format(url, e)), e
+                )
             return resp.text
         if scheme == "file":
             try:
@@ -185,12 +187,13 @@ class DefaultFetcher(Fetcher):
 
             except (OSError, IOError) as err:
                 if err.filename == path:
-                    raise_from(RuntimeError(Text(err)), err)
+                    raise_from(ValidationException(Text(err)), err)
                 else:
                     raise_from(
-                        RuntimeError("Error reading {}: {}".format(url, err)), err
+                        ValidationException("Error reading {}: {}".format(url, err)),
+                        err,
                     )
-        raise ValueError("Unsupported scheme in url: {}".format(url))
+        raise ValidationException("Unsupported scheme in url: {}".format(url))
 
     def check_exists(self, url):  # type: (Text) -> bool
         if url in self.cache:
@@ -211,7 +214,7 @@ class DefaultFetcher(Fetcher):
             return os.path.exists(urllib.request.url2pathname(str(path)))
         if scheme == "mailto":
             return True
-        raise ValueError("Unsupported scheme in url: {}".format(url))
+        raise ValidationException("Unsupported scheme in url: {}".format(url))
 
     def urljoin(self, base_url, url):  # type: (Text, Text) -> Text
         if url.startswith("_:"):
@@ -220,7 +223,7 @@ class DefaultFetcher(Fetcher):
         basesplit = urllib.parse.urlsplit(base_url)
         split = urllib.parse.urlsplit(url)
         if basesplit.scheme and basesplit.scheme != "file" and split.scheme == "file":
-            raise ValueError(
+            raise ValidationException(
                 "Not resolving potential remote exploit {} from base {}".format(
                     url, base_url
                 )
@@ -292,7 +295,7 @@ class DefaultFetcher(Fetcher):
                 # Base is http://something but url is C:/something - which urllib
                 # would wrongly resolve as an absolute path that could later be used
                 # to access local files
-                raise ValueError(
+                raise ValidationException(
                     "Not resolving potential remote exploit {} from base {}".format(
                         url, base_url
                     )
@@ -613,31 +616,31 @@ class Loader(object):
         if not base_url:
             base_url = file_uri(os.getcwd()) + "/"
 
-        sl = SourceLine(obj, None, ValueError)
+        sl = SourceLine(obj, None)
         # If `ref` is a dict, look for special directives.
         if isinstance(lref, CommentedMap):
             obj = lref
             if "$import" in obj:
-                sl = SourceLine(obj, "$import", RuntimeError)
+                sl = SourceLine(obj, "$import")
                 if len(obj) == 1:
                     lref = obj[u"$import"]
                     obj = None
                 else:
-                    raise sl.makeError(
-                        u"'$import' must be the only field in {}".format(obj)
+                    raise ValidationException(
+                        u"'$import' must be the only field in {}".format(obj), sl
                     )
             elif "$include" in obj:
-                sl = SourceLine(obj, "$include", RuntimeError)
+                sl = SourceLine(obj, "$include")
                 if len(obj) == 1:
                     lref = obj[u"$include"]
                     inc = True
                     obj = None
                 else:
-                    raise sl.makeError(
-                        u"'$include' must be the only field in {}".format(obj)
+                    raise ValidationException(
+                        u"'$include' must be the only field in {}".format(obj), sl
                     )
             elif "$mixin" in obj:
-                sl = SourceLine(obj, "$mixin", RuntimeError)
+                sl = SourceLine(obj, "$mixin")
                 lref = obj[u"$mixin"]
                 mixin = obj
                 obj = None
@@ -648,14 +651,15 @@ class Loader(object):
                         lref = obj[identifier]
                         break
                 if not lref:
-                    raise sl.makeError(
+                    raise ValidationException(
                         u"Object `{}` does not have identifier field in {}".format(
                             obj, self.identifiers
-                        )
+                        ),
+                        sl,
                     )
 
         if not isinstance(lref, string_types):
-            raise ValueError(
+            raise ValidationException(
                 u"Expected CommentedMap or string, got {}: `{}`".format(
                     type(lref), lref
                 )
@@ -678,7 +682,7 @@ class Loader(object):
                     else:
                         return resolved_obj, metadata
                 else:
-                    raise ValueError(
+                    raise ValidationException(
                         u"Expected CommentedMap, got {}: `{}`".format(
                             type(metadata), metadata
                         )
@@ -692,7 +696,7 @@ class Loader(object):
             elif isinstance(resolved_obj, string_types):
                 return resolved_obj, CommentedMap()
             else:
-                raise ValueError(
+                raise ValidationException(
                     u"Expected MutableMapping or MutableSequence, got {}: `{}`".format(
                         type(resolved_obj), resolved_obj
                     )
@@ -752,9 +756,9 @@ class Loader(object):
             if url in self.idx:
                 resolved_obj = self.idx[url]
             else:
-                raise RuntimeError(
-                    "Reference `{}}` is not in the index. Index contains:\n  {}".format(
-                        url, "\n  ".join(self.idx)
+                raise ValidationException(
+                    "Reference `{}` is not in the index. Index contains: {}".format(
+                        url, ", ".join(self.idx)
                     )
                 )
 
