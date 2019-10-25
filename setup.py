@@ -43,6 +43,7 @@ install_requires = [
 
 extras_require = {
     ':python_version<"3.5"': ['typing >= 3.7.4'],
+    'docs': ['sphinx >= 2.2', 'pytest'],
 }
 
 setup(name='schema-salad',
