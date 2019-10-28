@@ -1,6 +1,7 @@
 from os.path import normpath
 
 import pytest
+import re
 import six
 
 from schema_salad.main import to_one_line_messages
@@ -169,7 +170,9 @@ def test_for_invalid_yaml2():
             assert (
                 msg.endswith("expected <block end>, but found ':'")
                 or msg.endswith("expected <block end>, but found u':'")
-                or msg.endswith("mapping with implicit null key")
+                or re.sub(r"\s+", " ", msg, re.M).endswith(
+                    "mapping with implicit null key"
+                )
             )
             print ("\n", e)
             raise
