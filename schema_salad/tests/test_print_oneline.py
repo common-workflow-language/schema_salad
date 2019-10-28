@@ -144,7 +144,7 @@ def test_for_invalid_yaml1():
             msg = str(e)
             assert re.search(src + r":10:7: while scanning a\s+simple key", msg, re.M)
             assert re.search(
-                src + r":11:1:   could not\s+find\s+expected ':'$", msg, re.M
+                src + r":11:1:   could not\s+find\s+expected ':'", msg, re.M
             )
             print ("\n", e)
             raise
