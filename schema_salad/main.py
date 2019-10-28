@@ -21,11 +21,7 @@ from .avro.schema import SchemaParseException
 from .exceptions import ValidationException
 from .makedoc import makedoc
 from .ref_resolver import Loader, file_uri
-from .sourceline import (
-    reformat_yaml_exception_message,
-    strip_dup_lineno,
-    to_one_line_messages,
-)
+from .sourceline import to_one_line_messages
 from .utils import json_dumps
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
@@ -333,17 +329,6 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
     except ValidationException as e:
         msg = six.text_type(e)
         msg = to_one_line_messages(str(msg)) if args.print_oneline else msg
-        _logger.error(
-            "Document `%s` failed validation:\n%s",
-            args.document,
-            msg,
-            exc_info=args.debug,
-        )
-        return 1
-    except RuntimeError as e:
-        msg = strip_dup_lineno(six.text_type(e))
-        msg = reformat_yaml_exception_message(str(msg))
-        msg = to_one_line_messages(msg) if args.print_oneline else msg
         _logger.error(
             "Document `%s` failed validation:\n%s",
             args.document,

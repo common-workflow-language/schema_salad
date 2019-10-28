@@ -1,9 +1,10 @@
 from os.path import normpath
 
 import pytest
+import re
 import six
 
-from schema_salad.main import reformat_yaml_exception_message, to_one_line_messages
+from schema_salad.main import to_one_line_messages
 from schema_salad.schema import load_and_validate, load_schema
 from schema_salad.sourceline import strip_dup_lineno
 from schema_salad.validate import ValidationException
@@ -50,7 +51,7 @@ def test_print_oneline_for_invalid_yaml():
     )
 
     src = "test16.cwl"
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValidationException):
         try:
             load_and_validate(
                 document_loader,
@@ -58,8 +59,8 @@ def test_print_oneline_for_invalid_yaml():
                 six.text_type(get_data("tests/test_schema/" + src)),
                 True,
             )
-        except RuntimeError as e:
-            msg = reformat_yaml_exception_message(strip_dup_lineno(six.text_type(e)))
+        except ValidationException as e:
+            msg = str(e)
             msg = to_one_line_messages(msg)
             assert msg.endswith(src + ":11:1: could not find expected ':'")
             print ("\n", e)
@@ -131,7 +132,7 @@ def test_for_invalid_yaml1():
     )
 
     src = "test16.cwl"
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValidationException):
         try:
             load_and_validate(
                 document_loader,
@@ -139,12 +140,12 @@ def test_for_invalid_yaml1():
                 six.text_type(get_data("tests/test_schema/" + src)),
                 True,
             )
-        except RuntimeError as e:
-            msg = reformat_yaml_exception_message(strip_dup_lineno(six.text_type(e)))
-            msgs = msg.splitlines()
-            assert len(msgs) == 2
-            assert msgs[0].endswith(src + ":10:7: while scanning a simple key")
-            assert msgs[1].endswith(src + ":11:1:   could not find expected ':'")
+        except ValidationException as e:
+            msg = str(e)
+            assert re.search(src + r":10:7: while scanning a\s+simple\s+key", msg, re.M)
+            assert re.search(
+                src + r":11:1:   could not\s+find\s+expected ':'$", msg, re.M
+            )
             print ("\n", e)
             raise
 
@@ -156,29 +157,20 @@ def test_for_invalid_yaml2():
     )
 
     src = "test19.cwl"
-    try:
-        load_and_validate(
-            document_loader,
-            avsc_names,
-            six.text_type(get_data("tests/test_schema/" + src)),
-            True,
-        )
-    except RuntimeError as e:
-        msg = reformat_yaml_exception_message(strip_dup_lineno(six.text_type(e)))
-        assert msg.endswith(
-            src + ":2:1: expected <block end>, but found ':'"
-        ) or msg.endswith(src + ":2:1: expected <block end>, but found u':'")
-        return
-    except ValidationException as e:
-        msgs = str(strip_dup_lineno(six.text_type(e)))
-        print (msgs)
-        # weird splits due to differing path length on MS Windows
-        # & during the release tests
-        assert "{}:2:1: Object".format(src) in msgs
-        assert "is not valid because" in msgs
-        assert "`CommandLineTool`" in msgs
-        assert "mapping with" in msgs
-        assert "implicit" in msgs
-        assert "null key" in msgs
-        return
-    assert False, "Missing RuntimeError or ValidationException"
+    with pytest.raises(ValidationException):
+        try:
+            load_and_validate(
+                document_loader,
+                avsc_names,
+                six.text_type(get_data("tests/test_schema/" + src)),
+                True,
+            )
+        except ValidationException as e:
+            msg = str(e)
+            assert (
+                msg.endswith("expected <block end>, but found ':'")
+                or msg.endswith("expected <block end>, but found u':'")
+                or re.search(r"mapping with\s+implicit\s+null key$", msg, re.M)
+            )
+            print ("\n", e)
+            raise

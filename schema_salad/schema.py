@@ -43,7 +43,7 @@ from .exceptions import (
 )
 from .avro.schema import Names, SchemaParseException, make_avsc_object
 from .ref_resolver import Loader
-from .sourceline import SourceLine, add_lc_filename, relname, strip_dup_lineno
+from .sourceline import SourceLine, add_lc_filename, relname
 
 SALAD_FILES = (
     "metaschema.yml",
@@ -242,7 +242,7 @@ def load_schema(
     schema_doc, schema_metadata = metaschema_loader.resolve_ref(schema_ref, "")
 
     if not isinstance(schema_doc, MutableSequence):
-        raise ValueError("Schema reference must resolve to a list.")
+        raise ValidationException("Schema reference must resolve to a list.")
 
     validate_doc(metaschema_names, schema_doc, metaschema_loader, True)
     metactx = schema_metadata.get("@context", {})
@@ -294,7 +294,7 @@ def load_and_validate(
             strict_foreign_properties=strict_foreign_properties,
         )
     except ValidationException as exc:
-        raise_from(ValidationException(strip_dup_lineno(str(exc))), exc)
+        raise_from(ValidationException("", None, [exc]), exc)
     return data, metadata
 
 
