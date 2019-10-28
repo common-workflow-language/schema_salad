@@ -142,10 +142,10 @@ def test_for_invalid_yaml1():
             )
         except ValidationException as e:
             msg = str(e)
-            msgs = msg.splitlines()
-            assert len(msgs) == 2
-            assert msgs[0].endswith(src + ":10:7: while scanning a simple key")
-            assert msgs[1].endswith(src + ":11:1:   could not find expected ':'")
+            assert re.search(src + r":10:7: while scanning a\s+simple key", msg, re.M)
+            assert re.search(
+                src + r":11:1:   could not find\s+expected ':'$", msg, re.M
+            )
             print ("\n", e)
             raise
 
@@ -170,9 +170,7 @@ def test_for_invalid_yaml2():
             assert (
                 msg.endswith("expected <block end>, but found ':'")
                 or msg.endswith("expected <block end>, but found u':'")
-                or re.sub(r"\s+", " ", msg, re.M).endswith(
-                    "mapping with implicit null key"
-                )
+                or re.search(r"mapping with implicit\s+null key$", msg, re.M)
             )
             print ("\n", e)
             raise
