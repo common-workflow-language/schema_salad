@@ -1346,7 +1346,7 @@ class Loader(object):
                         document[d] = self.validate_link(
                             d, document[d], docid, all_doc_ids
                         )
-                except ValidationException as v:
+                except SchemaSaladException as v:
                     v = v.with_sourceline(sl)
                     if d == "$schemas" or (
                         d in self.foreign_properties and not strict_foreign_properties

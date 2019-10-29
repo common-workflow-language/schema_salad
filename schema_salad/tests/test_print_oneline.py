@@ -4,10 +4,8 @@ import pytest
 import re
 import six
 
-from schema_salad.main import to_one_line_messages
 from schema_salad.schema import load_and_validate, load_schema
-from schema_salad.sourceline import strip_dup_lineno
-from schema_salad.validate import ValidationException
+from schema_salad.exceptions import ValidationException, to_one_line_messages
 
 from .util import get_data
 
@@ -28,7 +26,7 @@ def test_print_oneline():
                 True,
             )
         except ValidationException as e:
-            msgs = to_one_line_messages(str(e)).splitlines()
+            msgs = to_one_line_messages(e).splitlines()
             assert len(msgs) == 2
             assert msgs[0].endswith(
                 src + ":11:7: invalid field `invalid_field`, expected one of: "
@@ -60,8 +58,7 @@ def test_print_oneline_for_invalid_yaml():
                 True,
             )
         except ValidationException as e:
-            msg = str(e)
-            msg = to_one_line_messages(msg)
+            msg = to_one_line_messages(e)
             assert msg.endswith(src + ":11:1: could not find expected ':'")
             print ("\n", e)
             raise
@@ -83,7 +80,7 @@ def test_print_oneline_for_errors_in_the_same_line():
                 True,
             )
         except ValidationException as e:
-            msgs = to_one_line_messages(str(e)).splitlines()
+            msgs = to_one_line_messages(e).splitlines()
             assert len(msgs) == 2, msgs
             assert msgs[0].endswith(src + ":14:5: missing required field `id`")
             assert msgs[1].endswith(
@@ -109,16 +106,12 @@ def test_print_oneline_for_errors_in_resolve_ref():
                 document_loader, avsc_names, six.text_type(fullpath), True
             )
         except ValidationException as e:
-            msgs = to_one_line_messages(
-                str(strip_dup_lineno(six.text_type(e)))
-            ).splitlines()
+            msg = to_one_line_messages(e)
             # convert Windows path to Posix path
             if "\\" in fullpath:
                 fullpath = "/" + fullpath.lower().replace("\\", "/")
-            assert len(msgs) == 2
             print ("\n", e)
-            assert msgs[0].endswith(src + ":9:1: checking field `outputs`")
-            assert msgs[1].endswith(
+            assert msg.endswith(
                 src + ":14:5: Field `type` references unknown identifier "
                 "`Filea`, tried file://%s#Filea" % (fullpath)
             )
