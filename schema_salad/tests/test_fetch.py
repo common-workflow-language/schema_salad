@@ -57,6 +57,6 @@ def test_cache():
     foo = os.path.join(os.getcwd(), "foo.txt")
     foo = schema_salad.ref_resolver.file_uri(foo)
     loader.cache.update({foo: "hello: foo"})
-    print (loader.cache)
+    print(loader.cache)
     assert {"hello": "foo"} == loader.resolve_ref("foo.txt")[0]
     assert loader.check_exists(foo)

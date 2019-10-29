@@ -38,7 +38,7 @@ def test_errors():
                     True,
                 )
             except ValidationException as e:
-                print ("\n", e)
+                print("\n", e)
                 raise
 
 
@@ -286,7 +286,7 @@ def test_errors_previously_defined_dict_key():
                     True,
                 )
             except ValidationException as e:
-                print ("\n", e)
+                print("\n", e)
                 raise
 
 

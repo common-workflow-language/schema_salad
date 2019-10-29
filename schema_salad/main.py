@@ -39,7 +39,7 @@ def printrdf(
 ):
     # type: (...) -> None
     g = jsonld_context.makerdf(workflow, wf, ctx)
-    print (g.serialize(format=sr, encoding="utf-8").decode("utf-8"))
+    print(g.serialize(format=sr, encoding="utf-8").decode("utf-8"))
 
 
 def main(argsl=None):  # type: (Optional[List[str]]) -> int
@@ -170,7 +170,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
     args = parser.parse_args(argsl)
 
     if args.version is None and args.schema is None:
-        print ("{}: error: too few arguments".format(sys.argv[0]))
+        print("{}: error: too few arguments".format(sys.argv[0]))
         return 1
 
     if args.quiet:
@@ -181,7 +181,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
     pkg = pkg_resources.require("schema_salad")
     if pkg:
         if args.version:
-            print ("{} Current version: {}".format(sys.argv[0], pkg[0].version))
+            print("{} Current version: {}".format(sys.argv[0], pkg[0].version))
             return 0
         else:
             _logger.info("%s Current version: %s", sys.argv[0], pkg[0].version)
@@ -228,11 +228,11 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
 
     # Optionally print the schema after ref resolution
     if not args.document and args.print_pre:
-        print (json_dumps(schema_doc, indent=4))
+        print(json_dumps(schema_doc, indent=4))
         return 0
 
     if not args.document and args.print_index:
-        print (json_dumps(list(metaschema_loader.idx.keys()), indent=4))
+        print(json_dumps(list(metaschema_loader.idx.keys()), indent=4))
         return 0
 
     # Validate the schema document against the metaschema
@@ -281,7 +281,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
                 exc_info=((type(err), err, None) if args.debug else None),
             )
             if args.print_avro:
-                print (json_dumps(avsc_obj, indent=4))
+                print(json_dumps(avsc_obj, indent=4))
             return 1
     else:
         _logger.error("Schema `%s` must be a list.", args.schema)
@@ -289,22 +289,22 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
 
     # Optionally print Avro-compatible schema from schema
     if args.print_avro:
-        print (json_dumps(avsc_obj, indent=4))
+        print(json_dumps(avsc_obj, indent=4))
         return 0
 
     # Optionally print the json-ld context from the schema
     if args.print_jsonld_context:
         j = {"@context": schema_ctx}
-        print (json_dumps(j, indent=4, sort_keys=True))
+        print(json_dumps(j, indent=4, sort_keys=True))
         return 0
 
     # Optionally print the RDFS graph from the schema
     if args.print_rdfs:
-        print (rdfs.serialize(format=args.rdf_serializer).decode("utf-8"))
+        print(rdfs.serialize(format=args.rdf_serializer).decode("utf-8"))
         return 0
 
     if args.print_metadata and not args.document:
-        print (json_dumps(schema_metadata, indent=4))
+        print(json_dumps(schema_metadata, indent=4))
         return 0
 
     if args.print_inheritance_dot:
@@ -317,7 +317,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
 
     # If no document specified, all done.
     if not args.document:
-        print ("Schema `{}` is valid".format(args.schema))
+        print("Schema `{}` is valid".format(args.schema))
         return 0
 
     # Load target document and resolve refs
@@ -339,11 +339,11 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
 
     # Optionally print the document after ref resolution
     if args.print_pre:
-        print (json_dumps(document, indent=4))
+        print(json_dumps(document, indent=4))
         return 0
 
     if args.print_index:
-        print (json_dumps(list(document_loader.idx.keys()), indent=4))
+        print(json_dumps(list(document_loader.idx.keys()), indent=4))
         return 0
 
     # Validate the user document against the schema
@@ -366,14 +366,14 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
             printrdf(args.document, document, schema_ctx, args.rdf_serializer)
             return 0
         else:
-            print ("Document must be a dictionary or list.")
+            print("Document must be a dictionary or list.")
             return 1
 
     if args.print_metadata:
-        print (json_dumps(doc_metadata, indent=4))
+        print(json_dumps(doc_metadata, indent=4))
         return 0
 
-    print ("Document `{}` is valid".format(args.document))
+    print("Document `{}` is valid".format(args.document))
 
     return 0
 
