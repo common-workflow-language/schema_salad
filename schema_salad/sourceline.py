@@ -66,19 +66,6 @@ def chunk_messages(message):  # type: (str) -> List[Tuple[int, str]]
     return arr
 
 
-def to_one_line_messages(message):  # type: (str) -> str
-    ret = []
-    max_elem = (0, "")
-    for (indent, msg) in chunk_messages(message):
-        if indent > max_elem[0]:
-            max_elem = (indent, msg)
-        else:
-            ret.append(max_elem[1])
-            max_elem = (indent, msg)
-    ret.append(max_elem[1])
-    return "\n".join(ret)
-
-
 def reformat_yaml_exception_message(message):  # type: (str) -> str
     line_regex = re.compile(r'^\s+in "(.+)", line (\d+), column (\d+)$')
     fname_regex = re.compile(r"^file://" + re.escape(os.getcwd()) + "/")

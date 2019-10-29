@@ -1,6 +1,10 @@
-from typing import Any, Sequence, Optional, Tuple
+from typing import Any, Sequence, Optional, Tuple, List
 from typing_extensions import Text
 from .sourceline import reflow_all, strip_duplicated_lineno, SourceLine
+
+
+def to_one_line_messages(exc):  # type: (SchemaSaladException) -> Text
+    return "\n".join((c.summary() for c in exc.leaves()))
 
 
 class SchemaSaladException(Exception):
@@ -11,13 +15,33 @@ class SchemaSaladException(Exception):
         msg,  # type: Text
         sl=None,  # type: Optional[SourceLine]
         children=None,  # type: Optional[Sequence[SchemaSaladException]]
-        bullet="",  # type: Text
+        bullet_for_children="",  # type: Text
     ):  # type: (...) -> None
         super(SchemaSaladException, self).__init__(msg)
-        self.children = children if children else []
-        self.bullet = bullet if len(self.children) > 1 else ""
-        self.with_sourceline(sl)
         self.message = self.args[0]
+
+        # It will be set by its parent
+        self.bullet = ""  # type: Text
+
+        def simplify(exc):  # type: (SchemaSaladException) -> List[SchemaSaladException]
+            return [exc] if len(exc.message) else exc.children
+
+        def with_bullet(exc, bullet):
+            # type: (SchemaSaladException, Text) -> SchemaSaladException
+            if exc.bullet == "":
+                exc.bullet = bullet
+            return exc
+
+        if children is None:
+            self.children = []  # type: List[SchemaSaladException]
+        elif len(children) <= 1:
+            self.children = sum((simplify(c) for c in children), [])
+        else:
+            self.children = sum(
+                (simplify(with_bullet(c, bullet_for_children)) for c in children), []
+            )
+
+        self.with_sourceline(sl)
         self.propagate_sourceline()
 
     def propagate_sourceline(self):  # type: () -> None
@@ -43,6 +67,14 @@ class SchemaSaladException(Exception):
             self.end = None
         return self
 
+    def leaves(self):  # type: () -> List[SchemaSaladException]
+        if len(self.children):
+            return sum((c.leaves() for c in self.children), [])
+        elif len(self.message):
+            return [self]
+        else:
+            return []
+
     def prefix(self):  # type: () -> Text
         if self.file:
             linecol = self.start if self.start else ("", "")  # type: Tuple[Any, Any]
@@ -50,38 +82,27 @@ class SchemaSaladException(Exception):
         else:
             return ""
 
+    def summary(self, level=0, with_bullet=False):  # type: (int, bool) -> Text
+        indent_per_level = 2
+        spaces = (level * indent_per_level) * " "
+        bullet = self.bullet + " " if len(self.bullet) and with_bullet else ""
+        return "{}{}{}{}".format(self.prefix(), spaces, bullet, self.message)
+
     def __str__(self):  # type: () -> str
         return str(self.pretty_str())
 
-    def pretty_str(self, level=0, bullet=""):  # type: (int, Text) -> Text
-        indent_per_level = 2
-        ret = u""
-        next_level = level + 1
-        spaces = (level * indent_per_level) * " "
+    def pretty_str(self, level=0):  # type: (int) -> Text
         if len(self.message):
-            if self.file:
-                ret = "{}{}{}{}".format(
-                    self.prefix(),
-                    spaces,
-                    bullet + " " if len(bullet) else "",
-                    self.message,
-                )
-            else:
-                ret = "{}{}{}".format(
-                    spaces, bullet + " " if len(bullet) else "", self.message
-                )
+            my_summary = [self.summary(level, True)]
+            next_level = level + 1
         else:
+            my_summary = []
             next_level = level
 
         ret = "\n".join(
-            (
-                e
-                for e in [ret]
-                + [c.pretty_str(next_level, self.bullet) for c in self.children]
-                if len(e)
-            )
+            (e for e in my_summary + [c.pretty_str(next_level) for c in self.children])
         )
-        if level == 0 and len(self.message):
+        if level == 0:
             return strip_duplicated_lineno(reflow_all(ret))
         else:
             return ret
