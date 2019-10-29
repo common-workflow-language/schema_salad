@@ -272,7 +272,7 @@ def test_scoped_id():
     } == ra
 
     g = makerdf(None, ra, ctx)
-    print (g.serialize(format="n3"))
+    print(g.serialize(format="n3"))
 
     ra, _ = ldr.resolve_all(
         cmap({"location": "foo", "bar": {"location": "baz"}}),
@@ -285,7 +285,7 @@ def test_scoped_id():
     } == ra
 
     g = makerdf(None, ra, ctx)
-    print (g.serialize(format="n3"))
+    print(g.serialize(format="n3"))
 
     ra, _ = ldr.resolve_all(
         cmap({"id": "foo", "bar": {"location": "baz"}}),
@@ -298,7 +298,7 @@ def test_scoped_id():
     } == ra
 
     g = makerdf(None, ra, ctx)
-    print (g.serialize(format="n3"))
+    print(g.serialize(format="n3"))
 
     ra, _ = ldr.resolve_all(
         cmap({"location": "foo", "bar": {"id": "baz"}}),
@@ -311,7 +311,7 @@ def test_scoped_id():
     } == ra
 
     g = makerdf(None, ra, ctx)
-    print (g.serialize(format="n3"))
+    print(g.serialize(format="n3"))
 
 
 def test_subscoped_id():

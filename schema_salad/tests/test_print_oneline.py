@@ -38,7 +38,7 @@ def test_print_oneline():
                 "'loadContents', 'position', 'prefix', 'separate', 'itemSeparator', "
                 "'valueFrom', 'shellQuote'"
             )
-            print ("\n", e)
+            print("\n", e)
             raise
 
 
@@ -60,7 +60,7 @@ def test_print_oneline_for_invalid_yaml():
         except ValidationException as e:
             msg = to_one_line_messages(e)
             assert msg.endswith(src + ":11:1: could not find expected ':'")
-            print ("\n", e)
+            print("\n", e)
             raise
 
 
@@ -88,7 +88,7 @@ def test_print_oneline_for_errors_in_the_same_line():
                 "'secondaryFiles', 'format', 'streamable', 'doc', 'id', "
                 "'outputBinding', 'type'"
             )
-            print ("\n", e)
+            print("\n", e)
             raise
 
 
@@ -110,7 +110,7 @@ def test_print_oneline_for_errors_in_resolve_ref():
             # convert Windows path to Posix path
             if "\\" in fullpath:
                 fullpath = "/" + fullpath.lower().replace("\\", "/")
-            print ("\n", e)
+            print("\n", e)
             assert msg.endswith(
                 src + ":14:5: Field `type` references unknown identifier "
                 "`Filea`, tried file://%s#Filea" % (fullpath)
@@ -139,7 +139,7 @@ def test_for_invalid_yaml1():
             assert re.search(
                 src + r":11:1:   could not\s+find\s+expected ':'$", msg, re.M
             )
-            print ("\n", e)
+            print("\n", e)
             raise
 
 
@@ -165,5 +165,5 @@ def test_for_invalid_yaml2():
                 or msg.endswith("expected <block end>, but found u':'")
                 or re.search(r"mapping with\s+implicit\s+null key$", msg, re.M)
             )
-            print ("\n", e)
+            print("\n", e)
             raise

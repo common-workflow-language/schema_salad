@@ -18,7 +18,12 @@ test_dir_name = "tests/test_real_cwl/"
 class TestRealWorldCWL:
     @classmethod
     def setup_class(cls):
-        cls.document_loader, cls.avsc_names, schema_metadata, metaschema_loader = load_schema(  # noqa: B950
+        (
+            cls.document_loader,
+            cls.avsc_names,
+            schema_metadata,
+            metaschema_loader,
+        ) = load_schema(  # noqa: B950
             get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
         )
 
@@ -33,7 +38,7 @@ class TestRealWorldCWL:
                 )
             except ValidationException as e:
                 # msgs = to_one_line_messages(str(e)).splitlines()
-                print ("\n", e)
+                print("\n", e)
                 raise
 
     def test_topmed_single_doc(self):

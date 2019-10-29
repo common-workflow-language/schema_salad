@@ -79,7 +79,7 @@ def uri_file_path(url):  # type: (str) -> str
 
 
 def to_validation_exception(
-    e
+    e,
 ):  # type: (yaml.error.MarkedYAMLError) -> ValidationException
     fname_regex = re.compile(r"^file://" + re.escape(os.getcwd()) + "/")
 
