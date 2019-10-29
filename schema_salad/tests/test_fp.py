@@ -39,7 +39,7 @@ def test_fp():
     ):
         with pytest.raises(ValidationException):
             try:
-                print (t)
+                print(t)
                 load_and_validate(
                     document_loader,
                     avsc_names,
@@ -48,5 +48,5 @@ def test_fp():
                     strict_foreign_properties=True,
                 )
             except ValidationException as e:
-                print ("\n", e)
+                print("\n", e)
                 raise
