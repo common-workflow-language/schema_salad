@@ -1340,7 +1340,7 @@ class Loader(object):
             iterator = enumerate(document)
         elif isinstance(document, MutableMapping):
             for d in self.url_fields:
-                sl = SourceLine(document, d, Text)
+                sl = SourceLine(document, d)
                 try:
                     if d in document and d not in self.identity_links:
                         document[d] = self.validate_link(
@@ -1364,7 +1364,7 @@ class Loader(object):
                     identifier
                 ) in self.identifiers:  # validate that each id is defined uniquely
                     if identifier in document:
-                        sl = SourceLine(document, identifier, Text)
+                        sl = SourceLine(document, identifier)
                         if (
                             document[identifier] in all_doc_ids
                             and sl.makeLead() != all_doc_ids[document[identifier]]
@@ -1389,7 +1389,7 @@ class Loader(object):
             return
 
         for key, val in iterator:
-            sl = SourceLine(document, key, Text)
+            sl = SourceLine(document, key)
             try:
                 self.validate_links(
                     val,

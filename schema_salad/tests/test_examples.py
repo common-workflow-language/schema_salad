@@ -2,15 +2,13 @@ from __future__ import absolute_import, print_function
 
 import os
 
-import six
-
 import ruamel.yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 import schema_salad.main
 import schema_salad.ref_resolver
 import schema_salad.schema
 from schema_salad.jsonld_context import makerdf
-from schema_salad.sourceline import SourceLine, cmap
+from schema_salad.sourceline import cmap
 
 from .util import get_data
 
@@ -382,35 +380,6 @@ def test_file_uri():
     ) == schema_salad.ref_resolver.uri_file_path(
         "file:///foo/bar%20baz/quux#zing%20zong"
     )
-
-
-def test_sourceline():
-    ldr = schema_salad.ref_resolver.Loader({"id": "@id"})
-    b, _ = ldr.resolve_ref(get_data("tests/frag.yml"))
-
-    class TestExp(Exception):
-        pass
-
-    try:
-        with SourceLine(b, 1, TestExp, False):
-            raise Exception("Whoops")
-    except TestExp as e:
-        assert str(e).endswith("frag.yml:3:3: Whoops"), e
-    except Exception as exc:
-        assert False, exc
-
-    if six.PY2:
-        try:
-            with SourceLine(b, 1, TestExp, True):
-                raise Exception("Whoops")
-        except TestExp as e:
-            assert (
-                str(e)
-                .splitlines()[0]
-                .endswith("frag.yml:3:3: Traceback (most recent call last):")
-            ), str(e)
-        except Exception as exc:
-            assert False, exc
 
 
 def test_cmap():

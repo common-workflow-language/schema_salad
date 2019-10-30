@@ -210,7 +210,7 @@ def validate_ex(
         if isinstance(datum, MutableSequence):
             for i, d in enumerate(datum):
                 try:
-                    sl = SourceLine(datum, i, ValidationException)
+                    sl = SourceLine(datum, i)
                     if not validate_ex(
                         expected_schema.items,
                         d,
@@ -351,7 +351,7 @@ def validate_ex(
                     fieldval = None
 
             try:
-                sl = SourceLine(datum, f.name, six.text_type)
+                sl = SourceLine(datum, f.name)
                 if not validate_ex(
                     f.type,
                     fieldval,
@@ -386,7 +386,7 @@ def validate_ex(
                 if d == f.name:
                     found = True
             if not found:
-                sl = SourceLine(datum, d, six.text_type)
+                sl = SourceLine(datum, d)
                 if d is None:
                     err = ValidationException(u"mapping with implicit null key", sl)
                     if strict:
