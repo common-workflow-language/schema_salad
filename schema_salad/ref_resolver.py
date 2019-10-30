@@ -1401,7 +1401,7 @@ class Loader(object):
                 if key in self.nolinkcheck or (
                     isinstance(key, string_types) and ":" in key
                 ):
-                    _logger.warning(v)
+                    errors.append(v)
                 else:
                     docid2 = self.getid(val)
                     if docid2 is not None:
