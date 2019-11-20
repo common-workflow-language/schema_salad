@@ -549,7 +549,7 @@ def prefix_url(url, namespaces):  # type: (Text, Dict[Text, Text]) -> Text
 
 def save_relative_uri(uri, base_url, scoped_id, ref_scope, relative_uris):
     # type: (Text, Text, bool, Optional[int], bool) -> Union[Text, List[Text]]
-    if not relative_uris:
+    if not relative_uris or uri == base_url:
         return uri
     if isinstance(uri, MutableSequence):
         return [
