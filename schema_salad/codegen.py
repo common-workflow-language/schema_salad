@@ -21,6 +21,7 @@ def codegen(
     i,  # type: List[Dict[Text, Any]]
     schema_metadata,  # type: Dict[Text, Any]
     loader,  # type: Loader
+    target=None,  # type: Optional[str]
 ):  # type: (...) -> None
     """Generate classes with loaders for the given Schema Salad description."""
 
@@ -28,9 +29,13 @@ def codegen(
 
     gen = None  # type: Optional[CodeGenBase]
     if lang == "python":
-        gen = PythonCodeGen(sys.stdout)
+        if target:
+            dest = open(target, "w")
+        else:
+            dest = sys.stdout
+        gen = PythonCodeGen(dest)
     elif lang == "java":
-        gen = JavaCodeGen(schema_metadata.get("$base", schema_metadata.get("id")))
+        gen = JavaCodeGen(schema_metadata.get("$base", schema_metadata.get("id")), target=target)
     else:
         raise SchemaSaladException(
             "Unsupported code generation language '{}'".format(lang)

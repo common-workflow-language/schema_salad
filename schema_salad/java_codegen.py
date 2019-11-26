@@ -1,5 +1,7 @@
 """Work-in-progress Java code generator for a given schema salad definition."""
 import os
+import pkg_resources
+import string
 from typing import Any, Dict, List, MutableSequence, Union
 
 from six import string_types
@@ -10,27 +12,61 @@ from . import schema
 from .codegen_base import CodeGenBase, TypeDef
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
+POM_SRC_TEMPLATE = string.Template(pkg_resources.resource_string(__name__, "java/pom.xml"))
+
+
+def _ensure_directory_and_write(path, contents):
+    # type: (str, Text) -> None
+    dirname = os.path.dirname(path)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+    with open(path, "w") as f:
+        f.write(contents)
 
 
 class JavaCodeGen(CodeGenBase):
-    def __init__(self, base):
-        # type: (Text) -> None
+    def __init__(self, base, target):
+        # type: (Text, Optional[str]) -> None
 
         super(JavaCodeGen, self).__init__()
         sp = urllib.parse.urlsplit(base)
         self.package = ".".join(
             list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/")
         )
-        self.outdir = self.package.replace(".", "/")
+        self.artifact = self.package.split(".")[-1]
+        target = target or "."
+        self.target_dir = target
+        rel_package_dir = self.package.replace(".", "/")
+        self.main_src_dir = os.path.join(self.target_dir, "src", "main", "java", rel_package_dir)
+        self.test_src_dir = os.path.join(self.target_dir, "src", "test", "java", rel_package_dir)
 
     def prologue(self):  # type: () -> None
-        if not os.path.exists(self.outdir):
-            os.makedirs(self.outdir)
+        for src_dir in [self.main_src_dir, self.test_src_dir]:
+            if not os.path.exists(src_dir):
+                os.makedirs(src_dir)
+        pom_src = POM_SRC_TEMPLATE.safe_substitute(
+            group_id=self.package,
+            artifact_id=self.artifact,
+            version="0.0.1-SNAPSHOT",
+        )
+        with open(os.path.join(self.target_dir, "pom.xml"), "w") as f:
+            f.write(pom_src)
+
+        util_src_dirs = {
+            "main_utils": self.main_src_dir,
+            "test_utils": self.test_src_dir,
+        }
+        for (util_src, util_target) in util_src_dirs.items():
+            for util in pkg_resources.resource_listdir(__name__, "java/%s" % util_src):
+                src_path = os.path.join(util_target, "utils", util)
+                src_template = string.Template(pkg_resources.resource_string(__name__, "java/%s/%s" % (util_src, util)))
+                src = src_template.safe_substitute(package=self.package)
+                _ensure_directory_and_write(src_path, src)
 
     @staticmethod
     def safe_name(name):  # type: (Text) -> Text
         avn = schema.avro_name(name)
-        if avn in ("class", "extends", "abstract"):
+        if avn in ("class", "extends", "abstract", "default"):
             # reserved words
             avn = avn + "_"
         return avn
@@ -53,7 +89,7 @@ class JavaCodeGen(CodeGenBase):
         self.current_class_is_abstract = abstract
         self.current_loader = cStringIO()
         self.current_fields = cStringIO()
-        with open(os.path.join(self.outdir, "{}.java".format(cls)), "w") as f:
+        with open(os.path.join(self.main_src_dir, "{}.java".format(cls)), "w") as f:
             if extends:
                 ext = "extends " + ", ".join(self.interface_name(e) for e in extends)
             else:
@@ -70,7 +106,7 @@ public interface {cls} {ext} {{
         if self.current_class_is_abstract:
             return
 
-        with open(os.path.join(self.outdir, "{}Impl.java".format(cls)), "w") as f:
+        with open(os.path.join(self.main_src_dir, "{}Impl.java".format(cls)), "w") as f:
             f.write(
                 """package {package};
 
@@ -88,7 +124,7 @@ public class {cls}Impl implements {cls} {{
     def end_class(self, classname, field_names):
         # type: (Text, List[Text]) -> None
         with open(
-            os.path.join(self.outdir, "{}.java".format(self.current_class)), "a"
+            os.path.join(self.main_src_dir, "{}.java".format(self.current_class)), "a"
         ) as f:
             f.write(
                 """
@@ -105,7 +141,7 @@ public class {cls}Impl implements {cls} {{
         )
 
         with open(
-            os.path.join(self.outdir, "{}Impl.java".format(self.current_class)), "a"
+            os.path.join(self.main_src_dir, "{}Impl.java".format(self.current_class)), "a"
         ) as f:
             f.write(self.current_fields.getvalue())
             f.write(self.current_loader.getvalue())
@@ -137,7 +173,7 @@ public class {cls}Impl implements {cls} {{
         u"https://w3id.org/cwl/salad#null": TypeDef(
             "null_type", "Support.NullLoader()"
         ),
-        u"https://w3id.org/cwl/salad#Any": TypeDef("Any_type", "Support.AnyLoader()"),
+        u"https://w3id.org/cwl/salad#Any": TypeDef("Object", "Support.AnyLoader()"),
     }
 
     def type_loader(self, type_declaration):
@@ -154,7 +190,7 @@ public class {cls}Impl implements {cls} {{
         # type: (Text, TypeDef, Text, bool) -> None
         fieldname = self.safe_name(name)
         with open(
-            os.path.join(self.outdir, "{}.java".format(self.current_class)), "a"
+            os.path.join(self.main_src_dir, "{}.java".format(self.current_class)), "a"
         ) as f:
             f.write(
                 """
