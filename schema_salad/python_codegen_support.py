@@ -52,7 +52,7 @@ class LoadingOptions(object):
         schemas=None,  # type: Optional[List[Text]]
         original_doc=None,  # type: Optional[Any]
     ):  # type: (...) -> None
-        self.idx = {}  # type: Dict[Text, Text]
+        self.idx = {}  # type: Dict[Text, Dict[Text, Any]]
         self.fileuri = fileuri  # type: Optional[Text]
         self.namespaces = namespaces
         self.schemas = schemas
