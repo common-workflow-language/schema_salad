@@ -502,6 +502,8 @@ def avrold_doc(
     brand,  # type: str
     brandlink,  # type: str
     primtype,  # type: str
+    brandstyle=None,  # type: Optional[str]
+    brandinverse=False  # type: bool
 ):  # type: (...) -> None
     toc = ToC()
     toc.start_numbering = False
@@ -509,12 +511,18 @@ def avrold_doc(
     rt = RenderType(toc, j, renderlist, redirects, primtype)
     content = rt.typedoc.getvalue()  # type: Text
 
-    bootstrap_url = (
-        "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"
-    )
-    bootstrap_integrity = (
-        "sha384-604wwakM23pEysLJAhja8Lm42IIwYrJ0dEAqzFsj9pJ/P5buiujjywArgPCi8eoz"
-    )
+    if brandstyle is None:
+        bootstrap_url = (
+            "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"
+        )
+        bootstrap_integrity = (
+            "sha384-604wwakM23pEysLJAhja8Lm42IIwYrJ0dEAqzFsj9pJ/P5buiujjywArgPCi8eoz"
+        )
+        brandstyle_template = (
+            '<link ref="stylesheet" href={} integrity={} crossorigin="anonymous">'
+        )
+        brandstyle = brandstyle_template.format(bootstrap_url, bootstrap_integrity)
+
     picturefill_url = (
         "https://cdn.rawgit.com/scottjehl/picturefill/3.0.2/dist/picturefill.min.js"
     )
@@ -528,10 +536,7 @@ def avrold_doc(
     <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet"
-        href="{}"
-        integrity="{}"
-        crossorigin="anonymous">
+    {}
     <script>
     // Picture element HTML5 shiv
     document.createElement( "picture" );
@@ -540,7 +545,7 @@ def avrold_doc(
         integrity="{}"
         crossorigin="anonymous" async></script>
     """.format(
-            bootstrap_url, bootstrap_integrity, picturefill_url, picturefill_integrity
+            brandstyle, picturefill_url, picturefill_integrity
         )
     )
 
@@ -615,14 +620,17 @@ def avrold_doc(
     """
     )
 
+    navbar_extraclass = ""
+    if brandinverse:
+        navbar_extraclass = "navbar-inverse"
     outdoc.write(
         """
-      <nav class="navbar navbar-default navbar-fixed-top">
+      <nav class="navbar navbar-default navbar-fixed-top {}">
         <div class="container">
           <div class="navbar-header">
             <a class="navbar-brand" href="{}">{}</a>
     """.format(
-            brandlink, brand
+            navbar_extraclass, brandlink, brand
         )
     )
 
@@ -681,6 +689,8 @@ def main():  # type: () -> None
     parser.add_argument("--redirect", action="append")
     parser.add_argument("--brand")
     parser.add_argument("--brandlink")
+    parser.add_argument("--brandstyle")
+    parser.add_argument("--brandinverse", default=False, action="store_true")
     parser.add_argument("--primtype", default="#PrimitiveType")
 
     args = parser.parse_args()
@@ -722,7 +732,8 @@ def makedoc(args):  # type: (argparse.Namespace) -> None
         else:
             stdout = codecs.getwriter("utf-8")(sys.stdout)
     avrold_doc(
-        s, stdout, renderlist, redirect, args.brand, args.brandlink, args.primtype
+        s, stdout, renderlist, redirect, args.brand, args.brandlink, args.primtype,
+        brandstyle=args.brandstyle, brandinverse=args.brandinverse
     )
 
 
