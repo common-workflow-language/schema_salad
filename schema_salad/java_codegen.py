@@ -44,24 +44,6 @@ class JavaCodeGen(CodeGenBase):
         for src_dir in [self.main_src_dir, self.test_src_dir]:
             if not os.path.exists(src_dir):
                 os.makedirs(src_dir)
-        pom_src = POM_SRC_TEMPLATE.safe_substitute(
-            group_id=self.package,
-            artifact_id=self.artifact,
-            version="0.0.1-SNAPSHOT",
-        )
-        with open(os.path.join(self.target_dir, "pom.xml"), "w") as f:
-            f.write(pom_src)
-
-        util_src_dirs = {
-            "main_utils": self.main_src_dir,
-            "test_utils": self.test_src_dir,
-        }
-        for (util_src, util_target) in util_src_dirs.items():
-            for util in pkg_resources.resource_listdir(__name__, "java/%s" % util_src):
-                src_path = os.path.join(util_target, "utils", util)
-                src_template = string.Template(pkg_resources.resource_string(__name__, "java/%s/%s" % (util_src, util)))
-                src = src_template.safe_substitute(package=self.package)
-                _ensure_directory_and_write(src_path, src)
 
     @staticmethod
     def safe_name(name):  # type: (Text) -> Text
@@ -243,5 +225,35 @@ public class {cls}Impl implements {cls} {{
         return inner
 
     def epilogue(self, root_loader):  # type: (TypeDef) -> None
+        pom_src = POM_SRC_TEMPLATE.safe_substitute(
+            group_id=self.package,
+            artifact_id=self.artifact,
+            version="0.0.1-SNAPSHOT",
+        )
+        with open(os.path.join(self.target_dir, "pom.xml"), "w") as f:
+            f.write(pom_src)
+
+        vocab = "";
+        rvocab = "";
+        for k in sorted(self.vocab.keys()):
+            vocab += '''        vocab.put("{}", "{}");\n'''.format(k, self.vocab[k])
+            rvocab += '''        rvocab.put("{}", "{}");\n'''.format(self.vocab[k], k)
+
+        template_args = dict(
+            package=self.package,
+            vocab=vocab,
+            rvocab=rvocab,
+        )
+
+        util_src_dirs = {
+            "main_utils": self.main_src_dir,
+            "test_utils": self.test_src_dir,
+        }
+        for (util_src, util_target) in util_src_dirs.items():
+            for util in pkg_resources.resource_listdir(__name__, "java/%s" % util_src):
+                src_path = os.path.join(util_target, "utils", util)
+                src_template = string.Template(pkg_resources.resource_string(__name__, "java/%s/%s" % (util_src, util)))
+                src = src_template.safe_substitute(**template_args)
+                _ensure_directory_and_write(src_path, src)
 
         pass

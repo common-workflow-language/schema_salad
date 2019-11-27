@@ -5,19 +5,19 @@ import java.util.List;
 import java.util.Map;
 import org.yaml.snakeyaml.Yaml;
 
-public interface Loader {
+public interface Loader<T> {
 
-    abstract Object load(final Object doc, final String baseUri, final LoadingOptions loadingOptions, final String docRoot);
+    abstract T load(final Object doc, final String baseUri, final LoadingOptions loadingOptions, final String docRoot);
 
-    default Object load(final Object doc, final String baseUri, final LoadingOptions loadingOptions) {
+    default T load(final Object doc, final String baseUri, final LoadingOptions loadingOptions) {
         return load(doc, baseUri, loadingOptions, null);
     }
 
-    default Object documentLoad(final String doc, final String baseUri, final LoadingOptions loadingOptions) {
+    default T documentLoad(final String doc, final String baseUri, final LoadingOptions loadingOptions) {
         return load(doc, baseUri, loadingOptions);
     }
 
-    default Object documentLoad(final Map<String, Object> doc_, final String baseUri_, final LoadingOptions loadingOptions_) {
+    default T documentLoad(final Map<String, Object> doc_, final String baseUri_, final LoadingOptions loadingOptions_) {
         Map<String, Object> doc = doc_;
         LoadingOptions loadingOptions = loadingOptions_;
         if(doc.containsKey("$namespaces")) {
@@ -26,12 +26,7 @@ public interface Loader {
             doc = copyWithoutKey(doc, "$namespaces");
         }
         /*
-        if "$namespaces" in doc:
-            loadingOptions = LoadingOptions(
-                copyfrom=loadingOptions, namespaces=doc["$namespaces"]
-            )
-            doc = {k: v for k, v in doc.items() if k != "$namespaces"}
-
+        // Following doesn't seem to be used in Python.
         if "$schemas" in doc:
             loadingOptions = LoadingOptions(
                 copyfrom=loadingOptions, schemas=doc["$schemas"]
@@ -49,11 +44,11 @@ public interface Loader {
         }
     }
 
-    default Object documentLoad(final List<Object> doc, final String baseUri, final LoadingOptions loadingOptions) {
+    default T documentLoad(final List<Object> doc, final String baseUri, final LoadingOptions loadingOptions) {
         return load(doc, baseUri, loadingOptions);
     }
 
-    default Object documentLoadByUrl(final String url, final LoadingOptions loadingOptions) {
+    default T documentLoadByUrl(final String url, final LoadingOptions loadingOptions) {
         if(loadingOptions.idx.containsKey(url)) {
             return documentLoad(loadingOptions.idx.get(url), url, loadingOptions);
         }
@@ -64,6 +59,30 @@ public interface Loader {
         loadingOptions.idx.put(url, result);
         final LoadingOptionsBuilder urlLoadingOptions = new LoadingOptionsBuilder().copiedFrom(loadingOptions).setFileUri(url);
         return documentLoad(result, url, urlLoadingOptions.build());
+    }
+
+    default T loadField(final Object val_, final String baseUri, final LoadingOptions loadingOptions) {
+        Object val = val_;
+        if (val instanceof Map) {
+            Map<String, Object> valMap = (Map<String, Object>) val;
+            if(valMap.containsKey("$import")) {
+                if(loadingOptions.fileUri == null) {
+                    throw new ValidationException("Cannot load $import without fileuri");
+                }
+                return documentLoadByUrl(
+                    loadingOptions.fetcher.urlJoin(loadingOptions.fileUri, (String) valMap.get("$import")),
+                    loadingOptions
+                );
+            } else if(valMap.containsKey("$include")) {
+                if(loadingOptions.fileUri == null) {
+                    throw new ValidationException("Cannot load $import without fileuri");
+                }
+                val = loadingOptions.fetcher.fetchText(
+                    loadingOptions.fetcher.urlJoin(loadingOptions.fileUri, (String) valMap.get("$include"))
+                );
+            }
+        }
+        return load(val, baseUri, loadingOptions);
     }
 
     private Map<String, Object> copyWithoutKey(final Map<String, Object> doc, final String key) {
