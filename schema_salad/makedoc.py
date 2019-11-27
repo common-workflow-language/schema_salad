@@ -503,7 +503,7 @@ def avrold_doc(
     brandlink,  # type: str
     primtype,  # type: str
     brandstyle=None,  # type: Optional[str]
-    brandinverse=False  # type: bool
+    brandinverse=False,  # type: bool
 ):  # type: (...) -> None
     toc = ToC()
     toc.start_numbering = False
@@ -732,8 +732,15 @@ def makedoc(args):  # type: (argparse.Namespace) -> None
         else:
             stdout = codecs.getwriter("utf-8")(sys.stdout)
     avrold_doc(
-        s, stdout, renderlist, redirect, args.brand, args.brandlink, args.primtype,
-        brandstyle=args.brandstyle, brandinverse=args.brandinverse
+        s,
+        stdout,
+        renderlist,
+        redirect,
+        args.brand,
+        args.brandlink,
+        args.primtype,
+        brandstyle=args.brandstyle,
+        brandinverse=args.brandinverse,
     )
 
 
