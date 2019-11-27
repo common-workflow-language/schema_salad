@@ -99,6 +99,7 @@ class JavaCodeGen(CodeGenBase):
         self.current_class = cls
         self.current_class_is_abstract = abstract
         self.current_loader = cStringIO()
+        self.current_fieldtypes = {}
         self.current_fields = cStringIO()
         with open(os.path.join(self.main_src_dir, "{}.java".format(cls)), "w") as f:
 
@@ -128,22 +129,29 @@ public interface {cls} {ext} {{
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.UUID;
 import {package}.utils.LoaderInstances;
 import {package}.utils.LoadingOptions;
+import {package}.utils.LoadingOptionsBuilder;
 import {package}.utils.ValidationException;
 
 public class {cls}Impl implements {cls} {{
+    private LoadingOptions loadingOptions_ = new LoadingOptionsBuilder().build();
+    private Map<String, Object> extensionFields_ = new HashMap<String, Object>();
 """.format(
                     package=self.package, cls=cls, ext=ext
                 )
             )
         self.current_loader.write(
             """
-    public static {cls}Impl fromDoc(Object doc_, String baseUri, LoadingOptions loadingOptions, String docRoot) {{
+    public static {cls}Impl fromDoc(final Object doc_, final String baseUri_, LoadingOptions loadingOptions, final String docRoot_) {{
+        String baseUri = baseUri_;
+        String docRoot = docRoot_;
         if(!(doc_ instanceof Map)) {{
             throw new ValidationException("fromDoc called on non-map");
         }}
-        final Map<String, Object> doc = (Map<String, Object>) doc_;
+        final Map<String, Object> __doc = (Map<String, Object>) doc_;
         final {cls}Impl bean = new {cls}Impl();
 """.format(cls=cls)
         )
@@ -160,9 +168,16 @@ public class {cls}Impl implements {cls} {{
             )
         if self.current_class_is_abstract:
             return
+        print(field_names)
+        print(self.current_fieldtypes)
+        for fieldname in field_names:
+            fieldtype = self.current_fieldtypes[fieldname]
+            print(fieldtype)
+            self.current_loader.write("""        bean.{safename} = ({type}) {safename};
+""".format(safename=self.safe_name(fieldname), type=fieldtype.instance_type))
 
         self.current_loader.write(
-            """
+            """        
         return bean;
     }
 """
@@ -278,6 +293,7 @@ public class {cls}Impl implements {cls} {{
             cap_case_property_name = "Class_"
 
         safename = self.safe_name(fieldname)
+        self.current_fieldtypes[property_name] = fieldtype
         with open(
             os.path.join(self.main_src_dir, "{}.java".format(self.current_class)), "a"
         ) as f:
@@ -307,16 +323,18 @@ public class {cls}Impl implements {cls} {{
             )
         )
 
+        self.current_loader.write("""    {type} {safename};
+""".format(type=fieldtype.instance_type, safename=safename))
         if optional:
             self.current_loader.write("""
-        if(doc.containsKey("{fieldname}")) {{
+        if(__doc.containsKey("{fieldname}")) {{
 """.format(fieldname=fieldname))
             spc = "    "
         else:
             spc = ""
 
         self.current_loader.write(
-            """{spc}        bean.{safename} = LoaderInstances.{fieldtype}.loadField(doc.get("{fieldname}"), baseUri, loadingOptions);
+            """{spc}        {safename} = LoaderInstances.{fieldtype}.loadField(__doc.get("{fieldname}"), baseUri, loadingOptions);
 """.format(
                 fieldtype=fieldtype.name,
                 safename=safename,
@@ -328,13 +346,40 @@ public class {cls}Impl implements {cls} {{
         if optional:
             self.current_loader.write("""
         }} else {{
-            bean.{safename} = null;
+            {safename} = null;
         }}
 """.format(safename=safename))
 
     def declare_id_field(self, name, fieldtype, doc, optional):
         # type: (Text, TypeDef, Text, bool) -> None
-        pass
+        if self.current_class_is_abstract:
+            return
+
+        self.declare_field(name, fieldtype, doc, True)
+
+        if optional:
+            opt = """{safename} = "_:" + UUID.randomUUID().toString();""".format(
+                safename=self.safe_name(name)
+            )
+        else:
+            opt = """throw new ValidationException("Missing {fieldname}");""".format(
+                fieldname=shortname(name)
+            )
+
+        self.current_loader.write(
+            """
+        if({safename} == null) {{
+            if(docRoot != null) {{
+                {safename} = docRoot;
+            }} else {{
+                {opt}
+            }}
+        }}
+        baseUri = (String) {safename};
+""".format(
+                safename=self.safe_name(name), fieldname=shortname(name), opt=opt
+            )
+        )
 
     def uri_loader(self, inner, scoped_id, vocab_term, ref_scope):
         # type: (TypeDef, bool, bool, Union[int, None]) -> TypeDef
