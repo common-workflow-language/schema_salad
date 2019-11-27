@@ -16,10 +16,7 @@ public class EnumLoader implements Loader<String> {
     }
 
     public String load(final Object doc, final String baseUri, final LoadingOptions loadingOptions, final String docRoot) {
-        if(!(doc instanceof String)) {
-            throw new ValidationException("Expected raw string");
-        }
-        final String docString = (String) doc;
+        final String docString = Loader.validateOfJavaType(String.class, doc);
         if(!this.symbols.contains(docString)) {
             throw new ValidationException(String.format("Expected one of %s", this.symbols));
         }

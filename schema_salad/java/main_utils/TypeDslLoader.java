@@ -46,7 +46,6 @@ public class TypeDslLoader<T> implements Loader<T> {
     }
 
     public T load(final Object doc_, final String baseUri, final LoadingOptions loadingOptions, final String docRoot) {
-        // TODO: dispatch on String and List
         Object doc = doc_;
         if(doc instanceof List) {
             final List<Object> docList = (List<Object>) doc;
