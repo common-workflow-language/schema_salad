@@ -431,9 +431,19 @@ public class {cls}Impl implements {cls} {{
             )
         )
 
-
     def typedsl_loader(self, inner, ref_scope):
         # type: (TypeDef, Union[int, None]) -> TypeDef
+        assert inner is not None
+        instance_type = inner.instance_type or "Object"
+        return self.declare_type(
+            JavaTypeDef(
+                instance_type=instance_type,
+                name="typedsl_{}_{}".format(inner.name, ref_scope),
+                init="new TypeDslLoader({}, {})".format(inner.name, ref_scope),
+                loader_type="Loader<{}>".format(instance_type),
+            )
+        )
+
         return inner
 
     def to_java(self, val):
