@@ -2,14 +2,15 @@
 import os
 import pkg_resources
 import string
-from typing import Any, Dict, List, MutableSequence, Union
+from typing import Any, Dict, List, MutableMapping, MutableSequence, Union
 
-from six import string_types
+from six import iteritems, itervalues, string_types
 from six.moves import cStringIO, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import schema
 from .codegen_base import CodeGenBase, TypeDef
+from .schema import shortname
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 POM_SRC_TEMPLATE = string.Template(pkg_resources.resource_string(__name__, "java/pom.xml"))
@@ -22,6 +23,26 @@ def _ensure_directory_and_write(path, contents):
         os.makedirs(dirname)
     with open(path, "w") as f:
         f.write(contents)
+
+
+class JavaTypeDef(TypeDef):  # pylint: disable=too-few-public-methods
+    """Extend TypeDef with Java concepts."""
+
+    __slots__ = ["name", "init", "is_uri", "scoped_id", "ref_scope", "loader_type", "instance_type"]
+
+    def __init__(
+        self,  # pylint: disable=too-many-arguments
+        name,  # type: Text
+        init,  # type: Text
+        is_uri=False,  # type: bool
+        scoped_id=False,  # type: bool
+        ref_scope=0,  # type: Optional[int]
+        loader_type="Loader<Object>",  # type: Text
+        instance_type="Object",  # type: Text
+    ):  # type: (...) -> None
+        super(JavaTypeDef, self).__init__(name, init, is_uri, scoped_id, ref_scope)
+        self.loader_type = loader_type
+        self.instance_type = instance_type
 
 
 class JavaCodeGen(CodeGenBase):
@@ -44,6 +65,9 @@ class JavaCodeGen(CodeGenBase):
         for src_dir in [self.main_src_dir, self.test_src_dir]:
             if not os.path.exists(src_dir):
                 os.makedirs(src_dir)
+
+        for primative in itervalues(self.prims):
+            self.declare_type(primative)
 
     @staticmethod
     def safe_name(name):  # type: (Text) -> Text
@@ -72,12 +96,16 @@ class JavaCodeGen(CodeGenBase):
         self.current_loader = cStringIO()
         self.current_fields = cStringIO()
         with open(os.path.join(self.main_src_dir, "{}.java".format(cls)), "w") as f:
+
             if extends:
-                ext = "extends " + ", ".join(self.interface_name(e) for e in extends)
+                ext = "extends " + ", ".join(self.interface_name(e) for e in extends) + ", Savable"
             else:
-                ext = ""
+                ext = "extends Savable"
             f.write(
                 """package {package};
+
+import java.util.List;
+import {package}.utils.Savable;
 
 public interface {cls} {ext} {{
 """.format(
@@ -91,6 +119,8 @@ public interface {cls} {ext} {{
         with open(os.path.join(self.main_src_dir, "{}Impl.java".format(cls)), "w") as f:
             f.write(
                 """package {package};
+
+import java.util.List;
 
 public class {cls}Impl implements {cls} {{
 """.format(
@@ -134,39 +164,94 @@ public class {cls}Impl implements {cls} {{
             )
 
     prims = {
-        u"http://www.w3.org/2001/XMLSchema#string": TypeDef(
-            "String", "Support.StringLoader()"
+        u"http://www.w3.org/2001/XMLSchema#string": JavaTypeDef(
+            instance_type="String", init="new PrimitiveLoader<String>(String.class)", name="StringLoaderInstance", loader_type="Loader<String>"
         ),
-        u"http://www.w3.org/2001/XMLSchema#int": TypeDef(
-            "Integer", "Support.IntLoader()"
+        u"http://www.w3.org/2001/XMLSchema#int": JavaTypeDef(
+            instance_type="Integer", init="new PrimitiveLoader<Integer>(Integer.class)", name="IntegerLoaderInstance", loader_type="Loader<Integer>"
         ),
-        u"http://www.w3.org/2001/XMLSchema#long": TypeDef(
-            "Long", "Support.LongLoader()"
+        u"http://www.w3.org/2001/XMLSchema#long": JavaTypeDef(
+            instance_type="Long", name="LongLoaderInstance", loader_type="Loader<Long>", init="new PrimitiveLoader<Long>(Long.class)"
         ),
-        u"http://www.w3.org/2001/XMLSchema#float": TypeDef(
-            "Float", "Support.FloatLoader()"
+        u"http://www.w3.org/2001/XMLSchema#float": JavaTypeDef(
+            instance_type="Float", name="FloatLoaderInstance", loader_type="Loader<Float>", init="new PrimitiveLoader<Float>(Float.class)"
         ),
-        u"http://www.w3.org/2001/XMLSchema#double": TypeDef(
-            "Double", "Support.DoubleLoader()"
+        u"http://www.w3.org/2001/XMLSchema#double": JavaTypeDef(
+            instance_type="Double", name="DoubleLoaderInstance", loader_type="Loader<Double>", init="new PrimitiveLoader<Double>(Double.class)"
         ),
-        u"http://www.w3.org/2001/XMLSchema#boolean": TypeDef(
-            "Boolean", "Support.BoolLoader()"
+        u"http://www.w3.org/2001/XMLSchema#boolean": JavaTypeDef(
+            instance_type="Boolean", name="BooleanLoaderInstance", loader_type="Loader<Boolean>", init="new PrimitiveLoader<Boolean>(Boolean.class)"
         ),
-        u"https://w3id.org/cwl/salad#null": TypeDef(
-            "null_type", "Support.NullLoader()"
+        u"https://w3id.org/cwl/salad#null": JavaTypeDef(
+            instance_type="Object", name="NullLoaderInstance", loader_type="Loader<Object>", init="new NullLoader()"
         ),
-        u"https://w3id.org/cwl/salad#Any": TypeDef("Object", "Support.AnyLoader()"),
+        u"https://w3id.org/cwl/salad#Any": JavaTypeDef(instance_type="Object", name="AnyLoaderInstance", init="new AnyLoader()", loader_type="Loader<Object>"),
     }
 
     def type_loader(self, type_declaration):
-        # type: (Union[List[Any], Dict[Text, Any]]) -> TypeDef
-        if isinstance(type_declaration, MutableSequence) and len(type_declaration) == 2:
-            if type_declaration[0] == "https://w3id.org/cwl/salad#null":
-                type_declaration = type_declaration[1]
-        if isinstance(type_declaration, string_types):
-            if type_declaration in self.prims:
-                return self.prims[type_declaration]
-        return TypeDef("Object", "")
+        # type: (Union[List[Any], Dict[Text, Any], Text]) -> JavaTypeDef
+        if isinstance(type_declaration, MutableSequence):
+            sub = [self.type_loader(i) for i in type_declaration]
+            return self.declare_type(
+                JavaTypeDef(
+                    instance_type="Object",
+                    init="new UnionLoader(new Loader[] {{ {} }})".format(", ".join(s.name for s in sub)),
+                    name="union_of_{}".format("_or_".join(s.name for s in sub)),
+                    loader_type="Loader<Object>"
+                )
+            )
+        if isinstance(type_declaration, MutableMapping):
+            if type_declaration["type"] in (
+                "array",
+                "https://w3id.org/cwl/salad#array",
+            ):
+                i = self.type_loader(type_declaration["items"])
+                return self.declare_type(
+                    JavaTypeDef(
+                        # instance_type="List<{}>".format(i.instance_type),  # special doesn't work out, gotta actual use extends and such.
+                        instance_type="List<Object>",
+                        name="array_of_{}".format(i.name),
+                        init="new ArrayLoader({})".format(i.name),
+                        loader_type="Loader<List<Object>>"
+                    )
+                )
+            if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
+                for sym in type_declaration["symbols"]:
+                    self.add_vocab(shortname(sym), sym)
+                return self.declare_type(
+                    JavaTypeDef(
+                        instance_type="String",
+                        name=self.safe_name(type_declaration["name"]) + "Loader",
+                        loader_type="Loader<String>",
+                        init='new EnumLoader(new String[] {{ "{}" }})'.format(
+                            '", "'.join(
+                                self.safe_name(sym)
+                                for sym in type_declaration["symbols"]
+                            )
+                        ),
+                    )
+                )
+            if type_declaration["type"] in (
+                "record",
+                "https://w3id.org/cwl/salad#record",
+            ):
+                fqclass = "{}.{}".format(self.package, self.safe_name(type_declaration["name"]))
+                return self.declare_type(
+                    JavaTypeDef(
+                        instance_type=self.safe_name(type_declaration["name"]),
+                        name=self.safe_name(type_declaration["name"]) + "Loader",
+                        init="new RecordLoader<{}>({}.class)".format(
+                            fqclass,
+                            fqclass
+                        ),
+                        loader_type="Loader<{}>".format(fqclass)
+                    )
+                )
+            raise SchemaException("wft {}".format(type_declaration["type"]))
+        if type_declaration in self.prims:
+            return self.prims[type_declaration]
+        print(type_declaration)
+        return self.collected_types[self.safe_name(type_declaration) + "Loader"]
 
     def declare_field(self, name, fieldtype, doc, optional):
         # type: (Text, TypeDef, Text, bool) -> None
@@ -180,7 +265,7 @@ public class {cls}Impl implements {cls} {{
 """.format(
                     fieldname=fieldname,
                     capfieldname=fieldname[0].upper() + fieldname[1:],
-                    type=fieldtype.name,
+                    type=fieldtype.instance_type,
                 )
             )
 
@@ -196,7 +281,7 @@ public class {cls}Impl implements {cls} {{
 """.format(
                 fieldname=fieldname,
                 capfieldname=fieldname[0].upper() + fieldname[1:],
-                type=fieldtype.name,
+                type=fieldtype.instance_type,
             )
         )
 
@@ -239,10 +324,15 @@ public class {cls}Impl implements {cls} {{
             vocab += '''        vocab.put("{}", "{}");\n'''.format(k, self.vocab[k])
             rvocab += '''        rvocab.put("{}", "{}");\n'''.format(self.vocab[k], k)
 
+        loader_instances = ""
+        for _, collected_type in iteritems(self.collected_types):
+            loader_instances += "    static {} {} = {};\n".format(collected_type.loader_type, collected_type.name, collected_type.init)
+
         template_args = dict(
             package=self.package,
             vocab=vocab,
             rvocab=rvocab,
+            loader_instances=loader_instances,
         )
 
         util_src_dirs = {

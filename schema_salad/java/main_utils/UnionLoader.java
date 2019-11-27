@@ -1,12 +1,18 @@
 package ${package}.utils;
 
 import java.util.List;
+import java.util.Arrays;
+
 
 public class UnionLoader implements Loader<Object> {
     private final List<Loader> alternates;
 
     public UnionLoader(List<Loader> alternates) {
         this.alternates = alternates;
+    }
+
+    public UnionLoader(Loader[] alternates) {
+        this(Arrays.asList(alternates));
     }
 
     public Object load(final Object doc, final String baseUri, final LoadingOptions loadingOptions, final String docRoot) {

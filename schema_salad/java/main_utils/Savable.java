@@ -8,6 +8,7 @@ public interface Savable {
         return null;
     }
 
-    public abstract void save(boolean top, String baseUrl, boolean relativeUris);
+    // TODO:
+    // public abstract void save(boolean top, String baseUrl, boolean relativeUris);
 
 }
