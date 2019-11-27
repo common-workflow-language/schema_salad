@@ -86,7 +86,7 @@ public interface Loader<T> {
     private Map<String, Object> copyWithoutKey(final Map<String, Object> doc, final String key) {
         final Map<String, Object> result = new HashMap();
         for(final Map.Entry<String, Object> entry : doc.entrySet()) {
-            if(entry.getKey() != key) {
+            if(!entry.getKey().equals(key)) {
                 result.put(entry.getKey(), entry.getValue());
             }
         }

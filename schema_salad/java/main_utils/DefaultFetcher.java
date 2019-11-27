@@ -14,7 +14,7 @@ public class DefaultFetcher implements Fetcher {
 
         final URI baseUri = Uris.toUri(baseUrl);
         final URI uri = Uris.toUri(url);
-        if(baseUri.getScheme() != null && baseUri.getScheme() != "file" && uri.getScheme() == "file") {
+        if(baseUri.getScheme() != null && !baseUri.getScheme().equals("file") && "file".equals(uri.getScheme())) {
             throw new ValidationException(
                 String.format("Not resolving potential remote exploit %s from base %s".format(
                     url, baseUrl

@@ -14,7 +14,7 @@ public class Uris {
     }
 
     public static String fileUri(final String path, final boolean splitFrag) {
-        if(path == "file://") {
+        if(path.equals("file://")) {
             return path;
         }
         String frag;

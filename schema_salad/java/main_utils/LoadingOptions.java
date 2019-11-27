@@ -42,7 +42,7 @@ public class LoadingOptions {
         // if not isinstance(url, string_types):
         //    return url
         String url = url_;
-        if(url == "@id" || url == "@type") {
+        if(url.equals("@id") || url.equals("@type")) {
             return url;
         }
 
@@ -61,7 +61,7 @@ public class LoadingOptions {
         final String scheme = split.getScheme();
         final boolean hasFragment = stringHasContent(split.getFragment());
         if(scheme != null && 
-            ((scheme.length() > 0 && (scheme == "http" || scheme == "https" || scheme == "file")) ||
+            ((scheme.length() > 0 && (scheme.equals("http") || scheme.equals("https") || scheme.equals("file"))) ||
              url.startsWith("$(") || 
              url.startsWith("${"))) {
             // pass
@@ -74,7 +74,7 @@ public class LoadingOptions {
                 frg = split.getPath();
             }
             String pt;
-            if(splitbase.getPath() != "") {
+            if(!splitbase.getPath().equals("")) {
                 pt = splitbase.getPath();
             } else {
                 pt = "/";
