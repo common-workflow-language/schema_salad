@@ -70,8 +70,13 @@ class JavaCodeGen(CodeGenBase):
             self.declare_type(primative)
 
     @staticmethod
-    def safe_name(name):  # type: (Text) -> Text
+    def property_name(name):  # type: (Text) -> Text
         avn = schema.avro_name(name)
+        return avn
+
+    @staticmethod
+    def safe_name(name):  # type: (Text) -> Text
+        avn = JavaCodeGen.property_name(name)
         if avn in ("class", "extends", "abstract", "default"):
             # reserved words
             avn = avn + "_"
@@ -105,6 +110,7 @@ class JavaCodeGen(CodeGenBase):
                 """package {package};
 
 import java.util.List;
+
 import {package}.utils.Savable;
 
 public interface {cls} {ext} {{
@@ -121,6 +127,10 @@ public interface {cls} {ext} {{
                 """package {package};
 
 import java.util.List;
+import java.util.Map;
+import {package}.utils.LoaderInstances;
+import {package}.utils.LoadingOptions;
+import {package}.utils.ValidationException;
 
 public class {cls}Impl implements {cls} {{
 """.format(
@@ -129,8 +139,13 @@ public class {cls}Impl implements {cls} {{
             )
         self.current_loader.write(
             """
-    void Load() {
-"""
+    public static {cls}Impl fromDoc(Object doc_, String baseUri, LoadingOptions loadingOptions, String docRoot) {{
+        if(!(doc_ instanceof Map)) {{
+            throw new ValidationException("fromDoc called on non-map");
+        }}
+        final Map<String, Object> doc = (Map<String, Object>) doc_;
+        final {cls}Impl bean = new {cls}Impl();
+""".format(cls=cls)
         )
 
     def end_class(self, classname, field_names):
@@ -148,6 +163,7 @@ public class {cls}Impl implements {cls} {{
 
         self.current_loader.write(
             """
+        return bean;
     }
 """
         )
@@ -255,7 +271,13 @@ public class {cls}Impl implements {cls} {{
 
     def declare_field(self, name, fieldtype, doc, optional):
         # type: (Text, TypeDef, Text, bool) -> None
-        fieldname = self.safe_name(name)
+        fieldname = name
+        property_name = self.property_name(fieldname)
+        cap_case_property_name = property_name[0].upper() + property_name[1:]
+        if cap_case_property_name == "Class":
+            cap_case_property_name = "Class_"
+
+        safename = self.safe_name(fieldname)
         with open(
             os.path.join(self.main_src_dir, "{}.java".format(self.current_class)), "a"
         ) as f:
@@ -264,7 +286,7 @@ public class {cls}Impl implements {cls} {{
     {type} get{capfieldname}();
 """.format(
                     fieldname=fieldname,
-                    capfieldname=fieldname[0].upper() + fieldname[1:],
+                    capfieldname=cap_case_property_name,
                     type=fieldtype.instance_type,
                 )
             )
@@ -274,24 +296,41 @@ public class {cls}Impl implements {cls} {{
 
         self.current_fields.write(
             """
-    private {type} {fieldname};
+    private {type} {safename};
     public {type} get{capfieldname}() {{
-        return this.{fieldname};
+        return this.{safename};
     }}
 """.format(
-                fieldname=fieldname,
-                capfieldname=fieldname[0].upper() + fieldname[1:],
+                safename=safename,
+                capfieldname=cap_case_property_name,
                 type=fieldtype.instance_type,
             )
         )
 
+        if optional:
+            self.current_loader.write("""
+        if(doc.containsKey("{fieldname}")) {{
+""".format(fieldname=fieldname))
+            spc = "    "
+        else:
+            spc = ""
+
         self.current_loader.write(
-            """
-        this.{fieldname} = null; // TODO: loaders
-        """.format(
-                fieldname=fieldname
+            """{spc}        bean.{safename} = LoaderInstances.{fieldtype}.loadField(doc.get("{fieldname}"), baseUri, loadingOptions);
+""".format(
+                fieldtype=fieldtype.name,
+                safename=safename,
+                fieldname=name,
+                spc=spc
             )
         )
+
+        if optional:
+            self.current_loader.write("""
+        }} else {{
+            bean.{safename} = null;
+        }}
+""".format(safename=safename))
 
     def declare_id_field(self, name, fieldtype, doc, optional):
         # type: (Text, TypeDef, Text, bool) -> None
@@ -326,7 +365,7 @@ public class {cls}Impl implements {cls} {{
 
         loader_instances = ""
         for _, collected_type in iteritems(self.collected_types):
-            loader_instances += "    static {} {} = {};\n".format(collected_type.loader_type, collected_type.name, collected_type.init)
+            loader_instances += "    public static {} {} = {};\n".format(collected_type.loader_type, collected_type.name, collected_type.init)
 
         template_args = dict(
             package=self.package,
