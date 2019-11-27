@@ -340,7 +340,7 @@ public class {cls}Impl implements {cls} {{
         if optional:
             self.current_loader.write("""
         if(__doc.containsKey("{fieldname}")) {{
-""".format(fieldname=fieldname))
+""".format(fieldname=property_name))
             spc = "    "
         else:
             spc = ""
@@ -355,7 +355,7 @@ public class {cls}Impl implements {cls} {{
 """.format(
                 fieldtype=fieldtype.name,
                 safename=safename,
-                fieldname=name,
+                fieldname=property_name,
                 spc=spc
             )
         )
