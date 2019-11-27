@@ -1,5 +1,6 @@
 package ${package}.utils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -33,11 +34,12 @@ public class UriLoader<T> implements Loader<T> {
     public T load(final Object doc_, final String baseUri, final LoadingOptions loadingOptions, final String docRoot) {
         Object doc = doc_;
         if(doc instanceof List) {
-            List<Object> expandedDoc = (List<Object>) doc;
-            for(final Object el : expandedDoc) {
-                expandedDoc.add(this.expandUrl(el, baseUri, loadingOptions));
+            List<Object> docList = (List<Object>) doc;
+            List<Object> docWithExpansion = new ArrayList<Object>();
+            for(final Object el : docList) {
+                docWithExpansion.add(this.expandUrl(el, baseUri, loadingOptions));
             }
-            doc = expandedDoc;
+            doc = docWithExpansion;
         }
         if(doc instanceof String) {
             doc = this.expandUrl(
