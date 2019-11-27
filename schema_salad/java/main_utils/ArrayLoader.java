@@ -21,14 +21,21 @@ public class ArrayLoader<T> implements Loader<List<T>> {
         loaders.add(this);
         loaders.add(this.itemLoader);
         final UnionLoader unionLoader = new UnionLoader(loaders);
-        // TODO: validate multiple errors...
+        final List<ValidationException> errors = new ArrayList();
         for(final Object el : docList) {
-            final Object loadedField = unionLoader.loadField(el, baseUri, loadingOptions);
-            if(loadedField instanceof List) {
-                r.addAll((List<T>) loadedField);
-            } else {
-                r.add((T) loadedField);
+            try {
+                final Object loadedField = unionLoader.loadField(el, baseUri, loadingOptions);
+                if(loadedField instanceof List) {
+                    r.addAll((List<T>) loadedField);
+                } else {
+                    r.add((T) loadedField);
+                }
+            } catch(final ValidationException e) {
+                errors.add(e);
             }
+        }
+        if(!errors.isEmpty()) {
+            throw new ValidationException("", errors);
         }
         return r;
     }
