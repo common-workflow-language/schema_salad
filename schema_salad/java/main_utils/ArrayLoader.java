@@ -12,10 +12,7 @@ public class ArrayLoader<T> implements Loader<List<T>> {
     }
 
     public List<T> load(final Object doc, final String baseUri, final LoadingOptions loadingOptions, final String docRoot) {
-        if (!(doc instanceof List)) {
-            throw new ValidationException("Expected a list");
-        }
-        final List<Object> docList = (List<Object>) doc;
+        final List<Object> docList = (List<Object>) Loader.validateOfJavaType(List.class, doc);
         final List<T> r = new ArrayList();
         final List<Loader> loaders = new ArrayList<Loader>();
         loaders.add(this);

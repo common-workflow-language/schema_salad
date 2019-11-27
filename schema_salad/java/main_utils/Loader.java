@@ -93,4 +93,18 @@ public interface Loader<T> {
         return result;
     }
 
+    public static <T> T validateOfJavaType(final Class<T> clazz, final Object doc) {
+        if(!clazz.isInstance(doc)) {
+            String className = "null";
+            if(doc != null) {
+                className = doc.getClass().getName();
+            }
+            final String message = String.format("Expected object with Java type of %s but got %s",
+                clazz.getName(), className
+            );
+            throw new ValidationException(message);
+        }
+        return (T) doc;
+    }
+
 }

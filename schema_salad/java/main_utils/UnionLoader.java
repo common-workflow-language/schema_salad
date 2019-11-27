@@ -17,7 +17,6 @@ public class UnionLoader implements Loader<Object> {
     }
 
     public Object load(final Object doc, final String baseUri, final LoadingOptions loadingOptions, final String docRoot) {
-        // TODO: catch validation exceptions and format pretty error.
         final List<ValidationException> errors = new ArrayList();
         for(final Loader loader : this.alternates) {
             try {

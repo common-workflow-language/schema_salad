@@ -271,14 +271,16 @@ public class {cls}Impl implements {cls} {{
                 "record",
                 "https://w3id.org/cwl/salad#record",
             ):
+                is_abstract = type_declaration.get("abstract", False)
                 fqclass = "{}.{}".format(self.package, self.safe_name(type_declaration["name"]))
                 return self.declare_type(
                     JavaTypeDef(
                         instance_type=self.safe_name(type_declaration["name"]),
                         name=self.safe_name(type_declaration["name"]) + "Loader",
-                        init="new RecordLoader<{}>({}.class)".format(
+                        init="new RecordLoader<{}>({}{}.class)".format(
                             fqclass,
-                            fqclass
+                            fqclass,
+                            "Impl" if not is_abstract else "",
                         ),
                         loader_type="Loader<{}>".format(fqclass)
                     )
@@ -327,7 +329,7 @@ public class {cls}Impl implements {cls} {{
             )
         )
 
-        self.current_loader.write("""    {type} {safename};
+        self.current_loader.write("""        {type} {safename};
 """.format(type=fieldtype.instance_type, safename=safename))
         if optional:
             self.current_loader.write("""

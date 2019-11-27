@@ -28,7 +28,7 @@ public class RootLoader {
             loadingOptions = new LoadingOptionsBuilder().setFileUri(uri).build();
         }
         loadingOptions.idx.put(uri, result);
-        return LoaderInstances.${root_loader_name}.documentLoad(doc, uri, loadingOptions);
+        return LoaderInstances.${root_loader_name}.documentLoad(result, uri, loadingOptions);
     }
 
 }
