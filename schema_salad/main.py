@@ -108,9 +108,16 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
     parser.add_argument(
         "--codegen-target",
         type=str,
-        metavar="file or target for codegen",
         default=None,
         help="Defaults to sys.stdout for python (and ./ for hidden Java codegen)",
+    )
+
+    parser.add_argument(
+        "--codegen-examples",
+        type=str,
+        metavar="directory",
+        default=None,
+        help="Directory of example documents for test case generation (only used by java currently). Files matching valid* are assumed to valid examples of schema documents and will be test. Files matching invalid* are assumed to be invalid.",
     )
 
     exgroup.add_argument(
@@ -272,6 +279,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
             schema_metadata,
             document_loader,
             target=args.codegen_target,
+            examples=args.codegen_examples,
         )
         return 0
 

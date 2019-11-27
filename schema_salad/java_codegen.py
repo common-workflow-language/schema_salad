@@ -2,6 +2,7 @@
 import os
 import pkg_resources
 import string
+import shutil
 from typing import Any, Dict, List, MutableMapping, MutableSequence, Union
 
 from six import iteritems, itervalues, string_types
@@ -46,11 +47,11 @@ class JavaTypeDef(TypeDef):  # pylint: disable=too-few-public-methods
 
 
 class JavaCodeGen(CodeGenBase):
-    def __init__(self, base, target):
+    def __init__(self, base, target, examples):
         # type: (Text, Optional[str]) -> None
-
         super(JavaCodeGen, self).__init__()
         sp = urllib.parse.urlsplit(base)
+        self.examples = examples
         self.package = ".".join(
             list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/")
         )
@@ -58,8 +59,10 @@ class JavaCodeGen(CodeGenBase):
         target = target or "."
         self.target_dir = target
         rel_package_dir = self.package.replace(".", "/")
+        self.rel_package_dir = rel_package_dir
         self.main_src_dir = os.path.join(self.target_dir, "src", "main", "java", rel_package_dir)
         self.test_src_dir = os.path.join(self.target_dir, "src", "test", "java", rel_package_dir)
+        self.test_resources_dir = os.path.join(self.target_dir, "src", "test", "resources", rel_package_dir)
 
     def prologue(self):  # type: () -> None
         for src_dir in [self.main_src_dir, self.test_src_dir]:
@@ -413,6 +416,23 @@ public class {cls}Impl implements {cls} {{
         for _, collected_type in iteritems(self.collected_types):
             loader_instances += "    public static {} {} = {};\n".format(collected_type.loader_type, collected_type.name, collected_type.init)
 
+        example_tests = ""
+        if self.examples:
+            os.makedirs(os.path.dirname(self.test_resources_dir))
+            shutil.copytree(self.examples, os.path.join(self.test_resources_dir, "utils"))
+            for example_name in os.listdir(self.examples):
+                if example_name.startswith("valid"):
+                    basename = os.path.basename(example_name).split(".", 1)[0]
+                    example_tests += """
+    @Test
+    public void test{basename}() throws Exception {{
+        String baseUri = Uris.fileUri(Paths.get(".").toAbsolutePath().normalize().toString()) + "/";
+        java.net.URL url = getClass().getResource("{example_name}");
+        java.nio.file.Path resPath = java.nio.file.Paths.get(url.toURI());
+        String yaml = new String(java.nio.file.Files.readAllBytes(resPath), "UTF8");
+        RootLoader.loadDocumentByString(yaml, baseUri);
+    }}""".format(basename=basename, example_name=example_name, rel_package_dir=self.rel_package_dir)
+            
         template_args = dict(
             package=self.package,
             vocab=vocab,
@@ -420,6 +440,7 @@ public class {cls}Impl implements {cls} {{
             loader_instances=loader_instances,
             root_loader_name=root_loader.name,
             root_loader_instance_type=root_loader.instance_type,
+            example_tests=example_tests,
         )
 
         util_src_dirs = {
@@ -432,5 +453,3 @@ public class {cls}Impl implements {cls} {{
                 src_template = string.Template(pkg_resources.resource_string(__name__, "java/%s/%s" % (util_src, util)))
                 src = src_template.safe_substitute(**template_args)
                 _ensure_directory_and_write(src_path, src)
-
-        pass

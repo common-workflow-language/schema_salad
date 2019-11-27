@@ -17,6 +17,10 @@ public class RootLoader {
         return LoaderInstances.${root_loader_name}.documentLoad(doc, baseUri, loadingOptions);
     }
 
+    public static ${root_loader_instance_type} loadDocumentByString(final String doc, final String uri) {
+        return loadDocumentByString(doc, uri, null);
+    }
+
     public static ${root_loader_instance_type} loadDocumentByString(final String doc, final String uri, final LoadingOptions loadingOptions_) {
         final Map<String, Object> result = YamlUtils.mapFromString(doc);
         LoadingOptions loadingOptions = loadingOptions_;
