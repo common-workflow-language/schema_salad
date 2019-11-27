@@ -400,15 +400,50 @@ public class {cls}Impl implements {cls} {{
 
     def uri_loader(self, inner, scoped_id, vocab_term, ref_scope):
         # type: (TypeDef, bool, bool, Union[int, None]) -> TypeDef
-        return inner
+        assert inner is not None
+        instance_type = inner.instance_type or "Object"
+        return self.declare_type(
+            JavaTypeDef(
+                instance_type=instance_type,  # ?
+                name="uri_{}_{}_{}_{}".format(inner.name, scoped_id, vocab_term, ref_scope),
+                init="new UriLoader({}, {}, {}, {})".format(
+                    inner.name, self.to_java(scoped_id), self.to_java(vocab_term), self.to_java(ref_scope)
+                ),
+                is_uri=True,
+                scoped_id=scoped_id,
+                ref_scope=ref_scope,
+                loader_type="Loader<{}>".format(instance_type)
+            )
+        )
 
     def idmap_loader(self, field, inner, map_subject, map_predicate):
         # type: (Text, TypeDef, Text, Union[Text, None]) -> TypeDef
-        return inner
+        assert inner is not None
+        instance_type = inner.instance_type or "Object"
+        return self.declare_type(
+            JavaTypeDef(
+                instance_type=instance_type,
+                name="idmap_{}_{}".format(self.safe_name(field), inner.name),
+                init='new IdMapLoader({}, "{}", "{}")'.format(
+                    inner.name, map_subject, map_predicate
+                ),
+                loader_type="Loader<{}>".format(instance_type),
+            )
+        )
+
 
     def typedsl_loader(self, inner, ref_scope):
         # type: (TypeDef, Union[int, None]) -> TypeDef
         return inner
+
+    def to_java(self, val):
+        if val is True:
+            return "true"
+        elif val is None:
+            return "null"
+        elif val is False:
+            return "false"
+        return val
 
     def epilogue(self, root_loader):  # type: (TypeDef) -> None
         pom_src = POM_SRC_TEMPLATE.safe_substitute(

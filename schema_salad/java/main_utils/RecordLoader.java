@@ -16,7 +16,6 @@ public class RecordLoader<T extends Savable> implements Loader<T> {
         try {
             final Method method = this.savableClass.getMethod("fromDoc", Object.class, String.class, LoadingOptions.class, String.class);
             T ret = (T) method.invoke(this.savableClass, doc, baseUri, loadingOptions, docRoot);
-            if(true) { throw new RuntimeException("loadedRecord" + ret.toString()); }
             return ret;
         } catch(InvocationTargetException e) {
             final Throwable cause = e.getCause();

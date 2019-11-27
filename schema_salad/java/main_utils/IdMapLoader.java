@@ -1,5 +1,11 @@
 package ${package}.utils;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
+
 
 public class IdMapLoader<T> implements Loader<T> {
     private final Loader<T> innerLoader;
@@ -14,7 +20,30 @@ public class IdMapLoader<T> implements Loader<T> {
 
     public T load(final Object doc_, final String baseUri, final LoadingOptions loadingOptions, final String docRoot) {
         Object doc = doc_;
-        // TODO: dispatch on map
+        if(doc instanceof Map) {
+            final Map<String, Object> docMap = (Map<String, Object>) doc;
+            final List<Object> asList = new ArrayList();
+            final TreeSet<String> sortedKeys = new TreeSet<String>();
+            sortedKeys.addAll(docMap.keySet());
+            for(final String key : sortedKeys) {
+                final Object el = docMap.get(key);
+                if(el instanceof Map) {
+                    final Map<String, Object> v2 = new HashMap<String, Object>((Map<String, Object>) el);
+                    v2.put(this.mapSubject, key);
+                    asList.add(v2);
+                } else {
+                    if(this.mapPredicate != null) {
+                        final Map<String, Object> v3 = new HashMap<String, Object>();
+                        v3.put(this.mapPredicate, el);
+                        v3.put(this.mapSubject, key);
+                        asList.add(v3);
+                    } else {
+                        throw new ValidationException("No mapPredicate");
+                    }
+                }
+            }
+            doc = asList;
+        }
         return this.innerLoader.load(doc, baseUri, loadingOptions);
     }
 

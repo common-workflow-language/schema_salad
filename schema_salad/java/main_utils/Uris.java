@@ -2,8 +2,10 @@ package ${package}.utils;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.net.URISyntaxException;
 
 
 public class Uris {
@@ -37,6 +39,15 @@ public class Uris {
             return "file://" + urlPath + frag;
         }
     }
+
+    public static URI toUri(final String url) {
+        try {
+            return new URI(url);
+        } catch(URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     public static String quote(final String uri) {
         try {

@@ -1,9 +1,8 @@
 package ${package}.utils;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 
-import ${package}.utils.Fetcher;
+// import ${package}.utils.Fetcher;
 
 
 public class DefaultFetcher implements Fetcher {
@@ -13,8 +12,8 @@ public class DefaultFetcher implements Fetcher {
             return url;
         }
 
-        final URI baseUri = _toUri(baseUrl);
-        final URI uri = _toUri(url);
+        final URI baseUri = Uris.toUri(baseUrl);
+        final URI uri = Uris.toUri(url);
         if(baseUri.getScheme() != null && baseUri.getScheme() != "file" && uri.getScheme() == "file") {
             throw new ValidationException(
                 String.format("Not resolving potential remote exploit %s from base %s".format(
@@ -32,14 +31,6 @@ public class DefaultFetcher implements Fetcher {
 
     public String fetchText(final String url) {
         return "fetched";
-    }
-
-    private URI _toUri(final String url) {
-        try {
-            return new URI(url);
-        } catch(URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
     }
 
 }
