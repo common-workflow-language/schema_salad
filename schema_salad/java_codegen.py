@@ -145,14 +145,19 @@ public class {cls}Impl implements {cls} {{
             )
         self.current_loader.write(
             """
-    public static {cls}Impl fromDoc(final Object doc_, final String baseUri_, LoadingOptions loadingOptions, final String docRoot_) {{
-        String baseUri = baseUri_;
-        String docRoot = docRoot_;
-        if(!(doc_ instanceof Map)) {{
+    public static {cls}Impl fromDoc(final Object __doc_, final String __baseUri_, LoadingOptions __loadingOptions, final String __docRoot_) {{
+        // Prefix plumbing variables with '__' to reduce likelihood of collision with
+        // generated names.
+        String __baseUri = __baseUri_;
+        String __docRoot = __docRoot_;
+        if(!(__doc_ instanceof Map)) {{
             throw new ValidationException("fromDoc called on non-map");
         }}
-        final Map<String, Object> __doc = (Map<String, Object>) doc_;
-        final {cls}Impl bean = new {cls}Impl();
+        final Map<String, Object> __doc = (Map<String, Object>) __doc_;
+        final {cls}Impl __bean = new {cls}Impl();
+        if(__loadingOptions != null) {{
+            __bean.loadingOptions_ = __loadingOptions;
+        }}
 """.format(cls=cls)
         )
 
@@ -168,17 +173,14 @@ public class {cls}Impl implements {cls} {{
             )
         if self.current_class_is_abstract:
             return
-        print(field_names)
-        print(self.current_fieldtypes)
         for fieldname in field_names:
             fieldtype = self.current_fieldtypes[fieldname]
-            print(fieldtype)
-            self.current_loader.write("""        bean.{safename} = ({type}) {safename};
+            self.current_loader.write("""        __bean.{safename} = ({type}) {safename};
 """.format(safename=self.safe_name(fieldname), type=fieldtype.instance_type))
 
         self.current_loader.write(
             """        
-        return bean;
+        return __bean;
     }
 """
         )
@@ -334,7 +336,7 @@ public class {cls}Impl implements {cls} {{
             spc = ""
 
         self.current_loader.write(
-            """{spc}        {safename} = LoaderInstances.{fieldtype}.loadField(__doc.get("{fieldname}"), baseUri, loadingOptions);
+            """{spc}        {safename} = LoaderInstances.{fieldtype}.loadField(__doc.get("{fieldname}"), __baseUri, __loadingOptions);
 """.format(
                 fieldtype=fieldtype.name,
                 safename=safename,
@@ -369,13 +371,13 @@ public class {cls}Impl implements {cls} {{
         self.current_loader.write(
             """
         if({safename} == null) {{
-            if(docRoot != null) {{
-                {safename} = docRoot;
+            if(__docRoot != null) {{
+                {safename} = __docRoot;
             }} else {{
                 {opt}
             }}
         }}
-        baseUri = (String) {safename};
+        __baseUri = (String) {safename};
 """.format(
                 safename=self.safe_name(name), fieldname=shortname(name), opt=opt
             )
