@@ -130,6 +130,7 @@ public interface {cls} {ext} {{
             f.write(
                 """package {package};
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -157,6 +158,7 @@ public class {cls}Impl implements {cls} {{
             throw new ValidationException("fromDoc called on non-map");
         }}
         final Map<String, Object> __doc = (Map<String, Object>) __doc_;
+        final List<ValidationException> __errors = new ArrayList<ValidationException>();
         final {cls}Impl __bean = new {cls}Impl();
         if(__loadingOptions != null) {{
             __bean.loadingOptions_ = __loadingOptions;
@@ -176,6 +178,10 @@ public class {cls}Impl implements {cls} {{
             )
         if self.current_class_is_abstract:
             return
+
+        self.current_loader.write("""        if(!__errors.isEmpty()) {{
+            throw new ValidationException("Trying 'RecordField'", __errors);
+        }}""")
         for fieldname in field_names:
             fieldtype = self.current_fieldtypes[fieldname]
             self.current_loader.write("""        __bean.{safename} = ({type}) {safename};
@@ -340,7 +346,12 @@ public class {cls}Impl implements {cls} {{
             spc = ""
 
         self.current_loader.write(
-            """{spc}        {safename} = LoaderInstances.{fieldtype}.loadField(__doc.get("{fieldname}"), __baseUri, __loadingOptions);
+            """{spc}        try {{
+{spc}            {safename} = LoaderInstances.{fieldtype}.loadField(__doc.get("{fieldname}"), __baseUri, __loadingOptions);
+{spc}       }} catch(ValidationException e) {{
+{spc}            {safename} = null; // won't be used but prevents compiler from complaining.
+{spc}            __errors.add(new ValidationException("the `{fieldname}` field is not valid because:", e));
+{spc}       }}
 """.format(
                 fieldtype=fieldtype.name,
                 safename=safename,

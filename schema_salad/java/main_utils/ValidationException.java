@@ -11,7 +11,11 @@ public class ValidationException extends RuntimeException {
     private String currentMessage;
 
     public ValidationException(final String message) {
-        this(message, null);
+        this(message, (List<ValidationException>) null);
+    }
+
+    public ValidationException(final String message, final ValidationException child) {
+        this(message, Arrays.asList(child));
     }
 
     public ValidationException(final String message, final List<ValidationException> children_) {
