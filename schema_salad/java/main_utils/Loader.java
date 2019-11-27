@@ -3,7 +3,6 @@ package ${package}.utils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.yaml.snakeyaml.Yaml;
 
 public interface Loader<T> {
 
@@ -54,8 +53,7 @@ public interface Loader<T> {
         }
 
         final String text = loadingOptions.fetcher.fetchText(url);
-        Yaml yaml = new Yaml();
-        final Map<String, Object> result = yaml.load(text);
+        final Map<String, Object> result = YamlUtils.mapFromString(text);
         loadingOptions.idx.put(url, result);
         final LoadingOptionsBuilder urlLoadingOptions = new LoadingOptionsBuilder().copiedFrom(loadingOptions).setFileUri(url);
         return documentLoad(result, url, urlLoadingOptions.build());

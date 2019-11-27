@@ -1,5 +1,8 @@
 package ${package}.utils;
 
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+
 
 public interface Fetcher {
 

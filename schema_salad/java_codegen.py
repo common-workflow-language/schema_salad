@@ -283,7 +283,6 @@ public class {cls}Impl implements {cls} {{
             raise SchemaException("wft {}".format(type_declaration["type"]))
         if type_declaration in self.prims:
             return self.prims[type_declaration]
-        print(type_declaration)
         return self.collected_types[self.safe_name(type_declaration) + "Loader"]
 
     def declare_field(self, name, fieldtype, doc, optional):
@@ -419,6 +418,8 @@ public class {cls}Impl implements {cls} {{
             vocab=vocab,
             rvocab=rvocab,
             loader_instances=loader_instances,
+            root_loader_name=root_loader.name,
+            root_loader_instance_type=root_loader.instance_type,
         )
 
         util_src_dirs = {
