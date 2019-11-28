@@ -115,11 +115,9 @@ class JavaCodeGen(CodeGenBase):
                 """package {package};
 
 import java.util.List;
-
 import {package}.utils.Savable;
 
-public interface {cls} {ext} {{
-""".format(
+public interface {cls} {ext} {{""".format(
                     package=self.package, cls=cls, ext=ext
                 )
             )
@@ -132,9 +130,9 @@ public interface {cls} {ext} {{
                 """package {package};
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.UUID;
 import {package}.utils.LoaderInstances;
 import {package}.utils.LoadingOptions;
@@ -143,28 +141,32 @@ import {package}.utils.SavableImpl;
 import {package}.utils.ValidationException;
 
 public class {cls}Impl extends SavableImpl implements {cls} {{
-    private LoadingOptions loadingOptions_ = new LoadingOptionsBuilder().build();
-    private Map<String, Object> extensionFields_ = new HashMap<String, Object>();
+  private LoadingOptions loadingOptions_ = new LoadingOptionsBuilder().build();
+  private Map<String, Object> extensionFields_ = new HashMap<String, Object>();
 """.format(
                     package=self.package, cls=cls, ext=ext
                 )
             )
         self.current_loader.write(
             """
-    public {cls}Impl(final Object __doc_, final String __baseUri_, LoadingOptions __loadingOptions, final String __docRoot_) {{
-        super(__doc_, __baseUri_, __loadingOptions, __docRoot_);
-        // Prefix plumbing variables with '__' to reduce likelihood of collision with
-        // generated names.
-        String __baseUri = __baseUri_;
-        String __docRoot = __docRoot_;
-        if(!(__doc_ instanceof Map)) {{
-            throw new ValidationException("fromDoc called on non-map");
-        }}
-        final Map<String, Object> __doc = (Map<String, Object>) __doc_;
-        final List<ValidationException> __errors = new ArrayList<ValidationException>();
-        if(__loadingOptions != null) {{
-            this.loadingOptions_ = __loadingOptions;
-        }}
+  public {cls}Impl(
+      final Object __doc_,
+      final String __baseUri_,
+      LoadingOptions __loadingOptions,
+      final String __docRoot_) {{
+    super(__doc_, __baseUri_, __loadingOptions, __docRoot_);
+    // Prefix plumbing variables with '__' to reduce likelihood of collision with
+    // generated names.
+    String __baseUri = __baseUri_;
+    String __docRoot = __docRoot_;
+    if (!(__doc_ instanceof Map)) {{
+      throw new ValidationException("fromDoc called on non-map");
+    }}
+    final Map<String, Object> __doc = (Map<String, Object>) __doc_;
+    final List<ValidationException> __errors = new ArrayList<ValidationException>();
+    if (__loadingOptions != null) {{
+      this.loadingOptions_ = __loadingOptions;
+    }}
 """.format(cls=cls)
         )
 
@@ -181,19 +183,16 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         if self.current_class_is_abstract:
             return
 
-        self.current_loader.write("""        if(!__errors.isEmpty()) {{
-            throw new ValidationException("Trying 'RecordField'", __errors);
-        }}""")
+        self.current_loader.write("""    if (!__errors.isEmpty()) {
+      throw new ValidationException("Trying 'RecordField'", __errors);
+    }
+""")
         for fieldname in field_names:
             fieldtype = self.current_fieldtypes[fieldname]
-            self.current_loader.write("""        this.{safename} = ({type}) {safename};
+            self.current_loader.write("""    this.{safename} = ({type}) {safename};
 """.format(safename=self.safe_name(fieldname), type=fieldtype.instance_type))
 
-        self.current_loader.write(
-            """        
-    }
-"""
-        )
+        self.current_loader.write("""  }""")
 
         with open(
             os.path.join(self.main_src_dir, "{}Impl.java".format(self.current_class)), "a"
@@ -312,8 +311,8 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         ) as f:
             f.write(
                 """
-    {type} get{capfieldname}();
-""".format(
+
+  {type} get{capfieldname}();""".format(
                     fieldname=fieldname,
                     capfieldname=cap_case_property_name,
                     type=fieldtype.instance_type,
@@ -325,10 +324,11 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
 
         self.current_fields.write(
             """
-    private {type} {safename};
-    public {type} get{capfieldname}() {{
-        return this.{safename};
-    }}
+  private {type} {safename};
+
+  public {type} get{capfieldname}() {{
+    return this.{safename};
+  }}
 """.format(
                 safename=safename,
                 capfieldname=cap_case_property_name,
@@ -336,23 +336,26 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
             )
         )
 
-        self.current_loader.write("""        {type} {safename};
+        self.current_loader.write("""    {type} {safename};
 """.format(type=fieldtype.instance_type, safename=safename))
         if optional:
             self.current_loader.write("""
-        if(__doc.containsKey("{fieldname}")) {{
+    if (__doc.containsKey("{fieldname}")) {{
 """.format(fieldname=property_name))
-            spc = "    "
+            spc = "  "
         else:
             spc = ""
 
         self.current_loader.write(
-            """{spc}        try {{
-{spc}            {safename} = LoaderInstances.{fieldtype}.loadField(__doc.get("{fieldname}"), __baseUri, __loadingOptions);
-{spc}       }} catch(ValidationException e) {{
-{spc}            {safename} = null; // won't be used but prevents compiler from complaining.
-{spc}            __errors.add(new ValidationException("the `{fieldname}` field is not valid because:", e));
-{spc}       }}
+            """{spc}    try {{
+{spc}      {safename} =
+{spc}          LoaderInstances
+{spc}              .{fieldtype}
+{spc}              .loadField(__doc.get("{fieldname}"), __baseUri, __loadingOptions);
+{spc}    }} catch (ValidationException e) {{
+{spc}      {safename} = null; // won't be used but prevents compiler from complaining.
+{spc}      __errors.add(new ValidationException("the `{fieldname}` field is not valid because:", e));
+{spc}    }}
 """.format(
                 fieldtype=fieldtype.name,
                 safename=safename,
@@ -363,9 +366,9 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
 
         if optional:
             self.current_loader.write("""
-        }} else {{
-            {safename} = null;
-        }}
+    }} else {{
+      {safename} = null;
+    }}
 """.format(safename=safename))
 
     def declare_id_field(self, name, fieldtype, doc, optional):
@@ -386,14 +389,14 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
 
         self.current_loader.write(
             """
-        if({safename} == null) {{
-            if(__docRoot != null) {{
-                {safename} = __docRoot;
-            }} else {{
-                {opt}
-            }}
-        }}
-        __baseUri = (String) {safename};
+    if ({safename} == null) {{
+      if (__docRoot != null) {{
+        {safename} = __docRoot;
+      }} else {{
+        {opt}
+      }}
+    }}
+    __baseUri = (String) {safename};
 """.format(
                 safename=self.safe_name(name), fieldname=shortname(name), opt=opt
             )
@@ -471,12 +474,12 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         vocab = "";
         rvocab = "";
         for k in sorted(self.vocab.keys()):
-            vocab += '''        vocab.put("{}", "{}");\n'''.format(k, self.vocab[k])
-            rvocab += '''        rvocab.put("{}", "{}");\n'''.format(self.vocab[k], k)
+            vocab += '''    vocab.put("{}", "{}");\n'''.format(k, self.vocab[k])
+            rvocab += '''    rvocab.put("{}", "{}");\n'''.format(self.vocab[k], k)
 
         loader_instances = ""
         for _, collected_type in iteritems(self.collected_types):
-            loader_instances += "    public static {} {} = {};\n".format(collected_type.loader_type, collected_type.name, collected_type.init)
+            loader_instances += "  public static {} {} = {};\n".format(collected_type.loader_type, collected_type.name, collected_type.init)
 
         example_tests = ""
         if self.examples:
@@ -486,14 +489,14 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                 if example_name.startswith("valid"):
                     basename = os.path.basename(example_name).split(".", 1)[0]
                     example_tests += """
-    @Test
-    public void test{basename}() throws Exception {{
-        String baseUri = Uris.fileUri(Paths.get(".").toAbsolutePath().normalize().toString()) + "/";
-        java.net.URL url = getClass().getResource("{example_name}");
-        java.nio.file.Path resPath = java.nio.file.Paths.get(url.toURI());
-        String yaml = new String(java.nio.file.Files.readAllBytes(resPath), "UTF8");
-        RootLoader.loadDocumentByString(yaml, baseUri);
-    }}""".format(basename=basename, example_name=example_name, rel_package_dir=self.rel_package_dir)
+  @Test
+  public void test{basename}() throws Exception {{
+    String baseUri = Uris.fileUri(Paths.get(".").toAbsolutePath().normalize().toString()) + "/";
+    java.net.URL url = getClass().getResource("{example_name}");
+    java.nio.file.Path resPath = java.nio.file.Paths.get(url.toURI());
+    String yaml = new String(java.nio.file.Files.readAllBytes(resPath), "UTF8");
+    RootLoader.loadDocumentByString(yaml, baseUri);
+  }}""".format(basename=basename, example_name=example_name, rel_package_dir=self.rel_package_dir)
             
         template_args = dict(
             package=self.package,

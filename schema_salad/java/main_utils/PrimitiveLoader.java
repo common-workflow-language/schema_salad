@@ -1,16 +1,17 @@
 package ${package}.utils;
 
-import ${package}.utils.ValidationException;
-
-
 public class PrimitiveLoader<T> implements Loader<T> {
-    private Class<T> clazz;
+  private Class<T> clazz;
 
-    public PrimitiveLoader(Class<T> clazz) {
-        this.clazz = clazz;
-    }
+  public PrimitiveLoader(Class<T> clazz) {
+    this.clazz = clazz;
+  }
 
-    public T load(final Object doc, final String baseUri, final LoadingOptions loadingOptions, final String docRoot) {
-        return Loader.validateOfJavaType(this.clazz, doc);
-    }
+  public T load(
+      final Object doc,
+      final String baseUri,
+      final LoadingOptions loadingOptions,
+      final String docRoot) {
+    return Loader.validateOfJavaType(this.clazz, doc);
+  }
 }
