@@ -1,6 +1,6 @@
 package ${package}.utils;
 
-import java.lang.reflect.Method;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 
@@ -14,8 +14,8 @@ public class RecordLoader<T extends Savable> implements Loader<T> {
     public T load(final Object doc, final String baseUri, final LoadingOptions loadingOptions, final String docRoot) {
         Loader.validateOfJavaType(java.util.Map.class, doc);
         try {
-            final Method method = this.savableClass.getMethod("fromDoc", Object.class, String.class, LoadingOptions.class, String.class);
-            T ret = (T) method.invoke(this.savableClass, doc, baseUri, loadingOptions, docRoot);
+            final Constructor<? extends T> constructor = this.savableClass.getConstructor(new Class[] {Object.class, String.class, LoadingOptions.class, String.class});
+            final T ret = constructor.newInstance(doc, baseUri, loadingOptions, docRoot);
             return ret;
         } catch(InvocationTargetException e) {
             final Throwable cause = e.getCause();

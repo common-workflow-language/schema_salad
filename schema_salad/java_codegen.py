@@ -139,9 +139,10 @@ import java.util.UUID;
 import {package}.utils.LoaderInstances;
 import {package}.utils.LoadingOptions;
 import {package}.utils.LoadingOptionsBuilder;
+import {package}.utils.SavableImpl;
 import {package}.utils.ValidationException;
 
-public class {cls}Impl implements {cls} {{
+public class {cls}Impl extends SavableImpl implements {cls} {{
     private LoadingOptions loadingOptions_ = new LoadingOptionsBuilder().build();
     private Map<String, Object> extensionFields_ = new HashMap<String, Object>();
 """.format(
@@ -150,7 +151,8 @@ public class {cls}Impl implements {cls} {{
             )
         self.current_loader.write(
             """
-    public static {cls}Impl fromDoc(final Object __doc_, final String __baseUri_, LoadingOptions __loadingOptions, final String __docRoot_) {{
+    public {cls}Impl(final Object __doc_, final String __baseUri_, LoadingOptions __loadingOptions, final String __docRoot_) {{
+        super(__doc_, __baseUri_, __loadingOptions, __docRoot_);
         // Prefix plumbing variables with '__' to reduce likelihood of collision with
         // generated names.
         String __baseUri = __baseUri_;
@@ -160,9 +162,8 @@ public class {cls}Impl implements {cls} {{
         }}
         final Map<String, Object> __doc = (Map<String, Object>) __doc_;
         final List<ValidationException> __errors = new ArrayList<ValidationException>();
-        final {cls}Impl __bean = new {cls}Impl();
         if(__loadingOptions != null) {{
-            __bean.loadingOptions_ = __loadingOptions;
+            this.loadingOptions_ = __loadingOptions;
         }}
 """.format(cls=cls)
         )
@@ -185,12 +186,11 @@ public class {cls}Impl implements {cls} {{
         }}""")
         for fieldname in field_names:
             fieldtype = self.current_fieldtypes[fieldname]
-            self.current_loader.write("""        __bean.{safename} = ({type}) {safename};
+            self.current_loader.write("""        this.{safename} = ({type}) {safename};
 """.format(safename=self.safe_name(fieldname), type=fieldtype.instance_type))
 
         self.current_loader.write(
             """        
-        return __bean;
     }
 """
         )
