@@ -49,13 +49,11 @@ class LoadingOptions(object):
         namespaces=None,  # type: Optional[Dict[Text, Text]]
         fileuri=None,  # type: Optional[Text]
         copyfrom=None,  # type: Optional[LoadingOptions]
-        schemas=None,  # type: Optional[List[Text]]
         original_doc=None,  # type: Optional[Any]
     ):  # type: (...) -> None
         self.idx = {}  # type: Dict[Text, Dict[Text, Any]]
         self.fileuri = fileuri  # type: Optional[Text]
         self.namespaces = namespaces
-        self.schemas = schemas
         self.original_doc = original_doc
         if copyfrom is not None:
             self.idx = copyfrom.idx
@@ -65,8 +63,6 @@ class LoadingOptions(object):
                 self.fileuri = copyfrom.fileuri
             if namespaces is None:
                 self.namespaces = copyfrom.namespaces
-            if namespaces is None:
-                schemas = copyfrom.schemas
 
         if fetcher is None:
             import requests
@@ -165,10 +161,6 @@ def expand_url(
     scoped_ref=None,  # type: Optional[int]
 ):
     # type: (...) -> Text
-
-    if not isinstance(url, string_types):
-        return url
-
     url = Text(url)
 
     if url in (u"@id", u"@type"):
@@ -388,8 +380,13 @@ class _TypeDSLLoader(_Loader):
         self.inner = inner
         self.refScope = refScope
 
-    def resolve(self, doc, baseuri, loadingOptions):
-        # type: (Any, Text, LoadingOptions) -> Any
+    def resolve(
+        self,
+        doc,  # type: Text
+        baseuri,  # type: Text
+        loadingOptions,  # type: LoadingOptions
+    ):
+        # type: (...) -> Union[List[Union[Dict[Text, Text], Text]], Dict[Text, Text], Text]
         m = self.typeDSLregex.match(doc)
         if m:
             first = expand_url(
@@ -397,7 +394,7 @@ class _TypeDSLLoader(_Loader):
             )
             second = third = None
             if bool(m.group(2)):
-                second = {"type": "array", "items": first}
+                second = {u"type": u"array", u"items": first}
                 # second = CommentedMap((("type", "array"),
                 #                       ("items", first)))
                 # second.lc.add_kv_line_col("type", lc)
@@ -409,7 +406,7 @@ class _TypeDSLLoader(_Loader):
                 # third.lc.add_kv_line_col(0, lc)
                 # third.lc.add_kv_line_col(1, lc)
                 # third.lc.filename = filename
-            doc = third or second or first
+            return third or second or first
         return doc
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
@@ -482,12 +479,6 @@ def _document_load(loader, doc, baseuri, loadingOptions):
                 copyfrom=loadingOptions, namespaces=doc["$namespaces"]
             )
             doc = {k: v for k, v in doc.items() if k != "$namespaces"}
-
-        if "$schemas" in doc:
-            loadingOptions = LoadingOptions(
-                copyfrom=loadingOptions, schemas=doc["$schemas"]
-            )
-            doc = {k: v for k, v in doc.items() if k != "$schemas"}
 
         if "$base" in doc:
             baseuri = doc["$base"]
