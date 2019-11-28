@@ -4,7 +4,6 @@ import re
 import uuid  # pylint: disable=unused-import # noqa: F401
 from typing import (
     Any,
-    cast,
     Dict,
     List,
     MutableMapping,
@@ -416,7 +415,7 @@ class _TypeDSLLoader(_Loader):
             r = []  # type: List[Any]
             for d in doc:
                 if isinstance(d, string_types):
-                    resolved = self.resolve(cast(Text, d), baseuri, loadingOptions)
+                    resolved = self.resolve(d, baseuri, loadingOptions)
                     if isinstance(resolved, MutableSequence):
                         for i in resolved:
                             if i not in r:
@@ -428,7 +427,7 @@ class _TypeDSLLoader(_Loader):
                     r.append(d)
             doc = r
         elif isinstance(doc, string_types):
-            doc = self.resolve(cast(Text, doc), baseuri, loadingOptions)
+            doc = self.resolve(doc, baseuri, loadingOptions)
 
         return self.inner.load(doc, baseuri, loadingOptions)
 
