@@ -36,7 +36,11 @@ def codegen(
             dest = sys.stdout
         gen = PythonCodeGen(dest)
     elif lang == "java":
-        gen = JavaCodeGen(schema_metadata.get("$base", schema_metadata.get("id")), target=target, examples=examples)
+        gen = JavaCodeGen(
+            schema_metadata.get("$base", schema_metadata.get("id")),
+            target=target,
+            examples=examples,
+        )
     else:
         raise SchemaSaladException(
             "Unsupported code generation language '{}'".format(lang)
