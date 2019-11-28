@@ -49,13 +49,11 @@ class LoadingOptions(object):
         namespaces=None,  # type: Optional[Dict[Text, Text]]
         fileuri=None,  # type: Optional[Text]
         copyfrom=None,  # type: Optional[LoadingOptions]
-        schemas=None,  # type: Optional[List[Text]]
         original_doc=None,  # type: Optional[Any]
     ):  # type: (...) -> None
         self.idx = {}  # type: Dict[Text, Dict[Text, Any]]
         self.fileuri = fileuri  # type: Optional[Text]
         self.namespaces = namespaces
-        self.schemas = schemas
         self.original_doc = original_doc
         if copyfrom is not None:
             self.idx = copyfrom.idx
@@ -65,8 +63,6 @@ class LoadingOptions(object):
                 self.fileuri = copyfrom.fileuri
             if namespaces is None:
                 self.namespaces = copyfrom.namespaces
-            if namespaces is None:
-                schemas = copyfrom.schemas
 
         if fetcher is None:
             import requests
@@ -482,12 +478,6 @@ def _document_load(loader, doc, baseuri, loadingOptions):
                 copyfrom=loadingOptions, namespaces=doc["$namespaces"]
             )
             doc = {k: v for k, v in doc.items() if k != "$namespaces"}
-
-        if "$schemas" in doc:
-            loadingOptions = LoadingOptions(
-                copyfrom=loadingOptions, schemas=doc["$schemas"]
-            )
-            doc = {k: v for k, v in doc.items() if k != "$schemas"}
 
         if "$base" in doc:
             baseuri = doc["$base"]
