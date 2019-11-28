@@ -161,10 +161,6 @@ def expand_url(
     scoped_ref=None,  # type: Optional[int]
 ):
     # type: (...) -> Text
-
-    if not isinstance(url, string_types):
-        return url
-
     url = Text(url)
 
     if url in (u"@id", u"@type"):
