@@ -385,7 +385,7 @@ class _TypeDSLLoader(_Loader):
         self.refScope = refScope
 
     def resolve(self, doc, baseuri, loadingOptions):
-        # type: (Any, Text, LoadingOptions) -> Any
+        # type: (Text, Text, LoadingOptions) -> Any
         m = self.typeDSLregex.match(doc)
         if m:
             first = expand_url(
