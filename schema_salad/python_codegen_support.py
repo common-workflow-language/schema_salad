@@ -380,8 +380,13 @@ class _TypeDSLLoader(_Loader):
         self.inner = inner
         self.refScope = refScope
 
-    def resolve(self, doc, baseuri, loadingOptions):
-        # type: (Text, Text, LoadingOptions) -> Any
+    def resolve(
+        self,
+        doc,  # type: Text
+        baseuri,  # type: Text
+        loadingOptions,  # type: LoadingOptions
+    ):
+        # type: (...) -> Union[List[Union[Dict[Text, Text], Text]], Dict[Text, Text], Text]
         m = self.typeDSLregex.match(doc)
         if m:
             first = expand_url(
@@ -389,7 +394,7 @@ class _TypeDSLLoader(_Loader):
             )
             second = third = None
             if bool(m.group(2)):
-                second = {"type": "array", "items": first}
+                second = {u"type": u"array", u"items": first}
                 # second = CommentedMap((("type", "array"),
                 #                       ("items", first)))
                 # second.lc.add_kv_line_col("type", lc)
@@ -401,7 +406,7 @@ class _TypeDSLLoader(_Loader):
                 # third.lc.add_kv_line_col(0, lc)
                 # third.lc.add_kv_line_col(1, lc)
                 # third.lc.filename = filename
-            doc = third or second or first
+            return third or second or first
         return doc
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
