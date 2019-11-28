@@ -15,12 +15,6 @@ from .exceptions import SchemaException
 from .schema import shortname
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
-POM_SRC_TEMPLATE = string.Template(
-    pkg_resources.resource_string(__name__, "java/pom.xml")
-)
-GITIGNORE_SRC_TEMPLATE = string.Template(
-    pkg_resources.resource_string(__name__, "java/gitignore")
-)
 
 
 def _ensure_directory_and_write(path, contents):
@@ -64,6 +58,7 @@ class JavaCodeGen(CodeGenBase):
     def __init__(self, base, target, examples):
         # type: (Text, Optional[str]) -> None
         super(JavaCodeGen, self).__init__()
+        self.base_uri = base
         sp = urllib.parse.urlsplit(base)
         self.examples = examples
         self.package = ".".join(
@@ -537,14 +532,34 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         return val
 
     def epilogue(self, root_loader):  # type: (TypeDef) -> None
-        pom_src = POM_SRC_TEMPLATE.safe_substitute(
-            group_id=self.package, artifact_id=self.artifact, version="0.0.1-SNAPSHOT",
+        template_vars = dict(
+            base_uri=self.base_uri,
+            group_id=self.package,
+            artifact_id=self.artifact,
+            version="0.0.1-SNAPSHOT",
         )
-        with open(os.path.join(self.target_dir, "pom.xml"), "w") as f:
-            f.write(pom_src)
-        gitignore_src = GITIGNORE_SRC_TEMPLATE.safe_substitute()
-        with open(os.path.join(self.target_dir, ".gitignore"), "w") as f:
-            f.write(gitignore_src)
+
+        def expand_resource_template_to(resource, path):
+            template_str = pkg_resources.resource_string(__name__, "java/%s" % resource)
+            template = string.Template(template_str)
+            src = template.safe_substitute(**template_vars)
+            target_dir = os.path.dirname(path)
+            if not os.path.exists(target_dir):
+                os.makedirs(target_dir)
+            with open(path, "w") as f:
+                f.write(src)
+
+        expand_resource_template_to("pom.xml", os.path.join(self.target_dir, "pom.xml"))
+        expand_resource_template_to(
+            "gitignore", os.path.join(self.target_dir, ".gitignore")
+        )
+        expand_resource_template_to(
+            "package.html", os.path.join(self.main_src_dir, "package.html")
+        )
+        expand_resource_template_to(
+            "overview.html",
+            os.path.join(self.target_dir, "src", "main", "javadoc", "overview.html"),
+        )
 
         vocab = ""
         rvocab = ""
