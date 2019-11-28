@@ -534,6 +534,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
     def epilogue(self, root_loader):  # type: (TypeDef) -> None
         template_vars = dict(
             base_uri=self.base_uri,
+            package=self.package,
             group_id=self.package,
             artifact_id=self.artifact,
             version="0.0.1-SNAPSHOT",
@@ -559,6 +560,10 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         expand_resource_template_to(
             "overview.html",
             os.path.join(self.target_dir, "src", "main", "javadoc", "overview.html"),
+        )
+        expand_resource_template_to(
+            "MANIFEST.MF",
+            os.path.join(self.target_dir, "src", "main", "resources", "META-INF", "MANIFEST.MF"),
         )
 
         vocab = ""
