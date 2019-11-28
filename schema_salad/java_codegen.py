@@ -584,12 +584,28 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                     basename = os.path.basename(example_name).split(".", 1)[0]
                     example_tests += """
   @Test
-  public void test{basename}() throws Exception {{
+  public void test{basename}ByString() throws Exception {{
     String baseUri = Uris.fileUri(Paths.get(".").toAbsolutePath().normalize().toString()) + "/";
     java.net.URL url = getClass().getResource("{example_name}");
     java.nio.file.Path resPath = java.nio.file.Paths.get(url.toURI());
     String yaml = new String(java.nio.file.Files.readAllBytes(resPath), "UTF8");
-    RootLoader.loadDocumentByString(yaml, baseUri);
+    RootLoader.loadDocument(yaml, baseUri);
+  }}
+
+  @Test
+  public void test{basename}ByPath() throws Exception {{
+    java.net.URL url = getClass().getResource("{example_name}");
+    java.nio.file.Path resPath = java.nio.file.Paths.get(url.toURI());
+    RootLoader.loadDocument(resPath);
+  }}
+
+  @Test
+  public void test{basename}ByMap() throws Exception {{
+    java.net.URL url = getClass().getResource("{example_name}");
+    java.nio.file.Path resPath = java.nio.file.Paths.get(url.toURI());
+    String yaml = new String(java.nio.file.Files.readAllBytes(resPath), "UTF8");
+    Map<String, Object> doc = (Map<String, Object>) YamlUtils.mapFromString(yaml);
+    RootLoader.loadDocument(doc);
   }}""".format(
                         basename=basename,
                         example_name=example_name,
