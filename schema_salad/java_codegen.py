@@ -305,7 +305,8 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                 i = self.type_loader(type_declaration["items"])
                 return self.declare_type(
                     JavaTypeDef(
-                        # instance_type="List<{}>".format(i.instance_type),  # special doesn't work out, gotta actual use extends and such.
+                        # special doesn't work out with subclassing, gotta be more clever
+                        # instance_type="List<{}>".format(i.instance_type),
                         instance_type="List<Object>",
                         name="array_of_{}".format(i.name),
                         init="new ArrayLoader({})".format(i.name),
@@ -417,7 +418,8 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
 {spc}              .loadField(__doc.get("{fieldname}"), __baseUri, __loadingOptions);
 {spc}    }} catch (ValidationException e) {{
 {spc}      {safename} = null; // won't be used but prevents compiler from complaining.
-{spc}      __errors.add(new ValidationException("the `{fieldname}` field is not valid because:", e));
+{spc}      final String __message = "the `{fieldname}` field is not valid because:";
+{spc}      __errors.add(new ValidationException(__message, e));
 {spc}    }}
 """.format(
                 fieldtype=fieldtype.name,

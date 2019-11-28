@@ -117,7 +117,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
         type=str,
         metavar="directory",
         default=None,
-        help="Directory of example documents for test case generation (only used by java currently). Files matching valid* are assumed to valid examples of schema documents and will be test. Files matching invalid* are assumed to be invalid.",
+        help="Directory of example documents for test case generation (Java only).",
     )
 
     exgroup.add_argument(
