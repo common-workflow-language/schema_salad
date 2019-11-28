@@ -15,6 +15,7 @@ from .schema import shortname
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 POM_SRC_TEMPLATE = string.Template(pkg_resources.resource_string(__name__, "java/pom.xml"))
+GITIGNORE_SRC_TEMPLATE = string.Template(pkg_resources.resource_string(__name__, "java/gitignore"))
 
 
 def _ensure_directory_and_write(path, contents):
@@ -463,6 +464,9 @@ public class {cls}Impl implements {cls} {{
         )
         with open(os.path.join(self.target_dir, "pom.xml"), "w") as f:
             f.write(pom_src)
+        gitignore_src = GITIGNORE_SRC_TEMPLATE.safe_substitute()
+        with open(os.path.join(self.target_dir, ".gitignore"), "w") as f:
+            f.write(gitignore_src)
 
         vocab = "";
         rvocab = "";
