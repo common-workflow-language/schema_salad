@@ -5,7 +5,8 @@
     <groupId>${group_id}</groupId>
     <artifactId>${artifact_id}</artifactId>
     <packaging>jar</packaging>
-    <name>${artifact_id}</name>
+    <name>${project_name}</name>
+    <description><![CDATA[${project_description}]]></description>
     <version>${version}</version>
 
     <properties>
@@ -14,8 +15,8 @@
 
     <licenses>
         <license>
-            <name>Apache License, Version 2.0</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <name>${license_name}</name>
+            <url>${license_url}</url>
         </license>
     </licenses>
 
