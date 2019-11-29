@@ -133,7 +133,6 @@ class JavaCodeGen(CodeGenBase):
             f.write(
                 """package {package};
 
-import java.util.List;
 import {package}.utils.Savable;
 
 public interface {cls} {ext} {{""".format(
@@ -148,11 +147,6 @@ public interface {cls} {ext} {{""".format(
             f.write(
                 """package {package};
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import {package}.utils.LoaderInstances;
 import {package}.utils.LoadingOptions;
 import {package}.utils.LoadingOptionsBuilder;
@@ -161,7 +155,7 @@ import {package}.utils.ValidationException;
 
 public class {cls}Impl extends SavableImpl implements {cls} {{
   private LoadingOptions loadingOptions_ = new LoadingOptionsBuilder().build();
-  private Map<String, Object> extensionFields_ = new HashMap<String, Object>();
+  private java.util.Map<String, Object> extensionFields_ = new java.util.HashMap<String, Object>();
 """.format(
                     package=self.package, cls=cls
                 )
@@ -178,11 +172,11 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
     // generated names.
     String __baseUri = __baseUri_;
     String __docRoot = __docRoot_;
-    if (!(__doc_ instanceof Map)) {{
+    if (!(__doc_ instanceof java.util.Map)) {{
       throw new ValidationException("fromDoc called on non-map");
     }}
-    final Map<String, Object> __doc = (Map<String, Object>) __doc_;
-    final List<ValidationException> __errors = new ArrayList<ValidationException>();
+    final java.util.Map<String, Object> __doc = (java.util.Map<String, Object>) __doc_;
+    final java.util.List<ValidationException> __errors = new java.util.ArrayList<ValidationException>();
     if (__loadingOptions != null) {{
       this.loadingOptions_ = __loadingOptions;
     }}
@@ -290,6 +284,24 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
             sub = [self.type_loader(i) for i in type_declaration]
             if len(sub) < 2:
                 return sub[0]
+
+            if len(sub) == 2:
+                type_1 = sub[0]
+                type_2 = sub[1]
+                if type_1.name == "NullInstance" or type_2 == "NullInstance":
+                    non_null_type = type_1 if type_1.name != "NullInstance" else type_2
+                    return self.declare_type(
+                        JavaTypeDef(
+                            instance_type="java.util.Optional<{}>".format(
+                                non_null_type.instance_type
+                            ),
+                            init="new OptionalLoader({})".format(non_null_type.name),
+                            name="optional_{}".format(non_null_type.name),
+                            loader_type="Loader<java.util.Optional<{}>>".format(
+                                non_null_type.instance_type
+                            ),
+                        )
+                    )
             return self.declare_type(
                 JavaTypeDef(
                     instance_type="Object",
@@ -310,10 +322,10 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                     JavaTypeDef(
                         # special doesn't work out with subclassing, gotta be more clever
                         # instance_type="List<{}>".format(i.instance_type),
-                        instance_type="List<Object>",
+                        instance_type="java.util.List<Object>",
                         name="array_of_{}".format(i.name),
                         init="new ArrayLoader({})".format(i.name),
-                        loader_type="Loader<List<Object>>",
+                        loader_type="Loader<java.util.List<Object>>",
                     )
                 )
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
@@ -492,29 +504,30 @@ public enum {clazz} {{
             return
 
         self.declare_field(name, fieldtype, doc, True)
-
         if optional:
-            opt = """{safename} = "_:" + UUID.randomUUID().toString();""".format(
-                safename=self.safe_name(name)
-            )
+            set_uri = """
+    if ({safename} == null) {{
+      if (__docRoot != null) {{
+        {safename} = java.util.Optional.of(__docRoot);
+      }} else {{
+        {safename} = java.util.Optional.of("_:" + java.util.UUID.randomUUID().toString());
+      }}
+    }}
+    __baseUri = (String) {safename}.orElse(null);
+"""
         else:
-            opt = """throw new ValidationException("Missing {fieldname}");""".format(
-                fieldname=shortname(name)
-            )
-
-        self.current_loader.write(
-            """
+            set_uri = """
     if ({safename} == null) {{
       if (__docRoot != null) {{
         {safename} = __docRoot;
       }} else {{
-        {opt}
+        throw new ValidationException("Missing {fieldname}");
       }}
     }}
     __baseUri = (String) {safename};
-""".format(
-                safename=self.safe_name(name), fieldname=shortname(name), opt=opt
-            )
+"""
+        self.current_loader.write(
+            set_uri.format(safename=self.safe_name(name), fieldname=shortname(name))
         )
 
     def uri_loader(self, inner, scoped_id, vocab_term, ref_scope):
