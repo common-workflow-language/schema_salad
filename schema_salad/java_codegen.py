@@ -363,7 +363,7 @@ public enum {clazz} {{
             )
             for i, sym in enumerate(symbols):
                 suffix = "," if i < (len(symbols) - 1) else ";"
-                const = self.safe_name(sym).upper()
+                const = self.safe_name(sym).replace("-", "_").replace(".", "_").upper()
                 f.write(
                     """  {const}("{val}"){suffix}\n""".format(
                         const=const, val=sym, suffix=suffix
