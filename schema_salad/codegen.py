@@ -1,5 +1,6 @@
 """Generate langauge specific loaders for a particular SALAD schema."""
 import sys
+from io import open
 from typing import Any, Dict, List, MutableMapping, Optional
 
 from typing_extensions import Text  # pylint: disable=unused-import
@@ -31,7 +32,7 @@ def codegen(
     gen = None  # type: Optional[CodeGenBase]
     if lang == "python":
         if target:
-            dest = open(target, "w")
+            dest = open(target, mode="w", encoding="utf-8")
         else:
             dest = sys.stdout
         gen = PythonCodeGen(dest)
