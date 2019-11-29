@@ -237,48 +237,48 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         u"http://www.w3.org/2001/XMLSchema#string": JavaTypeDef(
             instance_type="String",
             init="new PrimitiveLoader<String>(String.class)",
-            name="StringLoaderInstance",
+            name="StringInstance",
             loader_type="Loader<String>",
         ),
         u"http://www.w3.org/2001/XMLSchema#int": JavaTypeDef(
             instance_type="Integer",
             init="new PrimitiveLoader<Integer>(Integer.class)",
-            name="IntegerLoaderInstance",
+            name="IntegerInstance",
             loader_type="Loader<Integer>",
         ),
         u"http://www.w3.org/2001/XMLSchema#long": JavaTypeDef(
             instance_type="Long",
-            name="LongLoaderInstance",
+            name="LongInstance",
             loader_type="Loader<Long>",
             init="new PrimitiveLoader<Long>(Long.class)",
         ),
         u"http://www.w3.org/2001/XMLSchema#float": JavaTypeDef(
             instance_type="Float",
-            name="FloatLoaderInstance",
+            name="FloatInstance",
             loader_type="Loader<Float>",
             init="new PrimitiveLoader<Float>(Float.class)",
         ),
         u"http://www.w3.org/2001/XMLSchema#double": JavaTypeDef(
             instance_type="Double",
-            name="DoubleLoaderInstance",
+            name="DoubleInstance",
             loader_type="Loader<Double>",
             init="new PrimitiveLoader<Double>(Double.class)",
         ),
         u"http://www.w3.org/2001/XMLSchema#boolean": JavaTypeDef(
             instance_type="Boolean",
-            name="BooleanLoaderInstance",
+            name="BooleanInstance",
             loader_type="Loader<Boolean>",
             init="new PrimitiveLoader<Boolean>(Boolean.class)",
         ),
         u"https://w3id.org/cwl/salad#null": JavaTypeDef(
             instance_type="Object",
-            name="NullLoaderInstance",
+            name="NullInstance",
             loader_type="Loader<Object>",
             init="new NullLoader()",
         ),
         u"https://w3id.org/cwl/salad#Any": JavaTypeDef(
             instance_type="Object",
-            name="AnyLoaderInstance",
+            name="AnyInstance",
             init="new AnyLoader()",
             loader_type="Loader<Object>",
         ),
@@ -329,7 +329,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                 return self.declare_type(
                     JavaTypeDef(
                         instance_type=self.safe_name(type_declaration["name"]),
-                        name=self.safe_name(type_declaration["name"]) + "Loader",
+                        name=self.safe_name(type_declaration["name"]),
                         init="new RecordLoader<{clazz}>({clazz}{ext}.class)".format(
                             clazz=fqclass, ext="Impl" if not is_abstract else "",
                         ),
@@ -339,7 +339,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
             raise SchemaException("wft {}".format(type_declaration["type"]))
         if type_declaration in self.prims:
             return self.prims[type_declaration]
-        return self.collected_types[self.safe_name(type_declaration) + "Loader"]
+        return self.collected_types[self.safe_name(type_declaration)]
 
     def type_loader_enum(self, type_declaration):
         symbols = [self.property_name(sym) for sym in type_declaration["symbols"]]
@@ -394,7 +394,7 @@ public enum {clazz} {{
         return self.declare_type(
             JavaTypeDef(
                 instance_type=clazz,
-                name=self.safe_name(type_declaration["name"]) + "Loader",
+                name=self.safe_name(type_declaration["name"]),
                 loader_type="Loader<{clazz}>".format(clazz=clazz),
                 init="new EnumLoader({clazz}.class)".format(clazz=clazz),
             )
