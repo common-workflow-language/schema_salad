@@ -288,6 +288,8 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         # type: (Union[List[Any], Dict[Text, Any], Text]) -> JavaTypeDef
         if isinstance(type_declaration, MutableSequence):
             sub = [self.type_loader(i) for i in type_declaration]
+            if len(sub) < 2:
+                return sub[0]
             return self.declare_type(
                 JavaTypeDef(
                     instance_type="Object",
