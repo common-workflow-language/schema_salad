@@ -1,28 +1,29 @@
 package ${package}.utils;
 
+import java.lang.reflect.Method;
+import java.lang.ReflectiveOperationException;
 import java.util.Arrays;
 import java.util.List;
 
-public class EnumLoader implements Loader<String> {
-  private final List<String> symbols;
+public class EnumLoader<T extends Enum> implements Loader<T>{
+  private final Class<T> symbolEnumClass;
 
-  public EnumLoader(final List<String> symbols) {
-    this.symbols = symbols;
+  public EnumLoader(final Class<T> symbolEnumClass) {
+    this.symbolEnumClass = symbolEnumClass;
   }
 
-  public EnumLoader(final String[] symbols) {
-    this(Arrays.asList(symbols));
-  }
-
-  public String load(
+  public T load(
       final Object doc,
       final String baseUri,
       final LoadingOptions loadingOptions,
       final String docRoot) {
     final String docString = Loader.validateOfJavaType(String.class, doc);
-    if (!this.symbols.contains(docString)) {
-      throw new ValidationException(String.format("Expected one of %s", this.symbols));
+    try {
+      final Method m = symbolEnumClass.getMethod("fromDocumentVal", String.class);
+      final T val = (T) m.invoke(null, docString);
+      return val;
+    } catch (final ReflectiveOperationException e) {
+      throw new RuntimeException(e);
     }
-    return docString;
   }
 }

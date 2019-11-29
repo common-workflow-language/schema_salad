@@ -315,21 +315,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                     )
                 )
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
-                for sym in type_declaration["symbols"]:
-                    self.add_vocab(shortname(sym), sym)
-                return self.declare_type(
-                    JavaTypeDef(
-                        instance_type="String",
-                        name=self.safe_name(type_declaration["name"]) + "Loader",
-                        loader_type="Loader<String>",
-                        init='new EnumLoader(new String[] {{ "{}" }})'.format(
-                            '", "'.join(
-                                self.safe_name(sym)
-                                for sym in type_declaration["symbols"]
-                            )
-                        ),
-                    )
-                )
+                return self.type_loader_enum(type_declaration)
             if type_declaration["type"] in (
                 "record",
                 "https://w3id.org/cwl/salad#record",
@@ -352,6 +338,65 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         if type_declaration in self.prims:
             return self.prims[type_declaration]
         return self.collected_types[self.safe_name(type_declaration) + "Loader"]
+
+    def type_loader_enum(self, type_declaration):
+        symbols = [self.property_name(sym) for sym in type_declaration["symbols"]]
+        for sym in symbols:
+            self.add_vocab(shortname(sym), sym)
+        clazz = self.safe_name(type_declaration["name"])
+        symbols_decl = 'new String[] {{"{}"}}'.format(
+            '", "'.join(sym for sym in symbols)
+        )
+        enum_path = os.path.join(self.main_src_dir, "{}.java".format(clazz))
+        with open(enum_path, "w") as f:
+            f.write(
+                """package {package};
+
+import {package}.utils.ValidationException;
+
+public enum {clazz} {{
+""".format(
+                    package=self.package, clazz=clazz
+                )
+            )
+            for i, sym in enumerate(symbols):
+                suffix = "," if i < (len(symbols) - 1) else ";"
+                const = self.safe_name(sym).upper()
+                f.write(
+                    """  {const}("{val}"){suffix}\n""".format(
+                        const=const, val=sym, suffix=suffix
+                    )
+                )
+            f.write(
+                """
+  private static String[] symbols = {symbols_decl};
+  private String docVal;
+
+  private {clazz}(final String docVal) {{
+    this.docVal = docVal;
+  }}
+
+  public static {clazz} fromDocumentVal(final String docVal) {{
+    for(final {clazz} val : {clazz}.values()) {{
+      if(val.docVal.equals(docVal)) {{
+        return val;
+      }}
+    }}
+    throw new ValidationException(String.format("Expected one of %s", {clazz}.symbols, docVal));
+  }}
+}}
+""".format(
+                    clazz=clazz, symbols_decl=symbols_decl
+                )
+            )
+        return self.declare_type(
+            JavaTypeDef(
+                instance_type=clazz,
+                name=self.safe_name(type_declaration["name"]) + "Loader",
+                loader_type="Loader<{clazz}>".format(clazz=clazz),
+                init="new EnumLoader({clazz}.class)".format(clazz=clazz),
+            )
+        )
 
     def declare_field(self, name, fieldtype, doc, optional):
         # type: (Text, TypeDef, Text, bool) -> None
