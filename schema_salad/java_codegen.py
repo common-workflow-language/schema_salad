@@ -288,7 +288,9 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
             if len(sub) == 2:
                 type_1 = sub[0]
                 type_2 = sub[1]
-                if type_1.name == "NullInstance" or type_2 == "NullInstance":
+                type_1_name = type_1.name
+                type_2_name = type_2.name
+                if type_1_name == "NullInstance" or type_2_name == "NullInstance":
                     non_null_type = type_1 if type_1.name != "NullInstance" else type_2
                     return self.declare_type(
                         JavaTypeDef(
@@ -299,6 +301,30 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                             name="optional_{}".format(non_null_type.name),
                             loader_type="Loader<java.util.Optional<{}>>".format(
                                 non_null_type.instance_type
+                            ),
+                        )
+                    )
+                if type_1_name == "array_of_{}".format(
+                    type_2_name
+                ) or type_2_name == "array_of_{}".format(type_1_name):
+                    if type_1_name == "array_of_{}".format(type_2_name):
+                        single_type = type_2
+                        array_type = type_1
+                    else:
+                        single_type = type_1
+                        array_type = type_2
+                    fqclass = "{}.{}".format(self.package, single_type.instance_type)
+                    return self.declare_type(
+                        JavaTypeDef(
+                            instance_type="{}.utils.OneOrListOf<{}>".format(
+                                self.package, fqclass
+                            ),
+                            init="new OneOrListOfLoader<{}>({}, {})".format(
+                                fqclass, single_type.name, array_type.name
+                            ),
+                            name="one_or_array_of_{}".format(single_type.name),
+                            loader_type="Loader<{}.utils.OneOrListOf<{}>>".format(
+                                self.package, fqclass
                             ),
                         )
                     )
@@ -325,7 +351,9 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                         instance_type="java.util.List<Object>",
                         name="array_of_{}".format(i.name),
                         init="new ArrayLoader({})".format(i.name),
-                        loader_type="Loader<java.util.List<Object>>",
+                        loader_type="Loader<java.util.List<{}>>".format(
+                            i.instance_type
+                        ),
                     )
                 )
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
