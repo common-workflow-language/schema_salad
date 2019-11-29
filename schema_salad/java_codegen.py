@@ -552,15 +552,15 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
             license_url="https://www.apache.org/licenses/LICENSE-2.0.txt",
         )
 
-        def expand_resource_template_to(resource, path):
-            template_str = pkg_resources.resource_string(__name__, "java/%s" % resource)
+        def template_from_resource(resource):
+            template_str = pkg_resources.resource_string(__name__, "java/%s" % resource).decode("utf-8")
             template = string.Template(template_str)
+            return template
+
+        def expand_resource_template_to(resource, path):
+            template = template_from_resource(resource)
             src = template.safe_substitute(**template_vars)
-            target_dir = os.path.dirname(path)
-            if not os.path.exists(target_dir):
-                os.makedirs(target_dir)
-            with open(path, "w") as f:
-                f.write(src)
+            _ensure_directory_and_write(path, src)
 
         expand_resource_template_to("pom.xml", os.path.join(self.target_dir, "pom.xml"))
         expand_resource_template_to(
@@ -650,10 +650,6 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         for (util_src, util_target) in util_src_dirs.items():
             for util in pkg_resources.resource_listdir(__name__, "java/%s" % util_src):
                 src_path = os.path.join(util_target, "utils", util)
-                src_template = string.Template(
-                    pkg_resources.resource_string(
-                        __name__, "java/%s/%s" % (util_src, util)
-                    )
-                )
+                src_template = template_from_resource(os.path.join(util_src, util))
                 src = src_template.safe_substitute(**template_args)
                 _ensure_directory_and_write(src_path, src)
