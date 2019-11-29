@@ -96,7 +96,7 @@ class JavaCodeGen(CodeGenBase):
     @staticmethod
     def safe_name(name):  # type: (Text) -> Text
         avn = JavaCodeGen.property_name(name)
-        if avn in ("class", "extends", "abstract", "default"):
+        if avn in ("class", "extends", "abstract", "default", "package"):
             # reserved words
             avn = avn + "_"
         return avn
