@@ -27,34 +27,6 @@ def _ensure_directory_and_write(path, contents):
         f.write(contents)
 
 
-class JavaTypeDef(TypeDef):  # pylint: disable=too-few-public-methods
-    """Extend TypeDef with Java concepts."""
-
-    __slots__ = [
-        "name",
-        "init",
-        "is_uri",
-        "scoped_id",
-        "ref_scope",
-        "loader_type",
-        "instance_type",
-    ]
-
-    def __init__(
-        self,  # pylint: disable=too-many-arguments
-        name,  # type: Text
-        init,  # type: Text
-        is_uri=False,  # type: bool
-        scoped_id=False,  # type: bool
-        ref_scope=0,  # type: Optional[int]
-        loader_type="Loader<Object>",  # type: Text
-        instance_type="Object",  # type: Text
-    ):  # type: (...) -> None
-        super(JavaTypeDef, self).__init__(name, init, is_uri, scoped_id, ref_scope)
-        self.loader_type = loader_type
-        self.instance_type = instance_type
-
-
 class JavaCodeGen(CodeGenBase):
     def __init__(self, base, target, examples):
         # type: (Text, Optional[str], Optional[str]) -> None
@@ -205,7 +177,9 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
 """
         )
         for fieldname in field_names:
-            fieldtype = self.current_fieldtypes[fieldname]
+            fieldtype = self.current_fieldtypes.get(fieldname)
+            if fieldtype is None:
+                continue
             self.current_loader.write(
                 """    this.{safename} = ({type}) {safename};
 """.format(
@@ -228,49 +202,49 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
             )
 
     prims = {
-        u"http://www.w3.org/2001/XMLSchema#string": JavaTypeDef(
+        u"http://www.w3.org/2001/XMLSchema#string": TypeDef(
             instance_type="String",
             init="new PrimitiveLoader<String>(String.class)",
             name="StringInstance",
             loader_type="Loader<String>",
         ),
-        u"http://www.w3.org/2001/XMLSchema#int": JavaTypeDef(
+        u"http://www.w3.org/2001/XMLSchema#int": TypeDef(
             instance_type="Integer",
             init="new PrimitiveLoader<Integer>(Integer.class)",
             name="IntegerInstance",
             loader_type="Loader<Integer>",
         ),
-        u"http://www.w3.org/2001/XMLSchema#long": JavaTypeDef(
+        u"http://www.w3.org/2001/XMLSchema#long": TypeDef(
             instance_type="Long",
             name="LongInstance",
             loader_type="Loader<Long>",
             init="new PrimitiveLoader<Long>(Long.class)",
         ),
-        u"http://www.w3.org/2001/XMLSchema#float": JavaTypeDef(
+        u"http://www.w3.org/2001/XMLSchema#float": TypeDef(
             instance_type="Float",
             name="FloatInstance",
             loader_type="Loader<Float>",
             init="new PrimitiveLoader<Float>(Float.class)",
         ),
-        u"http://www.w3.org/2001/XMLSchema#double": JavaTypeDef(
+        u"http://www.w3.org/2001/XMLSchema#double": TypeDef(
             instance_type="Double",
             name="DoubleInstance",
             loader_type="Loader<Double>",
             init="new PrimitiveLoader<Double>(Double.class)",
         ),
-        u"http://www.w3.org/2001/XMLSchema#boolean": JavaTypeDef(
+        u"http://www.w3.org/2001/XMLSchema#boolean": TypeDef(
             instance_type="Boolean",
             name="BooleanInstance",
             loader_type="Loader<Boolean>",
             init="new PrimitiveLoader<Boolean>(Boolean.class)",
         ),
-        u"https://w3id.org/cwl/salad#null": JavaTypeDef(
+        u"https://w3id.org/cwl/salad#null": TypeDef(
             instance_type="Object",
             name="NullInstance",
             loader_type="Loader<Object>",
             init="new NullLoader()",
         ),
-        u"https://w3id.org/cwl/salad#Any": JavaTypeDef(
+        u"https://w3id.org/cwl/salad#Any": TypeDef(
             instance_type="Object",
             name="AnyInstance",
             init="new AnyLoader()",
@@ -279,7 +253,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
     }
 
     def type_loader(self, type_declaration):
-        # type: (Union[List[Any], Dict[Text, Any], Text]) -> JavaTypeDef
+        # type: (Union[List[Any], Dict[Text, Any], Text]) -> TypeDef
         if isinstance(type_declaration, MutableSequence):
             sub = [self.type_loader(i) for i in type_declaration]
             if len(sub) < 2:
@@ -293,7 +267,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                 if type_1_name == "NullInstance" or type_2_name == "NullInstance":
                     non_null_type = type_1 if type_1.name != "NullInstance" else type_2
                     return self.declare_type(
-                        JavaTypeDef(
+                        TypeDef(
                             instance_type="java.util.Optional<{}>".format(
                                 non_null_type.instance_type
                             ),
@@ -315,7 +289,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                         array_type = type_2
                     fqclass = "{}.{}".format(self.package, single_type.instance_type)
                     return self.declare_type(
-                        JavaTypeDef(
+                        TypeDef(
                             instance_type="{}.utils.OneOrListOf<{}>".format(
                                 self.package, fqclass
                             ),
@@ -329,7 +303,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                         )
                     )
             return self.declare_type(
-                JavaTypeDef(
+                TypeDef(
                     instance_type="Object",
                     init="new UnionLoader(new Loader[] {{ {} }})".format(
                         ", ".join(s.name for s in sub)
@@ -345,7 +319,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
             ):
                 i = self.type_loader(type_declaration["items"])
                 return self.declare_type(
-                    JavaTypeDef(
+                    TypeDef(
                         # special doesn't work out with subclassing, gotta be more clever
                         # instance_type="List<{}>".format(i.instance_type),
                         instance_type="java.util.List<Object>",
@@ -367,7 +341,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                     self.package, self.safe_name(type_declaration["name"])
                 )
                 return self.declare_type(
-                    JavaTypeDef(
+                    TypeDef(
                         instance_type=self.safe_name(type_declaration["name"]),
                         name=self.safe_name(type_declaration["name"]),
                         init="new RecordLoader<{clazz}>({clazz}{ext}.class)".format(
@@ -382,6 +356,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         return self.collected_types[self.safe_name(type_declaration)]
 
     def type_loader_enum(self, type_declaration):
+        # type: (Union[List[Any], Dict[Text, Any], Text]) -> TypeDef
         symbols = [self.property_name(sym) for sym in type_declaration["symbols"]]
         for sym in symbols:
             self.add_vocab(shortname(sym), sym)
@@ -432,7 +407,7 @@ public enum {clazz} {{
                 )
             )
         return self.declare_type(
-            JavaTypeDef(
+            TypeDef(
                 instance_type=clazz,
                 name=self.safe_name(type_declaration["name"]),
                 loader_type="Loader<{clazz}>".format(clazz=clazz),
@@ -563,7 +538,7 @@ public enum {clazz} {{
         assert inner is not None
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
-            JavaTypeDef(
+            TypeDef(
                 instance_type=instance_type,  # ?
                 name="uri_{}_{}_{}_{}".format(
                     inner.name, scoped_id, vocab_term, ref_scope
@@ -586,7 +561,7 @@ public enum {clazz} {{
         assert inner is not None
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
-            JavaTypeDef(
+            TypeDef(
                 instance_type=instance_type,
                 name="idmap_{}_{}".format(self.safe_name(field), inner.name),
                 init='new IdMapLoader({}, "{}", "{}")'.format(
@@ -601,7 +576,7 @@ public enum {clazz} {{
         assert inner is not None
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
-            JavaTypeDef(
+            TypeDef(
                 instance_type=instance_type,
                 name="typedsl_{}_{}".format(inner.name, ref_scope),
                 init="new TypeDslLoader({}, {})".format(inner.name, ref_scope),
