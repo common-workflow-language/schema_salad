@@ -88,13 +88,7 @@ public class LoadingOptions {
       } else {
         pt = "/";
       }
-      try {
-        url =
-            new URI(splitbase.scheme, splitbase.netloc, pt, splitbase.query, frg)
-                .toString();
-      } catch (java.net.URISyntaxException e) {
-        throw new RuntimeException(e);
-      }
+      url = Uris.unsplit(splitbase.scheme, splitbase.netloc, pt, splitbase.query, frg);
     } else if (scopedRef != null && !hasFragment) {
       final Uris.UriSplit splitbase = Uris.split(baseUrl);
       final ArrayList<String> sp = new ArrayList(Arrays.asList(splitbase.fragment.split("/")));
@@ -105,18 +99,7 @@ public class LoadingOptions {
       }
       sp.add(url);
       final String fragment = String.join("/", sp);
-      try {
-        url =
-            new URI(
-                    splitbase.scheme,
-                    splitbase.netloc,
-                    splitbase.path,
-                    splitbase.query,
-                    fragment)
-                .toString();
-      } catch (java.net.URISyntaxException e) {
-        throw new RuntimeException(e);
-      }
+      url = Uris.unsplit(splitbase.scheme, splitbase.netloc, splitbase.path, splitbase.query, fragment);
     } else {
       url = this.fetcher.urlJoin(baseUrl, url);
     }

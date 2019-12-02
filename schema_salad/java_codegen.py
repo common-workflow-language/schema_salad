@@ -172,7 +172,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
    * @param __baseUri_        Base URI to generate child document IDs against.
    * @param __loadingOptions  Context for loading URIs and populating objects.
    * @param __docRoot_        ID at this position in the document (if available) (maybe?)
-   * @throws ValidationException If the document fragement is not a {{@link java.util.Map}} or validation of fields
+   * @throws ValidationException If the document fragment is not a {{@link java.util.Map}} or validation of fields
    *                             fails.
    */
   public {cls}Impl(

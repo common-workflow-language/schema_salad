@@ -23,6 +23,12 @@ public class Uris {
       this.fragment = fragment;
     }
 
+    public String toString() {
+      return String.format(
+          "UriSplit[%s,%s,%s,%s,%s]",
+          this.scheme, this.netloc, this.path, this.query, this.fragment);
+    }
+
   }
 
   public static String fileUri(final String path) {
@@ -62,6 +68,27 @@ public class Uris {
       return new Uris.UriSplit(uri.getScheme(), uri.getAuthority(), uri.getPath(), uri.getQuery(), uri.getFragment());
     } catch (URISyntaxException e) {
         return new Uris.UriSplit(null, null, uriString, null, null);
+    }
+  }
+
+  public static String unsplit(
+    final String scheme,
+    final String netloc,
+    final String path,
+    final String query,
+    final String fragment
+  ) {
+    try {
+      return new URI(scheme, netloc, path, query, fragment).toString();
+    } catch (URISyntaxException e) {
+      if (scheme == null && path.startsWith("_:")) {
+        String uri = path;
+        if(fragment != null && fragment.length() > 0) {
+          uri += "#" + fragment;
+        }
+        return fragment;
+      }
+      throw new RuntimeException(e);
     }
   }
 
