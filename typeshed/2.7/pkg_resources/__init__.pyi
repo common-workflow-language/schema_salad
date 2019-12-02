@@ -295,6 +295,10 @@ def split_sections(s): ...
 
 def resource_stream(package_or_requirement: str, resource_name: str): ...
 
+# Modified manually by the unwise @jmchilton
+def resource_listdir(package_or_request: str, resource_name: str): ...  # type: List[str]
+def resource_string(package_or_request: str, resource_name: str): ... # type: str
+
 # Names in __all__ with no definition:
 #   add_activation_listener
 #   cleanup_resources

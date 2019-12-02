@@ -104,13 +104,13 @@ class JavaCodeGen(CodeGenBase):
         self.current_loader = cStringIO()
         self.current_fieldtypes = {}  # type: Dict[Text, TypeDef]
         self.current_fields = cStringIO()
-        interface_doc_str = "* Auto-generated interface for <I>%s</I><BR>" % classname
+        interface_doc_str = u"* Auto-generated interface for <I>%s</I><BR>" % classname
         if not abstract:
-            interface_doc_str += "This interface is implemented by {{@link {}Impl}}<BR>".format(
+            interface_doc_str += u"This interface is implemented by {{@link {}Impl}}<BR>".format(
                 cls
             )
         interface_doc_str += doc_to_doc_string(doc)
-        class_doc_str = "* Auto-generated class implementation for <I>{}</I><BR>".format(
+        class_doc_str = u"* Auto-generated class implementation for <I>{}</I><BR>".format(
             classname
         )
         class_doc_str += doc_to_doc_string(doc)
