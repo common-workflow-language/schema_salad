@@ -106,9 +106,8 @@ class JavaCodeGen(CodeGenBase):
         self.current_fields = cStringIO()
         interface_doc_str = u"* Auto-generated interface for <I>%s</I><BR>" % classname
         if not abstract:
-            interface_doc_str += u"This interface is implemented by {{@link {}Impl}}<BR>".format(
-                cls
-            )
+            implemented_by = u"This interface is implemented by {{@link {}Impl}}<BR>"
+            interface_doc_str += implemented_by.format(cls)
         interface_doc_str += doc_to_doc_string(doc)
         class_doc_str = u"* Auto-generated class implementation for <I>{}</I><BR>".format(
             classname
@@ -158,7 +157,8 @@ import {package}.utils.ValidationException;
  */
 public class {cls}Impl extends SavableImpl implements {cls} {{
   private LoadingOptions loadingOptions_ = new LoadingOptionsBuilder().build();
-  private java.util.Map<String, Object> extensionFields_ = new java.util.HashMap<String, Object>();
+  private java.util.Map<String, Object> extensionFields_ =
+      new java.util.HashMap<String, Object>();
 """.format(
                     package=self.package, cls=cls, class_doc_str=class_doc_str
                 )
@@ -168,12 +168,13 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
   /**
    * Used by {{@link {package}.utils.RootLoader}} to construct instances of {cls}Impl.
    *
-   * @param __doc_            Document fragment to load this record object from (presumably a {{@link java.util.Map}}).
+   * @param __doc_            Document fragment to load this record object from (presumably a
+                              {{@link java.util.Map}}).
    * @param __baseUri_        Base URI to generate child document IDs against.
    * @param __loadingOptions  Context for loading URIs and populating objects.
    * @param __docRoot_        ID at this position in the document (if available) (maybe?)
-   * @throws ValidationException If the document fragment is not a {{@link java.util.Map}} or validation of fields
-   *                             fails.
+   * @throws ValidationException If the document fragment is not a {{@link java.util.Map}}
+   *                             or validation of fields fails.
    */
   public {cls}Impl(
       final Object __doc_,
@@ -189,7 +190,8 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
       throw new ValidationException("{cls}Impl called on non-map");
     }}
     final java.util.Map<String, Object> __doc = (java.util.Map<String, Object>) __doc_;
-    final java.util.List<ValidationException> __errors = new java.util.ArrayList<ValidationException>();
+    final java.util.List<ValidationException> __errors =
+        new java.util.ArrayList<ValidationException>();
     if (__loadingOptions != null) {{
       this.loadingOptions_ = __loadingOptions;
     }}
