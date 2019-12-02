@@ -106,12 +106,12 @@ class JavaCodeGen(CodeGenBase):
         self.current_fields = cStringIO()
         interface_doc_str = "* Auto-generated interface for <I>%s</I><BR>" % classname
         if not abstract:
-            interface_doc_str += (
-                "This interface is implemented by {@link %sImpl}<BR>" % cls
+            interface_doc_str += "This interface is implemented by {{@link {}Impl}}<BR>".format(
+                cls
             )
         interface_doc_str += doc_to_doc_string(doc)
-        class_doc_str = (
-            "* Auto-generated class implementation for <I>%s</I><BR>" % classname
+        class_doc_str = "* Auto-generated class implementation for <I>{}</I><BR>".format(
+            classname
         )
         class_doc_str += doc_to_doc_string(doc)
         with open(os.path.join(self.main_src_dir, "{}.java".format(cls)), "w") as f:
@@ -397,7 +397,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         return self.collected_types[self.safe_name(type_declaration)]
 
     def type_loader_enum(self, type_declaration):
-        # type: (Union[List[Any], Dict[Text, Any], Text]) -> TypeDef
+        # type: (Dict[Text, Any]) -> TypeDef
         symbols = [self.property_name(sym) for sym in type_declaration["symbols"]]
         for sym in symbols:
             self.add_vocab(shortname(sym), sym)
@@ -677,7 +677,7 @@ public enum {clazz} {{
         def expand_resource_template_to(resource, path):
             # type: (str, str) -> None
             template = template_from_resource(resource)
-            src = template.safe_substitute(**template_vars)
+            src = template.safe_substitute(template_vars)
             _ensure_directory_and_write(path, src)
 
         expand_resource_template_to("pom.xml", os.path.join(self.target_dir, "pom.xml"))
@@ -756,9 +756,9 @@ public enum {clazz} {{
             rvocab=rvocab,
             loader_instances=loader_instances,
             root_loader_name=root_loader.name,
-            root_loader_instance_type=root_loader.instance_type,
+            root_loader_instance_type=root_loader.instance_type or "Object",
             example_tests=example_tests,
-        )
+        )  # type: MutableMapping[Text, Text]
 
         util_src_dirs = {
             "main_utils": self.main_src_dir,
@@ -768,5 +768,5 @@ public enum {clazz} {{
             for util in pkg_resources.resource_listdir(__name__, "java/%s" % util_src):
                 src_path = os.path.join(util_target, "utils", util)
                 src_template = template_from_resource(os.path.join(util_src, util))
-                src = src_template.safe_substitute(**template_args)
+                src = src_template.safe_substitute(template_args)
                 _ensure_directory_and_write(src_path, src)
