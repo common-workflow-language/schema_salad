@@ -27,6 +27,18 @@ def _ensure_directory_and_write(path, contents):
         f.write(contents)
 
 
+def doc_to_doc_string(doc, indent_level=0):
+    # type: (Text, int) -> Text
+    lead = " " + "  " * indent_level + "* " * indent_level
+    if doc:
+        doc_str = "{}<BLOCKQUOTE>\n".format(lead)
+        doc_str += "\n".join(["{}{}".format(lead, l) for l in doc.split("\n")])
+        doc_str += "{}</BLOCKQUOTE>".format(lead)
+    else:
+        doc_str = ""
+    return doc_str
+
+
 class JavaCodeGen(CodeGenBase):
     def __init__(self, base, target, examples):
         # type: (Text, Optional[str], Optional[str]) -> None
@@ -92,6 +104,16 @@ class JavaCodeGen(CodeGenBase):
         self.current_loader = cStringIO()
         self.current_fieldtypes = {}  # type: Dict[Text, TypeDef]
         self.current_fields = cStringIO()
+        interface_doc_str = "* Auto-generated interface for <I>%s</I><BR>" % classname
+        if not abstract:
+            interface_doc_str += (
+                "This interface is implemented by {@link %sImpl}<BR>" % cls
+            )
+        interface_doc_str += doc_to_doc_string(doc)
+        class_doc_str = (
+            "* Auto-generated class implementation for <I>%s</I><BR>" % classname
+        )
+        class_doc_str += doc_to_doc_string(doc)
         with open(os.path.join(self.main_src_dir, "{}.java".format(cls)), "w") as f:
 
             if extends:
@@ -107,8 +129,14 @@ class JavaCodeGen(CodeGenBase):
 
 import {package}.utils.Savable;
 
+/**
+{interface_doc_str}
+ */
 public interface {cls} {ext} {{""".format(
-                    package=self.package, cls=cls, ext=ext
+                    package=self.package,
+                    cls=cls,
+                    ext=ext,
+                    interface_doc_str=interface_doc_str,
                 )
             )
 
@@ -125,15 +153,28 @@ import {package}.utils.LoadingOptionsBuilder;
 import {package}.utils.SavableImpl;
 import {package}.utils.ValidationException;
 
+/**
+{class_doc_str}
+ */
 public class {cls}Impl extends SavableImpl implements {cls} {{
   private LoadingOptions loadingOptions_ = new LoadingOptionsBuilder().build();
   private java.util.Map<String, Object> extensionFields_ = new java.util.HashMap<String, Object>();
 """.format(
-                    package=self.package, cls=cls
+                    package=self.package, cls=cls, class_doc_str=class_doc_str
                 )
             )
         self.current_loader.write(
             """
+  /**
+   * Used by {{@link {package}.utils.RootLoader}} to construct instances of {cls}Impl.
+   *
+   * @param __doc_            Document fragment to load this record object from (presumably a {{@link java.util.Map}}).
+   * @param __baseUri_        Base URI to generate child document IDs against.
+   * @param __loadingOptions  Context for loading URIs and populating objects.
+   * @param __docRoot_        ID at this position in the document (if available) (maybe?)
+   * @throws ValidationException If the document fragement is not a {{@link java.util.Map}} or validation of fields
+   *                             fails.
+   */
   public {cls}Impl(
       final Object __doc_,
       final String __baseUri_,
@@ -145,7 +186,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
     String __baseUri = __baseUri_;
     String __docRoot = __docRoot_;
     if (!(__doc_ instanceof java.util.Map)) {{
-      throw new ValidationException("fromDoc called on non-map");
+      throw new ValidationException("{cls}Impl called on non-map");
     }}
     final java.util.Map<String, Object> __doc = (java.util.Map<String, Object>) __doc_;
     final java.util.List<ValidationException> __errors = new java.util.ArrayList<ValidationException>();
@@ -153,7 +194,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
       this.loadingOptions_ = __loadingOptions;
     }}
 """.format(
-                cls=cls
+                cls=cls, package=self.package
             )
         )
 
@@ -425,14 +466,23 @@ public enum {clazz} {{
 
         safename = self.safe_name(fieldname)
         self.current_fieldtypes[property_name] = fieldtype
+        getter_doc_str = """  /**
+   * Getter for property <I>{fieldname}</I><BR>
+{field_doc_str}
+   */
+""".format(
+            fieldname=fieldname, field_doc_str=doc_to_doc_string(doc, indent_level=1)
+        )
         with open(
             os.path.join(self.main_src_dir, "{}.java".format(self.current_class)), "a"
         ) as f:
             f.write(
                 """
-
+{getter_doc_str}
   {type} get{capfieldname}();""".format(
-                    capfieldname=cap_case_property_name, type=fieldtype.instance_type,
+                    getter_doc_str=getter_doc_str,
+                    capfieldname=cap_case_property_name,
+                    type=fieldtype.instance_type,
                 )
             )
 
@@ -443,12 +493,14 @@ public enum {clazz} {{
             """
   private {type} {safename};
 
+{getter_doc_str}
   public {type} get{capfieldname}() {{
     return this.{safename};
   }}
 """.format(
                 safename=safename,
                 capfieldname=cap_case_property_name,
+                getter_doc_str=getter_doc_str,
                 type=fieldtype.instance_type,
             )
         )
