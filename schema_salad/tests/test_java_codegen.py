@@ -4,7 +4,7 @@ import tempfile
 from typing import Any, Dict, cast, List, Text
 
 from schema_salad.schema import load_schema
-from schema_salad import codegen
+from schema_salad import codegen, ref_resolver
 from .util import get_data
 
 
@@ -13,7 +13,7 @@ def test_cwl_gen():
     topmed_example_path = get_data(
         u"tests/test_real_cwl/topmed/topmed_variant_calling_pipeline.cwl"
     )
-    file_uri = "file://%s" % file_path
+    file_uri = ref_resolver.file_uri(file_path)
     test_dir = tempfile.mkdtemp()
     try:
         target_dir = os.path.join(test_dir, "target")
