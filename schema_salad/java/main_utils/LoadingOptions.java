@@ -65,9 +65,9 @@ public class LoadingOptions {
       }
     }
 
-    URI split = Uris.toUri(url);
-    final String scheme = split.getScheme();
-    final boolean hasFragment = stringHasContent(split.getFragment());
+    Uris.UriSplit split = Uris.split(url);
+    final String scheme = split.scheme;
+    final boolean hasFragment = stringHasContent(split.fragment);
     if (scheme != null
         && ((scheme.length() > 0
                 && (scheme.equals("http") || scheme.equals("https") || scheme.equals("file")))
@@ -75,29 +75,29 @@ public class LoadingOptions {
             || url.startsWith("${"))) {
       // pass
     } else if (scopedId && !hasFragment) {
-      final URI splitbase = Uris.toUri(baseUrl);
+      final Uris.UriSplit splitbase = Uris.split(baseUrl);
       final String frg;
-      if (stringHasContent(splitbase.getFragment())) {
-        frg = splitbase.getFragment() + "/" + split.getPath();
+      if (stringHasContent(splitbase.fragment)) {
+        frg = splitbase.fragment + "/" + split.path;
       } else {
-        frg = split.getPath();
+        frg = split.path;
       }
       String pt;
-      if (!splitbase.getPath().equals("")) {
-        pt = splitbase.getPath();
+      if (!splitbase.path.equals("")) {
+        pt = splitbase.path;
       } else {
         pt = "/";
       }
       try {
         url =
-            new URI(splitbase.getScheme(), splitbase.getAuthority(), pt, splitbase.getQuery(), frg)
+            new URI(splitbase.scheme, splitbase.netloc, pt, splitbase.query, frg)
                 .toString();
       } catch (java.net.URISyntaxException e) {
         throw new RuntimeException(e);
       }
     } else if (scopedRef != null && !hasFragment) {
-      final URI splitbase = Uris.toUri(baseUrl);
-      final ArrayList<String> sp = new ArrayList(Arrays.asList(splitbase.getFragment().split("/")));
+      final Uris.UriSplit splitbase = Uris.split(baseUrl);
+      final ArrayList<String> sp = new ArrayList(Arrays.asList(splitbase.fragment.split("/")));
       int n = scopedRef;
       while (n > 0 && sp.size() > 0) {
         sp.remove(0);
@@ -108,10 +108,10 @@ public class LoadingOptions {
       try {
         url =
             new URI(
-                    splitbase.getScheme(),
-                    splitbase.getAuthority(),
-                    splitbase.getPath(),
-                    splitbase.getQuery(),
+                    splitbase.scheme,
+                    splitbase.netloc,
+                    splitbase.path,
+                    splitbase.query,
                     fragment)
                 .toString();
       } catch (java.net.URISyntaxException e) {
@@ -122,8 +122,8 @@ public class LoadingOptions {
     }
 
     if (vocabTerm) {
-      split = Uris.toUri(url);
-      if (stringHasContent(split.getScheme())) {
+      split = Uris.split(url);
+      if (stringHasContent(split.scheme)) {
         if (this.rvocab.containsKey(url)) {
           return this.rvocab.get(url);
         }

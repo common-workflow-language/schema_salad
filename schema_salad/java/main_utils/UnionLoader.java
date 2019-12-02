@@ -19,20 +19,9 @@ public class UnionLoader implements Loader<Object> {
       final Object doc,
       final String baseUri,
       final LoadingOptions loadingOptions,
-      final String docRoot
-  ) {
-    return unionLoad(this.alternates, doc, baseUri, loadingOptions, docRoot);
-  }
-
-  static Object unionLoad(
-      final List<Loader> alternates,
-      final Object doc,
-      final String baseUri,
-      final LoadingOptions loadingOptions,
-      final String docRoot
-  ) {
+      final String docRoot) {
     final List<ValidationException> errors = new ArrayList();
-    for (final Loader loader : alternates) {
+    for (final Loader loader : this.alternates) {
       try {
         return loader.load(doc, baseUri, loadingOptions, docRoot);
       } catch (ValidationException e) {

@@ -6,6 +6,25 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 
 public class Uris {
+
+  // Emulate Python's urlsplit.
+  public static class UriSplit {
+    String scheme;
+    String netloc;
+    String path;
+    String query;
+    String fragment;
+
+    public UriSplit(String scheme, String netloc, String path, String query, String fragment) {
+      this.scheme = scheme;
+      this.netloc = netloc;
+      this.path = path;
+      this.query = query;
+      this.fragment = fragment;
+    }
+
+  }
+
   public static String fileUri(final String path) {
     return fileUri(path, false);
   }
@@ -34,6 +53,15 @@ public class Uris {
       return "file:" + urlPath + frag;
     } else {
       return "file://" + urlPath + frag;
+    }
+  }
+
+  public static UriSplit split(final String uriString) {
+    try {
+      final URI uri = new URI(uriString);
+      return new Uris.UriSplit(uri.getScheme(), uri.getAuthority(), uri.getPath(), uri.getQuery(), uri.getFragment());
+    } catch (URISyntaxException e) {
+        return new Uris.UriSplit(null, null, uriString, null, null);
     }
   }
 
