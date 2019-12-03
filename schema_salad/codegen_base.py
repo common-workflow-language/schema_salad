@@ -12,7 +12,15 @@ from . import schema
 class TypeDef(object):  # pylint: disable=too-few-public-methods
     """Schema Salad type description."""
 
-    __slots__ = ["name", "init", "is_uri", "scoped_id", "ref_scope"]
+    __slots__ = [
+        "name",
+        "init",
+        "is_uri",
+        "scoped_id",
+        "ref_scope",
+        "loader_type",
+        "instance_type",
+    ]
 
     # switch to class-style typing.NamedTuple once support for Python < 3.6
     # is dropped
@@ -23,12 +31,17 @@ class TypeDef(object):  # pylint: disable=too-few-public-methods
         is_uri=False,  # type: bool
         scoped_id=False,  # type: bool
         ref_scope=0,  # type: Optional[int]
+        loader_type=None,  # type: Optional[Text]
+        instance_type=None,  # type: Optional[Text]
     ):  # type: (...) -> None
         self.name = name
         self.init = init
         self.is_uri = is_uri
         self.scoped_id = scoped_id
         self.ref_scope = ref_scope
+        # Follow attributes used by Java but not Python.
+        self.loader_type = loader_type
+        self.instance_type = instance_type
 
 
 class CodeGenBase(object):

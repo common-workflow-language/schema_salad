@@ -105,6 +105,21 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
         help="Generate classes in target language, currently supported: python",
     )
 
+    parser.add_argument(
+        "--codegen-target",
+        type=str,
+        default=None,
+        help="Defaults to sys.stdout for python (and ./ for hidden Java codegen)",
+    )
+
+    parser.add_argument(
+        "--codegen-examples",
+        type=str,
+        metavar="directory",
+        default=None,
+        help="Directory of example documents for test case generation (Java only).",
+    )
+
     exgroup.add_argument(
         "--print-oneline",
         action="store_true",
@@ -263,6 +278,8 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
             cast(List[Dict[Text, Any]], schema_doc),
             schema_metadata,
             document_loader,
+            target=args.codegen_target,
+            examples=args.codegen_examples,
         )
         return 0
 
