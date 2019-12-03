@@ -102,14 +102,14 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
         "--codegen",
         type=str,
         metavar="language",
-        help="Generate classes in target language, currently supported: python",
+        help="Generate classes in target language, currently supported: python, java",
     )
 
     parser.add_argument(
         "--codegen-target",
         type=str,
         default=None,
-        help="Defaults to sys.stdout for python (and ./ for hidden Java codegen)",
+        help="Defaults to sys.stdout for python and ./ for Java",
     )
 
     parser.add_argument(
