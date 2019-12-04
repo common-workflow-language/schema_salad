@@ -132,7 +132,7 @@ class PythonCodeGen(CodeGenBase):
         if hasattr(doc, 'lc'):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
-        errors = []
+        _errors__ = []
 """.format(
                 classname
             )
@@ -188,7 +188,7 @@ class PythonCodeGen(CodeGenBase):
                                     vocab_term=False)
                     extension_fields[ex] = _doc[k]
                 else:
-                    errors.append(
+                    _errors__.append(
                         ValidationException(
                             "invalid field `%s`, expected one of: {attrstr}" % (k),
                             SourceLine(_doc, k, str)
@@ -196,8 +196,8 @@ class PythonCodeGen(CodeGenBase):
                     )
                     break
 
-        if errors:
-            raise ValidationException(\"Trying '{class_}'\", None, errors)
+        if _errors__:
+            raise ValidationException(\"Trying '{class_}'\", None, _errors__)
 """.format(
                 attrstr=", ".join(["`{}`".format(f) for f in field_names]),
                 class_=self.safe_name(classname),
@@ -366,7 +366,7 @@ class PythonCodeGen(CodeGenBase):
 {spc}            {safename} = load_field(_doc.get(
 {spc}                '{fieldname}'), {fieldtype}, baseuri, loadingOptions)
 {spc}        except ValidationException as e:
-{spc}            errors.append(
+{spc}            _errors__.append(
 {spc}                ValidationException(
 {spc}                    \"the `{fieldname}` field is not valid because:\",
 {spc}                    SourceLine(_doc, '{fieldname}', str),
