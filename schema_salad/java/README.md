@@ -26,6 +26,7 @@ Compile the project, test it, and build a jar
 
 Building a standalone jar with all dependencies included and use it to validate a document
 
+    $ mvn install
     $ mvn assembly:single
     $ java -jar target/<project_name>-0.0.1-SNAPSHOT-jar-with-dependencies.jar ../path/to/document.yml
 

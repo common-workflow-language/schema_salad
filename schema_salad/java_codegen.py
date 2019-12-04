@@ -17,6 +17,12 @@ from .schema import shortname
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
+# experiment at providing more typed objects building a optional type that allows
+# referencing one or a list of objects. It is useful for improving the RootLoader
+# for simple schema with a single root loader - but doesn't help with CWL at all and
+# may even confuse things a bit so turning these off be default.
+USE_ONE_OR_LIST_OF_TYPES = False
+
 
 def _ensure_directory_and_write(path, contents):
     # type: (Text, Text) -> None
@@ -321,9 +327,10 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                             ),
                         )
                     )
-                if type_1_name == "array_of_{}".format(
-                    type_2_name
-                ) or type_2_name == "array_of_{}".format(type_1_name):
+                if (
+                    type_1_name == "array_of_{}".format(type_2_name)
+                    or type_2_name == "array_of_{}".format(type_1_name)
+                ) and USE_ONE_OR_LIST_OF_TYPES:
                     if type_1_name == "array_of_{}".format(type_2_name):
                         single_type = type_2
                         array_type = type_1
@@ -725,28 +732,30 @@ public enum {clazz} {{
                 if example_name.startswith("valid"):
                     basename = os.path.basename(example_name).split(".", 1)[0]
                     example_tests += """
-  @Test
+  @org.junit.Test
   public void test{basename}ByString() throws Exception {{
-    String baseUri = Uris.fileUri(Paths.get(".").toAbsolutePath().normalize().toString()) + "/";
+    String path = java.nio.file.Paths.get(".").toAbsolutePath().normalize().toString();
+    String baseUri = Uris.fileUri(path) + "/";
     java.net.URL url = getClass().getResource("{example_name}");
     java.nio.file.Path resPath = java.nio.file.Paths.get(url.toURI());
     String yaml = new String(java.nio.file.Files.readAllBytes(resPath), "UTF8");
     RootLoader.loadDocument(yaml, baseUri);
   }}
 
-  @Test
+  @org.junit.Test
   public void test{basename}ByPath() throws Exception {{
     java.net.URL url = getClass().getResource("{example_name}");
     java.nio.file.Path resPath = java.nio.file.Paths.get(url.toURI());
     RootLoader.loadDocument(resPath);
   }}
 
-  @Test
+  @org.junit.Test
   public void test{basename}ByMap() throws Exception {{
     java.net.URL url = getClass().getResource("{example_name}");
     java.nio.file.Path resPath = java.nio.file.Paths.get(url.toURI());
     String yaml = new String(java.nio.file.Files.readAllBytes(resPath), "UTF8");
-    Map<String, Object> doc = (Map<String, Object>) YamlUtils.mapFromString(yaml);
+    java.util.Map<String, Object> doc;
+    doc = (java.util.Map<String, Object>) YamlUtils.mapFromString(yaml);
     RootLoader.loadDocument(doc);
   }}""".format(
                         basename=basename, example_name=example_name,
