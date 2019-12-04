@@ -27,8 +27,7 @@ USE_ONE_OR_LIST_OF_TYPES = False
 def _ensure_directory_and_write(path, contents):
     # type: (Text, Text) -> None
     dirname = os.path.dirname(path)
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
+    _safe_makedirs(dirname)
     with io_open(path, mode="w", encoding="utf-8") as f:
         f.write(contents)
 
@@ -43,6 +42,12 @@ def doc_to_doc_string(doc, indent_level=0):
     else:
         doc_str = ""
     return doc_str
+
+
+def _safe_makedirs(path):
+    # type: (Text) -> None
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 
 class JavaCodeGen(CodeGenBase):
@@ -72,11 +77,10 @@ class JavaCodeGen(CodeGenBase):
 
     def prologue(self):  # type: () -> None
         for src_dir in [self.main_src_dir, self.test_src_dir]:
-            if not os.path.exists(src_dir):
-                os.makedirs(src_dir)
+            _safe_makedirs(src_dir)
 
-        for primative in itervalues(self.prims):
-            self.declare_type(primative)
+        for primitive in itervalues(self.prims):
+            self.declare_type(primitive)
 
     @staticmethod
     def property_name(name):  # type: (Text) -> Text
@@ -724,10 +728,11 @@ public enum {clazz} {{
 
         example_tests = ""
         if self.examples:
-            os.makedirs(os.path.dirname(self.test_resources_dir))
-            shutil.copytree(
-                self.examples, os.path.join(self.test_resources_dir, "utils")
-            )
+            _safe_makedirs(self.test_resources_dir)
+            utils_resources = os.path.join(self.test_resources_dir, "utils")
+            if os.path.exists(utils_resources):
+                shutil.rmtree(utils_resources)
+            shutil.copytree(self.examples, utils_resources)
             for example_name in os.listdir(self.examples):
                 if example_name.startswith("valid"):
                     basename = os.path.basename(example_name).split(".", 1)[0]
