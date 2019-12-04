@@ -13,4 +13,3 @@ omit =
     schema_salad/tests/*
     schema_salad/metaschema.py
     schema_salad/python_codegen_support.py
-    schema_salad/java_codegen.py
