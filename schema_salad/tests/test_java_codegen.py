@@ -10,7 +10,6 @@ from .util import get_data
 
 
 def test_cwl_gen():
-    file_uri = get_data_uri(u"tests/test_schema/CommonWorkflowLanguage.yml")
     topmed_example_path = get_data(
         u"tests/test_real_cwl/topmed/topmed_variant_calling_pipeline.cwl"
     )
@@ -24,7 +23,7 @@ def test_cwl_gen():
             topmed_example_path, os.path.join(examples_dir, "valid_topmed.cwl")
         )
 
-        java_codegen(file_uri, target_dir, examples=examples_dir)
+        java_codegen(cwl_file_uri, target_dir, examples=examples_dir)
         pom_xml_path = os.path.join(target_dir, "pom.xml")
         assert os.path.exists(pom_xml_path)
         tests_dir = os.path.join(
@@ -36,11 +35,10 @@ def test_cwl_gen():
 
 
 def test_meta_schema_gen():
-    file_uri = get_data_uri("metaschema/metaschema.yml")
     with t_directory() as test_dir:
         target_dir = os.path.join(test_dir, "target")
         os.mkdir(target_dir)
-        java_codegen(file_uri, target_dir)
+        java_codegen(metaschema_file_uri, target_dir)
         pom_xml_path = os.path.join(target_dir, "pom.xml")
         assert os.path.exists(pom_xml_path)
         src_dir = os.path.join(
@@ -60,6 +58,10 @@ def t_directory():
 
 def get_data_uri(resource_path):
     return ref_resolver.file_uri(get_data(resource_path))
+
+
+cwl_file_uri = get_data_uri(u"tests/test_schema/CommonWorkflowLanguage.yml")
+metaschema_file_uri = get_data_uri("metaschema/metaschema.yml")
 
 
 def java_codegen(file_uri, target, examples=None):
