@@ -324,7 +324,7 @@ class PythonCodeGen(CodeGenBase):
         self.declare_field(name, fieldtype, doc, True)
 
         if optional:
-            opt = """{safename} = "_:" + str(uuid.uuid4())""".format(
+            opt = """{safename} = "_:" + str(_uuid__.uuid4())""".format(
                 safename=self.safe_name(name)
             )
         else:

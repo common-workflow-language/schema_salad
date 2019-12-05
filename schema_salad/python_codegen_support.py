@@ -1,7 +1,7 @@
 import copy
 import os
 import re
-import uuid  # pylint: disable=unused-import # noqa: F401
+import uuid as _uuid__  # pylint: disable=unused-import # noqa: F401
 from typing import (
     Any,
     Dict,
