@@ -519,7 +519,7 @@ def avrold_doc(
             "sha384-604wwakM23pEysLJAhja8Lm42IIwYrJ0dEAqzFsj9pJ/P5buiujjywArgPCi8eoz"
         )
         brandstyle_template = (
-            '<link ref="stylesheet" href={} integrity={} crossorigin="anonymous">'
+            '<link rel="stylesheet" href={} integrity={} crossorigin="anonymous">'
         )
         brandstyle = brandstyle_template.format(bootstrap_url, bootstrap_integrity)
 
