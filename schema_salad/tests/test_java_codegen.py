@@ -2,10 +2,11 @@ import contextlib
 import os.path
 import shutil
 import tempfile
-from typing import Any, Dict, cast, List, Text
+from typing import Any, Dict, List, Text, cast
 
-from schema_salad.schema import load_schema
 from schema_salad import codegen, ref_resolver
+from schema_salad.schema import load_schema
+
 from .util import get_data
 
 

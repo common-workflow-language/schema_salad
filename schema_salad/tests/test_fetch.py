@@ -1,8 +1,8 @@
 import os
 from typing import Text
+from urllib.parse import urljoin, urlsplit
 
 import pytest
-from urllib.parse import urlsplit, urljoin
 
 import schema_salad.main
 import schema_salad.ref_resolver

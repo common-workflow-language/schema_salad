@@ -2,6 +2,7 @@ import copy
 import os
 import re
 import uuid as _uuid__  # pylint: disable=unused-import # noqa: F401
+from io import StringIO
 from typing import (
     Any,
     Dict,
@@ -14,17 +15,16 @@ from typing import (
     Type,
     Union,
 )
-
-from io import StringIO
-from urllib.parse import urlsplit, urlunsplit, quote
+from urllib.parse import quote, urlsplit, urlunsplit
 from urllib.request import pathname2url
+
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
+from schema_salad.exceptions import SchemaSaladException, ValidationException
 from schema_salad.ref_resolver import Fetcher
 from schema_salad.sourceline import SourceLine, add_lc_filename
-from schema_salad.exceptions import SchemaSaladException, ValidationException
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 

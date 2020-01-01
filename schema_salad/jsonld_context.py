@@ -11,10 +11,10 @@ from typing import (
     Union,
     cast,
 )
+from urllib.parse import urldefrag, urlsplit
 
 import rdflib
 import rdflib.namespace
-from urllib.parse import urlsplit, urldefrag
 from rdflib import Graph, URIRef
 from rdflib.namespace import RDF, RDFS
 from typing_extensions import Text  # pylint: disable=unused-import

@@ -1,8 +1,9 @@
 import os
-from typing import Any, Dict, cast, List, Text
+from typing import Any, Dict, List, Text, cast
 
-from schema_salad.schema import load_schema
 from schema_salad import codegen
+from schema_salad.schema import load_schema
+
 from .test_java_codegen import cwl_file_uri, metaschema_file_uri, t_directory
 
 

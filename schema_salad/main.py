@@ -5,11 +5,11 @@ import logging
 import os
 import sys
 from typing import Any, Dict, List, Mapping, MutableSequence, Optional, Union, cast
+from urllib.parse import urlparse
 
 import pkg_resources  # part of setuptools
 from rdflib.parser import Parser
 from rdflib.plugin import register
-from urllib.parse import urlparse
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from ruamel.yaml.comments import CommentedSeq

@@ -1,10 +1,10 @@
 import os
 
 import ruamel.yaml
-from ruamel.yaml.comments import CommentedMap, CommentedSeq
 import schema_salad.main
 import schema_salad.ref_resolver
 import schema_salad.schema
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from schema_salad.jsonld_context import makerdf
 from schema_salad.sourceline import SourceLine, cmap
 

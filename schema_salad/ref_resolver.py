@@ -4,7 +4,7 @@ import os
 import re
 import sys
 import xml.sax
-from io import open
+from io import StringIO, open
 from typing import Callable  # pylint: disable=unused-import
 from typing import (
     Any,
@@ -27,14 +27,13 @@ from cachecontrol.wrapper import CacheControl
 from rdflib.graph import Graph
 from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.plugins.parsers.notation3 import BadSyntax
-from io import StringIO
 from six.moves import range, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
 
-from .exceptions import ValidationException, SchemaSaladException
+from .exceptions import SchemaSaladException, ValidationException
 from .sourceline import SourceLine, add_lc_filename, relname
 from .utils import aslist, onWindows
 

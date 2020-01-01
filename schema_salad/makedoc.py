@@ -6,7 +6,7 @@ import os
 import re
 import sys
 from codecs import StreamWriter  # pylint: disable=unused-import
-from io import TextIOWrapper, open
+from io import StringIO, TextIOWrapper, open
 from typing import (
     IO,
     Any,
@@ -20,10 +20,9 @@ from typing import (
     Union,
     cast,
 )
+from urllib.parse import urldefrag
 
 import mistune
-from io import StringIO
-from urllib.parse import urldefrag
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import schema

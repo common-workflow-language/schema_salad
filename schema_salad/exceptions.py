@@ -1,6 +1,8 @@
-from typing import Any, Sequence, Optional, Tuple, List
+from typing import Any, List, Optional, Sequence, Tuple
+
 from typing_extensions import Text
-from .sourceline import reflow_all, strip_duplicated_lineno, SourceLine
+
+from .sourceline import SourceLine, reflow_all, strip_duplicated_lineno
 
 
 def to_one_line_messages(exc):  # type: (SchemaSaladException) -> Text

@@ -17,9 +17,9 @@ from typing import (
     Union,
     cast,
 )
+from urllib.parse import urldefrag, urlparse
 
 from pkg_resources import resource_stream
-from urllib.parse import urldefrag, urlparse
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from ruamel import yaml
@@ -33,12 +33,12 @@ from schema_salad.utils import (
 )
 
 from . import _logger, jsonld_context, ref_resolver, validate
+from .avro.schema import Names, SchemaParseException, make_avsc_object
 from .exceptions import (
     ClassValidationException,
-    ValidationException,
     SchemaSaladException,
+    ValidationException,
 )
-from .avro.schema import Names, SchemaParseException, make_avsc_object
 from .ref_resolver import Loader
 from .sourceline import SourceLine, add_lc_filename, relname
 

@@ -1,6 +1,21 @@
 # Stubs for urllib.parse
-from typing import Any, List, Dict, Tuple, AnyStr, Generic, Iterator, overload, Sequence, Mapping, Union, NamedTuple, Callable, Optional
 import sys
+from typing import (
+    Any,
+    AnyStr,
+    Callable,
+    Dict,
+    Generic,
+    Iterator,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    overload,
+)
 
 _Str = Union[bytes, str]
 

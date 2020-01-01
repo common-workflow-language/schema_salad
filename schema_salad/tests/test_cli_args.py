@@ -4,7 +4,6 @@ import sys
 
 # for capturing print() output
 from contextlib import contextmanager
-
 from io import StringIO
 
 import schema_salad.main as cli_parser

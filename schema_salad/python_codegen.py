@@ -1,13 +1,13 @@
 """Python code generator for a given schema salad definition."""
+from io import StringIO
 from typing import IO, Any, Dict, List, MutableMapping, MutableSequence, Union
 
 from pkg_resources import resource_stream
-from io import StringIO
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import schema
-from .exceptions import SchemaException
 from .codegen_base import CodeGenBase, TypeDef
+from .exceptions import SchemaException
 from .schema import shortname
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported

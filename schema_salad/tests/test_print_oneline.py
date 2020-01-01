@@ -1,10 +1,10 @@
+import re
 from os.path import normpath
 
 import pytest
-import re
 
-from schema_salad.schema import load_and_validate, load_schema
 from schema_salad.exceptions import ValidationException, to_one_line_messages
+from schema_salad.schema import load_and_validate, load_schema
 
 from .util import get_data
 

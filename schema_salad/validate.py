@@ -9,19 +9,19 @@ from typing import (  # noqa: F401
     Set,
     Union,
 )
-
 from urllib.parse import urlsplit
+
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import avro
-from .exceptions import (
-    ClassValidationException,
-    ValidationException,
-    SchemaSaladException,
-)
 from .avro import schema  # noqa: F401
 from .avro.schema import (  # pylint: disable=unused-import, no-name-in-module, import-error
     Schema,
+)
+from .exceptions import (
+    ClassValidationException,
+    SchemaSaladException,
+    ValidationException,
 )
 from .sourceline import SourceLine
 

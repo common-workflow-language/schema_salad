@@ -1,14 +1,13 @@
 """Work-in-progress Java code generator for a given schema salad definition."""
 import os
-import pkg_resources
-import string
 import shutil
-
-from urllib.parse import urlsplit
-from io import open as io_open
+import string
 from io import StringIO
+from io import open as io_open
 from typing import Any, Dict, List, MutableMapping, MutableSequence, Optional, Union
+from urllib.parse import urlsplit
 
+import pkg_resources
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import schema
