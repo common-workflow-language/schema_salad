@@ -2,11 +2,7 @@
 import collections
 from typing import Any, Dict, List, MutableSequence, Optional, Union
 
-from typing_extensions import Text  # pylint: disable=unused-import
-
 from . import schema
-
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 
 class TypeDef(object):  # pylint: disable=too-few-public-methods
@@ -26,13 +22,13 @@ class TypeDef(object):  # pylint: disable=too-few-public-methods
     # is dropped
     def __init__(
         self,  # pylint: disable=too-many-arguments
-        name,  # type: Text
-        init,  # type: Text
+        name,  # type: str
+        init,  # type: str
         is_uri=False,  # type: bool
         scoped_id=False,  # type: bool
         ref_scope=0,  # type: Optional[int]
-        loader_type=None,  # type: Optional[Text]
-        instance_type=None,  # type: Optional[Text]
+        loader_type=None,  # type: Optional[str]
+        instance_type=None,  # type: Optional[str]
     ):  # type: (...) -> None
         self.name = name
         self.init = init
@@ -50,8 +46,8 @@ class CodeGenBase(object):
     def __init__(self):  # type: () -> None
         self.collected_types = (
             collections.OrderedDict()
-        )  # type: collections.OrderedDict[Text, TypeDef]
-        self.vocab = {}  # type: Dict[Text, Text]
+        )  # type: collections.OrderedDict[str, TypeDef]
+        self.vocab = {}  # type: Dict[str, str]
 
     def declare_type(self, declared_type):  # type: (TypeDef) -> TypeDef
         """Add this type to our collection, if needed."""
@@ -59,7 +55,7 @@ class CodeGenBase(object):
             self.collected_types[declared_type.name] = declared_type
         return declared_type
 
-    def add_vocab(self, name, uri):  # type: (Text, Text) -> None
+    def add_vocab(self, name, uri):  # type: (str, str) -> None
         """Add the given name as an abbreviation for the given URI."""
         self.vocab[name] = uri
 
@@ -68,39 +64,39 @@ class CodeGenBase(object):
         raise NotImplementedError()
 
     @staticmethod
-    def safe_name(name):  # type: (Text) -> Text
+    def safe_name(name):  # type: (str) -> str
         """Generate a safe version of the given name."""
         return schema.avro_name(name)
 
     def begin_class(
         self,  # pylint: disable=too-many-arguments
-        classname,  # type: Text
-        extends,  # type: MutableSequence[Text]
-        doc,  # type: Text
+        classname,  # type: str
+        extends,  # type: MutableSequence[str]
+        doc,  # type: str
         abstract,  # type: bool
-        field_names,  # type: MutableSequence[Text]
-        idfield,  # type: Text
+        field_names,  # type: MutableSequence[str]
+        idfield,  # type: str
     ):  # type: (...) -> None
         """Produce the header for the given class."""
         raise NotImplementedError()
 
     def end_class(self, classname, field_names):
-        # type: (Text, List[Text]) -> None
+        # type: (str, List[str]) -> None
         """Signal that we are done with this class."""
         raise NotImplementedError()
 
     def type_loader(self, type_declaration):
-        # type: (Union[List[Any], Dict[Text, Any]]) -> TypeDef
+        # type: (Union[List[Any], Dict[str, Any]]) -> TypeDef
         """Parse the given type declaration and declare its components."""
         raise NotImplementedError()
 
     def declare_field(self, name, fieldtype, doc, optional):
-        # type: (Text, TypeDef, Text, bool) -> None
+        # type: (str, TypeDef, str, bool) -> None
         """Output the code to load the given field."""
         raise NotImplementedError()
 
     def declare_id_field(self, name, fieldtype, doc, optional):
-        # type: (Text, TypeDef, Text, bool) -> None
+        # type: (str, TypeDef, str, bool) -> None
         """Output the code to handle the given ID field."""
         raise NotImplementedError()
 
@@ -110,7 +106,7 @@ class CodeGenBase(object):
         raise NotImplementedError()
 
     def idmap_loader(self, field, inner, map_subject, map_predicate):
-        # type: (Text, TypeDef, Text, Union[Text, None]) -> TypeDef
+        # type: (str, TypeDef, str, Union[str, None]) -> TypeDef
         """Construct the TypeDef for the given mapped ID loader."""
         raise NotImplementedError()
 

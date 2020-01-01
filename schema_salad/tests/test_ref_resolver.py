@@ -1,6 +1,5 @@
 """Test the ref_resolver module."""
 
-from __future__ import absolute_import
 
 import os
 import shutil
@@ -170,9 +169,9 @@ def test_import_list():
 
     basedir = schema_salad.ref_resolver.file_uri(os.path.dirname(__file__) + "/")
     loader = schema_salad.ref_resolver.Loader({})
-    ra, _ = loader.resolve_all(cmap({u"foo": {"$import": "list.json"}}), basedir)
+    ra, _ = loader.resolve_all(cmap({"foo": {"$import": "list.json"}}), basedir)
 
-    assert {u"foo": ["bar", "baz"]} == ra
+    assert {"foo": ["bar", "baz"]} == ra
 
 
 def test_fetch_inject_id():

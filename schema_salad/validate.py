@@ -1,47 +1,28 @@
-from __future__ import absolute_import
-
 import logging
 import pprint
-from typing import (  # noqa: F401
-    Any,
-    List,
-    MutableMapping,
-    MutableSequence,
-    Optional,
-    Set,
-    Union,
-)
-
-import six
-from six.moves import urllib
-from typing_extensions import Text  # pylint: disable=unused-import
+from typing import Any, List, MutableMapping, MutableSequence, Optional, Set
+from urllib.parse import urlsplit
 
 from . import avro
+from .avro.schema import Schema  # pylint: disable=no-name-in-module, import-error
 from .exceptions import (
     ClassValidationException,
-    ValidationException,
     SchemaSaladException,
-)
-from .avro import schema  # noqa: F401
-from .avro.schema import (  # pylint: disable=unused-import, no-name-in-module, import-error
-    Schema,
+    ValidationException,
 )
 from .sourceline import SourceLine
-
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 
 _logger = logging.getLogger("salad")
 
 
 def validate(
-    expected_schema,  # type: Schema
-    datum,  # type: Any
-    identifiers=None,  # type: Optional[List[Text]]
-    strict=False,  # type: bool
-    foreign_properties=None,  # type: Optional[Set[Text]]
-):
-    # type: (...) -> bool
+    expected_schema: Schema,
+    datum: Any,
+    identifiers: Optional[List[str]] = None,
+    strict: bool = False,
+    foreign_properties: Optional[Set[str]] = None,
+) -> bool:
     if not identifiers:
         identifiers = []
     if not foreign_properties:
@@ -83,11 +64,11 @@ def vpformat(datum):  # type: (Any) -> str
 
 
 def validate_ex(
-    expected_schema,  # type: Schema
+    expected_schema: Schema,
     datum,  # type: Any
-    identifiers=None,  # type: Optional[List[Text]]
+    identifiers=None,  # type: Optional[List[str]]
     strict=False,  # type: bool
-    foreign_properties=None,  # type: Optional[Set[Text]]
+    foreign_properties=None,  # type: Optional[Set[str]]
     raise_ex=True,  # type: bool
     strict_foreign_properties=False,  # type: bool
     logger=_logger,  # type: logging.Logger
@@ -109,7 +90,7 @@ def validate_ex(
             return True
         else:
             if raise_ex:
-                raise ValidationException(u"the value is not null")
+                raise ValidationException("the value is not null")
             else:
                 return False
     elif schema_type == "boolean":
@@ -117,50 +98,44 @@ def validate_ex(
             return True
         else:
             if raise_ex:
-                raise ValidationException(u"the value is not boolean")
+                raise ValidationException("the value is not boolean")
             else:
                 return False
     elif schema_type == "string":
-        if isinstance(datum, six.string_types):
+        if isinstance(datum, str):
             return True
         elif isinstance(datum, bytes):
-            datum = datum.decode(u"utf-8")
             return True
         else:
             if raise_ex:
-                raise ValidationException(u"the value is not string")
+                raise ValidationException("the value is not string")
             else:
                 return False
     elif schema_type == "int":
-        if (
-            isinstance(datum, six.integer_types)
-            and INT_MIN_VALUE <= datum <= INT_MAX_VALUE
-        ):
+        if isinstance(datum, int) and INT_MIN_VALUE <= datum <= INT_MAX_VALUE:
             return True
         else:
             if raise_ex:
-                raise ValidationException(u"`{}` is not int".format(vpformat(datum)))
+                raise ValidationException("`{}` is not int".format(vpformat(datum)))
             else:
                 return False
     elif schema_type == "long":
-        if (
-            isinstance(datum, six.integer_types)
-        ) and LONG_MIN_VALUE <= datum <= LONG_MAX_VALUE:
+        if (isinstance(datum, int)) and LONG_MIN_VALUE <= datum <= LONG_MAX_VALUE:
             return True
         else:
             if raise_ex:
                 raise ValidationException(
-                    u"the value `{}` is not long".format(vpformat(datum))
+                    "the value `{}` is not long".format(vpformat(datum))
                 )
             else:
                 return False
     elif schema_type in ["float", "double"]:
-        if isinstance(datum, six.integer_types) or isinstance(datum, float):
+        if isinstance(datum, int) or isinstance(datum, float):
             return True
         else:
             if raise_ex:
                 raise ValidationException(
-                    u"the value `{}` is not float or double".format(vpformat(datum))
+                    "the value `{}` is not float or double".format(vpformat(datum))
                 )
             else:
                 return False
@@ -170,15 +145,13 @@ def validate_ex(
                 return True
             else:
                 if raise_ex:
-                    raise ValidationException(u"'Any' type must be non-null")
+                    raise ValidationException("'Any' type must be non-null")
                 else:
                     return False
-        if not isinstance(datum, six.string_types):
+        if not isinstance(datum, str):
             if raise_ex:
                 raise ValidationException(
-                    u"value is a {} but expected a string".format(
-                        (type(datum).__name__)
-                    )
+                    "value is a {} but expected a string".format((type(datum).__name__))
                 )
             else:
                 return False
@@ -187,7 +160,7 @@ def validate_ex(
                 return True
             if raise_ex:
                 raise ValidationException(
-                    u"value `%s` does not contain an expression in the form $() or ${}"
+                    "value `%s` does not contain an expression in the form $() or ${}"
                     % datum
                 )
             else:
@@ -197,7 +170,7 @@ def validate_ex(
         else:
             if raise_ex:
                 raise ValidationException(
-                    u"the value {} is not a valid {}, expected {}{}".format(
+                    "the value {} is not a valid {}, expected {}{}".format(
                         vpformat(datum),
                         expected_schema.name,
                         "one of " if len(expected_schema.symbols) > 1 else "",
@@ -232,7 +205,7 @@ def validate_ex(
         else:
             if raise_ex:
                 raise ValidationException(
-                    u"the value {} is not a list, expected list of {}".format(
+                    "the value {} is not a list, expected list of {}".format(
                         vpformat(datum), friendly(expected_schema.items)
                     )
                 )
@@ -266,9 +239,9 @@ def validate_ex(
                 s, avro.schema.RecordSchema
             ):
                 continue
-            elif isinstance(
-                datum, (bool, six.integer_types, float, six.string_types)
-            ) and isinstance(s, (avro.schema.ArraySchema, avro.schema.RecordSchema)):
+            elif isinstance(datum, (bool, int, float, str)) and isinstance(
+                s, (avro.schema.ArraySchema, avro.schema.RecordSchema)
+            ):
                 continue
             elif datum is not None and s.type == "null":
                 continue
@@ -312,7 +285,7 @@ def validate_ex(
     elif isinstance(expected_schema, avro.schema.RecordSchema):
         if not isinstance(datum, MutableMapping):
             if raise_ex:
-                raise ValidationException(u"is not a dict")
+                raise ValidationException("is not a dict")
             else:
                 return False
 
@@ -322,13 +295,13 @@ def validate_ex(
                 d = datum.get(f.name)
                 if not d:
                     if raise_ex:
-                        raise ValidationException(u"Missing '{}' field".format(f.name))
+                        raise ValidationException("Missing '{}' field".format(f.name))
                     else:
                         return False
                 if expected_schema.name != d:
                     if raise_ex:
                         raise ValidationException(
-                            u"Expected class '{}' but this is '{}'".format(
+                            "Expected class '{}' but this is '{}'".format(
                                 expected_schema.name, d
                             )
                         )
@@ -351,7 +324,7 @@ def validate_ex(
                     fieldval = None
 
             try:
-                sl = SourceLine(datum, f.name, six.text_type)
+                sl = SourceLine(datum, f.name, str)
                 if not validate_ex(
                     f.type,
                     fieldval,
@@ -368,13 +341,13 @@ def validate_ex(
                 if f.name not in datum:
                     errors.append(
                         ValidationException(
-                            u"missing required field `{}`".format(f.name)
+                            "missing required field `{}`".format(f.name)
                         )
                     )
                 else:
                     errors.append(
                         ValidationException(
-                            u"the `{}` field is not valid because".format(f.name),
+                            "the `{}` field is not valid because".format(f.name),
                             sl,
                             [v],
                         )
@@ -386,9 +359,9 @@ def validate_ex(
                 if d == f.name:
                     found = True
             if not found:
-                sl = SourceLine(datum, d, six.text_type)
+                sl = SourceLine(datum, d, str)
                 if d is None:
-                    err = ValidationException(u"mapping with implicit null key", sl)
+                    err = ValidationException("mapping with implicit null key", sl)
                     if strict:
                         errors.append(err)
                     else:
@@ -409,11 +382,11 @@ def validate_ex(
                         and not raise_ex
                     ):
                         return False
-                    split = urllib.parse.urlsplit(d)
+                    split = urlsplit(d)
                     if split.scheme:
                         if not skip_foreign_properties:
                             err = ValidationException(
-                                u"unrecognized extension field `{}`{}.{}".format(
+                                "unrecognized extension field `{}`{}.{}".format(
                                     d,
                                     " and strict_foreign_properties checking is enabled"
                                     if strict_foreign_properties
@@ -432,7 +405,7 @@ def validate_ex(
                                 logger.warning(err)
                     else:
                         err = ValidationException(
-                            u"invalid field `{}`, expected one of: {}".format(
+                            "invalid field `{}`, expected one of: {}".format(
                                 d,
                                 ", ".join(
                                     "'{}'".format(fn.name)
@@ -457,6 +430,6 @@ def validate_ex(
         else:
             return True
     if raise_ex:
-        raise ValidationException(u"Unrecognized schema_type {}".format(schema_type))
+        raise ValidationException("Unrecognized schema_type {}".format(schema_type))
     else:
         return False

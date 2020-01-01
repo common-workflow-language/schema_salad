@@ -1,21 +1,18 @@
 """Work-in-progress Java code generator for a given schema salad definition."""
 import os
-import pkg_resources
-import string
 import shutil
+import string
+from io import StringIO
 from io import open as io_open
 from typing import Any, Dict, List, MutableMapping, MutableSequence, Optional, Union
+from urllib.parse import urlsplit
 
-from six import iteritems, itervalues
-from six.moves import cStringIO, urllib
-from typing_extensions import Text  # pylint: disable=unused-import
+import pkg_resources
 
 from . import schema
 from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
-
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 # experiment at providing more typed objects building a optional type that allows
 # referencing one or a list of objects. It is useful for improving the RootLoader
@@ -25,7 +22,7 @@ USE_ONE_OR_LIST_OF_TYPES = False
 
 
 def _ensure_directory_and_write(path, contents):
-    # type: (Text, Text) -> None
+    # type: (str, str) -> None
     dirname = os.path.dirname(path)
     _safe_makedirs(dirname)
     with io_open(path, mode="w", encoding="utf-8") as f:
@@ -33,7 +30,7 @@ def _ensure_directory_and_write(path, contents):
 
 
 def doc_to_doc_string(doc, indent_level=0):
-    # type: (Text, int) -> Text
+    # type: (str, int) -> str
     lead = " " + "  " * indent_level + "* " * indent_level
     if doc:
         doc_str = "{}<BLOCKQUOTE>\n".format(lead)
@@ -45,17 +42,17 @@ def doc_to_doc_string(doc, indent_level=0):
 
 
 def _safe_makedirs(path):
-    # type: (Text) -> None
+    # type: (str) -> None
     if not os.path.exists(path):
         os.makedirs(path)
 
 
 class JavaCodeGen(CodeGenBase):
     def __init__(self, base, target, examples):
-        # type: (Text, Optional[str], Optional[str]) -> None
+        # type: (str, Optional[str], Optional[str]) -> None
         super(JavaCodeGen, self).__init__()
         self.base_uri = base
-        sp = urllib.parse.urlsplit(base)
+        sp = urlsplit(base)
         self.examples = examples
         self.package = ".".join(
             list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/")
@@ -79,16 +76,16 @@ class JavaCodeGen(CodeGenBase):
         for src_dir in [self.main_src_dir, self.test_src_dir]:
             _safe_makedirs(src_dir)
 
-        for primitive in itervalues(self.prims):
+        for primitive in self.prims.values():
             self.declare_type(primitive)
 
     @staticmethod
-    def property_name(name):  # type: (Text) -> Text
+    def property_name(name):  # type: (str) -> str
         avn = schema.avro_name(name)
         return avn
 
     @staticmethod
-    def safe_name(name):  # type: (Text) -> Text
+    def safe_name(name):  # type: (str) -> str
         avn = JavaCodeGen.property_name(name)
         if avn in ("class", "extends", "abstract", "default", "package"):
             # reserved words
@@ -96,30 +93,30 @@ class JavaCodeGen(CodeGenBase):
         return avn
 
     def interface_name(self, n):
-        # type: (Text) -> Text
+        # type: (str) -> str
         return self.safe_name(n)
 
     def begin_class(
         self,
-        classname,  # type: Text
-        extends,  # type: MutableSequence[Text]
-        doc,  # type: Text
+        classname,  # type: str
+        extends,  # type: MutableSequence[str]
+        doc,  # type: str
         abstract,  # type: bool
-        field_names,  # type: MutableSequence[Text]
-        idfield,  # type: Text
+        field_names,  # type: MutableSequence[str]
+        idfield,  # type: str
     ):  # type: (...) -> None
         cls = self.interface_name(classname)
         self.current_class = cls
         self.current_class_is_abstract = abstract
-        self.current_loader = cStringIO()
-        self.current_fieldtypes = {}  # type: Dict[Text, TypeDef]
-        self.current_fields = cStringIO()
-        interface_doc_str = u"* Auto-generated interface for <I>%s</I><BR>" % classname
+        self.current_loader = StringIO()
+        self.current_fieldtypes = {}  # type: Dict[str, TypeDef]
+        self.current_fields = StringIO()
+        interface_doc_str = "* Auto-generated interface for <I>%s</I><BR>" % classname
         if not abstract:
-            implemented_by = u"This interface is implemented by {{@link {}Impl}}<BR>"
+            implemented_by = "This interface is implemented by {{@link {}Impl}}<BR>"
             interface_doc_str += implemented_by.format(cls)
         interface_doc_str += doc_to_doc_string(doc)
-        class_doc_str = u"* Auto-generated class implementation for <I>{}</I><BR>".format(
+        class_doc_str = "* Auto-generated class implementation for <I>{}</I><BR>".format(
             classname
         )
         class_doc_str += doc_to_doc_string(doc)
@@ -211,7 +208,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         )
 
     def end_class(self, classname, field_names):
-        # type: (Text, List[Text]) -> None
+        # type: (str, List[str]) -> None
         with open(
             os.path.join(self.main_src_dir, "{}.java".format(self.current_class)), "a"
         ) as f:
@@ -255,49 +252,49 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
             )
 
     prims = {
-        u"http://www.w3.org/2001/XMLSchema#string": TypeDef(
+        "http://www.w3.org/2001/XMLSchema#string": TypeDef(
             instance_type="String",
             init="new PrimitiveLoader<String>(String.class)",
             name="StringInstance",
             loader_type="Loader<String>",
         ),
-        u"http://www.w3.org/2001/XMLSchema#int": TypeDef(
+        "http://www.w3.org/2001/XMLSchema#int": TypeDef(
             instance_type="Integer",
             init="new PrimitiveLoader<Integer>(Integer.class)",
             name="IntegerInstance",
             loader_type="Loader<Integer>",
         ),
-        u"http://www.w3.org/2001/XMLSchema#long": TypeDef(
+        "http://www.w3.org/2001/XMLSchema#long": TypeDef(
             instance_type="Long",
             name="LongInstance",
             loader_type="Loader<Long>",
             init="new PrimitiveLoader<Long>(Long.class)",
         ),
-        u"http://www.w3.org/2001/XMLSchema#float": TypeDef(
+        "http://www.w3.org/2001/XMLSchema#float": TypeDef(
             instance_type="Float",
             name="FloatInstance",
             loader_type="Loader<Float>",
             init="new PrimitiveLoader<Float>(Float.class)",
         ),
-        u"http://www.w3.org/2001/XMLSchema#double": TypeDef(
+        "http://www.w3.org/2001/XMLSchema#double": TypeDef(
             instance_type="Double",
             name="DoubleInstance",
             loader_type="Loader<Double>",
             init="new PrimitiveLoader<Double>(Double.class)",
         ),
-        u"http://www.w3.org/2001/XMLSchema#boolean": TypeDef(
+        "http://www.w3.org/2001/XMLSchema#boolean": TypeDef(
             instance_type="Boolean",
             name="BooleanInstance",
             loader_type="Loader<Boolean>",
             init="new PrimitiveLoader<Boolean>(Boolean.class)",
         ),
-        u"https://w3id.org/cwl/salad#null": TypeDef(
+        "https://w3id.org/cwl/salad#null": TypeDef(
             instance_type="Object",
             name="NullInstance",
             loader_type="Loader<Object>",
             init="new NullLoader()",
         ),
-        u"https://w3id.org/cwl/salad#Any": TypeDef(
+        "https://w3id.org/cwl/salad#Any": TypeDef(
             instance_type="Object",
             name="AnyInstance",
             init="new AnyLoader()",
@@ -306,7 +303,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
     }
 
     def type_loader(self, type_declaration):
-        # type: (Union[List[Any], Dict[Text, Any], Text]) -> TypeDef
+        # type: (Union[List[Any], Dict[str, Any], str]) -> TypeDef
         if isinstance(type_declaration, MutableSequence):
             sub = [self.type_loader(i) for i in type_declaration]
             if len(sub) < 2:
@@ -410,7 +407,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         return self.collected_types[self.safe_name(type_declaration)]
 
     def type_loader_enum(self, type_declaration):
-        # type: (Dict[Text, Any]) -> TypeDef
+        # type: (Dict[str, Any]) -> TypeDef
         symbols = [self.property_name(sym) for sym in type_declaration["symbols"]]
         for sym in symbols:
             self.add_vocab(shortname(sym), sym)
@@ -470,7 +467,7 @@ public enum {clazz} {{
         )
 
     def declare_field(self, name, fieldtype, doc, optional):
-        # type: (Text, TypeDef, Text, bool) -> None
+        # type: (str, TypeDef, str, bool) -> None
         fieldname = name
         property_name = self.property_name(fieldname)
         cap_case_property_name = property_name[0].upper() + property_name[1:]
@@ -567,7 +564,7 @@ public enum {clazz} {{
             )
 
     def declare_id_field(self, name, fieldtype, doc, optional):
-        # type: (Text, TypeDef, Text, bool) -> None
+        # type: (str, TypeDef, str, bool) -> None
         if self.current_class_is_abstract:
             return
 
@@ -622,7 +619,7 @@ public enum {clazz} {{
         )
 
     def idmap_loader(self, field, inner, map_subject, map_predicate):
-        # type: (Text, TypeDef, Text, Union[Text, None]) -> TypeDef
+        # type: (str, TypeDef, str, Union[str, None]) -> TypeDef
         assert inner is not None
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
@@ -661,7 +658,7 @@ public enum {clazz} {{
         return val
 
     def epilogue(self, root_loader):  # type: (TypeDef) -> None
-        pd = u"This project contains Java objects and utilities "
+        pd = "This project contains Java objects and utilities "
         pd = pd + ' auto-generated by <a href="https://github.com/'
         pd = pd + 'common-workflow-language/schema_salad">Schema Salad</a>'
         pd = pd + " for parsing documents corresponding to the "
@@ -677,7 +674,7 @@ public enum {clazz} {{
             project_description=pd,
             license_name="Apache License, Version 2.0",
             license_url="https://www.apache.org/licenses/LICENSE-2.0.txt",
-        )  # type: MutableMapping[Text, Text]
+        )  # type: MutableMapping[str, str]
 
         def template_from_resource(resource):
             # type: (str) -> string.Template
@@ -721,7 +718,7 @@ public enum {clazz} {{
             rvocab += """    rvocab.put("{}", "{}");\n""".format(self.vocab[k], k)
 
         loader_instances = ""
-        for _, collected_type in iteritems(self.collected_types):
+        for _, collected_type in self.collected_types.items():
             loader_instances += "  public static {} {} = {};\n".format(
                 collected_type.loader_type, collected_type.name, collected_type.init
             )
@@ -774,7 +771,7 @@ public enum {clazz} {{
             root_loader_name=root_loader.name,
             root_loader_instance_type=root_loader.instance_type or "Object",
             example_tests=example_tests,
-        )  # type: MutableMapping[Text, Text]
+        )  # type: MutableMapping[str, str]
 
         util_src_dirs = {
             "main_utils": self.main_src_dir,

@@ -47,7 +47,7 @@ public class LoadingOptions {
       final boolean vocabTerm,
       final Integer scopedRef) {
     // NOT CONVERTING this - doesn't match type declaration
-    // if not isinstance(url, string_types):
+    // if not isinstance(url, str):
     //    return url
     String url = url_;
     if (url.equals("@id") || url.equals("@type")) {

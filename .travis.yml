@@ -15,8 +15,6 @@ install:
 jobs:
   include:
     - stage: test
-      python: "2.7"
-    - stage: test
       python: "3.5"
     - stage: test
       python: "3.6"
@@ -24,9 +22,6 @@ jobs:
       python: "3.7"
     - stage: test
       python: "3.8"
-    - stage: release-test
-      python: "2.7"
-      script: RELEASE_SKIP=head PYVER= ${TRAVIS_BUILD_DIR}/release-test.sh
     - stage: release-test
       python: "3.8"
       script: RELEASE_SKIP=head PYVER=3.8 ${TRAVIS_BUILD_DIR}/release-test.sh

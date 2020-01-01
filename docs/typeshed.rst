@@ -9,7 +9,7 @@ directory.
 ::
 
  mkdir out
- stubgen --py2 module_name
+ stubgen module_name
  mv out/module_name/* typeshed/2.7/
  make mypy
 

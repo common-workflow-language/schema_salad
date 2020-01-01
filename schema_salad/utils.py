@@ -1,10 +1,6 @@
-from __future__ import absolute_import
-
 import json
 import os
 from typing import IO, Any, Dict, Mapping, MutableSequence
-
-import six
 
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
@@ -74,8 +70,6 @@ def json_dump(
     **kwargs  # type: Any
 ):  # type: (...) -> None
     """ Force use of unicode. """
-    if six.PY2:
-        kwargs["encoding"] = "utf-8"
     json.dump(convert_to_dict(obj), fp, **kwargs)
 
 
@@ -84,6 +78,4 @@ def json_dumps(
     **kwargs  # type: Any
 ):  # type: (...) -> str
     """ Force use of unicode. """
-    if six.PY2:
-        kwargs["encoding"] = "utf-8"
     return json.dumps(convert_to_dict(obj), **kwargs)

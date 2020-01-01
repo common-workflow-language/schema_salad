@@ -1,14 +1,10 @@
-from __future__ import absolute_import, print_function
-
 import os
 
-import six
-
 import ruamel.yaml
-from ruamel.yaml.comments import CommentedMap, CommentedSeq
 import schema_salad.main
 import schema_salad.ref_resolver
 import schema_salad.schema
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from schema_salad.jsonld_context import makerdf
 from schema_salad.sourceline import SourceLine, cmap
 
@@ -21,20 +17,20 @@ def test_schemas():
     ra, _ = loader.resolve_all(
         cmap(
             {
-                u"$schemas": [
+                "$schemas": [
                     schema_salad.ref_resolver.file_uri(get_data("tests/EDAM.owl"))
                 ],
-                u"$namespaces": {u"edam": u"http://edamontology.org/"},
-                u"edam:has_format": u"edam:format_1915",
+                "$namespaces": {"edam": "http://edamontology.org/"},
+                "edam:has_format": "edam:format_1915",
             }
         ),
         "",
     )
 
     assert {
-        u"$schemas": [schema_salad.ref_resolver.file_uri(get_data("tests/EDAM.owl"))],
-        u"$namespaces": {u"edam": u"http://edamontology.org/"},
-        u"http://edamontology.org/has_format": u"http://edamontology.org/format_1915",
+        "$schemas": [schema_salad.ref_resolver.file_uri(get_data("tests/EDAM.owl"))],
+        "$namespaces": {"edam": "http://edamontology.org/"},
+        "http://edamontology.org/has_format": "http://edamontology.org/format_1915",
     } == ra
 
 
@@ -347,8 +343,8 @@ def test_mixin():
         base_url=base_url,
     )
     assert [
-        {"id": base_url + "#a", "m": {"id": base_url + u"#a/four", "one": "two"}},
-        {"id": base_url + "#b", "m": {"id": base_url + u"#b/four", "one": "two"}},
+        {"id": base_url + "#a", "m": {"id": base_url + "#a/four", "one": "two"}},
+        {"id": base_url + "#b", "m": {"id": base_url + "#b/four", "one": "two"}},
     ] == ra[0]
 
 
@@ -398,19 +394,6 @@ def test_sourceline():
         assert str(e).endswith("frag.yml:3:3: Whoops"), e
     except Exception as exc:
         assert False, exc
-
-    if six.PY2:
-        try:
-            with SourceLine(b, 1, TestExp, True):
-                raise Exception("Whoops")
-        except TestExp as e:
-            assert (
-                str(e)
-                .splitlines()[0]
-                .endswith("frag.yml:3:3: Traceback (most recent call last):")
-            ), str(e)
-        except Exception as exc:
-            assert False, exc
 
 
 def test_cmap():
