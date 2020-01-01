@@ -340,7 +340,7 @@ class PythonCodeGen(CodeGenBase):
                 {opt}
         baseuri = {safename}
 """.format(
-                safename=self.safe_name(name), fieldname=shortname(name), opt=opt
+                safename=self.safe_name(name), opt=opt
             )
         )
 
@@ -492,7 +492,7 @@ def load_document(doc, baseuri=None, loadingOptions=None):
 
 def load_document_by_string(string, uri, loadingOptions=None):
     # type: (Any, Text, Optional[LoadingOptions]) -> Any
-    result = yaml.round_trip_load(string, preserve_quotes=True)
+    result = yaml.main.round_trip_load(string, preserve_quotes=True)
     add_lc_filename(result, uri)
 
     if loadingOptions is None:

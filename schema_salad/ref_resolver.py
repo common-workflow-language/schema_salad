@@ -1159,7 +1159,7 @@ class Loader(object):
                             for j in range(len(document) + llen, i + llen, -1):
                                 document.lc.data[j - 1] = document.lc.data[j - llen]
                             for item in l:
-                                document.insert(i, item)
+                                document.insert(i, item)  # type: ignore
                                 document.lc.data[i] = lc
                                 i += 1
                         else:
@@ -1201,7 +1201,7 @@ class Loader(object):
             else:
                 textIO = StringIO(text)
             textIO.name = str(url)
-            attachments = yaml.round_trip_load_all(textIO, preserve_quotes=True)
+            attachments = yaml.main.round_trip_load_all(textIO, preserve_quotes=True)
             result = next(attachments)
 
             if self.allow_attachments is not None and self.allow_attachments(result):
@@ -1222,10 +1222,10 @@ class Loader(object):
         self.idx[url] = result
         return result
 
-    FieldType = TypeVar("FieldType", Text, CommentedSeq, CommentedMap)
+    FieldType = TypeVar("FieldType", str, CommentedSeq, CommentedMap)
 
     def validate_scoped(self, field, link, docid):
-        # type: (Text, Text, Text) -> Text
+        # type: (Text, Text, Text) -> str
         split = urllib.parse.urlsplit(docid)
         sp = split.fragment.split("/")
         n = self.scoped_ref_fields[field]
@@ -1253,8 +1253,14 @@ class Loader(object):
             )
         )
 
-    def validate_link(self, field, link, docid, all_doc_ids):
-        # type: (Text, Loader.FieldType, Text, Dict[Text, Text]) -> Loader.FieldType
+    def validate_link(
+        self,
+        field,  # type: str
+        link,  # type: Union[str, CommentedSeq, CommentedMap]
+        docid,  # type: str
+        all_doc_ids,  # type: Dict[str, str]
+    ):
+        # type: (...) -> Union[str, CommentedSeq, CommentedMap]
         if field in self.nolinkcheck:
             return link
         if isinstance(link, str):

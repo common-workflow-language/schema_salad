@@ -509,7 +509,7 @@ def _document_load_by_url(loader, url, loadingOptions):
     else:
         textIO = StringIO(text)
     textIO.name = str(url)
-    result = yaml.round_trip_load(textIO, preserve_quotes=True)
+    result = yaml.main.round_trip_load(textIO, preserve_quotes=True)
     add_lc_filename(result, url)
 
     loadingOptions.idx[url] = result
@@ -2802,7 +2802,7 @@ def load_document(doc, baseuri=None, loadingOptions=None):
 
 def load_document_by_string(string, uri, loadingOptions=None):
     # type: (Any, Text, Optional[LoadingOptions]) -> Any
-    result = yaml.round_trip_load(string, preserve_quotes=True)
+    result = yaml.main.round_trip_load(string, preserve_quotes=True)
     add_lc_filename(result, uri)
 
     if loadingOptions is None:

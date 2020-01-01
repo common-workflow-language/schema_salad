@@ -180,7 +180,7 @@ def get_metaschema():  # type: () -> Tuple[Names, List[Dict[Text, Any]], Loader]
     with resource_stream(__name__, "metaschema/metaschema.yml") as stream:
         loader.cache["https://w3id.org/cwl/salad"] = stream.read()
 
-    j = yaml.round_trip_load(loader.cache["https://w3id.org/cwl/salad"])
+    j = yaml.main.round_trip_load(loader.cache["https://w3id.org/cwl/salad"])
     add_lc_filename(j, "metaschema.yml")
     j, _ = loader.resolve_all(j, saladp)
 
