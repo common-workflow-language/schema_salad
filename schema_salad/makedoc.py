@@ -724,10 +724,7 @@ def makedoc(args):  # type: (argparse.Namespace) -> None
     renderlist = args.only if args.only else []
     stdout = cast(TextIOWrapper, sys.stdout)  # type: Union[TextIOWrapper, StreamWriter]
     if sys.stdout.encoding != "UTF-8":
-        if sys.version_info >= (3,):
-            stdout = TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-        else:
-            stdout = codecs.getwriter("utf-8")(sys.stdout)
+        stdout = TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
     avrold_doc(
         s,
         stdout,

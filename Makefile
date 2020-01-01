@@ -86,7 +86,7 @@ diff_pydocstyle_report: pydocstyle_report.txt
 
 ## format      : check/fix all code indentation and formatting (runs black)
 format:
-	black --target-version py27 --exclude metaschema.py schema_salad
+	black --exclude metaschema.py schema_salad
 
 ## pylint      : run static code analysis on Python code
 pylint: $(PYSOURCES)
