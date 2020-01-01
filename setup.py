@@ -37,9 +37,7 @@ install_requires = [
     'mistune >= 0.8.1, < 0.9',
     'CacheControl >= 0.11.7, < 0.12',
     'lockfile >= 0.9',
-    'six >= 1.8.0',
-    'typing-extensions',
-    'future']
+    'typing-extensions']
 
 extras_require = {
     ':python_version<"3.5"': ['typing >= 3.7.4'],
@@ -78,7 +76,6 @@ setup(name='schema-salad',
           "Operating System :: MacOS :: MacOS X",
           "Operating System :: Microsoft :: Windows",
           "Development Status :: 5 - Production/Stable",
-          "Programming Language :: Python :: 2.7",
           "Programming Language :: Python :: 3.5",
           "Programming Language :: Python :: 3.6",
           "Programming Language :: Python :: 3.7",

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import logging
 from typing import (
     Any,
@@ -16,10 +14,9 @@ from typing import (
 
 import rdflib
 import rdflib.namespace
-import six
+from urllib.parse import urlsplit, urldefrag
 from rdflib import Graph, URIRef
 from rdflib.namespace import RDF, RDFS
-from six.moves import urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from .exceptions import SchemaException
@@ -40,16 +37,16 @@ def pred(
     defaultBase,  # type: str
     namespaces,  # type: Dict[Text, rdflib.namespace.Namespace]
 ):  # type: (...) -> Union[Dict[Text, Text], Text]
-    split = urllib.parse.urlsplit(name)
+    split = urlsplit(name)
 
     vee = None  # type: Optional[Text]
 
     if split.scheme != "":
         vee = name
-        (ns, ln) = rdflib.namespace.split_uri(six.text_type(vee))
+        (ns, ln) = rdflib.namespace.split_uri(str(vee))
         name = ln
         if ns[0:-1] in namespaces:
-            vee = six.text_type(namespaces[ns[0:-1]][ln])
+            vee = str(namespaces[ns[0:-1]][ln])
         _logger.debug("name, v %s %s", name, vee)
 
     v = None  # type: Optional[Dict[Text, Any]]
@@ -114,11 +111,11 @@ def process_type(
         classnode = URIRef(recordname)
         g.add((classnode, RDF.type, RDFS.Class))
 
-        split = urllib.parse.urlsplit(recordname)
+        split = urlsplit(recordname)
         predicate = recordname
         if t.get("inVocab", True):
             if split.scheme:
-                (ns, ln) = rdflib.namespace.split_uri(six.text_type(recordname))
+                (ns, ln) = rdflib.namespace.split_uri(str(recordname))
                 predicate = recordname
                 recordname = ln
             else:
@@ -149,13 +146,13 @@ def process_type(
                 t, i, fieldname, context, defaultPrefix, namespaces
             )  # type: Union[Dict[Any, Any], Text, None]
 
-            if isinstance(v, six.string_types):
+            if isinstance(v, str):
                 v = v if v[0] != "@" else None
             elif v is not None:
                 v = v["_@id"] if v.get("_@id", "@")[0] != "@" else None
 
             if bool(v):
-                (ns, ln) = rdflib.namespace.split_uri(six.text_type(v))
+                (ns, ln) = rdflib.namespace.split_uri(str(v))
                 if ns[0:-1] in namespaces:
                     propnode = namespaces[ns[0:-1]][ln]
                 else:
@@ -232,17 +229,17 @@ def makerdf(
 ):  # type: (...) -> Graph
     prefixes = {}
     idfields = []
-    for k, v in six.iteritems(ctx):
+    for k, v in ctx.items():
         if isinstance(v, MutableMapping):
             url = v["@id"]
         else:
             url = v
         if url == "@id":
             idfields.append(k)
-        doc_url, frg = urllib.parse.urldefrag(url)
+        doc_url, frg = urldefrag(url)
         if "/" in frg:
             p = frg.split("/")[0]
-            prefixes[p] = u"{}#{}/".format(doc_url, p)
+            prefixes[p] = "{}#{}/".format(doc_url, p)
 
     fix_jsonld_ids(wf, idfields)
 
@@ -263,7 +260,7 @@ def makerdf(
     for sub, pred, obj in g.triples((None, URIRef("@id"), None)):
         g.remove((sub, pred, obj))
 
-    for k2, v2 in six.iteritems(prefixes):
+    for k2, v2 in prefixes.items():
         g.namespace_manager.bind(k2, v2)
 
     return g

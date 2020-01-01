@@ -89,12 +89,12 @@ def test_import2():
     assert [
         {
             "doc": [
-                u"*Hello*",
+                "*Hello*",
                 "hello 2",
-                u"*dee dee dee five*",
+                "*dee dee dee five*",
                 "hello 3",
                 "hello 4",
-                u"*dee dee dee five*",
+                "*dee dee dee five*",
                 "hello 5",
             ],
             "type": "documentation",

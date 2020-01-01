@@ -1,5 +1,4 @@
 """Command line interface to schema-salad."""
-from __future__ import absolute_import, print_function
 
 import argparse
 import logging
@@ -8,10 +7,9 @@ import sys
 from typing import Any, Dict, List, Mapping, MutableSequence, Optional, Union, cast
 
 import pkg_resources  # part of setuptools
-import six
 from rdflib.parser import Parser
 from rdflib.plugin import register
-from six.moves import urllib
+from urllib.parse import urlparse
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from ruamel.yaml.comments import CommentedSeq
@@ -207,8 +205,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
 
     schema_uri = args.schema
     if not (
-        urllib.parse.urlparse(schema_uri)[0]
-        and urllib.parse.urlparse(schema_uri)[0] in [u"http", u"https", u"file"]
+        urlparse(schema_uri)[0] and urlparse(schema_uri)[0] in ["http", "https", "file"]
     ):
         schema_uri = file_uri(os.path.abspath(schema_uri))
     schema_raw_doc = metaschema_loader.fetch(schema_uri)
@@ -343,7 +340,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
             uri, strict_foreign_properties=args.strict_foreign_properties
         )
     except ValidationException as e:
-        msg = to_one_line_messages(e) if args.print_oneline else six.text_type(e)
+        msg = to_one_line_messages(e) if args.print_oneline else str(e)
         _logger.error(
             "Document `%s` failed validation:\n%s",
             args.document,
@@ -371,7 +368,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
             strict_foreign_properties=args.strict_foreign_properties,
         )
     except ValidationException as e:
-        msg = to_one_line_messages(e) if args.print_oneline else six.text_type(e)
+        msg = to_one_line_messages(e) if args.print_oneline else str(e)
         _logger.error("While validating document `%s`:\n%s" % (args.document, msg))
         return 1
 

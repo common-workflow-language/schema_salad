@@ -34,8 +34,6 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union, cast
 
 from schema_salad.exceptions import SchemaException
 
-import six
-
 #
 # Constants
 #
@@ -84,7 +82,7 @@ class Schema(object):
     def __init__(self, atype, other_props=None):
         # type: (Text, Optional[Dict[Text, Any]]) -> None
         # Ensure valid ctor args
-        if not isinstance(atype, six.string_types):
+        if not isinstance(atype, str):
             raise SchemaParseException(
                 "Schema type '{}' must be a string, was '{}.".format(atype, type(atype))
             )
@@ -124,21 +122,21 @@ class Name(object):
         @ard default_space: the current default space or None.
         """
         # Ensure valid ctor args
-        if not (isinstance(name_attr, six.string_types) or (name_attr is None)):
+        if not (isinstance(name_attr, str) or (name_attr is None)):
             fail_msg = "Name must be non-empty string or None."
             raise SchemaParseException(fail_msg)
         elif name_attr == "":
             fail_msg = "Name must be non-empty string or None."
             raise SchemaParseException(fail_msg)
 
-        if not (isinstance(space_attr, six.string_types) or (space_attr is None)):
+        if not (isinstance(space_attr, str) or (space_attr is None)):
             fail_msg = "Space must be non-empty string or None."
             raise SchemaParseException(fail_msg)
         elif name_attr == "":
             fail_msg = "Space must be non-empty string or None."
             raise SchemaParseException(fail_msg)
 
-        if not (isinstance(default_space, six.string_types) or (default_space is None)):
+        if not (isinstance(default_space, str) or (default_space is None)):
             fail_msg = "Default space must be non-empty string or None."
             raise SchemaParseException(fail_msg)
         elif name_attr == "":
@@ -233,10 +231,10 @@ class NamedSchema(Schema):
         if not name:
             fail_msg = "Named Schemas must have a non-empty name."
             raise SchemaParseException(fail_msg)
-        elif not isinstance(name, six.string_types):
+        elif not isinstance(name, str):
             fail_msg = "The name property must be a string."
             raise SchemaParseException(fail_msg)
-        elif namespace is not None and not isinstance(namespace, six.string_types):
+        elif namespace is not None and not isinstance(namespace, str):
             fail_msg = "The namespace property must be a string."
             raise SchemaParseException(fail_msg)
         if names is None:
@@ -276,7 +274,7 @@ class Field(object):
         if not name:
             fail_msg = "Fields must have a non-empty name."
             raise SchemaParseException(fail_msg)
-        elif not isinstance(name, six.string_types):
+        elif not isinstance(name, str):
             fail_msg = "The name property must be a string."
             raise SchemaParseException(fail_msg)
         elif order is not None and order not in VALID_FIELD_SORT_ORDERS:
@@ -288,11 +286,7 @@ class Field(object):
         self._has_default = has_default
         self._props.update(other_props or {})
 
-        if (
-            isinstance(atype, six.string_types)
-            and names is not None
-            and names.has_name(atype, None)
-        ):
+        if isinstance(atype, str) and names is not None and names.has_name(atype, None):
             type_schema = cast(NamedSchema, names.get_name(atype, None))  # type: Schema
         else:
             try:
@@ -362,7 +356,7 @@ class EnumSchema(NamedSchema):
         if not isinstance(symbols, list):
             fail_msg = "Enum Schema requires a JSON array for the symbols property."
             raise AvroException(fail_msg)
-        elif False in [isinstance(s, six.string_types) for s in symbols]:
+        elif False in [isinstance(s, str) for s in symbols]:
             fail_msg = "Enum Schema requires all symbols to be JSON strings."
             raise AvroException(fail_msg)
         elif len(set(symbols)) < len(symbols):
@@ -395,7 +389,7 @@ class ArraySchema(Schema):
 
         if names is None:
             raise SchemaParseException("Must provide Names.")
-        if isinstance(items, six.string_types) and names.has_name(items, None):
+        if isinstance(items, str) and names.has_name(items, None):
             items_schema = cast(Schema, names.get_name(items, None))
         else:
             try:
@@ -432,7 +426,7 @@ class UnionSchema(Schema):
         # Add class members
         schema_objects = []  # type: List[Schema]
         for schema in schemas:
-            if isinstance(schema, six.string_types) and names.has_name(schema, None):
+            if isinstance(schema, str) and names.has_name(schema, None):
                 new_schema = cast(Schema, names.get_name(schema, None))
             else:
                 try:

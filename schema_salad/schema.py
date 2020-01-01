@@ -1,5 +1,4 @@
 """Functions to process Schema Salad schemas."""
-from __future__ import absolute_import
 
 import copy
 import hashlib
@@ -19,10 +18,8 @@ from typing import (
     cast,
 )
 
-from future.utils import raise_from
 from pkg_resources import resource_stream
-from six import iteritems, string_types
-from six.moves import urllib
+from urllib.parse import urldefrag, urlparse
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from ruamel import yaml
@@ -294,7 +291,7 @@ def load_and_validate(
             strict_foreign_properties=strict_foreign_properties,
         )
     except ValidationException as exc:
-        raise_from(ValidationException("", None, [exc]), exc)
+        raise ValidationException("", None, [exc]) from exc
     return data, metadata
 
 
@@ -309,8 +306,8 @@ def validate_doc(
     """Validate a document using the provided schema."""
     has_root = False
     for root in schema_names.names.values():
-        if (hasattr(root, "get_prop") and root.get_prop(u"documentRoot")) or (
-            u"documentRoot" in root.props
+        if (hasattr(root, "get_prop") and root.get_prop("documentRoot")) or (
+            "documentRoot" in root.props
         ):
             has_root = True
             break
@@ -329,8 +326,8 @@ def validate_doc(
 
     roots = []
     for root in schema_names.names.values():
-        if (hasattr(root, "get_prop") and root.get_prop(u"documentRoot")) or (
-            root.props.get(u"documentRoot")
+        if (hasattr(root, "get_prop") and root.get_prop("documentRoot")) or (
+            root.props.get("documentRoot")
         ):
             roots.append(root)
 
@@ -356,7 +353,7 @@ def validate_doc(
             errors = []  # type: List[SchemaSaladException]
             for root in roots:
                 if hasattr(root, "get_prop"):
-                    name = root.get_prop(u"name")
+                    name = root.get_prop("name")
                 elif hasattr(root, "name"):
                     name = root.name
 
@@ -385,10 +382,10 @@ def validate_doc(
                         )
                     )
 
-            objerr = u"Invalid"
+            objerr = "Invalid"
             for ident in loader.identifiers:
                 if ident in item:
-                    objerr = u"Object `{}` is not valid because".format(
+                    objerr = "Object `{}` is not valid because".format(
                         relname(item[ident])
                     )
                     break
@@ -407,7 +404,7 @@ def get_anon_name(rec):
         raise ValidationException(
             "Expected name field to be a string, was {}".format(name)
         )
-    anon_name = u""
+    anon_name = ""
     if rec["type"] in ("enum", saladp + "enum"):
         for sym in rec["symbols"]:
             anon_name += sym
@@ -415,16 +412,16 @@ def get_anon_name(rec):
     if rec["type"] in ("record", saladp + "record"):
         for field in rec["fields"]:
             if isinstance(field, Mapping):
-                anon_name += field[u"name"]
+                anon_name += field["name"]
             else:
                 raise ValidationException(
                     "Expected entries in 'fields' to also be maps, was {}.".format(
                         field
                     )
                 )
-        return u"record_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
+        return "record_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
     if rec["type"] in ("array", saladp + "array"):
-        return u""
+        return ""
     raise ValidationException("Expected enum or record, was {}".format(rec["type"]))
 
 
@@ -465,7 +462,7 @@ def replace_type(items, spec, loader, found, find_embeds=True, deepen=True):
             replace_type(i, spec, loader, found, find_embeds=find_embeds, deepen=deepen)
             for i in items
         ]
-    if isinstance(items, string_types):
+    if isinstance(items, str):
         # found a string which is a symbol corresponding to a type.
         replace_with = None
         if items in loader.vocab:
@@ -494,7 +491,7 @@ def avro_name(url):  # type: (Text) -> Text
     Extract either the last part of the URL fragment past the slash, otherwise
     the whole fragment.
     """
-    frg = urllib.parse.urldefrag(url)[1]
+    frg = urldefrag(url)[1]
     if frg != "":
         if "/" in frg:
             return frg[frg.rindex("/") + 1 :]
@@ -544,7 +541,7 @@ def make_valid_avro(
         for i in items:
             ret.append(make_valid_avro(i, alltypes, found, union=union))
         return ret
-    if union and isinstance(items, string_types):
+    if union and isinstance(items, str):
         if items in alltypes and avro_name(items) not in found:
             return cast(
                 Dict[Text, Text],
@@ -563,7 +560,7 @@ def deepcopy_strip(item):  # type: (Any) -> Any
     """
 
     if isinstance(item, MutableMapping):
-        return {k: deepcopy_strip(v) for k, v in iteritems(item)}
+        return {k: deepcopy_strip(v) for k, v in item.items()}
     if isinstance(item, MutableSequence):
         return [deepcopy_strip(k) for k in item]
     return item
@@ -709,10 +706,10 @@ def make_avro_schema_from_avro(avro):
 
 def shortname(inputid):  # type: (Text) -> Text
     """Returns the last segment of the provided fragment or path."""
-    parsed_id = urllib.parse.urlparse(inputid)
+    parsed_id = urlparse(inputid)
     if parsed_id.fragment:
-        return parsed_id.fragment.split(u"/")[-1]
-    return parsed_id.path.split(u"/")[-1]
+        return parsed_id.fragment.split("/")[-1]
+    return parsed_id.path.split("/")[-1]
 
 
 def print_inheritance(doc, stream):

@@ -1,9 +1,6 @@
-from __future__ import absolute_import
-
 import itertools
 import os
 import re
-import traceback
 from typing import (
     Any,
     AnyStr,
@@ -18,8 +15,6 @@ from typing import (
     Union,
 )
 
-import six
-from future.utils import raise_from
 from typing_extensions import Text  # pylint: disable=unused-import
 
 import ruamel.yaml
@@ -28,7 +23,7 @@ from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq
 # move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 
-lineno_re = re.compile(u"^(.*?:[0-9]+:[0-9]+: )(( *)(.*))")
+lineno_re = re.compile("^(.*?:[0-9]+:[0-9]+: )(( *)(.*))")
 
 
 def regex_chunk(lines, regex):
@@ -106,7 +101,7 @@ def _add_lc_filename(
         for d in r:
             _add_lc_filename(d, source)
     elif isinstance(r, MutableMapping):
-        for d in six.itervalues(r):
+        for d in r.values():
             _add_lc_filename(d, source)
 
 
@@ -162,10 +157,10 @@ def reflow(text, maxline, shift=""):  # type: (Text, int, Text) -> Text
 
 
 def indent(
-    v, nolead=False, shift=u"  ", bullet=u"  "
+    v, nolead=False, shift="  ", bullet="  "
 ):  # type: (Text, bool, Text, Text) -> Text
     if nolead:
-        return v.splitlines()[0] + u"\n".join([shift + l for l in v.splitlines()[1:]])
+        return v.splitlines()[0] + "\n".join([shift + l for l in v.splitlines()[1:]])
     else:
 
         def lineno(i, l):  # type: (int, Text) -> Text
@@ -175,7 +170,7 @@ def indent(
             else:
                 return (bullet if i == 0 else shift) + l
 
-        return u"\n".join([lineno(i, l) for i, l in enumerate(v.splitlines())])
+        return "\n".join([lineno(i, l) for i, l in enumerate(v.splitlines())])
 
 
 def bullets(textlist, bul):  # type: (List[Text], Text) -> Text
@@ -242,7 +237,7 @@ def cmap(
 
     if isinstance(d, CommentedMap):
         fn = d.lc.filename if hasattr(d.lc, "filename") else fn
-        for k, v in six.iteritems(d):
+        for k, v in d.items():
             if d.lc.data is not None and k in d.lc.data:
                 d[k] = cmap(v, lc=d.lc.data[k], fn=fn)
             else:
@@ -292,7 +287,7 @@ class SourceLine(object):
         self,
         item,  # type: Any
         key=None,  # type: Optional[Any]
-        raise_type=six.text_type,  # type: Union[Type[six.text_type], Type[Exception]]
+        raise_type=str,  # type: Union[Type[str], Type[Exception]]
         include_traceback=False,  # type: bool
     ):  # type: (...) -> None
         self.item = item
@@ -311,17 +306,7 @@ class SourceLine(object):
     ):  # type: (...) -> None
         if not exc_value:
             return
-        if self.include_traceback and six.PY2:
-            # Python2 doesn't actually have chained exceptions, so
-            # fake it by injecting the backtrace into the message.
-            raise_from(
-                self.makeError(
-                    "\n".join(traceback.format_exception(exc_type, exc_value, tb))
-                ),
-                exc_value,
-            )
-        else:
-            raise_from(self.makeError(six.text_type(exc_value)), exc_value)
+        raise self.makeError(str(exc_value)) from exc_value
 
     def file(self):  # type: () -> Optional[Text]
         if hasattr(self.item, "lc") and hasattr(self.item.lc, "filename"):

@@ -11,7 +11,7 @@ from .util import get_data
 
 def test_cwl_gen():
     topmed_example_path = get_data(
-        u"tests/test_real_cwl/topmed/topmed_variant_calling_pipeline.cwl"
+        "tests/test_real_cwl/topmed/topmed_variant_calling_pipeline.cwl"
     )
     with t_directory() as test_dir:
         target_dir = os.path.join(test_dir, "target")
@@ -60,7 +60,7 @@ def get_data_uri(resource_path):
     return ref_resolver.file_uri(get_data(resource_path))
 
 
-cwl_file_uri = get_data_uri(u"tests/test_schema/CommonWorkflowLanguage.yml")
+cwl_file_uri = get_data_uri("tests/test_schema/CommonWorkflowLanguage.yml")
 metaschema_file_uri = get_data_uri("metaschema/metaschema.yml")
 
 

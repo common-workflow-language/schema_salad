@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import argparse
 import codecs
 import copy
@@ -24,9 +22,8 @@ from typing import (
 )
 
 import mistune
-import six
-from six import StringIO
-from six.moves import range, urllib
+from io import StringIO
+from urllib.parse import urldefrag
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import schema
@@ -52,13 +49,13 @@ def has_types(items):  # type: (Any) -> List[Text]
         for i in items:
             r.extend(has_types(i))
         return r
-    if isinstance(items, six.string_types):
+    if isinstance(items, str):
         return [items]
     return []
 
 
 def linkto(item):  # type: (Text) -> Text
-    _, frg = urllib.parse.urldefrag(item)
+    _, frg = urldefrag(item)
     return "[{}](#{})".format(frg, to_id(frg))
 
 
@@ -239,8 +236,8 @@ class RenderType(object):
                             if tp not in self.uses:
                                 self.uses[tp] = []
                             if (entry["name"], f["name"]) not in self.uses[tp]:
-                                _, frg1 = urllib.parse.urldefrag(t["name"])
-                                _, frg2 = urllib.parse.urldefrag(f["name"])
+                                _, frg1 = urldefrag(t["name"])
+                                _, frg2 = urldefrag(f["name"])
                                 self.uses[tp].append((frg1, frg2))
                             if (
                                 tp not in basicTypes
@@ -337,7 +334,7 @@ class RenderType(object):
                 return """<a href="{}">{}</a>""".format(
                     self.primitiveType, schema.avro_name(str(tp))
                 )
-            _, frg = urllib.parse.urldefrag(tp)
+            _, frg = urldefrag(tp)
             if frg != "":
                 tp = frg
             return """<a href="#{}">{}</a>""".format(to_id(tp), tp)
@@ -399,11 +396,11 @@ class RenderType(object):
                 lines.append(line)
             f["doc"] = "\n".join(lines)
 
-            _, frg = urllib.parse.urldefrag(f["name"])
+            _, frg = urldefrag(f["name"])
             num = self.toc.add_entry(depth, frg)
-            doc = u"{} {} {}\n".format(("#" * depth), num, frg)
+            doc = "{} {} {}\n".format(("#" * depth), num, frg)
         else:
-            doc = u""
+            doc = ""
 
         if self.title is None and f["doc"]:
             title = f["doc"][0 : f["doc"].index("\n")]
@@ -634,8 +631,8 @@ def avrold_doc(
         )
     )
 
-    if u"<!--ToC-->" in content:
-        content = content.replace(u"<!--ToC-->", toc.contents("toc"))
+    if "<!--ToC-->" in content:
+        content = content.replace("<!--ToC-->", toc.contents("toc"))
         outdoc.write(
             """
                 <ul class="nav navbar-nav">

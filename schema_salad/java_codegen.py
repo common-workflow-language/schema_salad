@@ -3,11 +3,12 @@ import os
 import pkg_resources
 import string
 import shutil
+
+from urllib.parse import urlsplit
 from io import open as io_open
+from io import StringIO
 from typing import Any, Dict, List, MutableMapping, MutableSequence, Optional, Union
 
-from six import iteritems, itervalues
-from six.moves import cStringIO, urllib
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import schema
@@ -55,7 +56,7 @@ class JavaCodeGen(CodeGenBase):
         # type: (Text, Optional[str], Optional[str]) -> None
         super(JavaCodeGen, self).__init__()
         self.base_uri = base
-        sp = urllib.parse.urlsplit(base)
+        sp = urlsplit(base)
         self.examples = examples
         self.package = ".".join(
             list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/")
@@ -79,7 +80,7 @@ class JavaCodeGen(CodeGenBase):
         for src_dir in [self.main_src_dir, self.test_src_dir]:
             _safe_makedirs(src_dir)
 
-        for primitive in itervalues(self.prims):
+        for primitive in self.prims.values():
             self.declare_type(primitive)
 
     @staticmethod
@@ -111,15 +112,15 @@ class JavaCodeGen(CodeGenBase):
         cls = self.interface_name(classname)
         self.current_class = cls
         self.current_class_is_abstract = abstract
-        self.current_loader = cStringIO()
+        self.current_loader = StringIO()
         self.current_fieldtypes = {}  # type: Dict[Text, TypeDef]
-        self.current_fields = cStringIO()
-        interface_doc_str = u"* Auto-generated interface for <I>%s</I><BR>" % classname
+        self.current_fields = StringIO()
+        interface_doc_str = "* Auto-generated interface for <I>%s</I><BR>" % classname
         if not abstract:
-            implemented_by = u"This interface is implemented by {{@link {}Impl}}<BR>"
+            implemented_by = "This interface is implemented by {{@link {}Impl}}<BR>"
             interface_doc_str += implemented_by.format(cls)
         interface_doc_str += doc_to_doc_string(doc)
-        class_doc_str = u"* Auto-generated class implementation for <I>{}</I><BR>".format(
+        class_doc_str = "* Auto-generated class implementation for <I>{}</I><BR>".format(
             classname
         )
         class_doc_str += doc_to_doc_string(doc)
@@ -255,49 +256,49 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
             )
 
     prims = {
-        u"http://www.w3.org/2001/XMLSchema#string": TypeDef(
+        "http://www.w3.org/2001/XMLSchema#string": TypeDef(
             instance_type="String",
             init="new PrimitiveLoader<String>(String.class)",
             name="StringInstance",
             loader_type="Loader<String>",
         ),
-        u"http://www.w3.org/2001/XMLSchema#int": TypeDef(
+        "http://www.w3.org/2001/XMLSchema#int": TypeDef(
             instance_type="Integer",
             init="new PrimitiveLoader<Integer>(Integer.class)",
             name="IntegerInstance",
             loader_type="Loader<Integer>",
         ),
-        u"http://www.w3.org/2001/XMLSchema#long": TypeDef(
+        "http://www.w3.org/2001/XMLSchema#long": TypeDef(
             instance_type="Long",
             name="LongInstance",
             loader_type="Loader<Long>",
             init="new PrimitiveLoader<Long>(Long.class)",
         ),
-        u"http://www.w3.org/2001/XMLSchema#float": TypeDef(
+        "http://www.w3.org/2001/XMLSchema#float": TypeDef(
             instance_type="Float",
             name="FloatInstance",
             loader_type="Loader<Float>",
             init="new PrimitiveLoader<Float>(Float.class)",
         ),
-        u"http://www.w3.org/2001/XMLSchema#double": TypeDef(
+        "http://www.w3.org/2001/XMLSchema#double": TypeDef(
             instance_type="Double",
             name="DoubleInstance",
             loader_type="Loader<Double>",
             init="new PrimitiveLoader<Double>(Double.class)",
         ),
-        u"http://www.w3.org/2001/XMLSchema#boolean": TypeDef(
+        "http://www.w3.org/2001/XMLSchema#boolean": TypeDef(
             instance_type="Boolean",
             name="BooleanInstance",
             loader_type="Loader<Boolean>",
             init="new PrimitiveLoader<Boolean>(Boolean.class)",
         ),
-        u"https://w3id.org/cwl/salad#null": TypeDef(
+        "https://w3id.org/cwl/salad#null": TypeDef(
             instance_type="Object",
             name="NullInstance",
             loader_type="Loader<Object>",
             init="new NullLoader()",
         ),
-        u"https://w3id.org/cwl/salad#Any": TypeDef(
+        "https://w3id.org/cwl/salad#Any": TypeDef(
             instance_type="Object",
             name="AnyInstance",
             init="new AnyLoader()",
@@ -661,7 +662,7 @@ public enum {clazz} {{
         return val
 
     def epilogue(self, root_loader):  # type: (TypeDef) -> None
-        pd = u"This project contains Java objects and utilities "
+        pd = "This project contains Java objects and utilities "
         pd = pd + ' auto-generated by <a href="https://github.com/'
         pd = pd + 'common-workflow-language/schema_salad">Schema Salad</a>'
         pd = pd + " for parsing documents corresponding to the "
@@ -721,7 +722,7 @@ public enum {clazz} {{
             rvocab += """    rvocab.put("{}", "{}");\n""".format(self.vocab[k], k)
 
         loader_instances = ""
-        for _, collected_type in iteritems(self.collected_types):
+        for _, collected_type in self.collected_types.items():
             loader_instances += "  public static {} {} = {};\n".format(
                 collected_type.loader_type, collected_type.name, collected_type.init
             )

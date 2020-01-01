@@ -1,10 +1,8 @@
-from __future__ import absolute_import, print_function
-
 import os
 from typing import Text
 
 import pytest
-from six.moves import urllib
+from urllib.parse import urlsplit, urljoin
 
 import schema_salad.main
 import schema_salad.ref_resolver
@@ -31,14 +29,14 @@ def test_fetcher():
                 return False
 
         def urljoin(self, base, url):
-            urlsp = urllib.parse.urlsplit(url)
+            urlsp = urlsplit(url)
             if urlsp.scheme:
                 return url
-            basesp = urllib.parse.urlsplit(base)
+            basesp = urlsplit(base)
 
             if basesp.scheme == "keep":
                 return base + "/" + url
-            return urllib.parse.urljoin(base, url)
+            return urljoin(base, url)
 
     loader = schema_salad.ref_resolver.Loader({}, fetcher_constructor=TestFetcher)
     assert {"hello": "foo"} == loader.resolve_ref("foo.txt")[0]

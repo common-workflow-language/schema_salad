@@ -15,8 +15,9 @@ from typing import (
     Union,
 )
 
-from six import iteritems, string_types, text_type
-from six.moves import StringIO, urllib
+from io import StringIO
+from urllib.parse import urlsplit, urlunsplit, quote
+from urllib.request import pathname2url
 from typing_extensions import Text  # pylint: disable=unused-import
 
 from ruamel import yaml
@@ -98,7 +99,7 @@ class LoadingOptions(object):
         if namespaces is not None:
             self.vocab = self.vocab.copy()
             self.rvocab = self.rvocab.copy()
-            for k, v in iteritems(namespaces):
+            for k, v in namespaces.items():
                 self.vocab[k] = v
                 self.rvocab[v] = k
 
@@ -163,58 +164,56 @@ def expand_url(
     # type: (...) -> Text
     url = Text(url)
 
-    if url in (u"@id", u"@type"):
+    if url in ("@id", "@type"):
         return url
 
     if vocab_term and url in loadingOptions.vocab:
         return url
 
-    if bool(loadingOptions.vocab) and u":" in url:
-        prefix = url.split(u":")[0]
+    if bool(loadingOptions.vocab) and ":" in url:
+        prefix = url.split(":")[0]
         if prefix in loadingOptions.vocab:
             url = loadingOptions.vocab[prefix] + url[len(prefix) + 1 :]
 
-    split = urllib.parse.urlsplit(url)
+    split = urlsplit(url)
 
     if (
-        (bool(split.scheme) and split.scheme in [u"http", u"https", u"file"])
-        or url.startswith(u"$(")
-        or url.startswith(u"${")
+        (bool(split.scheme) and split.scheme in ["http", "https", "file"])
+        or url.startswith("$(")
+        or url.startswith("${")
     ):
         pass
     elif scoped_id and not bool(split.fragment):
-        splitbase = urllib.parse.urlsplit(base_url)
-        frg = u""
+        splitbase = urlsplit(base_url)
+        frg = ""
         if bool(splitbase.fragment):
-            frg = splitbase.fragment + u"/" + split.path
+            frg = splitbase.fragment + "/" + split.path
         else:
             frg = split.path
         pt = splitbase.path if splitbase.path != "" else "/"
-        url = urllib.parse.urlunsplit(
-            (splitbase.scheme, splitbase.netloc, pt, splitbase.query, frg)
-        )
+        url = urlunsplit((splitbase.scheme, splitbase.netloc, pt, splitbase.query, frg))
     elif scoped_ref is not None and not bool(split.fragment):
-        splitbase = urllib.parse.urlsplit(base_url)
-        sp = splitbase.fragment.split(u"/")
+        splitbase = urlsplit(base_url)
+        sp = splitbase.fragment.split("/")
         n = scoped_ref
         while n > 0 and len(sp) > 0:
             sp.pop()
             n -= 1
         sp.append(url)
-        url = urllib.parse.urlunsplit(
+        url = urlunsplit(
             (
                 splitbase.scheme,
                 splitbase.netloc,
                 splitbase.path,
                 splitbase.query,
-                u"/".join(sp),
+                "/".join(sp),
             )
         )
     else:
         url = loadingOptions.fetcher.urljoin(base_url, url)
 
     if vocab_term:
-        split = urllib.parse.urlsplit(url)
+        split = urlsplit(url)
         if bool(split.scheme):
             if url in loadingOptions.rvocab:
                 return loadingOptions.rvocab[url]
@@ -329,10 +328,10 @@ class _UnionLoader(_Loader):
             except ValidationException as e:
                 errors.append(
                     ValidationException(
-                        u"tried {} but".format(t.__class__.__name__), None, [e]
+                        "tried {} but".format(t.__class__.__name__), None, [e]
                     )
                 )
-        raise ValidationException("", None, errors, u"-")
+        raise ValidationException("", None, errors, "-")
 
     def __repr__(self):  # type: () -> str
         return " | ".join(str(a) for a in self.alternates)
@@ -360,7 +359,7 @@ class _URILoader(_Loader):
                 )
                 for i in doc
             ]
-        if isinstance(doc, string_types):
+        if isinstance(doc, str):
             doc = expand_url(
                 doc,
                 baseuri,
@@ -394,15 +393,15 @@ class _TypeDSLLoader(_Loader):
             )
             second = third = None
             if bool(m.group(2)):
-                second = {u"type": u"array", u"items": first}
+                second = {"type": "array", "items": first}
                 # second = CommentedMap((("type", "array"),
                 #                       ("items", first)))
                 # second.lc.add_kv_line_col("type", lc)
                 # second.lc.add_kv_line_col("items", lc)
                 # second.lc.filename = filename
             if bool(m.group(3)):
-                third = [u"null", second or first]
-                # third = CommentedSeq([u"null", second or first])
+                third = ["null", second or first]
+                # third = CommentedSeq(["null", second or first])
                 # third.lc.add_kv_line_col(0, lc)
                 # third.lc.add_kv_line_col(1, lc)
                 # third.lc.filename = filename
@@ -414,7 +413,7 @@ class _TypeDSLLoader(_Loader):
         if isinstance(doc, MutableSequence):
             r = []  # type: List[Any]
             for d in doc:
-                if isinstance(d, string_types):
+                if isinstance(d, str):
                     resolved = self.resolve(d, baseuri, loadingOptions)
                     if isinstance(resolved, MutableSequence):
                         for i in resolved:
@@ -426,7 +425,7 @@ class _TypeDSLLoader(_Loader):
                 else:
                     r.append(d)
             doc = r
-        elif isinstance(doc, string_types):
+        elif isinstance(doc, str):
             doc = self.resolve(doc, baseuri, loadingOptions)
 
         return self.inner.load(doc, baseuri, loadingOptions)
@@ -468,7 +467,7 @@ class _IdMapLoader(_Loader):
 
 def _document_load(loader, doc, baseuri, loadingOptions):
     # type: (_Loader, Any, Text, LoadingOptions) -> Any
-    if isinstance(doc, string_types):
+    if isinstance(doc, str):
         return _document_load_by_url(
             loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions
         )
@@ -520,10 +519,10 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         return path
     if split_frag:
         pathsp = path.split("#", 2)
-        frag = "#" + urllib.parse.quote(str(pathsp[1])) if len(pathsp) == 2 else ""
-        urlpath = urllib.request.pathname2url(str(pathsp[0]))
+        frag = "#" + quote(str(pathsp[1])) if len(pathsp) == 2 else ""
+        urlpath = pathname2url(str(pathsp[0]))
     else:
-        urlpath = urllib.request.pathname2url(path)
+        urlpath = pathname2url(path)
         frag = ""
     if urlpath.startswith("//"):
         return "file:{}{}".format(urlpath, frag)
@@ -547,9 +546,9 @@ def save_relative_uri(uri, base_url, scoped_id, ref_scope, relative_uris):
             save_relative_uri(u, base_url, scoped_id, ref_scope, relative_uris)
             for u in uri
         ]
-    elif isinstance(uri, text_type):
-        urisplit = urllib.parse.urlsplit(uri)
-        basesplit = urllib.parse.urlsplit(base_url)
+    elif isinstance(uri, str):
+        urisplit = urlsplit(uri)
+        basesplit = urlsplit(base_url)
         if urisplit.scheme == basesplit.scheme and urisplit.netloc == basesplit.netloc:
             if urisplit.path != basesplit.path:
                 p = os.path.relpath(urisplit.path, os.path.dirname(basesplit.path))
