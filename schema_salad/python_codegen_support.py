@@ -18,28 +18,24 @@ from typing import (
 from urllib.parse import quote, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
-from typing_extensions import Text  # pylint: disable=unused-import
-
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
 from schema_salad.exceptions import SchemaSaladException, ValidationException
 from schema_salad.ref_resolver import Fetcher
 from schema_salad.sourceline import SourceLine, add_lc_filename
 
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
-
-_vocab = {}  # type: Dict[Text, Text]
-_rvocab = {}  # type: Dict[Text, Text]
+_vocab = {}  # type: Dict[str, str]
+_rvocab = {}  # type: Dict[str, str]
 
 
 class Savable(object):
     @classmethod
     def fromDoc(cls, _doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Savable
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Savable
         pass
 
     def save(self, top=False, base_url="", relative_uris=True):
-        # type: (bool, Text, bool) -> Dict[Text, Text]
+        # type: (bool, str, bool) -> Dict[str, str]
         pass
 
 
@@ -47,13 +43,13 @@ class LoadingOptions(object):
     def __init__(
         self,
         fetcher=None,  # type: Optional[Fetcher]
-        namespaces=None,  # type: Optional[Dict[Text, Text]]
-        fileuri=None,  # type: Optional[Text]
+        namespaces=None,  # type: Optional[Dict[str, str]]
+        fileuri=None,  # type: Optional[str]
         copyfrom=None,  # type: Optional[LoadingOptions]
         original_doc=None,  # type: Optional[Any]
     ):  # type: (...) -> None
-        self.idx = {}  # type: Dict[Text, Dict[Text, Any]]
-        self.fileuri = fileuri  # type: Optional[Text]
+        self.idx = {}  # type: Dict[str, Dict[str, Any]]
+        self.fileuri = fileuri  # type: Optional[str]
         self.namespaces = namespaces
         self.original_doc = original_doc
         if copyfrom is not None:
@@ -105,7 +101,7 @@ class LoadingOptions(object):
 
 
 def load_field(val, fieldtype, baseuri, loadingOptions):
-    # type: (Union[Text, Dict[Text, Text]], _Loader, Text, LoadingOptions) -> Any
+    # type: (Union[str, Dict[str, str]], _Loader, str, LoadingOptions) -> Any
     if isinstance(val, MutableMapping):
         if "$import" in val:
             if loadingOptions.fileuri is None:
@@ -124,15 +120,13 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
     return fieldtype.load(val, baseuri, loadingOptions)
 
 
-save_type = Union[
-    Dict[Text, Text], List[Union[Dict[Text, Text], List[Any], None]], None
-]
+save_type = Union[Dict[str, str], List[Union[Dict[str, str], List[Any], None]], None]
 
 
 def save(
     val,  # type: Optional[Union[Savable, MutableSequence[Savable]]]
     top=True,  # type: bool
-    base_url="",  # type: Text
+    base_url="",  # type: str
     relative_uris=True,  # type: bool
 ):  # type: (...) -> save_type
 
@@ -154,15 +148,15 @@ def save(
 
 
 def expand_url(
-    url,  # type: Union[str, Text]
-    base_url,  # type: Union[str, Text]
+    url,  # type: Union[str, str]
+    base_url,  # type: Union[str, str]
     loadingOptions,  # type: LoadingOptions
     scoped_id=False,  # type: bool
     vocab_term=False,  # type: bool
     scoped_ref=None,  # type: Optional[int]
 ):
-    # type: (...) -> Text
-    url = Text(url)
+    # type: (...) -> str
+    url = str(url)
 
     if url in ("@id", "@type"):
         return url
@@ -225,13 +219,13 @@ def expand_url(
 
 class _Loader(object):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         pass
 
 
 class _AnyLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if doc is not None:
             return doc
         raise ValidationException("Expected non-null")
@@ -239,11 +233,11 @@ class _AnyLoader(_Loader):
 
 class _PrimitiveLoader(_Loader):
     def __init__(self, tp):
-        # type: (Union[type, Tuple[Type[Text], Type[Text]]]) -> None
+        # type: (Union[type, Tuple[Type[str], Type[str]]]) -> None
         self.tp = tp
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if not isinstance(doc, self.tp):
             raise ValidationException(
                 "Expected a {} but got {}".format(
@@ -262,7 +256,7 @@ class _ArrayLoader(_Loader):
         self.items = items
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if not isinstance(doc, MutableSequence):
             raise ValidationException("Expected a list")
         r = []  # type: List[Any]
@@ -288,11 +282,11 @@ class _ArrayLoader(_Loader):
 
 class _EnumLoader(_Loader):
     def __init__(self, symbols):
-        # type: (Sequence[Text]) -> None
+        # type: (Sequence[str]) -> None
         self.symbols = symbols
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if doc in self.symbols:
             return doc
         else:
@@ -305,7 +299,7 @@ class _RecordLoader(_Loader):
         self.classtype = classtype
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if not isinstance(doc, MutableMapping):
             raise ValidationException("Expected a dict")
         return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
@@ -320,7 +314,7 @@ class _UnionLoader(_Loader):
         self.alternates = alternates
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         errors = []
         for t in self.alternates:
             try:
@@ -346,7 +340,7 @@ class _URILoader(_Loader):
         self.scoped_ref = scoped_ref
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if isinstance(doc, MutableSequence):
             doc = [
                 expand_url(
@@ -381,11 +375,11 @@ class _TypeDSLLoader(_Loader):
 
     def resolve(
         self,
-        doc,  # type: Text
-        baseuri,  # type: Text
+        doc,  # type: str
+        baseuri,  # type: str
         loadingOptions,  # type: LoadingOptions
     ):
-        # type: (...) -> Union[List[Union[Dict[Text, Text], Text]], Dict[Text, Text], Text]
+        # type: (...) -> Union[List[Union[Dict[str, str], str]], Dict[str, str], str]
         m = self.typeDSLregex.match(doc)
         if m:
             first = expand_url(
@@ -409,7 +403,7 @@ class _TypeDSLLoader(_Loader):
         return doc
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if isinstance(doc, MutableSequence):
             r = []  # type: List[Any]
             for d in doc:
@@ -433,13 +427,13 @@ class _TypeDSLLoader(_Loader):
 
 class _IdMapLoader(_Loader):
     def __init__(self, inner, mapSubject, mapPredicate):
-        # type: (_Loader, Text, Union[Text, None]) -> None
+        # type: (_Loader, str, Union[str, None]) -> None
         self.inner = inner
         self.mapSubject = mapSubject
         self.mapPredicate = mapPredicate
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if isinstance(doc, MutableMapping):
             r = []  # type: List[Any]
             for k in sorted(doc.keys()):
@@ -466,7 +460,7 @@ class _IdMapLoader(_Loader):
 
 
 def _document_load(loader, doc, baseuri, loadingOptions):
-    # type: (_Loader, Any, Text, LoadingOptions) -> Any
+    # type: (_Loader, Any, str, LoadingOptions) -> Any
     if isinstance(doc, str):
         return _document_load_by_url(
             loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions
@@ -494,7 +488,7 @@ def _document_load(loader, doc, baseuri, loadingOptions):
 
 
 def _document_load_by_url(loader, url, loadingOptions):
-    # type: (_Loader, Text, LoadingOptions) -> Any
+    # type: (_Loader, str, LoadingOptions) -> Any
     if url in loadingOptions.idx:
         return _document_load(loader, loadingOptions.idx[url], url, loadingOptions)
 
@@ -530,7 +524,7 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         return "file://{}{}".format(urlpath, frag)
 
 
-def prefix_url(url, namespaces):  # type: (Text, Dict[Text, Text]) -> Text
+def prefix_url(url, namespaces):  # type: (str, Dict[str, str]) -> str
     for k, v in namespaces.items():
         if url.startswith(v):
             return k + ":" + url[len(v) :]
@@ -538,7 +532,7 @@ def prefix_url(url, namespaces):  # type: (Text, Dict[Text, Text]) -> Text
 
 
 def save_relative_uri(uri, base_url, scoped_id, ref_scope, relative_uris):
-    # type: (Text, Text, bool, Optional[int], bool) -> Union[Text, List[Text]]
+    # type: (str, str, bool, Optional[int], bool) -> Union[str, List[str]]
     if not relative_uris or uri == base_url:
         return uri
     if isinstance(uri, MutableSequence):

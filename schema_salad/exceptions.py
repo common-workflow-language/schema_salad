@@ -1,11 +1,9 @@
 from typing import Any, List, Optional, Sequence, Tuple
 
-from typing_extensions import Text
-
 from .sourceline import SourceLine, reflow_all, strip_duplicated_lineno
 
 
-def to_one_line_messages(exc):  # type: (SchemaSaladException) -> Text
+def to_one_line_messages(exc):  # type: (SchemaSaladException) -> str
     return "\n".join((c.summary() for c in exc.leaves()))
 
 
@@ -14,22 +12,22 @@ class SchemaSaladException(Exception):
 
     def __init__(
         self,
-        msg,  # type: Text
+        msg,  # type: str
         sl=None,  # type: Optional[SourceLine]
         children=None,  # type: Optional[Sequence[SchemaSaladException]]
-        bullet_for_children="",  # type: Text
+        bullet_for_children="",  # type: str
     ):  # type: (...) -> None
         super(SchemaSaladException, self).__init__(msg)
         self.message = self.args[0]
 
         # It will be set by its parent
-        self.bullet = ""  # type: Text
+        self.bullet = ""  # type: str
 
         def simplify(exc):  # type: (SchemaSaladException) -> List[SchemaSaladException]
             return [exc] if len(exc.message) else exc.children
 
         def with_bullet(exc, bullet):
-            # type: (SchemaSaladException, Text) -> SchemaSaladException
+            # type: (SchemaSaladException, str) -> SchemaSaladException
             if exc.bullet == "":
                 exc.bullet = bullet
             return exc
@@ -60,7 +58,7 @@ class SchemaSaladException(Exception):
         self, sl
     ):  # type: (Optional[SourceLine]) -> SchemaSaladException
         if sl and sl.file():
-            self.file = sl.file()  # type: Optional[Text]
+            self.file = sl.file()  # type: Optional[str]
             self.start = sl.start()  # type: Optional[Tuple[int, int]]
             self.end = sl.end()  # type: Optional[Tuple[int, int]]
         else:
@@ -77,14 +75,14 @@ class SchemaSaladException(Exception):
         else:
             return []
 
-    def prefix(self):  # type: () -> Text
+    def prefix(self):  # type: () -> str
         if self.file:
             linecol = self.start if self.start else ("", "")  # type: Tuple[Any, Any]
             return "{}:{}:{}: ".format(self.file, linecol[0], linecol[1])
         else:
             return ""
 
-    def summary(self, level=0, with_bullet=False):  # type: (int, bool) -> Text
+    def summary(self, level=0, with_bullet=False):  # type: (int, bool) -> str
         indent_per_level = 2
         spaces = (level * indent_per_level) * " "
         bullet = self.bullet + " " if len(self.bullet) and with_bullet else ""
@@ -93,7 +91,7 @@ class SchemaSaladException(Exception):
     def __str__(self):  # type: () -> str
         return str(self.pretty_str())
 
-    def pretty_str(self, level=0):  # type: (int) -> Text
+    def pretty_str(self, level=0):  # type: (int) -> str
         if len(self.message):
             my_summary = [self.summary(level, True)]
             next_level = level + 1

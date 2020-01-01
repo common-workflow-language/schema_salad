@@ -3,25 +3,21 @@ import sys
 from io import open
 from typing import Any, Dict, List, MutableMapping, Optional
 
-from typing_extensions import Text  # pylint: disable=unused-import
-
 from . import schema
 from .codegen_base import CodeGenBase
 from .exceptions import SchemaSaladException
 from .java_codegen import JavaCodeGen
 from .python_codegen import PythonCodeGen
-from .ref_resolver import Loader  # pylint: disable=unused-import
+from .ref_resolver import Loader
 from .schema import shortname
 from .utils import aslist
-
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 
 def codegen(
     lang,  # type: str
-    i,  # type: List[Dict[Text, Any]]
-    schema_metadata,  # type: Dict[Text, Any]
-    loader,  # type: Loader
+    i,  # type: List[Dict[str, Any]]
+    schema_metadata,  # type: Dict[str, Any]
+    loader: Loader,
     target=None,  # type: Optional[str]
     examples=None,  # type: Optional[str]
 ):  # type: (...) -> None

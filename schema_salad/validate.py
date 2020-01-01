@@ -1,23 +1,10 @@
 import logging
 import pprint
-from typing import (  # noqa: F401
-    Any,
-    List,
-    MutableMapping,
-    MutableSequence,
-    Optional,
-    Set,
-    Union,
-)
+from typing import Any, List, MutableMapping, MutableSequence, Optional, Set
 from urllib.parse import urlsplit
 
-from typing_extensions import Text  # pylint: disable=unused-import
-
 from . import avro
-from .avro import schema  # noqa: F401
-from .avro.schema import (  # pylint: disable=unused-import, no-name-in-module, import-error
-    Schema,
-)
+from .avro.schema import Schema  # pylint: disable=no-name-in-module, import-error
 from .exceptions import (
     ClassValidationException,
     SchemaSaladException,
@@ -25,20 +12,17 @@ from .exceptions import (
 )
 from .sourceline import SourceLine
 
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
-
 
 _logger = logging.getLogger("salad")
 
 
 def validate(
-    expected_schema,  # type: Schema
-    datum,  # type: Any
-    identifiers=None,  # type: Optional[List[Text]]
-    strict=False,  # type: bool
-    foreign_properties=None,  # type: Optional[Set[Text]]
-):
-    # type: (...) -> bool
+    expected_schema: Schema,
+    datum: Any,
+    identifiers: Optional[List[str]] = None,
+    strict: bool = False,
+    foreign_properties: Optional[Set[str]] = None,
+) -> bool:
     if not identifiers:
         identifiers = []
     if not foreign_properties:
@@ -80,11 +64,11 @@ def vpformat(datum):  # type: (Any) -> str
 
 
 def validate_ex(
-    expected_schema,  # type: Schema
+    expected_schema: Schema,
     datum,  # type: Any
-    identifiers=None,  # type: Optional[List[Text]]
+    identifiers=None,  # type: Optional[List[str]]
     strict=False,  # type: bool
-    foreign_properties=None,  # type: Optional[Set[Text]]
+    foreign_properties=None,  # type: Optional[Set[str]]
     raise_ex=True,  # type: bool
     strict_foreign_properties=False,  # type: bool
     logger=_logger,  # type: logging.Logger
@@ -121,7 +105,6 @@ def validate_ex(
         if isinstance(datum, str):
             return True
         elif isinstance(datum, bytes):
-            datum = datum.decode("utf-8")
             return True
         else:
             if raise_ex:

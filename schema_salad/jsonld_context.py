@@ -17,29 +17,26 @@ import rdflib
 import rdflib.namespace
 from rdflib import Graph, URIRef
 from rdflib.namespace import RDF, RDFS
-from typing_extensions import Text  # pylint: disable=unused-import
 
 from .exceptions import SchemaException
-from .ref_resolver import ContextType  # pylint: disable=unused-import
+from .ref_resolver import ContextType
 from .utils import aslist, json_dumps
-
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 
 _logger = logging.getLogger("salad")
 
 
 def pred(
-    datatype,  # type: MutableMapping[Text, Union[Dict[Text, Text], Text]]
-    field,  # type: Optional[Dict[Text, Any]]
+    datatype,  # type: MutableMapping[str, Union[Dict[str, str], str]]
+    field,  # type: Optional[Dict[str, Any]]
     name,  # type: str
-    context,  # type: ContextType
+    context: ContextType,
     defaultBase,  # type: str
-    namespaces,  # type: Dict[Text, rdflib.namespace.Namespace]
-):  # type: (...) -> Union[Dict[Text, Text], Text]
+    namespaces,  # type: Dict[str, rdflib.namespace.Namespace]
+):  # type: (...) -> Union[Dict[str, str], str]
     split = urlsplit(name)
 
-    vee = None  # type: Optional[Text]
+    vee = None  # type: Optional[str]
 
     if split.scheme != "":
         vee = name
@@ -49,7 +46,7 @@ def pred(
             vee = str(namespaces[ns[0:-1]][ln])
         _logger.debug("name, v %s %s", name, vee)
 
-    v = None  # type: Optional[Dict[Text, Any]]
+    v = None  # type: Optional[Dict[str, Any]]
 
     if field is not None and "jsonldPredicate" in field:
         if isinstance(field["jsonldPredicate"], MutableMapping):
@@ -93,11 +90,11 @@ def pred(
 
 
 def process_type(
-    t,  # type: MutableMapping[Text, Any]
+    t,  # type: MutableMapping[str, Any]
     g,  # type: Graph
     context,  # type: ContextType
     defaultBase,  # type: str
-    namespaces,  # type: Dict[Text, rdflib.namespace.Namespace]
+    namespaces,  # type: Dict[str, rdflib.namespace.Namespace]
     defaultPrefix,  # type: str
 ):  # type: (...) -> None
     if t["type"] not in ("record", "enum"):
@@ -144,7 +141,7 @@ def process_type(
 
             v = pred(
                 t, i, fieldname, context, defaultPrefix, namespaces
-            )  # type: Union[Dict[Any, Any], Text, None]
+            )  # type: Union[Dict[Any, Any], str, None]
 
             if isinstance(v, str):
                 v = v if v[0] != "@" else None
@@ -179,8 +176,8 @@ def process_type(
 
 
 def salad_to_jsonld_context(
-    j,  # type: Iterable[MutableMapping[Text, Any]]
-    schema_ctx,  # type: MutableMapping[Text, Any]
+    j,  # type: Iterable[MutableMapping[str, Any]]
+    schema_ctx,  # type: MutableMapping[str, Any]
 ):  # type: (...) -> Tuple[ContextType, Graph]
     context = {}  # type: ContextType
     namespaces = {}
@@ -207,8 +204,8 @@ def salad_to_jsonld_context(
 
 
 def fix_jsonld_ids(
-    obj,  # type: Union[List[Dict[Text, Any]], MutableMapping[Text, Any]]
-    ids,  # type: List[Text]
+    obj,  # type: Union[List[Dict[str, Any]], MutableMapping[str, Any]]
+    ids,  # type: List[str]
 ):  # type: (...) -> None
     if isinstance(obj, MutableMapping):
         for i in ids:
@@ -222,8 +219,8 @@ def fix_jsonld_ids(
 
 
 def makerdf(
-    workflow,  # type: Text
-    wf,  # type: Union[List[Dict[Text, Any]], MutableMapping[Text, Any]]
+    workflow,  # type: str
+    wf,  # type: Union[List[Dict[str, Any]], MutableMapping[str, Any]]
     ctx,  # type: ContextType
     graph=None,  # type: Optional[Graph]
 ):  # type: (...) -> Graph

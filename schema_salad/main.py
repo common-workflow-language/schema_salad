@@ -10,8 +10,6 @@ from urllib.parse import urlparse
 import pkg_resources  # part of setuptools
 from rdflib.parser import Parser
 from rdflib.plugin import register
-from typing_extensions import Text  # pylint: disable=unused-import
-
 from ruamel.yaml.comments import CommentedSeq
 
 from . import codegen, jsonld_context, schema
@@ -21,8 +19,6 @@ from .makedoc import makedoc
 from .ref_resolver import Loader, file_uri
 from .utils import json_dumps
 
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
-
 
 register("json-ld", Parser, "rdflib_jsonld.parser", "JsonLDParser")
 _logger = logging.getLogger("salad")
@@ -30,8 +26,8 @@ _logger = logging.getLogger("salad")
 
 def printrdf(
     workflow,  # type: str
-    wf,  # type: Union[List[Dict[Text, Any]], Dict[Text, Any]]
-    ctx,  # type: Dict[Text, Any]
+    wf,  # type: Union[List[Dict[str, Any]], Dict[str, Any]]
+    ctx,  # type: Dict[str, Any]
     sr,  # type: str
 ):
     # type: (...) -> None
@@ -218,7 +214,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
         _logger.error(
             "Schema `%s` failed link checking:\n%s",
             args.schema,
-            Text(e),
+            str(e),
             exc_info=(True if args.debug else False),
         )
         _logger.debug("Index is %s", list(metaschema_loader.idx.keys()))
@@ -228,7 +224,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
         _logger.error(
             "Schema `%s` read error:\n%s",
             args.schema,
-            Text(e),
+            str(e),
             exc_info=(True if args.debug else False),
         )
         return 1
@@ -252,7 +248,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
             metaschema_names, schema_doc, metaschema_loader, args.strict
         )
     except ValidationException as e:
-        _logger.error("While validating schema `%s`:\n%s", args.schema, Text(e))
+        _logger.error("While validating schema `%s`:\n%s", args.schema, str(e))
         return 1
 
     # Get the json-ld context and RDFS representation from the schema
@@ -272,7 +268,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
     if args.codegen:
         codegen.codegen(
             args.codegen,
-            cast(List[Dict[Text, Any]], schema_doc),
+            cast(List[Dict[str, Any]], schema_doc),
             schema_metadata,
             document_loader,
             target=args.codegen_target,
@@ -290,7 +286,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
             _logger.error(
                 "Schema `%s` error:\n%s",
                 args.schema,
-                Text(err),
+                str(err),
                 exc_info=((type(err), err, None) if args.debug else None),
             )
             if args.print_avro:

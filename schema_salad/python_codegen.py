@@ -3,21 +3,18 @@ from io import StringIO
 from typing import IO, Any, Dict, List, MutableMapping, MutableSequence, Union
 
 from pkg_resources import resource_stream
-from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import schema
 from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
 
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
-
 
 class PythonCodeGen(CodeGenBase):
     """Generation of Python code for a given Schema Salad definition."""
 
     def __init__(self, out):
-        # type: (IO[Text]) -> None
+        # type: (IO[str]) -> None
         super(PythonCodeGen, self).__init__()
         self.out = out
         self.current_class_is_abstract = False
@@ -25,7 +22,7 @@ class PythonCodeGen(CodeGenBase):
         self.idfield = ""
 
     @staticmethod
-    def safe_name(name):  # type: (Text) -> Text
+    def safe_name(name):  # type: (str) -> str
         avn = schema.avro_name(name)
         if avn in ("class", "in"):
             # reserved words
@@ -54,12 +51,12 @@ class PythonCodeGen(CodeGenBase):
 
     def begin_class(
         self,  # pylint: disable=too-many-arguments
-        classname,  # type: Text
-        extends,  # type: MutableSequence[Text]
-        doc,  # type: Text
+        classname,  # type: str
+        extends,  # type: MutableSequence[str]
+        doc,  # type: str
         abstract,  # type: bool
-        field_names,  # type: MutableSequence[Text]
-        idfield,  # type: Text
+        field_names,  # type: MutableSequence[str]
+        idfield,  # type: str
     ):  # type: (...) -> None
         classname = self.safe_name(classname)
 
@@ -82,7 +79,7 @@ class PythonCodeGen(CodeGenBase):
             self.out.write("    pass\n\n\n")
             return
 
-        safe_inits = ["        self,"]  # type: List[Text]
+        safe_inits = ["        self,"]  # type: List[str]
         safe_inits.extend(
             [
                 "        {},  # type: Any".format(self.safe_name(f))
@@ -94,7 +91,7 @@ class PythonCodeGen(CodeGenBase):
             "    def __init__(\n"
             + "\n".join(safe_inits)
             + "\n        extension_fields=None,  "
-            + "# type: Optional[Dict[Text, Any]]"
+            + "# type: Optional[Dict[str, Any]]"
             + "\n        loadingOptions=None  # type: Optional[LoadingOptions]"
             + "\n    ):  # type: (...) -> None\n"
             + """
@@ -125,7 +122,7 @@ class PythonCodeGen(CodeGenBase):
             + """
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> {}
+        # type: (Any, str, LoadingOptions, Optional[str]) -> {}
 
         _doc = copy.copy(doc)
         if hasattr(doc, 'lc'):
@@ -142,8 +139,8 @@ class PythonCodeGen(CodeGenBase):
         self.serializer.write(
             """
     def save(self, top=False, base_url="", relative_uris=True):
-        # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
+        # type: (bool, str, bool) -> Dict[str, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 """
@@ -169,7 +166,7 @@ class PythonCodeGen(CodeGenBase):
             )
 
     def end_class(self, classname, field_names):
-        # type: (Text, List[Text]) -> None
+        # type: (str, List[str]) -> None
 
         if self.current_class_is_abstract:
             return
@@ -219,7 +216,7 @@ class PythonCodeGen(CodeGenBase):
 
         safe_inits = [
             self.safe_name(f) for f in field_names if f != "class"
-        ]  # type: List[Text]
+        ]  # type: List[str]
 
         safe_inits.extend(
             ["extension_fields=extension_fields", "loadingOptions=loadingOptions"]
@@ -262,7 +259,7 @@ class PythonCodeGen(CodeGenBase):
     }
 
     def type_loader(self, type_declaration):
-        # type: (Union[List[Any], Dict[Text, Any], Text]) -> TypeDef
+        # type: (Union[List[Any], Dict[str, Any], str]) -> TypeDef
 
         if isinstance(type_declaration, MutableSequence):
             sub = [self.type_loader(i) for i in type_declaration]
@@ -315,7 +312,7 @@ class PythonCodeGen(CodeGenBase):
         return self.collected_types[self.safe_name(type_declaration) + "Loader"]
 
     def declare_id_field(self, name, fieldtype, doc, optional):
-        # type: (Text, TypeDef, Text, bool) -> None
+        # type: (str, TypeDef, str, bool) -> None
 
         if self.current_class_is_abstract:
             return
@@ -345,7 +342,7 @@ class PythonCodeGen(CodeGenBase):
         )
 
     def declare_field(self, name, fieldtype, doc, optional):
-        # type: (Text, TypeDef, Text, bool) -> None
+        # type: (str, TypeDef, str, bool) -> None
 
         if self.current_class_is_abstract:
             return
@@ -444,7 +441,7 @@ class PythonCodeGen(CodeGenBase):
         )
 
     def idmap_loader(self, field, inner, map_subject, map_predicate):
-        # type: (Text, TypeDef, Text, Union[Text, None]) -> TypeDef
+        # type: (str, TypeDef, str, Union[str, None]) -> TypeDef
         return self.declare_type(
             TypeDef(
                 "idmap_{}_{}".format(self.safe_name(field), inner.name),
@@ -482,7 +479,7 @@ class PythonCodeGen(CodeGenBase):
         self.out.write(
             """
 def load_document(doc, baseuri=None, loadingOptions=None):
-    # type: (Any, Optional[Text], Optional[LoadingOptions]) -> Any
+    # type: (Any, Optional[str], Optional[LoadingOptions]) -> Any
     if baseuri is None:
         baseuri = file_uri(os.getcwd()) + "/"
     if loadingOptions is None:
@@ -491,7 +488,7 @@ def load_document(doc, baseuri=None, loadingOptions=None):
 
 
 def load_document_by_string(string, uri, loadingOptions=None):
-    # type: (Any, Text, Optional[LoadingOptions]) -> Any
+    # type: (Any, str, Optional[LoadingOptions]) -> Any
     result = yaml.main.round_trip_load(string, preserve_quotes=True)
     add_lc_filename(result, uri)
 
