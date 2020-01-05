@@ -199,7 +199,7 @@ class DefaultFetcher(Fetcher):
                 ) as fp:
                     return str(fp.read())
 
-            except (OSError, IOError) as err:
+            except OSError as err:
                 if err.filename == path:
                     raise ValidationException(str(err)) from err
                 else:
