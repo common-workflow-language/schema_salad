@@ -190,11 +190,11 @@ release-test: FORCE
 	PYVER=3 ./release-test.sh
 
 release: release-test
-	. testenv3.7_2/bin/activate && \
-		testenv3.7_2/src/${PACKAGE}/setup.py sdist bdist_wheel
+	. testenv3_2/bin/activate && \
+		testenv3_2/src/${PACKAGE}/setup.py sdist bdist_wheel
 	. testenv3.7_2/bin/activate && \
 		pip install twine && \
-		twine upload testenv3.7_2/src/${PACKAGE}/dist/* && \
+		twine upload testenv3_2/src/${PACKAGE}/dist/* && \
 		git tag ${VERSION} && git push --tags
 
 FORCE:
