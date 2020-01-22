@@ -163,6 +163,12 @@ list-author-emails:
 
 mypy3: mypy
 mypy: ${PYSOURCES}
+	if ! test -f $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))')/py.typed ; \
+	then \
+		rm -Rf typeshed/2and3/ruamel/yaml ; \
+		ln -s $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))') \
+			typeshed/2and3/ruamel/ ; \
+	fi  # if minimally required ruamel.yaml version is 0.15.99 or greater, than the above can be removed
 	MYPYPATH=$$MYPYPATH:typeshed/3:typeshed/2and3 mypy --disallow-untyped-calls \
 		 --warn-redundant-casts \
 		 schema_salad
