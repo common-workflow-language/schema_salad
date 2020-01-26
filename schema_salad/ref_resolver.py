@@ -140,6 +140,7 @@ def SubLoader(loader):  # type: (Loader) -> Loader
         skip_schemas=loader.skip_schemas,
         url_fields=loader.url_fields,
         allow_attachments=loader.allow_attachments,
+        session=loader.session,
     )
 
 
@@ -337,6 +338,7 @@ class Loader(object):
         skip_schemas=None,  # type: Optional[bool]
         url_fields=None,  # type: Optional[Set[str]]
         allow_attachments=None,  # type: Optional[attachements_sig]
+        doc_cache=True,  # type: Union[str, bool]
     ):
         # type: (...) -> None
 
@@ -367,22 +369,31 @@ class Loader(object):
             self.skip_schemas = False
 
         if session is None:
-            if "HOME" in os.environ:
+            if doc_cache is False:
+                self.session = requests.Session()
+            elif doc_cache is True:
+                if "HOME" in os.environ:
+                    self.session = CacheControl(
+                        requests.Session(),
+                        cache=FileCache(
+                            os.path.join(os.environ["HOME"], ".cache", "salad")
+                        ),
+                    )
+                elif "TMP" in os.environ:
+                    self.session = CacheControl(
+                        requests.Session(),
+                        cache=FileCache(
+                            os.path.join(os.environ["TMP"], ".cache", "salad")
+                        ),
+                    )
+                else:
+                    self.session = CacheControl(
+                        requests.Session(),
+                        cache=FileCache(os.path.join("/tmp", ".cache", "salad")),
+                    )
+            elif isinstance(doc_cache, str):
                 self.session = CacheControl(
-                    requests.Session(),
-                    cache=FileCache(
-                        os.path.join(os.environ["HOME"], ".cache", "salad")
-                    ),
-                )
-            elif "TMP" in os.environ:
-                self.session = CacheControl(
-                    requests.Session(),
-                    cache=FileCache(os.path.join(os.environ["TMP"], ".cache", "salad")),
-                )
-            else:
-                self.session = CacheControl(
-                    requests.Session(),
-                    cache=FileCache(os.path.join("/tmp", ".cache", "salad")),
+                    requests.Session(), cache=FileCache(doc_cache)
                 )
         else:
             self.session = session
