@@ -391,7 +391,7 @@ class Loader(object):
                         requests.Session(),
                         cache=FileCache(os.path.join("/tmp", ".cache", "salad")),
                     )
-            else:
+            elif isinstance(doc_cache, str):
                 self.session = CacheControl(
                     requests.Session(), cache=FileCache(doc_cache)
                 )
