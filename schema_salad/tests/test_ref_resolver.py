@@ -60,6 +60,11 @@ def test_Loader_initialisation_with_neither_TMP_HOME_set(tmp_dir_fixture):
     assert isinstance(loader.session, Session)
 
 
+def test_Loader_initialisation_disable_file_cache(tmp_dir_fixture):
+    loader = Loader(ctx={}, file_cache=False)
+    assert isinstance(loader.session, Session)
+
+
 def test_DefaultFetcher_urljoin_win32(tmp_dir_fixture):
     # Ensure HOME is set.
     os.environ["HOME"] = tmp_dir_fixture
