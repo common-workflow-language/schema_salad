@@ -60,8 +60,8 @@ def test_Loader_initialisation_with_neither_TMP_HOME_set(tmp_dir_fixture):
     assert isinstance(loader.session, Session)
 
 
-def test_Loader_initialisation_disable_file_cache(tmp_dir_fixture):
-    loader = Loader(ctx={}, file_cache=False)
+def test_Loader_initialisation_disable_doc_cache(tmp_dir_fixture):
+    loader = Loader(ctx={}, doc_cache=False)
     assert isinstance(loader.session, Session)
 
 
