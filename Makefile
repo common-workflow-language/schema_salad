@@ -192,7 +192,7 @@ release-test: FORCE
 release: release-test
 	. testenv3_2/bin/activate && \
 		testenv3_2/src/${PACKAGE}/setup.py sdist bdist_wheel
-	. testenv3.7_2/bin/activate && \
+	. testenv3_2/bin/activate && \
 		pip install twine && \
 		twine upload testenv3_2/src/${PACKAGE}/dist/* && \
 		git tag ${VERSION} && git push --tags
