@@ -415,3 +415,15 @@ def test_blank_node_id():
 
     ra, _ = ldr.resolve_all(cmap({"id": "_:foo"}), "http://example.com")
     assert {"id": "_:foo"} == ra
+
+
+def test_can_use_Any():
+    # Test that 'type: Any' can be used
+    (
+        document_loader,
+        avsc_names,
+        schema_metadata,
+        metaschema_loader,
+    ) = schema_salad.schema.load_schema(  # noqa: B950
+        get_data("tests/test_schema/cwltest-schema.yml")
+    )
