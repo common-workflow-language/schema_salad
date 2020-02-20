@@ -556,7 +556,7 @@ def make_avsc_object(json_data, names=None):
         names = Names()
     assert isinstance(names, Names)
 
-    if isinstance(json_data, Dict) and json_data["name"] == "Any":
+    if isinstance(json_data, Dict) and json_data.get("name") == "Any":
         del names.names["Any"]
     elif not names.has_name("Any", ""):
         EnumSchema("Any", "", ["Any"], names=names)
