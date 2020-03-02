@@ -1305,6 +1305,8 @@ class Loader(object):
                 raise ValidationException("", None, errors)
         elif isinstance(link, CommentedMap):
             self.validate_links(link, docid, all_doc_ids)
+        elif link is None:
+            return link
         else:
             raise ValidationException(
                 "`{}` field is {}, expected string, list, or a dict.".format(
