@@ -427,3 +427,12 @@ def test_can_use_Any():
     ) = schema_salad.schema.load_schema(  # noqa: B950
         get_data("tests/test_schema/cwltest-schema.yml")
     )
+
+
+def test_nullable_links():
+    ldr = schema_salad.ref_resolver.Loader({})
+    ctx = {"link": {"@type": "@id"}}
+    ldr.add_context(ctx)
+
+    ra, _ = ldr.resolve_all(cmap({"link": None}), "http://example.com", checklinks=True)
+    assert {"link": None} == ra
