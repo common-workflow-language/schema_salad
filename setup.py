@@ -33,7 +33,7 @@ install_requires = [
     # once the minimum version for ruamel.yaml >= 0.15.99
     # then please update the mypy targets in the Makefile
     'rdflib >= 4.2.2, < 4.3.0',
-    'rdflib-jsonld >= 0.3.0, < 0.5.0',
+    'rdflib-jsonld >= 0.3.0, < 0.6.0',
     'mistune >= 0.8.1, < 0.9',
     'CacheControl >= 0.11.7, < 0.12',
     'lockfile >= 0.9',
