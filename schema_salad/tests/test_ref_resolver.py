@@ -1,6 +1,5 @@
 """Test the ref_resolver module."""
 
-from __future__ import absolute_import
 
 import os
 import shutil
@@ -58,6 +57,11 @@ def test_Loader_initialisation_with_neither_TMP_HOME_set(tmp_dir_fixture):
         del os.environ["TMP"]
 
     loader = Loader(ctx={})
+    assert isinstance(loader.session, Session)
+
+
+def test_Loader_initialisation_disable_doc_cache(tmp_dir_fixture):
+    loader = Loader(ctx={}, doc_cache=False)
     assert isinstance(loader.session, Session)
 
 
@@ -170,9 +174,9 @@ def test_import_list():
 
     basedir = schema_salad.ref_resolver.file_uri(os.path.dirname(__file__) + "/")
     loader = schema_salad.ref_resolver.Loader({})
-    ra, _ = loader.resolve_all(cmap({u"foo": {"$import": "list.json"}}), basedir)
+    ra, _ = loader.resolve_all(cmap({"foo": {"$import": "list.json"}}), basedir)
 
-    assert {u"foo": ["bar", "baz"]} == ra
+    assert {"foo": ["bar", "baz"]} == ra
 
 
 def test_fetch_inject_id():

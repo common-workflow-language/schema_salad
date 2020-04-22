@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import logging
 from typing import (
     Any,
@@ -13,46 +11,42 @@ from typing import (
     Union,
     cast,
 )
+from urllib.parse import urldefrag, urlsplit
 
 import rdflib
 import rdflib.namespace
-import six
 from rdflib import Graph, URIRef
 from rdflib.namespace import RDF, RDFS
-from six.moves import urllib
-from typing_extensions import Text  # pylint: disable=unused-import
 
 from .exceptions import SchemaException
-from .ref_resolver import ContextType  # pylint: disable=unused-import
+from .ref_resolver import ContextType
 from .utils import aslist, json_dumps
-
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
 
 _logger = logging.getLogger("salad")
 
 
 def pred(
-    datatype,  # type: MutableMapping[Text, Union[Dict[Text, Text], Text]]
-    field,  # type: Optional[Dict[Text, Any]]
+    datatype,  # type: MutableMapping[str, Union[Dict[str, str], str]]
+    field,  # type: Optional[Dict[str, Any]]
     name,  # type: str
-    context,  # type: ContextType
+    context: ContextType,
     defaultBase,  # type: str
-    namespaces,  # type: Dict[Text, rdflib.namespace.Namespace]
-):  # type: (...) -> Union[Dict[Text, Text], Text]
-    split = urllib.parse.urlsplit(name)
+    namespaces,  # type: Dict[str, rdflib.namespace.Namespace]
+):  # type: (...) -> Union[Dict[str, str], str]
+    split = urlsplit(name)
 
-    vee = None  # type: Optional[Text]
+    vee = None  # type: Optional[str]
 
     if split.scheme != "":
         vee = name
-        (ns, ln) = rdflib.namespace.split_uri(six.text_type(vee))
+        (ns, ln) = rdflib.namespace.split_uri(str(vee))
         name = ln
         if ns[0:-1] in namespaces:
-            vee = six.text_type(namespaces[ns[0:-1]][ln])
+            vee = str(namespaces[ns[0:-1]][ln])
         _logger.debug("name, v %s %s", name, vee)
 
-    v = None  # type: Optional[Dict[Text, Any]]
+    v = None  # type: Optional[Dict[str, Any]]
 
     if field is not None and "jsonldPredicate" in field:
         if isinstance(field["jsonldPredicate"], MutableMapping):
@@ -96,11 +90,11 @@ def pred(
 
 
 def process_type(
-    t,  # type: MutableMapping[Text, Any]
+    t,  # type: MutableMapping[str, Any]
     g,  # type: Graph
     context,  # type: ContextType
     defaultBase,  # type: str
-    namespaces,  # type: Dict[Text, rdflib.namespace.Namespace]
+    namespaces,  # type: Dict[str, rdflib.namespace.Namespace]
     defaultPrefix,  # type: str
 ):  # type: (...) -> None
     if t["type"] not in ("record", "enum"):
@@ -114,11 +108,11 @@ def process_type(
         classnode = URIRef(recordname)
         g.add((classnode, RDF.type, RDFS.Class))
 
-        split = urllib.parse.urlsplit(recordname)
+        split = urlsplit(recordname)
         predicate = recordname
         if t.get("inVocab", True):
             if split.scheme:
-                (ns, ln) = rdflib.namespace.split_uri(six.text_type(recordname))
+                (ns, ln) = rdflib.namespace.split_uri(str(recordname))
                 predicate = recordname
                 recordname = ln
             else:
@@ -147,15 +141,15 @@ def process_type(
 
             v = pred(
                 t, i, fieldname, context, defaultPrefix, namespaces
-            )  # type: Union[Dict[Any, Any], Text, None]
+            )  # type: Union[Dict[Any, Any], str, None]
 
-            if isinstance(v, six.string_types):
+            if isinstance(v, str):
                 v = v if v[0] != "@" else None
             elif v is not None:
                 v = v["_@id"] if v.get("_@id", "@")[0] != "@" else None
 
             if bool(v):
-                (ns, ln) = rdflib.namespace.split_uri(six.text_type(v))
+                (ns, ln) = rdflib.namespace.split_uri(str(v))
                 if ns[0:-1] in namespaces:
                     propnode = namespaces[ns[0:-1]][ln]
                 else:
@@ -182,8 +176,8 @@ def process_type(
 
 
 def salad_to_jsonld_context(
-    j,  # type: Iterable[MutableMapping[Text, Any]]
-    schema_ctx,  # type: MutableMapping[Text, Any]
+    j,  # type: Iterable[MutableMapping[str, Any]]
+    schema_ctx,  # type: MutableMapping[str, Any]
 ):  # type: (...) -> Tuple[ContextType, Graph]
     context = {}  # type: ContextType
     namespaces = {}
@@ -210,8 +204,8 @@ def salad_to_jsonld_context(
 
 
 def fix_jsonld_ids(
-    obj,  # type: Union[List[Dict[Text, Any]], MutableMapping[Text, Any]]
-    ids,  # type: List[Text]
+    obj,  # type: Union[List[Dict[str, Any]], MutableMapping[str, Any]]
+    ids,  # type: List[str]
 ):  # type: (...) -> None
     if isinstance(obj, MutableMapping):
         for i in ids:
@@ -225,24 +219,24 @@ def fix_jsonld_ids(
 
 
 def makerdf(
-    workflow,  # type: Text
-    wf,  # type: Union[List[Dict[Text, Any]], MutableMapping[Text, Any]]
+    workflow,  # type: str
+    wf,  # type: Union[List[Dict[str, Any]], MutableMapping[str, Any]]
     ctx,  # type: ContextType
     graph=None,  # type: Optional[Graph]
 ):  # type: (...) -> Graph
     prefixes = {}
     idfields = []
-    for k, v in six.iteritems(ctx):
+    for k, v in ctx.items():
         if isinstance(v, MutableMapping):
             url = v["@id"]
         else:
             url = v
         if url == "@id":
             idfields.append(k)
-        doc_url, frg = urllib.parse.urldefrag(url)
+        doc_url, frg = urldefrag(url)
         if "/" in frg:
             p = frg.split("/")[0]
-            prefixes[p] = u"{}#{}/".format(doc_url, p)
+            prefixes[p] = "{}#{}/".format(doc_url, p)
 
     fix_jsonld_ids(wf, idfields)
 
@@ -263,7 +257,7 @@ def makerdf(
     for sub, pred, obj in g.triples((None, URIRef("@id"), None)):
         g.remove((sub, pred, obj))
 
-    for k2, v2 in six.iteritems(prefixes):
+    for k2, v2 in prefixes.items():
         g.namespace_manager.bind(k2, v2)
 
     return g

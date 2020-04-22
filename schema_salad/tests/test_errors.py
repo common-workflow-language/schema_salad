@@ -1,7 +1,4 @@
-from __future__ import absolute_import, print_function
-
 import pytest
-import six
 
 import schema_salad
 from schema_salad.schema import load_and_validate, load_schema
@@ -12,7 +9,7 @@ from .util import get_data
 
 def test_errors():
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
+        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     )
 
     for t in (
@@ -32,10 +29,7 @@ def test_errors():
         with pytest.raises(ValidationException):
             try:
                 load_and_validate(
-                    document_loader,
-                    avsc_names,
-                    six.text_type(get_data("tests/" + t)),
-                    True,
+                    document_loader, avsc_names, str(get_data("tests/" + t)), True,
                 )
             except ValidationException as e:
                 print("\n", e)
@@ -44,7 +38,7 @@ def test_errors():
 
 def test_error_message1():
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
+        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     )
 
     t = "test_schema/test1.cwl"
@@ -57,13 +51,13 @@ def test_error_message1():
     )
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
-            document_loader, avsc_names, six.text_type(get_data("tests/" + t)), True
+            document_loader, avsc_names, str(get_data("tests/" + t)), True
         )
 
 
 def test_error_message2():
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
+        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     )
 
     t = "test_schema/test2.cwl"
@@ -74,13 +68,13 @@ def test_error_message2():
     ]
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
-            document_loader, avsc_names, six.text_type(get_data("tests/" + t)), True
+            document_loader, avsc_names, str(get_data("tests/" + t)), True
         )
 
 
 def test_error_message3():
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
+        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     )
 
     t = "test_schema/test3.cwl"
@@ -93,13 +87,13 @@ def test_error_message3():
     ]
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
-            document_loader, avsc_names, six.text_type(get_data("tests/" + t)), True
+            document_loader, avsc_names, str(get_data("tests/" + t)), True
         )
 
 
 def test_error_message4():
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
+        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     )
 
     t = "test_schema/test4.cwl"
@@ -111,13 +105,13 @@ def test_error_message4():
     ]
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
-            document_loader, avsc_names, six.text_type(get_data("tests/" + t)), True
+            document_loader, avsc_names, str(get_data("tests/" + t)), True
         )
 
 
 def test_error_message5():
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
+        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     )
 
     t = "test_schema/test5.cwl"
@@ -132,13 +126,13 @@ def test_error_message5():
     ]
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
-            document_loader, avsc_names, six.text_type(get_data("tests/" + t)), True
+            document_loader, avsc_names, str(get_data("tests/" + t)), True
         )
 
 
 def test_error_message7():
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
+        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     )
 
     t = "test_schema/test7.cwl"
@@ -155,13 +149,13 @@ def test_error_message7():
     )
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
-            document_loader, avsc_names, six.text_type(get_data("tests/" + t)), True
+            document_loader, avsc_names, str(get_data("tests/" + t)), True
         )
 
 
 def test_error_message8():
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
+        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     )
 
     t = "test_schema/test8.cwl"
@@ -174,13 +168,13 @@ def test_error_message8():
     ]
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
-            document_loader, avsc_names, six.text_type(get_data("tests/" + t)), True
+            document_loader, avsc_names, str(get_data("tests/" + t)), True
         )
 
 
 def test_error_message9():
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
+        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     )
 
     t = "test_schema/test9.cwl"
@@ -192,13 +186,13 @@ def test_error_message9():
     )
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
-            document_loader, avsc_names, six.text_type(get_data("tests/" + t)), True
+            document_loader, avsc_names, str(get_data("tests/" + t)), True
         )
 
 
 def test_error_message10():
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
+        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     )
 
     t = "test_schema/test10.cwl"
@@ -215,13 +209,13 @@ def test_error_message10():
     ]
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
-            document_loader, avsc_names, six.text_type(get_data("tests/" + t)), True
+            document_loader, avsc_names, str(get_data("tests/" + t)), True
         )
 
 
 def test_error_message11():
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
+        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     )
 
     t = "test_schema/test11.cwl"
@@ -234,13 +228,13 @@ def test_error_message11():
     ]
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
-            document_loader, avsc_names, six.text_type(get_data("tests/" + t)), True
+            document_loader, avsc_names, str(get_data("tests/" + t)), True
         )
 
 
 def test_error_message15():
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
+        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     )
 
     t = "test_schema/test15.cwl"
@@ -260,7 +254,7 @@ def test_error_message15():
     )
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
-            document_loader, avsc_names, six.text_type(get_data("tests/" + t)), True
+            document_loader, avsc_names, str(get_data("tests/" + t)), True
         )
 
 
@@ -269,7 +263,7 @@ def test_error_message15():
 )
 def test_errors_previously_defined_dict_key():
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
+        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     )
 
     for t in (
@@ -280,10 +274,7 @@ def test_errors_previously_defined_dict_key():
         with pytest.raises(ValidationException):
             try:
                 load_and_validate(
-                    document_loader,
-                    avsc_names,
-                    six.text_type(get_data("tests/" + t)),
-                    True,
+                    document_loader, avsc_names, str(get_data("tests/" + t)), True,
                 )
             except ValidationException as e:
                 print("\n", e)

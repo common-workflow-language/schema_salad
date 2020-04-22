@@ -1,6 +1,6 @@
 Style guide:
-- Python 2.7 + Python 3.5+ compatible code
-- PEP-484 type hints, in comments for Python 2.7 compatability
+- Python 3.5+ compatible code
+- PEP-484 type hints
 - Prefer new style format strings https://pyformat.info/
 - Use ``make format`` to format the your code
 

@@ -1,7 +1,4 @@
-from __future__ import absolute_import, print_function
-
 import pytest
-import six
 
 from schema_salad.schema import load_and_validate, load_schema
 from schema_salad.validate import ValidationException
@@ -11,7 +8,7 @@ from .util import get_data
 
 def test_fp():
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
+        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     )
 
     for t in (
@@ -26,7 +23,7 @@ def test_fp():
         load_and_validate(
             document_loader,
             avsc_names,
-            six.text_type(get_data("tests/" + t)),
+            str(get_data("tests/" + t)),
             True,
             strict_foreign_properties=False,
         )
@@ -43,7 +40,7 @@ def test_fp():
                 load_and_validate(
                     document_loader,
                     avsc_names,
-                    six.text_type(get_data("tests/" + t)),
+                    str(get_data("tests/" + t)),
                     True,
                     strict_foreign_properties=True,
                 )

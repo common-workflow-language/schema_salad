@@ -29,17 +29,15 @@ else:
 install_requires = [
     'setuptools',
     'requests >= 1.0',
-    'ruamel.yaml >= 0.12.4, <= 0.16',
+    'ruamel.yaml >= 0.12.4, <= 0.16.5',
     # once the minimum version for ruamel.yaml >= 0.15.99
-    # then please update the mypy{2,3} targets in the Makefile
+    # then please update the mypy targets in the Makefile
     'rdflib >= 4.2.2, < 4.3.0',
-    'rdflib-jsonld >= 0.3.0, < 0.5.0',
+    'rdflib-jsonld >= 0.3.0, < 0.6.0',
     'mistune >= 0.8.1, < 0.9',
     'CacheControl >= 0.11.7, < 0.12',
     'lockfile >= 0.9',
-    'six >= 1.8.0',
-    'typing-extensions',
-    'future']
+    'typing-extensions']
 
 extras_require = {
     ':python_version<"3.5"': ['typing >= 3.7.4'],
@@ -47,7 +45,7 @@ extras_require = {
 }
 
 setup(name='schema-salad',
-      version='4.5',  # update the VERSION prefix in the Makefile as well 🙂
+      version='5.0',  # update the VERSION prefix in the Makefile as well 🙂
       description='Schema Annotations for Linked Avro Data (SALAD)',
       long_description=open(README).read(),
       long_description_content_type="text/x-rst",
@@ -56,6 +54,7 @@ setup(name='schema-salad',
       url="https://github.com/common-workflow-language/schema_salad",
       download_url="https://github.com/common-workflow-language/schema_salad/releases",
       license='Apache 2.0',
+      python_requires='>=3.5',
       setup_requires=[] + pytest_runner,
       packages=["schema_salad", "schema_salad.tests"],
       package_data={'schema_salad': ['metaschema/*', 'py.typed']},
@@ -78,7 +77,6 @@ setup(name='schema-salad',
           "Operating System :: MacOS :: MacOS X",
           "Operating System :: Microsoft :: Windows",
           "Development Status :: 5 - Production/Stable",
-          "Programming Language :: Python :: 2.7",
           "Programming Language :: Python :: 3.5",
           "Programming Language :: Python :: 3.6",
           "Programming Language :: Python :: 3.7",

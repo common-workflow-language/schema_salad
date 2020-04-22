@@ -33,7 +33,7 @@ COVBASE=coverage run --branch --append --source=${MODULE} \
 
 # Updating the Major & Minor version below?
 # Don't forget to update setup.py as well
-VERSION=4.5.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
+VERSION=5.0.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
 
 ## all         : default task
@@ -86,7 +86,7 @@ diff_pydocstyle_report: pydocstyle_report.txt
 
 ## format      : check/fix all code indentation and formatting (runs black)
 format:
-	black --target-version py27 --exclude metaschema.py schema_salad
+	black --exclude metaschema.py schema_salad
 
 ## pylint      : run static code analysis on Python code
 pylint: $(PYSOURCES)
@@ -161,22 +161,12 @@ list-author-emails:
 	@echo 'name, E-Mail Address'
 	@git log --format='%aN,%aE' | sort -u | grep -v 'root'
 
-mypy2: ${PYSOURCES}
-	if ! test -f $(shell python -c 'from __future__ import print_function; import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))')/py.typed ; \
+mypy3: mypy
+mypy: ${PYSOURCES}
+	if ! test -f $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))')/py.typed ; \
 	then \
 		rm -Rf typeshed/2and3/ruamel/yaml ; \
-		ln -s $(shell python -c 'from __future__ import print_function; import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))') \
-			typeshed/2and3/ruamel/ ; \
-	fi  # if minimally required ruamel.yaml version is 0.15.99 or greater, than the above can be removed
-	MYPYPATH=$$MYPYPATH:typeshed/2.7:typeshed/2and3 mypy --py2 --disallow-untyped-calls \
-		 --warn-redundant-casts \
-		 schema_salad
-
-mypy3: ${PYSOURCES}
-	if ! test -f $(shell python -c 'from __future__ import print_function; import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))')/py.typed ; \
-	then \
-		rm -Rf typeshed/2and3/ruamel/yaml ; \
-		ln -s $(shell python -c 'from __future__ import print_function; import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))') \
+		ln -s $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))') \
 			typeshed/2and3/ruamel/ ; \
 	fi  # if minimally required ruamel.yaml version is 0.15.99 or greater, than the above can be removed
 	MYPYPATH=$$MYPYPATH:typeshed/3:typeshed/2and3 mypy --disallow-untyped-calls \
@@ -193,20 +183,18 @@ jenkins: FORCE
 	. env3/bin/activate ; \
 	pip install -U setuptools pip wheel ; \
 	${MAKE} install-dep ; \
-	pip install -U -r mypy_requirements.txt ; ${MAKE} mypy2
-	# pip install -U -r mypy_requirements.txt ; ${MAKE} mypy3
+	pip install -U -r mypy_requirements.txt ; ${MAKE} mypy
 
 release-test: FORCE
 	git diff-index --quiet HEAD -- || ( echo You have uncommited changes, please commit them and try again; false )
-	PYVER=2.7 ./release-test.sh
 	PYVER=3 ./release-test.sh
 
 release: release-test
-	. testenv2.7_2/bin/activate && \
-		testenv2.7_2/src/${PACKAGE}/setup.py sdist bdist_wheel
-	. testenv2.7_2/bin/activate && \
+	. testenv3_2/bin/activate && \
+		testenv3_2/src/${PACKAGE}/setup.py sdist bdist_wheel
+	. testenv3_2/bin/activate && \
 		pip install twine && \
-		twine upload testenv2.7_2/src/${PACKAGE}/dist/* && \
+		twine upload testenv3_2/src/${PACKAGE}/dist/* && \
 		git tag ${VERSION} && git push --tags
 
 FORCE:

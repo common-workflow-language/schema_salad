@@ -5,7 +5,6 @@ run individually as py.test -k tests/test_real_cwl.py
 """
 
 import pytest
-import six
 
 from schema_salad.schema import load_and_validate, load_schema
 from schema_salad.validate import ValidationException
@@ -24,7 +23,7 @@ class TestRealWorldCWL:
             schema_metadata,
             metaschema_loader,
         ) = load_schema(  # noqa: B950
-            get_data(u"tests/test_schema/CommonWorkflowLanguage.yml")
+            get_data("tests/test_schema/CommonWorkflowLanguage.yml")
         )
 
     def load_cwl(self, src):
@@ -33,7 +32,7 @@ class TestRealWorldCWL:
                 load_and_validate(
                     self.document_loader,
                     self.avsc_names,
-                    six.text_type(get_data(test_dir_name + src)),
+                    str(get_data(test_dir_name + src)),
                     True,
                 )
             except ValidationException as e:

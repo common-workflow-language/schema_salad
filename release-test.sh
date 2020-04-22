@@ -10,7 +10,7 @@ repo=https://github.com/${slug}.git
 run_tests="bin/py.test --pyargs ${module}"
 pipver=18 # minimum required version of pip
 setupver=40.3 # minimum required version of setuptools
-PYVER=${PYVER:=2.7}
+PYVER=${PYVER:=3}
 
 rm -Rf "testenv${PYVER}_"? || /bin/true
 

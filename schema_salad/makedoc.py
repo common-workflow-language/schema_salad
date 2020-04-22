@@ -1,14 +1,11 @@
-from __future__ import absolute_import
-
 import argparse
-import codecs
 import copy
 import logging
 import os
 import re
 import sys
-from codecs import StreamWriter  # pylint: disable=unused-import
-from io import TextIOWrapper, open
+from codecs import StreamWriter
+from io import StringIO, TextIOWrapper, open
 from typing import (
     IO,
     Any,
@@ -22,12 +19,9 @@ from typing import (
     Union,
     cast,
 )
+from urllib.parse import urldefrag
 
 import mistune
-import six
-from six import StringIO
-from six.moves import range, urllib
-from typing_extensions import Text  # pylint: disable=unused-import
 
 from . import schema
 from .exceptions import SchemaSaladException, ValidationException
@@ -39,8 +33,8 @@ from .utils import add_dictlist, aslist
 _logger = logging.getLogger("salad")
 
 
-def has_types(items):  # type: (Any) -> List[Text]
-    r = []  # type: List[Text]
+def has_types(items):  # type: (Any) -> List[str]
+    r = []  # type: List[str]
     if isinstance(items, MutableMapping):
         if items["type"] == "https://w3id.org/cwl/salad#record":
             return [items["name"]]
@@ -52,13 +46,13 @@ def has_types(items):  # type: (Any) -> List[Text]
         for i in items:
             r.extend(has_types(i))
         return r
-    if isinstance(items, six.string_types):
+    if isinstance(items, str):
         return [items]
     return []
 
 
-def linkto(item):  # type: (Text) -> Text
-    _, frg = urllib.parse.urldefrag(item)
+def linkto(item):  # type: (str) -> str
+    _, frg = urldefrag(item)
     return "[{}](#{})".format(frg, to_id(frg))
 
 
@@ -67,19 +61,19 @@ class MyRenderer(mistune.Renderer):
         super(MyRenderer, self).__init__()
         self.options = {}
 
-    def header(self, text, level, raw=None):  # type: (Text, int, Any) -> Text
+    def header(self, text, level, raw=None):  # type: (str, int, Any) -> str
         return """<h{} id="{}" class="section">{} <a href="#{}">&sect;</a></h{}>""".format(
             level, to_id(text), text, to_id(text), level
         )
 
-    def table(self, header, body):  # type: (Text, Text) -> Text
+    def table(self, header, body):  # type: (str, str) -> str
         return (
             '<table class="table table-striped">\n<thead>{}</thead>\n'
             "<tbody>\n{}</tbody>\n</table>\n"
         ).format(header, body)
 
 
-def to_id(text):  # type: (Text) -> Text
+def to_id(text):  # type: (str) -> str
     textid = text
     if text[0] in ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"):
         try:
@@ -189,12 +183,12 @@ def fix_doc(doc):  # type: (Union[List[str], str]) -> str
 
 class RenderType(object):
     def __init__(self, toc, j, renderlist, redirects, primitiveType):
-        # type: (ToC, List[Dict[Text, Text]], str, Dict[Text, Text], str) -> None
+        # type: (ToC, List[Dict[str, str]], str, Dict[str, str], str) -> None
         self.typedoc = StringIO()
         self.toc = toc
         self.subs = {}  # type: Dict[str, str]
-        self.docParent = {}  # type: Dict[str, List[Text]]
-        self.docAfter = {}  # type: Dict[str, List[Text]]
+        self.docParent = {}  # type: Dict[str, List[str]]
+        self.docAfter = {}  # type: Dict[str, List[str]]
         self.rendered = set()  # type: Set[str]
         self.redirects = redirects
         self.title = None  # type: Optional[str]
@@ -220,9 +214,9 @@ class RenderType(object):
         metaschema_loader = schema.get_metaschema()[2]
         alltypes = schema.extend_and_specialize(j, metaschema_loader)
 
-        self.typemap = {}  # type: Dict[Text, Dict[Text, Text]]
-        self.uses = {}  # type: Dict[Text, List[Tuple[Text, Text]]]
-        self.record_refs = {}  # type: Dict[Text, List[Text]]
+        self.typemap = {}  # type: Dict[str, Dict[str, str]]
+        self.uses = {}  # type: Dict[str, List[Tuple[str, str]]]
+        self.record_refs = {}  # type: Dict[str, List[str]]
         for entry in alltypes:
             self.typemap[entry["name"]] = entry
             try:
@@ -230,17 +224,17 @@ class RenderType(object):
                     self.record_refs[entry["name"]] = []
                     fields = entry.get(
                         "fields", []
-                    )  # type: Union[Text, List[Dict[Text, Text]]]
-                    if isinstance(fields, Text):
+                    )  # type: Union[str, List[Dict[str, str]]]
+                    if isinstance(fields, str):
                         raise KeyError("record fields must be a list of mappings")
-                    for f in fields:  # type: Dict[Text, Text]
+                    for f in fields:  # type: Dict[str, str]
                         p = has_types(f)
                         for tp in p:
                             if tp not in self.uses:
                                 self.uses[tp] = []
                             if (entry["name"], f["name"]) not in self.uses[tp]:
-                                _, frg1 = urllib.parse.urldefrag(t["name"])
-                                _, frg2 = urllib.parse.urldefrag(f["name"])
+                                _, frg1 = urldefrag(t["name"])
+                                _, frg2 = urldefrag(f["name"])
                                 self.uses[tp].append((frg1, frg2))
                             if (
                                 tp not in basicTypes
@@ -264,11 +258,11 @@ class RenderType(object):
     def typefmt(
         self,
         tp,  # type: Any
-        redirects,  # type: Dict[Text, Text]
+        redirects,  # type: Dict[str, str]
         nbsp=False,  # type: bool
         jsonldPredicate=None,  # type: Optional[Dict[str, str]]
     ):
-        # type: (...) -> Text
+        # type: (...) -> str
         if isinstance(tp, MutableSequence):
             if nbsp and len(tp) <= 3:
                 return "&nbsp;|&nbsp;".join(
@@ -337,13 +331,13 @@ class RenderType(object):
                 return """<a href="{}">{}</a>""".format(
                     self.primitiveType, schema.avro_name(str(tp))
                 )
-            _, frg = urllib.parse.urldefrag(tp)
+            _, frg = urldefrag(tp)
             if frg != "":
                 tp = frg
             return """<a href="#{}">{}</a>""".format(to_id(tp), tp)
         raise SchemaSaladException("We should not be here!")
 
-    def render_type(self, f, depth):  # type: (Dict[Text, Any], int) -> None
+    def render_type(self, f, depth):  # type: (Dict[str, Any], int) -> None
         if f["name"] in self.rendered or f["name"] in self.redirects:
             return
         self.rendered.add(f["name"])
@@ -362,7 +356,7 @@ class RenderType(object):
             f["doc"] = ""
 
         def extendsfrom(item, ex):
-            # type: (Dict[Text, Any], List[Dict[Text, Any]]) -> None
+            # type: (Dict[str, Any], List[Dict[str, Any]]) -> None
             if "extends" in item:
                 for e in aslist(item["extends"]):
                     ex.insert(0, self.typemap[e])
@@ -399,11 +393,11 @@ class RenderType(object):
                 lines.append(line)
             f["doc"] = "\n".join(lines)
 
-            _, frg = urllib.parse.urldefrag(f["name"])
+            _, frg = urldefrag(f["name"])
             num = self.toc.add_entry(depth, frg)
-            doc = u"{} {} {}\n".format(("#" * depth), num, frg)
+            doc = "{} {} {}\n".format(("#" * depth), num, frg)
         else:
-            doc = u""
+            doc = ""
 
         if self.title is None and f["doc"]:
             title = f["doc"][0 : f["doc"].index("\n")]
@@ -495,26 +489,34 @@ class RenderType(object):
 
 
 def avrold_doc(
-    j,  # type: List[Dict[Text, Any]]
-    outdoc,  # type: Union[IO[Any], StreamWriter]
+    j,  # type: List[Dict[str, Any]]
+    outdoc: Union[IO[Any], StreamWriter],
     renderlist,  # type: str
-    redirects,  # type: Dict[Text, Text]
+    redirects,  # type: Dict[str, str]
     brand,  # type: str
     brandlink,  # type: str
     primtype,  # type: str
+    brandstyle=None,  # type: Optional[str]
+    brandinverse=False,  # type: bool
 ):  # type: (...) -> None
     toc = ToC()
     toc.start_numbering = False
 
     rt = RenderType(toc, j, renderlist, redirects, primtype)
-    content = rt.typedoc.getvalue()  # type: Text
+    content = rt.typedoc.getvalue()  # type: str
 
-    bootstrap_url = (
-        "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"
-    )
-    bootstrap_integrity = (
-        "sha384-604wwakM23pEysLJAhja8Lm42IIwYrJ0dEAqzFsj9pJ/P5buiujjywArgPCi8eoz"
-    )
+    if brandstyle is None:
+        bootstrap_url = (
+            "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"
+        )
+        bootstrap_integrity = (
+            "sha384-604wwakM23pEysLJAhja8Lm42IIwYrJ0dEAqzFsj9pJ/P5buiujjywArgPCi8eoz"
+        )
+        brandstyle_template = (
+            '<link rel="stylesheet" href={} integrity={} crossorigin="anonymous">'
+        )
+        brandstyle = brandstyle_template.format(bootstrap_url, bootstrap_integrity)
+
     picturefill_url = (
         "https://cdn.rawgit.com/scottjehl/picturefill/3.0.2/dist/picturefill.min.js"
     )
@@ -528,10 +530,7 @@ def avrold_doc(
     <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet"
-        href="{}"
-        integrity="{}"
-        crossorigin="anonymous">
+    {}
     <script>
     // Picture element HTML5 shiv
     document.createElement( "picture" );
@@ -540,7 +539,7 @@ def avrold_doc(
         integrity="{}"
         crossorigin="anonymous" async></script>
     """.format(
-            bootstrap_url, bootstrap_integrity, picturefill_url, picturefill_integrity
+            brandstyle, picturefill_url, picturefill_integrity
         )
     )
 
@@ -615,19 +614,22 @@ def avrold_doc(
     """
     )
 
+    navbar_extraclass = ""
+    if brandinverse:
+        navbar_extraclass = "navbar-inverse"
     outdoc.write(
         """
-      <nav class="navbar navbar-default navbar-fixed-top">
+      <nav class="navbar navbar-default navbar-fixed-top {}">
         <div class="container">
           <div class="navbar-header">
             <a class="navbar-brand" href="{}">{}</a>
     """.format(
-            brandlink, brand
+            navbar_extraclass, brandlink, brand
         )
     )
 
-    if u"<!--ToC-->" in content:
-        content = content.replace(u"<!--ToC-->", toc.contents("toc"))
+    if "<!--ToC-->" in content:
+        content = content.replace("<!--ToC-->", toc.contents("toc"))
         outdoc.write(
             """
                 <ul class="nav navbar-nav">
@@ -681,6 +683,8 @@ def main():  # type: () -> None
     parser.add_argument("--redirect", action="append")
     parser.add_argument("--brand")
     parser.add_argument("--brandlink")
+    parser.add_argument("--brandstyle")
+    parser.add_argument("--brandinverse", default=False, action="store_true")
     parser.add_argument("--primtype", default="#PrimitiveType")
 
     args = parser.parse_args()
@@ -690,7 +694,7 @@ def main():  # type: () -> None
 
 def makedoc(args):  # type: (argparse.Namespace) -> None
 
-    s = []  # type: List[Dict[Text, Any]]
+    s = []  # type: List[Dict[str, Any]]
     a = args.schema
     with open(a, encoding="utf-8") as f:
         if a.endswith("md"):
@@ -717,12 +721,17 @@ def makedoc(args):  # type: (argparse.Namespace) -> None
     renderlist = args.only if args.only else []
     stdout = cast(TextIOWrapper, sys.stdout)  # type: Union[TextIOWrapper, StreamWriter]
     if sys.stdout.encoding != "UTF-8":
-        if sys.version_info >= (3,):
-            stdout = TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-        else:
-            stdout = codecs.getwriter("utf-8")(sys.stdout)
+        stdout = TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
     avrold_doc(
-        s, stdout, renderlist, redirect, args.brand, args.brandlink, args.primtype
+        s,
+        stdout,
+        renderlist,
+        redirect,
+        args.brand,
+        args.brandlink,
+        args.primtype,
+        brandstyle=args.brandstyle,
+        brandinverse=args.brandinverse,
     )
 
 

@@ -1,12 +1,10 @@
 """ test different sets of command line arguments"""
-from __future__ import absolute_import
 
 import sys
 
 # for capturing print() output
 from contextlib import contextmanager
-
-from six import StringIO
+from io import StringIO
 
 import schema_salad.main as cli_parser
 

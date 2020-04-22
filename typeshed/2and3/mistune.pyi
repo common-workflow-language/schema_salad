@@ -1,7 +1,19 @@
 __author__ = "Aleksandr Slepchenkov"
 __email__ = "Sl.aleksandr28@gmail.com"
 
-from typing import Any, Optional, Pattern, List, Text, Tuple, Dict, Match, Type, Sequence, Iterable
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Match,
+    Optional,
+    Pattern,
+    Sequence,
+    Text,
+    Tuple,
+    Type,
+)
 
 Tokens = List[Dict[Text, Any]]
 # There are too much levels of optional unions of lists of text in cell and align 385 and 396 lines in mistune
