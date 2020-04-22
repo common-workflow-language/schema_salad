@@ -336,7 +336,7 @@ def validate_doc(
 
     anyerrors = []
     for pos, item in enumerate(vdoc):
-        sourceline = SourceLine(vdoc, pos)
+        sourceline = SourceLine(vdoc, pos, Text)
         success = False
         for root in roots:
             success = validate.validate_ex(

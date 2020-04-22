@@ -191,7 +191,7 @@ class PythonCodeGen(CodeGenBase):
                     errors.append(
                         ValidationException(
                             "invalid field `%s`, expected one of: {attrstr}" % (k),
-                            SourceLine(_doc, k)
+                            SourceLine(_doc, k, str)
                         )
                     )
                     break
@@ -369,7 +369,7 @@ class PythonCodeGen(CodeGenBase):
 {spc}            errors.append(
 {spc}                ValidationException(
 {spc}                    \"the `{fieldname}` field is not valid because:\",
-{spc}                    SourceLine(_doc, '{fieldname}'),
+{spc}                    SourceLine(_doc, '{fieldname}', str),
 {spc}                    [e]
 {spc}                )
 {spc}            )
