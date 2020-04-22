@@ -1,4 +1,3 @@
-import itertools
 import os
 import re
 from typing import (
@@ -9,7 +8,6 @@ from typing import (
     MutableMapping,
     MutableSequence,
     Optional,
-    Pattern,
     Tuple,
     Type,
     Union,
@@ -20,72 +18,6 @@ from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq
 
 
 lineno_re = re.compile("^(.*?:[0-9]+:[0-9]+: )(( *)(.*))")
-
-
-def regex_chunk(lines, regex):
-    # type: (List[str], Pattern[str]) -> List[List[str]]
-    lst = list(itertools.dropwhile(lambda x: not regex.match(x), lines))
-    arr = []
-    while lst:
-        ret = [lst[0]] + list(
-            itertools.takewhile(lambda x: not regex.match(x), lst[1:])
-        )
-        arr.append(ret)
-        lst = list(itertools.dropwhile(lambda x: not regex.match(x), lst[1:]))
-    return arr
-
-
-def chunk_messages(message):  # type: (str) -> List[Tuple[int, str]]
-    file_regex = re.compile(r"^(.+:\d+:\d+:)(\s+)(.+)$")
-    item_regex = re.compile(r"^\s*\*\s+")
-    arr = []
-    for chun in regex_chunk(message.splitlines(), file_regex):
-        fst = chun[0]
-        mat = file_regex.match(fst)
-        if mat:
-            place = mat.group(1)
-            indent = len(mat.group(2))
-
-            lst = [mat.group(3)] + chun[1:]
-            if [x for x in lst if item_regex.match(x)]:
-                for item in regex_chunk(lst, item_regex):
-                    msg = re.sub(item_regex, "", "\n".join(item))
-                    arr.append((indent, place + " " + re.sub(r"[\n\s]+", " ", msg)))
-            else:
-                msg = re.sub(item_regex, "", "\n".join(lst))
-                arr.append((indent, place + " " + re.sub(r"[\n\s]+", " ", msg)))
-    return arr
-
-
-def reformat_yaml_exception_message(message):  # type: (str) -> str
-    line_regex = re.compile(r'^\s+in "(.+)", line (\d+), column (\d+)$')
-    fname_regex = re.compile(r"^file://" + re.escape(os.getcwd()) + "/")
-    msgs = message.splitlines()
-    ret = []
-
-    if len(msgs) == 3:
-        msgs = msgs[1:]
-        nblanks = 0
-    elif len(msgs) == 4:
-        c_msg = msgs[0]
-        match = line_regex.match(msgs[1])
-        if match:
-            c_file, c_line, c_column = match.groups()
-            c_file = re.sub(fname_regex, "", c_file)
-            ret.append("{}:{}:{}: {}".format(c_file, c_line, c_column, c_msg))
-
-        msgs = msgs[2:]
-        nblanks = 2
-
-    p_msg = msgs[0]
-    match = line_regex.match(msgs[1])
-    if match:
-        p_file, p_line, p_column = match.groups()
-        p_file = re.sub(fname_regex, "", p_file)
-        ret.append(
-            "{}:{}:{}:{} {}".format(p_file, p_line, p_column, " " * nblanks, p_msg)
-        )
-    return "\n".join(ret)
 
 
 def _add_lc_filename(
