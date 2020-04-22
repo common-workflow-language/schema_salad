@@ -1,19 +1,15 @@
 """Command line interface to schema-salad."""
-from __future__ import absolute_import, print_function
 
 import argparse
 import logging
 import os
 import sys
 from typing import Any, Dict, List, Mapping, MutableSequence, Optional, Union, cast
+from urllib.parse import urlparse
 
 import pkg_resources  # part of setuptools
-import six
 from rdflib.parser import Parser
 from rdflib.plugin import register
-from six.moves import urllib
-from typing_extensions import Text  # pylint: disable=unused-import
-
 from ruamel.yaml.comments import CommentedSeq
 
 from . import codegen, jsonld_context, schema
@@ -23,8 +19,6 @@ from .makedoc import makedoc
 from .ref_resolver import Loader, file_uri
 from .utils import json_dumps
 
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
-
 
 register("json-ld", Parser, "rdflib_jsonld.parser", "JsonLDParser")
 _logger = logging.getLogger("salad")
@@ -32,8 +26,8 @@ _logger = logging.getLogger("salad")
 
 def printrdf(
     workflow,  # type: str
-    wf,  # type: Union[List[Dict[Text, Any]], Dict[Text, Any]]
-    ctx,  # type: Dict[Text, Any]
+    wf,  # type: Union[List[Dict[str, Any]], Dict[str, Any]]
+    ctx,  # type: Dict[str, Any]
     sr,  # type: str
 ):
     # type: (...) -> None
@@ -102,7 +96,22 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
         "--codegen",
         type=str,
         metavar="language",
-        help="Generate classes in target language, currently supported: python",
+        help="Generate classes in target language, currently supported: python, java",
+    )
+
+    parser.add_argument(
+        "--codegen-target",
+        type=str,
+        default=None,
+        help="Defaults to sys.stdout for python and ./ for Java",
+    )
+
+    parser.add_argument(
+        "--codegen-examples",
+        type=str,
+        metavar="directory",
+        default=None,
+        help="Directory of example documents for test case generation (Java only).",
     )
 
     exgroup.add_argument(
@@ -192,8 +201,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
 
     schema_uri = args.schema
     if not (
-        urllib.parse.urlparse(schema_uri)[0]
-        and urllib.parse.urlparse(schema_uri)[0] in [u"http", u"https", u"file"]
+        urlparse(schema_uri)[0] and urlparse(schema_uri)[0] in ["http", "https", "file"]
     ):
         schema_uri = file_uri(os.path.abspath(schema_uri))
     schema_raw_doc = metaschema_loader.fetch(schema_uri)
@@ -206,7 +214,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
         _logger.error(
             "Schema `%s` failed link checking:\n%s",
             args.schema,
-            Text(e),
+            str(e),
             exc_info=(True if args.debug else False),
         )
         _logger.debug("Index is %s", list(metaschema_loader.idx.keys()))
@@ -216,7 +224,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
         _logger.error(
             "Schema `%s` read error:\n%s",
             args.schema,
-            Text(e),
+            str(e),
             exc_info=(True if args.debug else False),
         )
         return 1
@@ -240,7 +248,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
             metaschema_names, schema_doc, metaschema_loader, args.strict
         )
     except ValidationException as e:
-        _logger.error("While validating schema `%s`:\n%s", args.schema, Text(e))
+        _logger.error("While validating schema `%s`:\n%s", args.schema, str(e))
         return 1
 
     # Get the json-ld context and RDFS representation from the schema
@@ -260,9 +268,11 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
     if args.codegen:
         codegen.codegen(
             args.codegen,
-            cast(List[Dict[Text, Any]], schema_doc),
+            cast(List[Dict[str, Any]], schema_doc),
             schema_metadata,
             document_loader,
+            target=args.codegen_target,
+            examples=args.codegen_examples,
         )
         return 0
 
@@ -276,7 +286,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
             _logger.error(
                 "Schema `%s` error:\n%s",
                 args.schema,
-                Text(err),
+                str(err),
                 exc_info=((type(err), err, None) if args.debug else None),
             )
             if args.print_avro:
@@ -326,7 +336,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
             uri, strict_foreign_properties=args.strict_foreign_properties
         )
     except ValidationException as e:
-        msg = to_one_line_messages(e) if args.print_oneline else six.text_type(e)
+        msg = to_one_line_messages(e) if args.print_oneline else str(e)
         _logger.error(
             "Document `%s` failed validation:\n%s",
             args.document,
@@ -354,7 +364,7 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
             strict_foreign_properties=args.strict_foreign_properties,
         )
     except ValidationException as e:
-        msg = to_one_line_messages(e) if args.print_oneline else six.text_type(e)
+        msg = to_one_line_messages(e) if args.print_oneline else str(e)
         _logger.error("While validating document `%s`:\n%s" % (args.document, msg))
         return 1
 

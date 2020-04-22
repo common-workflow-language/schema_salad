@@ -12,6 +12,9 @@
 #
 import os
 import sys
+
+from pkg_resources import get_distribution
+
 sys.path.insert(0, os.path.abspath('..'))
 
 
@@ -55,6 +58,5 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ['_static']
 
 
-from pkg_resources import get_distribution
 release = get_distribution('schema-salad').version
 version = '.'.join(release.split('.')[:2])

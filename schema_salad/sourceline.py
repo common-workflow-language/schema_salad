@@ -1,8 +1,5 @@
-from __future__ import absolute_import
-
 import os
 import re
-import traceback
 from typing import (
     Any,
     AnyStr,
@@ -16,17 +13,11 @@ from typing import (
     Union,
 )
 
-import six
-from future.utils import raise_from
-from typing_extensions import Text  # pylint: disable=unused-import
-
 import ruamel.yaml
 from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq
 
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
 
-
-lineno_re = re.compile(u"^(.*?:[0-9]+:[0-9]+: )(( *)(.*))")
+lineno_re = re.compile("^(.*?:[0-9]+:[0-9]+: )(( *)(.*))")
 
 
 def _add_lc_filename(
@@ -38,11 +29,11 @@ def _add_lc_filename(
         for d in r:
             _add_lc_filename(d, source)
     elif isinstance(r, MutableMapping):
-        for d in six.itervalues(r):
+        for d in r.values():
             _add_lc_filename(d, source)
 
 
-def relname(source):  # type: (Text) -> Text
+def relname(source):  # type: (str) -> str
     if source.startswith("file://"):
         source = source[7:]
         source = os.path.relpath(source)
@@ -51,11 +42,11 @@ def relname(source):  # type: (Text) -> Text
 
 def add_lc_filename(
     r, source
-):  # type: (ruamel.yaml.comments.CommentedBase, Text) -> None
+):  # type: (ruamel.yaml.comments.CommentedBase, str) -> None
     _add_lc_filename(r, relname(source))
 
 
-def reflow_all(text, maxline=None):  # type: (Text, Optional[int]) -> Text
+def reflow_all(text, maxline=None):  # type: (str, Optional[int]) -> str
     if maxline is None:
         maxline = int(os.environ.get("COLUMNS", "100"))
     maxno = 0
@@ -77,7 +68,7 @@ def reflow_all(text, maxline=None):  # type: (Text, Optional[int]) -> Text
     return "\n".join(msg)
 
 
-def reflow(text, maxline, shift=""):  # type: (Text, int, Text) -> Text
+def reflow(text, maxline, shift=""):  # type: (str, int, str) -> str
     if maxline < 20:
         maxline = 20
     if len(text) > maxline:
@@ -94,30 +85,30 @@ def reflow(text, maxline, shift=""):  # type: (Text, int, Text) -> Text
 
 
 def indent(
-    v, nolead=False, shift=u"  ", bullet=u"  "
-):  # type: (Text, bool, Text, Text) -> Text
+    v, nolead=False, shift="  ", bullet="  "
+):  # type: (str, bool, str, str) -> str
     if nolead:
-        return v.splitlines()[0] + u"\n".join([shift + l for l in v.splitlines()[1:]])
+        return v.splitlines()[0] + "\n".join([shift + l for l in v.splitlines()[1:]])
     else:
 
-        def lineno(i, l):  # type: (int, Text) -> Text
+        def lineno(i, l):  # type: (int, str) -> str
             r = lineno_re.match(l)
             if r is not None:
                 return r.group(1) + (bullet if i == 0 else shift) + r.group(2)
             else:
                 return (bullet if i == 0 else shift) + l
 
-        return u"\n".join([lineno(i, l) for i, l in enumerate(v.splitlines())])
+        return "\n".join([lineno(i, l) for i, l in enumerate(v.splitlines())])
 
 
-def bullets(textlist, bul):  # type: (List[Text], Text) -> Text
+def bullets(textlist, bul):  # type: (List[str], str) -> str
     if len(textlist) == 1:
         return textlist[0]
     else:
         return "\n".join(indent(t, bullet=bul) for t in textlist)
 
 
-def strip_duplicated_lineno(text):  # type: (Text) -> Text
+def strip_duplicated_lineno(text):  # type: (str) -> str
     """Same as `strip_dup_lineno` but without reflow"""
     pre = None
     msg = []
@@ -134,7 +125,7 @@ def strip_duplicated_lineno(text):  # type: (Text) -> Text
     return "\n".join(msg)
 
 
-def strip_dup_lineno(text, maxline=None):  # type: (Text, Optional[int]) -> Text
+def strip_dup_lineno(text, maxline=None):  # type: (str, Optional[int]) -> str
     if maxline is None:
         maxline = int(os.environ.get("COLUMNS", "100"))
     pre = None
@@ -163,10 +154,10 @@ def strip_dup_lineno(text, maxline=None):  # type: (Text, Optional[int]) -> Text
 
 
 def cmap(
-    d,  # type: Union[int, float, str, Text, Dict[Text, Any], List[Dict[Text, Any]]]
+    d,  # type: Union[int, float, str, str, Dict[str, Any], List[Dict[str, Any]]]
     lc=None,  # type: Optional[List[int]]
-    fn=None,  # type: Optional[Text]
-):  # type: (...) -> Union[int, float, str, Text, CommentedMap, CommentedSeq]
+    fn=None,  # type: Optional[str]
+):  # type: (...) -> Union[int, float, str, str, CommentedMap, CommentedSeq]
     if lc is None:
         lc = [0, 0, 0, 0]
     if fn is None:
@@ -174,7 +165,7 @@ def cmap(
 
     if isinstance(d, CommentedMap):
         fn = d.lc.filename if hasattr(d.lc, "filename") else fn
-        for k, v in six.iteritems(d):
+        for k, v in d.items():
             if d.lc.data is not None and k in d.lc.data:
                 d[k] = cmap(v, lc=d.lc.data[k], fn=fn)
             else:
@@ -224,7 +215,7 @@ class SourceLine(object):
         self,
         item,  # type: Any
         key=None,  # type: Optional[Any]
-        raise_type=six.text_type,  # type: Union[Type[six.text_type], Type[Exception]]
+        raise_type=str,  # type: Union[Type[str], Type[Exception]]
         include_traceback=False,  # type: bool
     ):  # type: (...) -> None
         self.item = item
@@ -243,21 +234,11 @@ class SourceLine(object):
     ):  # type: (...) -> None
         if not exc_value:
             return
-        if self.include_traceback and six.PY2:
-            # Python2 doesn't actually have chained exceptions, so
-            # fake it by injecting the backtrace into the message.
-            raise_from(
-                self.makeError(
-                    "\n".join(traceback.format_exception(exc_type, exc_value, tb))
-                ),
-                exc_value,
-            )
-        else:
-            raise_from(self.makeError(six.text_type(exc_value)), exc_value)
+        raise self.makeError(str(exc_value)) from exc_value
 
-    def file(self):  # type: () -> Optional[Text]
+    def file(self):  # type: () -> Optional[str]
         if hasattr(self.item, "lc") and hasattr(self.item.lc, "filename"):
-            return Text(self.item.lc.filename)
+            return str(self.item.lc.filename)
         else:
             return None
 
@@ -279,7 +260,7 @@ class SourceLine(object):
     def end(self):  # type: () -> Optional[Tuple[int, int]]
         return None
 
-    def makeLead(self):  # type: () -> Text
+    def makeLead(self):  # type: () -> str
         if self.file():
             lcol = self.start()
             line, col = lcol if lcol else ("", "")
@@ -287,7 +268,7 @@ class SourceLine(object):
         else:
             return ""
 
-    def makeError(self, msg):  # type: (Text) -> Any
+    def makeError(self, msg):  # type: (str) -> Any
         if not isinstance(self.item, ruamel.yaml.comments.CommentedBase):
             return self.raise_type(msg)
         errs = []
