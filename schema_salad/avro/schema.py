@@ -122,12 +122,13 @@ class Name(object):
         @ard default_space: the current default space or None.
         """
         # Ensure valid ctor args
-        def validate(val, name):
+        def validate(val: Optional[str], name: str) -> None:
             if (isinstance(val, str) and val != "") or val is None:
                 # OK
                 return
             fail_msg = "{} must be non-empty string or None.".format(name)
             raise SchemaParseException(fail_msg)
+
         validate(name_attr, "Name")
         validate(space_attr, "Space")
         validate(default_space, "Default space")
@@ -335,7 +336,7 @@ class EnumSchema(NamedSchema):
     def __init__(
         self,
         name,  # type: str
-        namespace,  # type: str
+        namespace,  # type: Optional[str]
         symbols,  # type: List[str]
         names=None,  # type: Optional[Names]
         doc=None,  # type: Optional[str]
