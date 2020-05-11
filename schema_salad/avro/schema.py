@@ -99,7 +99,9 @@ class Schema(object):
 
     # Read-only properties dict. Printing schemas
     # creates JSON properties directly from this dict.
-    props = property(lambda self: self._props)
+    @property
+    def props(self) -> Dict[str, Any]:
+        return self._props
 
     # utility functions to manipulate properties dict
     def get_prop(self, key):  # type: (str) -> Any
@@ -112,8 +114,9 @@ class Schema(object):
 class Name(object):
     """Class to describe Avro name."""
 
-    def __init__(self, name_attr, space_attr, default_space):
-        # type: (str, Optional[str], Optional[str]) -> None
+    def __init__(
+        self, name_attr: str, space_attr: Optional[str], default_space: Optional[str]
+    ) -> None:
         """
         Formulate full name according to the specification.
 
@@ -143,23 +146,23 @@ class Name(object):
             fail_msg = "Default must be non-empty string or None."
             raise SchemaParseException(fail_msg)
 
-        self._full = None  # type: Optional[str]
+        self._full = name_attr  # type: str
 
         if name_attr is None or name_attr == "":
             return
 
         if name_attr.find(".") < 0:
             if (space_attr is not None) and (space_attr != ""):
-                self._full = "%s.%s" % (space_attr, name_attr)
+                self._full = "{}.{}".format(space_attr, name_attr)
             else:
                 if (default_space is not None) and (default_space != ""):
-                    self._full = "%s.%s" % (default_space, name_attr)
+                    self._full = "{}.{}".format(default_space, name_attr)
                 else:
                     self._full = name_attr
-        else:
-            self._full = name_attr
 
-    fullname = property(lambda self: self._full)
+    @property
+    def fullname(self) -> str:
+        return self._full
 
     def get_space(self):
         # type: () -> Optional[str]
@@ -181,20 +184,21 @@ class Names(object):
         self.names = {}  # type: Dict[str, NamedSchema]
         self.default_namespace = default_namespace
 
-    def has_name(self, name_attr, space_attr):
-        # type: (str, Optional[str]) -> bool
+    def has_name(self, name_attr: str, space_attr: Optional[str]) -> bool:
         test = Name(name_attr, space_attr, self.default_namespace).fullname
         return test in self.names
 
-    def get_name(self, name_attr, space_attr):
-        # type: (str, Optional[str]) -> Optional[NamedSchema]
+    def get_name(
+        self, name_attr: str, space_attr: Optional[str]
+    ) -> Optional["NamedSchema"]:
         test = Name(name_attr, space_attr, self.default_namespace).fullname
         if test not in self.names:
             return None
         return self.names[test]
 
-    def add_name(self, name_attr, space_attr, new_schema):
-        # type: (str, Optional[str], NamedSchema) -> Name
+    def add_name(
+        self, name_attr: str, space_attr: Optional[str], new_schema: "NamedSchema"
+    ) -> Name:
         """
         Add a new schema object to the name set.
 
@@ -255,7 +259,9 @@ class NamedSchema(Schema):
         self._fullname = new_name.fullname
 
     # read-only properties
-    name = property(lambda self: self.get_prop("name"))
+    @property
+    def name(self) -> Any:
+        return self.get_prop("name")
 
 
 class Field(object):
@@ -308,7 +314,9 @@ class Field(object):
             self.set_prop("doc", doc)
 
     # read-only properties
-    default = property(lambda self: self.get_prop("default"))
+    @property
+    def default(self) -> Any:
+        return self.get_prop("default")
 
     # utility functions to manipulate properties dict
     def get_prop(self, key):  # type: (str) -> Union[Schema, str, None]
@@ -372,7 +380,9 @@ class EnumSchema(NamedSchema):
             self.set_prop("doc", doc)
 
     # read-only properties
-    symbols = property(lambda self: self.get_prop("symbols"))
+    @property
+    def symbols(self) -> Any:
+        return self.get_prop("symbols")
 
 
 #
@@ -403,7 +413,9 @@ class ArraySchema(Schema):
         self.set_prop("items", items_schema)
 
     # read-only properties
-    items = property(lambda self: self.get_prop("items"))
+    @property
+    def items(self) -> Any:
+        return self.get_prop("items")
 
 
 class UnionSchema(Schema):
@@ -449,7 +461,9 @@ class UnionSchema(Schema):
         self._schemas = schema_objects
 
     # read-only properties
-    schemas = property(lambda self: self._schemas)
+    @property
+    def schemas(self) -> List[Schema]:
+        return self._schemas
 
 
 class RecordSchema(NamedSchema):
@@ -526,7 +540,9 @@ class RecordSchema(NamedSchema):
             names.default_namespace = old_default
 
     # read-only properties
-    fields = property(lambda self: self.get_prop("fields"))
+    @property
+    def fields(self) -> Any:
+        return self.get_prop("fields")
 
 
 #

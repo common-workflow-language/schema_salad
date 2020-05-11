@@ -159,8 +159,12 @@ def number_headings(toc, maindoc):  # type: (ToC, str) -> str
         if not skip:
             m = re.match(r"^(#+) (.*)", line)
             if m is not None:
-                num = toc.add_entry(len(m.group(1)), m.group(2))
-                line = "{} {} {}".format(m.group(1), num, m.group(2))
+                group1 = m.group(1)
+                assert group1
+                group2 = m.group(2)
+                assert group2
+                num = toc.add_entry(len(group1), group2)
+                line = "{} {} {}".format(group1, num, group2)
             line = re.sub(r"^(https?://\S+)", r"[\1](\1)", line)
         mdlines.append(line)
 

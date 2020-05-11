@@ -47,6 +47,58 @@ def _safe_makedirs(path):
         os.makedirs(path)
 
 
+prims = {
+    "http://www.w3.org/2001/XMLSchema#string": TypeDef(
+        instance_type="String",
+        init="new PrimitiveLoader<String>(String.class)",
+        name="StringInstance",
+        loader_type="Loader<String>",
+    ),
+    "http://www.w3.org/2001/XMLSchema#int": TypeDef(
+        instance_type="Integer",
+        init="new PrimitiveLoader<Integer>(Integer.class)",
+        name="IntegerInstance",
+        loader_type="Loader<Integer>",
+    ),
+    "http://www.w3.org/2001/XMLSchema#long": TypeDef(
+        instance_type="Long",
+        name="LongInstance",
+        loader_type="Loader<Long>",
+        init="new PrimitiveLoader<Long>(Long.class)",
+    ),
+    "http://www.w3.org/2001/XMLSchema#float": TypeDef(
+        instance_type="Float",
+        name="FloatInstance",
+        loader_type="Loader<Float>",
+        init="new PrimitiveLoader<Float>(Float.class)",
+    ),
+    "http://www.w3.org/2001/XMLSchema#double": TypeDef(
+        instance_type="Double",
+        name="DoubleInstance",
+        loader_type="Loader<Double>",
+        init="new PrimitiveLoader<Double>(Double.class)",
+    ),
+    "http://www.w3.org/2001/XMLSchema#boolean": TypeDef(
+        instance_type="Boolean",
+        name="BooleanInstance",
+        loader_type="Loader<Boolean>",
+        init="new PrimitiveLoader<Boolean>(Boolean.class)",
+    ),
+    "https://w3id.org/cwl/salad#null": TypeDef(
+        instance_type="Object",
+        name="NullInstance",
+        loader_type="Loader<Object>",
+        init="new NullLoader()",
+    ),
+    "https://w3id.org/cwl/salad#Any": TypeDef(
+        instance_type="Object",
+        name="AnyInstance",
+        init="new AnyLoader()",
+        loader_type="Loader<Object>",
+    ),
+}
+
+
 class JavaCodeGen(CodeGenBase):
     def __init__(self, base, target, examples):
         # type: (str, Optional[str], Optional[str]) -> None
@@ -76,7 +128,7 @@ class JavaCodeGen(CodeGenBase):
         for src_dir in [self.main_src_dir, self.test_src_dir]:
             _safe_makedirs(src_dir)
 
-        for primitive in self.prims.values():
+        for primitive in prims.values():
             self.declare_type(primitive)
 
     @staticmethod
@@ -251,57 +303,6 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
 """
             )
 
-    prims = {
-        "http://www.w3.org/2001/XMLSchema#string": TypeDef(
-            instance_type="String",
-            init="new PrimitiveLoader<String>(String.class)",
-            name="StringInstance",
-            loader_type="Loader<String>",
-        ),
-        "http://www.w3.org/2001/XMLSchema#int": TypeDef(
-            instance_type="Integer",
-            init="new PrimitiveLoader<Integer>(Integer.class)",
-            name="IntegerInstance",
-            loader_type="Loader<Integer>",
-        ),
-        "http://www.w3.org/2001/XMLSchema#long": TypeDef(
-            instance_type="Long",
-            name="LongInstance",
-            loader_type="Loader<Long>",
-            init="new PrimitiveLoader<Long>(Long.class)",
-        ),
-        "http://www.w3.org/2001/XMLSchema#float": TypeDef(
-            instance_type="Float",
-            name="FloatInstance",
-            loader_type="Loader<Float>",
-            init="new PrimitiveLoader<Float>(Float.class)",
-        ),
-        "http://www.w3.org/2001/XMLSchema#double": TypeDef(
-            instance_type="Double",
-            name="DoubleInstance",
-            loader_type="Loader<Double>",
-            init="new PrimitiveLoader<Double>(Double.class)",
-        ),
-        "http://www.w3.org/2001/XMLSchema#boolean": TypeDef(
-            instance_type="Boolean",
-            name="BooleanInstance",
-            loader_type="Loader<Boolean>",
-            init="new PrimitiveLoader<Boolean>(Boolean.class)",
-        ),
-        "https://w3id.org/cwl/salad#null": TypeDef(
-            instance_type="Object",
-            name="NullInstance",
-            loader_type="Loader<Object>",
-            init="new NullLoader()",
-        ),
-        "https://w3id.org/cwl/salad#Any": TypeDef(
-            instance_type="Object",
-            name="AnyInstance",
-            init="new AnyLoader()",
-            loader_type="Loader<Object>",
-        ),
-    }
-
     def type_loader(self, type_declaration):
         # type: (Union[List[Any], Dict[str, Any], str]) -> TypeDef
         if isinstance(type_declaration, MutableSequence):
@@ -402,8 +403,8 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                     )
                 )
             raise SchemaException("wft {}".format(type_declaration["type"]))
-        if type_declaration in self.prims:
-            return self.prims[type_declaration]
+        if type_declaration in prims:
+            return prims[type_declaration]
         return self.collected_types[self.safe_name(type_declaration)]
 
     def type_loader_enum(self, type_declaration):
@@ -635,7 +636,6 @@ public enum {clazz} {{
 
     def typedsl_loader(self, inner, ref_scope):
         # type: (TypeDef, Union[int, None]) -> TypeDef
-        assert inner is not None
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
             TypeDef(
@@ -645,8 +645,6 @@ public enum {clazz} {{
                 loader_type="Loader<{}>".format(instance_type),
             )
         )
-
-        return inner
 
     def to_java(self, val):  # type: (Any) -> Any
         if val is True:

@@ -6,31 +6,32 @@ import shutil
 import sys
 import tempfile
 
-import pytest  # type: ignore
+import pytest
 from requests import Session
 
 from schema_salad.exceptions import ValidationException
 from schema_salad.ref_resolver import DefaultFetcher, Loader, file_uri
 from schema_salad.tests.util import get_data
 
+from _pytest.fixtures import FixtureRequest
 
-def is_fs_case_sensitive(path):  # https://stackoverflow.com/a/36612604/1585509
+def is_fs_case_sensitive(path: str) -> bool:  # https://stackoverflow.com/a/36612604/1585509
     with tempfile.NamedTemporaryFile(prefix="TmP", dir=path) as tmp_file:
         return not os.path.exists(tmp_file.name.lower())
 
 
 @pytest.fixture
-def tmp_dir_fixture(request):
+def tmp_dir_fixture(request: FixtureRequest) -> str:
     d = tempfile.mkdtemp()
 
     @request.addfinalizer
-    def teardown():
+    def teardown() -> None:
         shutil.rmtree(d)
 
     return d
 
 
-def test_Loader_initialisation_for_HOME_env_var(tmp_dir_fixture):
+def test_Loader_initialisation_for_HOME_env_var(tmp_dir_fixture: str) -> None:
     # Ensure HOME is set.
     os.environ["HOME"] = tmp_dir_fixture
 
@@ -38,7 +39,7 @@ def test_Loader_initialisation_for_HOME_env_var(tmp_dir_fixture):
     assert isinstance(loader.session, Session)
 
 
-def test_Loader_initialisation_for_TMP_env_var(tmp_dir_fixture):
+def test_Loader_initialisation_for_TMP_env_var(tmp_dir_fixture: str) -> None:
     # Ensure HOME is missing.
     if "HOME" in os.environ:
         del os.environ["HOME"]
@@ -49,7 +50,7 @@ def test_Loader_initialisation_for_TMP_env_var(tmp_dir_fixture):
     assert isinstance(loader.session, Session)
 
 
-def test_Loader_initialisation_with_neither_TMP_HOME_set(tmp_dir_fixture):
+def test_Loader_initialisation_with_neither_TMP_HOME_set(tmp_dir_fixture: str) -> None:
     # Ensure HOME is missing.
     if "HOME" in os.environ:
         del os.environ["HOME"]
@@ -60,72 +61,17 @@ def test_Loader_initialisation_with_neither_TMP_HOME_set(tmp_dir_fixture):
     assert isinstance(loader.session, Session)
 
 
-def test_Loader_initialisation_disable_doc_cache(tmp_dir_fixture):
+def test_Loader_initialisation_disable_doc_cache(tmp_dir_fixture: str) -> None:
     loader = Loader(ctx={}, doc_cache=False)
     assert isinstance(loader.session, Session)
 
 
-def test_DefaultFetcher_urljoin_win32(tmp_dir_fixture):
+def test_DefaultFetcher_urljoin_win32(tmp_dir_fixture: str) -> None:
     # Ensure HOME is set.
     os.environ["HOME"] = tmp_dir_fixture
 
-    actual_platform = sys.platform
-    try:
-        # For this test always pretend we're on Windows
-        sys.platform = "win32"
-        fetcher = DefaultFetcher({}, None)
-        # Relative path, same folder
-        url = fetcher.urljoin("file:///C:/Users/fred/foo.cwl", "soup.cwl")
-        assert url == "file:///C:/Users/fred/soup.cwl"
-        # Relative path, sub folder
-        url = fetcher.urljoin("file:///C:/Users/fred/foo.cwl", "foo/soup.cwl")
-        assert url == "file:///C:/Users/fred/foo/soup.cwl"
-        # relative climb-up path
-        url = fetcher.urljoin("file:///C:/Users/fred/foo.cwl", "../alice/soup.cwl")
-        assert url == "file:///C:/Users/alice/soup.cwl"
 
-        # Path with drive: should not be treated as relative to directory
-        # Note: \ would already have been converted to / by resolve_ref()
-        url = fetcher.urljoin("file:///C:/Users/fred/foo.cwl", "c:/bar/soup.cwl")
-        assert url == "file:///c:/bar/soup.cwl"
-        # /C:/  (regular URI absolute path)
-        url = fetcher.urljoin("file:///C:/Users/fred/foo.cwl", "/c:/bar/soup.cwl")
-        assert url == "file:///c:/bar/soup.cwl"
-        # Relative, change drive
-        url = fetcher.urljoin("file:///C:/Users/fred/foo.cwl", "D:/baz/soup.cwl")
-        assert url == "file:///d:/baz/soup.cwl"
-        # Relative from root of base's D: drive
-        url = fetcher.urljoin("file:///d:/baz/soup.cwl", "/foo/soup.cwl")
-        assert url == "file:///d:/foo/soup.cwl"
-
-        # resolving absolute non-drive URIs still works
-        url = fetcher.urljoin(
-            "file:///C:/Users/fred/foo.cwl", "http://example.com/bar/soup.cwl"
-        )
-        assert url == "http://example.com/bar/soup.cwl"
-        # and of course relative paths from http://
-        url = fetcher.urljoin("http://example.com/fred/foo.cwl", "soup.cwl")
-        assert url == "http://example.com/fred/soup.cwl"
-
-        # Stay on http:// and same host
-        url = fetcher.urljoin("http://example.com/fred/foo.cwl", "/bar/soup.cwl")
-        assert url == "http://example.com/bar/soup.cwl"
-
-        # Security concern - can't resolve file: from http:
-        with pytest.raises(ValidationException):
-            url = fetcher.urljoin(
-                "http://example.com/fred/foo.cwl", "file:///c:/bar/soup.cwl"
-            )
-        # Drive-relative -- should NOT return "absolute" URI c:/bar/soup.cwl"
-        # as that is a potential remote exploit
-        with pytest.raises(ValidationException):
-            url = fetcher.urljoin("http://example.com/fred/foo.cwl", "c:/bar/soup.cwl")
-
-    finally:
-        sys.platform = actual_platform
-
-
-def test_DefaultFetcher_urljoin_linux(tmp_dir_fixture):
+def test_DefaultFetcher_urljoin_linux(tmp_dir_fixture: str) -> None:
     # Ensure HOME is set.
     os.environ["HOME"] = tmp_dir_fixture
 
@@ -168,7 +114,7 @@ def test_DefaultFetcher_urljoin_linux(tmp_dir_fixture):
         sys.platform = actual_platform
 
 
-def test_import_list():
+def test_import_list() -> None:
     import schema_salad.ref_resolver
     from schema_salad.sourceline import cmap
 
@@ -179,7 +125,7 @@ def test_import_list():
     assert {"foo": ["bar", "baz"]} == ra
 
 
-def test_fetch_inject_id():
+def test_fetch_inject_id() -> None:
     lower = lambda s: s.lower()
     if is_fs_case_sensitive(
         os.path.dirname(get_data("schema_salad/tests/inject-id1.yml"))
@@ -208,7 +154,7 @@ def test_fetch_inject_id():
     )
 
 
-def test_attachments():
+def test_attachments() -> None:
     furi = file_uri(get_data("schema_salad/tests/multidoc.yml"))
 
     l1 = Loader({})

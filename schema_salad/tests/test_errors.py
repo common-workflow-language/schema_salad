@@ -7,7 +7,7 @@ from schema_salad.validate import ValidationException
 from .util import get_data
 
 
-def test_errors():
+def test_errors() -> None:
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
         get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     )

@@ -54,7 +54,9 @@ def reflow_all(text, maxline=None):  # type: (str, Optional[int]) -> str
         g = lineno_re.match(l)
         if not g:
             continue
-        maxno = max(maxno, len(g.group(1)))
+        group = g.group(1)
+        assert group
+        maxno = max(maxno, len(group))
     maxno_text = maxline - maxno
     msg = []
     for l in text.splitlines():
@@ -63,12 +65,17 @@ def reflow_all(text, maxline=None):  # type: (str, Optional[int]) -> str
             msg.append(l)
             continue
         pre = g.group(1)
-        reflowed = reflow(g.group(2), maxno_text, g.group(3)).splitlines()
+        assert pre
+        group2 = g.group(2)
+        assert group2
+        reflowed = reflow(group2, maxno_text, g.group(3)).splitlines()
         msg.extend([pre.ljust(maxno, " ") + r for r in reflowed])
     return "\n".join(msg)
 
 
-def reflow(text, maxline, shift=""):  # type: (str, int, str) -> str
+def reflow(text: str, maxline: int, shift: Optional[str]) -> str:
+    if not shift:
+        shift = ""
     if maxline < 20:
         maxline = 20
     if len(text) > maxline:
@@ -94,7 +101,11 @@ def indent(
         def lineno(i, l):  # type: (int, str) -> str
             r = lineno_re.match(l)
             if r is not None:
-                return r.group(1) + (bullet if i == 0 else shift) + r.group(2)
+                group1 = r.group(1)
+                group2 = r.group(2)
+                assert group1
+                assert group2
+                return group1 + (bullet if i == 0 else shift) + group2
             else:
                 return (bullet if i == 0 else shift) + l
 
@@ -110,7 +121,7 @@ def bullets(textlist, bul):  # type: (List[str], str) -> str
 
 def strip_duplicated_lineno(text):  # type: (str) -> str
     """Same as `strip_dup_lineno` but without reflow"""
-    pre = None
+    pre: Optional[str] = None
     msg = []
     for l in text.splitlines():
         g = lineno_re.match(l)
@@ -121,21 +132,27 @@ def strip_duplicated_lineno(text):  # type: (str) -> str
             msg.append(l)
             pre = g.group(1)
         else:
-            msg.append(" " * len(g.group(1)) + g.group(2))
+            group1 = g.group(1)
+            group2 = g.group(2)
+            assert group1
+            assert group2
+            msg.append(" " * len(group1) + group2)
     return "\n".join(msg)
 
 
 def strip_dup_lineno(text, maxline=None):  # type: (str, Optional[int]) -> str
     if maxline is None:
         maxline = int(os.environ.get("COLUMNS", "100"))
-    pre = None
+    pre: Optional[str] = None
     msg = []
     maxno = 0
     for l in text.splitlines():
         g = lineno_re.match(l)
         if not g:
             continue
-        maxno = max(maxno, len(g.group(1)))
+        group1 = g.group(1)
+        assert group1
+        maxno = max(maxno, len(group1))
 
     for l in text.splitlines():
         g = lineno_re.match(l)
@@ -143,12 +160,21 @@ def strip_dup_lineno(text, maxline=None):  # type: (str, Optional[int]) -> str
             msg.append(l)
             continue
         if g.group(1) != pre:
-            shift = maxno + len(g.group(3))
-            g2 = reflow(g.group(2), maxline - shift, " " * shift)
+            group3 = g.group(3)
+            assert group3
+            shift = maxno + len(group3)
+            group2 = g.group(2)
+            assert group2
+            g2 = reflow(group2, maxline - shift, " " * shift)
             pre = g.group(1)
-            msg.append(pre + " " * (maxno - len(g.group(1))) + g2)
+            assert pre
+            msg.append(pre + " " * (maxno - len(pre)) + g2)
         else:
-            g2 = reflow(g.group(2), maxline - maxno, " " * (maxno + len(g.group(3))))
+            group2 = g.group(2)
+            assert group2
+            group3 = g.group(3)
+            assert group3
+            g2 = reflow(group2, maxline - maxno, " " * (maxno + len(group3)))
             msg.append(" " * maxno + g2)
     return "\n".join(msg)
 

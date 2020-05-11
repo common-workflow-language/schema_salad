@@ -498,7 +498,7 @@ def avro_name(url):  # type: (str) -> str
     return url
 
 
-Avro = TypeVar("Avro", Dict[str, Any], List[Any], str)
+Avro = TypeVar("Avro", MutableMapping[str, Any], MutableSequence[Any], str)
 
 
 def make_valid_avro(
@@ -506,35 +506,31 @@ def make_valid_avro(
     alltypes,  # type: Dict[str, Dict[str, Any]]
     found,  # type: Set[str]
     union=False,  # type: bool
-):  # type: (...) -> Union[Avro, Dict[str, str], str]
+):  # type: (...) -> Union[Avro, MutableMapping[str, str], str, List[Union[Any, MutableMapping[str, str], str]]]
     """Convert our schema to be more avro like."""
     # Possibly could be integrated into our fork of avro/schema.py?
     if isinstance(items, MutableMapping):
-        items = copy.copy(items)
-        if items.get("name") and items.get("inVocab", True):
-            items["name"] = avro_name(items["name"])
+        avro = copy.copy(items)
+        if avro.get("name") and avro.get("inVocab", True):
+            avro["name"] = avro_name(avro["name"])
 
-        if "type" in items and items["type"] in (
+        if "type" in avro and avro["type"] in (
             saladp + "record",
             saladp + "enum",
             "record",
             "enum",
         ):
-            if (hasattr(items, "get") and items.get("abstract")) or (
-                "abstract" in items
-            ):
-                return items
-            if items["name"] in found:
-                return cast(str, items["name"])
-            found.add(items["name"])
+            if (hasattr(avro, "get") and avro.get("abstract")) or ("abstract" in avro):
+                return avro
+            if avro["name"] in found:
+                return cast(str, avro["name"])
+            found.add(avro["name"])
         for field in ("type", "items", "values", "fields"):
-            if field in items:
-                items[field] = make_valid_avro(
-                    items[field], alltypes, found, union=True
-                )
-        if "symbols" in items:
-            items["symbols"] = [avro_name(sym) for sym in items["symbols"]]
-        return items
+            if field in avro:
+                avro[field] = make_valid_avro(avro[field], alltypes, found, union=True)
+        if "symbols" in avro:
+            avro["symbols"] = [avro_name(sym) for sym in avro["symbols"]]
+        return avro
     if isinstance(items, MutableSequence):
         ret = []
         for i in items:
@@ -546,8 +542,9 @@ def make_valid_avro(
                 Dict[str, str],
                 make_valid_avro(alltypes[items], alltypes, found, union=union),
             )
-        items = avro_name(items)
-    return items
+        return avro_name(items)
+    else:
+        return items
 
 
 def deepcopy_strip(item):  # type: (Any) -> Any

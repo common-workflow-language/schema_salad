@@ -21,6 +21,7 @@ from typing import (
     cast,
 )
 
+from collections import OrderedDict
 import requests
 from cachecontrol.caches import FileCache
 from cachecontrol.wrapper import CacheControl
@@ -41,6 +42,10 @@ _logger = logging.getLogger("salad")
 ContextType = Dict[str, Union[Dict[str, Any], str, Iterable[str]]]
 DocumentType = TypeVar("DocumentType", CommentedSeq, CommentedMap)
 DocumentOrStrType = TypeVar("DocumentOrStrType", CommentedSeq, CommentedMap, str)
+FieldType = TypeVar("FieldType", str, CommentedSeq, CommentedMap)
+resolved_ref_type = Tuple[
+    Optional[Union[CommentedMap, CommentedSeq, str]], CommentedMap
+]
 
 _re_drive = re.compile(r"/([a-zA-Z]):")
 
@@ -94,7 +99,7 @@ def to_validation_exception(
         return exc
 
 
-class NormDict(CommentedMap):
+class NormDict(Dict[str, Union[CommentedMap, CommentedSeq, str, None]]):
     """A Dict where all keys are normalized using the provided function."""
 
     def __init__(self, normalize: Callable[[str], str] = str) -> None:
@@ -110,7 +115,7 @@ class NormDict(CommentedMap):
     def __delitem__(self, key):  # type: (Any) -> Any
         return super(NormDict, self).__delitem__(self.normalize(key))
 
-    def __contains__(self, key):  # type: (Any) -> Any
+    def __contains__(self, key: Any) -> bool:
         return super(NormDict, self).__contains__(self.normalize(key))
 
 
@@ -144,7 +149,17 @@ def SubLoader(loader):  # type: (Loader) -> Loader
     )
 
 
+schemes = ["file", "http", "https", "mailto"]
+
+
 class Fetcher(object):
+    def __init__(
+        self,
+        cache,  # type: Dict[str, Union[str, bool]]
+        session,  # type: Optional[requests.sessions.Session]
+    ):  # type: (...) -> None
+        pass
+
     def fetch_text(self, url):  # type: (str) -> str
         raise NotImplementedError()
 
@@ -154,10 +169,8 @@ class Fetcher(object):
     def urljoin(self, base_url, url):  # type: (str, str) -> str
         raise NotImplementedError()
 
-    schemes = ["file", "http", "https", "mailto"]
-
     def supported_schemes(self):  # type: () -> List[str]
-        return self.schemes
+        return schemes
 
 
 class DefaultFetcher(Fetcher):
@@ -243,78 +256,6 @@ class DefaultFetcher(Fetcher):
                 )
             )
 
-        if sys.platform == "win32":
-            if base_url == url:
-                return url
-            basesplit = urllib.parse.urlsplit(base_url)
-            # note that below might split
-            # "C:" with "C" as URI scheme
-            split = urllib.parse.urlsplit(url)
-
-            has_drive = split.scheme and len(split.scheme) == 1
-
-            if basesplit.scheme == "file":
-                # Special handling of relative file references on Windows
-                # as urllib seems to not be quite up to the job
-
-                # netloc MIGHT appear in equivalents of UNC Strings
-                # \\server1.example.com\path as
-                # file:///server1.example.com/path
-                # https://tools.ietf.org/html/rfc8089#appendix-E.3.2
-                # (TODO: test this)
-                netloc = split.netloc or basesplit.netloc
-
-                # Check if url is a local path like "C:/Users/fred"
-                # or actually an absolute URI like http://example.com/fred
-                if has_drive:
-                    # Assume split.scheme is actually a drive, e.g. "C:"
-                    # so we'll recombine into a path
-                    path_with_drive = urllib.parse.urlunsplit(
-                        (split.scheme, "", split.path, "", "")
-                    )
-                    # Compose new file:/// URI with path_with_drive
-                    # .. carrying over any #fragment (?query just in case..)
-                    return urllib.parse.urlunsplit(
-                        ("file", netloc, path_with_drive, split.query, split.fragment)
-                    )
-                if (
-                    not split.scheme
-                    and not netloc
-                    and split.path
-                    and split.path.startswith("/")
-                ):
-                    # Relative - but does it have a drive?
-                    base_drive = _re_drive.match(basesplit.path)
-                    drive = _re_drive.match(split.path)
-                    if base_drive and not drive:
-                        # Keep drive letter from base_url
-                        # https://tools.ietf.org/html/rfc8089#appendix-E.2.1
-                        # e.g. urljoin("file:///D:/bar/a.txt", "/foo/b.txt")
-                        #          == file:///D:/foo/b.txt
-                        path_with_drive = "/{}:{}".format(
-                            base_drive.group(1), split.path
-                        )
-                        return urllib.parse.urlunsplit(
-                            (
-                                "file",
-                                netloc,
-                                path_with_drive,
-                                split.query,
-                                split.fragment,
-                            )
-                        )
-
-                # else: fall-through to resolve as relative URI
-            elif has_drive:
-                # Base is http://something but url is C:/something - which urllib
-                # would wrongly resolve as an absolute path that could later be used
-                # to access local files
-                raise ValidationException(
-                    "Not resolving potential remote exploit {} from base {}".format(
-                        url, base_url
-                    )
-                )
-
         return urllib.parse.urljoin(base_url, url)
 
 
@@ -323,6 +264,7 @@ fetcher_sig = Callable[
     [Dict[str, Union[str, bool]], requests.sessions.Session], Fetcher
 ]
 attachements_sig = Callable[[Union[CommentedMap, CommentedSeq]], bool]
+typeDSLregex = re.compile(str(r"^([^[?]+)(\[\])?(\?)?$"))
 
 
 class Loader(object):
@@ -618,10 +560,6 @@ class Loader(object):
         _logger.debug("vocab_fields is %s", self.vocab_fields)
         _logger.debug("vocab is %s", self.vocab)
 
-    resolved_ref_type = Tuple[
-        Optional[Union[CommentedMap, CommentedSeq, str]], CommentedMap
-    ]
-
     def resolve_ref(
         self,
         ref,  # type: Union[CommentedMap, CommentedSeq, str]
@@ -629,7 +567,7 @@ class Loader(object):
         checklinks=True,  # type: bool
         strict_foreign_properties=False,  # type: bool
     ):
-        # type: (...) -> Loader.resolved_ref_type
+        # type: (...) -> resolved_ref_type
 
         lref = ref  # type: Union[CommentedMap, CommentedSeq, str, None]
         obj = None  # type: Optional[CommentedMap]
@@ -696,7 +634,7 @@ class Loader(object):
         if url in self.idx and (not mixin):
             resolved_obj = self.idx[url]
             if isinstance(resolved_obj, MutableMapping):
-                metadata = self.idx.get(urllib.parse.urldefrag(url)[0], CommentedMap())
+                metadata: Union[CommentedMap, CommentedSeq, str, None] = self.idx.get(urllib.parse.urldefrag(url)[0], CommentedMap())
                 if isinstance(metadata, MutableMapping):
                     if "$graph" in resolved_obj:
                         metadata = _copy_dict_without_key(resolved_obj, "$graph")
@@ -842,22 +780,21 @@ class Loader(object):
 
                     document[idmapField] = ls
 
-    typeDSLregex = re.compile(str(r"^([^[?]+)(\[\])?(\?)?$"))
-
     def _type_dsl(
         self,
-        t,  # type: Union[str, Dict[str, str], List[str]]
+        t,  # type: Union[str, CommentedMap, CommentedSeq]
         lc,  # type: LineCol
         filename,  # type: str
-    ):  # type: (...) -> Union[str, Dict[str, str], List[str]]
+    ):  # type: (...) -> Union[str, CommentedMap, CommentedSeq]
 
         if not isinstance(t, str):
             return t
 
-        m = Loader.typeDSLregex.match(t)
+        m = typeDSLregex.match(t)
         if not m:
             return t
         first = m.group(1)
+        assert first
         second = third = None
         if bool(m.group(2)):
             second = CommentedMap((("type", "array"), ("items", first)))
@@ -873,10 +810,10 @@ class Loader(object):
 
     def _secondaryFile_dsl(
         self,
-        t,  # type: Union[str, Dict[str, str], List[str]]
+        t,  # type: Union[str, CommentedMap, CommentedSeq]
         lc,  # type: LineCol
         filename,  # type: str
-    ):  # type: (...) -> Union[str, Dict[str, str], List[str]]
+    ):  # type: (...) -> Union[str, CommentedMap, CommentedSeq]
 
         if not isinstance(t, str):
             return t
@@ -894,13 +831,13 @@ class Loader(object):
 
     def _apply_dsl(
         self,
-        datum,  # type: Union[str, Dict[Any, Any], List[Any]]
+        datum,  # type: Union[str, CommentedMap, CommentedSeq]
         d,  # type: str
         loader,  # type: Loader
         lc,  # type: LineCol
         filename,  # type: str
     ):
-        # type: (...) -> Union[str, Dict[Any, Any], List[Any]]
+        # type: (...) -> Union[str, CommentedMap, CommentedSeq]
         if d in loader.type_dsl_fields:
             return self._type_dsl(datum, lc, filename)
         elif d in loader.secondaryFile_dsl_fields:
@@ -1010,7 +947,7 @@ class Loader(object):
 
     def _resolve_uris(
         self,
-        document,  # type: Dict[str, Union[str, List[str]]]
+        document,  # type: Dict[str, Any]
         loader,  # type: Loader
         base_url,  # type: str
     ):
@@ -1046,7 +983,7 @@ class Loader(object):
         checklinks=True,  # type: bool
         strict_foreign_properties=False,  # type: bool
     ):
-        # type: (...) -> Loader.resolved_ref_type
+        # type: (...) -> resolved_ref_type
         loader = self
         metadata = CommentedMap()  # type: CommentedMap
         if file_base is None:
@@ -1228,8 +1165,6 @@ class Loader(object):
                 ] = result
         self.idx[url] = result
         return result
-
-    FieldType = TypeVar("FieldType", str, CommentedSeq, CommentedMap)
 
     def validate_scoped(self, field, link, docid):
         # type: (str, str, str) -> str

@@ -2,7 +2,7 @@ import contextlib
 import os.path
 import shutil
 import tempfile
-from typing import Any, Dict, List, Text, cast
+from typing import Any, Dict, Iterator, List, Optional, Text, cast
 
 from schema_salad import codegen, ref_resolver
 from schema_salad.schema import load_schema
@@ -10,10 +10,11 @@ from schema_salad.schema import load_schema
 from .util import get_data
 
 
-def test_cwl_gen():
+def test_cwl_gen() -> None:
     topmed_example_path = get_data(
         "tests/test_real_cwl/topmed/topmed_variant_calling_pipeline.cwl"
     )
+    assert topmed_example_path
     with t_directory() as test_dir:
         target_dir = os.path.join(test_dir, "target")
         examples_dir = os.path.join(test_dir, "examples")
@@ -35,7 +36,7 @@ def test_cwl_gen():
             assert "topmed" in f.read()
 
 
-def test_meta_schema_gen():
+def test_meta_schema_gen() -> None:
     with t_directory() as test_dir:
         target_dir = os.path.join(test_dir, "target")
         os.mkdir(target_dir)
@@ -49,7 +50,7 @@ def test_meta_schema_gen():
 
 
 @contextlib.contextmanager
-def t_directory():
+def t_directory() -> Iterator[str]:
     test_dir = tempfile.mkdtemp()
     try:
         yield test_dir
@@ -57,15 +58,17 @@ def t_directory():
         shutil.rmtree(test_dir)
 
 
-def get_data_uri(resource_path):
-    return ref_resolver.file_uri(get_data(resource_path))
+def get_data_uri(resource_path: str) -> str:
+    path = get_data(resource_path)
+    assert path
+    return ref_resolver.file_uri(path)
 
 
 cwl_file_uri = get_data_uri("tests/test_schema/CommonWorkflowLanguage.yml")
 metaschema_file_uri = get_data_uri("metaschema/metaschema.yml")
 
 
-def java_codegen(file_uri, target, examples=None):
+def java_codegen(file_uri: str, target: str, examples: Optional[str] = None) -> None:
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
         file_uri
     )
