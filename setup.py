@@ -33,28 +33,29 @@ USE_MYPYC = False
 if len(sys.argv) > 1 and sys.argv[1] == "--use-mypyc":
     sys.argv.pop(1)
     USE_MYPYC = True
-if os.getenv("BLACK_USE_MYPYC", None) == "1":
+if os.getenv("SCHEMA_SALAD_USE_MYPYC", None) == "1":
     USE_MYPYC = True
 
 if USE_MYPYC:
     mypyc_targets = [
-        "schema_salad/codegen_base.py",
-        "schema_salad/codegen.py",
+        # "schema_salad/codegen_base.py",  # interpreted classes cannot inherit from compiled
+        # "schema_salad/codegen.py",
         "schema_salad/exceptions.py",
         "schema_salad/__init__.py",
-        "schema_salad/java_codegen.py",
+        # "schema_salad/java_codegen.py",  # due to use of __name__
         "schema_salad/jsonld_context.py",
         "schema_salad/__main__.py",
         "schema_salad/main.py",
         "schema_salad/makedoc.py",
-        "schema_salad/python_codegen.py",
+        # "schema_salad/python_codegen.py",  # due to use of __name__
         "schema_salad/ref_resolver.py",
         "schema_salad/schema.py",
         "schema_salad/sourceline.py",
         "schema_salad/utils.py",
         "schema_salad/validate.py",
         "schema_salad/avro/__init__.py",
-        # "schema_salad/avro/schema.py",
+        "schema_salad/avro/schema.py",
+        "schema_salad/tests/a_fetcher.py",
         # "schema_salad/tests/util.py",
         # "schema_salad/tests/test_print_oneline.py",
         # "schema_salad/tests/test_python_codegen.py",

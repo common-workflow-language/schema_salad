@@ -5,26 +5,30 @@ import os
 import shutil
 import sys
 import tempfile
+from typing import Union
 
-import pytest
+import pytest  # type: ignore
+from _pytest.fixtures import FixtureRequest  # type: ignore
 from requests import Session
 
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from schema_salad.exceptions import ValidationException
 from schema_salad.ref_resolver import DefaultFetcher, Loader, file_uri
 from schema_salad.tests.util import get_data
 
-from _pytest.fixtures import FixtureRequest
 
-def is_fs_case_sensitive(path: str) -> bool:  # https://stackoverflow.com/a/36612604/1585509
+def is_fs_case_sensitive(
+    path: str,
+) -> bool:  # https://stackoverflow.com/a/36612604/1585509
     with tempfile.NamedTemporaryFile(prefix="TmP", dir=path) as tmp_file:
         return not os.path.exists(tmp_file.name.lower())
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore
 def tmp_dir_fixture(request: FixtureRequest) -> str:
     d = tempfile.mkdtemp()
 
-    @request.addfinalizer
+    @request.addfinalizer  # type: ignore
     def teardown() -> None:
         shutil.rmtree(d)
 
@@ -126,13 +130,20 @@ def test_import_list() -> None:
 
 
 def test_fetch_inject_id() -> None:
-    lower = lambda s: s.lower()
-    if is_fs_case_sensitive(
-        os.path.dirname(get_data("schema_salad/tests/inject-id1.yml"))
-    ):
-        lower = lambda a: a
+    path = get_data("schema_salad/tests/inject-id1.yml")
+    assert path
+    if is_fs_case_sensitive(os.path.dirname(path)):
+
+        def lower(item: str) -> str:
+            return item
+
+    else:
+
+        def lower(item: str) -> str:
+            return item.lower()
+
     l1 = Loader({"id": "@id"})
-    furi1 = file_uri(get_data("schema_salad/tests/inject-id1.yml"))
+    furi1 = file_uri(path)
     r1, _ = l1.resolve_ref(furi1)
     assert {"id": furi1 + "#foo", "bar": "baz"} == r1
     assert [lower(furi1), lower(furi1 + "#foo")] == sorted(
@@ -140,13 +151,17 @@ def test_fetch_inject_id() -> None:
     )
 
     l2 = Loader({"id": "@id"})
-    furi2 = file_uri(get_data("schema_salad/tests/inject-id2.yml"))
+    path2 = get_data("schema_salad/tests/inject-id2.yml")
+    assert path2
+    furi2 = file_uri(path2)
     r2, _ = l2.resolve_ref(furi2)
     assert {"id": furi2, "bar": "baz"} == r2
     assert [lower(furi2)] == sorted(list(lower(k) for k in l2.idx.keys()))
 
     l3 = Loader({"id": "@id"})
-    furi3 = file_uri(get_data("schema_salad/tests/inject-id3.yml"))
+    path3 = get_data("schema_salad/tests/inject-id3.yml")
+    assert path3
+    furi3 = file_uri(path3)
     r3, _ = l3.resolve_ref(furi3)
     assert {"id": "http://example.com", "bar": "baz"} == r3
     assert [lower(furi3), "http://example.com"] == sorted(
@@ -155,15 +170,20 @@ def test_fetch_inject_id() -> None:
 
 
 def test_attachments() -> None:
-    furi = file_uri(get_data("schema_salad/tests/multidoc.yml"))
+    path = get_data("schema_salad/tests/multidoc.yml")
+    assert path
+    furi = file_uri(path)
 
     l1 = Loader({})
     r1, _ = l1.resolve_ref(furi)
-    with open(get_data("schema_salad/tests/multidoc.yml"), "rt") as f:
+    with open(path, "rt") as f:
         content = f.read()
         assert {"foo": "bar", "baz": content, "quux": content} == r1
 
-    l2 = Loader({}, allow_attachments=lambda x: x["foo"] == "bar")
+    def aa1(item: Union[CommentedMap, CommentedSeq]) -> bool:
+        return bool(item["foo"] == "bar")
+
+    l2 = Loader({}, allow_attachments=aa1)
     r2, _ = l2.resolve_ref(furi)
     assert {
         "foo": "bar",
@@ -171,8 +191,11 @@ def test_attachments() -> None:
         "quux": "This is the [second attachment].",
     } == r2
 
-    l3 = Loader({}, allow_attachments=lambda x: x["foo"] == "baz")
+    def aa2(item: Union[CommentedMap, CommentedSeq]) -> bool:
+        return bool(item["foo"] == "baz")
+
+    l3 = Loader({}, allow_attachments=aa2)
     r3, _ = l3.resolve_ref(furi)
-    with open(get_data("schema_salad/tests/multidoc.yml"), "rt") as f:
+    with open(path, "rt") as f:
         content = f.read()
         assert {"foo": "bar", "baz": content, "quux": content} == r3

@@ -1,6 +1,6 @@
 """Python code generator for a given schema salad definition."""
 from io import StringIO
-from typing import IO, Any, Dict, List, MutableMapping, MutableSequence, Union
+from typing import IO, Any, Dict, List, MutableMapping, MutableSequence, Optional, Union
 
 from pkg_resources import resource_stream
 
@@ -339,8 +339,9 @@ class PythonCodeGen(CodeGenBase):
             )
         )
 
-    def declare_field(self, name, fieldtype, doc, optional):
-        # type: (str, TypeDef, str, bool) -> None
+    def declare_field(
+        self, name: str, fieldtype: TypeDef, doc: Optional[str], optional: bool
+    ) -> None:
 
         if self.current_class_is_abstract:
             return

@@ -1,4 +1,4 @@
-"""Work-in-progress Java code generator for a given schema salad definition."""
+"""Java code generator for a given schema salad definition."""
 import os
 import shutil
 import string
@@ -21,20 +21,18 @@ from .schema import shortname
 USE_ONE_OR_LIST_OF_TYPES = False
 
 
-def _ensure_directory_and_write(path, contents):
-    # type: (str, str) -> None
+def _ensure_directory_and_write(path: str, contents: str) -> None:
     dirname = os.path.dirname(path)
     _safe_makedirs(dirname)
     with io_open(path, mode="w", encoding="utf-8") as f:
         f.write(contents)
 
 
-def doc_to_doc_string(doc, indent_level=0):
-    # type: (str, int) -> str
+def doc_to_doc_string(doc: Optional[str], indent_level: int = 0) -> str:
     lead = " " + "  " * indent_level + "* " * indent_level
     if doc:
         doc_str = "{}<BLOCKQUOTE>\n".format(lead)
-        doc_str += "\n".join(["{}{}".format(lead, l) for l in doc.split("\n")])
+        doc_str += "\n".join(["{}{}".format(lead, line) for line in doc.split("\n")])
         doc_str += "{}</BLOCKQUOTE>".format(lead)
     else:
         doc_str = ""
@@ -467,8 +465,9 @@ public enum {clazz} {{
             )
         )
 
-    def declare_field(self, name, fieldtype, doc, optional):
-        # type: (str, TypeDef, str, bool) -> None
+    def declare_field(
+        self, name: str, fieldtype: TypeDef, doc: Optional[str], optional: bool
+    ) -> None:
         fieldname = name
         property_name = self.property_name(fieldname)
         cap_case_property_name = property_name[0].upper() + property_name[1:]

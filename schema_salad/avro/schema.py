@@ -54,6 +54,18 @@ SCHEMA_RESERVED_PROPS = (
     "doc",
 )
 
+# need recursion support in mypy/mypyc for a comprehensive JSON type
+# MappingDataType = Dict[str, Union[PropType, List[PropsType]]]
+# was: Union[str, MappingDataType, List[MappingDataType]]
+JsonDataType = Any
+AtomicPropType = Union[str, bool, "Schema", List[str], List["Field"]]
+PropType = Union[
+    AtomicPropType,
+    Dict[str, Optional[AtomicPropType]],
+    List[Dict[str, Optional[AtomicPropType]]],
+]
+PropsType = Dict[str, Optional[PropType]]
+
 FIELD_RESERVED_PROPS = ("default", "name", "doc", "order", "type")
 
 VALID_FIELD_SORT_ORDERS = ("ascending", "descending", "ignore")
@@ -79,8 +91,7 @@ class SchemaParseException(AvroException):
 class Schema(object):
     """Base class for all Schema classes."""
 
-    def __init__(self, atype, other_props=None):
-        # type: (str, Optional[Dict[str, Any]]) -> None
+    def __init__(self, atype: str, other_props: Optional[PropsType] = None) -> None:
         # Ensure valid ctor args
         if not isinstance(atype, str):
             raise SchemaParseException(
@@ -92,7 +103,7 @@ class Schema(object):
 
         # add members
         if not hasattr(self, "_props"):
-            self._props = {}  # type: Dict[str, Any]
+            self._props: PropsType = {}
         self.set_prop("type", atype)
         self.type = atype
         self._props.update(other_props or {})
@@ -100,14 +111,14 @@ class Schema(object):
     # Read-only properties dict. Printing schemas
     # creates JSON properties directly from this dict.
     @property
-    def props(self) -> Dict[str, Any]:
+    def props(self) -> PropsType:
         return self._props
 
     # utility functions to manipulate properties dict
-    def get_prop(self, key):  # type: (str) -> Any
+    def get_prop(self, key: str) -> Optional[PropType]:
         return self._props.get(key)
 
-    def set_prop(self, key, value):  # type: (str, Any) -> None
+    def set_prop(self, key: str, value: Optional[PropType]) -> None:
         self._props[key] = value
 
 
@@ -115,7 +126,10 @@ class Name(object):
     """Class to describe Avro name."""
 
     def __init__(
-        self, name_attr: str, space_attr: Optional[str], default_space: Optional[str]
+        self,
+        name_attr: Optional[str] = None,
+        space_attr: Optional[str] = None,
+        default_space: Optional[str] = None,
     ) -> None:
         """
         Formulate full name according to the specification.
@@ -125,28 +139,19 @@ class Name(object):
         @ard default_space: the current default space or None.
         """
         # Ensure valid ctor args
-        if not (isinstance(name_attr, str) or (name_attr is None)):
-            fail_msg = "Name must be non-empty string or None."
-            raise SchemaParseException(fail_msg)
-        elif name_attr == "":
+        if name_attr == "":
             fail_msg = "Name must be non-empty string or None."
             raise SchemaParseException(fail_msg)
 
-        if not (isinstance(space_attr, str) or (space_attr is None)):
-            fail_msg = "Space must be non-empty string or None."
-            raise SchemaParseException(fail_msg)
-        elif name_attr == "":
+        if name_attr == "":
             fail_msg = "Space must be non-empty string or None."
             raise SchemaParseException(fail_msg)
 
-        if not (isinstance(default_space, str) or (default_space is None)):
-            fail_msg = "Default space must be non-empty string or None."
-            raise SchemaParseException(fail_msg)
-        elif name_attr == "":
+        if name_attr == "":
             fail_msg = "Default must be non-empty string or None."
             raise SchemaParseException(fail_msg)
 
-        self._full = name_attr  # type: str
+        self._full: Optional[str] = name_attr
 
         if name_attr is None or name_attr == "":
             return
@@ -157,15 +162,12 @@ class Name(object):
             else:
                 if (default_space is not None) and (default_space != ""):
                     self._full = "{}.{}".format(default_space, name_attr)
-                else:
-                    self._full = name_attr
 
     @property
-    def fullname(self) -> str:
+    def fullname(self) -> Optional[str]:
         return self._full
 
-    def get_space(self):
-        # type: () -> Optional[str]
+    def get_space(self) -> Optional[str]:
         """Back out a namespace from full name."""
         if self._full is None:
             return None
@@ -179,9 +181,8 @@ class Name(object):
 class Names(object):
     """Track name set and default namespace during parsing."""
 
-    def __init__(self, default_namespace=None):
-        # type: (Optional[str]) -> None
-        self.names = {}  # type: Dict[str, NamedSchema]
+    def __init__(self, default_namespace: Optional[str] = None) -> None:
+        self.names: Dict[str, NamedSchema] = {}
         self.default_namespace = default_namespace
 
     def has_name(self, name_attr: str, space_attr: Optional[str]) -> bool:
@@ -216,6 +217,7 @@ class Names(object):
             fail_msg = 'The name "%s" is already in use.' % to_add.fullname
             raise SchemaParseException(fail_msg)
 
+        assert to_add.fullname
         self.names[to_add.fullname] = new_schema
         return to_add
 
@@ -225,12 +227,12 @@ class NamedSchema(Schema):
 
     def __init__(
         self,
-        atype,  # type: str
-        name,  # type: str
-        namespace=None,  # type: Optional[str]
-        names=None,  # type: Optional[Names]
-        other_props=None,  # type: Optional[Dict[str, str]]
-    ):  # type: (...) -> None
+        atype: str,
+        name: str,
+        namespace: Optional[str] = None,
+        names: Optional[Names] = None,
+        other_props: Optional[PropsType] = None,
+    ) -> None:
         # Ensure valid ctor args
         if not name:
             fail_msg = "Named Schemas must have a non-empty name."
@@ -260,22 +262,22 @@ class NamedSchema(Schema):
 
     # read-only properties
     @property
-    def name(self) -> Any:
-        return self.get_prop("name")
+    def name(self) -> str:
+        return cast(str, self.get_prop("name"))
 
 
 class Field(object):
     def __init__(
         self,
-        atype,  # type: Union[str, Dict[str, str]]
-        name,  # type: str
-        has_default,  # type: bool
-        default=None,  # type: Optional[str]
-        order=None,  # type: Optional[str]
-        names=None,  # type: Optional[Names]
-        doc=None,  # type: Optional[str]
-        other_props=None,  # type: Optional[Dict[str, str]]
-    ):  # type: (...) -> None
+        atype: JsonDataType,
+        name: str,
+        has_default: bool,
+        default: Optional[Any] = None,
+        order: Optional[str] = None,
+        names: Optional[Names] = None,
+        doc: Optional[Union[str, List[str]]] = None,
+        other_props: Optional[PropsType] = None,
+    ) -> None:
         # Ensure valid ctor args
         if not name:
             fail_msg = "Fields must have a non-empty name."
@@ -288,15 +290,15 @@ class Field(object):
             raise SchemaParseException(fail_msg)
 
         # add members
-        self._props = {}  # type: Dict[str, Union[Schema, str, None]]
+        self._props: PropsType = {}
         self._has_default = has_default
         self._props.update(other_props or {})
 
         if isinstance(atype, str) and names is not None and names.has_name(atype, None):
-            type_schema = cast(NamedSchema, names.get_name(atype, None))  # type: Schema
+            type_schema: Schema = cast(NamedSchema, names.get_name(atype, None))
         else:
             try:
-                type_schema = make_avsc_object(cast(Dict[str, str], atype), names)
+                type_schema = make_avsc_object(atype, names)
             except Exception as e:
                 raise SchemaParseException(
                     'Type property "%s" not a valid Avro schema: %s' % (atype, e)
@@ -315,15 +317,14 @@ class Field(object):
 
     # read-only properties
     @property
-    def default(self) -> Any:
+    def default(self) -> Optional[Any]:
         return self.get_prop("default")
 
     # utility functions to manipulate properties dict
-    def get_prop(self, key):  # type: (str) -> Union[Schema, str, None]
+    def get_prop(self, key: str) -> Optional[PropType]:
         return self._props.get(key)
 
-    def set_prop(self, key, value):
-        # type: (str, Union[Schema, str, None]) -> None
+    def set_prop(self, key: str, value: Optional[PropType]) -> None:
         self._props[key] = value
 
 
@@ -333,8 +334,7 @@ class Field(object):
 class PrimitiveSchema(Schema):
     """Valid primitive types are in PRIMITIVE_TYPES."""
 
-    def __init__(self, atype, other_props=None):
-        # type: (str, Optional[Dict[str, str]]) -> None
+    def __init__(self, atype: str, other_props: Optional[PropsType] = None) -> None:
         # Ensure valid ctor args
         if atype not in PRIMITIVE_TYPES:
             raise AvroException("%s is not a valid primitive type." % atype)
@@ -353,13 +353,13 @@ class PrimitiveSchema(Schema):
 class EnumSchema(NamedSchema):
     def __init__(
         self,
-        name,  # type: str
-        namespace,  # type: str
-        symbols,  # type: List[str]
-        names=None,  # type: Optional[Names]
-        doc=None,  # type: Optional[str]
-        other_props=None,  # type: Optional[Dict[str, str]]
-    ):  # type: (...) -> None
+        name: str,
+        namespace: Optional[str],
+        symbols: List[str],
+        names: Optional[Names] = None,
+        doc: Optional[Union[str, List[str]]] = None,
+        other_props: Optional[PropsType] = None,
+    ) -> None:
         # Ensure valid ctor args
         if not isinstance(symbols, list):
             fail_msg = "Enum Schema requires a JSON array for the symbols property."
@@ -381,8 +381,8 @@ class EnumSchema(NamedSchema):
 
     # read-only properties
     @property
-    def symbols(self) -> Any:
-        return self.get_prop("symbols")
+    def symbols(self) -> List[str]:
+        return cast(List[str], self.get_prop("symbols"))
 
 
 #
@@ -391,8 +391,9 @@ class EnumSchema(NamedSchema):
 
 
 class ArraySchema(Schema):
-    def __init__(self, items, names=None, other_props=None):
-        # type: (List[Any], Optional[Names], Optional[Dict[str, str]]) -> None
+    def __init__(
+        self, items: JsonDataType, names: Names, other_props: Optional[PropsType] = None
+    ) -> None:
         # Call parent ctor
         Schema.__init__(self, "array", other_props)
         # Add class members
@@ -414,8 +415,8 @@ class ArraySchema(Schema):
 
     # read-only properties
     @property
-    def items(self) -> Any:
-        return self.get_prop("items")
+    def items(self) -> Schema:
+        return cast(Schema, self.get_prop("items"))
 
 
 class UnionSchema(Schema):
@@ -423,8 +424,7 @@ class UnionSchema(Schema):
     names is a dictionary of schema objects
     """
 
-    def __init__(self, schemas, names=None):
-        # type: (List[Schema], Optional[Names]) -> None
+    def __init__(self, schemas: List[JsonDataType], names: Names,) -> None:
         # Ensure valid ctor args
         if names is None:
             raise SchemaParseException("Must provide Names.")
@@ -436,16 +436,16 @@ class UnionSchema(Schema):
         Schema.__init__(self, "union")
 
         # Add class members
-        schema_objects = []  # type: List[Schema]
+        schema_objects: List[Schema] = []
         for schema in schemas:
             if isinstance(schema, str) and names.has_name(schema, None):
                 new_schema = cast(Schema, names.get_name(schema, None))
             else:
                 try:
-                    new_schema = make_avsc_object(schema, names)  # type: ignore
+                    new_schema = make_avsc_object(schema, names)
                 except Exception as err:
                     raise SchemaParseException(
-                        "Union item must be a valid Avro schema: %s" % str(err)
+                        "Union item must be a valid Avro schema: %s. %s" % (err, schema)
                     )
             # check the new schema
             if (
@@ -468,14 +468,13 @@ class UnionSchema(Schema):
 
 class RecordSchema(NamedSchema):
     @staticmethod
-    def make_field_objects(field_data, names):
-        # type: (List[Dict[str, str]], Names) -> List[Field]
+    def make_field_objects(field_data: List[PropsType], names: Names) -> List[Field]:
         """We're going to need to make message parameters too."""
-        field_objects = []
-        field_names = []  # type: List[str]
+        field_objects: List[Field] = []
+        field_names: List[str] = []
         for field in field_data:
             if hasattr(field, "get") and callable(field.get):
-                atype = cast(str, field.get("type"))
+                atype = field.get("type")
                 name = cast(str, field.get("name"))
 
                 # null values can have a default value of None
@@ -484,9 +483,16 @@ class RecordSchema(NamedSchema):
                 if "default" in field:
                     has_default = True
                     default = field.get("default")
-
                 order = field.get("order")
+                if not (order is None or isinstance(order, str)):
+                    raise SchemaParseException('"order" must be a string or None')
                 doc = field.get("doc")
+                if not (doc is None or isinstance(doc, str) or isinstance(doc, list)):
+                    raise SchemaParseException(
+                        '"doc" must be a string, list of strings, or None'
+                    )
+                else:
+                    doc = cast(Union[str, List[str], None], doc)
                 other_props = get_other_props(field, FIELD_RESERVED_PROPS)
                 new_field = Field(
                     atype, name, has_default, default, order, names, doc, other_props
@@ -503,14 +509,14 @@ class RecordSchema(NamedSchema):
 
     def __init__(
         self,
-        name,  # type: str
-        namespace,  # type: str
-        fields,  # type: List[Dict[str, str]]
-        names=None,  # type: Optional[Names]
-        schema_type="record",  # type: str
-        doc=None,  # type: Optional[str]
-        other_props=None,  # type: Optional[Dict[str, str]]
-    ):  # type: (...) -> None
+        name: str,
+        namespace: Optional[str],
+        fields: List[PropsType],
+        names: Names,
+        schema_type: str = "record",
+        doc: Optional[Union[str, List[str]]] = None,
+        other_props: Optional[PropsType] = None,
+    ) -> None:
         # Ensure valid ctor args
         if fields is None:
             fail_msg = "Record schema requires a non-empty fields property."
@@ -518,8 +524,6 @@ class RecordSchema(NamedSchema):
         elif not isinstance(fields, list):
             fail_msg = "Fields property must be a list of Avro schemas."
             raise SchemaParseException(fail_msg)
-        if names is None:
-            raise SchemaParseException("Must provide Names.")
 
         # Call parent ctor (adds own name to namespace, too)
         NamedSchema.__init__(self, schema_type, name, namespace, names, other_props)
@@ -541,15 +545,16 @@ class RecordSchema(NamedSchema):
 
     # read-only properties
     @property
-    def fields(self) -> Any:
-        return self.get_prop("fields")
+    def fields(self) -> List[Field]:
+        return cast(List[Field], self.get_prop("fields"))
 
 
 #
 # Module Methods
 #
-def get_other_props(all_props, reserved_props):
-    # type: (Dict[str, str], Tuple[str, ...]) -> Optional[Dict[str, str]]
+def get_other_props(
+    all_props: PropsType, reserved_props: Tuple[str, ...]
+) -> Optional[PropsType]:
     """
     Retrieve the non-reserved properties from a dictionary of properties
     @args reserved_props: The set of reserved properties to exclude
@@ -561,8 +566,7 @@ def get_other_props(all_props, reserved_props):
     return None
 
 
-def make_avsc_object(json_data, names=None):
-    # type: (Union[Dict[str, str], List[Any], str], Optional[Names]) -> Schema
+def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> Schema:
     """
     Build Avro Schema from data parsed out of JSON string.
 
@@ -578,29 +582,57 @@ def make_avsc_object(json_data, names=None):
         EnumSchema("Any", "", ["Any"], names=names)
 
     # JSON object (non-union)
-    if hasattr(json_data, "get") and callable(json_data.get):  # type: ignore
-        assert isinstance(json_data, Dict)
-        atype = cast(str, json_data.get("type"))
+    if isinstance(json_data, dict):
+        atype = json_data.get("type")
         other_props = get_other_props(json_data, SCHEMA_RESERVED_PROPS)
         if atype in PRIMITIVE_TYPES:
-            return PrimitiveSchema(atype, other_props)
+            primative_type = cast(str, atype)
+            return PrimitiveSchema(primative_type, other_props)
         if atype in NAMED_TYPES:
-            name = cast(str, json_data.get("name"))
-            namespace = cast(str, json_data.get("namespace", names.default_namespace))
+            name = json_data.get("name")
+            namespace = json_data.get("namespace", names.default_namespace)
+            doc = json_data.get("doc")
+            if not isinstance(name, str):
+                raise SchemaParseException(
+                    '"name" for type %s must be a string: %s' % (atype, json_data)
+                )
+            if not (namespace is None or isinstance(namespace, str)):
+                raise SchemaParseException(
+                    '"namespace" for type %s must be a string or None: %s'
+                    % (atype, json_data)
+                )
+            if not (doc is None or isinstance(doc, str) or isinstance(doc, list)):
+                raise SchemaParseException(
+                    '"doc" for type %s must be a string, a list of strings, or None: %s'
+                    % (atype, json_data)
+                )
             if atype == "enum":
-                symbols = cast(List[str], json_data.get("symbols"))
-                doc = json_data.get("doc")
+                symbols = json_data.get("symbols")
+                if not isinstance(symbols, list):
+                    raise SchemaParseException(
+                        '"symbols" for type enum must be a list of strings: %s'
+                        % json_data
+                    )
+                else:
+                    symbols = cast(List[str], symbols)
                 return EnumSchema(name, namespace, symbols, names, doc, other_props)
             if atype in ["record", "error"]:
-                fields = cast(List[Dict[str, str]], json_data.get("fields"))
-                doc = json_data.get("doc")
+                assert isinstance(atype, str)
+                fields = json_data.get("fields")
+                if not isinstance(fields, list):
+                    raise SchemaParseException(
+                        '"fields" for type %s must be a list of mappings: %s'
+                        % (atype, json_data)
+                    )
+                else:
+                    fields = cast(List[PropsType], fields)
                 return RecordSchema(
                     name, namespace, fields, names, atype, doc, other_props
                 )
             raise SchemaParseException("Unknown Named Type: %s" % atype)
         if atype in VALID_TYPES:
             if atype == "array":
-                items = cast(List[str], json_data.get("items"))
+                items = json_data.get("items")
                 return ArraySchema(items, names, other_props)
         if atype is None:
             raise SchemaParseException('No "type" property: %s' % json_data)
@@ -610,7 +642,7 @@ def make_avsc_object(json_data, names=None):
         return UnionSchema(json_data, names)
     # JSON string (primitive)
     if json_data in PRIMITIVE_TYPES:
-        return PrimitiveSchema(cast(str, json_data))
+        return PrimitiveSchema(json_data)
     # not for us!
     fail_msg = "Could not make an Avro Schema object from %s." % json_data
     raise SchemaParseException(fail_msg)

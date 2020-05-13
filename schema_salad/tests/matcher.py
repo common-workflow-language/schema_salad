@@ -4,7 +4,6 @@
 
 import difflib
 import re
-
 from typing import Any
 
 from schema_salad.utils import json_dumps

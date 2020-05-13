@@ -1,16 +1,19 @@
-import pytest
+import pytest  # type: ignore
 
 import schema_salad
+import schema_salad.main
+from schema_salad.avro.schema import Names
+from schema_salad.exceptions import ValidationException
 from schema_salad.schema import load_and_validate, load_schema
-from schema_salad.validate import ValidationException
 
 from .util import get_data
 
 
 def test_errors() -> None:
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    )
+    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    assert path
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    assert isinstance(avsc_names, Names)
 
     for t in (
         "test_schema/test1.cwl",
@@ -26,20 +29,23 @@ def test_errors() -> None:
         "test_schema/test11.cwl",
         "test_schema/test15.cwl",
     ):
+        path2 = get_data("tests/" + t)
+        assert path2
         with pytest.raises(ValidationException):
             try:
                 load_and_validate(
-                    document_loader, avsc_names, str(get_data("tests/" + t)), True,
+                    document_loader, avsc_names, path2, True,
                 )
             except ValidationException as e:
                 print("\n", e)
                 raise
 
 
-def test_error_message1():
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    )
+def test_error_message1() -> None:
+    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    assert path
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    assert isinstance(avsc_names, Names)
 
     t = "test_schema/test1.cwl"
     match = (
@@ -49,16 +55,17 @@ def test_error_message1():
 \s+\* missing\s+required\s+field\s+`outputs`
 \s+\* missing\s+required\s+field\s+`steps`$"""
     )
+    path2 = get_data("tests/" + t)
+    assert path2
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(
-            document_loader, avsc_names, str(get_data("tests/" + t)), True
-        )
+        load_and_validate(document_loader, avsc_names, path2, True)
 
 
-def test_error_message2():
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    )
+def test_error_message2() -> None:
+    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    assert path
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    assert isinstance(avsc_names, Names)
 
     t = "test_schema/test2.cwl"
     match = r"""
@@ -66,16 +73,17 @@ def test_error_message2():
 \s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$"""[
         1:
     ]
+    path2 = get_data("tests/" + t)
+    assert path2
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(
-            document_loader, avsc_names, str(get_data("tests/" + t)), True
-        )
+        load_and_validate(document_loader, avsc_names, path2, True)
 
 
-def test_error_message3():
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    )
+def test_error_message3() -> None:
+    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    assert path
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    assert isinstance(avsc_names, Names)
 
     t = "test_schema/test3.cwl"
     match = r"""
@@ -91,10 +99,11 @@ def test_error_message3():
         )
 
 
-def test_error_message4():
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    )
+def test_error_message4() -> None:
+    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    assert path
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    assert isinstance(avsc_names, Names)
 
     t = "test_schema/test4.cwl"
     match = r"""
@@ -109,10 +118,11 @@ def test_error_message4():
         )
 
 
-def test_error_message5():
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    )
+def test_error_message5() -> None:
+    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    assert path
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    assert isinstance(avsc_names, Names)
 
     t = "test_schema/test5.cwl"
     match = r"""
@@ -130,10 +140,11 @@ def test_error_message5():
         )
 
 
-def test_error_message7():
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    )
+def test_error_message7() -> None:
+    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    assert path
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    assert isinstance(avsc_names, Names)
 
     t = "test_schema/test7.cwl"
     match = (
@@ -153,10 +164,11 @@ def test_error_message7():
         )
 
 
-def test_error_message8():
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    )
+def test_error_message8() -> None:
+    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    assert path
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    assert isinstance(avsc_names, Names)
 
     t = "test_schema/test8.cwl"
     match = r"""
@@ -172,10 +184,11 @@ def test_error_message8():
         )
 
 
-def test_error_message9():
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    )
+def test_error_message9() -> None:
+    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    assert path
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    assert isinstance(avsc_names, Names)
 
     t = "test_schema/test9.cwl"
     match = (
@@ -190,10 +203,11 @@ def test_error_message9():
         )
 
 
-def test_error_message10():
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    )
+def test_error_message10() -> None:
+    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    assert path
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    assert isinstance(avsc_names, Names)
 
     t = "test_schema/test10.cwl"
     match = r"""
@@ -213,10 +227,11 @@ def test_error_message10():
         )
 
 
-def test_error_message11():
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    )
+def test_error_message11() -> None:
+    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    assert path
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    assert isinstance(avsc_names, Names)
 
     t = "test_schema/test11.cwl"
     match = r"""
@@ -232,10 +247,11 @@ def test_error_message11():
         )
 
 
-def test_error_message15():
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    )
+def test_error_message15() -> None:
+    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    assert path
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    assert isinstance(avsc_names, Names)
 
     t = "test_schema/test15.cwl"
     match = (
@@ -258,13 +274,14 @@ def test_error_message15():
         )
 
 
-@pytest.mark.skip(
+@pytest.mark.skip(  # type: ignore
     "See https://github.com/common-workflow-language/common-workflow-language/issues/734"  # noqa: B950
 )
-def test_errors_previously_defined_dict_key():
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    )
+def test_errors_previously_defined_dict_key() -> None:
+    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    assert path
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    assert isinstance(avsc_names, Names)
 
     for t in (
         "test_schema/test12.cwl",
@@ -281,12 +298,16 @@ def test_errors_previously_defined_dict_key():
                 raise
 
 
-def test_bad_schema():
-    assert 1 == schema_salad.main.main(argsl=[get_data("tests/bad_schema.yml")])
-    assert 1 == schema_salad.main.main(
-        argsl=["--print-avro", get_data("tests/bad_schema.yml")]
-    )
+def test_bad_schema() -> None:
+    path = get_data("tests/bad_schema.yml")
+    assert path
+    assert 1 == schema_salad.main.main(argsl=[path])
+    path2 = get_data("tests/bad_schema.yml")
+    assert path2
+    assert 1 == schema_salad.main.main(argsl=["--print-avro", path2])
 
 
-def test_bad_schema2():
-    assert 1 == schema_salad.main.main(argsl=[get_data("tests/bad_schema2.yml")])
+def test_bad_schema2() -> None:
+    path = get_data("tests/bad_schema2.yml")
+    assert path
+    assert 1 == schema_salad.main.main(argsl=[path])
