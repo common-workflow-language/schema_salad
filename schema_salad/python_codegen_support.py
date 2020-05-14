@@ -381,7 +381,7 @@ class _TypeDSLLoader(_Loader):
         m = self.typeDSLregex.match(doc)
         if m:
             group1 = m.group(1)
-            assert group1
+            assert group1 is not None
             first = expand_url(
                 group1, baseuri, loadingOptions, False, True, self.refScope
             )
