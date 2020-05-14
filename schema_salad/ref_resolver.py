@@ -41,12 +41,12 @@ ContextType = Dict[str, Union[Dict[str, Any], str, Iterable[str]]]
 DocumentType = TypeVar("DocumentType", CommentedSeq, CommentedMap)
 DocumentOrStrType = TypeVar("DocumentOrStrType", CommentedSeq, CommentedMap, str)
 FieldType = TypeVar("FieldType", str, CommentedSeq, CommentedMap)
-resolve_type = Union[int, float, str, CommentedMap, CommentedSeq, None]
-resolved_ref_type = Tuple[resolve_type, CommentedMap]
-idx_result = Union[CommentedMap, CommentedSeq, str, None]
-idx_type = Dict[str, idx_result]
+ResolveType = Union[int, float, str, CommentedMap, CommentedSeq, None]
+ResolvedRefType = Tuple[ResolveType, CommentedMap]
+IdxResultType = Union[CommentedMap, CommentedSeq, str, None]
+idx_type = Dict[str, IdxResultType]
 cache_type = Dict[str, Union[str, Graph, bool]]
-fetcher_sig = Callable[[cache_type, requests.sessions.Session], "Fetcher"]
+FetcherCallableType = Callable[[cache_type, requests.sessions.Session], "Fetcher"]
 attachements_sig = Callable[[Union[CommentedMap, CommentedSeq]], bool]
 typeDSLregex = re.compile(str(r"^([^[?]+)(\[\])?(\?)?$"))
 
@@ -326,7 +326,7 @@ class Loader(object):
         idx: Optional[idx_type] = None,
         cache: Optional[cache_type] = None,
         session: Optional[requests.sessions.Session] = None,
-        fetcher_constructor: Optional[fetcher_sig] = None,
+        fetcher_constructor: Optional[FetcherCallableType] = None,
         skip_schemas: Optional[bool] = None,
         url_fields: Optional[Set[str]] = None,
         allow_attachments: Optional[attachements_sig] = None,
@@ -589,15 +589,15 @@ class Loader(object):
 
     def resolve_ref(
         self,
-        ref: resolve_type,
+        ref: ResolveType,
         base_url: Optional[str] = None,
         checklinks: bool = True,
         strict_foreign_properties: bool = False,
-    ) -> resolved_ref_type:
+    ) -> ResolvedRefType:
 
         lref = ref
         obj: Optional[CommentedMap] = None
-        resolved_obj: resolve_type = None
+        resolved_obj: ResolveType = None
         inc = False
         mixin: Optional[MutableMapping[str, str]] = None
 
@@ -985,12 +985,12 @@ class Loader(object):
 
     def resolve_all(
         self,
-        document: resolve_type,
+        document: ResolveType,
         base_url: str,
         file_base: Optional[str] = None,
         checklinks: bool = True,
         strict_foreign_properties: bool = False,
-    ) -> resolved_ref_type:
+    ) -> ResolvedRefType:
         loader = self
         metadata = CommentedMap()
         if file_base is None:
@@ -1142,7 +1142,7 @@ class Loader(object):
 
         return document, metadata
 
-    def fetch(self, url: str, inject_ids: bool = True) -> idx_result:
+    def fetch(self, url: str, inject_ids: bool = True) -> IdxResultType:
         if url in self.idx:
             return self.idx[url]
         try:
@@ -1267,7 +1267,7 @@ class Loader(object):
 
     def validate_links(
         self,
-        document: resolve_type,
+        document: ResolveType,
         base_url: str,
         all_doc_ids: Dict[str, str],
         strict_foreign_properties: bool = False,

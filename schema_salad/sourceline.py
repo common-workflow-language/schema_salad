@@ -3,6 +3,7 @@ import re
 from typing import (
     Any,
     AnyStr,
+    Callable,
     Dict,
     List,
     MutableMapping,
@@ -234,7 +235,7 @@ class SourceLine(object):
         self,
         item: Any,
         key: Optional[Any] = None,
-        raise_type: Union[Type[str], Type[Exception]] = str,
+        raise_type: Callable[[str], Any] = str,
         include_traceback: bool = False,
     ) -> None:
         self.item = item

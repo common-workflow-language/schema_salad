@@ -38,7 +38,7 @@ from .exceptions import (
     SchemaSaladException,
     ValidationException,
 )
-from .ref_resolver import Loader, cache_type, resolve_type
+from .ref_resolver import Loader, cache_type, ResolveType
 from .sourceline import SourceLine, add_lc_filename, relname
 
 SALAD_FILES = (
@@ -228,7 +228,7 @@ schema_type = Tuple[Loader, Union[Names, SchemaParseException], Dict[str, Any], 
 
 
 def load_schema(
-    schema_ref: resolve_type, cache: Optional[cache_type] = None,
+    schema_ref: ResolveType, cache: Optional[cache_type] = None,
 ) -> schema_type:
     """
     Load a schema that can be used to validate documents using load_and_validate.
@@ -299,7 +299,7 @@ def load_and_validate(
 
 def validate_doc(
     schema_names: Names,
-    doc: resolve_type,
+    doc: ResolveType,
     loader: Loader,
     strict: bool,
     strict_foreign_properties: bool = False,
