@@ -58,7 +58,7 @@ SCHEMA_RESERVED_PROPS = (
 # MappingDataType = Dict[str, Union[PropType, List[PropsType]]]
 # was: Union[str, MappingDataType, List[MappingDataType]]
 JsonDataType = Any
-AtomicPropType = Union[str, bool, "Schema", List[str], List["Field"]]
+AtomicPropType = Union[str, int, bool, "Schema", List[str], List["Field"]]
 PropType = Union[
     AtomicPropType,
     Dict[str, Optional[AtomicPropType]],
