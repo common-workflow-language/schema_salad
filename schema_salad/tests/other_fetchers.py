@@ -37,3 +37,36 @@ class testFetcher(schema_salad.ref_resolver.Fetcher):
         if basesp.scheme == "keep":
             return base + "/" + url
         return urljoin(base, url)
+
+
+class CWLTestFetcher(schema_salad.ref_resolver.Fetcher):
+    def __init__(
+        self,
+        cache: schema_salad.ref_resolver.cache_type,
+        session: Optional[requests.sessions.Session],
+    ) -> None:
+        pass
+
+    def fetch_text(self, url):  # type: (str) -> str
+        if url == "baz:bar/foo.cwl":
+            return """
+cwlVersion: v1.0
+class: CommandLineTool
+baseCommand: echo
+inputs: []
+outputs: []
+"""
+        raise RuntimeError("Not foo.cwl, was %s" % url)
+
+    def check_exists(self, url):  # type: (str) -> bool
+        return url == "baz:bar/foo.cwl"
+
+    def urljoin(self, base: str, url: str) -> str:
+        urlsp = urlsplit(url)
+        if urlsp.scheme:
+            return url
+        basesp = urlsplit(base)
+
+        if basesp.scheme == "keep":
+            return base + "/" + url
+        return urljoin(base, url)

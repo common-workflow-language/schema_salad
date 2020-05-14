@@ -55,7 +55,7 @@ if USE_MYPYC:
         "schema_salad/validate.py",
         "schema_salad/avro/__init__.py",
         "schema_salad/avro/schema.py",
-        "schema_salad/tests/a_fetcher.py",
+        "schema_salad/tests/other_fetchers.py",
         # "schema_salad/tests/util.py",
         # "schema_salad/tests/test_print_oneline.py",
         # "schema_salad/tests/test_python_codegen.py",

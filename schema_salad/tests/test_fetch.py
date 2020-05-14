@@ -6,7 +6,7 @@ import schema_salad.main
 import schema_salad.ref_resolver
 import schema_salad.schema
 
-from .a_fetcher import testFetcher
+from .other_fetchers import testFetcher
 
 
 def test_fetcher() -> None:
