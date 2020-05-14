@@ -549,10 +549,7 @@ def make_valid_avro(
         return ret
     if union and isinstance(items, str):
         if items in alltypes and avro_name(items) not in found:
-            return cast(
-                Dict[str, str],
-                make_valid_avro(alltypes[items], alltypes, found, union=union),
-            )
+            return make_valid_avro(alltypes[items], alltypes, found, union=union)
         return avro_name(items)
     else:
         return items
