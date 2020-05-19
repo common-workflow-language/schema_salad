@@ -2,8 +2,6 @@ import json
 import os
 from typing import IO, Any, Dict, Mapping, MutableSequence
 
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
-
 
 def add_dictlist(di, key, val):  # type: (Dict[Any, Any], Any, Any) -> None
     if key not in di:
@@ -11,31 +9,31 @@ def add_dictlist(di, key, val):  # type: (Dict[Any, Any], Any, Any) -> None
     di[key].append(val)
 
 
-def aslist(l):  # type: (Any) -> MutableSequence[Any]
+def aslist(thing):  # type: (Any) -> MutableSequence[Any]
     """
     Convenience function to wrap single items and lists.
 
     Return lists unchanged.
     """
 
-    if isinstance(l, MutableSequence):
-        return l
+    if isinstance(thing, MutableSequence):
+        return thing
     else:
-        return [l]
+        return [thing]
 
 
 # http://rightfootin.blogspot.com/2006/09/more-on-python-flatten.html
 
 
-def flatten(l, ltypes=(list, tuple)):
+def flatten(thing, ltypes=(list, tuple)):
     # type: (Any, Any) -> Any
-    if l is None:
+    if thing is None:
         return []
-    if not isinstance(l, ltypes):
-        return [l]
+    if not isinstance(thing, ltypes):
+        return [thing]
 
-    ltype = type(l)
-    lst = list(l)
+    ltype = type(thing)
+    lst = list(thing)
     i = 0
     while i < len(lst):
         while isinstance(lst[i], ltypes):

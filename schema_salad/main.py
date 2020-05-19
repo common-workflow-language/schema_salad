@@ -10,7 +10,8 @@ from urllib.parse import urlparse
 import pkg_resources  # part of setuptools
 from rdflib.parser import Parser
 from rdflib.plugin import register
-from ruamel.yaml.comments import CommentedSeq
+
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from . import codegen, jsonld_context, schema
 from .avro.schema import SchemaParseException
@@ -19,23 +20,18 @@ from .makedoc import makedoc
 from .ref_resolver import Loader, file_uri
 from .utils import json_dumps
 
-
 register("json-ld", Parser, "rdflib_jsonld.parser", "JsonLDParser")
 _logger = logging.getLogger("salad")
 
 
 def printrdf(
-    workflow,  # type: str
-    wf,  # type: Union[List[Dict[str, Any]], Dict[str, Any]]
-    ctx,  # type: Dict[str, Any]
-    sr,  # type: str
-):
-    # type: (...) -> None
+    workflow: str, wf: Union[CommentedMap, CommentedSeq], ctx: Dict[str, Any], sr: str,
+) -> None:
     g = jsonld_context.makerdf(workflow, wf, ctx)
     print(g.serialize(format=sr, encoding="utf-8").decode("utf-8"))
 
 
-def main(argsl=None):  # type: (Optional[List[str]]) -> int
+def main(argsl: Optional[List[str]] = None) -> int:
     if argsl is None:
         argsl = sys.argv[1:]
 
@@ -124,15 +120,15 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
         "--print-doc", action="store_true", help="Print HTML schema documentation page"
     )
 
-    exgroup = parser.add_mutually_exclusive_group()
-    exgroup.add_argument(
+    exgroup_strict = parser.add_mutually_exclusive_group()
+    exgroup_strict.add_argument(
         "--strict",
         action="store_true",
         help="Strict validation (unrecognized or out of place fields are error)",
         default=True,
         dest="strict",
     )
-    exgroup.add_argument(
+    exgroup_strict.add_argument(
         "--non-strict",
         action="store_false",
         help="Lenient validation (ignore unrecognized fields)",
@@ -140,12 +136,16 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
         dest="strict",
     )
 
-    exgroup = parser.add_mutually_exclusive_group()
-    exgroup.add_argument("--verbose", action="store_true", help="Default logging")
-    exgroup.add_argument(
+    exgroup_volume = parser.add_mutually_exclusive_group()
+    exgroup_volume.add_argument(
+        "--verbose", action="store_true", help="Default logging"
+    )
+    exgroup_volume.add_argument(
         "--quiet", action="store_true", help="Only print warnings and errors."
     )
-    exgroup.add_argument("--debug", action="store_true", help="Print even more logging")
+    exgroup_volume.add_argument(
+        "--debug", action="store_true", help="Print even more logging"
+    )
 
     parser.add_argument(
         "--only",
@@ -364,8 +364,8 @@ def main(argsl=None):  # type: (Optional[List[str]]) -> int
             strict_foreign_properties=args.strict_foreign_properties,
         )
     except ValidationException as e:
-        msg = to_one_line_messages(e) if args.print_oneline else str(e)
-        _logger.error("While validating document `%s`:\n%s" % (args.document, msg))
+        msg2 = to_one_line_messages(e) if args.print_oneline else str(e)
+        _logger.error("While validating document `%s`:\n%s" % (args.document, msg2))
         return 1
 
     # Optionally convert the document to RDF

@@ -14,13 +14,13 @@ from .utils import aslist
 
 
 def codegen(
-    lang,  # type: str
-    i,  # type: List[Dict[str, Any]]
-    schema_metadata,  # type: Dict[str, Any]
+    lang: str,
+    i: List[Dict[str, str]],
+    schema_metadata: Dict[str, Any],
     loader: Loader,
-    target=None,  # type: Optional[str]
-    examples=None,  # type: Optional[str]
-):  # type: (...) -> None
+    target: Optional[str] = None,
+    examples: Optional[str] = None,
+) -> None:
     """Generate classes with loaders for the given Schema Salad description."""
 
     j = schema.extend_and_specialize(i, loader)

@@ -33,7 +33,7 @@ COVBASE=coverage run --branch --append --source=${MODULE} \
 
 # Updating the Major & Minor version below?
 # Don't forget to update setup.py as well
-VERSION=5.0.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
+VERSION=5.1.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
 
 ## all         : default task
@@ -86,7 +86,7 @@ diff_pydocstyle_report: pydocstyle_report.txt
 
 ## format      : check/fix all code indentation and formatting (runs black)
 format:
-	black --exclude metaschema.py schema_salad
+	black --exclude metaschema.py schema_salad setup.py
 
 ## pylint      : run static code analysis on Python code
 pylint: $(PYSOURCES)
@@ -172,6 +172,9 @@ mypy: ${PYSOURCES}
 	MYPYPATH=$$MYPYPATH:typeshed/3:typeshed/2and3 mypy --disallow-untyped-calls \
 		 --warn-redundant-casts \
 		 schema_salad
+
+mypyc: ${PYSOURCES}
+	MYPYPATH=typeshed/2and3/:typeshed/3 SCHEMA_SALAD_USE_MYPYC=1 python setup.py test
 
 jenkins: FORCE
 	rm -Rf env && virtualenv env

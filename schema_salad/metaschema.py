@@ -7,6 +7,7 @@ import copy
 import os
 import re
 import uuid as _uuid__  # pylint: disable=unused-import # noqa: F401
+from io import StringIO
 from typing import (
     Any,
     Dict,
@@ -19,32 +20,27 @@ from typing import (
     Type,
     Union,
 )
-
-from io import StringIO
-from urllib.parse import urlsplit, urlunsplit, quote
+from urllib.parse import quote, urlsplit, urlunsplit
 from urllib.request import pathname2url
-from typing_extensions import Text  # pylint: disable=unused-import
 
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
+from schema_salad.exceptions import SchemaSaladException, ValidationException
 from schema_salad.ref_resolver import Fetcher
 from schema_salad.sourceline import SourceLine, add_lc_filename
-from schema_salad.exceptions import SchemaSaladException, ValidationException
 
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
-
-_vocab = {}  # type: Dict[Text, Text]
-_rvocab = {}  # type: Dict[Text, Text]
+_vocab = {}  # type: Dict[str, str]
+_rvocab = {}  # type: Dict[str, str]
 
 
 class Savable(object):
     @classmethod
     def fromDoc(cls, _doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Savable
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Savable
         pass
 
     def save(self, top=False, base_url="", relative_uris=True):
-        # type: (bool, Text, bool) -> Dict[Text, Text]
+        # type: (bool, str, bool) -> Dict[str, str]
         pass
 
 
@@ -52,13 +48,13 @@ class LoadingOptions(object):
     def __init__(
         self,
         fetcher=None,  # type: Optional[Fetcher]
-        namespaces=None,  # type: Optional[Dict[Text, Text]]
-        fileuri=None,  # type: Optional[Text]
+        namespaces=None,  # type: Optional[Dict[str, str]]
+        fileuri=None,  # type: Optional[str]
         copyfrom=None,  # type: Optional[LoadingOptions]
         original_doc=None,  # type: Optional[Any]
     ):  # type: (...) -> None
-        self.idx = {}  # type: Dict[Text, Dict[Text, Any]]
-        self.fileuri = fileuri  # type: Optional[Text]
+        self.idx = {}  # type: Dict[str, Dict[str, Any]]
+        self.fileuri = fileuri  # type: Optional[str]
         self.namespaces = namespaces
         self.original_doc = original_doc
         if copyfrom is not None:
@@ -110,7 +106,7 @@ class LoadingOptions(object):
 
 
 def load_field(val, fieldtype, baseuri, loadingOptions):
-    # type: (Union[Text, Dict[Text, Text]], _Loader, Text, LoadingOptions) -> Any
+    # type: (Union[str, Dict[str, str]], _Loader, str, LoadingOptions) -> Any
     if isinstance(val, MutableMapping):
         if "$import" in val:
             if loadingOptions.fileuri is None:
@@ -129,15 +125,13 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
     return fieldtype.load(val, baseuri, loadingOptions)
 
 
-save_type = Union[
-    Dict[Text, Text], List[Union[Dict[Text, Text], List[Any], None]], None
-]
+save_type = Union[Dict[str, str], List[Union[Dict[str, str], List[Any], None]], None]
 
 
 def save(
     val,  # type: Optional[Union[Savable, MutableSequence[Savable]]]
     top=True,  # type: bool
-    base_url="",  # type: Text
+    base_url="",  # type: str
     relative_uris=True,  # type: bool
 ):  # type: (...) -> save_type
 
@@ -159,16 +153,14 @@ def save(
 
 
 def expand_url(
-    url,  # type: Union[str, Text]
-    base_url,  # type: Union[str, Text]
+    url,  # type: str
+    base_url,  # type: str
     loadingOptions,  # type: LoadingOptions
     scoped_id=False,  # type: bool
     vocab_term=False,  # type: bool
     scoped_ref=None,  # type: Optional[int]
 ):
-    # type: (...) -> Text
-    url = Text(url)
-
+    # type: (...) -> str
     if url in ("@id", "@type"):
         return url
 
@@ -230,13 +222,13 @@ def expand_url(
 
 class _Loader(object):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         pass
 
 
 class _AnyLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if doc is not None:
             return doc
         raise ValidationException("Expected non-null")
@@ -244,11 +236,11 @@ class _AnyLoader(_Loader):
 
 class _PrimitiveLoader(_Loader):
     def __init__(self, tp):
-        # type: (Union[type, Tuple[Type[Text], Type[Text]]]) -> None
+        # type: (Union[type, Tuple[Type[str], Type[str]]]) -> None
         self.tp = tp
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if not isinstance(doc, self.tp):
             raise ValidationException(
                 "Expected a {} but got {}".format(
@@ -267,7 +259,7 @@ class _ArrayLoader(_Loader):
         self.items = items
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if not isinstance(doc, MutableSequence):
             raise ValidationException("Expected a list")
         r = []  # type: List[Any]
@@ -293,11 +285,11 @@ class _ArrayLoader(_Loader):
 
 class _EnumLoader(_Loader):
     def __init__(self, symbols):
-        # type: (Sequence[Text]) -> None
+        # type: (Sequence[str]) -> None
         self.symbols = symbols
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if doc in self.symbols:
             return doc
         else:
@@ -310,7 +302,7 @@ class _RecordLoader(_Loader):
         self.classtype = classtype
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if not isinstance(doc, MutableMapping):
             raise ValidationException("Expected a dict")
         return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
@@ -325,7 +317,7 @@ class _UnionLoader(_Loader):
         self.alternates = alternates
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         errors = []
         for t in self.alternates:
             try:
@@ -351,7 +343,7 @@ class _URILoader(_Loader):
         self.scoped_ref = scoped_ref
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if isinstance(doc, MutableSequence):
             doc = [
                 expand_url(
@@ -386,15 +378,17 @@ class _TypeDSLLoader(_Loader):
 
     def resolve(
         self,
-        doc,  # type: Text
-        baseuri,  # type: Text
+        doc,  # type: str
+        baseuri,  # type: str
         loadingOptions,  # type: LoadingOptions
     ):
-        # type: (...) -> Union[List[Union[Dict[Text, Text], Text]], Dict[Text, Text], Text]
+        # type: (...) -> Union[List[Union[Dict[str, str], str]], Dict[str, str], str]
         m = self.typeDSLregex.match(doc)
         if m:
+            group1 = m.group(1)
+            assert group1
             first = expand_url(
-                m.group(1), baseuri, loadingOptions, False, True, self.refScope
+                group1, baseuri, loadingOptions, False, True, self.refScope
             )
             second = third = None
             if bool(m.group(2)):
@@ -414,7 +408,7 @@ class _TypeDSLLoader(_Loader):
         return doc
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if isinstance(doc, MutableSequence):
             r = []  # type: List[Any]
             for d in doc:
@@ -438,13 +432,13 @@ class _TypeDSLLoader(_Loader):
 
 class _IdMapLoader(_Loader):
     def __init__(self, inner, mapSubject, mapPredicate):
-        # type: (_Loader, Text, Union[Text, None]) -> None
+        # type: (_Loader, str, Union[str, None]) -> None
         self.inner = inner
         self.mapSubject = mapSubject
         self.mapPredicate = mapPredicate
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Any
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if isinstance(doc, MutableMapping):
             r = []  # type: List[Any]
             for k in sorted(doc.keys()):
@@ -471,7 +465,7 @@ class _IdMapLoader(_Loader):
 
 
 def _document_load(loader, doc, baseuri, loadingOptions):
-    # type: (_Loader, Any, Text, LoadingOptions) -> Any
+    # type: (_Loader, Any, str, LoadingOptions) -> Any
     if isinstance(doc, str):
         return _document_load_by_url(
             loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions
@@ -499,7 +493,7 @@ def _document_load(loader, doc, baseuri, loadingOptions):
 
 
 def _document_load_by_url(loader, url, loadingOptions):
-    # type: (_Loader, Text, LoadingOptions) -> Any
+    # type: (_Loader, str, LoadingOptions) -> Any
     if url in loadingOptions.idx:
         return _document_load(loader, loadingOptions.idx[url], url, loadingOptions)
 
@@ -535,7 +529,7 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         return "file://{}{}".format(urlpath, frag)
 
 
-def prefix_url(url, namespaces):  # type: (Text, Dict[Text, Text]) -> Text
+def prefix_url(url, namespaces):  # type: (str, Dict[str, str]) -> str
     for k, v in namespaces.items():
         if url.startswith(v):
             return k + ":" + url[len(v) :]
@@ -543,7 +537,7 @@ def prefix_url(url, namespaces):  # type: (Text, Dict[Text, Text]) -> Text
 
 
 def save_relative_uri(uri, base_url, scoped_id, ref_scope, relative_uris):
-    # type: (Text, Text, bool, Optional[int], bool) -> Union[Text, List[Text]]
+    # type: (str, str, bool, Optional[int], bool) -> Union[str, List[str]]
     if not relative_uris or uri == base_url:
         return uri
     if isinstance(uri, MutableSequence):
@@ -592,7 +586,7 @@ A field of a record.
         doc,  # type: Any
         name,  # type: Any
         type,  # type: Any
-        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
 
@@ -610,7 +604,7 @@ A field of a record.
 
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> RecordField
+        # type: (Any, str, LoadingOptions, Optional[str]) -> RecordField
 
         _doc = copy.copy(doc)
         if hasattr(doc, 'lc'):
@@ -690,8 +684,8 @@ A field of a record.
         return cls(doc, name, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
-        # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
+        # type: (bool, str, bool) -> Dict[str, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -732,7 +726,7 @@ class RecordSchema(Savable):
         self,
         fields,  # type: Any
         type,  # type: Any
-        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
 
@@ -749,7 +743,7 @@ class RecordSchema(Savable):
 
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> RecordSchema
+        # type: (Any, str, LoadingOptions, Optional[str]) -> RecordSchema
 
         _doc = copy.copy(doc)
         if hasattr(doc, 'lc'):
@@ -808,8 +802,8 @@ class RecordSchema(Savable):
         return cls(fields, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
-        # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
+        # type: (bool, str, bool) -> Dict[str, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -844,7 +838,7 @@ Define an enumerated type.
         self,
         symbols,  # type: Any
         type,  # type: Any
-        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
 
@@ -861,7 +855,7 @@ Define an enumerated type.
 
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> EnumSchema
+        # type: (Any, str, LoadingOptions, Optional[str]) -> EnumSchema
 
         _doc = copy.copy(doc)
         if hasattr(doc, 'lc'):
@@ -917,8 +911,8 @@ Define an enumerated type.
         return cls(symbols, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
-        # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
+        # type: (bool, str, bool) -> Dict[str, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -952,7 +946,7 @@ class ArraySchema(Savable):
         self,
         items,  # type: Any
         type,  # type: Any
-        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
 
@@ -969,7 +963,7 @@ class ArraySchema(Savable):
 
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> ArraySchema
+        # type: (Any, str, LoadingOptions, Optional[str]) -> ArraySchema
 
         _doc = copy.copy(doc)
         if hasattr(doc, 'lc'):
@@ -1025,8 +1019,8 @@ class ArraySchema(Savable):
         return cls(items, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
-        # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
+        # type: (bool, str, bool) -> Dict[str, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -1074,7 +1068,7 @@ URI resolution and JSON-LD context generation.
         typeDSL,  # type: Any
         secondaryFilesDSL,  # type: Any
         subscope,  # type: Any
-        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
 
@@ -1100,7 +1094,7 @@ URI resolution and JSON-LD context generation.
 
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> JsonldPredicate
+        # type: (Any, str, LoadingOptions, Optional[str]) -> JsonldPredicate
 
         _doc = copy.copy(doc)
         if hasattr(doc, 'lc'):
@@ -1288,8 +1282,8 @@ URI resolution and JSON-LD context generation.
         return cls(_id, _type, _container, identity, noLinkCheck, mapSubject, mapPredicate, refScope, typeDSL, secondaryFilesDSL, subscope, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
-        # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
+        # type: (bool, str, bool) -> Dict[str, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -1386,7 +1380,7 @@ class SpecializeDef(Savable):
         self,
         specializeFrom,  # type: Any
         specializeTo,  # type: Any
-        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
 
@@ -1403,7 +1397,7 @@ class SpecializeDef(Savable):
 
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> SpecializeDef
+        # type: (Any, str, LoadingOptions, Optional[str]) -> SpecializeDef
 
         _doc = copy.copy(doc)
         if hasattr(doc, 'lc'):
@@ -1459,8 +1453,8 @@ class SpecializeDef(Savable):
         return cls(specializeFrom, specializeTo, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
-        # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
+        # type: (bool, str, bool) -> Dict[str, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -1519,7 +1513,7 @@ A field of a record.
         type,  # type: Any
         jsonldPredicate,  # type: Any
         default,  # type: Any
-        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
 
@@ -1539,7 +1533,7 @@ A field of a record.
 
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> SaladRecordField
+        # type: (Any, str, LoadingOptions, Optional[str]) -> SaladRecordField
 
         _doc = copy.copy(doc)
         if hasattr(doc, 'lc'):
@@ -1647,8 +1641,8 @@ A field of a record.
         return cls(doc, name, type, jsonldPredicate, default, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
-        # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
+        # type: (bool, str, bool) -> Dict[str, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -1714,7 +1708,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         abstract,  # type: Any
         extends,  # type: Any
         specialize,  # type: Any
-        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
 
@@ -1742,7 +1736,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
 
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> SaladRecordSchema
+        # type: (Any, str, LoadingOptions, Optional[str]) -> SaladRecordSchema
 
         _doc = copy.copy(doc)
         if hasattr(doc, 'lc'):
@@ -1962,8 +1956,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         return cls(name, inVocab, fields, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, abstract, extends, specialize, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
-        # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
+        # type: (bool, str, bool) -> Dict[str, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -2099,7 +2093,7 @@ Define an enumerated type.
         jsonldPredicate,  # type: Any
         documentRoot,  # type: Any
         extends,  # type: Any
-        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
 
@@ -2125,7 +2119,7 @@ Define an enumerated type.
 
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> SaladEnumSchema
+        # type: (Any, str, LoadingOptions, Optional[str]) -> SaladEnumSchema
 
         _doc = copy.copy(doc)
         if hasattr(doc, 'lc'):
@@ -2314,8 +2308,8 @@ Define an enumerated type.
         return cls(name, inVocab, symbols, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, extends, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
-        # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
+        # type: (bool, str, bool) -> Dict[str, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -2437,7 +2431,7 @@ schemas but has no role in formal validation.
         docChild,  # type: Any
         docAfter,  # type: Any
         type,  # type: Any
-        extension_fields=None,  # type: Optional[Dict[Text, Any]]
+        extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
 
@@ -2459,7 +2453,7 @@ schemas but has no role in formal validation.
 
     @classmethod
     def fromDoc(cls, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, Text, LoadingOptions, Optional[Text]) -> Documentation
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Documentation
 
         _doc = copy.copy(doc)
         if hasattr(doc, 'lc'):
@@ -2595,8 +2589,8 @@ schemas but has no role in formal validation.
         return cls(name, inVocab, doc, docParent, docChild, docAfter, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
-        # type: (bool, Text, bool) -> Dict[Text, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[Text, Any]
+        # type: (bool, str, bool) -> Dict[str, Any]
+        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -2792,7 +2786,7 @@ union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader
 
 
 def load_document(doc, baseuri=None, loadingOptions=None):
-    # type: (Any, Optional[Text], Optional[LoadingOptions]) -> Any
+    # type: (Any, Optional[str], Optional[LoadingOptions]) -> Any
     if baseuri is None:
         baseuri = file_uri(os.getcwd()) + "/"
     if loadingOptions is None:
@@ -2801,7 +2795,7 @@ def load_document(doc, baseuri=None, loadingOptions=None):
 
 
 def load_document_by_string(string, uri, loadingOptions=None):
-    # type: (Any, Text, Optional[LoadingOptions]) -> Any
+    # type: (Any, str, Optional[LoadingOptions]) -> Any
     result = yaml.main.round_trip_load(string, preserve_quotes=True)
     add_lc_filename(result, uri)
 
