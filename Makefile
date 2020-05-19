@@ -173,6 +173,9 @@ mypy: ${PYSOURCES}
 		 --warn-redundant-casts \
 		 schema_salad
 
+mypyc: ${PYSOURCES}
+	MYPYPATH=typeshed/2and3/:typeshed/3 SCHEMA_SALAD_USE_MYPYC=1 python setup.py test
+
 jenkins: FORCE
 	rm -Rf env && virtualenv env
 	. env/bin/activate ; \
