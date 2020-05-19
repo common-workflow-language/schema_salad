@@ -255,12 +255,12 @@ def test_secondaryFile_dsl_ref() -> None:
 
 def test_scoped_id() -> None:
     ldr = schema_salad.ref_resolver.Loader({})
-    ctx: schema_salad.ref_resolver.ContextType = {
+    ctx = {
         "id": "@id",
         "location": {"@id": "@id", "@type": "@id"},
         "bar": "http://example.com/bar",
         "ex": "http://example.com/",
-    }
+    }  # type: schema_salad.ref_resolver.ContextType
     ldr.add_context(ctx)
 
     ra, _ = ldr.resolve_all(
@@ -316,10 +316,10 @@ def test_scoped_id() -> None:
 
 def test_subscoped_id() -> None:
     ldr = schema_salad.ref_resolver.Loader({})
-    ctx: schema_salad.ref_resolver.ContextType = {
+    ctx = {
         "id": "@id",
         "bar": {"subscope": "bar"},
-    }
+    }  # type: schema_salad.ref_resolver.ContextType
     ldr.add_context(ctx)
 
     ra, _ = ldr.resolve_all(
@@ -417,7 +417,7 @@ def test_blank_node_id() -> None:
     # was not given.
 
     ldr = schema_salad.ref_resolver.Loader({})
-    ctx: schema_salad.ref_resolver.ContextType = {"id": "@id"}
+    ctx = {"id": "@id"}  # type: schema_salad.ref_resolver.ContextType
     ldr.add_context(ctx)
 
     ra, _ = ldr.resolve_all(cmap({"id": "_:foo"}), "http://example.com")
@@ -438,7 +438,7 @@ def test_can_use_Any() -> None:
 
 def test_nullable_links() -> None:
     ldr = schema_salad.ref_resolver.Loader({})
-    ctx: schema_salad.ref_resolver.ContextType = {"link": {"@type": "@id"}}
+    ctx = {"link": {"@type": "@id"}}  # type: schema_salad.ref_resolver.ContextType
     ldr.add_context(ctx)
 
     ra, _ = ldr.resolve_all(cmap({"link": None}), "http://example.com", checklinks=True)

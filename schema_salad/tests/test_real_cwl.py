@@ -20,10 +20,10 @@ test_dir_name = "tests/test_real_cwl/"
 
 class TestRealWorldCWL:
 
-    document_loader: Loader
-    avsc_names: Union[Names, SchemaParseException]
-    schema_metadata = Dict[str, Any]
-    metaschema_loader = Loader
+    document_loader = None  # type: Loader
+    avsc_names = None  # type: Union[Names, SchemaParseException]
+    schema_metadata = None  # type: Dict[str, Any]
+    metaschema_loader = None  # type: Loader
 
     @classmethod
     def setup_class(cls) -> None:

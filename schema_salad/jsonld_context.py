@@ -37,7 +37,7 @@ def pred(
 ) -> Union[Dict[str, Union[str, None]], str]:
     split = urlsplit(name)
 
-    vee: Optional[str] = None
+    vee = None  # type: Optional[str]
 
     if split.scheme != "":
         vee = name
@@ -47,7 +47,7 @@ def pred(
             vee = str(namespaces[ns[0:-1]][ln])
         _logger.debug("name, v %s %s", name, vee)
 
-    v: Optional[Union[Dict[str, Union[str, None]], str]] = None
+    v = None  # type: Optional[Union[Dict[str, Union[str, None]], str]]
 
     if field is not None and "jsonldPredicate" in field:
         if isinstance(field["jsonldPredicate"], MutableMapping):
@@ -140,9 +140,9 @@ def process_type(
 
             _logger.debug("Processing field %s", i)
 
-            v: Union[Dict[Any, Any], str, None] = pred(
+            v = pred(
                 t, i, fieldname, context, defaultPrefix, namespaces
-            )
+            )  # type: Union[Dict[Any, Any], str, None]
 
             if isinstance(v, str):
                 v = v if v[0] != "@" else None
@@ -179,7 +179,7 @@ def process_type(
 def salad_to_jsonld_context(
     j: Iterable[MutableMapping[str, Any]], schema_ctx: MutableMapping[str, Any]
 ) -> Tuple[ContextType, Graph]:
-    context: ContextType = {}
+    context = {}  # type: ContextType
     namespaces = {}
     g = Graph()
     defaultPrefix = ""

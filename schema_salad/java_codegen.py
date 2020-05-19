@@ -98,8 +98,9 @@ prims = {
 
 
 class JavaCodeGen(CodeGenBase):
-    def __init__(self, base, target, examples):
-        # type: (str, Optional[str], Optional[str]) -> None
+    def __init__(
+        self, base: str, target: Optional[str], examples: Optional[str]
+    ) -> None:
         super(JavaCodeGen, self).__init__()
         self.base_uri = base
         sp = urlsplit(base)
@@ -122,7 +123,7 @@ class JavaCodeGen(CodeGenBase):
             self.target_dir, "src", "test", "resources", rel_package_dir
         )
 
-    def prologue(self):  # type: () -> None
+    def prologue(self) -> None:
         for src_dir in [self.main_src_dir, self.test_src_dir]:
             _safe_makedirs(src_dir)
 
@@ -130,31 +131,30 @@ class JavaCodeGen(CodeGenBase):
             self.declare_type(primitive)
 
     @staticmethod
-    def property_name(name):  # type: (str) -> str
+    def property_name(name: str) -> str:
         avn = schema.avro_name(name)
         return avn
 
     @staticmethod
-    def safe_name(name):  # type: (str) -> str
+    def safe_name(name: str) -> str:
         avn = JavaCodeGen.property_name(name)
         if avn in ("class", "extends", "abstract", "default", "package"):
             # reserved words
             avn = avn + "_"
         return avn
 
-    def interface_name(self, n):
-        # type: (str) -> str
+    def interface_name(self, n: str) -> str:
         return self.safe_name(n)
 
     def begin_class(
         self,
-        classname,  # type: str
-        extends,  # type: MutableSequence[str]
-        doc,  # type: str
-        abstract,  # type: bool
-        field_names,  # type: MutableSequence[str]
-        idfield,  # type: str
-    ):  # type: (...) -> None
+        classname: str,
+        extends: MutableSequence[str],
+        doc: str,
+        abstract: bool,
+        field_names: MutableSequence[str],
+        idfield: str,
+    ) -> None:
         cls = self.interface_name(classname)
         self.current_class = cls
         self.current_class_is_abstract = abstract
@@ -301,8 +301,9 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
 """
             )
 
-    def type_loader(self, type_declaration):
-        # type: (Union[List[Any], Dict[str, Any], str]) -> TypeDef
+    def type_loader(
+        self, type_declaration: Union[List[Any], Dict[str, Any], str]
+    ) -> TypeDef:
         if isinstance(type_declaration, MutableSequence):
             sub = [self.type_loader(i) for i in type_declaration]
             if len(sub) < 2:
@@ -405,8 +406,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
             return prims[type_declaration]
         return self.collected_types[self.safe_name(type_declaration)]
 
-    def type_loader_enum(self, type_declaration):
-        # type: (Dict[str, Any]) -> TypeDef
+    def type_loader_enum(self, type_declaration: Dict[str, Any]) -> TypeDef:
         symbols = [self.property_name(sym) for sym in type_declaration["symbols"]]
         for sym in symbols:
             self.add_vocab(shortname(sym), sym)
@@ -563,8 +563,9 @@ public enum {clazz} {{
                 )
             )
 
-    def declare_id_field(self, name, fieldtype, doc, optional):
-        # type: (str, TypeDef, str, bool) -> None
+    def declare_id_field(
+        self, name: str, fieldtype: TypeDef, doc: str, optional: bool
+    ) -> None:
         if self.current_class_is_abstract:
             return
 
@@ -595,8 +596,13 @@ public enum {clazz} {{
             set_uri.format(safename=self.safe_name(name), fieldname=shortname(name))
         )
 
-    def uri_loader(self, inner, scoped_id, vocab_term, ref_scope):
-        # type: (TypeDef, bool, bool, Union[int, None]) -> TypeDef
+    def uri_loader(
+        self,
+        inner: TypeDef,
+        scoped_id: bool,
+        vocab_term: bool,
+        ref_scope: Optional[int],
+    ) -> TypeDef:
         assert inner is not None
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
@@ -618,8 +624,9 @@ public enum {clazz} {{
             )
         )
 
-    def idmap_loader(self, field, inner, map_subject, map_predicate):
-        # type: (str, TypeDef, str, Union[str, None]) -> TypeDef
+    def idmap_loader(
+        self, field: str, inner: TypeDef, map_subject: str, map_predicate: Optional[str]
+    ) -> TypeDef:
         assert inner is not None
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
@@ -633,8 +640,7 @@ public enum {clazz} {{
             )
         )
 
-    def typedsl_loader(self, inner, ref_scope):
-        # type: (TypeDef, Union[int, None]) -> TypeDef
+    def typedsl_loader(self, inner: TypeDef, ref_scope: Union[int, None]) -> TypeDef:
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
             TypeDef(
@@ -645,7 +651,7 @@ public enum {clazz} {{
             )
         )
 
-    def to_java(self, val):  # type: (Any) -> Any
+    def to_java(self, val: Any) -> Any:
         if val is True:
             return "true"
         elif val is None:
@@ -654,7 +660,7 @@ public enum {clazz} {{
             return "false"
         return val
 
-    def epilogue(self, root_loader):  # type: (TypeDef) -> None
+    def epilogue(self, root_loader: TypeDef) -> None:
         pd = "This project contains Java objects and utilities "
         pd = pd + ' auto-generated by <a href="https://github.com/'
         pd = pd + 'common-workflow-language/schema_salad">Schema Salad</a>'

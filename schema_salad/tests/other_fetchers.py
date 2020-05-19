@@ -9,7 +9,7 @@ import schema_salad.ref_resolver
 class testFetcher(schema_salad.ref_resolver.Fetcher):
     def __init__(
         self,
-        cache: schema_salad.ref_resolver.cache_type,
+        cache: schema_salad.ref_resolver.CacheType,
         session: Optional[requests.sessions.Session],
     ) -> None:
         pass
@@ -42,7 +42,7 @@ class testFetcher(schema_salad.ref_resolver.Fetcher):
 class CWLTestFetcher(schema_salad.ref_resolver.Fetcher):
     def __init__(
         self,
-        cache: schema_salad.ref_resolver.cache_type,
+        cache: schema_salad.ref_resolver.CacheType,
         session: Optional[requests.sessions.Session],
     ) -> None:
         pass

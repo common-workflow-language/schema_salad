@@ -38,7 +38,7 @@ from .exceptions import (
     SchemaSaladException,
     ValidationException,
 )
-from .ref_resolver import Loader, cache_type, ResolveType
+from .ref_resolver import Loader, CacheType, ResolveType
 from .sourceline import SourceLine, add_lc_filename, relname
 
 SALAD_FILES = (
@@ -215,7 +215,7 @@ def add_namespaces(
 
 def collect_namespaces(metadata: Mapping[str, Any]) -> Dict[str, str]:
     """Walk through the metadata object, collecting namespace declarations."""
-    namespaces: Dict[str, str] = {}
+    namespaces = {}  # type: Dict[str, str]
     if "$import_metadata" in metadata:
         for value in metadata["$import_metadata"].values():
             add_namespaces(collect_namespaces(value), namespaces)
@@ -228,7 +228,7 @@ schema_type = Tuple[Loader, Union[Names, SchemaParseException], Dict[str, Any], 
 
 
 def load_schema(
-    schema_ref: ResolveType, cache: Optional[cache_type] = None,
+    schema_ref: ResolveType, cache: Optional[CacheType] = None,
 ) -> schema_type:
     """
     Load a schema that can be used to validate documents using load_and_validate.
@@ -351,7 +351,7 @@ def validate_doc(
                 break
 
         if not success:
-            errors: List[SchemaSaladException] = []
+            errors = []  # type: List[SchemaSaladException]
             for root in roots:
                 if hasattr(root, "get_prop"):
                     name = root.get_prop("name")
@@ -578,18 +578,18 @@ def extend_and_specialize(
     """
 
     items2 = deepcopy_strip(items)
-    types: Dict[str, Any] = {i["name"]: i for i in items2}
+    types = {i["name"]: i for i in items2}  # type: Dict[str, Any]
     results = []
 
     for stype in items2:
         if "extends" in stype:
-            specs: Dict[str, str] = {}
+            specs = {}  # type: Dict[str, str]
             if "specialize" in stype:
                 for spec in aslist(stype["specialize"]):
                     specs[spec["specializeFrom"]] = spec["specializeTo"]
 
-            exfields: List[str] = []
-            exsym: List[str] = []
+            exfields = []  # type: List[str]
+            exsym = []  # type: List[str]
             for ex in aslist(stype["extends"]):
                 if ex not in types:
                     raise ValidationException(
@@ -619,7 +619,7 @@ def extend_and_specialize(
                 exfields.extend(stype.get("fields", []))
                 stype["fields"] = exfields
 
-                fieldnames: Set[str] = set()
+                fieldnames = set()  # type: Set[str]
                 for field in stype["fields"]:
                     if field["name"] in fieldnames:
                         raise ValidationException(
@@ -642,7 +642,7 @@ def extend_and_specialize(
     for result in results:
         ex_types[result["name"]] = result
 
-    extended_by: Dict[str, str] = {}
+    extended_by = {}  # type: Dict[str, str]
     for result in results:
         if "extends" in result:
             for ex in aslist(result["extends"]):
@@ -669,7 +669,7 @@ def make_avro(i: List[Dict[str, Any]], loader: Loader,) -> List[Any]:
 
     j = extend_and_specialize(i, loader)
 
-    name_dict: Dict[str, Dict[str, Any]] = {}
+    name_dict = {}  # type: Dict[str, Dict[str, Any]]
     for entry in j:
         name_dict[entry["name"]] = entry
     avro = make_valid_avro(j, name_dict, set())

@@ -15,9 +15,9 @@ class SchemaSaladException(Exception):
     ) -> None:
         super(SchemaSaladException, self).__init__(msg)
         self.message = self.args[0]
-        self.file: Optional[str] = None
-        self.start: Optional[Tuple[int, int]] = None
-        self.end: Optional[Tuple[int, int]] = None
+        self.file = None  # type: Optional[str]
+        self.start = None  # type: Optional[Tuple[int, int]]
+        self.end = None  # type: Optional[Tuple[int, int]]
 
         # It will be set by its parent
         self.bullet = ""  # type: str
@@ -33,7 +33,7 @@ class SchemaSaladException(Exception):
             return exc
 
         if children is None:
-            self.children: List["SchemaSaladException"] = []
+            self.children = []  # type: List["SchemaSaladException"]
         elif len(children) <= 1:
             self.children = sum((simplify(c) for c in children), [])
         else:
@@ -75,8 +75,8 @@ class SchemaSaladException(Exception):
 
     def prefix(self) -> str:
         if self.file:
-            linecol0: Union[int, str] = ""
-            linecol1: Union[int, str] = ""
+            linecol0 = ""  # type: Union[int, str]
+            linecol1 = ""  # type: Union[int, str]
             if self.start:
                 linecol0, linecol1 = self.start
             return "{}:{}:{}: ".format(self.file, linecol0, linecol1)

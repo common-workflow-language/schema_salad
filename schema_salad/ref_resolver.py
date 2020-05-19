@@ -44,10 +44,10 @@ FieldType = TypeVar("FieldType", str, CommentedSeq, CommentedMap)
 ResolveType = Union[int, float, str, CommentedMap, CommentedSeq, None]
 ResolvedRefType = Tuple[ResolveType, CommentedMap]
 IdxResultType = Union[CommentedMap, CommentedSeq, str, None]
-idx_type = Dict[str, IdxResultType]
-cache_type = Dict[str, Union[str, Graph, bool]]
-FetcherCallableType = Callable[[cache_type, requests.sessions.Session], "Fetcher"]
-attachements_sig = Callable[[Union[CommentedMap, CommentedSeq]], bool]
+IdxType = Dict[str, IdxResultType]
+CacheType = Dict[str, Union[str, Graph, bool]]
+FetcherCallableType = Callable[[CacheType, requests.sessions.Session], "Fetcher"]
+AttachementsSig = Callable[[Union[CommentedMap, CommentedSeq]], bool]
 typeDSLregex = re.compile(str(r"^([^[?]+)(\[\])?(\?)?$"))
 
 
@@ -111,6 +111,9 @@ class NormDict(Dict[str, Union[CommentedMap, CommentedSeq, str, None]]):
         super(NormDict, self).__init__()
         self.normalize = normalize
 
+    def __eq__(self, other: Any) -> bool:
+        return super(NormDict, self).__eq__(other)
+
     def __getitem__(self, key):  # type: (Any) -> Any
         return super(NormDict, self).__getitem__(self.normalize(key))
 
@@ -141,7 +144,7 @@ def SubLoader(loader: "Loader") -> "Loader":
 
 class Fetcher(object):
     def __init__(
-        self, cache: cache_type, session: Optional[requests.sessions.Session],
+        self, cache: CacheType, session: Optional[requests.sessions.Session],
     ) -> None:
         pass
 
@@ -162,7 +165,7 @@ class Fetcher(object):
 
 class DefaultFetcher(Fetcher):
     def __init__(
-        self, cache: cache_type, session: Optional[requests.sessions.Session],
+        self, cache: CacheType, session: Optional[requests.sessions.Session],
     ) -> None:
         self.cache = cache
         self.session = session
@@ -323,22 +326,23 @@ class Loader(object):
         ctx: ContextType,
         schemagraph: Optional[Graph] = None,
         foreign_properties: Optional[Set[str]] = None,
-        idx: Optional[idx_type] = None,
-        cache: Optional[cache_type] = None,
+        idx: Optional[IdxType] = None,
+        cache: Optional[CacheType] = None,
         session: Optional[requests.sessions.Session] = None,
         fetcher_constructor: Optional[FetcherCallableType] = None,
         skip_schemas: Optional[bool] = None,
         url_fields: Optional[Set[str]] = None,
-        allow_attachments: Optional[attachements_sig] = None,
+        allow_attachments: Optional[AttachementsSig] = None,
         doc_cache: Union[str, bool] = True,
     ) -> None:
 
-        self.idx: idx_type = (
+        self.idx = (
             NormDict(lambda url: urllib.parse.urlsplit(url).geturl())
             if idx is None
             else idx
-        )
-        self.ctx: ContextType = {}
+        )  # type: IdxType
+
+        self.ctx = {}  # type: ContextType
         self.graph = schemagraph if schemagraph is not None else Graph()
         self.foreign_properties = (
             set(foreign_properties) if foreign_properties is not None else set()
@@ -382,20 +386,22 @@ class Loader(object):
         self.fetcher = self.fetcher_constructor(self.cache, self.session)
         self.fetch_text = self.fetcher.fetch_text
         self.check_exists = self.fetcher.check_exists
-        self.url_fields: Set[str] = set() if url_fields is None else set(url_fields)
-        self.scoped_ref_fields: Dict[str, int] = {}
-        self.vocab_fields: Set[str] = set()
-        self.identifiers: List[str] = []
-        self.identity_links: Set[str] = set()
-        self.standalone: Optional[Set[str]] = None
-        self.nolinkcheck: Set[str] = set()
-        self.vocab: Dict[str, str] = {}
-        self.rvocab: Dict[str, str] = {}
-        self.idmap: Dict[str, str] = {}
-        self.mapPredicate: Dict[str, str] = {}
-        self.type_dsl_fields: Set[str] = set()
-        self.subscopes: Dict[str, str] = {}
-        self.secondaryFile_dsl_fields: Set[str] = set()
+        self.url_fields = (
+            set() if url_fields is None else set(url_fields)
+        )  # type: Set[str]
+        self.scoped_ref_fields = {}  # type: Dict[str, int]
+        self.vocab_fields = set()  # type: Set[str]
+        self.identifiers = []  # type: List[str]
+        self.identity_links = set()  # type: Set[str]
+        self.standalone = None  # type: Optional[Set[str]]
+        self.nolinkcheck = set()  # type: Set[str]
+        self.vocab = {}  # type: Dict[str, str]
+        self.rvocab = {}  # type: Dict[str, str]
+        self.idmap = {}  # type: Dict[str, str]
+        self.mapPredicate = {}  # type: Dict[str, str]
+        self.type_dsl_fields = set()  # type: Set[str]
+        self.subscopes = {}  # type:  Dict[str, str]
+        self.secondaryFile_dsl_fields = set()  # type: Set[str]
         self.allow_attachments = allow_attachments
 
         self.add_context(ctx)
@@ -596,10 +602,10 @@ class Loader(object):
     ) -> ResolvedRefType:
 
         lref = ref
-        obj: Optional[CommentedMap] = None
-        resolved_obj: ResolveType = None
+        obj = None  # type: Optional[CommentedMap]
+        resolved_obj = None  # type: ResolveType
         inc = False
-        mixin: Optional[MutableMapping[str, str]] = None
+        mixin = None  # type: Optional[MutableMapping[str, str]]
 
         if not base_url:
             base_url = file_uri(os.getcwd()) + "/"
@@ -660,9 +666,9 @@ class Loader(object):
         if url in self.idx and (not mixin):
             resolved_obj = self.idx[url]
             if isinstance(resolved_obj, MutableMapping):
-                metadata: Union[CommentedMap, CommentedSeq, str, None] = self.idx.get(
+                metadata = self.idx.get(
                     urllib.parse.urldefrag(url)[0], CommentedMap()
-                )
+                )  # type: Union[CommentedMap, CommentedSeq, str, None]
                 if isinstance(metadata, MutableMapping):
                     if "$graph" in resolved_obj:
                         metadata = _copy_dict_without_key(resolved_obj, "$graph")
@@ -767,7 +773,7 @@ class Loader(object):
                     ls = CommentedSeq()
                     for k in sorted(idmapFieldValue.keys()):
                         val = idmapFieldValue[k]
-                        v: Optional[CommentedMap] = None
+                        v = None  # type: Optional[CommentedMap]
                         if not isinstance(val, CommentedMap):
                             if idmapField in loader.mapPredicate:
                                 v = CommentedMap(
@@ -831,7 +837,7 @@ class Loader(object):
         if not isinstance(t, str):
             return t
         pat = t[0:-1] if t.endswith("?") else t
-        req: Optional[bool] = False if t.endswith("?") else None
+        req = False if t.endswith("?") else None  # type: Optional[bool]
 
         second = CommentedMap((("pattern", pat), ("required", req)))
         second.lc.add_kv_line_col("pattern", lc)
@@ -879,7 +885,7 @@ class Loader(object):
                             datum2.append(self._apply_dsl(t, d, loader, LineCol(), ""))
                 if isinstance(datum2, CommentedSeq):
                     datum3 = CommentedSeq()
-                    seen: List[str] = []
+                    seen = []  # type: List[str]
                     for i, item in enumerate(datum2):
                         if isinstance(item, CommentedSeq):
                             for j, v in enumerate(item):
@@ -1023,7 +1029,7 @@ class Loader(object):
         else:
             return (document, metadata)
 
-        newctx: Optional["Loader"] = None
+        newctx = None  # type: Optional["Loader"]
         if isinstance(document, CommentedMap):
             # Handle $base, $profile, $namespaces, $schemas and $graph
             if "$base" in document:
@@ -1132,7 +1138,7 @@ class Loader(object):
                 ) from v
 
         if checklinks:
-            all_doc_ids: Dict[str, str] = {}
+            all_doc_ids = {}  # type: Dict[str, str]
             loader.validate_links(
                 document,
                 "",
@@ -1274,8 +1280,8 @@ class Loader(object):
     ) -> None:
         docid = self.getid(document) or base_url
 
-        errors: List[SchemaSaladException] = []
-        iterator: Any = None
+        errors = []  # type: List[SchemaSaladException]
+        iterator = None  # type: Any
         if isinstance(document, MutableSequence):
             iterator = enumerate(document)
         elif isinstance(document, MutableMapping):

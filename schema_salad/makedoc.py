@@ -31,7 +31,7 @@ _logger = logging.getLogger("salad")
 
 
 def has_types(items: Any) -> List[str]:
-    r: List[str] = []
+    r = []  # type: List[str]
     if isinstance(items, MutableMapping):
         if items["type"] == "https://w3id.org/cwl/salad#record":
             return [items["name"]]
@@ -191,12 +191,12 @@ class RenderType(object):
     ) -> None:
         self.typedoc = StringIO()
         self.toc = toc
-        self.subs: Dict[str, str] = {}
-        self.docParent: Dict[str, List[str]] = {}
-        self.docAfter: Dict[str, List[str]] = {}
-        self.rendered: Set[str] = set()
+        self.subs = {}  # type: Dict[str, str]
+        self.docParent = {}  # type: Dict[str, List[str]]
+        self.docAfter = {}  # type: Dict[str, List[str]]
+        self.rendered = set()  # type: Set[str]
         self.redirects = redirects
-        self.title: Optional[str] = None
+        self.title = None  # type: Optional[str]
         self.primitiveType = primitiveType
 
         for t in j:
@@ -219,15 +219,17 @@ class RenderType(object):
         metaschema_loader = schema.get_metaschema()[2]
         alltypes = schema.extend_and_specialize(j, metaschema_loader)
 
-        self.typemap: Dict[str, Dict[str, str]] = {}
-        self.uses: Dict[str, List[Tuple[str, str]]] = {}
-        self.record_refs: Dict[str, List[str]] = {}
+        self.typemap = {}  # type: Dict[str, Dict[str, str]]
+        self.uses = {}  # type: Dict[str, List[Tuple[str, str]]]
+        self.record_refs = {}  # type: Dict[str, List[str]]
         for entry in alltypes:
             self.typemap[entry["name"]] = entry
             try:
                 if entry["type"] == "record":
                     self.record_refs[entry["name"]] = []
-                    fields: Union[str, List[Dict[str, str]]] = entry.get("fields", [])
+                    fields = entry.get(
+                        "fields", []
+                    )  # type: Union[str, List[Dict[str, str]]]
                     if isinstance(fields, str):
                         raise KeyError("record fields must be a list of mappings")
                     for f in fields:  # type: Dict[str, str]
@@ -504,7 +506,7 @@ def avrold_doc(
     toc.start_numbering = False
 
     rt = RenderType(toc, j, renderlist, redirects, primtype)
-    content: str = rt.typedoc.getvalue()
+    content = rt.typedoc.getvalue()
 
     if brandstyle is None:
         bootstrap_url = (
@@ -693,7 +695,7 @@ def main() -> None:
 
 def makedoc(args: argparse.Namespace) -> None:
 
-    s: List[Dict[str, Any]] = []
+    s = []  # type: List[Dict[str, Any]]
     a = args.schema
     with open(a, encoding="utf-8") as f:
         if a.endswith("md"):
@@ -718,9 +720,11 @@ def makedoc(args: argparse.Namespace) -> None:
     for r in args.redirect or []:
         redirect[r.split("=")[0]] = r.split("=")[1]
     renderlist = args.only if args.only else []
-    stdout: Union[TextIOWrapper, StreamWriter] = TextIOWrapper(
-        sys.stdout.buffer, encoding="utf-8"
-    ) if sys.stdout.encoding != "UTF-8" else cast(TextIOWrapper, sys.stdout)
+    stdout = (
+        TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+        if sys.stdout.encoding != "UTF-8"
+        else cast(TextIOWrapper, sys.stdout)
+    )  # type: Union[TextIOWrapper, StreamWriter]
     avrold_doc(
         s,
         stdout,

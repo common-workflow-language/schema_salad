@@ -25,7 +25,7 @@ def codegen(
 
     j = schema.extend_and_specialize(i, loader)
 
-    gen: Optional[CodeGenBase] = None
+    gen = None  # type: Optional[CodeGenBase]
     if lang == "python":
         if target:
             dest = open(target, mode="w", encoding="utf-8")

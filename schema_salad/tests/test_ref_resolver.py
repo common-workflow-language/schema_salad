@@ -70,9 +70,58 @@ def test_Loader_initialisation_disable_doc_cache(tmp_dir_fixture: str) -> None:
     assert isinstance(loader.session, Session)
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="Only for win32")  # type: ignore
 def test_DefaultFetcher_urljoin_win32(tmp_dir_fixture: str) -> None:
     # Ensure HOME is set.
     os.environ["HOME"] = tmp_dir_fixture
+
+    fetcher = DefaultFetcher({}, None)
+    # Relative path, same folder
+    url = fetcher.urljoin("file:///C:/Users/fred/foo.cwl", "soup.cwl")
+    assert url == "file:///C:/Users/fred/soup.cwl"
+    # Relative path, sub folder
+    url = fetcher.urljoin("file:///C:/Users/fred/foo.cwl", "foo/soup.cwl")
+    assert url == "file:///C:/Users/fred/foo/soup.cwl"
+    # relative climb-up path
+    url = fetcher.urljoin("file:///C:/Users/fred/foo.cwl", "../alice/soup.cwl")
+    assert url == "file:///C:/Users/alice/soup.cwl"
+
+    # Path with drive: should not be treated as relative to directory
+    # Note: \ would already have been converted to / by resolve_ref()
+    url = fetcher.urljoin("file:///C:/Users/fred/foo.cwl", "c:/bar/soup.cwl")
+    assert url == "file:///c:/bar/soup.cwl"
+    # /C:/  (regular URI absolute path)
+    url = fetcher.urljoin("file:///C:/Users/fred/foo.cwl", "/c:/bar/soup.cwl")
+    assert url == "file:///c:/bar/soup.cwl"
+    # Relative, change drive
+    url = fetcher.urljoin("file:///C:/Users/fred/foo.cwl", "D:/baz/soup.cwl")
+    assert url == "file:///d:/baz/soup.cwl"
+    # Relative from root of base's D: drive
+    url = fetcher.urljoin("file:///d:/baz/soup.cwl", "/foo/soup.cwl")
+    assert url == "file:///d:/foo/soup.cwl"
+
+    # resolving absolute non-drive URIs still works
+    url = fetcher.urljoin(
+        "file:///C:/Users/fred/foo.cwl", "http://example.com/bar/soup.cwl"
+    )
+    assert url == "http://example.com/bar/soup.cwl"
+    # and of course relative paths from http://
+    url = fetcher.urljoin("http://example.com/fred/foo.cwl", "soup.cwl")
+    assert url == "http://example.com/fred/soup.cwl"
+
+    # Stay on http:// and same host
+    url = fetcher.urljoin("http://example.com/fred/foo.cwl", "/bar/soup.cwl")
+    assert url == "http://example.com/bar/soup.cwl"
+
+    # Security concern - can't resolve file: from http:
+    with pytest.raises(ValidationException):
+        url = fetcher.urljoin(
+            "http://example.com/fred/foo.cwl", "file:///c:/bar/soup.cwl"
+        )
+    # Drive-relative -- should NOT return "absolute" URI c:/bar/soup.cwl"
+    # as that is a potential remote exploit
+    with pytest.raises(ValidationException):
+        url = fetcher.urljoin("http://example.com/fred/foo.cwl", "c:/bar/soup.cwl")
 
 
 def test_DefaultFetcher_urljoin_linux(tmp_dir_fixture: str) -> None:

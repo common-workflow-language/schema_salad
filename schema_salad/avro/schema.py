@@ -103,7 +103,7 @@ class Schema(object):
 
         # add members
         if not hasattr(self, "_props"):
-            self._props: PropsType = {}
+            self._props = {}  # type: PropsType
         self.set_prop("type", atype)
         self.type = atype
         self._props.update(other_props or {})
@@ -151,7 +151,7 @@ class Name(object):
             fail_msg = "Default must be non-empty string or None."
             raise SchemaParseException(fail_msg)
 
-        self._full: Optional[str] = name_attr
+        self._full = name_attr  # type: Optional[str]
 
         if name_attr is None or name_attr == "":
             return
@@ -182,7 +182,7 @@ class Names(object):
     """Track name set and default namespace during parsing."""
 
     def __init__(self, default_namespace: Optional[str] = None) -> None:
-        self.names: Dict[str, NamedSchema] = {}
+        self.names = {}  # type: Dict[str, NamedSchema]
         self.default_namespace = default_namespace
 
     def has_name(self, name_attr: str, space_attr: Optional[str]) -> bool:
@@ -290,12 +290,12 @@ class Field(object):
             raise SchemaParseException(fail_msg)
 
         # add members
-        self._props: PropsType = {}
+        self._props = {}  # type: PropsType
         self._has_default = has_default
         self._props.update(other_props or {})
 
         if isinstance(atype, str) and names is not None and names.has_name(atype, None):
-            type_schema: Schema = cast(NamedSchema, names.get_name(atype, None))
+            type_schema = cast(NamedSchema, names.get_name(atype, None))  # type: Schema
         else:
             try:
                 type_schema = make_avsc_object(atype, names)
@@ -436,7 +436,7 @@ class UnionSchema(Schema):
         Schema.__init__(self, "union")
 
         # Add class members
-        schema_objects: List[Schema] = []
+        schema_objects = []  # type: List[Schema]
         for schema in schemas:
             if isinstance(schema, str) and names.has_name(schema, None):
                 new_schema = cast(Schema, names.get_name(schema, None))
@@ -470,8 +470,8 @@ class RecordSchema(NamedSchema):
     @staticmethod
     def make_field_objects(field_data: List[PropsType], names: Names) -> List[Field]:
         """We're going to need to make message parameters too."""
-        field_objects: List[Field] = []
-        field_names: List[str] = []
+        field_objects = []  # type: List[Field]
+        field_names = []  # type: List[str]
         for field in field_data:
             if hasattr(field, "get") and callable(field.get):
                 atype = field.get("type")

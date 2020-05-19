@@ -10,7 +10,6 @@ from typing import (
     MutableSequence,
     Optional,
     Tuple,
-    Type,
     Union,
 )
 
@@ -54,7 +53,7 @@ def reflow_all(text: str, maxline: Optional[int] = None) -> str:
         assert group is not None
         maxno = max(maxno, len(group))
     maxno_text = maxline - maxno
-    msg: List[str] = []
+    msg = []  # type: List[str]
     for line in text.splitlines():
         g = lineno_re.match(line)
         if not g:
@@ -115,7 +114,7 @@ def bullets(textlist: List[str], bul: str) -> str:
 
 def strip_duplicated_lineno(text: str) -> str:
     """Same as `strip_dup_lineno` but without reflow"""
-    pre: Optional[str] = None
+    pre = None  # type: Optional[str]
     msg = []
     for line in text.splitlines():
         g = lineno_re.match(line)
@@ -137,7 +136,7 @@ def strip_duplicated_lineno(text: str) -> str:
 def strip_dup_lineno(text: str, maxline: Optional[int] = None) -> str:
     if maxline is None:
         maxline = int(os.environ.get("COLUMNS", "100"))
-    pre: Optional[str] = None
+    pre = None  # type: Optional[str]
     msg = []
     maxno = 0
     for line in text.splitlines():
