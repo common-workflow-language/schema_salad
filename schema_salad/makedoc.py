@@ -27,13 +27,10 @@ from . import schema
 from .exceptions import SchemaSaladException, ValidationException
 from .utils import add_dictlist, aslist
 
-# move to a regular typing import when Python 3.3-3.6 is no longer supported
-
-
 _logger = logging.getLogger("salad")
 
 
-def has_types(items):  # type: (Any) -> List[str]
+def has_types(items: Any) -> List[str]:
     r = []  # type: List[str]
     if isinstance(items, MutableMapping):
         if items["type"] == "https://w3id.org/cwl/salad#record":
@@ -51,41 +48,40 @@ def has_types(items):  # type: (Any) -> List[str]
     return []
 
 
-def linkto(item):  # type: (str) -> str
-    _, frg = urldefrag(item)
+def linkto(item: str) -> str:
+    frg = urldefrag(item)[1]
     return "[{}](#{})".format(frg, to_id(frg))
 
 
 class MyRenderer(mistune.Renderer):
-    def __init__(self):  # type: () -> None
+    def __init__(self) -> None:
         super(MyRenderer, self).__init__()
         self.options = {}
 
-    def header(self, text, level, raw=None):  # type: (str, int, Any) -> str
+    def header(self, text: str, level: int, raw: Optional[Any] = None) -> str:
         return """<h{} id="{}" class="section">{} <a href="#{}">&sect;</a></h{}>""".format(
             level, to_id(text), text, to_id(text), level
         )
 
-    def table(self, header, body):  # type: (str, str) -> str
+    def table(self, header: str, body: str) -> str:
         return (
             '<table class="table table-striped">\n<thead>{}</thead>\n'
             "<tbody>\n{}</tbody>\n</table>\n"
         ).format(header, body)
 
 
-def to_id(text):  # type: (str) -> str
+def to_id(text: str) -> str:
     textid = text
     if text[0] in ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"):
         try:
             textid = text[text.index(" ") + 1 :]
         except ValueError:
             pass
-    textid = textid.replace(" ", "_")
-    return textid
+    return textid.replace(" ", "_")
 
 
 class ToC(object):
-    def __init__(self):  # type: () -> None
+    def __init__(self) -> None:
         self.first_toc_entry = True
         self.numbering = [0]
         self.toc = ""
@@ -108,18 +104,19 @@ class ToC(object):
         elif thisdepth > depth:
             self.numbering.append(1)
 
-        if self.start_numbering:
-            num = "{}.{}".format(
+        num = (
+            "{}.{}".format(
                 self.numbering[0], ".".join([str(n) for n in self.numbering[1:]])
             )
-        else:
-            num = ""
+            if self.start_numbering
+            else ""
+        )
         self.toc += """<li><a href="#{}">{} {}</a><ol>\n""".format(
             to_id(title), num, title
         )
         return num
 
-    def contents(self, idn):  # type: (str) -> str
+    def contents(self, idn: str) -> str:
         toc = """<h1 id="{}">Table of contents</h1>
                <nav class="tocnav"><ol>{}""".format(
             idn, self.toc
@@ -145,13 +142,14 @@ basicTypes = (
 )
 
 
-def number_headings(toc, maindoc):  # type: (ToC, str) -> str
+def number_headings(toc: ToC, maindoc: str) -> str:
     mdlines = []
     skip = False
     for line in maindoc.splitlines():
         if line.strip() == "# Introduction":
             toc.start_numbering = True
-            toc.numbering = [0]
+            toc.numbering.clear()
+            toc.numbering.append(0)
 
         if "```" in line:
             skip = not skip
@@ -159,8 +157,12 @@ def number_headings(toc, maindoc):  # type: (ToC, str) -> str
         if not skip:
             m = re.match(r"^(#+) (.*)", line)
             if m is not None:
-                num = toc.add_entry(len(m.group(1)), m.group(2))
-                line = "{} {} {}".format(m.group(1), num, m.group(2))
+                group1 = m.group(1)
+                assert group1 is not None
+                group2 = m.group(2)
+                assert group2 is not None
+                num = toc.add_entry(len(group1), group2)
+                line = "{} {} {}".format(group1, num, group2)
             line = re.sub(r"^(https?://\S+)", r"[\1](\1)", line)
         mdlines.append(line)
 
@@ -168,11 +170,8 @@ def number_headings(toc, maindoc):  # type: (ToC, str) -> str
     return maindoc
 
 
-def fix_doc(doc):  # type: (Union[List[str], str]) -> str
-    if isinstance(doc, MutableSequence):
-        docstr = "".join(doc)
-    else:
-        docstr = doc
+def fix_doc(doc: Union[List[str], str]) -> str:
+    docstr = "".join(doc) if isinstance(doc, MutableSequence) else doc
     return "\n".join(
         [
             re.sub(r"<([^>@]+@[^>]+)>", r"[\1](mailto:\1)", d)
@@ -182,8 +181,14 @@ def fix_doc(doc):  # type: (Union[List[str], str]) -> str
 
 
 class RenderType(object):
-    def __init__(self, toc, j, renderlist, redirects, primitiveType):
-        # type: (ToC, List[Dict[str, str]], str, Dict[str, str], str) -> None
+    def __init__(
+        self,
+        toc: ToC,
+        j: List[Dict[str, str]],
+        renderlist: str,
+        redirects: Dict[str, str],
+        primitiveType: str,
+    ) -> None:
         self.typedoc = StringIO()
         self.toc = toc
         self.subs = {}  # type: Dict[str, str]
@@ -257,12 +262,11 @@ class RenderType(object):
 
     def typefmt(
         self,
-        tp,  # type: Any
-        redirects,  # type: Dict[str, str]
-        nbsp=False,  # type: bool
-        jsonldPredicate=None,  # type: Optional[Dict[str, str]]
-    ):
-        # type: (...) -> str
+        tp: Any,
+        redirects: Dict[str, str],
+        nbsp: bool = False,
+        jsonldPredicate: Optional[Dict[str, str]] = None,
+    ) -> str:
         if isinstance(tp, MutableSequence):
             if nbsp and len(tp) <= 3:
                 return "&nbsp;|&nbsp;".join(
@@ -331,13 +335,13 @@ class RenderType(object):
                 return """<a href="{}">{}</a>""".format(
                     self.primitiveType, schema.avro_name(str(tp))
                 )
-            _, frg = urldefrag(tp)
-            if frg != "":
-                tp = frg
+            frg2 = urldefrag(tp)[1]
+            if frg2 != "":
+                tp = frg2
             return """<a href="#{}">{}</a>""".format(to_id(tp), tp)
         raise SchemaSaladException("We should not be here!")
 
-    def render_type(self, f, depth):  # type: (Dict[str, Any], int) -> None
+    def render_type(self, f: Dict[str, Any], depth: int) -> None:
         if f["name"] in self.rendered or f["name"] in self.redirects:
             return
         self.rendered.add(f["name"])
@@ -355,8 +359,7 @@ class RenderType(object):
         if "doc" not in f:
             f["doc"] = ""
 
-        def extendsfrom(item, ex):
-            # type: (Dict[str, Any], List[Dict[str, Any]]) -> None
+        def extendsfrom(item: Dict[str, Any], ex: List[Dict[str, Any]]) -> None:
             if "extends" in item:
                 for e in aslist(item["extends"]):
                     ex.insert(0, self.typemap[e])
@@ -393,7 +396,7 @@ class RenderType(object):
                 lines.append(line)
             f["doc"] = "\n".join(lines)
 
-            _, frg = urldefrag(f["name"])
+            frg = urldefrag(f["name"])[1]
             num = self.toc.add_entry(depth, frg)
             doc = "{} {} {}\n".format(("#" * depth), num, frg)
         else:
@@ -489,21 +492,21 @@ class RenderType(object):
 
 
 def avrold_doc(
-    j,  # type: List[Dict[str, Any]]
+    j: List[Dict[str, Any]],
     outdoc: Union[IO[Any], StreamWriter],
-    renderlist,  # type: str
-    redirects,  # type: Dict[str, str]
-    brand,  # type: str
-    brandlink,  # type: str
-    primtype,  # type: str
-    brandstyle=None,  # type: Optional[str]
-    brandinverse=False,  # type: bool
-):  # type: (...) -> None
+    renderlist: str,
+    redirects: Dict[str, str],
+    brand: str,
+    brandlink: str,
+    primtype: str,
+    brandstyle: Optional[str] = None,
+    brandinverse: Optional[bool] = False,
+) -> None:
     toc = ToC()
     toc.start_numbering = False
 
     rt = RenderType(toc, j, renderlist, redirects, primtype)
-    content = rt.typedoc.getvalue()  # type: str
+    content = rt.typedoc.getvalue()
 
     if brandstyle is None:
         bootstrap_url = (
@@ -614,9 +617,7 @@ def avrold_doc(
     """
     )
 
-    navbar_extraclass = ""
-    if brandinverse:
-        navbar_extraclass = "navbar-inverse"
+    navbar_extraclass = "navbar-inverse" if brandinverse else ""
     outdoc.write(
         """
       <nav class="navbar navbar-default navbar-fixed-top {}">
@@ -676,7 +677,7 @@ def avrold_doc(
     )
 
 
-def main():  # type: () -> None
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("schema")
     parser.add_argument("--only", action="append")
@@ -692,7 +693,7 @@ def main():  # type: () -> None
     makedoc(args)
 
 
-def makedoc(args):  # type: (argparse.Namespace) -> None
+def makedoc(args: argparse.Namespace) -> None:
 
     s = []  # type: List[Dict[str, Any]]
     a = args.schema
@@ -708,7 +709,7 @@ def makedoc(args):  # type: (argparse.Namespace) -> None
         else:
             uri = "file://" + os.path.abspath(a)
             metaschema_loader = schema.get_metaschema()[2]
-            j, _ = metaschema_loader.resolve_ref(uri, "")
+            j = metaschema_loader.resolve_ref(uri, "")[0]
             if isinstance(j, MutableSequence):
                 s.extend(j)
             elif isinstance(j, MutableMapping):
@@ -719,9 +720,11 @@ def makedoc(args):  # type: (argparse.Namespace) -> None
     for r in args.redirect or []:
         redirect[r.split("=")[0]] = r.split("=")[1]
     renderlist = args.only if args.only else []
-    stdout = cast(TextIOWrapper, sys.stdout)  # type: Union[TextIOWrapper, StreamWriter]
-    if sys.stdout.encoding != "UTF-8":
-        stdout = TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+    stdout = (
+        TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+        if sys.stdout.encoding != "UTF-8"
+        else cast(TextIOWrapper, sys.stdout)
+    )  # type: Union[TextIOWrapper, StreamWriter]
     avrold_doc(
         s,
         stdout,

@@ -1,4 +1,4 @@
-"""Work-in-progress Java code generator for a given schema salad definition."""
+"""Java code generator for a given schema salad definition."""
 import os
 import shutil
 import string
@@ -21,20 +21,18 @@ from .schema import shortname
 USE_ONE_OR_LIST_OF_TYPES = False
 
 
-def _ensure_directory_and_write(path, contents):
-    # type: (str, str) -> None
+def _ensure_directory_and_write(path: str, contents: str) -> None:
     dirname = os.path.dirname(path)
     _safe_makedirs(dirname)
     with io_open(path, mode="w", encoding="utf-8") as f:
         f.write(contents)
 
 
-def doc_to_doc_string(doc, indent_level=0):
-    # type: (str, int) -> str
+def doc_to_doc_string(doc: Optional[str], indent_level: int = 0) -> str:
     lead = " " + "  " * indent_level + "* " * indent_level
     if doc:
         doc_str = "{}<BLOCKQUOTE>\n".format(lead)
-        doc_str += "\n".join(["{}{}".format(lead, l) for l in doc.split("\n")])
+        doc_str += "\n".join(["{}{}".format(lead, line) for line in doc.split("\n")])
         doc_str += "{}</BLOCKQUOTE>".format(lead)
     else:
         doc_str = ""
@@ -47,9 +45,62 @@ def _safe_makedirs(path):
         os.makedirs(path)
 
 
+prims = {
+    "http://www.w3.org/2001/XMLSchema#string": TypeDef(
+        instance_type="String",
+        init="new PrimitiveLoader<String>(String.class)",
+        name="StringInstance",
+        loader_type="Loader<String>",
+    ),
+    "http://www.w3.org/2001/XMLSchema#int": TypeDef(
+        instance_type="Integer",
+        init="new PrimitiveLoader<Integer>(Integer.class)",
+        name="IntegerInstance",
+        loader_type="Loader<Integer>",
+    ),
+    "http://www.w3.org/2001/XMLSchema#long": TypeDef(
+        instance_type="Long",
+        name="LongInstance",
+        loader_type="Loader<Long>",
+        init="new PrimitiveLoader<Long>(Long.class)",
+    ),
+    "http://www.w3.org/2001/XMLSchema#float": TypeDef(
+        instance_type="Float",
+        name="FloatInstance",
+        loader_type="Loader<Float>",
+        init="new PrimitiveLoader<Float>(Float.class)",
+    ),
+    "http://www.w3.org/2001/XMLSchema#double": TypeDef(
+        instance_type="Double",
+        name="DoubleInstance",
+        loader_type="Loader<Double>",
+        init="new PrimitiveLoader<Double>(Double.class)",
+    ),
+    "http://www.w3.org/2001/XMLSchema#boolean": TypeDef(
+        instance_type="Boolean",
+        name="BooleanInstance",
+        loader_type="Loader<Boolean>",
+        init="new PrimitiveLoader<Boolean>(Boolean.class)",
+    ),
+    "https://w3id.org/cwl/salad#null": TypeDef(
+        instance_type="Object",
+        name="NullInstance",
+        loader_type="Loader<Object>",
+        init="new NullLoader()",
+    ),
+    "https://w3id.org/cwl/salad#Any": TypeDef(
+        instance_type="Object",
+        name="AnyInstance",
+        init="new AnyLoader()",
+        loader_type="Loader<Object>",
+    ),
+}
+
+
 class JavaCodeGen(CodeGenBase):
-    def __init__(self, base, target, examples):
-        # type: (str, Optional[str], Optional[str]) -> None
+    def __init__(
+        self, base: str, target: Optional[str], examples: Optional[str]
+    ) -> None:
         super(JavaCodeGen, self).__init__()
         self.base_uri = base
         sp = urlsplit(base)
@@ -72,39 +123,38 @@ class JavaCodeGen(CodeGenBase):
             self.target_dir, "src", "test", "resources", rel_package_dir
         )
 
-    def prologue(self):  # type: () -> None
+    def prologue(self) -> None:
         for src_dir in [self.main_src_dir, self.test_src_dir]:
             _safe_makedirs(src_dir)
 
-        for primitive in self.prims.values():
+        for primitive in prims.values():
             self.declare_type(primitive)
 
     @staticmethod
-    def property_name(name):  # type: (str) -> str
+    def property_name(name: str) -> str:
         avn = schema.avro_name(name)
         return avn
 
     @staticmethod
-    def safe_name(name):  # type: (str) -> str
+    def safe_name(name: str) -> str:
         avn = JavaCodeGen.property_name(name)
         if avn in ("class", "extends", "abstract", "default", "package"):
             # reserved words
             avn = avn + "_"
         return avn
 
-    def interface_name(self, n):
-        # type: (str) -> str
+    def interface_name(self, n: str) -> str:
         return self.safe_name(n)
 
     def begin_class(
         self,
-        classname,  # type: str
-        extends,  # type: MutableSequence[str]
-        doc,  # type: str
-        abstract,  # type: bool
-        field_names,  # type: MutableSequence[str]
-        idfield,  # type: str
-    ):  # type: (...) -> None
+        classname: str,
+        extends: MutableSequence[str],
+        doc: str,
+        abstract: bool,
+        field_names: MutableSequence[str],
+        idfield: str,
+    ) -> None:
         cls = self.interface_name(classname)
         self.current_class = cls
         self.current_class_is_abstract = abstract
@@ -251,59 +301,9 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
 """
             )
 
-    prims = {
-        "http://www.w3.org/2001/XMLSchema#string": TypeDef(
-            instance_type="String",
-            init="new PrimitiveLoader<String>(String.class)",
-            name="StringInstance",
-            loader_type="Loader<String>",
-        ),
-        "http://www.w3.org/2001/XMLSchema#int": TypeDef(
-            instance_type="Integer",
-            init="new PrimitiveLoader<Integer>(Integer.class)",
-            name="IntegerInstance",
-            loader_type="Loader<Integer>",
-        ),
-        "http://www.w3.org/2001/XMLSchema#long": TypeDef(
-            instance_type="Long",
-            name="LongInstance",
-            loader_type="Loader<Long>",
-            init="new PrimitiveLoader<Long>(Long.class)",
-        ),
-        "http://www.w3.org/2001/XMLSchema#float": TypeDef(
-            instance_type="Float",
-            name="FloatInstance",
-            loader_type="Loader<Float>",
-            init="new PrimitiveLoader<Float>(Float.class)",
-        ),
-        "http://www.w3.org/2001/XMLSchema#double": TypeDef(
-            instance_type="Double",
-            name="DoubleInstance",
-            loader_type="Loader<Double>",
-            init="new PrimitiveLoader<Double>(Double.class)",
-        ),
-        "http://www.w3.org/2001/XMLSchema#boolean": TypeDef(
-            instance_type="Boolean",
-            name="BooleanInstance",
-            loader_type="Loader<Boolean>",
-            init="new PrimitiveLoader<Boolean>(Boolean.class)",
-        ),
-        "https://w3id.org/cwl/salad#null": TypeDef(
-            instance_type="Object",
-            name="NullInstance",
-            loader_type="Loader<Object>",
-            init="new NullLoader()",
-        ),
-        "https://w3id.org/cwl/salad#Any": TypeDef(
-            instance_type="Object",
-            name="AnyInstance",
-            init="new AnyLoader()",
-            loader_type="Loader<Object>",
-        ),
-    }
-
-    def type_loader(self, type_declaration):
-        # type: (Union[List[Any], Dict[str, Any], str]) -> TypeDef
+    def type_loader(
+        self, type_declaration: Union[List[Any], Dict[str, Any], str]
+    ) -> TypeDef:
         if isinstance(type_declaration, MutableSequence):
             sub = [self.type_loader(i) for i in type_declaration]
             if len(sub) < 2:
@@ -402,12 +402,11 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                     )
                 )
             raise SchemaException("wft {}".format(type_declaration["type"]))
-        if type_declaration in self.prims:
-            return self.prims[type_declaration]
+        if type_declaration in prims:
+            return prims[type_declaration]
         return self.collected_types[self.safe_name(type_declaration)]
 
-    def type_loader_enum(self, type_declaration):
-        # type: (Dict[str, Any]) -> TypeDef
+    def type_loader_enum(self, type_declaration: Dict[str, Any]) -> TypeDef:
         symbols = [self.property_name(sym) for sym in type_declaration["symbols"]]
         for sym in symbols:
             self.add_vocab(shortname(sym), sym)
@@ -466,8 +465,9 @@ public enum {clazz} {{
             )
         )
 
-    def declare_field(self, name, fieldtype, doc, optional):
-        # type: (str, TypeDef, str, bool) -> None
+    def declare_field(
+        self, name: str, fieldtype: TypeDef, doc: Optional[str], optional: bool
+    ) -> None:
         fieldname = name
         property_name = self.property_name(fieldname)
         cap_case_property_name = property_name[0].upper() + property_name[1:]
@@ -563,8 +563,9 @@ public enum {clazz} {{
                 )
             )
 
-    def declare_id_field(self, name, fieldtype, doc, optional):
-        # type: (str, TypeDef, str, bool) -> None
+    def declare_id_field(
+        self, name: str, fieldtype: TypeDef, doc: str, optional: bool
+    ) -> None:
         if self.current_class_is_abstract:
             return
 
@@ -595,8 +596,13 @@ public enum {clazz} {{
             set_uri.format(safename=self.safe_name(name), fieldname=shortname(name))
         )
 
-    def uri_loader(self, inner, scoped_id, vocab_term, ref_scope):
-        # type: (TypeDef, bool, bool, Union[int, None]) -> TypeDef
+    def uri_loader(
+        self,
+        inner: TypeDef,
+        scoped_id: bool,
+        vocab_term: bool,
+        ref_scope: Optional[int],
+    ) -> TypeDef:
         assert inner is not None
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
@@ -618,8 +624,9 @@ public enum {clazz} {{
             )
         )
 
-    def idmap_loader(self, field, inner, map_subject, map_predicate):
-        # type: (str, TypeDef, str, Union[str, None]) -> TypeDef
+    def idmap_loader(
+        self, field: str, inner: TypeDef, map_subject: str, map_predicate: Optional[str]
+    ) -> TypeDef:
         assert inner is not None
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
@@ -633,9 +640,7 @@ public enum {clazz} {{
             )
         )
 
-    def typedsl_loader(self, inner, ref_scope):
-        # type: (TypeDef, Union[int, None]) -> TypeDef
-        assert inner is not None
+    def typedsl_loader(self, inner: TypeDef, ref_scope: Union[int, None]) -> TypeDef:
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
             TypeDef(
@@ -646,9 +651,7 @@ public enum {clazz} {{
             )
         )
 
-        return inner
-
-    def to_java(self, val):  # type: (Any) -> Any
+    def to_java(self, val: Any) -> Any:
         if val is True:
             return "true"
         elif val is None:
@@ -657,7 +660,7 @@ public enum {clazz} {{
             return "false"
         return val
 
-    def epilogue(self, root_loader):  # type: (TypeDef) -> None
+    def epilogue(self, root_loader: TypeDef) -> None:
         pd = "This project contains Java objects and utilities "
         pd = pd + ' auto-generated by <a href="https://github.com/'
         pd = pd + 'common-workflow-language/schema_salad">Schema Salad</a>'

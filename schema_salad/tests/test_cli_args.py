@@ -1,16 +1,15 @@
 """ test different sets of command line arguments"""
 
-import sys
-
-# for capturing print() output
+import sys  # for capturing print() output
 from contextlib import contextmanager
 from io import StringIO
+from typing import Iterator, List, Tuple
 
 import schema_salad.main as cli_parser
 
 
 @contextmanager
-def captured_output():
+def captured_output() -> Iterator[Tuple[StringIO, StringIO]]:
     new_out, new_err = StringIO(), StringIO()
     old_out, old_err = sys.stdout, sys.stderr
     try:
@@ -20,8 +19,8 @@ def captured_output():
         sys.stdout, sys.stderr = old_out, old_err
 
 
-def test_version():
-    args = [["--version"], ["-v"]]
+def test_version() -> None:
+    args = [["--version"], ["-v"]]  # type: List[List[str]]
     for arg in args:
         with captured_output() as (out, err):
             cli_parser.main(arg)
@@ -30,9 +29,9 @@ def test_version():
         assert "Current version" in response
 
 
-def test_empty_input():
+def test_empty_input() -> None:
     # running schema_salad tool wihtout any args
-    args = []
+    args = []  # type: List[str]
     with captured_output() as (out, err):
         cli_parser.main(args)
 

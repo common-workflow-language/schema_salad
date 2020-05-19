@@ -1,6 +1,6 @@
 """Python code generator for a given schema salad definition."""
 from io import StringIO
-from typing import IO, Any, Dict, List, MutableMapping, MutableSequence, Union
+from typing import IO, Any, Dict, List, MutableMapping, MutableSequence, Optional, Union
 
 from pkg_resources import resource_stream
 
@@ -8,6 +8,29 @@ from . import schema
 from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
+
+prims = {
+    "http://www.w3.org/2001/XMLSchema#string": TypeDef(
+        "strtype", "_PrimitiveLoader((str, str))"
+    ),
+    "http://www.w3.org/2001/XMLSchema#int": TypeDef("inttype", "_PrimitiveLoader(int)"),
+    "http://www.w3.org/2001/XMLSchema#long": TypeDef(
+        "inttype", "_PrimitiveLoader(int)"
+    ),
+    "http://www.w3.org/2001/XMLSchema#float": TypeDef(
+        "floattype", "_PrimitiveLoader(float)"
+    ),
+    "http://www.w3.org/2001/XMLSchema#double": TypeDef(
+        "floattype", "_PrimitiveLoader(float)"
+    ),
+    "http://www.w3.org/2001/XMLSchema#boolean": TypeDef(
+        "booltype", "_PrimitiveLoader(bool)"
+    ),
+    "https://w3id.org/cwl/salad#null": TypeDef(
+        "None_type", "_PrimitiveLoader(type(None))"
+    ),
+    "https://w3id.org/cwl/salad#Any": TypeDef("Any_type", "_AnyLoader()"),
+}
 
 
 class PythonCodeGen(CodeGenBase):
@@ -46,7 +69,7 @@ class PythonCodeGen(CodeGenBase):
         stream.close()
         self.out.write("\n\n")
 
-        for primative in self.prims.values():
+        for primative in prims.values():
             self.declare_type(primative)
 
     def begin_class(
@@ -233,31 +256,6 @@ class PythonCodeGen(CodeGenBase):
 
         self.out.write("\n\n")
 
-    prims = {
-        "http://www.w3.org/2001/XMLSchema#string": TypeDef(
-            "strtype", "_PrimitiveLoader((str, str))"
-        ),
-        "http://www.w3.org/2001/XMLSchema#int": TypeDef(
-            "inttype", "_PrimitiveLoader(int)"
-        ),
-        "http://www.w3.org/2001/XMLSchema#long": TypeDef(
-            "inttype", "_PrimitiveLoader(int)"
-        ),
-        "http://www.w3.org/2001/XMLSchema#float": TypeDef(
-            "floattype", "_PrimitiveLoader(float)"
-        ),
-        "http://www.w3.org/2001/XMLSchema#double": TypeDef(
-            "floattype", "_PrimitiveLoader(float)"
-        ),
-        "http://www.w3.org/2001/XMLSchema#boolean": TypeDef(
-            "booltype", "_PrimitiveLoader(bool)"
-        ),
-        "https://w3id.org/cwl/salad#null": TypeDef(
-            "None_type", "_PrimitiveLoader(type(None))"
-        ),
-        "https://w3id.org/cwl/salad#Any": TypeDef("Any_type", "_AnyLoader()"),
-    }
-
     def type_loader(self, type_declaration):
         # type: (Union[List[Any], Dict[str, Any], str]) -> TypeDef
 
@@ -307,8 +305,8 @@ class PythonCodeGen(CodeGenBase):
                     )
                 )
             raise SchemaException("wft {}".format(type_declaration["type"]))
-        if type_declaration in self.prims:
-            return self.prims[type_declaration]
+        if type_declaration in prims:
+            return prims[type_declaration]
         return self.collected_types[self.safe_name(type_declaration) + "Loader"]
 
     def declare_id_field(self, name, fieldtype, doc, optional):
@@ -341,8 +339,9 @@ class PythonCodeGen(CodeGenBase):
             )
         )
 
-    def declare_field(self, name, fieldtype, doc, optional):
-        # type: (str, TypeDef, str, bool) -> None
+    def declare_field(
+        self, name: str, fieldtype: TypeDef, doc: Optional[str], optional: bool
+    ) -> None:
 
         if self.current_class_is_abstract:
             return

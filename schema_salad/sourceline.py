@@ -3,26 +3,23 @@ import re
 from typing import (
     Any,
     AnyStr,
+    Callable,
     Dict,
     List,
     MutableMapping,
     MutableSequence,
     Optional,
     Tuple,
-    Type,
     Union,
 )
 
 import ruamel.yaml
 from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq
 
-
 lineno_re = re.compile("^(.*?:[0-9]+:[0-9]+: )(( *)(.*))")
 
 
-def _add_lc_filename(
-    r, source
-):  # type: (ruamel.yaml.comments.CommentedBase, AnyStr) -> None
+def _add_lc_filename(r: ruamel.yaml.comments.CommentedBase, source: AnyStr) -> None:
     if isinstance(r, ruamel.yaml.comments.CommentedBase):
         r.lc.filename = source
     if isinstance(r, MutableSequence):
@@ -33,42 +30,45 @@ def _add_lc_filename(
             _add_lc_filename(d, source)
 
 
-def relname(source):  # type: (str) -> str
+def relname(source: str) -> str:
     if source.startswith("file://"):
         source = source[7:]
         source = os.path.relpath(source)
     return source
 
 
-def add_lc_filename(
-    r, source
-):  # type: (ruamel.yaml.comments.CommentedBase, str) -> None
+def add_lc_filename(r: ruamel.yaml.comments.CommentedBase, source: str) -> None:
     _add_lc_filename(r, relname(source))
 
 
-def reflow_all(text, maxline=None):  # type: (str, Optional[int]) -> str
+def reflow_all(text: str, maxline: Optional[int] = None) -> str:
     if maxline is None:
         maxline = int(os.environ.get("COLUMNS", "100"))
     maxno = 0
-    for l in text.splitlines():
-        g = lineno_re.match(l)
+    for line in text.splitlines():
+        g = lineno_re.match(line)
         if not g:
             continue
-        maxno = max(maxno, len(g.group(1)))
+        group = g.group(1)
+        assert group is not None
+        maxno = max(maxno, len(group))
     maxno_text = maxline - maxno
-    msg = []
-    for l in text.splitlines():
-        g = lineno_re.match(l)
+    msg = []  # type: List[str]
+    for line in text.splitlines():
+        g = lineno_re.match(line)
         if not g:
-            msg.append(l)
+            msg.append(line)
             continue
         pre = g.group(1)
-        reflowed = reflow(g.group(2), maxno_text, g.group(3)).splitlines()
+        assert pre is not None
+        group2 = g.group(2)
+        assert group2 is not None
+        reflowed = reflow(group2, maxno_text, g.group(3)).splitlines()
         msg.extend([pre.ljust(maxno, " ") + r for r in reflowed])
     return "\n".join(msg)
 
 
-def reflow(text, maxline, shift=""):  # type: (str, int, str) -> str
+def reflow(text: str, maxline: int, shift: Optional[str] = "") -> str:
     if maxline < 20:
         maxline = 20
     if len(text) > maxline:
@@ -84,80 +84,99 @@ def reflow(text, maxline, shift=""):  # type: (str, int, str) -> str
     return text
 
 
-def indent(
-    v, nolead=False, shift="  ", bullet="  "
-):  # type: (str, bool, str, str) -> str
+def indent(v: str, nolead: bool = False, shift: str = "  ", bullet: str = "  ") -> str:
     if nolead:
-        return v.splitlines()[0] + "\n".join([shift + l for l in v.splitlines()[1:]])
+        return v.splitlines()[0] + "\n".join(
+            [shift + line for line in v.splitlines()[1:]]
+        )
     else:
 
-        def lineno(i, l):  # type: (int, str) -> str
-            r = lineno_re.match(l)
+        def lineno(i: int, line: str) -> str:
+            r = lineno_re.match(line)
             if r is not None:
-                return r.group(1) + (bullet if i == 0 else shift) + r.group(2)
+                group1 = r.group(1)
+                group2 = r.group(2)
+                assert group1 is not None
+                assert group2 is not None
+                return group1 + (bullet if i == 0 else shift) + group2
             else:
-                return (bullet if i == 0 else shift) + l
+                return (bullet if i == 0 else shift) + line
 
-        return "\n".join([lineno(i, l) for i, l in enumerate(v.splitlines())])
+        return "\n".join([lineno(i, line) for i, line in enumerate(v.splitlines())])
 
 
-def bullets(textlist, bul):  # type: (List[str], str) -> str
+def bullets(textlist: List[str], bul: str) -> str:
     if len(textlist) == 1:
         return textlist[0]
     else:
         return "\n".join(indent(t, bullet=bul) for t in textlist)
 
 
-def strip_duplicated_lineno(text):  # type: (str) -> str
+def strip_duplicated_lineno(text: str) -> str:
     """Same as `strip_dup_lineno` but without reflow"""
-    pre = None
+    pre = None  # type: Optional[str]
     msg = []
-    for l in text.splitlines():
-        g = lineno_re.match(l)
+    for line in text.splitlines():
+        g = lineno_re.match(line)
         if not g:
-            msg.append(l)
+            msg.append(line)
             continue
         elif g.group(1) != pre:
-            msg.append(l)
+            msg.append(line)
             pre = g.group(1)
         else:
-            msg.append(" " * len(g.group(1)) + g.group(2))
+            group1 = g.group(1)
+            group2 = g.group(2)
+            assert group1 is not None
+            assert group2 is not None
+            msg.append(" " * len(group1) + group2)
     return "\n".join(msg)
 
 
-def strip_dup_lineno(text, maxline=None):  # type: (str, Optional[int]) -> str
+def strip_dup_lineno(text: str, maxline: Optional[int] = None) -> str:
     if maxline is None:
         maxline = int(os.environ.get("COLUMNS", "100"))
-    pre = None
+    pre = None  # type: Optional[str]
     msg = []
     maxno = 0
-    for l in text.splitlines():
-        g = lineno_re.match(l)
+    for line in text.splitlines():
+        g = lineno_re.match(line)
         if not g:
             continue
-        maxno = max(maxno, len(g.group(1)))
+        group1 = g.group(1)
+        assert group1 is not None
+        maxno = max(maxno, len(group1))
 
-    for l in text.splitlines():
-        g = lineno_re.match(l)
+    for line in text.splitlines():
+        g = lineno_re.match(line)
         if not g:
-            msg.append(l)
+            msg.append(line)
             continue
         if g.group(1) != pre:
-            shift = maxno + len(g.group(3))
-            g2 = reflow(g.group(2), maxline - shift, " " * shift)
+            group3 = g.group(3)
+            assert group3 is not None
+            shift = maxno + len(group3)
+            group2 = g.group(2)
+            assert group2 is not None
+            g2 = reflow(group2, maxline - shift, " " * shift)
             pre = g.group(1)
-            msg.append(pre + " " * (maxno - len(g.group(1))) + g2)
+            assert pre is not None
+            msg.append(pre + " " * (maxno - len(pre)) + g2)
         else:
-            g2 = reflow(g.group(2), maxline - maxno, " " * (maxno + len(g.group(3))))
+            group2 = g.group(2)
+            assert group2 is not None
+            group3 = g.group(3)
+            assert group3 is not None
+            g2 = reflow(group2, maxline - maxno, " " * (maxno + len(group3)))
             msg.append(" " * maxno + g2)
     return "\n".join(msg)
 
 
 def cmap(
-    d,  # type: Union[int, float, str, str, Dict[str, Any], List[Dict[str, Any]]]
-    lc=None,  # type: Optional[List[int]]
-    fn=None,  # type: Optional[str]
-):  # type: (...) -> Union[int, float, str, str, CommentedMap, CommentedSeq]
+    d: Union[int, float, str, Dict[str, Any], List[Any], None],
+    lc: Optional[List[int]] = None,
+    fn: Optional[str] = None,
+) -> Union[int, float, str, CommentedMap, CommentedSeq, None]:
     if lc is None:
         lc = [0, 0, 0, 0]
     if fn is None:
@@ -213,36 +232,31 @@ def cmap(
 class SourceLine(object):
     def __init__(
         self,
-        item,  # type: Any
-        key=None,  # type: Optional[Any]
-        raise_type=str,  # type: Union[Type[str], Type[Exception]]
-        include_traceback=False,  # type: bool
-    ):  # type: (...) -> None
+        item: Any,
+        key: Optional[Any] = None,
+        raise_type: Callable[[str], Any] = str,
+        include_traceback: bool = False,
+    ) -> None:
         self.item = item
         self.key = key
         self.raise_type = raise_type
         self.include_traceback = include_traceback
 
-    def __enter__(self):  # type: () -> SourceLine
+    def __enter__(self) -> "SourceLine":
         return self
 
-    def __exit__(
-        self,
-        exc_type,  # type: Any
-        exc_value,  # type: Any
-        tb,  # type: Any
-    ):  # type: (...) -> None
+    def __exit__(self, exc_type: Any, exc_value: Any, tb: Any,) -> None:
         if not exc_value:
             return
         raise self.makeError(str(exc_value)) from exc_value
 
-    def file(self):  # type: () -> Optional[str]
+    def file(self) -> Optional[str]:
         if hasattr(self.item, "lc") and hasattr(self.item.lc, "filename"):
             return str(self.item.lc.filename)
         else:
             return None
 
-    def start(self):  # type: () -> Optional[Tuple[int, int]]
+    def start(self) -> Optional[Tuple[int, int]]:
         if self.file() is None:
             return None
         elif (
@@ -257,10 +271,10 @@ class SourceLine(object):
                 (self.item.lc.data[self.key][1] or 0) + 1,
             )
 
-    def end(self):  # type: () -> Optional[Tuple[int, int]]
+    def end(self) -> Optional[Tuple[int, int]]:
         return None
 
-    def makeLead(self):  # type: () -> str
+    def makeLead(self) -> str:
         if self.file():
             lcol = self.start()
             line, col = lcol if lcol else ("", "")
@@ -268,7 +282,7 @@ class SourceLine(object):
         else:
             return ""
 
-    def makeError(self, msg):  # type: (str) -> Any
+    def makeError(self, msg: str) -> Any:
         if not isinstance(self.item, ruamel.yaml.comments.CommentedBase):
             return self.raise_type(msg)
         errs = []

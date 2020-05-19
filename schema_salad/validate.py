@@ -12,7 +12,6 @@ from .exceptions import (
 )
 from .sourceline import SourceLine
 
-
 _logger = logging.getLogger("salad")
 
 

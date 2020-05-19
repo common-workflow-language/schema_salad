@@ -4,10 +4,14 @@ Checks loading of some real world tools and workflows found in the wild (e.g. do
 run individually as py.test -k tests/test_real_cwl.py
 """
 
-import pytest
+from typing import Any, Dict, Union
 
+import pytest  # type: ignore
+
+from schema_salad.avro.schema import Names, SchemaParseException
+from schema_salad.exceptions import ValidationException
+from schema_salad.ref_resolver import Loader
 from schema_salad.schema import load_and_validate, load_schema
-from schema_salad.validate import ValidationException
 
 from .util import get_data
 
@@ -15,43 +19,49 @@ test_dir_name = "tests/test_real_cwl/"
 
 
 class TestRealWorldCWL:
+
+    document_loader = None  # type: Loader
+    avsc_names = None  # type: Union[Names, SchemaParseException]
+    schema_metadata = None  # type: Dict[str, Any]
+    metaschema_loader = None  # type: Loader
+
     @classmethod
-    def setup_class(cls):
+    def setup_class(cls) -> None:
+        path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+        assert path
         (
             cls.document_loader,
             cls.avsc_names,
             schema_metadata,
             metaschema_loader,
-        ) = load_schema(  # noqa: B950
-            get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-        )
+        ) = load_schema(path)
 
-    def load_cwl(self, src):
+    def load_cwl(self, src: str) -> None:
+        path = get_data(test_dir_name + src)
+        assert path
+        assert isinstance(self.avsc_names, Names)
         with pytest.raises(ValidationException):
             try:
                 load_and_validate(
-                    self.document_loader,
-                    self.avsc_names,
-                    str(get_data(test_dir_name + src)),
-                    True,
+                    self.document_loader, self.avsc_names, path, True,
                 )
             except ValidationException as e:
                 # msgs = to_one_line_messages(str(e)).splitlines()
                 print("\n", e)
                 raise
 
-    def test_topmed_single_doc(self):
-        # TOPMed Variant Calling Pipeline CWL1
+    def test_topmed_single_doc(self) -> None:
+        """TOPMed Variant Calling Pipeline CWL1"""
         self.load_cwl(src="topmed/topmed_variant_calling_pipeline.cwl")
 
-    def test_h3agatk_WES(self):
-        # H3ABioNet GATK Germline Workflow
+    def test_h3agatk_WES(self) -> None:
+        """H3ABioNet GATK Germline Workflow"""
         self.load_cwl(src="h3agatk/GATK-complete-WES-Workflow-h3abionet.cwl")
 
-    def test_h3agatk_SNP(self):
-        # H3ABioNet SNPs Workflow
+    def test_h3agatk_SNP(self) -> None:
+        """H3ABioNet SNPs Workflow"""
         self.load_cwl(src="h3agatk/GATK-Sub-Workflow-h3abionet-snp.cwl")
 
-    def test_icgc_pancan(self):
-        # ICGC PanCan
+    def test_icgc_pancan(self) -> None:
+        """ICGC PanCan"""
         self.load_cwl(src="ICGC-TCGA-PanCancer/preprocess_vcf.cwl")
