@@ -1,6 +1,6 @@
 """Base class for the generation of loaders from schema-salad definitions."""
 import collections
-from typing import Any, Dict, List, MutableSequence, Optional, Union, Set
+from typing import Any, Dict, List, MutableSequence, Optional, Union
 
 from . import schema
 
@@ -76,7 +76,6 @@ class CodeGenBase(object):
         abstract: bool,
         field_names: MutableSequence[str],
         idfield: str,
-        optional_fields: Set[str],
     ) -> None:
         """Produce the header for the given class."""
         raise NotImplementedError()
