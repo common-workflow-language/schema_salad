@@ -1,6 +1,16 @@
 """Python code generator for a given schema salad definition."""
 from io import StringIO
-from typing import IO, Any, Dict, List, MutableMapping, MutableSequence, Optional, Union
+from typing import (
+    IO,
+    Any,
+    Dict,
+    List,
+    MutableMapping,
+    MutableSequence,
+    Optional,
+    Union,
+    Set,
+)
 
 from pkg_resources import resource_stream
 
@@ -74,12 +84,13 @@ class PythonCodeGen(CodeGenBase):
 
     def begin_class(
         self,  # pylint: disable=too-many-arguments
-        classname,  # type: str
-        extends,  # type: MutableSequence[str]
-        doc,  # type: str
-        abstract,  # type: bool
-        field_names,  # type: MutableSequence[str]
-        idfield,  # type: str
+        classname: str,
+        extends: MutableSequence[str],
+        doc: str,
+        abstract: bool,
+        field_names: MutableSequence[str],
+        idfield: str,
+        optional_fields: Set[str],
     ):  # type: (...) -> None
         classname = self.safe_name(classname)
 
@@ -102,11 +113,21 @@ class PythonCodeGen(CodeGenBase):
             self.out.write("    pass\n\n\n")
             return
 
+        required_field_names = [f for f in field_names if f not in optional_fields]
+        optional_field_names = [f for f in field_names if f in optional_fields]
+
         safe_inits = ["        self,"]  # type: List[str]
         safe_inits.extend(
             [
                 "        {},  # type: Any".format(self.safe_name(f))
-                for f in field_names
+                for f in required_field_names
+                if f != "class"
+            ]
+        )
+        safe_inits.extend(
+            [
+                "        {}=None,  # type: Any".format(self.safe_name(f))
+                for f in optional_field_names
                 if f != "class"
             ]
         )
