@@ -1,7 +1,7 @@
 """Generate langauge specific loaders for a particular SALAD schema."""
 import sys
 from io import open
-from typing import Any, Dict, List, MutableMapping, Optional
+from typing import Any, Dict, List, MutableMapping, MutableSequence, Optional
 
 from . import schema
 from .codegen_base import CodeGenBase
@@ -63,9 +63,17 @@ def codegen(
                 document_roots.append(rec["name"])
 
             field_names = []
+            optional_fields = set()
             for field in rec.get("fields", []):
-                field_names.append(shortname(field["name"]))
-
+                field_name = shortname(field["name"])
+                field_names.append(field_name)
+                tp = field["type"]
+                if (
+                    isinstance(tp, MutableSequence)
+                    and tp[0] == "https://w3id.org/cwl/salad#null"
+                ):
+                    optional_fields.add(field_name)
+                    
             idfield = ""
             for field in rec.get("fields", []):
                 if field.get("jsonldPredicate") == "@id":
@@ -78,6 +86,7 @@ def codegen(
                 rec.get("abstract", False),
                 field_names,
                 idfield,
+                optional_fields
             )
             gen.add_vocab(shortname(rec["name"]), rec["name"])
 
