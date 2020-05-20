@@ -139,17 +139,17 @@ class Name(object):
         @ard default_space: the current default space or None.
         """
         # Ensure valid ctor args
-        if name_attr == "":
-            fail_msg = "Name must be non-empty string or None."
+
+        def validate(val: Optional[str], name: str) -> None:
+            if (isinstance(val, str) and val != "") or val is None:
+                # OK
+                return
+            fail_msg = "{} must be non-empty string or None.".format(name)
             raise SchemaParseException(fail_msg)
 
-        if name_attr == "":
-            fail_msg = "Space must be non-empty string or None."
-            raise SchemaParseException(fail_msg)
-
-        if name_attr == "":
-            fail_msg = "Default must be non-empty string or None."
-            raise SchemaParseException(fail_msg)
+        validate(name_attr, "Name")
+        validate(space_attr, "Space")
+        validate(default_space, "Default space")
 
         self._full = name_attr  # type: Optional[str]
 
@@ -175,7 +175,7 @@ class Name(object):
         if self._full.find(".") > 0:
             return self._full.rsplit(".", 1)[0]
         else:
-            return ""
+            return None
 
 
 class Names(object):
@@ -578,8 +578,8 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
 
     if isinstance(json_data, Dict) and json_data.get("name") == "Any":
         del names.names["Any"]
-    elif not names.has_name("Any", ""):
-        EnumSchema("Any", "", ["Any"], names=names)
+    elif not names.has_name("Any", None):
+        EnumSchema("Any", None, ["Any"], names=names)
 
     # JSON object (non-union)
     if isinstance(json_data, dict):
