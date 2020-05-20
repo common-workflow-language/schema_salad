@@ -1,6 +1,6 @@
 """Python code generator for a given schema salad definition."""
 from io import StringIO
-from typing import IO, Any, Dict, List, MutableMapping, MutableSequence, Optional, Union
+from typing import IO, Any, Dict, List, MutableMapping, MutableSequence, Optional, Union, Set
 
 from pkg_resources import resource_stream
 
@@ -80,7 +80,7 @@ class PythonCodeGen(CodeGenBase):
         abstract: bool,
         field_names: MutableSequence[str],
         idfield: str,
-        optional_fields: MutableSequence[str],
+        optional_fields: Set[str],
     ):  # type: (...) -> None
         classname = self.safe_name(classname)
 
