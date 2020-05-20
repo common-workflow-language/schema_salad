@@ -76,6 +76,7 @@ class CodeGenBase(object):
         abstract: bool,
         field_names: MutableSequence[str],
         idfield: str,
+        optional_fields: MutableSequence[str],
     ) -> None:
         """Produce the header for the given class."""
         raise NotImplementedError()

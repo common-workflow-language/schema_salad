@@ -80,6 +80,7 @@ class PythonCodeGen(CodeGenBase):
         abstract,  # type: bool
         field_names,  # type: MutableSequence[str]
         idfield,  # type: str
+        optional_fields, # type: MutableSequence[str]
     ):  # type: (...) -> None
         classname = self.safe_name(classname)
 
@@ -102,11 +103,21 @@ class PythonCodeGen(CodeGenBase):
             self.out.write("    pass\n\n\n")
             return
 
+        required_field_names = [f for f in field_names if f not in optional_fields]
+        optional_field_names = [f for f in field_names if f in optional_fields]
+
         safe_inits = ["        self,"]  # type: List[str]
         safe_inits.extend(
             [
                 "        {},  # type: Any".format(self.safe_name(f))
-                for f in field_names
+                for f in required_field_names
+                if f != "class"
+            ]
+        )
+        safe_inits.extend(
+            [
+                "        {}=None,  # type: Any".format(self.safe_name(f))
+                for f in optional_field_names
                 if f != "class"
             ]
         )
