@@ -74,13 +74,13 @@ class PythonCodeGen(CodeGenBase):
 
     def begin_class(
         self,  # pylint: disable=too-many-arguments
-        classname,  # type: str
-        extends,  # type: MutableSequence[str]
-        doc,  # type: str
-        abstract,  # type: bool
-        field_names,  # type: MutableSequence[str]
-        idfield,  # type: str
-        optional_fields, # type: MutableSequence[str]
+        classname: str,
+        extends: MutableSequence[str],
+        doc: str,
+        abstract: bool,
+        field_names: MutableSequence[str],
+        idfield: str,
+        optional_fields: MutableSequence[str],
     ):  # type: (...) -> None
         classname = self.safe_name(classname)
 
