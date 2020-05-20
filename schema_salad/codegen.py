@@ -73,7 +73,7 @@ def codegen(
                     and tp[0] == "https://w3id.org/cwl/salad#null"
                 ):
                     optional_fields.add(field_name)
-                    
+
             idfield = ""
             for field in rec.get("fields", []):
                 if field.get("jsonldPredicate") == "@id":
@@ -86,7 +86,7 @@ def codegen(
                 rec.get("abstract", False),
                 field_names,
                 idfield,
-                optional_fields
+                optional_fields,
             )
             gen.add_vocab(shortname(rec["name"]), rec["name"])
 

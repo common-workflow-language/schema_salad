@@ -1,6 +1,16 @@
 """Python code generator for a given schema salad definition."""
 from io import StringIO
-from typing import IO, Any, Dict, List, MutableMapping, MutableSequence, Optional, Union, Set
+from typing import (
+    IO,
+    Any,
+    Dict,
+    List,
+    MutableMapping,
+    MutableSequence,
+    Optional,
+    Union,
+    Set,
+)
 
 from pkg_resources import resource_stream
 

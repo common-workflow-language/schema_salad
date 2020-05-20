@@ -4,7 +4,16 @@ import shutil
 import string
 from io import StringIO
 from io import open as io_open
-from typing import Any, Dict, List, MutableMapping, MutableSequence, Optional, Union, Set
+from typing import (
+    Any,
+    Dict,
+    List,
+    MutableMapping,
+    MutableSequence,
+    Optional,
+    Union,
+    Set,
+)
 from urllib.parse import urlsplit
 
 import pkg_resources
