@@ -258,9 +258,11 @@ class PythonCodeGen(CodeGenBase):
             "    attrs = frozenset({attrs})\n".format(attrs=field_names)
         )
 
-        safe_inits = [
+        safe_init_fields = [
             self.safe_name(f) for f in field_names if f != "class"
         ]  # type: List[str]
+
+        safe_inits = [f + "=" + f for f in safe_init_fields]
 
         safe_inits.extend(
             ["extension_fields=extension_fields", "loadingOptions=loadingOptions"]
