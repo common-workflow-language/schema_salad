@@ -154,6 +154,7 @@ class JavaCodeGen(CodeGenBase):
         abstract: bool,
         field_names: MutableSequence[str],
         idfield: str,
+        optional_fields: MutableSequence[str],
     ) -> None:
         cls = self.interface_name(classname)
         self.current_class = cls
