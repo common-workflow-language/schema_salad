@@ -4,7 +4,16 @@ import shutil
 import string
 from io import StringIO
 from io import open as io_open
-from typing import Any, Dict, List, MutableMapping, MutableSequence, Optional, Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    MutableMapping,
+    MutableSequence,
+    Optional,
+    Union,
+    Set,
+)
 from urllib.parse import urlsplit
 
 import pkg_resources
@@ -154,6 +163,7 @@ class JavaCodeGen(CodeGenBase):
         abstract: bool,
         field_names: MutableSequence[str],
         idfield: str,
+        optional_fields: Set[str],
     ) -> None:
         cls = self.interface_name(classname)
         self.current_class = cls
