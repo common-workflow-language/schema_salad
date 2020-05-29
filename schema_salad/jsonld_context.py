@@ -148,7 +148,30 @@ def process_type(
                 v = v["_@id"] if v.get("_@id", "@")[0] != "@" else None
 
             if bool(v):
-                (ns, ln) = rdflib.namespace.split_uri(str(v))
+                try:
+                    (ns, ln) = rdflib.namespace.split_uri(str(v))
+                except ValueError:
+                    # rdflib 5.0.0 compatibility
+                    uri = str(v)
+                    colon_index = str(v).rfind(":")
+
+                    if colon_index < 0:
+                        raise
+                    split_start = rdflib.namespace.SPLIT_START_CATEGORIES
+                    for j in range(-1 - colon_index, len(uri)):
+                        if (
+                            rdflib.namespace.category(uri[j]) in split_start
+                            or uri[j] == "_"
+                        ):
+                            # _ prevents early split, roundtrip not generate
+                            ns = uri[:j]
+                            if not ns:
+                                break
+                            ln = uri[j:]
+                            break
+                    if not ns or not ln:
+                        raise
+
                 if ns[0:-1] in namespaces:
                     propnode = namespaces[ns[0:-1]][ln]
                 else:
