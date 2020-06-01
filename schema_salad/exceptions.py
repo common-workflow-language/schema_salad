@@ -19,7 +19,7 @@ class SchemaSaladException(Exception):
         self.start = None  # type: Optional[Tuple[int, int]]
         self.end = None  # type: Optional[Tuple[int, int]]
 
-        self.is_warning = False # type: bool
+        self.is_warning = False  # type: bool
 
         # It will be set by its parent
         self.bullet = ""  # type: str
@@ -90,7 +90,7 @@ class SchemaSaladException(Exception):
                 linecol0, linecol1 = self.start
             pre = "{}:{}:{}: ".format(self.file, linecol0, linecol1)
 
-        return "Warning: "+pre if self.is_warning else pre
+        return "Warning: " + pre if self.is_warning else pre
 
     def summary(self, level: int = 0, with_bullet: bool = False) -> str:
         indent_per_level = 2
