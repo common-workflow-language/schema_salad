@@ -1297,7 +1297,7 @@ class Loader(object):
                     if d == "$schemas" or (
                         d in self.foreign_properties and not strict_foreign_properties
                     ):
-                        _logger.warning(v)
+                        _logger.warning(v.as_warning())
                     else:
                         errors.append(v)
             # TODO: Validator should local scope only in which
