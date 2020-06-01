@@ -364,7 +364,7 @@ def validate_ex(
                     if strict:
                         errors.append(err)
                     else:
-                        logger.warning(err)
+                        logger.warning(err.as_warning())
                     continue
                 if (
                     d not in identifiers
@@ -401,7 +401,7 @@ def validate_ex(
                             if strict_foreign_properties:
                                 errors.append(err)
                             elif len(foreign_properties) > 0:
-                                logger.warning(err)
+                                logger.warning(err.as_warning())
                     else:
                         err = ValidationException(
                             "invalid field `{}`, expected one of: {}".format(
@@ -416,7 +416,7 @@ def validate_ex(
                         if strict:
                             errors.append(err)
                         else:
-                            logger.warning(err)
+                            logger.warning(err.as_warning())
 
         if bool(errors):
             if raise_ex:

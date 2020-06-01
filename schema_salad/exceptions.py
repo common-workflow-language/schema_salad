@@ -19,6 +19,8 @@ class SchemaSaladException(Exception):
         self.start = None  # type: Optional[Tuple[int, int]]
         self.end = None  # type: Optional[Tuple[int, int]]
 
+        self.is_warning = False  # type: bool
+
         # It will be set by its parent
         self.bullet = ""  # type: str
 
@@ -54,6 +56,12 @@ class SchemaSaladException(Exception):
                 c.end = self.end
                 c.propagate_sourceline()
 
+    def as_warning(self) -> "SchemaSaladException":
+        self.is_warning = True
+        for c in self.children:
+            c.as_warning()
+        return self
+
     def with_sourceline(self, sl: Optional[SourceLine]) -> "SchemaSaladException":
         if sl and sl.file():
             self.file = sl.file()
@@ -74,14 +82,15 @@ class SchemaSaladException(Exception):
             return []
 
     def prefix(self) -> str:
+        pre = ""  # type:str
         if self.file:
             linecol0 = ""  # type: Union[int, str]
             linecol1 = ""  # type: Union[int, str]
             if self.start:
                 linecol0, linecol1 = self.start
-            return "{}:{}:{}: ".format(self.file, linecol0, linecol1)
-        else:
-            return ""
+            pre = "{}:{}:{}: ".format(self.file, linecol0, linecol1)
+
+        return pre + "Warning: " if self.is_warning else pre
 
     def summary(self, level: int = 0, with_bullet: bool = False) -> str:
         indent_per_level = 2
