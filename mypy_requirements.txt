@@ -1,1 +1,1 @@
-mypy==0.780
+git+https://github.com/python/mypy.git@8cc06b70829c885a6f9f2a9f989994c51693f23c#egg=mypy
