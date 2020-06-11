@@ -94,7 +94,6 @@ install_requires = [
 ]
 
 extras_require = {
-    ':python_version<"3.5"': ["typing >= 3.7.4"],
     "docs": ["sphinx >= 2.2", "sphinx-rtd-theme", "pytest"],
 }
 
@@ -139,6 +138,7 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Typing :: Typed",
     ],
 )
