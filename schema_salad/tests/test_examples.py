@@ -2,24 +2,25 @@ import os
 
 import ruamel.yaml
 import schema_salad.main
-import schema_salad.ref_resolver
 import schema_salad.schema
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from schema_salad.jsonld_context import makerdf
+from schema_salad.ref_resolver import Loader, file_uri, uri_file_path
 from schema_salad.sourceline import SourceLine, cmap
+from schema_salad.utils import ContextType
 
 from .util import get_data
 
 
 def test_schemas() -> None:
-    loader = schema_salad.ref_resolver.Loader({})
+    loader = Loader({})
 
     path = get_data("tests/EDAM.owl")
     assert path
     ra, _ = loader.resolve_all(
         cmap(
             {
-                "$schemas": [schema_salad.ref_resolver.file_uri(path)],
+                "$schemas": [file_uri(path)],
                 "$namespaces": {"edam": "http://edamontology.org/"},
                 "edam:has_format": "edam:format_1915",
             }
@@ -28,7 +29,7 @@ def test_schemas() -> None:
     )
 
     assert {
-        "$schemas": [schema_salad.ref_resolver.file_uri(path)],
+        "$schemas": [file_uri(path)],
         "$namespaces": {"edam": "http://edamontology.org/"},
         "http://edamontology.org/has_format": "http://edamontology.org/format_1915",
     } == ra
@@ -67,7 +68,7 @@ def test_jsonld_ctx() -> None:
 
 
 def test_idmap() -> None:
-    ldr = schema_salad.ref_resolver.Loader({})
+    ldr = Loader({})
     ldr.add_context(
         {
             "inputs": {
@@ -104,7 +105,7 @@ def test_idmap() -> None:
 
 
 def test_scoped_ref() -> None:
-    ldr = schema_salad.ref_resolver.Loader({})
+    ldr = Loader({})
     ldr.add_context(
         {
             "scatter": {"@type": "@id", "refScope": 0},
@@ -213,7 +214,7 @@ def test_yaml_float_test() -> None:
 
 
 def test_typedsl_ref() -> None:
-    ldr = schema_salad.ref_resolver.Loader({})
+    ldr = Loader({})
     ldr.add_context(
         {
             "File": "http://example.com/File",
@@ -237,7 +238,7 @@ def test_typedsl_ref() -> None:
 
 
 def test_secondaryFile_dsl_ref() -> None:
-    ldr = schema_salad.ref_resolver.Loader({})
+    ldr = Loader({})
     ldr.add_context({"secondaryFiles": {"secondaryFilesDSL": True}})
 
     ra, _ = ldr.resolve_all(cmap({"secondaryFiles": ".foo"}), "")
@@ -254,13 +255,13 @@ def test_secondaryFile_dsl_ref() -> None:
 
 
 def test_scoped_id() -> None:
-    ldr = schema_salad.ref_resolver.Loader({})
+    ldr = Loader({})
     ctx = {
         "id": "@id",
         "location": {"@id": "@id", "@type": "@id"},
         "bar": "http://example.com/bar",
         "ex": "http://example.com/",
-    }  # type: schema_salad.ref_resolver.ContextType
+    }  # type: ContextType
     ldr.add_context(ctx)
 
     ra, _ = ldr.resolve_all(
@@ -315,11 +316,11 @@ def test_scoped_id() -> None:
 
 
 def test_subscoped_id() -> None:
-    ldr = schema_salad.ref_resolver.Loader({})
+    ldr = Loader({})
     ctx = {
         "id": "@id",
         "bar": {"subscope": "bar"},
-    }  # type: schema_salad.ref_resolver.ContextType
+    }  # type: ContextType
     ldr.add_context(ctx)
 
     ra, _ = ldr.resolve_all(
@@ -332,13 +333,13 @@ def test_subscoped_id() -> None:
 
 
 def test_mixin() -> None:
-    base_url = schema_salad.ref_resolver.file_uri(os.path.join(os.getcwd(), "tests"))
-    ldr = schema_salad.ref_resolver.Loader({})
+    base_url = file_uri(os.path.join(os.getcwd(), "tests"))
+    ldr = Loader({})
     path = get_data("tests/mixin.yml")
     assert path
     ra = ldr.resolve_ref(cmap({"$mixin": path, "one": "five"}), base_url=base_url)
     assert {"id": "four", "one": "five"} == ra[0]
-    ldr = schema_salad.ref_resolver.Loader({"id": "@id"})
+    ldr = Loader({"id": "@id"})
 
     ra = ldr.resolve_all(
         cmap([{"id": "a", "m": {"$mixin": path}}, {"id": "b", "m": {"$mixin": path}}]),
@@ -351,7 +352,7 @@ def test_mixin() -> None:
 
 
 def test_fragment() -> None:
-    ldr = schema_salad.ref_resolver.Loader({"id": "@id"})
+    ldr = Loader({"id": "@id"})
     path = get_data("tests/frag.yml#foo2")
     assert path
     b = ldr.resolve_ref(path)[0]
@@ -362,31 +363,23 @@ def test_fragment() -> None:
 def test_file_uri() -> None:
     # Note: this test probably won't pass on Windows.  Someone with a
     # windows box should add an alternate test.
-    assert "file:///foo/bar%20baz/quux" == schema_salad.ref_resolver.file_uri(
-        "/foo/bar baz/quux"
+    assert "file:///foo/bar%20baz/quux" == file_uri("/foo/bar baz/quux")
+    assert os.path.normpath("/foo/bar baz/quux") == uri_file_path(
+        "file:///foo/bar%20baz/quux"
     )
-    assert os.path.normpath(
-        "/foo/bar baz/quux"
-    ) == schema_salad.ref_resolver.uri_file_path("file:///foo/bar%20baz/quux")
-    assert (
-        "file:///foo/bar%20baz/quux%23zing%20zong"
-        == schema_salad.ref_resolver.file_uri("/foo/bar baz/quux#zing zong")
-    )
-    assert (
-        "file:///foo/bar%20baz/quux#zing%20zong"
-        == schema_salad.ref_resolver.file_uri(
-            "/foo/bar baz/quux#zing zong", split_frag=True
-        )
-    )
-    assert os.path.normpath(
+    assert "file:///foo/bar%20baz/quux%23zing%20zong" == file_uri(
         "/foo/bar baz/quux#zing zong"
-    ) == schema_salad.ref_resolver.uri_file_path(
+    )
+    assert "file:///foo/bar%20baz/quux#zing%20zong" == file_uri(
+        "/foo/bar baz/quux#zing zong", split_frag=True
+    )
+    assert os.path.normpath("/foo/bar baz/quux#zing zong") == uri_file_path(
         "file:///foo/bar%20baz/quux#zing%20zong"
     )
 
 
 def test_sourceline() -> None:
-    ldr = schema_salad.ref_resolver.Loader({"id": "@id"})
+    ldr = Loader({"id": "@id"})
     path = get_data("tests/frag.yml")
     assert path
     b, _ = ldr.resolve_ref(path)
@@ -416,8 +409,8 @@ def test_blank_node_id() -> None:
     # placeholders mainly used internally where an id is needed but
     # was not given.
 
-    ldr = schema_salad.ref_resolver.Loader({})
-    ctx = {"id": "@id"}  # type: schema_salad.ref_resolver.ContextType
+    ldr = Loader({})
+    ctx = {"id": "@id"}  # type: ContextType
     ldr.add_context(ctx)
 
     ra, _ = ldr.resolve_all(cmap({"id": "_:foo"}), "http://example.com")
@@ -438,7 +431,7 @@ def test_can_use_Any() -> None:
 
 def test_nullable_links() -> None:
     ldr = schema_salad.ref_resolver.Loader({})
-    ctx = {"link": {"@type": "@id"}}  # type: schema_salad.ref_resolver.ContextType
+    ctx = {"link": {"@type": "@id"}}  # type: ContextType
     ldr.add_context(ctx)
 
     ra, _ = ldr.resolve_all(cmap({"link": None}), "http://example.com", checklinks=True)

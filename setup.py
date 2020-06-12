@@ -49,13 +49,13 @@ if USE_MYPYC:
         "schema_salad/makedoc.py",
         # "schema_salad/python_codegen.py",  # due to use of __name__
         "schema_salad/ref_resolver.py",
+        # "schema_salad/fetcher.py",  # to allow subclassing {Default,}Fetcher
         "schema_salad/schema.py",
         "schema_salad/sourceline.py",
         "schema_salad/utils.py",
         "schema_salad/validate.py",
         "schema_salad/avro/__init__.py",
         "schema_salad/avro/schema.py",
-        "schema_salad/tests/other_fetchers.py",
         # "schema_salad/tests/util.py",
         # "schema_salad/tests/test_print_oneline.py",
         # "schema_salad/tests/test_python_codegen.py",
@@ -99,7 +99,7 @@ extras_require = {
 
 setup(
     name="schema-salad",
-    version="6.0",  # update the VERSION prefix in the Makefile as well 🙂
+    version="7.0",  # update the VERSION prefix in the Makefile as well 🙂
     description="Schema Annotations for Linked Avro Data (SALAD)",
     long_description=open(README).read(),
     long_description_content_type="text/x-rst",

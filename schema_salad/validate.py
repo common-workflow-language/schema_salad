@@ -87,73 +87,58 @@ def validate_ex(
     if schema_type == "null":
         if datum is None:
             return True
-        else:
-            if raise_ex:
-                raise ValidationException("the value is not null")
-            else:
-                return False
+        if raise_ex:
+            raise ValidationException("the value is not null")
+        return False
     elif schema_type == "boolean":
         if isinstance(datum, bool):
             return True
-        else:
-            if raise_ex:
-                raise ValidationException("the value is not boolean")
-            else:
-                return False
+        if raise_ex:
+            raise ValidationException("the value is not boolean")
+        return False
     elif schema_type == "string":
         if isinstance(datum, str):
             return True
-        elif isinstance(datum, bytes):
+        if isinstance(datum, bytes):
             return True
-        else:
-            if raise_ex:
-                raise ValidationException("the value is not string")
-            else:
-                return False
+        if raise_ex:
+            raise ValidationException("the value is not string")
+        return False
     elif schema_type == "int":
         if isinstance(datum, int) and INT_MIN_VALUE <= datum <= INT_MAX_VALUE:
             return True
-        else:
-            if raise_ex:
-                raise ValidationException("`{}` is not int".format(vpformat(datum)))
-            else:
-                return False
+        if raise_ex:
+            raise ValidationException("`{}` is not int".format(vpformat(datum)))
+        return False
     elif schema_type == "long":
         if (isinstance(datum, int)) and LONG_MIN_VALUE <= datum <= LONG_MAX_VALUE:
             return True
-        else:
-            if raise_ex:
-                raise ValidationException(
-                    "the value `{}` is not long".format(vpformat(datum))
-                )
-            else:
-                return False
+        if raise_ex:
+            raise ValidationException(
+                "the value `{}` is not long".format(vpformat(datum))
+            )
+        return False
     elif schema_type in ["float", "double"]:
         if isinstance(datum, int) or isinstance(datum, float):
             return True
-        else:
-            if raise_ex:
-                raise ValidationException(
-                    "the value `{}` is not float or double".format(vpformat(datum))
-                )
-            else:
-                return False
+        if raise_ex:
+            raise ValidationException(
+                "the value `{}` is not float or double".format(vpformat(datum))
+            )
+        return False
     elif isinstance(expected_schema, avro.schema.EnumSchema):
         if expected_schema.name == "Any":
             if datum is not None:
                 return True
-            else:
-                if raise_ex:
-                    raise ValidationException("'Any' type must be non-null")
-                else:
-                    return False
+            if raise_ex:
+                raise ValidationException("'Any' type must be non-null")
+            return False
         if not isinstance(datum, str):
             if raise_ex:
                 raise ValidationException(
                     "value is a {} but expected a string".format((type(datum).__name__))
                 )
-            else:
-                return False
+            return False
         if expected_schema.name == "Expression":
             if "$(" in datum or "${" in datum:
                 return True
@@ -162,8 +147,7 @@ def validate_ex(
                     "value `%s` does not contain an expression in the form $() or ${}"
                     % datum
                 )
-            else:
-                return False
+            return False
         if datum in expected_schema.symbols:
             return True
         else:
@@ -176,8 +160,7 @@ def validate_ex(
                         "'" + "', '".join(expected_schema.symbols) + "'",
                     )
                 )
-            else:
-                return False
+            return False
     elif isinstance(expected_schema, avro.schema.ArraySchema):
         if isinstance(datum, MutableSequence):
             for i, d in enumerate(datum):
@@ -198,8 +181,7 @@ def validate_ex(
                 except ValidationException as v:
                     if raise_ex:
                         raise ValidationException("item is invalid because", sl, [v])
-                    else:
-                        return False
+                    return False
             return True
         else:
             if raise_ex:
@@ -208,8 +190,7 @@ def validate_ex(
                         vpformat(datum), friendly(expected_schema.items)
                     )
                 )
-            else:
-                return False
+            return False
     elif isinstance(expected_schema, avro.schema.UnionSchema):
         for s in expected_schema.schemas:
             if validate_ex(

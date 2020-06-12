@@ -24,6 +24,8 @@ from pkg_resources import resource_stream
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from schema_salad.utils import (
+    CacheType,
+    ResolveType,
     add_dictlist,
     aslist,
     convert_to_dict,
@@ -38,7 +40,7 @@ from .exceptions import (
     SchemaSaladException,
     ValidationException,
 )
-from .ref_resolver import Loader, CacheType, ResolveType
+from .ref_resolver import Loader
 from .sourceline import SourceLine, add_lc_filename, relname
 
 SALAD_FILES = (

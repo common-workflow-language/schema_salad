@@ -26,7 +26,7 @@ from urllib.request import pathname2url
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
 from schema_salad.exceptions import SchemaSaladException, ValidationException
-from schema_salad.ref_resolver import Fetcher
+from schema_salad.fetcher import DefaultFetcher, Fetcher
 from schema_salad.sourceline import SourceLine, add_lc_filename
 
 _vocab = {}  # type: Dict[str, str]
@@ -70,7 +70,6 @@ class LoadingOptions(object):
             import requests
             from cachecontrol.wrapper import CacheControl
             from cachecontrol.caches import FileCache
-            from schema_salad.ref_resolver import DefaultFetcher
 
             if "HOME" in os.environ:
                 session = CacheControl(
@@ -386,7 +385,7 @@ class _TypeDSLLoader(_Loader):
         m = self.typeDSLregex.match(doc)
         if m:
             group1 = m.group(1)
-            assert group1
+            assert group1 is not None
             first = expand_url(
                 group1, baseuri, loadingOptions, False, True, self.refScope
             )
@@ -583,9 +582,9 @@ A field of a record.
     """
     def __init__(
         self,
-        doc,  # type: Any
         name,  # type: Any
         type,  # type: Any
+        doc=None,  # type: Any
         extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
@@ -681,7 +680,7 @@ A field of a record.
             raise ValidationException("Trying 'RecordField'", None, _errors__)
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(doc, name, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(doc=doc, name=name, type=type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
@@ -724,8 +723,8 @@ A field of a record.
 class RecordSchema(Savable):
     def __init__(
         self,
-        fields,  # type: Any
         type,  # type: Any
+        fields=None,  # type: Any
         extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
@@ -799,7 +798,7 @@ class RecordSchema(Savable):
             raise ValidationException("Trying 'RecordSchema'", None, _errors__)
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(fields, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(fields=fields, type=type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
@@ -908,7 +907,7 @@ Define an enumerated type.
             raise ValidationException("Trying 'EnumSchema'", None, _errors__)
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(symbols, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(symbols=symbols, type=type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
@@ -1016,7 +1015,7 @@ class ArraySchema(Savable):
             raise ValidationException("Trying 'ArraySchema'", None, _errors__)
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(items, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(items=items, type=type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
@@ -1057,17 +1056,17 @@ URI resolution and JSON-LD context generation.
     """
     def __init__(
         self,
-        _id,  # type: Any
-        _type,  # type: Any
-        _container,  # type: Any
-        identity,  # type: Any
-        noLinkCheck,  # type: Any
-        mapSubject,  # type: Any
-        mapPredicate,  # type: Any
-        refScope,  # type: Any
-        typeDSL,  # type: Any
-        secondaryFilesDSL,  # type: Any
-        subscope,  # type: Any
+        _id=None,  # type: Any
+        _type=None,  # type: Any
+        _container=None,  # type: Any
+        identity=None,  # type: Any
+        noLinkCheck=None,  # type: Any
+        mapSubject=None,  # type: Any
+        mapPredicate=None,  # type: Any
+        refScope=None,  # type: Any
+        typeDSL=None,  # type: Any
+        secondaryFilesDSL=None,  # type: Any
+        subscope=None,  # type: Any
         extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
@@ -1279,7 +1278,7 @@ URI resolution and JSON-LD context generation.
             raise ValidationException("Trying 'JsonldPredicate'", None, _errors__)
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(_id, _type, _container, identity, noLinkCheck, mapSubject, mapPredicate, refScope, typeDSL, secondaryFilesDSL, subscope, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(_id=_id, _type=_type, _container=_container, identity=identity, noLinkCheck=noLinkCheck, mapSubject=mapSubject, mapPredicate=mapPredicate, refScope=refScope, typeDSL=typeDSL, secondaryFilesDSL=secondaryFilesDSL, subscope=subscope, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
@@ -1450,7 +1449,7 @@ class SpecializeDef(Savable):
             raise ValidationException("Trying 'SpecializeDef'", None, _errors__)
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(specializeFrom, specializeTo, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(specializeFrom=specializeFrom, specializeTo=specializeTo, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
@@ -1508,11 +1507,11 @@ A field of a record.
     """
     def __init__(
         self,
-        doc,  # type: Any
         name,  # type: Any
         type,  # type: Any
-        jsonldPredicate,  # type: Any
-        default,  # type: Any
+        doc=None,  # type: Any
+        jsonldPredicate=None,  # type: Any
+        default=None,  # type: Any
         extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
@@ -1638,7 +1637,7 @@ A field of a record.
             raise ValidationException("Trying 'SaladRecordField'", None, _errors__)
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(doc, name, type, jsonldPredicate, default, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(doc=doc, name=name, type=type, jsonldPredicate=jsonldPredicate, default=default, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
@@ -1696,18 +1695,18 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
     def __init__(
         self,
         name,  # type: Any
-        inVocab,  # type: Any
-        fields,  # type: Any
         type,  # type: Any
-        doc,  # type: Any
-        docParent,  # type: Any
-        docChild,  # type: Any
-        docAfter,  # type: Any
-        jsonldPredicate,  # type: Any
-        documentRoot,  # type: Any
-        abstract,  # type: Any
-        extends,  # type: Any
-        specialize,  # type: Any
+        inVocab=None,  # type: Any
+        fields=None,  # type: Any
+        doc=None,  # type: Any
+        docParent=None,  # type: Any
+        docChild=None,  # type: Any
+        docAfter=None,  # type: Any
+        jsonldPredicate=None,  # type: Any
+        documentRoot=None,  # type: Any
+        abstract=None,  # type: Any
+        extends=None,  # type: Any
+        specialize=None,  # type: Any
         extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
@@ -1953,7 +1952,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             raise ValidationException("Trying 'SaladRecordSchema'", None, _errors__)
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(name, inVocab, fields, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, abstract, extends, specialize, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(name=name, inVocab=inVocab, fields=fields, type=type, doc=doc, docParent=docParent, docChild=docChild, docAfter=docAfter, jsonldPredicate=jsonldPredicate, documentRoot=documentRoot, abstract=abstract, extends=extends, specialize=specialize, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
@@ -2083,16 +2082,16 @@ Define an enumerated type.
     def __init__(
         self,
         name,  # type: Any
-        inVocab,  # type: Any
         symbols,  # type: Any
         type,  # type: Any
-        doc,  # type: Any
-        docParent,  # type: Any
-        docChild,  # type: Any
-        docAfter,  # type: Any
-        jsonldPredicate,  # type: Any
-        documentRoot,  # type: Any
-        extends,  # type: Any
+        inVocab=None,  # type: Any
+        doc=None,  # type: Any
+        docParent=None,  # type: Any
+        docChild=None,  # type: Any
+        docAfter=None,  # type: Any
+        jsonldPredicate=None,  # type: Any
+        documentRoot=None,  # type: Any
+        extends=None,  # type: Any
         extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
@@ -2305,7 +2304,7 @@ Define an enumerated type.
             raise ValidationException("Trying 'SaladEnumSchema'", None, _errors__)
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(name, inVocab, symbols, type, doc, docParent, docChild, docAfter, jsonldPredicate, documentRoot, extends, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(name=name, inVocab=inVocab, symbols=symbols, type=type, doc=doc, docParent=docParent, docChild=docChild, docAfter=docAfter, jsonldPredicate=jsonldPredicate, documentRoot=documentRoot, extends=extends, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
@@ -2425,12 +2424,12 @@ schemas but has no role in formal validation.
     def __init__(
         self,
         name,  # type: Any
-        inVocab,  # type: Any
-        doc,  # type: Any
-        docParent,  # type: Any
-        docChild,  # type: Any
-        docAfter,  # type: Any
         type,  # type: Any
+        inVocab=None,  # type: Any
+        doc=None,  # type: Any
+        docParent=None,  # type: Any
+        docChild=None,  # type: Any
+        docAfter=None,  # type: Any
         extension_fields=None,  # type: Optional[Dict[str, Any]]
         loadingOptions=None  # type: Optional[LoadingOptions]
     ):  # type: (...) -> None
@@ -2586,7 +2585,7 @@ schemas but has no role in formal validation.
             raise ValidationException("Trying 'Documentation'", None, _errors__)
         loadingOptions = copy.deepcopy(loadingOptions)
         loadingOptions.original_doc = _doc
-        return cls(name, inVocab, doc, docParent, docChild, docAfter, type, extension_fields=extension_fields, loadingOptions=loadingOptions)
+        return cls(name=name, inVocab=inVocab, doc=doc, docParent=docParent, docChild=docChild, docAfter=docAfter, type=type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]

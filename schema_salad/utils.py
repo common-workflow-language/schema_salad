@@ -1,6 +1,38 @@
 import json
 import os
-from typing import IO, Any, Dict, Mapping, MutableSequence
+from typing import (
+    IO,
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Mapping,
+    MutableSequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
+
+import requests
+from rdflib.graph import Graph
+
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
+
+if TYPE_CHECKING:
+    from .fetcher import Fetcher
+
+ContextType = Dict[str, Union[Dict[str, Any], str, Iterable[str]]]
+DocumentType = TypeVar("DocumentType", CommentedSeq, CommentedMap)
+DocumentOrStrType = TypeVar("DocumentOrStrType", CommentedSeq, CommentedMap, str)
+FieldType = TypeVar("FieldType", str, CommentedSeq, CommentedMap)
+ResolveType = Union[int, float, str, CommentedMap, CommentedSeq, None]
+ResolvedRefType = Tuple[ResolveType, CommentedMap]
+IdxResultType = Union[CommentedMap, CommentedSeq, str, None]
+IdxType = Dict[str, IdxResultType]
+CacheType = Dict[str, Union[str, Graph, bool]]
+FetcherCallableType = Callable[[CacheType, requests.sessions.Session], "Fetcher"]
+AttachmentsType = Callable[[Union[CommentedMap, CommentedSeq]], bool]
 
 
 def add_dictlist(di, key, val):  # type: (Dict[Any, Any], Any, Any) -> None
