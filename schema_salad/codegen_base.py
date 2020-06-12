@@ -1,6 +1,6 @@
 """Base class for the generation of loaders from schema-salad definitions."""
 import collections
-from typing import Any, Dict, List, MutableSequence, Optional, Union, Set
+from typing import Any, Dict, List, MutableSequence, Optional, Set, Union
 
 from . import schema
 

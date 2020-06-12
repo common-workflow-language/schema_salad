@@ -13,7 +13,8 @@ from requests import Session
 
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from schema_salad.exceptions import ValidationException
-from schema_salad.ref_resolver import DefaultFetcher, Loader, file_uri
+from schema_salad.fetcher import DefaultFetcher
+from schema_salad.ref_resolver import Loader, file_uri
 from schema_salad.tests.util import get_data
 
 

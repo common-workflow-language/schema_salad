@@ -76,10 +76,9 @@ class SchemaSaladException(Exception):
     def leaves(self) -> List["SchemaSaladException"]:
         if len(self.children):
             return sum((c.leaves() for c in self.children), [])
-        elif len(self.message):
+        if len(self.message):
             return [self]
-        else:
-            return []
+        return []
 
     def prefix(self) -> str:
         pre = ""  # type:str
@@ -118,13 +117,9 @@ class SchemaSaladException(Exception):
 class SchemaException(SchemaSaladException):
     """Indicates error with the provided schema definition."""
 
-    pass
-
 
 class ValidationException(SchemaSaladException):
     """Indicates error with document against the provided schema."""
-
-    pass
 
 
 class ClassValidationException(ValidationException):

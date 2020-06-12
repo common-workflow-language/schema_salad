@@ -21,7 +21,7 @@ from urllib.request import pathname2url
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
 from schema_salad.exceptions import SchemaSaladException, ValidationException
-from schema_salad.ref_resolver import Fetcher
+from schema_salad.fetcher import DefaultFetcher, Fetcher
 from schema_salad.sourceline import SourceLine, add_lc_filename
 
 _vocab = {}  # type: Dict[str, str]
@@ -65,7 +65,6 @@ class LoadingOptions(object):
             import requests
             from cachecontrol.wrapper import CacheControl
             from cachecontrol.caches import FileCache
-            from schema_salad.ref_resolver import DefaultFetcher
 
             if "HOME" in os.environ:
                 session = CacheControl(

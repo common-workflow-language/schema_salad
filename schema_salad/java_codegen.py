@@ -11,8 +11,8 @@ from typing import (
     MutableMapping,
     MutableSequence,
     Optional,
-    Union,
     Set,
+    Union,
 )
 from urllib.parse import urlsplit
 

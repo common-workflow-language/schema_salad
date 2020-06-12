@@ -8,8 +8,8 @@ from typing import (
     MutableMapping,
     MutableSequence,
     Optional,
-    Union,
     Set,
+    Union,
 )
 
 from pkg_resources import resource_stream

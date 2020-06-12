@@ -21,8 +21,7 @@ from rdflib.namespace import RDF, RDFS
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from .exceptions import SchemaException
-from .ref_resolver import ContextType
-from .utils import aslist, json_dumps
+from .utils import ContextType, aslist, json_dumps
 
 _logger = logging.getLogger("salad")
 
