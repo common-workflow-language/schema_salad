@@ -22,9 +22,9 @@ jobs:
       python: "3.7"
     - stage: test
       python: "3.8"
-    - stage: test
-      dist: focal
-      python: "3.9-dev"
+    # - stage: test
+    #   dist: focal
+    #   python: "3.9-dev"
     - stage: release-test
       python: "3.8"
       script: RELEASE_SKIP=head PYVER=3.8 ${TRAVIS_BUILD_DIR}/release-test.sh
