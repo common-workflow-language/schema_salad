@@ -1,10 +1,10 @@
 |Linux Build Status| |Windows Build status| |Code coverage| |CII Best Practices|
 
-.. |Linux Build Status| image:: https://img.shields.io/travis/common-workflow-language/schema_salad/master.svg?label=unix%20build
+.. |Linux Build Status| image:: https://img.shields.io/travis/common-workflow-language/schema_salad/main.svg?label=unix%20build
    :target: https://travis-ci.org/common-workflow-language/schema_salad
-.. |Windows Build status| image:: https://img.shields.io/appveyor/ci/mr-c/schema-salad/master.svg?label=windows%20build
-   :target: https://ci.appveyor.com/project/mr-c/schema-salad/branch/master
-.. |Code coverage| image:: https://codecov.io/gh/common-workflow-language/schema_salad/branch/master/graph/badge.svg
+.. |Windows Build status| image:: https://img.shields.io/appveyor/ci/mr-c/schema-salad/main.svg?label=windows%20build
+   :target: https://ci.appveyor.com/project/mr-c/schema-salad/branch/main
+.. |Code coverage| image:: https://codecov.io/gh/common-workflow-language/schema_salad/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/common-workflow-language/schema_salad
 .. |CII Best Practices| image:: https://bestpractices.coreinfrastructure.org/projects/1867/badge
    :target: https://bestpractices.coreinfrastructure.org/projects/1867
@@ -210,7 +210,7 @@ provides for robust support of inline documentation.
 
 .. _JSON-LD: http://json-ld.org
 .. _Avro: http://avro.apache.org
-.. _metaschema: https://github.com/common-workflow-language/schema_salad/blob/master/schema_salad/metaschema/metaschema.yml
+.. _metaschema: https://github.com/common-workflow-language/schema_salad/blob/main/schema_salad/metaschema/metaschema.yml
 .. _specification: http://www.commonwl.org/v1.0/SchemaSalad.html
-.. _Language: https://github.com/common-workflow-language/common-workflow-language/blob/master/v1.0/CommandLineTool.yml
+.. _Language: https://github.com/common-workflow-language/common-workflow-language/blob/main/v1.0/CommandLineTool.yml
 .. _RDF: https://www.w3.org/RDF/

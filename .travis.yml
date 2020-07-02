@@ -31,6 +31,6 @@ jobs:
 script: tox
 branches:
   only:
-    - master
+    - main
 notifications:
   email: false
