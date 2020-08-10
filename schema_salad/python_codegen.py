@@ -246,9 +246,12 @@ class PythonCodeGen(CodeGenBase):
 
         self.serializer.write(
             """
-        if top and self.loadingOptions.namespaces:
-            r["$namespaces"] = self.loadingOptions.namespaces
-
+        # top refers to the directory level
+        if top:
+            if self.loadingOptions.namespaces:
+                r["$namespaces"] = self.loadingOptions.namespaces
+            if self.loadingOptions.schemas:
+                r["$schemas"] = self.loadingOptions.schemas
 """
         )
 
