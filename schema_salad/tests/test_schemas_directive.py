@@ -46,4 +46,4 @@ class TestSchemasDirective:
         res = self.load_cwl(src="formattest2.cwl")
 
         # EDAM.owl resides in this directory
-        assert os.path.split(str(res[0]['$schemas'][0]))[1] == "EDAM.owl"
+        assert os.path.split(str(res[0]["$schemas"][0]))[1] == "EDAM.owl"
