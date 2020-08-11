@@ -472,9 +472,9 @@ def _document_load(loader, doc, baseuri, loadingOptions):
     if isinstance(doc, MutableMapping):
         if "$namespaces" in doc or "$schemas" in doc:
             loadingOptions = LoadingOptions(
-                copyfrom=loadingOptions,
-                namespaces=doc.get("$namespaces", None),
-                schemas=doc.get("$schemas", None)
+                copyfrom = loadingOptions,
+                namespaces = doc.get("$namespaces", None),
+                schemas = doc.get("$schemas", None),
             )
             doc = {k: v for k, v in doc.items() if k not in ["$namespaces", "$schemas"]}
 

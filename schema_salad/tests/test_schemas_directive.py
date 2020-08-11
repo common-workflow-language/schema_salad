@@ -17,6 +17,7 @@ test_dir_name = "tests/"
 
 class TestSchemasDirective:
     """Ensure codegen-produced parsers accept $schemas directives"""
+
     document_loader = None  # type: Loader
     avsc_names = None  # type: Union[Names, SchemaParseException]
     schema_metadata = None  # type: Dict[str, Any]
@@ -37,9 +38,7 @@ class TestSchemasDirective:
         path = get_data(test_dir_name + src)
         assert path
         assert isinstance(self.avsc_names, Names)
-        res = load_and_validate(
-            self.document_loader, self.avsc_names, path, True,
-        )
+        res = load_and_validate(self.document_loader, self.avsc_names, path, True)
         return res
 
     def test_dollarsign_schema(self) -> None:
@@ -47,4 +46,4 @@ class TestSchemasDirective:
         res = self.load_cwl(src="formattest2.cwl")
 
         # EDAM.owl resides in this directory
-        assert os.path.split(str(res[0]['$schemas'][0]))[1] == 'EDAM.owl'
+        assert os.path.split(str(res[0]['$schemas'][0]))[1] == "EDAM.owl"
