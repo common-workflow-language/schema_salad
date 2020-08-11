@@ -37,14 +37,14 @@ class TestSchemasDirective:
         path = get_data(test_dir_name + src)
         assert path
         assert isinstance(self.avsc_names, Names)
-        res=load_and_validate(
+        res = load_and_validate(
             self.document_loader, self.avsc_names, path, True,
         )
         return res
 
     def test_dollarsign_schema(self) -> None:
         """EDAM.owl as a schema"""
-        res=self.load_cwl(src="formattest2.cwl")
+        res = self.load_cwl(src="formattest2.cwl")
 
         # EDAM.owl resides in this directory
-        assert os.path.isfile(str(res[0]['$schemas'][0]).replace('file://',''))
+        assert os.path.split(str(res[0]['$schemas'][0]))[1]=='EDAM.owl'
