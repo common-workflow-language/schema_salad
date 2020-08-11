@@ -436,13 +436,3 @@ def test_nullable_links() -> None:
 
     ra, _ = ldr.resolve_all(cmap({"link": None}), "http://example.com", checklinks=True)
     assert {"link": None} == ra
-
-def test_dollarsign_schemas() -> None:
-    path = get_data("tests/test_schema/cwltest-schema.yml")
-    assert path
-    (
-        document_loader,
-        avsc_names,
-        schema_metadata,
-        metaschema_loader,
-    ) = schema_salad.schema.load_schema(path)
