@@ -44,6 +44,7 @@ class LoadingOptions(object):
         self,
         fetcher=None,  # type: Optional[Fetcher]
         namespaces=None,  # type: Optional[Dict[str, str]]
+        schemas=None,  # type: Optional[Dict[str, str]]
         fileuri=None,  # type: Optional[str]
         copyfrom=None,  # type: Optional[LoadingOptions]
         original_doc=None,  # type: Optional[Any]
@@ -51,6 +52,7 @@ class LoadingOptions(object):
         self.idx = {}  # type: Dict[str, Dict[str, Any]]
         self.fileuri = fileuri  # type: Optional[str]
         self.namespaces = namespaces
+        self.schemas = schemas
         self.original_doc = original_doc
         if copyfrom is not None:
             self.idx = copyfrom.idx
@@ -60,6 +62,8 @@ class LoadingOptions(object):
                 self.fileuri = copyfrom.fileuri
             if namespaces is None:
                 self.namespaces = copyfrom.namespaces
+            if schemas is None:
+                self.schemas = copyfrom.schemas
 
         if fetcher is None:
             import requests
@@ -466,11 +470,13 @@ def _document_load(loader, doc, baseuri, loadingOptions):
         )
 
     if isinstance(doc, MutableMapping):
-        if "$namespaces" in doc:
+        if "$namespaces" in doc or "$schemas" in doc:
             loadingOptions = LoadingOptions(
-                copyfrom=loadingOptions, namespaces=doc["$namespaces"]
+                copyfrom=loadingOptions,
+                namespaces=doc.get("$namespaces", None),
+                schemas=doc.get("$schemas", None),
             )
-            doc = {k: v for k, v in doc.items() if k != "$namespaces"}
+            doc = {k: v for k, v in doc.items() if k not in ["$namespaces", "$schemas"]}
 
         if "$base" in doc:
             baseuri = doc["$base"]
