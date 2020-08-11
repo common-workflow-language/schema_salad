@@ -37,7 +37,7 @@ class TestSchemasDirective:
             metaschema_loader,
         ) = load_schema(path)
 
-    def load_cwl(self, src: str) -> None:
+    def load_cwl(self, src: str) -> Tuple[Any, Dict[str, Any]]:
         path = get_data(test_dir_name + src)
         assert path
         assert isinstance(self.avsc_names, Names)
@@ -49,6 +49,6 @@ class TestSchemasDirective:
     def test_dollarsign_schema(self) -> None:
         """EDAM.owl as a schema"""
         res=self.load_cwl(src="formattest2.cwl")
-        
+
         # EDAM.owl resides in this directory
         assert os.path.isfile(str(res[0]['$schemas'][0]).replace('file://',''))
