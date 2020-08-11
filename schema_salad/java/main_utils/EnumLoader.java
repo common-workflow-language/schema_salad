@@ -23,6 +23,10 @@ public class EnumLoader<T extends Enum> implements Loader<T>{
       final T val = (T) m.invoke(null, docString);
       return val;
     } catch (final ReflectiveOperationException e) {
+      final Throwable cause = e.getCause();
+      if (cause instanceof RuntimeException) {
+        throw (RuntimeException) cause;
+      }
       throw new RuntimeException(e);
     }
   }
