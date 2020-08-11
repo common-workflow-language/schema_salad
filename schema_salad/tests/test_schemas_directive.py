@@ -4,14 +4,13 @@ Checks for accepting $schemas directive
 run individually as py.test -k tests/test_schemas_directive.py
 """
 
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, Tuple
 
 import pytest  # type: ignore
 
 from schema_salad.avro.schema import Names, SchemaParseException
-from schema_salad.ref_resolver import Loader
 from schema_salad.schema import load_and_validate, load_schema
-from schema_salad.ref_resolver import Loader, file_uri, uri_file_path
+from schema_salad.ref_resolver import Loader
 import os
 
 from .util import get_data
