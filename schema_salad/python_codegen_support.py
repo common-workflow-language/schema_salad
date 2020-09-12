@@ -329,6 +329,16 @@ class _RecordLoader(_Loader):
     def __repr__(self):  # type: () -> str
         return str(self.classtype)
 
+class _ExpressionLoader(_Loader):
+    def __init__(self, items):
+        # type: (_Loader) -> None
+        self.items = items
+
+    def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
+        if not isinstance(doc, str):
+            raise ValidationException("Expected a str")
+        return doc
 
 class _UnionLoader(_Loader):
     def __init__(self, alternates):
