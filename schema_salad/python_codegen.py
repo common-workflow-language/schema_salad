@@ -480,6 +480,15 @@ class PythonCodeGen(CodeGenBase):
             )
         )
 
+    def secondaryfilesdsl_loader(self, inner):
+        # type: (TypeDef) -> TypeDef
+        return self.declare_type(
+            TypeDef(
+                "secondaryfilesdsl_{}".format(inner.name),
+                "_SecondaryDSLLoader({})".format(inner.name),
+            )
+        )
+
     def epilogue(self, root_loader):
         # type: (TypeDef) -> None
         self.out.write("_vocab = {\n")
