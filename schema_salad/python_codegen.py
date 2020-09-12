@@ -19,6 +19,7 @@ from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
 
+
 prims = {
     "http://www.w3.org/2001/XMLSchema#string": TypeDef(
         "strtype", "_PrimitiveLoader((str, str))"
@@ -281,6 +282,7 @@ class PythonCodeGen(CodeGenBase):
         # type: (Union[List[Any], Dict[str, Any], str]) -> TypeDef
 
         if isinstance(type_declaration, MutableSequence):
+
             sub = [self.type_loader(i) for i in type_declaration]
             return self.declare_type(
                 TypeDef(
@@ -313,6 +315,7 @@ class PythonCodeGen(CodeGenBase):
                         ),
                     )
                 )
+
             if type_declaration["type"] in (
                 "record",
                 "https://w3id.org/cwl/salad#record",
@@ -326,8 +329,17 @@ class PythonCodeGen(CodeGenBase):
                     )
                 )
             raise SchemaException("wft {}".format(type_declaration["type"]))
+
         if type_declaration in prims:
             return prims[type_declaration]
+
+        if type_declaration in ("Expression", "https://w3id.org/cwl/cwl#Expression"):
+            return self.declare_type(
+                TypeDef(
+                    self.safe_name(type_declaration) + "Loader",
+                    "_ExpressionLoader(str)",
+                )
+            )
         return self.collected_types[self.safe_name(type_declaration) + "Loader"]
 
     def declare_id_field(self, name, fieldtype, doc, optional):
