@@ -293,6 +293,27 @@ class _EnumLoader(_Loader):
         else:
             raise ValidationException("Expected one of {}".format(self.symbols))
 
+class _SecondaryDSLLoader(_Loader):
+    def __init__(self, items):
+        # type: (_Loader) -> None
+        self.items = items
+
+    def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
+        if isinstance(doc, MutableSequence):
+            r = []  # type: List[Any]
+            for d in doc:
+                if isinstance(d, str):
+                    r.append(d)
+                else:
+                    raise ValidationException("Expected str or sequence of str")
+            doc = r
+        elif isinstance(doc, str):
+            doc = str
+        else:
+            raise ValidationException("Expected str or sequence of str")
+        return doc
+
 
 class _RecordLoader(_Loader):
     def __init__(self, classtype):
