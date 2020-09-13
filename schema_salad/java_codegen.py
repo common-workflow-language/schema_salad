@@ -475,9 +475,7 @@ public enum {clazz} {{
             )
         )
 
-    def declare_field(
-        self, name: str, fieldtype: TypeDef, doc: Optional[str], optional: bool
-    ) -> None:
+    def declare_field(self, name: str, fieldtype: TypeDef, doc: Optional[str], optional: bool, subscope) -> None:
         fieldname = name
         property_name = self.property_name(fieldname)
         cap_case_property_name = property_name[0].upper() + property_name[1:]
@@ -579,7 +577,7 @@ public enum {clazz} {{
         if self.current_class_is_abstract:
             return
 
-        self.declare_field(name, fieldtype, doc, True)
+        self.declare_field(name, fieldtype, doc, True, None)
         if optional:
             set_uri = """
     if ({safename} == null) {{
