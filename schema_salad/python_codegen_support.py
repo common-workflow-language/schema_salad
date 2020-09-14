@@ -309,7 +309,7 @@ class _SecondaryDSLLoader(_Loader):
                     raise ValidationException("Expected str or sequence of str")
             doc = r
         elif isinstance(doc, str):
-            doc = str
+            pass
         else:
             raise ValidationException("Expected str or sequence of str")
         return doc
