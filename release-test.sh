@@ -25,7 +25,7 @@ then
 	rm -f "testenv${PYVER}_1/lib/python-wheels/setuptools"*
 	pip install --force-reinstall -U pip==${pipver}
 	pip install setuptools==${setupver} wheel
-	pip install pytest\<6 pytest-xdist -rrequirements.txt
+	pip install pytest\<7 pytest-xdist -rrequirements.txt
 	make test
 	pip uninstall -y ${package} || true; pip uninstall -y ${package} \
 		|| true; make install
@@ -56,7 +56,7 @@ rm lib/python-wheels/setuptools* \
 # The following can fail if you haven't pushed your commits to ${repo}
 pip install -e "git+${repo}@${HEAD}#egg=${package}"
 pushd src/${package}
-pip install pytest\<6 pytest-xdist
+pip install pytest\<7 pytest-xdist
 make dist
 make test
 cp dist/${package}*tar.gz "../../../testenv${PYVER}_3/"
@@ -77,7 +77,7 @@ rm lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \
         && pip install setuptools==${setupver} wheel
 pip install ${package}*tar.gz
-pip install pytest\<6 pytest-xdist
+pip install pytest\<7 pytest-xdist
 mkdir out
 tar --extract --directory=out -z -f ${package}*.tar.gz
 pushd out/${package}*
@@ -100,7 +100,7 @@ rm lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \
         && pip install setuptools==${setupver} wheel
 pip install ${module}*.whl
-pip install pytest\<6 pytest-xdist
+pip install pytest\<7 pytest-xdist
 mkdir not-${module}
 pushd not-${module}
 # shellcheck disable=SC2086

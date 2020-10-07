@@ -18,7 +18,7 @@ except ImportError:
     tagger = egg_info_cmd.egg_info
 
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
-pytest_runner = ["pytest < 6", "pytest-runner"] if needs_pytest else []
+pytest_runner = ["pytest < 7", "pytest-runner"] if needs_pytest else []
 
 if os.path.exists("requirements.txt"):
     requirements = [
@@ -94,7 +94,7 @@ install_requires = [
 ]
 
 extras_require = {
-    "docs": ["sphinx >= 2.2", "sphinx-rtd-theme", "pytest < 6"],
+    "docs": ["sphinx >= 2.2", "sphinx-rtd-theme", "pytest < 7"],
 }
 
 setup(
@@ -117,7 +117,7 @@ setup(
     install_requires=install_requires,
     extras_require=extras_require,
     test_suite="tests",
-    tests_require=["pytest<6"],
+    tests_require=["pytest<7"],
     entry_points={
         "console_scripts": [
             "schema-salad-tool=schema_salad.main:main",
