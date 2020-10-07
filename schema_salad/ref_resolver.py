@@ -574,7 +574,11 @@ class Loader(object):
         else:
             return resolved_obj, metadata
 
-    def _resolve_idmap(self, document: CommentedMap, loader: "Loader",) -> None:
+    def _resolve_idmap(
+        self,
+        document: CommentedMap,
+        loader: "Loader",
+    ) -> None:
         # Convert fields with mapSubject into lists
         # use mapPredicate if the mapped value isn't a dict.
         for idmapField in loader.idmap:
@@ -621,7 +625,10 @@ class Loader(object):
                     document[idmapField] = ls
 
     def _type_dsl(
-        self, t: Union[str, CommentedMap, CommentedSeq], lc: LineCol, filename: str,
+        self,
+        t: Union[str, CommentedMap, CommentedSeq],
+        lc: LineCol,
+        filename: str,
     ) -> Union[str, CommentedMap, CommentedSeq]:
 
         if not isinstance(t, str):
@@ -646,7 +653,10 @@ class Loader(object):
         return third or second or first
 
     def _secondaryFile_dsl(
-        self, t: Union[str, CommentedMap, CommentedSeq], lc: LineCol, filename: str,
+        self,
+        t: Union[str, CommentedMap, CommentedSeq],
+        lc: LineCol,
+        filename: str,
     ) -> Union[str, CommentedMap, CommentedSeq]:
 
         if not isinstance(t, str):
@@ -675,7 +685,11 @@ class Loader(object):
         else:
             return datum
 
-    def _resolve_dsl(self, document: CommentedMap, loader: "Loader",) -> None:
+    def _resolve_dsl(
+        self,
+        document: CommentedMap,
+        loader: "Loader",
+    ) -> None:
         fields = list(loader.type_dsl_fields)
         fields.extend(loader.secondaryFile_dsl_fields)
 

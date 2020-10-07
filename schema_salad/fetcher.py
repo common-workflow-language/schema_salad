@@ -14,7 +14,9 @@ _re_drive = re.compile(r"/([a-zA-Z]):")
 
 class Fetcher(object):
     def __init__(
-        self, cache: CacheType, session: Optional[requests.sessions.Session],
+        self,
+        cache: CacheType,
+        session: Optional[requests.sessions.Session],
     ) -> None:
         pass
 
@@ -35,7 +37,9 @@ class Fetcher(object):
 
 class DefaultFetcher(Fetcher):
     def __init__(
-        self, cache: CacheType, session: Optional[requests.sessions.Session],
+        self,
+        cache: CacheType,
+        session: Optional[requests.sessions.Session],
     ) -> None:
         self.cache = cache
         self.session = session

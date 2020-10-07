@@ -24,7 +24,11 @@ def test_fp() -> None:
         path2 = get_data("tests/" + t)
         assert path2
         load_and_validate(
-            document_loader, avsc_names, path2, True, strict_foreign_properties=False,
+            document_loader,
+            avsc_names,
+            path2,
+            True,
+            strict_foreign_properties=False,
         )
 
     for t in (

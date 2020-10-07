@@ -230,7 +230,8 @@ schema_type = Tuple[Loader, Union[Names, SchemaParseException], Dict[str, Any], 
 
 
 def load_schema(
-    schema_ref: ResolveType, cache: Optional[CacheType] = None,
+    schema_ref: ResolveType,
+    cache: Optional[CacheType] = None,
 ) -> schema_type:
     """
     Load a schema that can be used to validate documents using load_and_validate.
@@ -667,7 +668,10 @@ def extend_and_specialize(
     return results
 
 
-def make_avro(i: List[Dict[str, Any]], loader: Loader,) -> List[Any]:
+def make_avro(
+    i: List[Dict[str, Any]],
+    loader: Loader,
+) -> List[Any]:
 
     j = extend_and_specialize(i, loader)
 
@@ -685,7 +689,10 @@ def make_avro(i: List[Dict[str, Any]], loader: Loader,) -> List[Any]:
     ]
 
 
-def make_avro_schema(i: List[Any], loader: Loader,) -> Names:
+def make_avro_schema(
+    i: List[Any],
+    loader: Loader,
+) -> Names:
     """
     All in one convenience function.
 
