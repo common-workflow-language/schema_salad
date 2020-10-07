@@ -59,8 +59,10 @@ class MyRenderer(mistune.Renderer):
         self.options = {}
 
     def header(self, text: str, level: int, raw: Optional[Any] = None) -> str:
-        return """<h{} id="{}" class="section">{} <a href="#{}">&sect;</a></h{}>""".format(
-            level, to_id(text), text, to_id(text), level
+        return (
+            """<h{} id="{}" class="section">{} <a href="#{}">&sect;</a></h{}>""".format(
+                level, to_id(text), text, to_id(text), level
+            )
         )
 
     def table(self, header: str, body: str) -> str:

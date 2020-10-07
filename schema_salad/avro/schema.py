@@ -424,7 +424,11 @@ class UnionSchema(Schema):
     names is a dictionary of schema objects
     """
 
-    def __init__(self, schemas: List[JsonDataType], names: Names,) -> None:
+    def __init__(
+        self,
+        schemas: List[JsonDataType],
+        names: Names,
+    ) -> None:
         # Ensure valid ctor args
         if names is None:
             raise SchemaParseException("Must provide Names.")

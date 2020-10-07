@@ -23,7 +23,10 @@ def test_print_oneline() -> None:
     with pytest.raises(ValidationException):
         try:
             load_and_validate(
-                document_loader, avsc_names, path, True,
+                document_loader,
+                avsc_names,
+                path,
+                True,
             )
         except ValidationException as e:
             msgs = to_one_line_messages(e).splitlines()
@@ -55,7 +58,10 @@ def test_print_oneline_for_invalid_yaml() -> None:
     with pytest.raises(ValidationException):
         try:
             load_and_validate(
-                document_loader, avsc_names, path, True,
+                document_loader,
+                avsc_names,
+                path,
+                True,
             )
         except ValidationException as e:
             msg = to_one_line_messages(e)
@@ -77,7 +83,10 @@ def test_print_oneline_for_errors_in_the_same_line() -> None:
     with pytest.raises(ValidationException):
         try:
             load_and_validate(
-                document_loader, avsc_names, path, True,
+                document_loader,
+                avsc_names,
+                path,
+                True,
             )
         except ValidationException as e:
             msgs = to_one_line_messages(e).splitlines()
@@ -132,7 +141,10 @@ def test_for_invalid_yaml1() -> None:
     with pytest.raises(ValidationException):
         try:
             load_and_validate(
-                document_loader, avsc_names, path, True,
+                document_loader,
+                avsc_names,
+                path,
+                True,
             )
         except ValidationException as e:
             msg = str(e)
@@ -157,7 +169,10 @@ def test_for_invalid_yaml2() -> None:
     with pytest.raises(ValidationException):
         try:
             load_and_validate(
-                document_loader, avsc_names, path, True,
+                document_loader,
+                avsc_names,
+                path,
+                True,
             )
         except ValidationException as e:
             msg = str(e)

@@ -12,7 +12,9 @@ from schema_salad.utils import CacheType
 
 class testFetcher(Fetcher):
     def __init__(
-        self, cache: CacheType, session: Optional[requests.sessions.Session],
+        self,
+        cache: CacheType,
+        session: Optional[requests.sessions.Session],
     ) -> None:
         pass
 
@@ -43,7 +45,9 @@ class testFetcher(Fetcher):
 
 class CWLTestFetcher(Fetcher):
     def __init__(
-        self, cache: CacheType, session: Optional[requests.sessions.Session],
+        self,
+        cache: CacheType,
+        session: Optional[requests.sessions.Session],
     ) -> None:
         pass
 

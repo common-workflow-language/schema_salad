@@ -25,7 +25,10 @@ _logger = logging.getLogger("salad")
 
 
 def printrdf(
-    workflow: str, wf: Union[CommentedMap, CommentedSeq], ctx: Dict[str, Any], sr: str,
+    workflow: str,
+    wf: Union[CommentedMap, CommentedSeq],
+    ctx: Dict[str, Any],
+    sr: str,
 ) -> None:
     g = jsonld_context.makerdf(workflow, wf, ctx)
     print(g.serialize(format=sr, encoding="utf-8").decode("utf-8"))

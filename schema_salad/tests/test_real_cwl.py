@@ -43,7 +43,10 @@ class TestRealWorldCWL:
         with pytest.raises(ValidationException):
             try:
                 load_and_validate(
-                    self.document_loader, self.avsc_names, path, True,
+                    self.document_loader,
+                    self.avsc_names,
+                    path,
+                    True,
                 )
             except ValidationException as e:
                 # msgs = to_one_line_messages(str(e)).splitlines()

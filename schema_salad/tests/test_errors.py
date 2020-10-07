@@ -34,7 +34,10 @@ def test_errors() -> None:
         with pytest.raises(ValidationException):
             try:
                 load_and_validate(
-                    document_loader, avsc_names, path2, True,
+                    document_loader,
+                    avsc_names,
+                    path2,
+                    True,
                 )
             except ValidationException as e:
                 print("\n", e)
@@ -291,7 +294,10 @@ def test_errors_previously_defined_dict_key() -> None:
         with pytest.raises(ValidationException):
             try:
                 load_and_validate(
-                    document_loader, avsc_names, str(get_data("tests/" + t)), True,
+                    document_loader,
+                    avsc_names,
+                    str(get_data("tests/" + t)),
+                    True,
                 )
             except ValidationException as e:
                 print("\n", e)
