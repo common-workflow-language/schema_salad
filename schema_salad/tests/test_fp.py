@@ -1,4 +1,4 @@
-import pytest  # type: ignore
+import pytest
 
 from schema_salad.avro.schema import Names
 from schema_salad.exceptions import ValidationException

@@ -2,7 +2,7 @@ import os
 from typing import Optional
 from urllib.parse import urljoin, urlsplit
 
-import pytest  # type: ignore
+import pytest
 import requests
 
 from schema_salad.fetcher import Fetcher
