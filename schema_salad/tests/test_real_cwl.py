@@ -6,7 +6,7 @@ run individually as py.test -k tests/test_real_cwl.py
 
 from typing import Any, Dict, Union
 
-import pytest  # type: ignore
+import pytest
 
 from schema_salad.avro.schema import Names, SchemaParseException
 from schema_salad.exceptions import ValidationException

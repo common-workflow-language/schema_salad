@@ -7,8 +7,8 @@ import sys
 import tempfile
 from typing import Union
 
-import pytest  # type: ignore
-from _pytest.fixtures import FixtureRequest  # type: ignore
+import pytest
+from _pytest.fixtures import FixtureRequest
 from requests import Session
 
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
@@ -25,11 +25,11 @@ def is_fs_case_sensitive(
         return not os.path.exists(tmp_file.name.lower())
 
 
-@pytest.fixture  # type: ignore
+@pytest.fixture
 def tmp_dir_fixture(request: FixtureRequest) -> str:
     d = tempfile.mkdtemp()
 
-    @request.addfinalizer  # type: ignore
+    @request.addfinalizer
     def teardown() -> None:
         shutil.rmtree(d)
 
@@ -71,7 +71,7 @@ def test_Loader_initialisation_disable_doc_cache(tmp_dir_fixture: str) -> None:
     assert isinstance(loader.session, Session)
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="Only for win32")  # type: ignore
+@pytest.mark.skipif(sys.platform != "win32", reason="Only for win32")
 def test_DefaultFetcher_urljoin_win32(tmp_dir_fixture: str) -> None:
     # Ensure HOME is set.
     os.environ["HOME"] = tmp_dir_fixture
