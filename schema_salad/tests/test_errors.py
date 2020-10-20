@@ -1,4 +1,4 @@
-import pytest  # type: ignore
+import pytest
 
 import schema_salad
 import schema_salad.main
@@ -277,7 +277,7 @@ def test_error_message15() -> None:
         )
 
 
-@pytest.mark.skip(  # type: ignore
+@pytest.mark.skip(
     "See https://github.com/common-workflow-language/common-workflow-language/issues/734"  # noqa: B950
 )
 def test_errors_previously_defined_dict_key() -> None:
