@@ -1,7 +1,7 @@
 import json
 import os
 
-import pytest  # type: ignore
+import pytest
 
 import schema_salad.metaschema as cg_metaschema
 from schema_salad.exceptions import ValidationException
