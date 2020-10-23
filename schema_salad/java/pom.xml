@@ -11,6 +11,8 @@
 
     <properties>
         <commonslang.version>3.7</commonslang.version>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
     </properties>
 
     <licenses>
@@ -114,7 +116,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>4.13.1</version>
         </dependency>
         <dependency>
             <groupId>org.yaml</groupId>

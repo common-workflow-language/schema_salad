@@ -6,7 +6,7 @@ run individually as py.test -k tests/test_real_cwl.py
 
 from typing import Any, Dict, Union
 
-import pytest  # type: ignore
+import pytest
 
 from schema_salad.avro.schema import Names, SchemaParseException
 from schema_salad.exceptions import ValidationException
@@ -43,7 +43,10 @@ class TestRealWorldCWL:
         with pytest.raises(ValidationException):
             try:
                 load_and_validate(
-                    self.document_loader, self.avsc_names, path, True,
+                    self.document_loader,
+                    self.avsc_names,
+                    path,
+                    True,
                 )
             except ValidationException as e:
                 # msgs = to_one_line_messages(str(e)).splitlines()

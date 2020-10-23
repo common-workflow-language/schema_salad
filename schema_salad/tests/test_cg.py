@@ -1,7 +1,7 @@
 import json
 import os
 
-import pytest  # type: ignore
+import pytest
 
 import schema_salad.metaschema as cg_metaschema
 from schema_salad.exceptions import ValidationException
@@ -179,7 +179,9 @@ def test_load_metaschema() -> None:
     path = get_data("metaschema/metaschema.yml")
     assert path
     doc = cg_metaschema.load_document(
-        file_uri(path), "", cg_metaschema.LoadingOptions(),
+        file_uri(path),
+        "",
+        cg_metaschema.LoadingOptions(),
     )
     path2 = get_data("tests/metaschema-pre.yml")
     assert path2
@@ -193,7 +195,9 @@ def test_load_cwlschema() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     assert path
     doc = cg_metaschema.load_document(
-        file_uri(path), "", cg_metaschema.LoadingOptions(),
+        file_uri(path),
+        "",
+        cg_metaschema.LoadingOptions(),
     )
     path2 = get_data("tests/cwl-pre.yml")
     assert path2

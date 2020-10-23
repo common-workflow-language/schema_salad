@@ -245,7 +245,12 @@ class SourceLine(object):
     def __enter__(self) -> "SourceLine":
         return self
 
-    def __exit__(self, exc_type: Any, exc_value: Any, tb: Any,) -> None:
+    def __exit__(
+        self,
+        exc_type: Any,
+        exc_value: Any,
+        tb: Any,
+    ) -> None:
         if not exc_value:
             return
         raise self.makeError(str(exc_value)) from exc_value

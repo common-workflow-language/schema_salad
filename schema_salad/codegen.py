@@ -1,7 +1,16 @@
 """Generate langauge specific loaders for a particular SALAD schema."""
 import sys
-from io import open
-from typing import Any, Dict, List, MutableMapping, MutableSequence, Optional
+from io import open, TextIOWrapper
+from typing import (
+    Any,
+    Dict,
+    List,
+    MutableMapping,
+    MutableSequence,
+    Optional,
+    TextIO,
+    Union,
+)
 
 from . import schema
 from .codegen_base import CodeGenBase
@@ -28,7 +37,9 @@ def codegen(
     gen = None  # type: Optional[CodeGenBase]
     if lang == "python":
         if target:
-            dest = open(target, mode="w", encoding="utf-8")
+            dest: Union[TextIOWrapper, TextIO] = open(
+                target, mode="w", encoding="utf-8"
+            )
         else:
             dest = sys.stdout
         gen = PythonCodeGen(dest)

@@ -272,11 +272,6 @@ class PythonCodeGen(CodeGenBase):
             ["extension_fields=extension_fields", "loadingOptions=loadingOptions"]
         )
 
-        self.out.write(
-            """        loadingOptions = copy.deepcopy(loadingOptions)
-        loadingOptions.original_doc = _doc
-"""
-        )
         self.out.write("        return cls(" + ", ".join(safe_inits) + ")\n")
 
         self.out.write(str(self.serializer.getvalue()))

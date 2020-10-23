@@ -176,8 +176,8 @@ class JavaCodeGen(CodeGenBase):
             implemented_by = "This interface is implemented by {{@link {}Impl}}<BR>"
             interface_doc_str += implemented_by.format(cls)
         interface_doc_str += doc_to_doc_string(doc)
-        class_doc_str = "* Auto-generated class implementation for <I>{}</I><BR>".format(
-            classname
+        class_doc_str = (
+            "* Auto-generated class implementation for <I>{}</I><BR>".format(classname)
         )
         class_doc_str += doc_to_doc_string(doc)
         with open(os.path.join(self.main_src_dir, "{}.java".format(cls)), "w") as f:
@@ -406,7 +406,8 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                         instance_type=self.safe_name(type_declaration["name"]),
                         name=self.safe_name(type_declaration["name"]),
                         init="new RecordLoader<{clazz}>({clazz}{ext}.class)".format(
-                            clazz=fqclass, ext="Impl" if not is_abstract else "",
+                            clazz=fqclass,
+                            ext="Impl" if not is_abstract else "",
                         ),
                         loader_type="Loader<{}>".format(fqclass),
                     )
@@ -719,7 +720,8 @@ public enum {clazz} {{
             ),
         )
         expand_resource_template_to(
-            "README.md", os.path.join(self.target_dir, "README.md"),
+            "README.md",
+            os.path.join(self.target_dir, "README.md"),
         )
 
         vocab = ""
@@ -771,7 +773,8 @@ public enum {clazz} {{
     doc = (java.util.Map<String, Object>) YamlUtils.mapFromString(yaml);
     RootLoader.loadDocument(doc);
   }}""".format(
-                        basename=basename, example_name=example_name,
+                        basename=basename,
+                        example_name=example_name,
                     )
 
         template_args = dict(

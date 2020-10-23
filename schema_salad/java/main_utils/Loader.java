@@ -6,7 +6,7 @@ import java.util.Map;
 
 public interface Loader<T> {
 
-  abstract T load(
+  T load(
       final Object doc,
       final String baseUri,
       final LoadingOptions loadingOptions,
@@ -85,7 +85,7 @@ public interface Loader<T> {
     return load(val, baseUri, loadingOptions);
   }
 
-  private Map<String, Object> copyWithoutKey(final Map<String, Object> doc, final String key) {
+  default Map<String, Object> copyWithoutKey(final Map<String, Object> doc, final String key) {
     final Map<String, Object> result = new HashMap();
     for (final Map.Entry<String, Object> entry : doc.entrySet()) {
       if (!entry.getKey().equals(key)) {
@@ -95,7 +95,7 @@ public interface Loader<T> {
     return result;
   }
 
-  public static <T> T validateOfJavaType(final Class<T> clazz, final Object doc) {
+  static <T> T validateOfJavaType(final Class<T> clazz, final Object doc) {
     if (!clazz.isInstance(doc)) {
       String className = "null";
       if (doc != null) {
