@@ -1,7 +1,7 @@
 import os
+import re
 import sys
 import urllib
-import re
 from typing import List, Optional
 
 import requests

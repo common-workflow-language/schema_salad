@@ -1,6 +1,6 @@
 """Generate langauge specific loaders for a particular SALAD schema."""
 import sys
-from io import open, TextIOWrapper
+from io import TextIOWrapper, open
 from typing import (
     Any,
     Dict,

@@ -4,20 +4,22 @@ Ensure codegen-produced parsers accept $schemas directives
 run individually as py.test -k test_cwl11
 """
 
-from typing import Any, Dict, Union, Tuple, Generator
+import os
+import shutil
+import tarfile
+from pathlib import Path
+from typing import Any, Dict, Generator, Tuple, Union
+
+import pytest
+import requests
+from _pytest.tmpdir import TempPathFactory
+
 from schema_salad.avro.schema import Names, SchemaParseException
 from schema_salad.exceptions import ValidationException
 from schema_salad.ref_resolver import Loader
 from schema_salad.schema import load_and_validate, load_schema
-import os
-import tarfile
-from pathlib import Path
-import shutil
-import requests
 
 from .util import get_data
-import pytest
-from _pytest.tmpdir import TempPathFactory
 
 test_dir_name = "tests/"
 

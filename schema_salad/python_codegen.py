@@ -19,7 +19,6 @@ from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
 
-
 prims = {
     "http://www.w3.org/2001/XMLSchema#string": TypeDef(
         "strtype", "_PrimitiveLoader((str, str))"

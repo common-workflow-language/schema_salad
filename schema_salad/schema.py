@@ -20,9 +20,9 @@ from typing import (
 from urllib.parse import urldefrag, urlparse
 
 from pkg_resources import resource_stream
-
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
+
 from schema_salad.utils import (
     CacheType,
     ResolveType,

@@ -24,10 +24,9 @@ from cachecontrol.wrapper import CacheControl
 from rdflib.graph import Graph
 from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.plugins.parsers.notation3 import BadSyntax
-from six.moves import range, urllib
-
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
+from six.moves import range, urllib
 
 from .exceptions import SchemaSaladException, ValidationException
 from .fetcher import DefaultFetcher

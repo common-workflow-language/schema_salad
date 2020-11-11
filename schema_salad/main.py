@@ -10,7 +10,6 @@ from urllib.parse import urlparse
 import pkg_resources  # part of setuptools
 from rdflib.parser import Parser
 from rdflib.plugin import register
-
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from . import codegen, jsonld_context, schema
