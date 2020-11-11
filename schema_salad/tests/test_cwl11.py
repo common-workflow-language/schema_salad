@@ -35,7 +35,7 @@ def cwl_v1_2_schema(
     ).raw as specfileobj:
         tf = tarfile.open(fileobj=specfileobj)
         tf.extractall(path=tmp_path)  # this becomes cwl-v1.2-1.2.0
-    path = get_data(str(tmp_path / "cwl-v1.2-1.2.0/CommonWorkflowLanguage.yml"))
+    path = str(tmp_path / "cwl-v1.2-1.2.0/CommonWorkflowLanguage.yml")
     yield load_schema(path)
     shutil.rmtree(os.path.join(tmp_path))
 
