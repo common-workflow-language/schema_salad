@@ -333,8 +333,7 @@ class _RecordLoader(_Loader):
 
 
 class _ExpressionLoader(_Loader):
-    def __init__(self, items):
-        # type: (_Loader) -> None
+    def __init__(self, items: Type[str]) -> None:
         self.items = items
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
