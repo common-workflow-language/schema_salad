@@ -363,8 +363,6 @@ class PythonCodeGen(CodeGenBase):
                 fieldname=shortname(name)
             )
 
-        # The run field now introduces a subscope so that embedded definitions do not have identifier conflicts with the outer workflow
-        # https://github.com/common-workflow-language/cwl-utils/issues/31#issuecomment-689012888
         if subscope is not None:
             name = name + subscope
 
