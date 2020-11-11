@@ -16,7 +16,6 @@ from typing import (
 
 import requests
 from rdflib.graph import Graph
-
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 if TYPE_CHECKING:

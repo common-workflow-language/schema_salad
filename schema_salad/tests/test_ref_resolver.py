@@ -10,8 +10,8 @@ from typing import Union
 import pytest
 from _pytest.fixtures import FixtureRequest
 from requests import Session
-
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
+
 from schema_salad.exceptions import ValidationException
 from schema_salad.fetcher import DefaultFetcher
 from schema_salad.ref_resolver import Loader, file_uri

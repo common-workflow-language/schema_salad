@@ -1,6 +1,6 @@
 """Generate langauge specific loaders for a particular SALAD schema."""
 import sys
-from io import open, TextIOWrapper
+from io import TextIOWrapper, open
 from typing import (
     Any,
     Dict,
@@ -103,13 +103,14 @@ def codegen(
 
             for field in rec.get("fields", []):
                 if field.get("jsonldPredicate") == "@id":
+                    subscope = field.get("subscope")
                     fieldpred = field["name"]
                     optional = bool("https://w3id.org/cwl/salad#null" in field["type"])
                     uri_loader = gen.uri_loader(
                         gen.type_loader(field["type"]), True, False, None
                     )
                     gen.declare_id_field(
-                        fieldpred, uri_loader, field.get("doc"), optional
+                        fieldpred, uri_loader, field.get("doc"), optional, subscope
                     )
                     break
 
@@ -118,11 +119,16 @@ def codegen(
                 type_loader = gen.type_loader(field["type"])
                 jld = field.get("jsonldPredicate")
                 fieldpred = field["name"]
+                subscope = None
+
                 if isinstance(jld, MutableMapping):
                     ref_scope = jld.get("refScope")
-
                     if jld.get("typeDSL"):
                         type_loader = gen.typedsl_loader(type_loader, ref_scope)
+                    elif jld.get("secondaryFilesDSL"):
+                        type_loader = gen.secondaryfilesdsl_loader(type_loader)
+                    elif jld.get("subscope"):
+                        subscope = jld.get("subscope")
                     elif jld.get("_type") == "@id":
                         type_loader = gen.uri_loader(
                             type_loader, jld.get("identity", False), False, ref_scope

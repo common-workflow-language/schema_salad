@@ -92,13 +92,22 @@ class CodeGenBase(object):
         raise NotImplementedError()
 
     def declare_field(
-        self, name: str, fieldtype: TypeDef, doc: Optional[str], optional: bool
+        self,
+        name: str,
+        fieldtype: TypeDef,
+        doc: Optional[str],
+        optional: bool,
     ) -> None:
         """Output the code to load the given field."""
         raise NotImplementedError()
 
     def declare_id_field(
-        self, name: str, fieldtype: TypeDef, doc: str, optional: bool
+        self,
+        name: str,
+        fieldtype: TypeDef,
+        doc: str,
+        optional: bool,
+        subscope: Optional[str],
     ) -> None:
         """Output the code to handle the given ID field."""
         raise NotImplementedError()
@@ -125,4 +134,8 @@ class CodeGenBase(object):
 
     def epilogue(self, root_loader: TypeDef) -> None:
         """Trigger to generate the epilouge code."""
+        raise NotImplementedError()
+
+    def secondaryfilesdsl_loader(self, type_loader: TypeDef) -> TypeDef:
+        """Construct the TypeDef for secondary files"""
         raise NotImplementedError()

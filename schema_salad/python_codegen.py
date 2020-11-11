@@ -281,6 +281,7 @@ class PythonCodeGen(CodeGenBase):
         # type: (Union[List[Any], Dict[str, Any], str]) -> TypeDef
 
         if isinstance(type_declaration, MutableSequence):
+
             sub = [self.type_loader(i) for i in type_declaration]
             return self.declare_type(
                 TypeDef(
@@ -313,6 +314,7 @@ class PythonCodeGen(CodeGenBase):
                         ),
                     )
                 )
+
             if type_declaration["type"] in (
                 "record",
                 "https://w3id.org/cwl/salad#record",
@@ -326,13 +328,27 @@ class PythonCodeGen(CodeGenBase):
                     )
                 )
             raise SchemaException("wft {}".format(type_declaration["type"]))
+
         if type_declaration in prims:
             return prims[type_declaration]
+
+        if type_declaration in ("Expression", "https://w3id.org/cwl/cwl#Expression"):
+            return self.declare_type(
+                TypeDef(
+                    self.safe_name(type_declaration) + "Loader",
+                    "_ExpressionLoader(str)",
+                )
+            )
         return self.collected_types[self.safe_name(type_declaration) + "Loader"]
 
-    def declare_id_field(self, name, fieldtype, doc, optional):
-        # type: (str, TypeDef, str, bool) -> None
-
+    def declare_id_field(
+        self,
+        name: str,
+        fieldtype: TypeDef,
+        doc: str,
+        optional: bool,
+        subscope: Optional[str],
+    ) -> None:
         if self.current_class_is_abstract:
             return
 
@@ -346,6 +362,9 @@ class PythonCodeGen(CodeGenBase):
             opt = """raise ValidationException("Missing {fieldname}")""".format(
                 fieldname=shortname(name)
             )
+
+        if subscope is not None:
+            name = name + subscope
 
         self.out.write(
             """
@@ -477,6 +496,15 @@ class PythonCodeGen(CodeGenBase):
             TypeDef(
                 "typedsl_{}_{}".format(inner.name, ref_scope),
                 "_TypeDSLLoader({}, {})".format(inner.name, ref_scope),
+            )
+        )
+
+    def secondaryfilesdsl_loader(self, inner):
+        # type: (TypeDef) -> TypeDef
+        return self.declare_type(
+            TypeDef(
+                "secondaryfilesdsl_{}".format(inner.name),
+                "_SecondaryDSLLoader({})".format(inner.name),
             )
         )
 

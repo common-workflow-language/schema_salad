@@ -17,7 +17,6 @@ import rdflib
 import rdflib.namespace
 from rdflib import Graph, URIRef
 from rdflib.namespace import RDF, RDFS
-
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from .exceptions import SchemaException
