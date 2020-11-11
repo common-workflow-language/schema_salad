@@ -476,7 +476,13 @@ public enum {clazz} {{
             )
         )
 
-    def declare_field(self, name: str, fieldtype: TypeDef, doc: Optional[str], optional: bool, subscope) -> None:
+    def declare_field(
+        self,
+        name: str,
+        fieldtype: TypeDef,
+        doc: Optional[str],
+        optional: bool,
+    ) -> None:
         fieldname = name
         property_name = self.property_name(fieldname)
         cap_case_property_name = property_name[0].upper() + property_name[1:]
@@ -573,12 +579,17 @@ public enum {clazz} {{
             )
 
     def declare_id_field(
-        self, name: str, fieldtype: TypeDef, doc: str, optional: bool
+        self,
+        name: str,
+        fieldtype: TypeDef,
+        doc: str,
+        optional: bool,
+        subscope: Optional[str],
     ) -> None:
         if self.current_class_is_abstract:
             return
 
-        self.declare_field(name, fieldtype, doc, True, None)
+        self.declare_field(name, fieldtype, doc, True)
         if optional:
             set_uri = """
     if ({safename} == null) {{
@@ -601,6 +612,9 @@ public enum {clazz} {{
     }}
     __baseUri = (String) {safename};
 """
+        if subscope is not None:
+            name = name + subscope
+
         self.current_loader.write(
             set_uri.format(safename=self.safe_name(name), fieldname=shortname(name))
         )

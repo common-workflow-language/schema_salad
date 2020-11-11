@@ -1,71 +1,66 @@
 """
-Checks for accepting $schemas directive
+Ensure codegen-produced parsers accept $schemas directives
 
-run individually as py.test -k tests/test_schemas_directive.py
+run individually as py.test -k test_cwl11
 """
 
-from typing import Any, Dict, Union, Tuple
+from typing import Any, Dict, Union, Tuple, Generator
 from schema_salad.avro.schema import Names, SchemaParseException
 from schema_salad.exceptions import ValidationException
 from schema_salad.ref_resolver import Loader
 from schema_salad.schema import load_and_validate, load_schema
 import os
 import tarfile
-import pathlib
+from pathlib import Path
 import shutil
+import requests
 
 from .util import get_data
+import pytest
+from _pytest.tmpdir import TempPathFactory
 
 test_dir_name = "tests/"
 
+SchemaType = Tuple[Loader, Union[Names, SchemaParseException], Dict[str, Any], Loader]
 
 
+@pytest.fixture(scope="session")
+def cwl_v1_2_schema(
+    tmp_path_factory: TempPathFactory,
+) -> Generator[SchemaType, None, None]:
+    tmp_path = tmp_path_factory.mktemp("cwl_v1_2_schema")
+    with requests.get(
+        "https://github.com/common-workflow-language/cwl-v1.2/archive/v1.2.0.tar.gz",
+        stream=True,
+    ).raw as specfileobj:
+        tf = tarfile.open(fileobj=specfileobj)
+        tf.extractall(path=tmp_path)  # this becomes cwl-v1.2-1.2.0
+    path = get_data(str(tmp_path / "cwl-v1.2-1.2.0/CommonWorkflowLanguage.yml"))
+    yield load_schema(path)
+    shutil.rmtree(os.path.join(tmp_path))
 
-class TestCwl11:
-    """Ensure codegen-produced parsers accept $schemas directives"""
 
-    document_loader = None  # type: Loader
-    avsc_names = None  # type: Union[Names, SchemaParseException]
-    schema_metadata = None  # type: Dict[str, Any]
-    metaschema_loader = None  # type: Loader
+def load_cwl(cwl_v1_2_schema: SchemaType, src: str) -> Tuple[Any, Dict[str, Any]]:
+    (document_loader, avsc_names, schema_metadata, metaschema_loader) = cwl_v1_2_schema
+    path = get_data(test_dir_name + src)
+    assert path
+    assert isinstance(avsc_names, Names)
+    res = load_and_validate(document_loader, avsc_names, path, True)
+    return res
 
-    @classmethod
-    def setup_class(cls) -> None:
 
-        #filepath = pathlib.Path(__file__).resolve().parent
-        print("here i am {}".format(os.getcwd()))
-        #filepath = "schema_salad/tests/test_schema/" #/"+test_dir_name
-        filepath = "."
-        tf = tarfile.open(os.path.join(filepath,"v1.2.0.tar.gz"))
-        tf.extractall(os.path.join(filepath)) #this becomes cwl-v1.2-1.2.0
-        path = get_data(os.path.join(filepath,"cwl-v1.2-1.2.0/CommonWorkflowLanguage.yml"))
-        assert path
-        (
-            cls.document_loader,
-            cls.avsc_names,
-            schema_metadata,
-            metaschema_loader,
-        ) = load_schema(path)
+def test_secondaryFiles(cwl_v1_2_schema: SchemaType) -> None:
+    """secondaryFiles"""
+    res = load_cwl(
+        cwl_v1_2_schema,
+        src="test_real_cwl/bio-cwl-tools/picard_CreateSequenceDictionary.cwl",
+    )
+    print("the res:{}".format(res))
 
-    @classmethod
-    def teardown_class(cls) -> None:
-        #filepath = pathlib.Path(__file__).resolve().parent
-        filepath = "."
-        shutil.rmtree(os.path.join(filepath,"cwl-v1.2-1.2.0/"))
 
-    def load_cwl(self, src: str) -> Tuple[Any, Dict[str, Any]]:
-        path = get_data(test_dir_name + src)
-        assert path
-        assert isinstance(self.avsc_names, Names)
-        res = load_and_validate(self.document_loader, self.avsc_names, path, True)
-        return res
-
-    def test_secondaryFiles(self) -> None:
-        """secondaryFiles"""
-        res = self.load_cwl(src="test_real_cwl/bio-cwl-tools/picard_CreateSequenceDictionary.cwl")
-        print("the res:{}".format(res))
-
-    def test_outputBinding(self) -> None:
-        """secondaryFiles"""
-        res = self.load_cwl(src="test_real_cwl/bio-cwl-tools/bamtools_stats.cwl")
-        print("the res:{}".format(res))
+def test_outputBinding(cwl_v1_2_schema: SchemaType) -> None:
+    """secondaryFiles"""
+    res = load_cwl(
+        cwl_v1_2_schema, src="test_real_cwl/bio-cwl-tools/bamtools_stats.cwl"
+    )
+    print("the res:{}".format(res))

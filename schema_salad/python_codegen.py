@@ -342,9 +342,14 @@ class PythonCodeGen(CodeGenBase):
             )
         return self.collected_types[self.safe_name(type_declaration) + "Loader"]
 
-    def declare_id_field(self, name, fieldtype, doc, optional, subscope):
-        # type: (str, TypeDef, str, bool, str) -> None
-
+    def declare_id_field(
+        self,
+        name: str,
+        fieldtype: TypeDef,
+        doc: str,
+        optional: bool,
+        subscope: Optional[str],
+    ) -> None:
         if self.current_class_is_abstract:
             return
 
@@ -359,10 +364,10 @@ class PythonCodeGen(CodeGenBase):
                 fieldname=shortname(name)
             )
 
-        #The run field now introduces a subscope so that embedded definitions do not have identifier conflicts with the outer workflow
-        #https://github.com/common-workflow-language/cwl-utils/issues/31#issuecomment-689012888
+        # The run field now introduces a subscope so that embedded definitions do not have identifier conflicts with the outer workflow
+        # https://github.com/common-workflow-language/cwl-utils/issues/31#issuecomment-689012888
         if subscope is not None:
-            name = name+subscope
+            name = name + subscope
 
         self.out.write(
             """
@@ -377,7 +382,9 @@ class PythonCodeGen(CodeGenBase):
             )
         )
 
-    def declare_field(self, name: str, fieldtype: TypeDef, doc: Optional[str], optional: bool) -> None:
+    def declare_field(
+        self, name: str, fieldtype: TypeDef, doc: Optional[str], optional: bool
+    ) -> None:
 
         if self.current_class_is_abstract:
             return

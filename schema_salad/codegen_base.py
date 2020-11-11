@@ -91,12 +91,23 @@ class CodeGenBase(object):
         """Parse the given type declaration and declare its components."""
         raise NotImplementedError()
 
-    def declare_field(self, name: str, fieldtype: TypeDef, doc: Optional[str], optional: bool, subscope) -> None:
+    def declare_field(
+        self,
+        name: str,
+        fieldtype: TypeDef,
+        doc: Optional[str],
+        optional: bool,
+    ) -> None:
         """Output the code to load the given field."""
         raise NotImplementedError()
 
     def declare_id_field(
-        self, name: str, fieldtype: TypeDef, doc: str, optional: bool
+        self,
+        name: str,
+        fieldtype: TypeDef,
+        doc: str,
+        optional: bool,
+        subscope: Optional[str],
     ) -> None:
         """Output the code to handle the given ID field."""
         raise NotImplementedError()

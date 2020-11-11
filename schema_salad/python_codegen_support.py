@@ -293,6 +293,7 @@ class _EnumLoader(_Loader):
         else:
             raise ValidationException("Expected one of {}".format(self.symbols))
 
+
 class _SecondaryDSLLoader(_Loader):
     def __init__(self, items):
         # type: (_Loader) -> None
@@ -329,6 +330,7 @@ class _RecordLoader(_Loader):
     def __repr__(self):  # type: () -> str
         return str(self.classtype)
 
+
 class _ExpressionLoader(_Loader):
     def __init__(self, items):
         # type: (_Loader) -> None
@@ -339,6 +341,7 @@ class _ExpressionLoader(_Loader):
         if not isinstance(doc, str):
             raise ValidationException("Expected a str")
         return doc
+
 
 class _UnionLoader(_Loader):
     def __init__(self, alternates):
