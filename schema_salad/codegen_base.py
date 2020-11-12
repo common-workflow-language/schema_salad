@@ -136,6 +136,6 @@ class CodeGenBase(object):
         """Trigger to generate the epilouge code."""
         raise NotImplementedError()
 
-    def secondaryfilesdsl_loader(self, type_loader: TypeDef) -> TypeDef:
+    def secondaryfilesdsl_loader(self, inner: TypeDef) -> TypeDef:
         """Construct the TypeDef for secondary files"""
         raise NotImplementedError()
