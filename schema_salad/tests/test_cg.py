@@ -1,7 +1,9 @@
 import json
 import os
+from typing import Any
 
 import pytest
+import ruamel.yaml
 
 import schema_salad.metaschema as cg_metaschema
 from schema_salad.exceptions import ValidationException
@@ -175,20 +177,40 @@ def test_load_pt() -> None:
     ] == doc.symbols
 
 
-def test_load_metaschema() -> None:
+@pytest.fixture
+def metaschema_pre() -> Any:
+    """Prep-parsed schema for testing."""
+    path2 = get_data("tests/metaschema-pre.yml")
+    assert path2
+    with open(path2) as f:
+        pre = json.load(f)
+    return pre
+
+
+def test_load_metaschema(metaschema_pre: Any) -> None:
     path = get_data("metaschema/metaschema.yml")
     assert path
     doc = cg_metaschema.load_document(
         file_uri(path),
         "",
-        cg_metaschema.LoadingOptions(),
+        None,
     )
-    path2 = get_data("tests/metaschema-pre.yml")
-    assert path2
-    with open(path2) as f:
-        pre = json.load(f)
     saved = [d.save(relative_uris=False) for d in doc]
-    assert saved == JsonDiffMatcher(pre)
+    assert saved == JsonDiffMatcher(metaschema_pre)
+
+
+def test_load_by_yaml_metaschema(metaschema_pre: Any) -> None:
+    path = get_data("metaschema/metaschema.yml")
+    assert path
+    with open(path, "r") as path_handle:
+        yaml_doc = ruamel.yaml.main.round_trip_load(path_handle, preserve_quotes=True)
+    doc = cg_metaschema.load_document_by_yaml(
+        yaml_doc,
+        file_uri(path),
+        None,
+    )
+    saved = [d.save(relative_uris=False) for d in doc]
+    assert saved == JsonDiffMatcher(metaschema_pre)
 
 
 def test_load_cwlschema() -> None:

@@ -50,6 +50,7 @@ class LoadingOptions(object):
         self,
         fetcher=None,  # type: Optional[Fetcher]
         namespaces=None,  # type: Optional[Dict[str, str]]
+        schemas=None,  # type: Optional[Dict[str, str]]
         fileuri=None,  # type: Optional[str]
         copyfrom=None,  # type: Optional[LoadingOptions]
         original_doc=None,  # type: Optional[Any]
@@ -57,6 +58,7 @@ class LoadingOptions(object):
         self.idx = {}  # type: Dict[str, Dict[str, Any]]
         self.fileuri = fileuri  # type: Optional[str]
         self.namespaces = namespaces
+        self.schemas = schemas
         self.original_doc = original_doc
         if copyfrom is not None:
             self.idx = copyfrom.idx
@@ -66,6 +68,8 @@ class LoadingOptions(object):
                 self.fileuri = copyfrom.fileuri
             if namespaces is None:
                 self.namespaces = copyfrom.namespaces
+            if schemas is None:
+                self.schemas = copyfrom.schemas
 
         if fetcher is None:
             import requests
@@ -296,6 +300,56 @@ class _EnumLoader(_Loader):
             raise ValidationException("Expected one of {}".format(self.symbols))
 
 
+class _SecondaryDSLLoader(_Loader):
+    def __init__(self, inner):
+        # type: (_Loader) -> None
+        self.inner = inner
+
+    def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
+        r: List[Dict[str, Any]] = []
+        if isinstance(doc, MutableSequence):
+            for d in doc:
+                if isinstance(d, str):
+                    if d.endswith("?"):
+                        r.append({"pattern": d[:-1], "required": False})
+                    else:
+                        r.append({"pattern": d})
+                elif isinstance(d, dict):
+                    new_dict: Dict[str, Any] = {}
+                    if "pattern" in d:
+                        new_dict["pattern"] = d.pop("pattern")
+                    else:
+                        raise ValidationException(
+                            "Missing pattern in secondaryFiles specification entry: {}".format(
+                                d
+                            )
+                        )
+                    new_dict["required"] = (
+                        d.pop("required") if "required" in d else None
+                    )
+
+                    if len(d):
+                        raise ValidationException(
+                            "Unallowed values in secondaryFiles specification entry: {}".format(
+                                d
+                            )
+                        )
+
+                else:
+                    raise ValidationException(
+                        "Expected a string or sequence of (strings or mappings)."
+                    )
+        elif isinstance(doc, str):
+            if doc.endswith("?"):
+                r.append({"pattern": doc[:-1], "required": False})
+            else:
+                r.append({"pattern": doc})
+        else:
+            raise ValidationException("Expected str or sequence of str")
+        return self.inner.load(r, baseuri, loadingOptions, docRoot)
+
+
 class _RecordLoader(_Loader):
     def __init__(self, classtype):
         # type: (Type[Savable]) -> None
@@ -309,6 +363,17 @@ class _RecordLoader(_Loader):
 
     def __repr__(self):  # type: () -> str
         return str(self.classtype)
+
+
+class _ExpressionLoader(_Loader):
+    def __init__(self, items: Type[str]) -> None:
+        self.items = items
+
+    def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
+        if not isinstance(doc, str):
+            raise ValidationException("Expected a str")
+        return doc
 
 
 class _UnionLoader(_Loader):
@@ -472,11 +537,13 @@ def _document_load(loader, doc, baseuri, loadingOptions):
         )
 
     if isinstance(doc, MutableMapping):
-        if "$namespaces" in doc:
+        if "$namespaces" in doc or "$schemas" in doc:
             loadingOptions = LoadingOptions(
-                copyfrom=loadingOptions, namespaces=doc["$namespaces"]
+                copyfrom=loadingOptions,
+                namespaces=doc.get("$namespaces", None),
+                schemas=doc.get("$schemas", None),
             )
-            doc = {k: v for k, v in doc.items() if k != "$namespaces"}
+            doc = {k: v for k, v in doc.items() if k not in ["$namespaces", "$schemas"]}
 
         if "$base" in doc:
             baseuri = doc["$base"]
@@ -679,8 +746,6 @@ A field of a record.
 
         if _errors__:
             raise ValidationException("Trying 'RecordField'", None, _errors__)
-        loadingOptions = copy.deepcopy(loadingOptions)
-        loadingOptions.original_doc = _doc
         return cls(doc=doc, name=name, type=type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
@@ -713,9 +778,12 @@ A field of a record.
                 base_url=self.name,
                 relative_uris=relative_uris)
 
-        if top and self.loadingOptions.namespaces:
-            r["$namespaces"] = self.loadingOptions.namespaces
-
+        # top refers to the directory level
+        if top:
+            if self.loadingOptions.namespaces:
+                r["$namespaces"] = self.loadingOptions.namespaces
+            if self.loadingOptions.schemas:
+                r["$schemas"] = self.loadingOptions.schemas
         return r
 
     attrs = frozenset(['doc', 'name', 'type'])
@@ -797,8 +865,6 @@ class RecordSchema(Savable):
 
         if _errors__:
             raise ValidationException("Trying 'RecordSchema'", None, _errors__)
-        loadingOptions = copy.deepcopy(loadingOptions)
-        loadingOptions.original_doc = _doc
         return cls(fields=fields, type=type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
@@ -821,9 +887,12 @@ class RecordSchema(Savable):
                 base_url=base_url,
                 relative_uris=relative_uris)
 
-        if top and self.loadingOptions.namespaces:
-            r["$namespaces"] = self.loadingOptions.namespaces
-
+        # top refers to the directory level
+        if top:
+            if self.loadingOptions.namespaces:
+                r["$namespaces"] = self.loadingOptions.namespaces
+            if self.loadingOptions.schemas:
+                r["$schemas"] = self.loadingOptions.schemas
         return r
 
     attrs = frozenset(['fields', 'type'])
@@ -906,8 +975,6 @@ Define an enumerated type.
 
         if _errors__:
             raise ValidationException("Trying 'EnumSchema'", None, _errors__)
-        loadingOptions = copy.deepcopy(loadingOptions)
-        loadingOptions.original_doc = _doc
         return cls(symbols=symbols, type=type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
@@ -933,9 +1000,12 @@ Define an enumerated type.
                 base_url=base_url,
                 relative_uris=relative_uris)
 
-        if top and self.loadingOptions.namespaces:
-            r["$namespaces"] = self.loadingOptions.namespaces
-
+        # top refers to the directory level
+        if top:
+            if self.loadingOptions.namespaces:
+                r["$namespaces"] = self.loadingOptions.namespaces
+            if self.loadingOptions.schemas:
+                r["$schemas"] = self.loadingOptions.schemas
         return r
 
     attrs = frozenset(['symbols', 'type'])
@@ -1014,8 +1084,6 @@ class ArraySchema(Savable):
 
         if _errors__:
             raise ValidationException("Trying 'ArraySchema'", None, _errors__)
-        loadingOptions = copy.deepcopy(loadingOptions)
-        loadingOptions.original_doc = _doc
         return cls(items=items, type=type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
@@ -1041,9 +1109,12 @@ class ArraySchema(Savable):
                 base_url=base_url,
                 relative_uris=relative_uris)
 
-        if top and self.loadingOptions.namespaces:
-            r["$namespaces"] = self.loadingOptions.namespaces
-
+        # top refers to the directory level
+        if top:
+            if self.loadingOptions.namespaces:
+                r["$namespaces"] = self.loadingOptions.namespaces
+            if self.loadingOptions.schemas:
+                r["$schemas"] = self.loadingOptions.schemas
         return r
 
     attrs = frozenset(['items', 'type'])
@@ -1277,8 +1348,6 @@ URI resolution and JSON-LD context generation.
 
         if _errors__:
             raise ValidationException("Trying 'JsonldPredicate'", None, _errors__)
-        loadingOptions = copy.deepcopy(loadingOptions)
-        loadingOptions.original_doc = _doc
         return cls(_id=_id, _type=_type, _container=_container, identity=identity, noLinkCheck=noLinkCheck, mapSubject=mapSubject, mapPredicate=mapPredicate, refScope=refScope, typeDSL=typeDSL, secondaryFilesDSL=secondaryFilesDSL, subscope=subscope, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
@@ -1367,9 +1436,12 @@ URI resolution and JSON-LD context generation.
                 base_url=base_url,
                 relative_uris=relative_uris)
 
-        if top and self.loadingOptions.namespaces:
-            r["$namespaces"] = self.loadingOptions.namespaces
-
+        # top refers to the directory level
+        if top:
+            if self.loadingOptions.namespaces:
+                r["$namespaces"] = self.loadingOptions.namespaces
+            if self.loadingOptions.schemas:
+                r["$schemas"] = self.loadingOptions.schemas
         return r
 
     attrs = frozenset(['_id', '_type', '_container', 'identity', 'noLinkCheck', 'mapSubject', 'mapPredicate', 'refScope', 'typeDSL', 'secondaryFilesDSL', 'subscope'])
@@ -1448,8 +1520,6 @@ class SpecializeDef(Savable):
 
         if _errors__:
             raise ValidationException("Trying 'SpecializeDef'", None, _errors__)
-        loadingOptions = copy.deepcopy(loadingOptions)
-        loadingOptions.original_doc = _doc
         return cls(specializeFrom=specializeFrom, specializeTo=specializeTo, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
@@ -1478,9 +1548,12 @@ class SpecializeDef(Savable):
             if u:
                 r['specializeTo'] = u
 
-        if top and self.loadingOptions.namespaces:
-            r["$namespaces"] = self.loadingOptions.namespaces
-
+        # top refers to the directory level
+        if top:
+            if self.loadingOptions.namespaces:
+                r["$namespaces"] = self.loadingOptions.namespaces
+            if self.loadingOptions.schemas:
+                r["$schemas"] = self.loadingOptions.schemas
         return r
 
     attrs = frozenset(['specializeFrom', 'specializeTo'])
@@ -1636,8 +1709,6 @@ A field of a record.
 
         if _errors__:
             raise ValidationException("Trying 'SaladRecordField'", None, _errors__)
-        loadingOptions = copy.deepcopy(loadingOptions)
-        loadingOptions.original_doc = _doc
         return cls(doc=doc, name=name, type=type, jsonldPredicate=jsonldPredicate, default=default, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
@@ -1684,9 +1755,12 @@ A field of a record.
                 base_url=self.name,
                 relative_uris=relative_uris)
 
-        if top and self.loadingOptions.namespaces:
-            r["$namespaces"] = self.loadingOptions.namespaces
-
+        # top refers to the directory level
+        if top:
+            if self.loadingOptions.namespaces:
+                r["$namespaces"] = self.loadingOptions.namespaces
+            if self.loadingOptions.schemas:
+                r["$schemas"] = self.loadingOptions.schemas
         return r
 
     attrs = frozenset(['doc', 'name', 'type', 'jsonldPredicate', 'default'])
@@ -1951,8 +2025,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
 
         if _errors__:
             raise ValidationException("Trying 'SaladRecordSchema'", None, _errors__)
-        loadingOptions = copy.deepcopy(loadingOptions)
-        loadingOptions.original_doc = _doc
         return cls(name=name, inVocab=inVocab, fields=fields, type=type, doc=doc, docParent=docParent, docChild=docChild, docAfter=docAfter, jsonldPredicate=jsonldPredicate, documentRoot=documentRoot, abstract=abstract, extends=extends, specialize=specialize, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
@@ -2067,9 +2139,12 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 base_url=self.name,
                 relative_uris=relative_uris)
 
-        if top and self.loadingOptions.namespaces:
-            r["$namespaces"] = self.loadingOptions.namespaces
-
+        # top refers to the directory level
+        if top:
+            if self.loadingOptions.namespaces:
+                r["$namespaces"] = self.loadingOptions.namespaces
+            if self.loadingOptions.schemas:
+                r["$schemas"] = self.loadingOptions.schemas
         return r
 
     attrs = frozenset(['name', 'inVocab', 'fields', 'type', 'doc', 'docParent', 'docChild', 'docAfter', 'jsonldPredicate', 'documentRoot', 'abstract', 'extends', 'specialize'])
@@ -2303,8 +2378,6 @@ Define an enumerated type.
 
         if _errors__:
             raise ValidationException("Trying 'SaladEnumSchema'", None, _errors__)
-        loadingOptions = copy.deepcopy(loadingOptions)
-        loadingOptions.original_doc = _doc
         return cls(name=name, inVocab=inVocab, symbols=symbols, type=type, doc=doc, docParent=docParent, docChild=docChild, docAfter=docAfter, jsonldPredicate=jsonldPredicate, documentRoot=documentRoot, extends=extends, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
@@ -2408,9 +2481,12 @@ Define an enumerated type.
             if u:
                 r['extends'] = u
 
-        if top and self.loadingOptions.namespaces:
-            r["$namespaces"] = self.loadingOptions.namespaces
-
+        # top refers to the directory level
+        if top:
+            if self.loadingOptions.namespaces:
+                r["$namespaces"] = self.loadingOptions.namespaces
+            if self.loadingOptions.schemas:
+                r["$schemas"] = self.loadingOptions.schemas
         return r
 
     attrs = frozenset(['name', 'inVocab', 'symbols', 'type', 'doc', 'docParent', 'docChild', 'docAfter', 'jsonldPredicate', 'documentRoot', 'extends'])
@@ -2584,8 +2660,6 @@ schemas but has no role in formal validation.
 
         if _errors__:
             raise ValidationException("Trying 'Documentation'", None, _errors__)
-        loadingOptions = copy.deepcopy(loadingOptions)
-        loadingOptions.original_doc = _doc
         return cls(name=name, inVocab=inVocab, doc=doc, docParent=docParent, docChild=docChild, docAfter=docAfter, type=type, extension_fields=extension_fields, loadingOptions=loadingOptions)
 
     def save(self, top=False, base_url="", relative_uris=True):
@@ -2655,9 +2729,12 @@ schemas but has no role in formal validation.
                 base_url=self.name,
                 relative_uris=relative_uris)
 
-        if top and self.loadingOptions.namespaces:
-            r["$namespaces"] = self.loadingOptions.namespaces
-
+        # top refers to the directory level
+        if top:
+            if self.loadingOptions.namespaces:
+                r["$namespaces"] = self.loadingOptions.namespaces
+            if self.loadingOptions.schemas:
+                r["$schemas"] = self.loadingOptions.schemas
         return r
 
     attrs = frozenset(['name', 'inVocab', 'doc', 'docParent', 'docChild', 'docAfter', 'type'])
@@ -2804,3 +2881,17 @@ def load_document_by_string(string, uri, loadingOptions=None):
     loadingOptions.idx[uri] = result
 
     return _document_load(union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader, result, uri, loadingOptions)
+
+
+def load_document_by_yaml(yaml, uri, loadingOptions=None):
+    # type: (Any, str, Optional[LoadingOptions]) -> Any
+    '''Shortcut to load via a YAML object.
+    yaml: must be from ruamel.yaml.main.round_trip_load with preserve_quotes=True
+    '''
+    add_lc_filename(yaml, uri)
+
+    if loadingOptions is None:
+        loadingOptions = LoadingOptions(fileuri=uri)
+    loadingOptions.idx[uri] = yaml
+
+    return _document_load(union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader, yaml, uri, loadingOptions)
