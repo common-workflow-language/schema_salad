@@ -811,3 +811,14 @@ public enum {clazz} {{
                 src_template = template_from_resource(os.path.join(util_src, util))
                 src = src_template.safe_substitute(template_args)
                 _ensure_directory_and_write(src_path, src)
+
+    def secondaryfilesdsl_loader(self, inner: TypeDef) -> TypeDef:
+        instance_type = inner.instance_type or "Object"
+        return self.declare_type(
+            TypeDef(
+                instance_type=instance_type,
+                name="secondaryfilesdsl_{}".format(inner.name),
+                init="new SecondaryFilesDslLoader({})".format(inner.name),
+                loader_type="Loader<{}>".format(instance_type),
+            )
+        )
