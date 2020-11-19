@@ -759,7 +759,7 @@ public enum {clazz} {{
             shutil.copytree(self.examples, utils_resources)
             for example_name in os.listdir(self.examples):
                 if example_name.startswith("valid"):
-                    basename = os.path.basename(example_name).split(".", 1)[0]
+                    basename = os.path.basename(example_name).rsplit(".", 1)[0]
                     example_tests += """
   @org.junit.Test
   public void test{basename}ByString() throws Exception {{
@@ -787,7 +787,7 @@ public enum {clazz} {{
     doc = (java.util.Map<String, Object>) YamlUtils.mapFromString(yaml);
     RootLoader.loadDocument(doc);
   }}""".format(
-                        basename=basename,
+                        basename=basename.replace("-", "_").replace(".", "_"),
                         example_name=example_name,
                     )
 
