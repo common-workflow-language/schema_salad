@@ -12,7 +12,7 @@ from .utils import CacheType
 _re_drive = re.compile(r"/([a-zA-Z]):")
 
 
-class Fetcher(object):
+class Fetcher:
     def __init__(
         self,
         cache: CacheType,
@@ -60,7 +60,7 @@ class DefaultFetcher(Fetcher):
                 resp = self.session.get(url)
                 resp.raise_for_status()
             except Exception as e:
-                raise ValidationException("Error fetching {}: {}".format(url, e)) from e
+                raise ValidationException(f"Error fetching {url}: {e}") from e
             return resp.text
         if scheme == "file":
             try:
@@ -80,10 +80,8 @@ class DefaultFetcher(Fetcher):
                 if err.filename == path:
                     raise ValidationException(str(err)) from err
                 else:
-                    raise ValidationException(
-                        "Error reading {}: {}".format(url, err)
-                    ) from err
-        raise ValidationException("Unsupported scheme in url: {}".format(url))
+                    raise ValidationException(f"Error reading {url}: {err}") from err
+        raise ValidationException(f"Unsupported scheme in url: {url}")
 
     def check_exists(self, url: str) -> bool:
         if url in self.cache:
@@ -104,7 +102,7 @@ class DefaultFetcher(Fetcher):
             return os.path.exists(urllib.request.url2pathname(str(path)))
         if scheme == "mailto":
             return True
-        raise ValidationException("Unsupported scheme in url: {}".format(url))
+        raise ValidationException(f"Unsupported scheme in url: {url}")
 
     def urljoin(self, base_url: str, url: str) -> str:
         if url.startswith("_:"):

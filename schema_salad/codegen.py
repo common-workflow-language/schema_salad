@@ -1,6 +1,6 @@
 """Generate langauge specific loaders for a particular SALAD schema."""
 import sys
-from io import TextIOWrapper, open
+from io import TextIOWrapper
 from typing import (
     Any,
     Dict,
@@ -50,9 +50,7 @@ def codegen(
             examples=examples,
         )
     else:
-        raise SchemaSaladException(
-            "Unsupported code generation language '{}'".format(lang)
-        )
+        raise SchemaSaladException(f"Unsupported code generation language '{lang}'")
     assert gen is not None
 
     gen.prologue()

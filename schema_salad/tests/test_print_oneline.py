@@ -123,7 +123,7 @@ def test_print_oneline_for_errors_in_resolve_ref() -> None:
             print("\n", e)
             assert msg.endswith(
                 src + ":14:5: Field `type` references unknown identifier "
-                "`Filea`, tried file://%s#Filea" % (fullpath)
+                "`Filea`, tried file://{}#Filea".format(fullpath)
             )
             raise
 

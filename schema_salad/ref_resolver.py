@@ -26,7 +26,7 @@ from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.plugins.parsers.notation3 import BadSyntax
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
-from six.moves import range, urllib
+from six.moves import urllib
 
 from .exceptions import SchemaSaladException, ValidationException
 from .fetcher import DefaultFetcher
@@ -45,7 +45,7 @@ from .utils import (
 )
 
 _logger = logging.getLogger("salad")
-typeDSLregex = re.compile(str(r"^([^[?]+)(\[\])?(\?)?$"))
+typeDSLregex = re.compile(r"^([^[?]+)(\[\])?(\?)?$")
 
 
 def file_uri(path: str, split_frag: bool = False) -> str:
@@ -62,8 +62,8 @@ def file_uri(path: str, split_frag: bool = False) -> str:
         urlpath = urllib.request.pathname2url(path)
         frag = ""
     if urlpath.startswith("//"):
-        return "file:{}{}".format(urlpath, frag)
-    return "file://{}{}".format(urlpath, frag)
+        return f"file:{urlpath}{frag}"
+    return f"file://{urlpath}{frag}"
 
 
 def uri_file_path(url: str) -> str:
@@ -74,7 +74,7 @@ def uri_file_path(url: str) -> str:
             if bool(split.fragment)
             else ""
         )
-    raise ValidationException("Not a file URI: {}".format(url))
+    raise ValidationException(f"Not a file URI: {url}")
 
 
 def to_validation_exception(e: yaml.error.MarkedYAMLError) -> ValidationException:
@@ -101,23 +101,23 @@ class NormDict(Dict[str, Union[CommentedMap, CommentedSeq, str, None]]):
     """A Dict where all keys are normalized using the provided function."""
 
     def __init__(self, normalize: Callable[[str], str] = str) -> None:
-        super(NormDict, self).__init__()
+        super().__init__()
         self.normalize = normalize
 
     def __eq__(self, other: Any) -> bool:
-        return super(NormDict, self).__eq__(other)
+        return super().__eq__(other)
 
     def __getitem__(self, key):  # type: (Any) -> Any
-        return super(NormDict, self).__getitem__(self.normalize(key))
+        return super().__getitem__(self.normalize(key))
 
     def __setitem__(self, key, value):  # type: (Any, Any) -> Any
-        return super(NormDict, self).__setitem__(self.normalize(key), value)
+        return super().__setitem__(self.normalize(key), value)
 
     def __delitem__(self, key):  # type: (Any) -> Any
-        return super(NormDict, self).__delitem__(self.normalize(key))
+        return super().__delitem__(self.normalize(key))
 
     def __contains__(self, key: Any) -> bool:
-        return super(NormDict, self).__contains__(self.normalize(key))
+        return super().__contains__(self.normalize(key))
 
 
 def SubLoader(loader: "Loader") -> "Loader":
@@ -135,7 +135,7 @@ def SubLoader(loader: "Loader") -> "Loader":
     )
 
 
-class Loader(object):
+class Loader:
     def __init__(
         self,
         ctx: ContextType,
@@ -336,7 +336,7 @@ class Loader(object):
         if bool(self.vocab):
             raise ValidationException("Refreshing context that already has stuff in it")
 
-        self.url_fields = set(("$schemas",))
+        self.url_fields = {"$schemas"}
         self.scoped_ref_fields.clear()
         self.vocab_fields.clear()
         self.identifiers.clear()
@@ -435,7 +435,7 @@ class Loader(object):
                     obj = None
                 else:
                     raise ValidationException(
-                        "'$import' must be the only field in {}".format(obj), sl
+                        f"'$import' must be the only field in {obj}", sl
                     )
             elif "$include" in obj:
                 sl = SourceLine(obj, "$include")
@@ -445,7 +445,7 @@ class Loader(object):
                     obj = None
                 else:
                     raise ValidationException(
-                        "'$include' must be the only field in {}".format(obj), sl
+                        f"'$include' must be the only field in {obj}", sl
                     )
             elif "$mixin" in obj:
                 sl = SourceLine(obj, "$mixin")
@@ -527,7 +527,7 @@ class Loader(object):
                 # so if we didn't find the reference earlier then it must not
                 # exist.
                 raise ValidationException(
-                    "Reference `#{}` not found in file `{}`.".format(frg, doc_url), sl
+                    f"Reference `#{frg}` not found in file `{doc_url}`.", sl
                 )
             doc = self.fetch(doc_url, inject_ids=(not mixin))
 
@@ -993,7 +993,7 @@ class Loader(object):
             if self.allow_attachments is not None and self.allow_attachments(result):
                 i = 1
                 for a in attachments:
-                    self.idx["{}#attachment-{}".format(url, i)] = a
+                    self.idx[f"{url}#attachment-{i}"] = a
                     i += 1
             add_lc_filename(result, url)
         except yaml.error.MarkedYAMLError as e:
@@ -1182,9 +1182,7 @@ class Loader(object):
                     else:
                         if isinstance(key, str):
                             errors.append(
-                                ValidationException(
-                                    "checking field `{}`".format(key), sl, [v]
-                                )
+                                ValidationException(f"checking field `{key}`", sl, [v])
                             )
                         else:
                             errors.append(ValidationException("checking item", sl, [v]))

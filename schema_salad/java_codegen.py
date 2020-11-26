@@ -40,9 +40,9 @@ def _ensure_directory_and_write(path: str, contents: str) -> None:
 def doc_to_doc_string(doc: Optional[str], indent_level: int = 0) -> str:
     lead = " " + "  " * indent_level + "* " * indent_level
     if doc:
-        doc_str = "{}<BLOCKQUOTE>\n".format(lead)
-        doc_str += "\n".join(["{}{}".format(lead, line) for line in doc.split("\n")])
-        doc_str += "{}</BLOCKQUOTE>".format(lead)
+        doc_str = f"{lead}<BLOCKQUOTE>\n"
+        doc_str += "\n".join([f"{lead}{line}" for line in doc.split("\n")])
+        doc_str += f"{lead}</BLOCKQUOTE>"
     else:
         doc_str = ""
     return doc_str
@@ -110,7 +110,7 @@ class JavaCodeGen(CodeGenBase):
     def __init__(
         self, base: str, target: Optional[str], examples: Optional[str]
     ) -> None:
-        super(JavaCodeGen, self).__init__()
+        super().__init__()
         self.base_uri = base
         sp = urlsplit(base)
         self.examples = examples
@@ -171,16 +171,16 @@ class JavaCodeGen(CodeGenBase):
         self.current_loader = StringIO()
         self.current_fieldtypes = {}  # type: Dict[str, TypeDef]
         self.current_fields = StringIO()
-        interface_doc_str = "* Auto-generated interface for <I>%s</I><BR>" % classname
+        interface_doc_str = f"* Auto-generated interface for <I>{classname}</I><BR>"
         if not abstract:
             implemented_by = "This interface is implemented by {{@link {}Impl}}<BR>"
             interface_doc_str += implemented_by.format(cls)
         interface_doc_str += doc_to_doc_string(doc)
         class_doc_str = (
-            "* Auto-generated class implementation for <I>{}</I><BR>".format(classname)
+            f"* Auto-generated class implementation for <I>{classname}</I><BR>"
         )
         class_doc_str += doc_to_doc_string(doc)
-        with open(os.path.join(self.main_src_dir, "{}.java".format(cls)), "w") as f:
+        with open(os.path.join(self.main_src_dir, f"{cls}.java"), "w") as f:
 
             if extends:
                 ext = (
@@ -209,7 +209,7 @@ public interface {cls} {ext} {{""".format(
         if self.current_class_is_abstract:
             return
 
-        with open(os.path.join(self.main_src_dir, "{}Impl.java".format(cls)), "w") as f:
+        with open(os.path.join(self.main_src_dir, f"{cls}Impl.java"), "w") as f:
             f.write(
                 """package {package};
 
@@ -270,7 +270,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
     def end_class(self, classname, field_names):
         # type: (str, List[str]) -> None
         with open(
-            os.path.join(self.main_src_dir, "{}.java".format(self.current_class)), "a"
+            os.path.join(self.main_src_dir, f"{self.current_class}.java"), "a"
         ) as f:
             f.write(
                 """
@@ -300,7 +300,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         self.current_loader.write("""  }""")
 
         with open(
-            os.path.join(self.main_src_dir, "{}Impl.java".format(self.current_class)),
+            os.path.join(self.main_src_dir, f"{self.current_class}Impl.java"),
             "a",
         ) as f:
             f.write(self.current_fields.getvalue())
@@ -331,24 +331,24 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                             instance_type="java.util.Optional<{}>".format(
                                 non_null_type.instance_type
                             ),
-                            init="new OptionalLoader({})".format(non_null_type.name),
-                            name="optional_{}".format(non_null_type.name),
+                            init=f"new OptionalLoader({non_null_type.name})",
+                            name=f"optional_{non_null_type.name}",
                             loader_type="Loader<java.util.Optional<{}>>".format(
                                 non_null_type.instance_type
                             ),
                         )
                     )
                 if (
-                    type_1_name == "array_of_{}".format(type_2_name)
-                    or type_2_name == "array_of_{}".format(type_1_name)
+                    type_1_name == f"array_of_{type_2_name}"
+                    or type_2_name == f"array_of_{type_1_name}"
                 ) and USE_ONE_OR_LIST_OF_TYPES:
-                    if type_1_name == "array_of_{}".format(type_2_name):
+                    if type_1_name == f"array_of_{type_2_name}":
                         single_type = type_2
                         array_type = type_1
                     else:
                         single_type = type_1
                         array_type = type_2
-                    fqclass = "{}.{}".format(self.package, single_type.instance_type)
+                    fqclass = f"{self.package}.{single_type.instance_type}"
                     return self.declare_type(
                         TypeDef(
                             instance_type="{}.utils.OneOrListOf<{}>".format(
@@ -357,7 +357,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                             init="new OneOrListOfLoader<{}>({}, {})".format(
                                 fqclass, single_type.name, array_type.name
                             ),
-                            name="one_or_array_of_{}".format(single_type.name),
+                            name=f"one_or_array_of_{single_type.name}",
                             loader_type="Loader<{}.utils.OneOrListOf<{}>>".format(
                                 self.package, fqclass
                             ),
@@ -384,8 +384,8 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                         # special doesn't work out with subclassing, gotta be more clever
                         # instance_type="List<{}>".format(i.instance_type),
                         instance_type="java.util.List<Object>",
-                        name="array_of_{}".format(i.name),
-                        init="new ArrayLoader({})".format(i.name),
+                        name=f"array_of_{i.name}",
+                        init=f"new ArrayLoader({i.name})",
                         loader_type="Loader<java.util.List<{}>>".format(
                             i.instance_type
                         ),
@@ -409,7 +409,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                             clazz=fqclass,
                             ext="Impl" if not is_abstract else "",
                         ),
-                        loader_type="Loader<{}>".format(fqclass),
+                        loader_type=f"Loader<{fqclass}>",
                     )
                 )
             raise SchemaException("wft {}".format(type_declaration["type"]))
@@ -425,7 +425,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         symbols_decl = 'new String[] {{"{}"}}'.format(
             '", "'.join(sym for sym in symbols)
         )
-        enum_path = os.path.join(self.main_src_dir, "{}.java".format(clazz))
+        enum_path = os.path.join(self.main_src_dir, f"{clazz}.java")
         with open(enum_path, "w") as f:
             f.write(
                 """package {package};
@@ -471,8 +471,8 @@ public enum {clazz} {{
             TypeDef(
                 instance_type=clazz,
                 name=self.safe_name(type_declaration["name"]),
-                loader_type="Loader<{clazz}>".format(clazz=clazz),
-                init="new EnumLoader({clazz}.class)".format(clazz=clazz),
+                loader_type=f"Loader<{clazz}>",
+                init=f"new EnumLoader({clazz}.class)",
             )
         )
 
@@ -499,7 +499,7 @@ public enum {clazz} {{
             fieldname=fieldname, field_doc_str=doc_to_doc_string(doc, indent_level=1)
         )
         with open(
-            os.path.join(self.main_src_dir, "{}.java".format(self.current_class)), "a"
+            os.path.join(self.main_src_dir, f"{self.current_class}.java"), "a"
         ) as f:
             f.write(
                 """
@@ -643,7 +643,7 @@ public enum {clazz} {{
                 is_uri=True,
                 scoped_id=scoped_id,
                 ref_scope=ref_scope,
-                loader_type="Loader<{}>".format(instance_type),
+                loader_type=f"Loader<{instance_type}>",
             )
         )
 
@@ -659,7 +659,7 @@ public enum {clazz} {{
                 init='new IdMapLoader({}, "{}", "{}")'.format(
                     inner.name, map_subject, map_predicate
                 ),
-                loader_type="Loader<{}>".format(instance_type),
+                loader_type=f"Loader<{instance_type}>",
             )
         )
 
@@ -668,9 +668,9 @@ public enum {clazz} {{
         return self.declare_type(
             TypeDef(
                 instance_type=instance_type,
-                name="typedsl_{}_{}".format(inner.name, ref_scope),
-                init="new TypeDslLoader({}, {})".format(inner.name, ref_scope),
-                loader_type="Loader<{}>".format(instance_type),
+                name=f"typedsl_{inner.name}_{ref_scope}",
+                init=f"new TypeDslLoader({inner.name}, {ref_scope})",
+                loader_type=f"Loader<{instance_type}>",
             )
         )
 
@@ -705,7 +705,7 @@ public enum {clazz} {{
         def template_from_resource(resource):
             # type: (str) -> string.Template
             template_str = pkg_resources.resource_string(
-                __name__, "java/%s" % resource
+                __name__, f"java/{resource}"
             ).decode("utf-8")
             template = string.Template(template_str)
             return template
@@ -806,7 +806,7 @@ public enum {clazz} {{
             "test_utils": self.test_src_dir,
         }
         for (util_src, util_target) in util_src_dirs.items():
-            for util in pkg_resources.resource_listdir(__name__, "java/%s" % util_src):
+            for util in pkg_resources.resource_listdir(__name__, f"java/{util_src}"):
                 src_path = os.path.join(util_target, "utils", util)
                 src_template = template_from_resource(os.path.join(util_src, util))
                 src = src_template.safe_substitute(template_args)
@@ -817,8 +817,8 @@ public enum {clazz} {{
         return self.declare_type(
             TypeDef(
                 instance_type=instance_type,
-                name="secondaryfilesdsl_{}".format(inner.name),
-                init="new SecondaryFilesDslLoader({})".format(inner.name),
-                loader_type="Loader<{}>".format(instance_type),
+                name=f"secondaryfilesdsl_{inner.name}",
+                init=f"new SecondaryFilesDslLoader({inner.name})",
+                loader_type=f"Loader<{instance_type}>",
             )
         )

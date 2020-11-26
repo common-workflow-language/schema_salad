@@ -202,7 +202,7 @@ def test_load_metaschema(metaschema_pre: Any) -> None:
 def test_load_by_yaml_metaschema(metaschema_pre: Any) -> None:
     path = get_data("metaschema/metaschema.yml")
     assert path
-    with open(path, "r") as path_handle:
+    with open(path) as path_handle:
         yaml_doc = ruamel.yaml.main.round_trip_load(path_handle, preserve_quotes=True)
     doc = cg_metaschema.load_document_by_yaml(
         yaml_doc,

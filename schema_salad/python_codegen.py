@@ -48,7 +48,7 @@ class PythonCodeGen(CodeGenBase):
 
     def __init__(self, out):
         # type: (IO[str]) -> None
-        super(PythonCodeGen, self).__init__()
+        super().__init__()
         self.out = out
         self.current_class_is_abstract = False
         self.serializer = StringIO()
@@ -99,12 +99,12 @@ class PythonCodeGen(CodeGenBase):
         else:
             ext = "Savable"
 
-        self.out.write("class {}({}):\n".format(classname, ext))
+        self.out.write(f"class {classname}({ext}):\n")
 
         if doc:
-            self.out.write(u'    """\n')
+            self.out.write('    """\n')
             self.out.write(str(doc))
-            self.out.write(u'\n    """\n')
+            self.out.write('\n    """\n')
 
         self.serializer = StringIO()
 
@@ -230,7 +230,7 @@ class PythonCodeGen(CodeGenBase):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `%s`, expected one of: {attrstr}" % (k),
+                            "invalid field `{{}}`, expected one of: {attrstr}".format(k),
                             SourceLine(_doc, k, str)
                         )
                     )
@@ -239,7 +239,7 @@ class PythonCodeGen(CodeGenBase):
         if _errors__:
             raise ValidationException(\"Trying '{class_}'\", None, _errors__)
 """.format(
-                attrstr=", ".join(["`{}`".format(f) for f in field_names]),
+                attrstr=", ".join([f"`{f}`" for f in field_names]),
                 class_=self.safe_name(classname),
             )
         )
@@ -257,9 +257,7 @@ class PythonCodeGen(CodeGenBase):
 
         self.serializer.write("        return r\n\n")
 
-        self.serializer.write(
-            "    attrs = frozenset({attrs})\n".format(attrs=field_names)
-        )
+        self.serializer.write(f"    attrs = frozenset({field_names})\n")
 
         safe_init_fields = [
             self.safe_name(f) for f in field_names if f != "class"
@@ -296,9 +294,7 @@ class PythonCodeGen(CodeGenBase):
             ):
                 i = self.type_loader(type_declaration["items"])
                 return self.declare_type(
-                    TypeDef(
-                        "array_of_{}".format(i.name), "_ArrayLoader({})".format(i.name)
-                    )
+                    TypeDef(f"array_of_{i.name}", f"_ArrayLoader({i.name})")
                 )
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
                 for sym in type_declaration["symbols"]:
@@ -469,7 +465,7 @@ class PythonCodeGen(CodeGenBase):
         # type: (TypeDef, bool, bool, Union[int, None]) -> TypeDef
         return self.declare_type(
             TypeDef(
-                "uri_{}_{}_{}_{}".format(inner.name, scoped_id, vocab_term, ref_scope),
+                f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}",
                 "_URILoader({}, {}, {}, {})".format(
                     inner.name, scoped_id, vocab_term, ref_scope
                 ),
@@ -494,8 +490,8 @@ class PythonCodeGen(CodeGenBase):
         # type: (TypeDef, Union[int, None]) -> TypeDef
         return self.declare_type(
             TypeDef(
-                "typedsl_{}_{}".format(inner.name, ref_scope),
-                "_TypeDSLLoader({}, {})".format(inner.name, ref_scope),
+                f"typedsl_{inner.name}_{ref_scope}",
+                f"_TypeDSLLoader({inner.name}, {ref_scope})",
             )
         )
 
@@ -503,8 +499,8 @@ class PythonCodeGen(CodeGenBase):
         # type: (TypeDef) -> TypeDef
         return self.declare_type(
             TypeDef(
-                "secondaryfilesdsl_{}".format(inner.name),
-                "_SecondaryDSLLoader({})".format(inner.name),
+                f"secondaryfilesdsl_{inner.name}",
+                f"_SecondaryDSLLoader({inner.name})",
             )
         )
 
@@ -512,16 +508,16 @@ class PythonCodeGen(CodeGenBase):
         # type: (TypeDef) -> None
         self.out.write("_vocab = {\n")
         for k in sorted(self.vocab.keys()):
-            self.out.write(u'    "{}": "{}",\n'.format(k, self.vocab[k]))
+            self.out.write('    "{}": "{}",\n'.format(k, self.vocab[k]))
         self.out.write("}\n")
 
         self.out.write("_rvocab = {\n")
         for k in sorted(self.vocab.keys()):
-            self.out.write(u'    "{}": "{}",\n'.format(self.vocab[k], k))
+            self.out.write('    "{}": "{}",\n'.format(self.vocab[k], k))
         self.out.write("}\n\n")
 
         for _, collected_type in self.collected_types.items():
-            self.out.write("{} = {}\n".format(collected_type.name, collected_type.init))
+            self.out.write(f"{collected_type.name} = {collected_type.init}\n")
         self.out.write("\n")
 
         self.out.write(

@@ -136,7 +136,7 @@ def validate_ex(
         if not isinstance(datum, str):
             if raise_ex:
                 raise ValidationException(
-                    "value is a {} but expected a string".format((type(datum).__name__))
+                    "value is a {} but expected a string".format(type(datum).__name__)
                 )
             return False
         if expected_schema.name == "Expression":
@@ -144,8 +144,9 @@ def validate_ex(
                 return True
             if raise_ex:
                 raise ValidationException(
-                    "value `%s` does not contain an expression in the form $() or ${}"
-                    % datum
+                    "value `{}` does not contain an expression in the form $() or ${{}}".format(
+                        datum
+                    )
                 )
             return False
         if datum in expected_schema.symbols:
@@ -275,7 +276,7 @@ def validate_ex(
                 d = datum.get(f.name)
                 if not d:
                     if raise_ex:
-                        raise ValidationException("Missing '{}' field".format(f.name))
+                        raise ValidationException(f"Missing '{f.name}' field")
                     else:
                         return False
                 if expected_schema.name != d:
@@ -320,14 +321,12 @@ def validate_ex(
             except ValidationException as v:
                 if f.name not in datum:
                     errors.append(
-                        ValidationException(
-                            "missing required field `{}`".format(f.name)
-                        )
+                        ValidationException(f"missing required field `{f.name}`")
                     )
                 else:
                     errors.append(
                         ValidationException(
-                            "the `{}` field is not valid because".format(f.name),
+                            f"the `{f.name}` field is not valid because",
                             sl,
                             [v],
                         )
@@ -388,8 +387,7 @@ def validate_ex(
                             "invalid field `{}`, expected one of: {}".format(
                                 d,
                                 ", ".join(
-                                    "'{}'".format(fn.name)
-                                    for fn in expected_schema.fields
+                                    f"'{fn.name}'" for fn in expected_schema.fields
                                 ),
                             ),
                             sl,
@@ -410,6 +408,6 @@ def validate_ex(
         else:
             return True
     if raise_ex:
-        raise ValidationException("Unrecognized schema_type {}".format(schema_type))
+        raise ValidationException(f"Unrecognized schema_type {schema_type}")
     else:
         return False

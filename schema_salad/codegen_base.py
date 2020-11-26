@@ -5,7 +5,7 @@ from typing import Any, Dict, List, MutableSequence, Optional, Set, Union
 from . import schema
 
 
-class TypeDef(object):  # pylint: disable=too-few-public-methods
+class TypeDef:  # pylint: disable=too-few-public-methods
     """Schema Salad type description."""
 
     __slots__ = [
@@ -40,7 +40,7 @@ class TypeDef(object):  # pylint: disable=too-few-public-methods
         self.instance_type = instance_type
 
 
-class CodeGenBase(object):
+class CodeGenBase:
     """Abstract base class for schema salad code generators."""
 
     def __init__(self) -> None:

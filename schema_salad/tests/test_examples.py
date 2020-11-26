@@ -194,16 +194,16 @@ def test_scoped_ref() -> None:
 
 def test_examples() -> None:
     for a in ["field_name", "ident_res", "link_res", "vocab_res"]:
-        path = get_data("metaschema/%s_schema.yml" % a)
+        path = get_data(f"metaschema/{a}_schema.yml")
         assert path
         ldr, _, _, _ = schema_salad.schema.load_schema(path)
-        path2 = get_data("metaschema/%s_src.yml" % a)
+        path2 = get_data(f"metaschema/{a}_src.yml")
         assert path2
         with open(path2) as src_fp:
             src = ldr.resolve_all(
                 ruamel.yaml.main.round_trip_load(src_fp), "", checklinks=False
             )[0]
-        path3 = get_data("metaschema/%s_proc.yml" % a)
+        path3 = get_data(f"metaschema/{a}_proc.yml")
         assert path3
         with open(path3) as src_proc:
             proc = ruamel.yaml.main.safe_load(src_proc)

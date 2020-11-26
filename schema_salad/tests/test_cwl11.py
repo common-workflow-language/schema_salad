@@ -55,7 +55,7 @@ def test_secondaryFiles(cwl_v1_2_schema: SchemaType) -> None:
         cwl_v1_2_schema,
         src="test_real_cwl/bio-cwl-tools/picard_CreateSequenceDictionary.cwl",
     )
-    print("the res:{}".format(res))
+    print(f"the res:{res}")
 
 
 def test_outputBinding(cwl_v1_2_schema: SchemaType) -> None:
@@ -63,4 +63,4 @@ def test_outputBinding(cwl_v1_2_schema: SchemaType) -> None:
     res = load_cwl(
         cwl_v1_2_schema, src="test_real_cwl/bio-cwl-tools/bamtools_stats.cwl"
     )
-    print("the res:{}".format(res))
+    print(f"the res:{res}")

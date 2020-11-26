@@ -13,7 +13,7 @@ def test_cwl_gen() -> None:
         src_target = os.path.join(test_dir, "src.py")
         python_codegen(cwl_file_uri, src_target)
         assert os.path.exists(src_target)
-        with open(src_target, "r") as f:
+        with open(src_target) as f:
             assert "class Workflow(Process)" in f.read()
 
 
@@ -22,7 +22,7 @@ def test_meta_schema_gen() -> None:
         src_target = os.path.join(test_dir, "src.py")
         python_codegen(metaschema_file_uri, src_target)
         assert os.path.exists(src_target)
-        with open(src_target, "r") as f:
+        with open(src_target) as f:
             assert "class RecordSchema(Savable):" in f.read()
 
 
