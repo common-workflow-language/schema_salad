@@ -25,9 +25,9 @@ PACKAGE=schema-salad
 
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
-PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py) setup.py
+PYSOURCES=$(wildcard ${MODULE}/**.py ${MODULE}/avro/*.py ${MODULE}/tests/*.py) setup.py
 DEVPKGS=diff_cover black pylint coverage pep257 pytest-xdist \
-	flake8 flake8-bugbear
+	flake8 flake8-bugbear pyupgrade
 COVBASE=coverage run --branch --append --source=${MODULE} \
 	--omit=schema_salad/tests/*
 
@@ -70,8 +70,8 @@ clean: FORCE
 
 # Linting and code style related targets
 ## sorting imports using isort: https://github.com/timothycrosley/isort
-sort_imports:
-	isort ${MODULE}/*.py ${MODULE}/tests/*.py setup.py
+sort_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
+	isort $^
 
 pep257: pydocstyle
 ## pydocstyle      : check Python code style
@@ -175,6 +175,9 @@ mypy: ${PYSOURCES}
 
 mypyc: ${PYSOURCES}
 	MYPYPATH=typeshed/2and3/:typeshed/3 SCHEMA_SALAD_USE_MYPYC=1 python setup.py test
+
+pyupgrade: $(filter-out schema_salad/metaschema.py,${PYSOURCES})
+	pyupgrade --exit-zero-even-if-changed --py36-plus $^
 
 jenkins: FORCE
 	rm -Rf env && virtualenv env

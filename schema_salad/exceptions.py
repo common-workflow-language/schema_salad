@@ -13,7 +13,7 @@ class SchemaSaladException(Exception):
         children: Optional[Sequence["SchemaSaladException"]] = None,
         bullet_for_children: str = "",
     ) -> None:
-        super(SchemaSaladException, self).__init__(msg)
+        super().__init__(msg)
         self.message = self.args[0]
         self.file = None  # type: Optional[str]
         self.start = None  # type: Optional[Tuple[int, int]]
@@ -87,7 +87,7 @@ class SchemaSaladException(Exception):
             linecol1 = ""  # type: Union[int, str]
             if self.start:
                 linecol0, linecol1 = self.start
-            pre = "{}:{}:{}: ".format(self.file, linecol0, linecol1)
+            pre = f"{self.file}:{linecol0}:{linecol1}: "
 
         return pre + "Warning: " if self.is_warning else pre
 
@@ -95,7 +95,7 @@ class SchemaSaladException(Exception):
         indent_per_level = 2
         spaces = (level * indent_per_level) * " "
         bullet = self.bullet + " " if len(self.bullet) and with_bullet else ""
-        return "{}{}{}{}".format(self.prefix(), spaces, bullet, self.message)
+        return f"{self.prefix()}{spaces}{bullet}{self.message}"
 
     def __str__(self) -> str:
         return str(self.pretty_str())
@@ -106,7 +106,7 @@ class SchemaSaladException(Exception):
         next_level = level + 1 if messages else level
 
         ret = "\n".join(
-            (e for e in my_summary + [c.pretty_str(next_level) for c in self.children])
+            e for e in my_summary + [c.pretty_str(next_level) for c in self.children]
         )
         if level == 0:
             return strip_duplicated_lineno(reflow_all(ret))
@@ -127,4 +127,4 @@ class ClassValidationException(ValidationException):
 
 
 def to_one_line_messages(exc: SchemaSaladException) -> str:
-    return "\n".join((c.summary() for c in exc.leaves()))
+    return "\n".join(c.summary() for c in exc.leaves())

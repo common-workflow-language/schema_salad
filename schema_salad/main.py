@@ -328,7 +328,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
 
     # If no document specified, all done.
     if not args.document:
-        print("Schema `{}` is valid".format(args.schema))
+        print(f"Schema `{args.schema}` is valid")
         return 0
 
     # Load target document and resolve refs
@@ -367,7 +367,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         )
     except ValidationException as e:
         msg2 = to_one_line_messages(e) if args.print_oneline else str(e)
-        _logger.error("While validating document `%s`:\n%s" % (args.document, msg2))
+        _logger.error(f"While validating document `{args.document}`:\n{msg2}")
         return 1
 
     # Optionally convert the document to RDF
@@ -383,7 +383,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         print(json_dumps(doc_metadata, indent=4))
         return 0
 
-    print("Document `{}` is valid".format(args.document))
+    print(f"Document `{args.document}` is valid")
 
     return 0
 

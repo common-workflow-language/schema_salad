@@ -60,7 +60,7 @@ baseCommand: echo
 inputs: []
 outputs: []
 """
-        raise RuntimeError("Not foo.cwl, was %s" % url)
+        raise RuntimeError(f"Not foo.cwl, was {url}")
 
     def check_exists(self, url):  # type: (str) -> bool
         return url == "baz:bar/foo.cwl"

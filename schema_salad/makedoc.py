@@ -5,7 +5,7 @@ import os
 import re
 import sys
 from codecs import StreamWriter
-from io import StringIO, TextIOWrapper, open
+from io import StringIO, TextIOWrapper
 from typing import (
     IO,
     Any,
@@ -55,7 +55,7 @@ def linkto(item: str) -> str:
 
 class MyRenderer(mistune.Renderer):
     def __init__(self) -> None:
-        super(MyRenderer, self).__init__()
+        super().__init__()
         self.options = {}
 
     def header(self, text: str, level: int, raw: Optional[Any] = None) -> str:
@@ -82,7 +82,7 @@ def to_id(text: str) -> str:
     return textid.replace(" ", "_")
 
 
-class ToC(object):
+class ToC:
     def __init__(self) -> None:
         self.first_toc_entry = True
         self.numbering = [0]
@@ -164,7 +164,7 @@ def number_headings(toc: ToC, maindoc: str) -> str:
                 group2 = m.group(2)
                 assert group2 is not None
                 num = toc.add_entry(len(group1), group2)
-                line = "{} {} {}".format(group1, num, group2)
+                line = f"{group1} {num} {group2}"
             line = re.sub(r"^(https?://\S+)", r"[\1](\1)", line)
         mdlines.append(line)
 
@@ -182,7 +182,7 @@ def fix_doc(doc: Union[List[str], str]) -> str:
     )
 
 
-class RenderType(object):
+class RenderType:
     def __init__(
         self,
         toc: ToC,
@@ -548,7 +548,7 @@ def avrold_doc(
         )
     )
 
-    outdoc.write("<title>{}</title>".format(rt.title))
+    outdoc.write(f"<title>{rt.title}</title>")
 
     outdoc.write(
         """

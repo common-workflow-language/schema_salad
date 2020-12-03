@@ -34,7 +34,7 @@ _vocab = {}  # type: Dict[str, str]
 _rvocab = {}  # type: Dict[str, str]
 
 
-class Savable(object):
+class Savable:
     @classmethod
     def fromDoc(cls, _doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Savable
@@ -45,7 +45,7 @@ class Savable(object):
         pass
 
 
-class LoadingOptions(object):
+class LoadingOptions:
     def __init__(
         self,
         fetcher=None,  # type: Optional[Fetcher]
@@ -219,12 +219,12 @@ def expand_url(
             if url in loadingOptions.rvocab:
                 return loadingOptions.rvocab[url]
         else:
-            raise ValidationException("Term '{}' not in vocabulary".format(url))
+            raise ValidationException(f"Term '{url}' not in vocabulary")
 
     return url
 
 
-class _Loader(object):
+class _Loader:
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         pass
@@ -284,7 +284,7 @@ class _ArrayLoader(_Loader):
         return r
 
     def __repr__(self):  # type: () -> str
-        return "array<{}>".format(self.items)
+        return f"array<{self.items}>"
 
 
 class _EnumLoader(_Loader):
@@ -297,7 +297,7 @@ class _EnumLoader(_Loader):
         if doc in self.symbols:
             return doc
         else:
-            raise ValidationException("Expected one of {}".format(self.symbols))
+            raise ValidationException(f"Expected one of {self.symbols}")
 
 
 class _SecondaryDSLLoader(_Loader):
@@ -389,9 +389,7 @@ class _UnionLoader(_Loader):
                 return t.load(doc, baseuri, loadingOptions, docRoot=docRoot)
             except ValidationException as e:
                 errors.append(
-                    ValidationException(
-                        "tried {} but".format(t.__class__.__name__), None, [e]
-                    )
+                    ValidationException(f"tried {t.__class__.__name__} but", None, [e])
                 )
         raise ValidationException("", None, errors, "-")
 
@@ -591,9 +589,9 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         urlpath = pathname2url(path)
         frag = ""
     if urlpath.startswith("//"):
-        return "file:{}{}".format(urlpath, frag)
+        return f"file:{urlpath}{frag}"
     else:
-        return "file://{}{}".format(urlpath, frag)
+        return f"file://{urlpath}{frag}"
 
 
 def prefix_url(url, namespaces):  # type: (str, Dict[str, str]) -> str
@@ -738,7 +736,7 @@ A field of a record.
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `%s`, expected one of: `doc`, `name`, `type`" % (k),
+                            "invalid field `{}`, expected one of: `doc`, `name`, `type`".format(k),
                             SourceLine(_doc, k, str)
                         )
                     )
@@ -857,7 +855,7 @@ class RecordSchema(Savable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `%s`, expected one of: `fields`, `type`" % (k),
+                            "invalid field `{}`, expected one of: `fields`, `type`".format(k),
                             SourceLine(_doc, k, str)
                         )
                     )
@@ -967,7 +965,7 @@ Define an enumerated type.
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `%s`, expected one of: `symbols`, `type`" % (k),
+                            "invalid field `{}`, expected one of: `symbols`, `type`".format(k),
                             SourceLine(_doc, k, str)
                         )
                     )
@@ -1076,7 +1074,7 @@ class ArraySchema(Savable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `%s`, expected one of: `items`, `type`" % (k),
+                            "invalid field `{}`, expected one of: `items`, `type`".format(k),
                             SourceLine(_doc, k, str)
                         )
                     )
@@ -1340,7 +1338,7 @@ URI resolution and JSON-LD context generation.
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `%s`, expected one of: `_id`, `_type`, `_container`, `identity`, `noLinkCheck`, `mapSubject`, `mapPredicate`, `refScope`, `typeDSL`, `secondaryFilesDSL`, `subscope`" % (k),
+                            "invalid field `{}`, expected one of: `_id`, `_type`, `_container`, `identity`, `noLinkCheck`, `mapSubject`, `mapPredicate`, `refScope`, `typeDSL`, `secondaryFilesDSL`, `subscope`".format(k),
                             SourceLine(_doc, k, str)
                         )
                     )
@@ -1512,7 +1510,7 @@ class SpecializeDef(Savable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `%s`, expected one of: `specializeFrom`, `specializeTo`" % (k),
+                            "invalid field `{}`, expected one of: `specializeFrom`, `specializeTo`".format(k),
                             SourceLine(_doc, k, str)
                         )
                     )
@@ -1701,7 +1699,7 @@ A field of a record.
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `%s`, expected one of: `doc`, `name`, `type`, `jsonldPredicate`, `default`" % (k),
+                            "invalid field `{}`, expected one of: `doc`, `name`, `type`, `jsonldPredicate`, `default`".format(k),
                             SourceLine(_doc, k, str)
                         )
                     )
@@ -2017,7 +2015,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `%s`, expected one of: `name`, `inVocab`, `fields`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `abstract`, `extends`, `specialize`" % (k),
+                            "invalid field `{}`, expected one of: `name`, `inVocab`, `fields`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `abstract`, `extends`, `specialize`".format(k),
                             SourceLine(_doc, k, str)
                         )
                     )
@@ -2370,7 +2368,7 @@ Define an enumerated type.
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `%s`, expected one of: `name`, `inVocab`, `symbols`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `extends`" % (k),
+                            "invalid field `{}`, expected one of: `name`, `inVocab`, `symbols`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `extends`".format(k),
                             SourceLine(_doc, k, str)
                         )
                     )
@@ -2652,7 +2650,7 @@ schemas but has no role in formal validation.
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `%s`, expected one of: `name`, `inVocab`, `doc`, `docParent`, `docChild`, `docAfter`, `type`" % (k),
+                            "invalid field `{}`, expected one of: `name`, `inVocab`, `doc`, `docParent`, `docChild`, `docAfter`, `type`".format(k),
                             SourceLine(_doc, k, str)
                         )
                     )

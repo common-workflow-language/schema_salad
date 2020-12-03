@@ -29,7 +29,7 @@ _vocab = {}  # type: Dict[str, str]
 _rvocab = {}  # type: Dict[str, str]
 
 
-class Savable(object):
+class Savable:
     @classmethod
     def fromDoc(cls, _doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Savable
@@ -40,7 +40,7 @@ class Savable(object):
         pass
 
 
-class LoadingOptions(object):
+class LoadingOptions:
     def __init__(
         self,
         fetcher=None,  # type: Optional[Fetcher]
@@ -214,12 +214,12 @@ def expand_url(
             if url in loadingOptions.rvocab:
                 return loadingOptions.rvocab[url]
         else:
-            raise ValidationException("Term '{}' not in vocabulary".format(url))
+            raise ValidationException(f"Term '{url}' not in vocabulary")
 
     return url
 
 
-class _Loader(object):
+class _Loader:
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         pass
@@ -279,7 +279,7 @@ class _ArrayLoader(_Loader):
         return r
 
     def __repr__(self):  # type: () -> str
-        return "array<{}>".format(self.items)
+        return f"array<{self.items}>"
 
 
 class _EnumLoader(_Loader):
@@ -292,7 +292,7 @@ class _EnumLoader(_Loader):
         if doc in self.symbols:
             return doc
         else:
-            raise ValidationException("Expected one of {}".format(self.symbols))
+            raise ValidationException(f"Expected one of {self.symbols}")
 
 
 class _SecondaryDSLLoader(_Loader):
@@ -384,9 +384,7 @@ class _UnionLoader(_Loader):
                 return t.load(doc, baseuri, loadingOptions, docRoot=docRoot)
             except ValidationException as e:
                 errors.append(
-                    ValidationException(
-                        "tried {} but".format(t.__class__.__name__), None, [e]
-                    )
+                    ValidationException(f"tried {t.__class__.__name__} but", None, [e])
                 )
         raise ValidationException("", None, errors, "-")
 
@@ -586,9 +584,9 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         urlpath = pathname2url(path)
         frag = ""
     if urlpath.startswith("//"):
-        return "file:{}{}".format(urlpath, frag)
+        return f"file:{urlpath}{frag}"
     else:
-        return "file://{}{}".format(urlpath, frag)
+        return f"file://{urlpath}{frag}"
 
 
 def prefix_url(url, namespaces):  # type: (str, Dict[str, str]) -> str

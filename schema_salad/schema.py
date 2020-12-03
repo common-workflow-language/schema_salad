@@ -189,7 +189,7 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
 
     if not isinstance(j2, list):
         _logger.error("%s", j2)
-        raise SchemaParseException("Not a list: {}".format(j2))
+        raise SchemaParseException(f"Not a list: {j2}")
     else:
         sch_obj = make_avro(j2, loader)
     try:
@@ -375,15 +375,13 @@ def validate_doc(
                 except ClassValidationException as exc1:
                     errors = [
                         ClassValidationException(
-                            "tried `{}` but".format(name), sourceline, [exc1]
+                            f"tried `{name}` but", sourceline, [exc1]
                         )
                     ]
                     break
                 except ValidationException as exc2:
                     errors.append(
-                        ValidationException(
-                            "tried `{}` but".format(name), sourceline, [exc2]
-                        )
+                        ValidationException(f"tried `{name}` but", sourceline, [exc2])
                     )
 
             objerr = "Invalid"
@@ -406,9 +404,7 @@ def get_anon_name(
         name = rec["name"]
         if isinstance(name, str):
             return name
-        raise ValidationException(
-            "Expected name field to be a string, was {}".format(name)
-        )
+        raise ValidationException(f"Expected name field to be a string, was {name}")
     anon_name = ""
     if rec["type"] in ("enum", saladp + "enum"):
         for sym in rec["symbols"]:
@@ -731,7 +727,7 @@ def print_inheritance(doc: List[Dict[str, Any]], stream: IO[Any]) -> None:
                     "\\l* ".join(shortname(field["name"]) for field in fields)
                 )
             shape = "ellipse" if entry.get("abstract") else "box"
-            stream.write('"{}" [shape={} label="{}"];\n'.format(name, shape, label))
+            stream.write(f'"{name}" [shape={shape} label="{label}"];\n')
             if "extends" in entry:
                 for target in aslist(entry["extends"]):
                     stream.write('"{}" -> "{}";\n'.format(shortname(target), name))
@@ -742,19 +738,17 @@ def print_fieldrefs(doc: List[Dict[str, Any]], loader: Loader, stream: IO[Any]) 
     """Write a GraphViz graph of the relationships between the fields."""
     obj = extend_and_specialize(doc, loader)
 
-    primitives = set(
-        (
-            "http://www.w3.org/2001/XMLSchema#string",
-            "http://www.w3.org/2001/XMLSchema#boolean",
-            "http://www.w3.org/2001/XMLSchema#int",
-            "http://www.w3.org/2001/XMLSchema#long",
-            saladp + "null",
-            saladp + "enum",
-            saladp + "array",
-            saladp + "record",
-            saladp + "Any",
-        )
-    )
+    primitives = {
+        "http://www.w3.org/2001/XMLSchema#string",
+        "http://www.w3.org/2001/XMLSchema#boolean",
+        "http://www.w3.org/2001/XMLSchema#int",
+        "http://www.w3.org/2001/XMLSchema#long",
+        saladp + "null",
+        saladp + "enum",
+        saladp + "array",
+        saladp + "record",
+        saladp + "Any",
+    }
 
     stream.write("digraph {\n")
     for entry in obj:

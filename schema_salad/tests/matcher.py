@@ -9,7 +9,7 @@ from typing import Any
 from schema_salad.utils import json_dumps
 
 
-class JsonDiffMatcher(object):
+class JsonDiffMatcher:
     """Raise AssertionError with a readable JSON diff when not __eq__().
 
     Used with assert_called_with() so it's possible for a human to see

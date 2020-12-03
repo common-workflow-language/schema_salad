@@ -229,7 +229,7 @@ def cmap(
         return d
 
 
-class SourceLine(object):
+class SourceLine:
     def __init__(
         self,
         item: Any,
@@ -283,7 +283,7 @@ class SourceLine(object):
         if self.file():
             lcol = self.start()
             line, col = lcol if lcol else ("", "")
-            return "{}:{}:{}:".format(self.file(), line, col)
+            return f"{self.file()}:{line}:{col}:"
         else:
             return ""
 
@@ -296,5 +296,5 @@ class SourceLine(object):
             if bool(lineno_re.match(m)):
                 errs.append(m)
             else:
-                errs.append("{} {}".format(lead, m))
+                errs.append(f"{lead} {m}")
         return self.raise_type("\n".join(errs))

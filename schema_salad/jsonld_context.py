@@ -115,7 +115,7 @@ def process_type(
                 predicate = recordname
                 recordname = ln
             else:
-                predicate = "{}:{}".format(defaultPrefix, recordname)
+                predicate = f"{defaultPrefix}:{recordname}"
 
         if context.get(recordname, predicate) != predicate:
             raise SchemaException(
@@ -125,7 +125,7 @@ def process_type(
             )
 
         if not recordname:
-            raise SchemaException("Unable to find/derive recordname for {}".format(t))
+            raise SchemaException(f"Unable to find/derive recordname for {t}")
 
         _logger.debug(
             "Adding to context '%s' %s (%s)", recordname, predicate, type(predicate)
@@ -233,7 +233,7 @@ def makerdf(
         doc_url, frg = urldefrag(url)
         if "/" in frg:
             p = frg.split("/")[0]
-            prefixes[p] = "{}#{}/".format(doc_url, p)
+            prefixes[p] = f"{doc_url}#{p}/"
 
     fix_jsonld_ids(wf, idfields)
 
@@ -247,7 +247,7 @@ def makerdf(
         wf["@context"] = ctx
         g.parse(data=json_dumps(wf), format="json-ld", publicID=str(workflow))
     else:
-        raise SchemaException("{} is not a workflow".format(wf))
+        raise SchemaException(f"{wf} is not a workflow")
 
     # Bug in json-ld loader causes @id fields to be added to the graph
     for sub, pred, obj in g.triples((None, URIRef("@id"), None)):

@@ -226,7 +226,7 @@ def test_attachments() -> None:
 
     l1 = Loader({})
     r1, _ = l1.resolve_ref(furi)
-    with open(path, "rt") as f:
+    with open(path) as f:
         content = f.read()
         assert {"foo": "bar", "baz": content, "quux": content} == r1
 
@@ -246,6 +246,6 @@ def test_attachments() -> None:
 
     l3 = Loader({}, allow_attachments=aa2)
     r3, _ = l3.resolve_ref(furi)
-    with open(path, "rt") as f:
+    with open(path) as f:
         content = f.read()
         assert {"foo": "bar", "baz": content, "quux": content} == r3
