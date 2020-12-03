@@ -564,7 +564,7 @@ def get_other_props(
     @args reserved_props: The set of reserved properties to exclude
     """
     if hasattr(all_props, "items") and callable(all_props.items):
-        return {k: v for (k, v) in list(all_props.items()) if k not in reserved_props}
+        return {k: v for (k, v) in all_props.items() if k not in reserved_props}
     return None
 
 
