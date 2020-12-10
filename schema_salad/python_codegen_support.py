@@ -407,7 +407,7 @@ class _URILoader(_Loader):
             for i in doc:
                 if not isinstance(i, str):
                     raise ValidationException(
-                        f"Expected a list of strings, but item was {typeof(i)}"
+                        f"Expected a list of strings, but item was {type(i)}"
                     )
                 doc.append(
                     expand_url(
