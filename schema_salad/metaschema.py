@@ -408,18 +408,23 @@ class _URILoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if isinstance(doc, MutableSequence):
-            doc = [
-                expand_url(
-                    i,
-                    baseuri,
-                    loadingOptions,
-                    self.scoped_id,
-                    self.vocab_term,
-                    self.scoped_ref,
-                )
-                for i in doc
-            ]
-        if isinstance(doc, str):
+            newdoc = []
+            for i in doc:
+                if isinstance(i, str):
+                    newdoc.append(
+                        expand_url(
+                            i,
+                            baseuri,
+                            loadingOptions,
+                            self.scoped_id,
+                            self.vocab_term,
+                            self.scoped_ref,
+                        )
+                    )
+                else:
+                    newdoc.append(i)
+            doc = newdoc
+        elif isinstance(doc, str):
             doc = expand_url(
                 doc,
                 baseuri,

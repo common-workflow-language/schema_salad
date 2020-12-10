@@ -403,23 +403,23 @@ class _URILoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if isinstance(doc, MutableSequence):
-            doc = []
+            newdoc = []
             for i in doc:
-                if not isinstance(i, str):
-                    raise ValidationException(
-                        f"Expected a list of strings, but item was {type(i)}"
+                if isinstance(i, str):
+                    newdoc.append(
+                        expand_url(
+                            i,
+                            baseuri,
+                            loadingOptions,
+                            self.scoped_id,
+                            self.vocab_term,
+                            self.scoped_ref,
+                        )
                     )
-                doc.append(
-                    expand_url(
-                        i,
-                        baseuri,
-                        loadingOptions,
-                        self.scoped_id,
-                        self.vocab_term,
-                        self.scoped_ref,
-                    )
-                )
-        if isinstance(doc, str):
+                else:
+                    newdoc.append(i)
+            doc = newdoc
+        elif isinstance(doc, str):
             doc = expand_url(
                 doc,
                 baseuri,
