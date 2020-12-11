@@ -26,8 +26,8 @@ PACKAGE=schema-salad
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py ${MODULE}/avro/*.py ${MODULE}/tests/*.py) setup.py
-DEVPKGS=diff_cover black pylint coverage pep257 pytest-xdist \
-	flake8 flake8-bugbear pyupgrade
+DEVPKGS=diff_cover black pylint coverage pep257 pydocstyle flake8 mypy\
+	isort wheel autoflake flake8-bugbear pyupgrade pytest-xdist \
 COVBASE=coverage run --branch --append --source=${MODULE} \
 	--omit=schema_salad/tests/*
 
@@ -72,6 +72,9 @@ clean: FORCE
 ## sorting imports using isort: https://github.com/timothycrosley/isort
 sort_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 	isort $^
+
+remove_unused_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
+	autoflake --in-place --remove-all-unused-imports $^
 
 pep257: pydocstyle
 ## pydocstyle      : check Python code style
