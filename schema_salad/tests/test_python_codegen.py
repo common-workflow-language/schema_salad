@@ -1,4 +1,4 @@
-import filecmp
+import inspect
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Text, cast
@@ -31,7 +31,8 @@ def test_meta_schema_gen_up_to_date(tmp_path: Path) -> None:
     src_target = tmp_path / "src.py"
     python_codegen(metaschema_file_uri, src_target)
     assert os.path.exists(src_target)
-    assert filecmp.cmp(src_target, cg_metaschema.__file__)
+    with open(src_target) as f:
+        assert f.read() == inspect.getsource(cg_metaschema)
 
 
 def python_codegen(file_uri: str, target: Path) -> None:
