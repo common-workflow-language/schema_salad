@@ -1,8 +1,6 @@
-import contextlib
 import shutil
-import tempfile
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Text, cast
+from typing import Any, Dict, List, Optional, Text, cast
 
 from schema_salad import codegen, ref_resolver
 from schema_salad.schema import load_schema
