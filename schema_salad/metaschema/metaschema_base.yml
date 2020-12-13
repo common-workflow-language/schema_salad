@@ -59,6 +59,61 @@ $graph:
     The **Any** type validates for any non-null value.
 
 
+- name: ConstrainedSchema
+  type: record
+  abstract: true
+  fields:
+    valueMax:
+      type: ["null", int, float]
+      doc: |
+        * For numbers, the lowest valid numeric value (inclusive).
+        * For strings, the smallest valid string length (inclusive).
+        * For arrays, the smallest valid array length (inclusive).
+
+        Default is no lower bound.
+
+    valueMin:
+      type: ["null", int, float]
+      doc: |
+        * For numbers, the greatest valid numeric value (inclusive).
+        * For strings, the greatest valid string length (inclusive).
+        * For arrays, the greatest valid array length (inclusive).
+
+        Default is unbounded.
+
+    valueMatches:
+      type: string?
+      doc: |
+        Applies when validating strings only. An ECMAScript-syntax
+        regular expression.  Field is valid when the regular
+        expression matches the entire string.
+
+    multipleOf:
+      type: ["null", int, float]
+      doc: |
+        For numbers, N is the value.  For strings or arrays, N is the
+        length.
+
+        L is the value of `valueMin`
+
+        S is the value of `stride`
+
+        Field is valid when `(N-L) mod S = 0`
+
+
+- name: ConstrainedPrimitive
+  type: record
+  extends: ConstrainedSchema
+  fields:
+    - name: type
+      type: PrimitiveType
+      jsonldPredicate:
+        _id: sld:type
+        _type: "@vocab"
+        typeDSL: true
+        refScope: 2
+
+
 - name: RecordField
   type: record
   extends: Documented
@@ -73,6 +128,7 @@ $graph:
     - name: type
       type:
         - PrimitiveType
+        - ConstrainedPrimitive
         - RecordSchema
         - EnumSchema
         - ArraySchema
@@ -80,6 +136,7 @@ $graph:
         - type: array
           items:
             - PrimitiveType
+            - ConstrainedPrimitive
             - RecordSchema
             - EnumSchema
             - ArraySchema
@@ -143,6 +200,7 @@ $graph:
 
 - name: ArraySchema
   type: record
+  extends: ConstrainedSchema
   fields:
     type:
       doc: "Must be `array`"
@@ -158,6 +216,7 @@ $graph:
     items:
       type:
         - PrimitiveType
+        - ConstrainedPrimitive
         - RecordSchema
         - EnumSchema
         - ArraySchema
@@ -165,6 +224,7 @@ $graph:
         - type: array
           items:
             - PrimitiveType
+            - ConstrainedPrimitive
             - RecordSchema
             - EnumSchema
             - ArraySchema
