@@ -49,15 +49,29 @@ public interface Loader<T> {
 
   default T documentLoadByUrl(final String url, final LoadingOptions loadingOptions) {
     if (loadingOptions.idx.containsKey(url)) {
-      return documentLoad(loadingOptions.idx.get(url), url, loadingOptions);
+      Object result = loadingOptions.idx.get(url);
+      if (result instanceof String) {
+        return documentLoad((String) result, url, loadingOptions);
+      } else if (result instanceof Map) {
+        return documentLoad((Map<String, Object>) result, url, loadingOptions);
+      }
+      return load(result, url, loadingOptions);
     }
 
     final String text = loadingOptions.fetcher.fetchText(url);
-    final Map<String, Object> result = YamlUtils.mapFromString(text);
-    loadingOptions.idx.put(url, result);
-    final LoadingOptionsBuilder urlLoadingOptions =
-        new LoadingOptionsBuilder().copiedFrom(loadingOptions).setFileUri(url);
-    return documentLoad(result, url, urlLoadingOptions.build());
+    try {
+      Map<String, Object> resultMap = YamlUtils.mapFromString(text);
+      loadingOptions.idx.put(url, resultMap);
+      final LoadingOptionsBuilder urlLoadingOptions =
+          new LoadingOptionsBuilder().copiedFrom(loadingOptions).setFileUri(url);
+      return documentLoad(resultMap, url, urlLoadingOptions.build());
+    } catch (ClassCastException e) {
+      List<Object> resultList = YamlUtils.listFromString(text);
+      loadingOptions.idx.put(url, resultList);
+      final LoadingOptionsBuilder urlLoadingOptions =
+          new LoadingOptionsBuilder().copiedFrom(loadingOptions).setFileUri(url);
+      return documentLoad(resultList, url, urlLoadingOptions.build());
+    }
   }
 
   default T loadField(

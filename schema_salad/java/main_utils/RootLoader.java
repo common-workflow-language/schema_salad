@@ -13,7 +13,7 @@ public class RootLoader {
     final String baseUri = ensureBaseUri(baseUri_);
     LoadingOptions loadingOptions = loadingOptions_;
     if (loadingOptions == null) {
-      loadingOptions = new LoadingOptionsBuilder().build();
+      loadingOptions = new LoadingOptionsBuilder().setFileUri(baseUri).build();
     }
     return LoaderInstances.${root_loader_name}.documentLoad(doc, baseUri, loadingOptions);
   }
