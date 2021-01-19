@@ -785,7 +785,7 @@ public enum {clazz} {{
     String yaml = new String(java.nio.file.Files.readAllBytes(resPath), "UTF8");
     java.util.Map<String, Object> doc;
     doc = (java.util.Map<String, Object>) YamlUtils.mapFromString(yaml);
-    RootLoader.loadDocument(doc);
+    RootLoader.loadDocument(doc, url.toString());
   }}""".format(
                         basename=basename.replace("-", "_").replace(".", "_"),
                         example_name=example_name,

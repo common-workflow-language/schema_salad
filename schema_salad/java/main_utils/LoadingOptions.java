@@ -11,7 +11,7 @@ public class LoadingOptions {
   String fileUri;
   Map<String, String> namespaces;
   List<String> schemas;
-  Map<String, Map<String, Object>> idx;
+  Map<String, Object> idx;
   Map<String, String> vocab;
   Map<String, String> rvocab;
 
@@ -20,7 +20,7 @@ public class LoadingOptions {
       final String fileUri,
       final Map<String, String> namespaces,
       final List<String> schemas,
-      final Map<String, Map<String, Object>> idx) {
+      final Map<String, Object> idx) {
     this.fetcher = fetcher;
     this.fileUri = fileUri;
     this.namespaces = namespaces;

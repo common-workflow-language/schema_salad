@@ -39,7 +39,7 @@ public class LoadingOptionsBuilder {
     String fileUri = this.fileUri.orElse(null);
     List<String> schemas = this.schemas.orElse(null);
     Map<String, String> namespaces = this.namespaces.orElse(null);
-    Map<String, Map<String, Object>> idx = new HashMap<String, Map<String, Object>>();
+    Map<String, Object> idx = new HashMap<String, Object>();
     if (this.copyFrom.isPresent()) {
       final LoadingOptions copyFrom = this.copyFrom.get();
       idx = copyFrom.idx;
