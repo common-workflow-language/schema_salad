@@ -74,10 +74,10 @@ prims = {
         init="new PrimitiveLoader<Long>(Long.class)",
     ),
     "http://www.w3.org/2001/XMLSchema#float": TypeDef(
-        instance_type="Float",
-        name="FloatInstance",
-        loader_type="Loader<Float>",
-        init="new PrimitiveLoader<Float>(Float.class)",
+        instance_type="Double",
+        name="DoubleInstance",
+        loader_type="Loader<Double>",
+        init="new PrimitiveLoader<Double>(Double.class)",
     ),
     "http://www.w3.org/2001/XMLSchema#double": TypeDef(
         instance_type="Double",
