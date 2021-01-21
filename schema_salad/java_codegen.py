@@ -415,6 +415,15 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
             raise SchemaException("wft {}".format(type_declaration["type"]))
         if type_declaration in prims:
             return prims[type_declaration]
+        if type_declaration in ("Expression", "https://w3id.org/cwl/cwl#Expression"):
+           return self.declare_type(
+                TypeDef(
+                    name = self.safe_name(type_declaration) + "Loader",
+                    init="new ExpressionLoader()",
+                    loader_type="Loader<String>",
+                    instance_type="String"
+                )
+            )
         return self.collected_types[self.safe_name(type_declaration)]
 
     def type_loader_enum(self, type_declaration: Dict[str, Any]) -> TypeDef:
