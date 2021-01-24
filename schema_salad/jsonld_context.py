@@ -1,4 +1,5 @@
 import logging
+import unicodedata
 from typing import (
     Any,
     Dict,
@@ -159,10 +160,7 @@ def process_type(
                         raise
                     split_start = rdflib.namespace.SPLIT_START_CATEGORIES
                     for j in range(-1 - colon_index, len(uri)):
-                        if (
-                            rdflib.namespace.category(uri[j]) in split_start
-                            or uri[j] == "_"
-                        ):
+                        if unicodedata.category(uri[j]) in split_start or uri[j] == "_":
                             # _ prevents early split, roundtrip not generate
                             ns = uri[:j]
                             if not ns:
