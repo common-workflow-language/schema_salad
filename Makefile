@@ -27,7 +27,7 @@ PACKAGE=schema-salad
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py ${MODULE}/avro/*.py ${MODULE}/tests/*.py) setup.py
 DEVPKGS=diff_cover black pylint coverage pep257 pydocstyle flake8 mypy\
-	isort wheel autoflake flake8-bugbear pyupgrade pytest-xdist \
+	isort wheel autoflake flake8-bugbear pyupgrade pytest-xdist
 COVBASE=coverage run --branch --append --source=${MODULE} \
 	--omit=schema_salad/tests/*
 
