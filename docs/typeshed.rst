@@ -8,9 +8,7 @@ directory.
 
 ::
 
- mkdir out
- stubgen module_name
- mv out/module_name/* typeshed/3/
+ stubgen -o typeshed module_name
  make mypy
 
 Note: the module name is not always the name of the PyPI package
