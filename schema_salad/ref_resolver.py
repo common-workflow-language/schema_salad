@@ -413,6 +413,7 @@ class Loader:
         base_url: Optional[str] = None,
         checklinks: bool = True,
         strict_foreign_properties: bool = False,
+        content_types: Optional[List[str]] = None,  # Expected content-types
     ) -> ResolvedRefType:
 
         lref = ref
@@ -529,7 +530,9 @@ class Loader:
                 raise ValidationException(
                     f"Reference `#{frg}` not found in file `{doc_url}`.", sl
                 )
-            doc = self.fetch(doc_url, inject_ids=(not mixin))
+            doc = self.fetch(
+                doc_url, inject_ids=(not mixin), content_types=content_types
+            )
 
         # Recursively expand urls and resolve directives
         if bool(mixin):
@@ -976,11 +979,16 @@ class Loader:
 
         return document, metadata
 
-    def fetch(self, url: str, inject_ids: bool = True) -> IdxResultType:
+    def fetch(
+        self,
+        url: str,
+        inject_ids: bool = True,
+        content_types: Optional[List[str]] = None,
+    ) -> IdxResultType:
         if url in self.idx:
             return self.idx[url]
         try:
-            text = self.fetch_text(url)
+            text = self.fetch_text(url, content_types=content_types)
             if isinstance(text, bytes):
                 textIO = StringIO(text.decode("utf-8"))
 
