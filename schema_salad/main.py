@@ -112,6 +112,23 @@ def main(argsl: Optional[List[str]] = None) -> int:
         help="Directory of example documents for test case generation (Java only).",
     )
 
+    parser.add_argument(
+        "--codegen-package",
+        type=str,
+        metavar="dotted.package",
+        default=None,
+        help="Optional override of the package name which is other derived "
+        "from the base URL (Java only).",
+    ),
+
+    parser.add_argument(
+        "--codegen-copyright",
+        type=str,
+        metavar="copyright_string",
+        default=None,
+        help="Optional copyright of the input schema.",
+    ),
+
     exgroup.add_argument(
         "--print-oneline",
         action="store_true",
@@ -275,6 +292,8 @@ def main(argsl: Optional[List[str]] = None) -> int:
             document_loader,
             target=args.codegen_target,
             examples=args.codegen_examples,
+            package=args.codegen_package,
+            copyright=args.codegen_copyright,
         )
         return 0
 

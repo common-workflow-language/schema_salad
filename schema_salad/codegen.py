@@ -29,6 +29,8 @@ def codegen(
     loader: Loader,
     target: Optional[str] = None,
     examples: Optional[str] = None,
+    package: Optional[str] = None,
+    copyright: Optional[str] = None,
 ) -> None:
     """Generate classes with loaders for the given Schema Salad description."""
 
@@ -42,12 +44,14 @@ def codegen(
             )
         else:
             dest = sys.stdout
-        gen = PythonCodeGen(dest)
+        gen = PythonCodeGen(dest, copyright=copyright)
     elif lang == "java":
         gen = JavaCodeGen(
             schema_metadata.get("$base", schema_metadata.get("id")),
             target=target,
             examples=examples,
+            package=package,
+            copyright=copyright,
         )
     else:
         raise SchemaSaladException(f"Unsupported code generation language '{lang}'")

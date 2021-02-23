@@ -108,16 +108,26 @@ prims = {
 
 class JavaCodeGen(CodeGenBase):
     def __init__(
-        self, base: str, target: Optional[str], examples: Optional[str]
+        self,
+        base: str,
+        target: Optional[str],
+        examples: Optional[str],
+        package: Optional[str],
+        copyright: Optional[str],
     ) -> None:
         super().__init__()
         self.base_uri = base
         sp = urlsplit(base)
         self.examples = examples
-        self.package = ".".join(
-            list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/")
+        self.package = (
+            package
+            if package
+            else ".".join(
+                list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/")
+            )
         )
         self.artifact = self.package.split(".")[-1]
+        self.copyright = copyright
         target = target or "."
         self.target_dir = target
         rel_package_dir = self.package.replace(".", "/")
@@ -191,7 +201,31 @@ class JavaCodeGen(CodeGenBase):
             else:
                 ext = "extends Savable"
             f.write(
-                """package {package};
+                """// Copyright Common Workflow Language project contributors
+"""
+            )
+            if self.copyright:
+                f.write(
+                    """// {copyright}
+""".format(
+                        copyright=self.copyright
+                    )
+                )
+            f.write(
+                """//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package {package};
 
 import {package}.utils.Savable;
 
@@ -211,7 +245,31 @@ public interface {cls} {ext} {{""".format(
 
         with open(os.path.join(self.main_src_dir, f"{cls}Impl.java"), "w") as f:
             f.write(
-                """package {package};
+                """// Copyright Common Workflow Language project contributors
+"""
+            )
+            if self.copyright:
+                f.write(
+                    """// {copyright}
+""".format(
+                        copyright=self.copyright
+                    )
+                )
+            f.write(
+                """//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package {package};
 
 import {package}.utils.LoaderInstances;
 import {package}.utils.LoadingOptions;
@@ -227,7 +285,9 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
   private java.util.Map<String, Object> extensionFields_ =
       new java.util.HashMap<String, Object>();
 """.format(
-                    package=self.package, cls=cls, class_doc_str=class_doc_str
+                    package=self.package,
+                    cls=cls,
+                    class_doc_str=class_doc_str,
                 )
             )
         self.current_loader.write(
@@ -437,7 +497,31 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         enum_path = os.path.join(self.main_src_dir, f"{clazz}.java")
         with open(enum_path, "w") as f:
             f.write(
-                """package {package};
+                """// Copyright Common Workflow Language project contributors
+"""
+            )
+            if self.copyright:
+                f.write(
+                    """// {copyright}
+""".format(
+                        copyright=self.copyright
+                    )
+                )
+            f.write(
+                """//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package {package};
 
 import {package}.utils.ValidationException;
 
