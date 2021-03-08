@@ -119,9 +119,9 @@
             <version>4.13.1</version>
         </dependency>
         <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-            <version>1.24</version>
+            <groupId>org.snakeyaml</groupId>
+            <artifactId>snakeyaml-engine</artifactId>
+            <version>2.2.1</version>
         </dependency>
     </dependencies>
 </project>
