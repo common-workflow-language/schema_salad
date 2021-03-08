@@ -5,16 +5,20 @@ set -x
 
 package=schema-salad
 module=schema_salad
-slug=${TRAVIS_PULL_REQUEST_SLUG:=common-workflow-language/schema_salad}
-repo=https://github.com/${slug}.git
+if [ "$GITHUB_ACTIONS" = "true" ]; then
+    # We are running as a GH Action
+    repo=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git
+    HEAD=${GITHUB_SHA}
+else
+    repo=https://github.com/common-workflow-language/schema_salad.git
+    HEAD=$(git rev-parse HEAD)
+fi
 run_tests="bin/py.test --pyargs ${module}"
 pipver=18 # minimum required version of pip
 setupver=40.3 # minimum required version of setuptools
 PYVER=${PYVER:=3}
 
 rm -Rf "testenv${PYVER}_"? || /bin/true
-
-export HEAD=${TRAVIS_PULL_REQUEST_SHA:-$(git rev-parse HEAD)}
 
 if [ "${RELEASE_SKIP}" != "head" ]
 then
