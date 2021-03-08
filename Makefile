@@ -33,7 +33,7 @@ COVBASE=coverage run --branch --append --source=${MODULE} \
 
 # Updating the Major & Minor version below?
 # Don't forget to update setup.py as well
-VERSION=7.0.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
+VERSION=7.1.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
 
 ## all         : default task
@@ -172,9 +172,7 @@ mypy: ${PYSOURCES}
 		ln -s $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))') \
 			typeshed/ruamel/ ; \
 	fi  # if minimally required ruamel.yaml version is 0.15.99 or greater, than the above can be removed
-	MYPYPATH=$$MYPYPATH:typeshed mypy --disallow-untyped-calls \
-		 --warn-redundant-casts \
-		 schema_salad
+	MYPYPATH=$$MYPYPATH:typeshed mypy schema_salad
 
 mypyc: ${PYSOURCES}
 	MYPYPATH=typeshed SCHEMA_SALAD_USE_MYPYC=1 python setup.py test

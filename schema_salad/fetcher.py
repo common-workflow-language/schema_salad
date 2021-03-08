@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import urllib
+import logging
 from typing import List, Optional
 
 import requests
@@ -10,6 +11,7 @@ from .exceptions import ValidationException
 from .utils import CacheType
 
 _re_drive = re.compile(r"/([a-zA-Z]):")
+_logger = logging.getLogger("salad")
 
 
 class Fetcher:
@@ -20,7 +22,7 @@ class Fetcher:
     ) -> None:
         pass
 
-    def fetch_text(self, url: str) -> str:
+    def fetch_text(self, url: str, content_types: Optional[List[str]] = None) -> str:
         raise NotImplementedError()
 
     def check_exists(self, url: str) -> bool:
@@ -44,7 +46,7 @@ class DefaultFetcher(Fetcher):
         self.cache = cache
         self.session = session
 
-    def fetch_text(self, url: str) -> str:
+    def fetch_text(self, url: str, content_types: Optional[List[str]] = None) -> str:
         if url in self.cache and self.cache[url] is not True:
             # treat "True" as a placeholder that indicates something exists but
             # not necessarily what its contents is.
@@ -57,10 +59,20 @@ class DefaultFetcher(Fetcher):
 
         if scheme in ["http", "https"] and self.session is not None:
             try:
-                resp = self.session.get(url)
+                headers = {}
+                if content_types:
+                    headers["Accept"] = ", ".join(content_types) + ", */*;q=0.8"
+                resp = self.session.get(url, headers=headers)
                 resp.raise_for_status()
             except Exception as e:
                 raise ValidationException(f"Error fetching {url}: {e}") from e
+            if content_types and "content-type" in resp.headers:
+                content_type = resp.headers["content-type"].split(";")[:1][0]
+                if content_type not in content_types:
+                    _logger.warning(
+                        f"While fetching {url}, got content-type of "
+                        f"'{content_type}'. Expected one of {content_types}."
+                    )
             return resp.text
         if scheme == "file":
             try:
