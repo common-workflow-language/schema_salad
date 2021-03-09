@@ -14,7 +14,7 @@ else
     HEAD=$(git rev-parse HEAD)
 fi
 run_tests="bin/py.test --pyargs ${module}"
-pipver=18 # minimum required version of pip
+pipver=20.3b1 # minimum required version of pip for Python 3.9
 setupver=41.1.0 # minimum required version of setuptools
 PYVER=${PYVER:=3}
 
