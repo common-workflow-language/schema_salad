@@ -8,21 +8,21 @@ module=schema_salad
 if [ "$GITHUB_ACTIONS" = "true" ]; then
     # We are running as a GH Action
     repo=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git
-    HEAD=${GITHUB_SHA}
+    HEAD=${GITHUB_REF}
 else
     repo=https://github.com/common-workflow-language/schema_salad.git
     HEAD=$(git rev-parse HEAD)
 fi
 run_tests="bin/py.test --pyargs ${module}"
 pipver=18 # minimum required version of pip
-setupver=40.3 # minimum required version of setuptools
+setupver=41.1.0 # minimum required version of setuptools
 PYVER=${PYVER:=3}
 
 rm -Rf "testenv${PYVER}_"? || /bin/true
 
 if [ "${RELEASE_SKIP}" != "head" ]
 then
-	virtualenv "testenv${PYVER}_1" -p "python${PYVER}"
+	"python${PYVER}" -m venv "testenv${PYVER}_1"
 	# First we test the head
 	# shellcheck source=/dev/null
 	source "testenv${PYVER}_1/bin/activate"
@@ -43,10 +43,10 @@ then
 fi
 
 
-virtualenv "testenv${PYVER}_2" -p "python${PYVER}"
-virtualenv "testenv${PYVER}_3" -p "python${PYVER}"
-virtualenv "testenv${PYVER}_4" -p "python${PYVER}"
-virtualenv "testenv${PYVER}_5" -p "python${PYVER}"
+"python${PYVER}" -m venv "testenv${PYVER}_2"
+"python${PYVER}" -m venv "testenv${PYVER}_3"
+"python${PYVER}" -m venv "testenv${PYVER}_4"
+"python${PYVER}" -m venv "testenv${PYVER}_5"
 
 
 # Secondly we test via pip
@@ -54,7 +54,7 @@ virtualenv "testenv${PYVER}_5" -p "python${PYVER}"
 pushd "testenv${PYVER}_2"
 # shellcheck source=/dev/null
 source bin/activate
-rm lib/python-wheels/setuptools* \
+rm -f lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \
         && pip install setuptools==${setupver} wheel
 # The following can fail if you haven't pushed your commits to ${repo}
@@ -77,7 +77,7 @@ popd
 pushd "testenv${PYVER}_3/"
 # shellcheck source=/dev/null
 source bin/activate
-rm lib/python-wheels/setuptools* \
+rm -f lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \
         && pip install setuptools==${setupver} wheel
 pip install ${package}*tar.gz
@@ -100,7 +100,7 @@ popd
 pushd "testenv${PYVER}_4/"
 # shellcheck source=/dev/null
 source bin/activate
-rm lib/python-wheels/setuptools* \
+rm -f lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \
         && pip install setuptools==${setupver} wheel
 pip install ${module}*.whl
