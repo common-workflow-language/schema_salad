@@ -719,7 +719,6 @@ public enum {clazz} {{
         vocab_term: bool,
         ref_scope: Optional[int],
     ) -> TypeDef:
-        assert inner is not None
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
             TypeDef(
@@ -743,7 +742,6 @@ public enum {clazz} {{
     def idmap_loader(
         self, field: str, inner: TypeDef, map_subject: str, map_predicate: Optional[str]
     ) -> TypeDef:
-        assert inner is not None
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
             TypeDef(
