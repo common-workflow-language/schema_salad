@@ -26,7 +26,7 @@ rm -Rf testenv? || /bin/true
 
 if [ "${RELEASE_SKIP}" != "head" ]
 then
-	python3 -m venv testenv_1
+	python3 -m venv testenv1
 	# First we test the head
 	# shellcheck source=/dev/null
 	source testenv1/bin/activate
