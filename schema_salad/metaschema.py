@@ -4,7 +4,9 @@
 # subject to the license of the original schema.
 import copy
 import os
+import pathlib
 import re
+import tempfile
 import uuid as _uuid__  # pylint: disable=unused-import # noqa: F401
 from io import StringIO
 from typing import (
@@ -75,25 +77,12 @@ class LoadingOptions:
             from cachecontrol.caches import FileCache
             from cachecontrol.wrapper import CacheControl
 
-            if "HOME" in os.environ:
-                session = CacheControl(
-                    requests.Session(),
-                    cache=FileCache(
-                        os.path.join(os.environ["HOME"], ".cache", "salad")
-                    ),
-                )
-            elif "TMPDIR" in os.environ:
-                session = CacheControl(
-                    requests.Session(),
-                    cache=FileCache(
-                        os.path.join(os.environ["TMPDIR"], ".cache", "salad")
-                    ),
-                )
-            else:
-                session = CacheControl(
-                    requests.Session(), cache=FileCache("/tmp", ".cache", "salad")
-                )
-            self.fetcher = DefaultFetcher({}, session)  # type: Fetcher
+            root = pathlib.Path(os.environ.get("HOME", tempfile.gettempdir()))
+            session = CacheControl(
+                requests.Session(),
+                cache=FileCache(root / ".cache" / "salad"),
+            )
+            self.fetcher: Fetcher = DefaultFetcher({}, session)
         else:
             self.fetcher = fetcher
 
@@ -453,7 +442,7 @@ class _TypeDSLLoader(_Loader):
         m = self.typeDSLregex.match(doc)
         if m:
             group1 = m.group(1)
-            assert group1 is not None
+            assert group1 is not None  # nosec
             first = expand_url(
                 group1, baseuri, loadingOptions, False, True, self.refScope
             )

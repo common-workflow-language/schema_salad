@@ -160,9 +160,9 @@ def number_headings(toc: ToC, maindoc: str) -> str:
             m = re.match(r"^(#+) (.*)", line)
             if m is not None:
                 group1 = m.group(1)
-                assert group1 is not None
+                assert group1 is not None  # nosec
                 group2 = m.group(2)
-                assert group2 is not None
+                assert group2 is not None  # nosec
                 num = toc.add_entry(len(group1), group2)
                 line = f"{group1} {num} {group2}"
             line = re.sub(r"^(https?://\S+)", r"[\1](\1)", line)

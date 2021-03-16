@@ -55,7 +55,6 @@ def codegen(
         )
     else:
         raise SchemaSaladException(f"Unsupported code generation language '{lang}'")
-    assert gen is not None
 
     gen.prologue()
 

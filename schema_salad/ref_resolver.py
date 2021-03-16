@@ -1,8 +1,10 @@
 import copy
 import logging
 import os
+import pathlib
 import re
-import xml.sax
+import tempfile
+import xml.sax  # nosec
 from io import StringIO
 from typing import (
     Any,
@@ -169,25 +171,11 @@ class Loader:
             if doc_cache is False:
                 self.session = requests.Session()
             elif doc_cache is True:
-                if "HOME" in os.environ:
-                    self.session = CacheControl(
-                        requests.Session(),
-                        cache=FileCache(
-                            os.path.join(os.environ["HOME"], ".cache", "salad")
-                        ),
-                    )
-                elif "TMP" in os.environ:
-                    self.session = CacheControl(
-                        requests.Session(),
-                        cache=FileCache(
-                            os.path.join(os.environ["TMP"], ".cache", "salad")
-                        ),
-                    )
-                else:
-                    self.session = CacheControl(
-                        requests.Session(),
-                        cache=FileCache(os.path.join("/tmp", ".cache", "salad")),
-                    )
+                root = pathlib.Path(os.environ.get("HOME", tempfile.gettempdir()))
+                self.session = CacheControl(
+                    requests.Session(),
+                    cache=FileCache(root / ".cache" / "salad"),
+                )
             elif isinstance(doc_cache, str):
                 self.session = CacheControl(
                     requests.Session(), cache=FileCache(doc_cache)
@@ -640,7 +628,7 @@ class Loader:
         if not m:
             return t
         first = m.group(1)
-        assert first
+        assert first  # nosec
         second = third = None
         if bool(m.group(2)):
             second = CommentedMap((("type", "array"), ("items", first)))

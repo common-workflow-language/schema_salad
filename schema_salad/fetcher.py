@@ -1,8 +1,9 @@
+"""Resource fetching."""
+import logging
 import os
 import re
 import sys
 import urllib
-import logging
 from typing import List, Optional
 
 import requests
@@ -47,11 +48,9 @@ class DefaultFetcher(Fetcher):
         self.session = session
 
     def fetch_text(self, url: str, content_types: Optional[List[str]] = None) -> str:
-        if url in self.cache and self.cache[url] is not True:
-            # treat "True" as a placeholder that indicates something exists but
-            # not necessarily what its contents is.
-            result = self.cache[url]
-            assert isinstance(result, str)
+        """Retrieve the given resource as a string."""
+        result = self.cache.get(url, None)
+        if isinstance(result, str):
             return result
 
         split = urllib.parse.urlsplit(url)

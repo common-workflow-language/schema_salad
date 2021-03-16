@@ -26,8 +26,9 @@ PACKAGE=schema-salad
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py ${MODULE}/avro/*.py ${MODULE}/tests/*.py) setup.py
-DEVPKGS=diff_cover black pylint coverage pep257 pydocstyle flake8 mypy\
-	isort wheel autoflake flake8-bugbear pyupgrade pytest-xdist
+DEVPKGS=diff_cover black pylint coverage pep257 pydocstyle flake8 tox\
+	isort wheel autoflake flake8-bugbear pyupgrade bandit \
+	-rtest-requirements.txt -rmypy_requirements.txt
 COVBASE=coverage run --branch --append --source=${MODULE} \
 	--omit=schema_salad/tests/*
 
@@ -55,11 +56,19 @@ install-dependencies:
 install: FORCE
 	pip install .
 
+## dev     : install the ${MODULE} module in dev mode
+dev: install-dep
+	pip install -e
+
 ## dist        : create a module package for distribution
 dist: dist/${MODULE}-$(VERSION).tar.gz
 
 dist/${MODULE}-$(VERSION).tar.gz: $(SOURCES)
 	./setup.py sdist bdist_wheel
+
+## docs	       : make the docs
+docs: FORCE
+	cd docs && $(MAKE) html
 
 ## clean       : clean up all temporary / machine-generated files
 clean: FORCE
@@ -85,11 +94,14 @@ pydocstyle_report.txt: $(PYSOURCES)
 	pydocstyle setup.py $^ > $@ 2>&1 || true
 
 diff_pydocstyle_report: pydocstyle_report.txt
-	diff-quality --compare-branch=main --violations=pycodestyle --fail-under=100 $^
+	diff-quality --compare-branch=main --violations=pydocstyle --fail-under=100 $^
 
 ## format      : check/fix all code indentation and formatting (runs black)
 format:
 	black --exclude metaschema.py schema_salad setup.py
+
+format-check:
+	black --diff --check --exclude metaschema.py schema_salad setup.py
 
 ## pylint      : run static code analysis on Python code
 pylint: $(PYSOURCES)
@@ -180,29 +192,20 @@ mypyc: ${PYSOURCES}
 pyupgrade: $(filter-out schema_salad/metaschema.py,${PYSOURCES})
 	pyupgrade --exit-zero-even-if-changed --py36-plus $^
 
-jenkins: FORCE
-	rm -Rf env && virtualenv env
-	. env/bin/activate ; \
-	pip install -U setuptools pip wheel ; \
-	${MAKE} install-dep coverage.html coverage.xml pydocstyle_report.txt \
-		sloccount.sc pylint_report.txt
-	if ! test -d env3 ; then virtualenv -p python3 env3 ; fi
-	. env3/bin/activate ; \
-	pip install -U setuptools pip wheel ; \
-	${MAKE} install-dep ; \
-	pip install -U -r mypy_requirements.txt ; ${MAKE} mypy
-
 release-test: FORCE
 	git diff-index --quiet HEAD -- || ( echo You have uncommited changes, please commit them and try again; false )
-	PYVER=3 ./release-test.sh
+	./release-test.sh
 
 release: release-test
-	. testenv3_2/bin/activate && \
-		testenv3_2/src/${PACKAGE}/setup.py sdist bdist_wheel
-	. testenv3_2/bin/activate && \
+	. testenv2/bin/activate && \
+		testenv2/src/${PACKAGE}/setup.py sdist bdist_wheel
+	. testenv2/bin/activate && \
 		pip install twine && \
-		twine upload testenv3_2/src/${PACKAGE}/dist/* && \
+		twine upload testenv2/src/${PACKAGE}/dist/* && \
 		git tag ${VERSION} && git push --tags
+
+flake8: ${PYSOURCES}
+	flake8 $^
 
 FORCE:
 

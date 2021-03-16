@@ -216,8 +216,10 @@ class Names:
         elif to_add.fullname in self.names:
             fail_msg = f'The name "{to_add.fullname}" is already in use.'
             raise SchemaParseException(fail_msg)
+        elif to_add.fullname is None:
+            fail_msg = f"{to_add.fullname} is missing, but this is impossible."
+            raise SchemaParseException(fail_msg)
 
-        assert to_add.fullname
         self.names[to_add.fullname] = new_schema
         return to_add
 
@@ -576,7 +578,6 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
     """
     if names is None:
         names = Names()
-    assert isinstance(names, Names)
 
     if isinstance(json_data, Dict) and json_data.get("name") == "Any":
         del names.names["Any"]
@@ -622,7 +623,6 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
                     symbols = cast(List[str], symbols)
                 return EnumSchema(name, namespace, symbols, names, doc, other_props)
             if atype in ["record", "error"]:
-                assert isinstance(atype, str)
                 fields = json_data.get("fields")
                 if not isinstance(fields, list):
                     raise SchemaParseException(

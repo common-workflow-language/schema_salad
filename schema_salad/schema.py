@@ -409,7 +409,7 @@ def get_anon_name(
     if rec["type"] in ("enum", saladp + "enum"):
         for sym in rec["symbols"]:
             anon_name += sym
-        return "enum_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
+        return "enum_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()  # nosec
     if rec["type"] in ("record", saladp + "record"):
         for field in rec["fields"]:
             if isinstance(field, Mapping):
@@ -420,7 +420,7 @@ def get_anon_name(
                         field
                     )
                 )
-        return "record_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
+        return "record_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()  # nosec
     if rec["type"] in ("array", saladp + "array"):
         return ""
     raise ValidationException("Expected enum or record, was {}".format(rec["type"]))
