@@ -26,11 +26,10 @@ PACKAGE=schema-salad
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py ${MODULE}/avro/*.py ${MODULE}/tests/*.py) setup.py
-DEVPKGS=diff_cover black pylint coverage pep257 pydocstyle flake8 tox\
+DEVPKGS=diff_cover black pylint pep257 pydocstyle flake8 tox tox-pyenv \
 	isort wheel autoflake flake8-bugbear pyupgrade bandit \
 	-rtest-requirements.txt -rmypy_requirements.txt
-COVBASE=coverage run --branch --append --source=${MODULE} \
-	--omit=schema_salad/tests/*
+COVBASE=coverage run --append
 
 # Updating the Major & Minor version below?
 # Don't forget to update setup.py as well
@@ -38,8 +37,7 @@ VERSION=7.1.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
 
 ## all         : default task
-all:
-	pip install -e .
+all: dev
 
 ## help        : print this help message and exit
 help: Makefile
@@ -48,7 +46,7 @@ help: Makefile
 ## install-dep : install most of the development dependencies via pip
 install-dep: install-dependencies
 
-install-dependencies:
+install-dependencies: FORCE
 	pip install --upgrade $(DEVPKGS)
 	pip install -r requirements.txt
 
@@ -58,7 +56,7 @@ install: FORCE
 
 ## dev     : install the ${MODULE} module in dev mode
 dev: install-dep
-	pip install -e
+	pip install -e .
 
 ## dist        : create a module package for distribution
 dist: dist/${MODULE}-$(VERSION).tar.gz
@@ -108,16 +106,15 @@ pylint: $(PYSOURCES)
 	pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
                 $^ -j0|| true
 
-pylint_report.txt: ${PYSOURCES}
+pylint_report.txt: $(PYSOURCES)
 	pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
 		$^ -j0> $@ || true
 
 diff_pylint_report: pylint_report.txt
 	diff-quality --violations=pylint pylint_report.txt
 
-.coverage: $(PYSOURCES) all
-	rm -f .coverage
-	$(COVBASE) setup.py test
+.coverage: testcov
+	python setup.py test --addopts "--cov --cov-config=.coveragerc --cov-report= -n auto"
 	$(COVBASE) -m schema_salad.main \
 		--print-jsonld-context schema_salad/metaschema/metaschema.yml \
 		> /dev/null
@@ -162,14 +159,18 @@ diff-cover.html: coverage.xml
 	diff-cover $^ --html-report $@
 
 ## test        : run the ${MODULE} test suite
-test: FORCE
-	python setup.py test --addopts "-n auto"
+test: $(PYSOURCES)
+	python setup.py test
 
-sloccount.sc: ${PYSOURCES} Makefile
+## testcov     : run the ${MODULE} test suite and collect coverage
+testcov: $(PYSOURCES)
+	python setup.py test --addopts "--cov"
+
+sloccount.sc: $(PYSOURCES) Makefile
 	sloccount --duplicates --wide --details $^ > $@
 
 ## sloccount   : count lines of code
-sloccount: ${PYSOURCES} Makefile
+sloccount: $(PYSOURCES) Makefile
 	sloccount $^
 
 list-author-emails:
@@ -177,19 +178,19 @@ list-author-emails:
 	@git log --format='%aN,%aE' | sort -u | grep -v 'root'
 
 mypy3: mypy
-mypy: ${PYSOURCES}
+mypy: $(filter-out setup.py gittagger.py,$(PYSOURCES))
 	if ! test -f $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))')/py.typed ; \
 	then \
 		rm -Rf typeshed/ruamel/yaml ; \
 		ln -s $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))') \
 			typeshed/ruamel/ ; \
 	fi  # if minimally required ruamel.yaml version is 0.15.99 or greater, than the above can be removed
-	MYPYPATH=$$MYPYPATH:typeshed mypy schema_salad
+	MYPYPATH=$$MYPYPATH:typeshed mypy $^
 
-mypyc: ${PYSOURCES}
+mypyc: $(PYSOURCES)
 	MYPYPATH=typeshed SCHEMA_SALAD_USE_MYPYC=1 python setup.py test
 
-pyupgrade: $(filter-out schema_salad/metaschema.py,${PYSOURCES})
+pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 	pyupgrade --exit-zero-even-if-changed --py36-plus $^
 
 release-test: FORCE
@@ -204,7 +205,7 @@ release: release-test
 		twine upload testenv2/src/${PACKAGE}/dist/* && \
 		git tag ${VERSION} && git push --tags
 
-flake8: ${PYSOURCES}
+flake8: $(PYSOURCES)
 	flake8 $^
 
 FORCE:

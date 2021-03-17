@@ -1,6 +1,7 @@
 [run]
 branch = True
 source = schema_salad
+omit = schema_salad/tests/*
 
 [report]
 exclude_lines =
