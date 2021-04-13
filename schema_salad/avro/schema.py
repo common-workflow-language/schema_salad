@@ -58,13 +58,13 @@ SCHEMA_RESERVED_PROPS = (
 # MappingDataType = Dict[str, Union[PropType, List[PropsType]]]
 # was: Union[str, MappingDataType, List[MappingDataType]]
 JsonDataType = Any
-AtomicPropType = Union[str, int, bool, "Schema", List[str], List["Field"]]
+AtomicPropType = Union[None, str, int, float, bool, "Schema", List[str], List["Field"]]
 PropType = Union[
     AtomicPropType,
-    Dict[str, Optional[AtomicPropType]],
-    List[Dict[str, Optional[AtomicPropType]]],
+    Dict[str, AtomicPropType],
+    List[Dict[str, AtomicPropType]],
 ]
-PropsType = Dict[str, Optional[PropType]]
+PropsType = Dict[str, PropType]
 
 FIELD_RESERVED_PROPS = ("default", "name", "doc", "order", "type")
 

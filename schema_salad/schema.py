@@ -434,8 +434,7 @@ def replace_type(
     find_embeds: bool = True,
     deepen: bool = True,
 ) -> Any:
-    """ Go through and replace types in the 'spec' mapping"""
-
+    """Go through and replace types in the 'spec' mapping."""
     if isinstance(items, MutableMapping):
         # recursively check these fields for types to replace
         if items.get("type") in ("record", "enum") and items.get("name"):
