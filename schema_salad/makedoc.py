@@ -187,7 +187,7 @@ class RenderType:
         self,
         toc: ToC,
         j: List[Dict[str, str]],
-        renderlist: str,
+        renderlist: List[str],
         redirects: Dict[str, str],
         primitiveType: str,
     ) -> None:
@@ -496,7 +496,7 @@ class RenderType:
 def avrold_doc(
     j: List[Dict[str, Any]],
     outdoc: Union[IO[Any], StreamWriter],
-    renderlist: str,
+    renderlist: List[str],
     redirects: Dict[str, str],
     brand: str,
     brandlink: str,
