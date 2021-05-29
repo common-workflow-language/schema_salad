@@ -40,7 +40,7 @@ def test_self_validate() -> None:
     path = get_data("metaschema/metaschema.yml")
     assert path
     assert 0 == schema_salad.main.main(argsl=[path])
-    assert 0 == schema_salad.main.main(argsl=[path, path])
+    assert 1 == schema_salad.main.main(argsl=[path, path]) # passing in 2 schemas should throw an error
 
 
 def test_avro_regression() -> None:
