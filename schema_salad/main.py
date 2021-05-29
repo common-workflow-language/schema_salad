@@ -189,7 +189,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
     )
 
     parser.add_argument("schema", type=str, nargs="?", default=None)
-    parser.add_argument("document", type=str, nargs="?", default=None)
+    parser.add_argument("document", nargs="*", default=None)
     parser.add_argument(
         "--version", "-v", action="store_true", help="Print version", default=None
     )
@@ -350,21 +350,25 @@ def main(argsl: Optional[List[str]] = None) -> int:
         print(f"Schema `{args.schema}` is valid")
         return 0
 
-    # Load target document and resolve refs
-    try:
-        uri = args.document
-        document, doc_metadata = document_loader.resolve_ref(
-            uri, strict_foreign_properties=args.strict_foreign_properties
-        )
-    except ValidationException as e:
-        msg = to_one_line_messages(e) if args.print_oneline else str(e)
-        _logger.error(
-            "Document `%s` failed validation:\n%s",
-            args.document,
-            msg,
-            exc_info=args.debug,
-        )
-        return 1
+    # Load target document and resolve refs. Note that this can now
+    # take multiple document files. doc_metadata only returns the
+    # metadata for the last document as they should be the same
+    document = []
+    for uri in args.document:
+        try:
+            document1, doc_metadata = document_loader.resolve_ref(
+                uri, strict_foreign_properties=args.strict_foreign_properties
+            )
+            document.append(document1)
+        except ValidationException as e:
+            msg = to_one_line_messages(e) if args.print_oneline else str(e)
+            _logger.error(
+                "Document `%s` failed validation:\n%s",
+                document,
+                msg,
+                exc_info=args.debug,
+            )
+            return 1
 
     # Optionally print the document after ref resolution
     if args.print_pre:
