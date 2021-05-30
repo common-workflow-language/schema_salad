@@ -71,6 +71,14 @@ Validate a document using a schema::
 
    $ schema-salad-tool myschema.yml mydocument.yml
 
+Validate a JSON document using a schema::
+
+   $ schema-salad-tool myschema.yml mydocument.json
+
+Multiple documents and (lazy) expansion can be used::
+
+   $ schema-salad-tool myschema.yml 'my*.yml'
+
 Generate HTML documentation::
 
    $ schema-salad-tool myschema.yml > myschema.html

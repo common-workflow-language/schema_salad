@@ -1,6 +1,7 @@
 """Command line interface to schema-salad."""
 
 import argparse
+import glob
 import logging
 import os
 import sys
@@ -251,6 +252,9 @@ def main(argsl: Optional[List[str]] = None) -> int:
     if args.print_doc:
         makedoc(args)
         return 0
+
+    # Use globbing to expand the list of documents - and flatten again
+    args.documents = [item for sublist in map(lambda fn: glob.glob(fn), args.documents) for item in sublist]
 
     # Optionally print the schema after ref resolution
     if not args.documents and args.print_pre:
