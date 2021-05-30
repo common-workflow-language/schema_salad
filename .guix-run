@@ -15,4 +15,6 @@ env GUIX_PACKAGE_PATH=~/guix-bioinformatics/ guix environment -C guix --ad-hoc g
 # --- install and run
 # python3 setup.py install --user
 # ~/.local/bin/schema-salad-tool --help
-#
+# --- Example
+# ~/.local/bin/schema-salad-tool --debug --print-rdf schema_salad/tests/data/pubseq/pubseq-schema.yml schema_salad/tests/data/pubseq/MW084447.1.json schema_salad/tests/data/pubseq/MW343767.1.json
+
