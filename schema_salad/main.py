@@ -189,7 +189,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
     )
 
     parser.add_argument("schema", type=str, nargs="?", default=None)
-    parser.add_argument("document", nargs="*", default=None)
+    parser.add_argument("documents", nargs="*", default=None)
     parser.add_argument(
         "--version", "-v", action="store_true", help="Print version", default=None
     )
@@ -253,11 +253,11 @@ def main(argsl: Optional[List[str]] = None) -> int:
         return 0
 
     # Optionally print the schema after ref resolution
-    if not args.document and args.print_pre:
+    if not args.documents and args.print_pre:
         print(json_dumps(schema_doc, indent=4))
         return 0
 
-    if not args.document and args.print_index:
+    if not args.documents and args.print_index:
         print(json_dumps(list(metaschema_loader.idx.keys()), indent=4))
         return 0
 
@@ -333,7 +333,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         print(rdfs.serialize(format=args.rdf_serializer).decode("utf-8"))
         return 0
 
-    if args.print_metadata and not args.document:
+    if args.print_metadata and not args.documents:
         print(json_dumps(schema_metadata, indent=4))
         return 0
 
@@ -346,7 +346,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         return 0
 
     # If no document specified, all done.
-    if not args.document:
+    if not args.documents:
         print(f"Schema `{args.schema}` is valid")
         return 0
 
@@ -354,7 +354,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
     # take multiple document files. doc_metadata only returns the
     # metadata for the last document as they should be the same
     document = []
-    for uri in args.document:
+    for uri in args.documents:
         try:
             document1, doc_metadata = document_loader.resolve_ref(
                 uri, strict_foreign_properties=args.strict_foreign_properties
@@ -390,13 +390,13 @@ def main(argsl: Optional[List[str]] = None) -> int:
         )
     except ValidationException as e:
         msg2 = to_one_line_messages(e) if args.print_oneline else str(e)
-        _logger.error(f"While validating document `{args.document}`:\n{msg2}")
+        _logger.error(f"While validating document `{args.documents}`:\n{msg2}")
         return 1
 
     # Optionally convert the document to RDF
     if args.print_rdf:
         if isinstance(document, (Mapping, MutableSequence)):
-            printrdf(args.document, document, schema_ctx, args.rdf_serializer)
+            printrdf(args.documents, document, schema_ctx, args.rdf_serializer)
             return 0
         else:
             print("Document must be a dictionary or list.")
@@ -406,7 +406,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         print(json_dumps(doc_metadata, indent=4))
         return 0
 
-    print(f"Document `{args.document}` is valid")
+    print(f"Document `{args.documents}` is valid")
 
     return 0
 
