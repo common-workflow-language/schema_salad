@@ -354,11 +354,18 @@ def main(argsl: Optional[List[str]] = None) -> int:
     # take multiple document files. doc_metadata only returns the
     # metadata for the last document as they should be the same
     document = []
+    ids = {} # check for duplicate use of document id as it creates
+             # unpredictable output
     for uri in args.documents:
         try:
             document1, doc_metadata = document_loader.resolve_ref(
                 uri, strict_foreign_properties=args.strict_foreign_properties
             )
+            if "id" in document1:
+                doc_id = document1["id"]
+                if doc_id in ids:
+                    raise Exception(f"Document id {doc_id} is duplicated in {uri}!")
+                ids[doc_id] = True
             document.append(document1)
         except ValidationException as e:
             msg = to_one_line_messages(e) if args.print_oneline else str(e)

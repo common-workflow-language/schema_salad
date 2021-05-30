@@ -1,0 +1,46 @@
+{
+  "id": "placeholder",
+  "update_date": "2020-11-12",
+  "host": {
+    "host_species": "http://purl.obolibrary.org/obo/NCBITaxon_9606"
+  },
+  "sample": {
+    "sample_id": "MW084447.1",
+    "database": "https://www.ncbi.nlm.nih.gov/genbank/",
+    "source_database_accession": [
+      "http://identifiers.org/insdc/MW084447.1#sequence"
+    ],
+    "collection_date": "2020-04-14",
+    "original_collection_location": "USA",
+    "collection_location": "http://www.wikidata.org/entity/Q23337",
+    "country": "USA",
+    "place": "Salt Lake City"
+  },
+  "virus": {
+    "virus_strain": "SARS-CoV-2/human/USA/UT-02140/2020",
+    "virus_species": "http://purl.obolibrary.org/obo/NCBITaxon_2697049"
+  },
+  "technology": {
+    "alignment_protocol": "bwa v. 0.7.17-r1188",
+    "sample_sequencing_technology": [
+      "http://purl.obolibrary.org/obo/OBI_0000759"
+    ],
+    "assembly_method": "http://purl.obolibrary.org/obo/GENEPIO_0002028"
+  },
+  "submitter": {
+    "authors": [
+      "Young,E.L.",
+      "Oakeson,K.",
+      "Sangster,A.",
+      "Hirschi,B.",
+      "Butz,H."
+    ],
+    "submitter_name": [
+      " Utah Public Health Laboratory"
+    ],
+    "submitter_address": "Utah Public Health Laboratory Infectious Disease submission group, 4431 S 2700 W, Salt Lake City, UT 84129, USA"
+  },
+  "warnings": [
+    "Missing specimen_source"
+  ]
+}

@@ -437,3 +437,13 @@ def test_nullable_links() -> None:
 
     ra, _ = ldr.resolve_all(cmap({"link": None}), "http://example.com", checklinks=True)
     assert {"link": None} == ra
+
+def test_pubseq_multidoc_example() -> None:
+    schema = get_data("tests/data/pubseq/pubseq-schema.yml")
+    doc1   = get_data("tests/data/pubseq/MW084447.1.json")
+    doc2   = get_data("tests/data/pubseq/MW343767.1.json")
+    assert schema
+    assert doc1
+    assert doc2
+    assert 0 == schema_salad.main.main(argsl=[schema,doc1])
+    assert 0 == schema_salad.main.main(argsl=[schema,doc1,doc2])
