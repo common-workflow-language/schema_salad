@@ -20,8 +20,8 @@ from typing import (
 from urllib.parse import urldefrag, urlparse
 
 from pkg_resources import resource_stream
-from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
+from ruamel.yaml.main import YAML
 
 from schema_salad.utils import (
     CacheType,
@@ -183,7 +183,8 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
     with resource_stream("schema_salad", "metaschema/metaschema.yml") as stream:
         loader.cache["https://w3id.org/cwl/salad"] = stream.read().decode("UTF-8")
 
-    j = yaml.main.round_trip_load(loader.cache["https://w3id.org/cwl/salad"])
+    yaml = YAML()
+    j = yaml.load(loader.cache["https://w3id.org/cwl/salad"])
     add_lc_filename(j, "metaschema.yml")
     j2 = loader.resolve_all(j, saladp)[0]
 
