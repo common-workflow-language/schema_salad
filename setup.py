@@ -87,7 +87,7 @@ install_requires = [
     "rdflib >= 4.2.2, <= 5.0.0",
     "rdflib-jsonld >= 0.3.0, < 0.6.0",
     "mistune >= 0.8.1, < 0.9",
-    "CacheControl >= 0.11.7, < 0.12",
+    "CacheControl >= 0.11.7, < 0.13",
     "lockfile >= 0.9",
     "typing-extensions",
 ]
