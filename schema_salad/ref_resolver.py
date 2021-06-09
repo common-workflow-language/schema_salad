@@ -4,6 +4,7 @@ import os
 import pathlib
 import re
 import tempfile
+import urllib
 import xml.sax  # nosec
 from io import StringIO
 from typing import (
@@ -28,7 +29,6 @@ from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.plugins.parsers.notation3 import BadSyntax
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
-from six.moves import urllib
 
 from .exceptions import SchemaSaladException, ValidationException
 from .fetcher import DefaultFetcher
