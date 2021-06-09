@@ -3,7 +3,7 @@ import os
 from typing import Any
 
 import pytest
-import ruamel.yaml
+from ruamel.yaml.main import YAML
 
 import schema_salad.metaschema as cg_metaschema
 from schema_salad.exceptions import ValidationException
@@ -203,7 +203,9 @@ def test_load_by_yaml_metaschema(metaschema_pre: Any) -> None:
     path = get_data("metaschema/metaschema.yml")
     assert path
     with open(path) as path_handle:
-        yaml_doc = ruamel.yaml.main.round_trip_load(path_handle, preserve_quotes=True)
+        yaml = YAML()
+        yaml.preserve_quotes = True  # type: ignore
+        yaml_doc = yaml.load(path_handle)
     doc = cg_metaschema.load_document_by_yaml(
         yaml_doc,
         file_uri(path),
