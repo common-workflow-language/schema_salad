@@ -315,7 +315,7 @@ class RenderType:
                 "https://w3id.org/cwl/salad#record",
                 "https://w3id.org/cwl/salad#enum",
             ):
-                frg = schema.avro_name(tp["name"])
+                frg = schema.avro_type_name(tp["name"])
                 if tp["name"] in redirects:
                     return """<a href="{}">{}</a>""".format(redirects[tp["name"]], frg)
                 if tp["name"] in self.typemap:
@@ -325,7 +325,7 @@ class RenderType:
                     and len(tp["symbols"]) == 1
                 ):
                     return "constant value <code>{}</code>".format(
-                        schema.avro_name(tp["symbols"][0])
+                        schema.avro_field_name(tp["symbols"][0])
                     )
                 return frg
             if isinstance(tp["type"], MutableMapping):
@@ -335,7 +335,7 @@ class RenderType:
                 return """<a href="{}">{}</a>""".format(redirects[tp], redirects[tp])
             if str(tp) in basicTypes:
                 return """<a href="{}">{}</a>""".format(
-                    self.primitiveType, schema.avro_name(str(tp))
+                    self.primitiveType, schema.avro_type_name(str(tp))
                 )
             frg2 = urldefrag(tp)[1]
             if frg2 != "":
@@ -443,7 +443,7 @@ class RenderType:
 
                 desc = i["doc"]
 
-                rfrg = schema.avro_name(i["name"])
+                rfrg = schema.avro_field_name(i["name"])
                 tr = """
 <div class="row responsive-table-row">
 <div class="col-xs-3 col-lg-2"><code>{}</code></div>
@@ -472,7 +472,7 @@ class RenderType:
             for e in ex:
                 for i in e.get("symbols", []):
                     doc += "<tr>"
-                    efrg = schema.avro_name(i)
+                    efrg = schema.avro_field_name(i)
                     doc += "<td><code>{}</code></td><td>{}</td>".format(
                         efrg, enumDesc.get(efrg, "")
                     )

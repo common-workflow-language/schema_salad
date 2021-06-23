@@ -151,7 +151,7 @@ class JavaCodeGen(CodeGenBase):
 
     @staticmethod
     def property_name(name: str) -> str:
-        avn = schema.avro_name(name)
+        avn = schema.avro_field_name(name)
         return avn
 
     @staticmethod

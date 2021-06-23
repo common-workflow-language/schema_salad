@@ -376,13 +376,13 @@ def validate_doc(
                 except ClassValidationException as exc1:
                     errors = [
                         ClassValidationException(
-                            f"tried `{name}` but", sourceline, [exc1]
+                            f"tried `{validate.friendly(name)}` but", sourceline, [exc1]
                         )
                     ]
                     break
                 except ValidationException as exc2:
                     errors.append(
-                        ValidationException(f"tried `{name}` but", sourceline, [exc2])
+                        ValidationException(f"tried `{validate.friendly(name)}` but", sourceline, [exc2])
                     )
 
             objerr = "Invalid"

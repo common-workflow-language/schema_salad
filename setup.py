@@ -98,7 +98,7 @@ extras_require = {
 
 setup(
     name="schema-salad",
-    version="7.1",  # update the VERSION prefix in the Makefile as well 🙂
+    version="8.0",  # update the VERSION prefix in the Makefile as well 🙂
     description="Schema Annotations for Linked Avro Data (SALAD)",
     long_description=open(README).read(),
     long_description_content_type="text/x-rst",
