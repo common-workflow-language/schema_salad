@@ -1,4 +1,4 @@
-mypy==0.902
+mypy==0.910
 types-pkg_resources
 types-requests
 pytest
