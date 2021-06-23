@@ -14,7 +14,7 @@ from typing import (
 
 from pkg_resources import resource_stream
 
-from . import schema
+from . import schema, validate
 from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
@@ -56,7 +56,9 @@ class PythonCodeGen(CodeGenBase):
 
     @staticmethod
     def safe_name(name):  # type: (str) -> str
-        avn = schema.avro_name(name)
+        avn = schema.avro_field_name(name)
+        if avn.startswith("anon."):
+            avn = avn[5:]
         if avn in ("class", "in"):
             # reserved words
             avn = avn + "_"
@@ -498,8 +500,8 @@ class PythonCodeGen(CodeGenBase):
         # type: (TypeDef, Union[int, None]) -> TypeDef
         return self.declare_type(
             TypeDef(
-                f"typedsl_{inner.name}_{ref_scope}",
-                f"_TypeDSLLoader({inner.name}, {ref_scope})",
+                f"typedsl_{self.safe_name(inner.name)}_{ref_scope}",
+                f"_TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope})",
             )
         )
 
