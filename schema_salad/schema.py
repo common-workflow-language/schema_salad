@@ -382,7 +382,9 @@ def validate_doc(
                     break
                 except ValidationException as exc2:
                     errors.append(
-                        ValidationException(f"tried `{validate.friendly(name)}` but", sourceline, [exc2])
+                        ValidationException(
+                            f"tried `{validate.friendly(name)}` but", sourceline, [exc2]
+                        )
                     )
 
             objerr = "Invalid"
@@ -410,7 +412,9 @@ def get_anon_name(
     if rec["type"] in ("enum", saladp + "enum"):
         for sym in rec["symbols"]:
             anon_name += sym
-        return "anon.enum_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()  # nosec
+        return (
+            "anon.enum_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
+        )  # nosec
     if rec["type"] in ("record", saladp + "record"):
         for field in rec["fields"]:
             if isinstance(field, Mapping):
@@ -488,6 +492,7 @@ def replace_type(
         found.add(items)
     return items
 
+
 primitives = {
     "http://www.w3.org/2001/XMLSchema#string": "string",
     "http://www.w3.org/2001/XMLSchema#boolean": "boolean",
@@ -498,8 +503,9 @@ primitives = {
     saladp + "null": "null",
     saladp + "enum": "enum",
     saladp + "array": "array",
-    saladp + "record": "record"
+    saladp + "record": "record",
 }
+
 
 def avro_type_name(url: str) -> str:
     """
@@ -546,7 +552,7 @@ def make_valid_avro(
     alltypes: Dict[str, Dict[str, Any]],
     found: Set[str],
     union: bool = False,
-    field: bool = False
+    fielddef: bool = False,
 ) -> Union[
     Avro, MutableMapping[str, str], str, List[Union[Any, MutableMapping[str, str], str]]
 ]:
@@ -555,7 +561,7 @@ def make_valid_avro(
     if isinstance(items, MutableMapping):
         avro = copy.copy(items)
         if avro.get("name") and avro.get("inVocab", True):
-            if field:
+            if fielddef:
                 avro["name"] = avro_field_name(avro["name"])
             else:
                 avro["name"] = avro_type_name(avro["name"])
@@ -573,14 +579,22 @@ def make_valid_avro(
             found.add(avro["name"])
         for field in ("type", "items", "values", "fields"):
             if field in avro:
-                avro[field] = make_valid_avro(avro[field], alltypes, found, union=True, field=(field=="fields"))
+                avro[field] = make_valid_avro(
+                    avro[field],
+                    alltypes,
+                    found,
+                    union=True,
+                    fielddef=(field == "fields"),
+                )
         if "symbols" in avro:
             avro["symbols"] = [avro_field_name(sym) for sym in avro["symbols"]]
         return avro
     if isinstance(items, MutableSequence):
         ret = []
         for i in items:
-            ret.append(make_valid_avro(i, alltypes, found, union=union, field=field))
+            ret.append(
+                make_valid_avro(i, alltypes, found, union=union, fielddef=fielddef)
+            )
         return ret
     if union and isinstance(items, str):
         if items in alltypes and avro_type_name(items) not in found:
