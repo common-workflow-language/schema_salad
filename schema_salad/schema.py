@@ -350,6 +350,7 @@ def validate_doc(
                 raise_ex=False,
                 skip_foreign_properties=loader.skip_schemas,
                 strict_foreign_properties=strict_foreign_properties,
+                vocab=loader.vocab
             )
             if success:
                 break
@@ -493,42 +494,6 @@ def replace_type(
     return items
 
 
-primitives = {
-    "http://www.w3.org/2001/XMLSchema#string": "string",
-    "http://www.w3.org/2001/XMLSchema#boolean": "boolean",
-    "http://www.w3.org/2001/XMLSchema#int": "int",
-    "http://www.w3.org/2001/XMLSchema#long": "long",
-    "http://www.w3.org/2001/XMLSchema#float": "float",
-    "http://www.w3.org/2001/XMLSchema#double": "double",
-    saladp + "null": "null",
-    saladp + "enum": "enum",
-    saladp + "array": "array",
-    saladp + "record": "record",
-}
-
-
-def avro_type_name(url: str) -> str:
-    """
-    Turn a URL into an Avro-safe name.
-
-    If the URL has no fragment, return this plain URL.
-
-    Extract either the last part of the URL fragment past the slash, otherwise
-    the whole fragment.
-    """
-    global primitives
-
-    if url in primitives:
-        return primitives[url]
-
-    if url.startswith("http://"):
-        url = url[7:]
-    elif url.startswith("https://"):
-        url = url[8:]
-    url = url.replace("/", ".").replace("#", ".")
-    return url
-
-
 def avro_field_name(url: str) -> str:
     """
     Turn a URL into an Avro-safe name.
@@ -564,7 +529,7 @@ def make_valid_avro(
             if fielddef:
                 avro["name"] = avro_field_name(avro["name"])
             else:
-                avro["name"] = avro_type_name(avro["name"])
+                avro["name"] = validate.avro_type_name(avro["name"])
 
         if "type" in avro and avro["type"] in (
             saladp + "record",
@@ -597,9 +562,9 @@ def make_valid_avro(
             )
         return ret
     if union and isinstance(items, str):
-        if items in alltypes and avro_type_name(items) not in found:
+        if items in alltypes and validate.avro_type_name(items) not in found:
             return make_valid_avro(alltypes[items], alltypes, found, union=union)
-        return avro_type_name(items)
+        return validate.avro_type_name(items)
     else:
         return items
 
@@ -697,7 +662,7 @@ def extend_and_specialize(
             for ex in aslist(result["extends"]):
                 if ex_types[ex].get("abstract"):
                     add_dictlist(extended_by, ex, ex_types[result["name"]])
-                    add_dictlist(extended_by, avro_type_name(ex), ex_types[ex])
+                    add_dictlist(extended_by, validate.avro_type_name(ex), ex_types[ex])
 
     for result in results:
         if result.get("abstract") and result["name"] not in extended_by:
