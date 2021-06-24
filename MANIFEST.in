@@ -1,4 +1,4 @@
-include gittaggers.py Makefile LICENSE.txt requirements.txt mypy_requirements.txt test-requirements.txt
+include gittaggers.py Makefile LICENSE.txt requirements.txt mypy_requirements.txt test-requirements.txt mypy.ini
 include schema_salad/py.typed
 include schema_salad/avro/*
 recursive-include schema_salad/java *
@@ -10,5 +10,6 @@ include schema_salad/tests/foreign/*.cwl
 recursive-include schema_salad/tests/test_real_cwl *
 include schema_salad/metaschema/*
 include schema_salad/tests/docimp/*
+recursive-include typeshed *.py?
 global-exclude *~
 global-exclude *.pyc
