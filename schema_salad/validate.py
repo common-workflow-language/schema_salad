@@ -170,7 +170,7 @@ def validate_ex(
             )
         return False
     elif isinstance(expected_schema, avro.schema.EnumSchema):
-        if expected_schema.name == "w3id.org.cwl.salad.Any":
+        if expected_schema.name in ("w3id.org.cwl.salad.Any", "Any"):
             if datum is not None:
                 return True
             if raise_ex:
