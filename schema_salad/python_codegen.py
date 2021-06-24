@@ -14,7 +14,7 @@ from typing import (
 
 from pkg_resources import resource_stream
 
-from . import schema, validate
+from . import schema
 from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
