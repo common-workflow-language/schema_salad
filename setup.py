@@ -131,7 +131,6 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: POSIX",
         "Operating System :: MacOS :: MacOS X",
-        "Operating System :: Microsoft :: Windows",
         "Development Status :: 5 - Production/Stable",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
