@@ -43,6 +43,7 @@ LONG_MAX_VALUE = (1 << 63) - 1
 
 
 def avro_shortname(name: str) -> str:
+    """Produce an avro friendly short name."""
     return name.split(".")[-1]
 
 

@@ -17,7 +17,7 @@ from typing import (
     Union,
     cast,
 )
-from urllib.parse import urldefrag, urlparse
+from urllib.parse import urlparse
 
 from pkg_resources import resource_stream
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
@@ -413,8 +413,8 @@ def get_anon_name(
         for sym in rec["symbols"]:
             anon_name += sym
         return (
-            "anon.enum_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()
-        )  # nosec
+            "anon.enum_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()  # nosec
+        )
     if rec["type"] in ("record", saladp + "record"):
         for field in rec["fields"]:
             if isinstance(field, Mapping):
