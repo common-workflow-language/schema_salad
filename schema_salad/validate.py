@@ -42,9 +42,14 @@ LONG_MIN_VALUE = -(1 << 63)
 LONG_MAX_VALUE = (1 << 63) - 1
 
 
+def avro_shortname(name: str) -> str:
+    """Produce an avro friendly short name."""
+    return name.split(".")[-1]
+
+
 def friendly(v):  # type: (Any) -> Any
     if isinstance(v, avro.schema.NamedSchema):
-        return v.name
+        return avro_shortname(v.name)
     if isinstance(v, avro.schema.ArraySchema):
         return "array of <{}>".format(friendly(v.items))
     elif isinstance(v, avro.schema.PrimitiveSchema):
@@ -52,7 +57,7 @@ def friendly(v):  # type: (Any) -> Any
     elif isinstance(v, avro.schema.UnionSchema):
         return " or ".join([friendly(s) for s in v.schemas])
     else:
-        return v
+        return avro_shortname(v)
 
 
 def vpformat(datum):  # type: (Any) -> str
@@ -127,7 +132,7 @@ def validate_ex(
             )
         return False
     elif isinstance(expected_schema, avro.schema.EnumSchema):
-        if expected_schema.name == "Any":
+        if expected_schema.name == "w3id.org.cwl.salad.Any":
             if datum is not None:
                 return True
             if raise_ex:
@@ -139,7 +144,7 @@ def validate_ex(
                     "value is a {} but expected a string".format(type(datum).__name__)
                 )
             return False
-        if expected_schema.name == "Expression":
+        if expected_schema.name == "w3id.org.cwl.cwl.Expression":
             if "$(" in datum or "${" in datum:
                 return True
             if raise_ex:
@@ -279,7 +284,7 @@ def validate_ex(
                         raise ValidationException(f"Missing '{f.name}' field")
                     else:
                         return False
-                if expected_schema.name != d:
+                if avro_shortname(expected_schema.name) != d:
                     if raise_ex:
                         raise ValidationException(
                             "Expected class '{}' but this is '{}'".format(

@@ -24,8 +24,8 @@ from typing import (
 from urllib.parse import quote, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
-from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
+from ruamel.yaml.main import YAML
 
 from schema_salad.exceptions import SchemaSaladException, ValidationException
 from schema_salad.fetcher import DefaultFetcher, Fetcher
@@ -561,7 +561,9 @@ def _document_load_by_url(loader, url, loadingOptions):
     else:
         textIO = StringIO(text)
     textIO.name = str(url)
-    result = yaml.main.round_trip_load(textIO, preserve_quotes=True)
+    yaml = YAML()
+    yaml.preserve_quotes = True  # type: ignore
+    result = yaml.load(textIO)
     add_lc_filename(result, url)
 
     loadingOptions.idx[url] = result
@@ -651,7 +653,7 @@ A field of a record.
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = yaml.comments.CommentedMap()
+            self.extension_fields = CommentedMap()
         if loadingOptions:
             self.loadingOptions = loadingOptions
         else:
@@ -716,7 +718,7 @@ A field of a record.
                 )
             )
 
-        extension_fields = yaml.comments.CommentedMap()
+        extension_fields = CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -741,7 +743,7 @@ A field of a record.
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
+        r = CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -792,7 +794,7 @@ class RecordSchema(Savable):
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = yaml.comments.CommentedMap()
+            self.extension_fields = CommentedMap()
         if loadingOptions:
             self.loadingOptions = loadingOptions
         else:
@@ -835,7 +837,7 @@ class RecordSchema(Savable):
                 )
             )
 
-        extension_fields = yaml.comments.CommentedMap()
+        extension_fields = CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -860,7 +862,7 @@ class RecordSchema(Savable):
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
+        r = CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -905,7 +907,7 @@ Define an enumerated type.
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = yaml.comments.CommentedMap()
+            self.extension_fields = CommentedMap()
         if loadingOptions:
             self.loadingOptions = loadingOptions
         else:
@@ -945,7 +947,7 @@ Define an enumerated type.
                 )
             )
 
-        extension_fields = yaml.comments.CommentedMap()
+        extension_fields = CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -970,7 +972,7 @@ Define an enumerated type.
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
+        r = CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -1014,7 +1016,7 @@ class ArraySchema(Savable):
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = yaml.comments.CommentedMap()
+            self.extension_fields = CommentedMap()
         if loadingOptions:
             self.loadingOptions = loadingOptions
         else:
@@ -1054,7 +1056,7 @@ class ArraySchema(Savable):
                 )
             )
 
-        extension_fields = yaml.comments.CommentedMap()
+        extension_fields = CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -1079,7 +1081,7 @@ class ArraySchema(Savable):
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
+        r = CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -1137,7 +1139,7 @@ URI resolution and JSON-LD context generation.
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = yaml.comments.CommentedMap()
+            self.extension_fields = CommentedMap()
         if loadingOptions:
             self.loadingOptions = loadingOptions
         else:
@@ -1318,7 +1320,7 @@ URI resolution and JSON-LD context generation.
         else:
             subscope = None
 
-        extension_fields = yaml.comments.CommentedMap()
+        extension_fields = CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -1343,7 +1345,7 @@ URI resolution and JSON-LD context generation.
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
+        r = CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -1450,7 +1452,7 @@ class SpecializeDef(Savable):
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = yaml.comments.CommentedMap()
+            self.extension_fields = CommentedMap()
         if loadingOptions:
             self.loadingOptions = loadingOptions
         else:
@@ -1490,7 +1492,7 @@ class SpecializeDef(Savable):
                 )
             )
 
-        extension_fields = yaml.comments.CommentedMap()
+        extension_fields = CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -1515,7 +1517,7 @@ class SpecializeDef(Savable):
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
+        r = CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -1584,7 +1586,7 @@ A field of a record.
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = yaml.comments.CommentedMap()
+            self.extension_fields = CommentedMap()
         if loadingOptions:
             self.loadingOptions = loadingOptions
         else:
@@ -1679,7 +1681,7 @@ A field of a record.
         else:
             default = None
 
-        extension_fields = yaml.comments.CommentedMap()
+        extension_fields = CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -1704,7 +1706,7 @@ A field of a record.
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
+        r = CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -1780,7 +1782,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = yaml.comments.CommentedMap()
+            self.extension_fields = CommentedMap()
         if loadingOptions:
             self.loadingOptions = loadingOptions
         else:
@@ -1995,7 +1997,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         else:
             specialize = None
 
-        extension_fields = yaml.comments.CommentedMap()
+        extension_fields = CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -2020,7 +2022,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
+        r = CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -2166,7 +2168,7 @@ Define an enumerated type.
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = yaml.comments.CommentedMap()
+            self.extension_fields = CommentedMap()
         if loadingOptions:
             self.loadingOptions = loadingOptions
         else:
@@ -2348,7 +2350,7 @@ Define an enumerated type.
         else:
             extends = None
 
-        extension_fields = yaml.comments.CommentedMap()
+        extension_fields = CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -2373,7 +2375,7 @@ Define an enumerated type.
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
+        r = CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -2505,7 +2507,7 @@ schemas but has no role in formal validation.
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = yaml.comments.CommentedMap()
+            self.extension_fields = CommentedMap()
         if loadingOptions:
             self.loadingOptions = loadingOptions
         else:
@@ -2630,7 +2632,7 @@ schemas but has no role in formal validation.
                 )
             )
 
-        extension_fields = yaml.comments.CommentedMap()
+        extension_fields = CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -2655,7 +2657,7 @@ schemas but has no role in formal validation.
 
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
+        r = CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
@@ -2864,7 +2866,9 @@ def load_document(doc, baseuri=None, loadingOptions=None):
 
 def load_document_by_string(string, uri, loadingOptions=None):
     # type: (Any, str, Optional[LoadingOptions]) -> Any
-    result = yaml.main.round_trip_load(string, preserve_quotes=True)
+    yaml = YAML()
+    yaml.preserve_quotes = True  # type: ignore
+    result = yaml.load(string)
     add_lc_filename(result, uri)
 
     if loadingOptions is None:
@@ -2877,7 +2881,7 @@ def load_document_by_string(string, uri, loadingOptions=None):
 def load_document_by_yaml(yaml, uri, loadingOptions=None):
     # type: (Any, str, Optional[LoadingOptions]) -> Any
     '''Shortcut to load via a YAML object.
-    yaml: must be from ruamel.yaml.main.round_trip_load with preserve_quotes=True
+    yaml: must be from ruamel.yaml.main.YAML.load with preserve_quotes=True
     '''
     add_lc_filename(yaml, uri)
 

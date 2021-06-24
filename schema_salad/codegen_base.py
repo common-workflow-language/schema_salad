@@ -66,7 +66,7 @@ class CodeGenBase:
     @staticmethod
     def safe_name(name: str) -> str:
         """Generate a safe version of the given name."""
-        return schema.avro_name(name)
+        return schema.avro_field_name(name)
 
     def begin_class(
         self,  # pylint: disable=too-many-arguments

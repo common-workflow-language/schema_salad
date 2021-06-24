@@ -20,8 +20,8 @@ from typing import (
 from urllib.parse import quote, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
-from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
+from ruamel.yaml.main import YAML
 
 from schema_salad.exceptions import SchemaSaladException, ValidationException
 from schema_salad.fetcher import DefaultFetcher, Fetcher
@@ -557,7 +557,9 @@ def _document_load_by_url(loader, url, loadingOptions):
     else:
         textIO = StringIO(text)
     textIO.name = str(url)
-    result = yaml.main.round_trip_load(textIO, preserve_quotes=True)
+    yaml = YAML()
+    yaml.preserve_quotes = True  # type: ignore
+    result = yaml.load(textIO)
     add_lc_filename(result, url)
 
     loadingOptions.idx[url] = result

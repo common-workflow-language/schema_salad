@@ -17,11 +17,11 @@ from typing import (
     Union,
     cast,
 )
-from urllib.parse import urldefrag, urlparse
+from urllib.parse import urlparse
 
 from pkg_resources import resource_stream
-from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
+from ruamel.yaml.main import YAML
 
 from schema_salad.utils import (
     CacheType,
@@ -183,7 +183,8 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
     with resource_stream("schema_salad", "metaschema/metaschema.yml") as stream:
         loader.cache["https://w3id.org/cwl/salad"] = stream.read().decode("UTF-8")
 
-    j = yaml.main.round_trip_load(loader.cache["https://w3id.org/cwl/salad"])
+    yaml = YAML()
+    j = yaml.load(loader.cache["https://w3id.org/cwl/salad"])
     add_lc_filename(j, "metaschema.yml")
     j2 = loader.resolve_all(j, saladp)[0]
 
@@ -375,13 +376,15 @@ def validate_doc(
                 except ClassValidationException as exc1:
                     errors = [
                         ClassValidationException(
-                            f"tried `{name}` but", sourceline, [exc1]
+                            f"tried `{validate.friendly(name)}` but", sourceline, [exc1]
                         )
                     ]
                     break
                 except ValidationException as exc2:
                     errors.append(
-                        ValidationException(f"tried `{name}` but", sourceline, [exc2])
+                        ValidationException(
+                            f"tried `{validate.friendly(name)}` but", sourceline, [exc2]
+                        )
                     )
 
             objerr = "Invalid"
@@ -409,7 +412,9 @@ def get_anon_name(
     if rec["type"] in ("enum", saladp + "enum"):
         for sym in rec["symbols"]:
             anon_name += sym
-        return "enum_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()  # nosec
+        return (
+            "anon.enum_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()  # nosec
+        )
     if rec["type"] in ("record", saladp + "record"):
         for field in rec["fields"]:
             if isinstance(field, Mapping):
@@ -488,7 +493,21 @@ def replace_type(
     return items
 
 
-def avro_name(url: str) -> str:
+primitives = {
+    "http://www.w3.org/2001/XMLSchema#string": "string",
+    "http://www.w3.org/2001/XMLSchema#boolean": "boolean",
+    "http://www.w3.org/2001/XMLSchema#int": "int",
+    "http://www.w3.org/2001/XMLSchema#long": "long",
+    "http://www.w3.org/2001/XMLSchema#float": "float",
+    "http://www.w3.org/2001/XMLSchema#double": "double",
+    saladp + "null": "null",
+    saladp + "enum": "enum",
+    saladp + "array": "array",
+    saladp + "record": "record",
+}
+
+
+def avro_type_name(url: str) -> str:
     """
     Turn a URL into an Avro-safe name.
 
@@ -497,12 +516,32 @@ def avro_name(url: str) -> str:
     Extract either the last part of the URL fragment past the slash, otherwise
     the whole fragment.
     """
-    frg = urldefrag(url)[1]
-    if frg != "":
-        if "/" in frg:
-            return frg[frg.rindex("/") + 1 :]
-        return frg
+    global primitives
+
+    if url in primitives:
+        return primitives[url]
+
+    if url.startswith("http://"):
+        url = url[7:]
+    elif url.startswith("https://"):
+        url = url[8:]
+    url = url.replace("/", ".").replace("#", ".")
     return url
+
+
+def avro_field_name(url: str) -> str:
+    """
+    Turn a URL into an Avro-safe name.
+
+    If the URL has no fragment, return this plain URL.
+
+    Extract either the last part of the URL fragment past the slash, otherwise
+    the whole fragment.
+    """
+    d = urlparse(url)
+    if d.fragment:
+        return d.fragment.split("/")[-1]
+    return d.path.split("/")[-1]
 
 
 Avro = TypeVar("Avro", MutableMapping[str, Any], MutableSequence[Any], str)
@@ -513,6 +552,7 @@ def make_valid_avro(
     alltypes: Dict[str, Dict[str, Any]],
     found: Set[str],
     union: bool = False,
+    fielddef: bool = False,
 ) -> Union[
     Avro, MutableMapping[str, str], str, List[Union[Any, MutableMapping[str, str], str]]
 ]:
@@ -521,7 +561,10 @@ def make_valid_avro(
     if isinstance(items, MutableMapping):
         avro = copy.copy(items)
         if avro.get("name") and avro.get("inVocab", True):
-            avro["name"] = avro_name(avro["name"])
+            if fielddef:
+                avro["name"] = avro_field_name(avro["name"])
+            else:
+                avro["name"] = avro_type_name(avro["name"])
 
         if "type" in avro and avro["type"] in (
             saladp + "record",
@@ -536,19 +579,27 @@ def make_valid_avro(
             found.add(avro["name"])
         for field in ("type", "items", "values", "fields"):
             if field in avro:
-                avro[field] = make_valid_avro(avro[field], alltypes, found, union=True)
+                avro[field] = make_valid_avro(
+                    avro[field],
+                    alltypes,
+                    found,
+                    union=True,
+                    fielddef=(field == "fields"),
+                )
         if "symbols" in avro:
-            avro["symbols"] = [avro_name(sym) for sym in avro["symbols"]]
+            avro["symbols"] = [avro_field_name(sym) for sym in avro["symbols"]]
         return avro
     if isinstance(items, MutableSequence):
         ret = []
         for i in items:
-            ret.append(make_valid_avro(i, alltypes, found, union=union))
+            ret.append(
+                make_valid_avro(i, alltypes, found, union=union, fielddef=fielddef)
+            )
         return ret
     if union and isinstance(items, str):
-        if items in alltypes and avro_name(items) not in found:
+        if items in alltypes and avro_type_name(items) not in found:
             return make_valid_avro(alltypes[items], alltypes, found, union=union)
-        return avro_name(items)
+        return avro_type_name(items)
     else:
         return items
 
@@ -646,7 +697,7 @@ def extend_and_specialize(
             for ex in aslist(result["extends"]):
                 if ex_types[ex].get("abstract"):
                     add_dictlist(extended_by, ex, ex_types[result["name"]])
-                    add_dictlist(extended_by, avro_name(ex), ex_types[ex])
+                    add_dictlist(extended_by, avro_type_name(ex), ex_types[ex])
 
     for result in results:
         if result.get("abstract") and result["name"] not in extended_by:

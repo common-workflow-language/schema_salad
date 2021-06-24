@@ -4,6 +4,7 @@ import os
 import pathlib
 import re
 import tempfile
+import urllib
 import xml.sax  # nosec
 from io import StringIO
 from typing import (
@@ -15,7 +16,6 @@ from typing import (
     MutableSequence,
     Optional,
     Set,
-    TypeVar,
     Union,
     cast,
 )
@@ -26,9 +26,9 @@ from cachecontrol.wrapper import CacheControl
 from rdflib.graph import Graph
 from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.plugins.parsers.notation3 import BadSyntax
-from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
-from six.moves import urllib
+from ruamel.yaml.error import MarkedYAMLError
+from ruamel.yaml.main import YAML
 
 from .exceptions import SchemaSaladException, ValidationException
 from .fetcher import DefaultFetcher
@@ -79,7 +79,8 @@ def uri_file_path(url: str) -> str:
     raise ValidationException(f"Not a file URI: {url}")
 
 
-def to_validation_exception(e: yaml.error.MarkedYAMLError) -> ValidationException:
+def to_validation_exception(e: MarkedYAMLError) -> ValidationException:
+    """Convert ruamel.yaml exception to our type."""
     fname_regex = re.compile(r"^file://" + re.escape(os.getcwd()) + "/")
 
     exc = ValidationException(e.problem)
@@ -767,7 +768,7 @@ class Loader:
                             v, base_url, scoped_id=True
                         )
                         if document[identifer][n] not in loader.idx:
-                            loader.idx[document[identifer][n]] = v
+                            loader.idx[cast(str, document[identifer][n])] = v
 
     def _normalize_fields(self, document: CommentedMap, loader: "Loader") -> None:
         # Normalize fields which are prefixed or full URIn to vocabulary terms
@@ -935,7 +936,7 @@ class Loader:
                             for j in range(len(document) + llen, i + llen, -1):
                                 document.lc.data[j - 1] = document.lc.data[j - llen]
                             for item in l:
-                                cast(CommentedSeq, document).insert(i, item)
+                                document.insert(i, item)
                                 document.lc.data[i] = lc
                                 i += 1
                         else:
@@ -983,8 +984,10 @@ class Loader:
             else:
                 textIO = StringIO(text)
             textIO.name = str(url)
-            attachments = yaml.main.round_trip_load_all(textIO, preserve_quotes=True)
-            result = cast(CommentedMap, next(attachments))
+            yaml = YAML()
+            yaml.preserve_quotes = True  # type: ignore
+            attachments = yaml.load_all(textIO)
+            result = cast(Union[CommentedSeq, CommentedMap], next(attachments))
 
             if self.allow_attachments is not None and self.allow_attachments(result):
                 i = 1
@@ -992,7 +995,7 @@ class Loader:
                     self.idx[f"{url}#attachment-{i}"] = a
                     i += 1
             add_lc_filename(result, url)
-        except yaml.error.MarkedYAMLError as e:
+        except MarkedYAMLError as e:
             raise to_validation_exception(e) from e
         if isinstance(result, CommentedMap) and inject_ids and bool(self.identifiers):
             for identifier in self.identifiers:
@@ -1190,10 +1193,9 @@ class Loader:
         return
 
 
-D = TypeVar("D", CommentedMap, ContextType)
-
-
-def _copy_dict_without_key(from_dict: D, filtered_key: str) -> D:
+def _copy_dict_without_key(
+    from_dict: Union[CommentedMap, ContextType], filtered_key: str
+) -> CommentedMap:
     new_dict = CommentedMap(from_dict.items())
     if filtered_key in new_dict:
         del new_dict[filtered_key]

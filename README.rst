@@ -1,9 +1,7 @@
-|Linux Build Status| |Windows Build status| |Code coverage| |CII Best Practices|
+|Linux Build Status| |Code coverage| |CII Best Practices|
 
 .. |Linux Build Status| image:: https://github.com/common-workflow-language/schema-salad/actions/workflows/ci-tests.yml/badge.svg?branch=main
    :target: https://github.com/common-workflow-language/schema-salad/actions/workflows/ci-tests.yml
-.. |Windows Build status| image:: https://img.shields.io/appveyor/ci/mr-c/schema-salad/main.svg?label=windows%20build
-   :target: https://ci.appveyor.com/project/mr-c/schema-salad/branch/main
 .. |Code coverage| image:: https://codecov.io/gh/common-workflow-language/schema_salad/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/common-workflow-language/schema_salad
 .. |CII Best Practices| image:: https://bestpractices.coreinfrastructure.org/projects/1867/badge

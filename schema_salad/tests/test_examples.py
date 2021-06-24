@@ -1,7 +1,7 @@
 import os
 
-import ruamel.yaml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
+from ruamel.yaml.main import YAML
 
 import schema_salad.main
 import schema_salad.schema
@@ -199,19 +199,18 @@ def test_examples() -> None:
         ldr, _, _, _ = schema_salad.schema.load_schema(path)
         path2 = get_data(f"metaschema/{a}_src.yml")
         assert path2
+        yaml = YAML()
         with open(path2) as src_fp:
-            src = ldr.resolve_all(
-                ruamel.yaml.main.round_trip_load(src_fp), "", checklinks=False
-            )[0]
+            src = ldr.resolve_all(yaml.load(src_fp), "", checklinks=False)[0]
         path3 = get_data(f"metaschema/{a}_proc.yml")
         assert path3
         with open(path3) as src_proc:
-            proc = ruamel.yaml.main.safe_load(src_proc)
+            proc = yaml.load(src_proc)
         assert proc == src
 
 
 def test_yaml_float_test() -> None:
-    assert ruamel.yaml.main.safe_load("float-test: 2e-10")["float-test"] == 2e-10
+    assert YAML().load("float-test: 2e-10")["float-test"] == 2e-10
 
 
 def test_typedsl_ref() -> None:

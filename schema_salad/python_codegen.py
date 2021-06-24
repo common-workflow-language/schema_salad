@@ -56,7 +56,9 @@ class PythonCodeGen(CodeGenBase):
 
     @staticmethod
     def safe_name(name):  # type: (str) -> str
-        avn = schema.avro_name(name)
+        avn = schema.avro_field_name(name)
+        if avn.startswith("anon."):
+            avn = avn[5:]
         if avn in ("class", "in"):
             # reserved words
             avn = avn + "_"
@@ -150,7 +152,7 @@ class PythonCodeGen(CodeGenBase):
         if extension_fields:
             self.extension_fields = extension_fields
         else:
-            self.extension_fields = yaml.comments.CommentedMap()
+            self.extension_fields = CommentedMap()
         if loadingOptions:
             self.loadingOptions = loadingOptions
         else:
@@ -192,7 +194,7 @@ class PythonCodeGen(CodeGenBase):
             """
     def save(self, top=False, base_url="", relative_uris=True):
         # type: (bool, str, bool) -> Dict[str, Any]
-        r = yaml.comments.CommentedMap()  # type: Dict[str, Any]
+        r = CommentedMap()  # type: Dict[str, Any]
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 """
@@ -225,7 +227,7 @@ class PythonCodeGen(CodeGenBase):
 
         self.out.write(
             """
-        extension_fields = yaml.comments.CommentedMap()
+        extension_fields = CommentedMap()
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -498,8 +500,8 @@ class PythonCodeGen(CodeGenBase):
         # type: (TypeDef, Union[int, None]) -> TypeDef
         return self.declare_type(
             TypeDef(
-                f"typedsl_{inner.name}_{ref_scope}",
-                f"_TypeDSLLoader({inner.name}, {ref_scope})",
+                f"typedsl_{self.safe_name(inner.name)}_{ref_scope}",
+                f"_TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope})",
             )
         )
 
@@ -541,7 +543,9 @@ def load_document(doc, baseuri=None, loadingOptions=None):
 
 def load_document_by_string(string, uri, loadingOptions=None):
     # type: (Any, str, Optional[LoadingOptions]) -> Any
-    result = yaml.main.round_trip_load(string, preserve_quotes=True)
+    yaml = YAML()
+    yaml.preserve_quotes = True  # type: ignore
+    result = yaml.load(string)
     add_lc_filename(result, uri)
 
     if loadingOptions is None:
@@ -554,7 +558,7 @@ def load_document_by_string(string, uri, loadingOptions=None):
 def load_document_by_yaml(yaml, uri, loadingOptions=None):
     # type: (Any, str, Optional[LoadingOptions]) -> Any
     '''Shortcut to load via a YAML object.
-    yaml: must be from ruamel.yaml.main.round_trip_load with preserve_quotes=True
+    yaml: must be from ruamel.yaml.main.YAML.load with preserve_quotes=True
     '''
     add_lc_filename(yaml, uri)
 
