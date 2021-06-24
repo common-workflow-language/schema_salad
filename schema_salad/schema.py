@@ -373,6 +373,7 @@ def validate_doc(
                         raise_ex=True,
                         skip_foreign_properties=loader.skip_schemas,
                         strict_foreign_properties=strict_foreign_properties,
+                        vocab=loader.vocab
                     )
                 except ClassValidationException as exc1:
                     errors = [
