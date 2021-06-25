@@ -192,7 +192,7 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
         _logger.error("%s", j2)
         raise SchemaParseException(f"Not a list: {j2}")
     else:
-        sch_obj = make_avro(j2, loader)
+        sch_obj = make_avro(j2, loader, loader.vocab)
     try:
         sch_names = make_avro_schema_from_avro(sch_obj)
     except SchemaParseException:
@@ -258,7 +258,7 @@ def load_schema(
 
     # Make the Avro validation that will be used to validate the target
     # document
-    avsc_names = make_avro_schema(schema_doc, document_loader)
+    avsc_names = make_avro_schema(schema_doc, document_loader, metaschema_loader.vocab)
 
     return document_loader, avsc_names, schema_metadata, metaschema_loader
 
@@ -350,7 +350,7 @@ def validate_doc(
                 raise_ex=False,
                 skip_foreign_properties=loader.skip_schemas,
                 strict_foreign_properties=strict_foreign_properties,
-                vocab=loader.vocab
+                vocab=loader.vocab # type: Dict[str, str]
             )
             if success:
                 break
@@ -519,10 +519,16 @@ def make_valid_avro(
     found: Set[str],
     union: bool = False,
     fielddef: bool = False,
+    vocab: Optional[Dict[str, str]] = None,
 ) -> Union[
     Avro, MutableMapping[str, str], str, List[Union[Any, MutableMapping[str, str], str]]
 ]:
     """Convert our schema to be more avro like."""
+
+    if vocab is None:
+        _, _, metaschema_loader = get_metaschema()
+        vocab = metaschema_loader.vocab
+
     # Possibly could be integrated into our fork of avro/schema.py?
     if isinstance(items, MutableMapping):
         avro = copy.copy(items)
@@ -551,6 +557,7 @@ def make_valid_avro(
                     found,
                     union=True,
                     fielddef=(field == "fields"),
+                    vocab=vocab,
                 )
         if "symbols" in avro:
             avro["symbols"] = [avro_field_name(sym) for sym in avro["symbols"]]
@@ -559,12 +566,14 @@ def make_valid_avro(
         ret = []
         for i in items:
             ret.append(
-                make_valid_avro(i, alltypes, found, union=union, fielddef=fielddef)
+                make_valid_avro(i, alltypes, found, union=union, fielddef=fielddef, vocab=vocab)
             )
         return ret
     if union and isinstance(items, str):
         if items in alltypes and validate.avro_type_name(items) not in found:
-            return make_valid_avro(alltypes[items], alltypes, found, union=union)
+            return make_valid_avro(alltypes[items], alltypes, found, union=union, vocab=vocab)
+        if items in vocab:
+            items = vocab[items]
         return validate.avro_type_name(items)
     else:
         return items
@@ -683,6 +692,7 @@ def extend_and_specialize(
 def make_avro(
     i: List[Dict[str, Any]],
     loader: Loader,
+    metaschema_vocab: Optional[Dict[str, str]] = None
 ) -> List[Any]:
 
     j = extend_and_specialize(i, loader)
@@ -690,20 +700,22 @@ def make_avro(
     name_dict = {}  # type: Dict[str, Dict[str, Any]]
     for entry in j:
         name_dict[entry["name"]] = entry
-    avro = make_valid_avro(j, name_dict, set())
+
+    avro = make_valid_avro(j, name_dict, set(), vocab=metaschema_vocab)
 
     return [
         t
         for t in avro
         if isinstance(t, MutableMapping)
         and not t.get("abstract")
-        and t.get("type") != "documentation"
+        and t.get("type") != "org.w3id.cwl.salad.documentation"
     ]
 
 
 def make_avro_schema(
     i: List[Any],
     loader: Loader,
+    metaschema_vocab: Optional[Dict[str, str]] = None
 ) -> Names:
     """
     All in one convenience function.
@@ -712,7 +724,7 @@ def make_avro_schema(
     the intermediate result for diagnostic output.
     """
     names = Names()
-    avro = make_avro(i, loader)
+    avro = make_avro(i, loader, metaschema_vocab)
     make_avsc_object(convert_to_dict(avro), names)
     return names
 

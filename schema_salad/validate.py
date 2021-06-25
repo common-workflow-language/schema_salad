@@ -1,6 +1,6 @@
 import logging
 import pprint
-from typing import Any, List, MutableMapping, MutableSequence, Optional, Set
+from typing import Any, List, Mapping, MutableMapping, MutableSequence, Optional, Set
 from urllib.parse import urlsplit
 
 from . import avro
@@ -21,7 +21,7 @@ def validate(
     identifiers: Optional[List[str]] = None,
     strict: bool = False,
     foreign_properties: Optional[Set[str]] = None,
-    vocab=None, # type: Dict[str, str]
+    vocab: Optional[Mapping[str, str]] = None,
 ) -> bool:
     if not identifiers:
         identifiers = []
@@ -76,12 +76,9 @@ def avro_type_name(url: str) -> str:
     if url in primitives:
         return primitives[url]
 
-    if url.startswith("http://"):
-        url = url[7:]
-    elif url.startswith("https://"):
-        url = url[8:]
-    url = url.replace("/", ".").replace("#", ".")
-    return url
+    u = urlsplit(url)
+    joined = filter(lambda x: x, list(reversed(u.netloc.split(".")))+u.path.split("/")+u.fragment.split("/"))
+    return ".".join(joined)
 
 
 def friendly(v):  # type: (Any) -> Any
@@ -170,7 +167,7 @@ def validate_ex(
             )
         return False
     elif isinstance(expected_schema, avro.schema.EnumSchema):
-        if expected_schema.name in ("w3id.org.cwl.salad.Any", "Any"):
+        if expected_schema.name in ("org.w3id.cwl.salad.Any", "Any"):
             if datum is not None:
                 return True
             if raise_ex:
@@ -182,7 +179,7 @@ def validate_ex(
                     "value is a {} but expected a string".format(type(datum).__name__)
                 )
             return False
-        if expected_schema.name == "w3id.org.cwl.cwl.Expression":
+        if expected_schema.name == "org.w3id.cwl.cwl.Expression":
             if "$(" in datum or "${" in datum:
                 return True
             if raise_ex:
