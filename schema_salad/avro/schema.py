@@ -579,7 +579,10 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
     if names is None:
         names = Names()
 
-    if isinstance(json_data, Dict) and json_data.get("name") == "org.w3id.cwl.salad.Any":
+    if (
+        isinstance(json_data, Dict)
+        and json_data.get("name") == "org.w3id.cwl.salad.Any"
+    ):
         del names.names["org.w3id.cwl.salad.Any"]
     elif not names.has_name("org.w3id.cwl.salad.Any", None):
         EnumSchema("org.w3id.cwl.salad.Any", None, ["Any"], names=names)

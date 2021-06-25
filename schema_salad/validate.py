@@ -48,6 +48,7 @@ def avro_shortname(name: str) -> str:
     """Produce an avro friendly short name."""
     return name.split(".")[-1]
 
+
 saladp = "https://w3id.org/cwl/salad#"
 primitives = {
     "http://www.w3.org/2001/XMLSchema#string": "string",
@@ -61,6 +62,7 @@ primitives = {
     saladp + "array": "array",
     saladp + "record": "record",
 }
+
 
 def avro_type_name(url: str) -> str:
     """
@@ -77,7 +79,10 @@ def avro_type_name(url: str) -> str:
         return primitives[url]
 
     u = urlsplit(url)
-    joined = filter(lambda x: x, list(reversed(u.netloc.split(".")))+u.path.split("/")+u.fragment.split("/"))
+    joined = filter(
+        lambda x: x,
+        list(reversed(u.netloc.split("."))) + u.path.split("/") + u.fragment.split("/"),
+    )
     return ".".join(joined)
 
 
@@ -111,7 +116,7 @@ def validate_ex(
     strict_foreign_properties=False,  # type: bool
     logger=_logger,  # type: logging.Logger
     skip_foreign_properties=False,  # type: bool
-        vocab=None, # type: Dict[str, str]
+    vocab=None,  # type: Optional[Mapping[str, str]]
 ):
     # type: (...) -> bool
     """Determine if a python datum is an instance of a schema."""
@@ -121,6 +126,9 @@ def validate_ex(
 
     if not foreign_properties:
         foreign_properties = set()
+
+    if vocab is None:
+        raise Exception("vocab must be provided")
 
     schema_type = expected_schema.type
 
@@ -217,7 +225,7 @@ def validate_ex(
                         strict_foreign_properties=strict_foreign_properties,
                         logger=logger,
                         skip_foreign_properties=skip_foreign_properties,
-                            vocab=vocab,
+                        vocab=vocab,
                     ):
                         return False
                 except ValidationException as v:
@@ -244,7 +252,7 @@ def validate_ex(
                 strict_foreign_properties=strict_foreign_properties,
                 logger=logger,
                 skip_foreign_properties=skip_foreign_properties,
-                    vocab=vocab,
+                vocab=vocab,
             ):
                 return True
 
@@ -324,7 +332,7 @@ def validate_ex(
                         return False
                 avroname = None
                 if d in vocab:
-                   avroname  = avro_type_name(vocab[d])
+                    avroname = avro_type_name(vocab[d])
                 if expected_schema.name != d and expected_schema.name != avroname:
                     if raise_ex:
                         raise ValidationException(
@@ -362,7 +370,7 @@ def validate_ex(
                     strict_foreign_properties=strict_foreign_properties,
                     logger=logger,
                     skip_foreign_properties=skip_foreign_properties,
-                        vocab=vocab,
+                    vocab=vocab,
                 ):
                     return False
             except ValidationException as v:

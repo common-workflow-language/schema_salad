@@ -350,7 +350,7 @@ def validate_doc(
                 raise_ex=False,
                 skip_foreign_properties=loader.skip_schemas,
                 strict_foreign_properties=strict_foreign_properties,
-                vocab=loader.vocab # type: Dict[str, str]
+                vocab=loader.vocab,
             )
             if success:
                 break
@@ -373,7 +373,7 @@ def validate_doc(
                         raise_ex=True,
                         skip_foreign_properties=loader.skip_schemas,
                         strict_foreign_properties=strict_foreign_properties,
-                        vocab=loader.vocab
+                        vocab=loader.vocab,
                     )
                 except ClassValidationException as exc1:
                     errors = [
@@ -566,15 +566,20 @@ def make_valid_avro(
         ret = []
         for i in items:
             ret.append(
-                make_valid_avro(i, alltypes, found, union=union, fielddef=fielddef, vocab=vocab)
+                make_valid_avro(
+                    i, alltypes, found, union=union, fielddef=fielddef, vocab=vocab
+                )
             )
         return ret
     if union and isinstance(items, str):
         if items in alltypes and validate.avro_type_name(items) not in found:
-            return make_valid_avro(alltypes[items], alltypes, found, union=union, vocab=vocab)
+            return make_valid_avro(
+                alltypes[items], alltypes, found, union=union, vocab=vocab
+            )
         if items in vocab:
-            items = vocab[items]
-        return validate.avro_type_name(items)
+            return validate.avro_type_name(vocab[items])
+        else:
+            return validate.avro_type_name(items)
     else:
         return items
 
@@ -692,7 +697,7 @@ def extend_and_specialize(
 def make_avro(
     i: List[Dict[str, Any]],
     loader: Loader,
-    metaschema_vocab: Optional[Dict[str, str]] = None
+    metaschema_vocab: Optional[Dict[str, str]] = None,
 ) -> List[Any]:
 
     j = extend_and_specialize(i, loader)
@@ -713,9 +718,7 @@ def make_avro(
 
 
 def make_avro_schema(
-    i: List[Any],
-    loader: Loader,
-    metaschema_vocab: Optional[Dict[str, str]] = None
+    i: List[Any], loader: Loader, metaschema_vocab: Optional[Dict[str, str]] = None
 ) -> Names:
     """
     All in one convenience function.
