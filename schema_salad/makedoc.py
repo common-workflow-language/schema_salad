@@ -24,6 +24,7 @@ from urllib.parse import urldefrag
 import mistune
 
 from . import schema
+from .validate import avro_type_name
 from .exceptions import SchemaSaladException, ValidationException
 from .utils import add_dictlist, aslist
 
@@ -315,7 +316,7 @@ class RenderType:
                 "https://w3id.org/cwl/salad#record",
                 "https://w3id.org/cwl/salad#enum",
             ):
-                frg = schema.avro_type_name(tp["name"])
+                frg = avro_type_name(tp["name"])
                 if tp["name"] in redirects:
                     return """<a href="{}">{}</a>""".format(redirects[tp["name"]], frg)
                 if tp["name"] in self.typemap:
@@ -335,7 +336,7 @@ class RenderType:
                 return """<a href="{}">{}</a>""".format(redirects[tp], redirects[tp])
             if str(tp) in basicTypes:
                 return """<a href="{}">{}</a>""".format(
-                    self.primitiveType, schema.avro_type_name(str(tp))
+                    self.primitiveType, avro_type_name(str(tp))
                 )
             frg2 = urldefrag(tp)[1]
             if frg2 != "":

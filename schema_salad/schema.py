@@ -192,7 +192,7 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
         _logger.error("%s", j2)
         raise SchemaParseException(f"Not a list: {j2}")
     else:
-        sch_obj = make_avro(j2, loader)
+        sch_obj = make_avro(j2, loader, loader.vocab)
     try:
         sch_names = make_avro_schema_from_avro(sch_obj)
     except SchemaParseException:
@@ -258,7 +258,7 @@ def load_schema(
 
     # Make the Avro validation that will be used to validate the target
     # document
-    avsc_names = make_avro_schema(schema_doc, document_loader)
+    avsc_names = make_avro_schema(schema_doc, document_loader, metaschema_loader.vocab)
 
     return document_loader, avsc_names, schema_metadata, metaschema_loader
 
@@ -350,6 +350,7 @@ def validate_doc(
                 raise_ex=False,
                 skip_foreign_properties=loader.skip_schemas,
                 strict_foreign_properties=strict_foreign_properties,
+                vocab=loader.vocab,
             )
             if success:
                 break
@@ -372,6 +373,7 @@ def validate_doc(
                         raise_ex=True,
                         skip_foreign_properties=loader.skip_schemas,
                         strict_foreign_properties=strict_foreign_properties,
+                        vocab=loader.vocab,
                     )
                 except ClassValidationException as exc1:
                     errors = [
@@ -493,42 +495,6 @@ def replace_type(
     return items
 
 
-primitives = {
-    "http://www.w3.org/2001/XMLSchema#string": "string",
-    "http://www.w3.org/2001/XMLSchema#boolean": "boolean",
-    "http://www.w3.org/2001/XMLSchema#int": "int",
-    "http://www.w3.org/2001/XMLSchema#long": "long",
-    "http://www.w3.org/2001/XMLSchema#float": "float",
-    "http://www.w3.org/2001/XMLSchema#double": "double",
-    saladp + "null": "null",
-    saladp + "enum": "enum",
-    saladp + "array": "array",
-    saladp + "record": "record",
-}
-
-
-def avro_type_name(url: str) -> str:
-    """
-    Turn a URL into an Avro-safe name.
-
-    If the URL has no fragment, return this plain URL.
-
-    Extract either the last part of the URL fragment past the slash, otherwise
-    the whole fragment.
-    """
-    global primitives
-
-    if url in primitives:
-        return primitives[url]
-
-    if url.startswith("http://"):
-        url = url[7:]
-    elif url.startswith("https://"):
-        url = url[8:]
-    url = url.replace("/", ".").replace("#", ".")
-    return url
-
-
 def avro_field_name(url: str) -> str:
     """
     Turn a URL into an Avro-safe name.
@@ -553,10 +519,16 @@ def make_valid_avro(
     found: Set[str],
     union: bool = False,
     fielddef: bool = False,
+    vocab: Optional[Dict[str, str]] = None,
 ) -> Union[
     Avro, MutableMapping[str, str], str, List[Union[Any, MutableMapping[str, str], str]]
 ]:
     """Convert our schema to be more avro like."""
+
+    if vocab is None:
+        _, _, metaschema_loader = get_metaschema()
+        vocab = metaschema_loader.vocab
+
     # Possibly could be integrated into our fork of avro/schema.py?
     if isinstance(items, MutableMapping):
         avro = copy.copy(items)
@@ -564,7 +536,7 @@ def make_valid_avro(
             if fielddef:
                 avro["name"] = avro_field_name(avro["name"])
             else:
-                avro["name"] = avro_type_name(avro["name"])
+                avro["name"] = validate.avro_type_name(avro["name"])
 
         if "type" in avro and avro["type"] in (
             saladp + "record",
@@ -585,6 +557,7 @@ def make_valid_avro(
                     found,
                     union=True,
                     fielddef=(field == "fields"),
+                    vocab=vocab,
                 )
         if "symbols" in avro:
             avro["symbols"] = [avro_field_name(sym) for sym in avro["symbols"]]
@@ -593,13 +566,20 @@ def make_valid_avro(
         ret = []
         for i in items:
             ret.append(
-                make_valid_avro(i, alltypes, found, union=union, fielddef=fielddef)
+                make_valid_avro(
+                    i, alltypes, found, union=union, fielddef=fielddef, vocab=vocab
+                )
             )
         return ret
     if union and isinstance(items, str):
-        if items in alltypes and avro_type_name(items) not in found:
-            return make_valid_avro(alltypes[items], alltypes, found, union=union)
-        return avro_type_name(items)
+        if items in alltypes and validate.avro_type_name(items) not in found:
+            return make_valid_avro(
+                alltypes[items], alltypes, found, union=union, vocab=vocab
+            )
+        if items in vocab:
+            return validate.avro_type_name(vocab[items])
+        else:
+            return validate.avro_type_name(items)
     else:
         return items
 
@@ -697,7 +677,7 @@ def extend_and_specialize(
             for ex in aslist(result["extends"]):
                 if ex_types[ex].get("abstract"):
                     add_dictlist(extended_by, ex, ex_types[result["name"]])
-                    add_dictlist(extended_by, avro_type_name(ex), ex_types[ex])
+                    add_dictlist(extended_by, validate.avro_type_name(ex), ex_types[ex])
 
     for result in results:
         if result.get("abstract") and result["name"] not in extended_by:
@@ -717,6 +697,7 @@ def extend_and_specialize(
 def make_avro(
     i: List[Dict[str, Any]],
     loader: Loader,
+    metaschema_vocab: Optional[Dict[str, str]] = None,
 ) -> List[Any]:
 
     j = extend_and_specialize(i, loader)
@@ -724,20 +705,20 @@ def make_avro(
     name_dict = {}  # type: Dict[str, Dict[str, Any]]
     for entry in j:
         name_dict[entry["name"]] = entry
-    avro = make_valid_avro(j, name_dict, set())
+
+    avro = make_valid_avro(j, name_dict, set(), vocab=metaschema_vocab)
 
     return [
         t
         for t in avro
         if isinstance(t, MutableMapping)
         and not t.get("abstract")
-        and t.get("type") != "documentation"
+        and t.get("type") != "org.w3id.cwl.salad.documentation"
     ]
 
 
 def make_avro_schema(
-    i: List[Any],
-    loader: Loader,
+    i: List[Any], loader: Loader, metaschema_vocab: Optional[Dict[str, str]] = None
 ) -> Names:
     """
     All in one convenience function.
@@ -746,7 +727,7 @@ def make_avro_schema(
     the intermediate result for diagnostic output.
     """
     names = Names()
-    avro = make_avro(i, loader)
+    avro = make_avro(i, loader, metaschema_vocab)
     make_avsc_object(convert_to_dict(avro), names)
     return names
 

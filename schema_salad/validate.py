@@ -1,6 +1,6 @@
 import logging
 import pprint
-from typing import Any, List, MutableMapping, MutableSequence, Optional, Set
+from typing import Any, List, Mapping, MutableMapping, MutableSequence, Optional, Set
 from urllib.parse import urlsplit
 
 from . import avro
@@ -21,6 +21,7 @@ def validate(
     identifiers: Optional[List[str]] = None,
     strict: bool = False,
     foreign_properties: Optional[Set[str]] = None,
+    vocab: Optional[Mapping[str, str]] = None,
 ) -> bool:
     if not identifiers:
         identifiers = []
@@ -33,6 +34,7 @@ def validate(
         strict=strict,
         foreign_properties=foreign_properties,
         raise_ex=False,
+        vocab=vocab,
     )
 
 
@@ -45,6 +47,43 @@ LONG_MAX_VALUE = (1 << 63) - 1
 def avro_shortname(name: str) -> str:
     """Produce an avro friendly short name."""
     return name.split(".")[-1]
+
+
+saladp = "https://w3id.org/cwl/salad#"
+primitives = {
+    "http://www.w3.org/2001/XMLSchema#string": "string",
+    "http://www.w3.org/2001/XMLSchema#boolean": "boolean",
+    "http://www.w3.org/2001/XMLSchema#int": "int",
+    "http://www.w3.org/2001/XMLSchema#long": "long",
+    "http://www.w3.org/2001/XMLSchema#float": "float",
+    "http://www.w3.org/2001/XMLSchema#double": "double",
+    saladp + "null": "null",
+    saladp + "enum": "enum",
+    saladp + "array": "array",
+    saladp + "record": "record",
+}
+
+
+def avro_type_name(url: str) -> str:
+    """
+    Turn a URL into an Avro-safe name.
+
+    If the URL has no fragment, return this plain URL.
+
+    Extract either the last part of the URL fragment past the slash, otherwise
+    the whole fragment.
+    """
+    global primitives
+
+    if url in primitives:
+        return primitives[url]
+
+    u = urlsplit(url)
+    joined = filter(
+        lambda x: x,
+        list(reversed(u.netloc.split("."))) + u.path.split("/") + u.fragment.split("/"),
+    )
+    return ".".join(joined)
 
 
 def friendly(v):  # type: (Any) -> Any
@@ -77,6 +116,7 @@ def validate_ex(
     strict_foreign_properties=False,  # type: bool
     logger=_logger,  # type: logging.Logger
     skip_foreign_properties=False,  # type: bool
+    vocab=None,  # type: Optional[Mapping[str, str]]
 ):
     # type: (...) -> bool
     """Determine if a python datum is an instance of a schema."""
@@ -86,6 +126,9 @@ def validate_ex(
 
     if not foreign_properties:
         foreign_properties = set()
+
+    if vocab is None:
+        raise Exception("vocab must be provided")
 
     schema_type = expected_schema.type
 
@@ -132,7 +175,7 @@ def validate_ex(
             )
         return False
     elif isinstance(expected_schema, avro.schema.EnumSchema):
-        if expected_schema.name == "w3id.org.cwl.salad.Any":
+        if expected_schema.name in ("org.w3id.cwl.salad.Any", "Any"):
             if datum is not None:
                 return True
             if raise_ex:
@@ -144,7 +187,7 @@ def validate_ex(
                     "value is a {} but expected a string".format(type(datum).__name__)
                 )
             return False
-        if expected_schema.name == "w3id.org.cwl.cwl.Expression":
+        if expected_schema.name == "org.w3id.cwl.cwl.Expression":
             if "$(" in datum or "${" in datum:
                 return True
             if raise_ex:
@@ -182,6 +225,7 @@ def validate_ex(
                         strict_foreign_properties=strict_foreign_properties,
                         logger=logger,
                         skip_foreign_properties=skip_foreign_properties,
+                        vocab=vocab,
                     ):
                         return False
                 except ValidationException as v:
@@ -208,6 +252,7 @@ def validate_ex(
                 strict_foreign_properties=strict_foreign_properties,
                 logger=logger,
                 skip_foreign_properties=skip_foreign_properties,
+                vocab=vocab,
             ):
                 return True
 
@@ -244,6 +289,7 @@ def validate_ex(
                     strict_foreign_properties=strict_foreign_properties,
                     logger=logger,
                     skip_foreign_properties=skip_foreign_properties,
+                    vocab=vocab,
                 )
             except ClassValidationException:
                 raise
@@ -284,7 +330,10 @@ def validate_ex(
                         raise ValidationException(f"Missing '{f.name}' field")
                     else:
                         return False
-                if avro_shortname(expected_schema.name) != d:
+                avroname = None
+                if d in vocab:
+                    avroname = avro_type_name(vocab[d])
+                if expected_schema.name != d and expected_schema.name != avroname:
                     if raise_ex:
                         raise ValidationException(
                             "Expected class '{}' but this is '{}'".format(
@@ -321,6 +370,7 @@ def validate_ex(
                     strict_foreign_properties=strict_foreign_properties,
                     logger=logger,
                     skip_foreign_properties=skip_foreign_properties,
+                    vocab=vocab,
                 ):
                     return False
             except ValidationException as v:
