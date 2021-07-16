@@ -187,7 +187,7 @@ class RenderType:
     def __init__(
         self,
         toc: ToC,
-        j: List[Dict[str, str]],
+        j: List[Dict[str, Any]],
         renderlist: List[str],
         redirects: Dict[str, str],
         primitiveType: str,
