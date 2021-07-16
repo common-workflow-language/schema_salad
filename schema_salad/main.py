@@ -180,7 +180,18 @@ def main(argsl: Optional[List[str]] = None) -> int:
         "--brand", help="Use with --print-doc, set the 'brand' text in nav bar"
     )
     parser.add_argument(
-        "--brandlink", help="Use with --print-doc, set the link for 'brand' in nav bar"
+        "--brandlink",
+        help="Use with --print-doc, set the link for 'brand' in nav bar",
+    )
+    parser.add_argument(
+        "--brandstyle",
+        help="Use with --print-doc, HTML code to link to an external style sheet",
+    )
+    parser.add_argument(
+        "--brandinverse",
+        default=False,
+        action="store_true",
+        help="Use with --print-doc",
     )
     parser.add_argument(
         "--primtype",
