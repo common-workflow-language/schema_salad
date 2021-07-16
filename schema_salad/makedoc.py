@@ -268,7 +268,7 @@ class RenderType:
         tp: Any,
         redirects: Dict[str, str],
         nbsp: bool = False,
-        jsonldPredicate: Optional[Dict[str, str]] = None,
+        jsonldPredicate: Optional[Union[Dict[str, str], str]] = None,
     ) -> str:
         if isinstance(tp, MutableSequence):
             if nbsp and len(tp) <= 3:
@@ -289,7 +289,10 @@ class RenderType:
                 ar = "array&lt;{}&gt;".format(
                     self.typefmt(tp["items"], redirects, nbsp=True)
                 )
-                if jsonldPredicate is not None and "mapSubject" in jsonldPredicate:
+                if (
+                    isinstance(jsonldPredicate, dict)
+                    and "mapSubject" in jsonldPredicate
+                ):
                     if "mapPredicate" in jsonldPredicate:
                         ar += " | "
                         if len(ar) > 40:
