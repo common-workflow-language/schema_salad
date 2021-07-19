@@ -27,3 +27,23 @@ jobs:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
         packages_dir: audited_wheels
+
+  deploy_aarch64:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Build manylinux2014 Python wheels
+      uses: RalfG/python-wheels-manylinux-build@v0.3.4-manylinux2014_aarch64
+      with:
+        pre-build-command: source .github/workflows/wheel-prep.sh
+        build-requirements: -rrequirements.txt -rmypy_requirements.txt
+    - name: Move audited wheels to new directory
+      run: mkdir audited_wheels && cp dist/*-manylinux*.whl audited_wheels/
+    - name: Publish wheels to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        packages_dir: audited_wheels
