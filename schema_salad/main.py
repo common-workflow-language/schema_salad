@@ -17,7 +17,7 @@ from .avro.schema import SchemaParseException
 from .exceptions import ValidationException, to_one_line_messages
 from .makedoc import makedoc
 from .ref_resolver import Loader, file_uri
-from .utils import json_dumps
+from .utils import json_dump, stdout
 
 register("json-ld", Parser, "rdflib_jsonld.parser", "JsonLDParser")
 _logger = logging.getLogger("salad")
@@ -30,7 +30,7 @@ def printrdf(
     sr: str,
 ) -> None:
     g = jsonld_context.makerdf(workflow, wf, ctx)
-    print(g.serialize(format=sr, encoding="utf-8").decode("utf-8"))
+    g.serialize(destination=stdout(), format=sr)
 
 
 def main(argsl: Optional[List[str]] = None) -> int:
@@ -208,7 +208,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
     args = parser.parse_args(argsl)
 
     if args.version is None and args.schema is None:
-        print("{}: error: too few arguments".format(sys.argv[0]))
+        print(f"{sys.argv[0]}: error: too few arguments.")
         return 1
 
     if args.quiet:
@@ -219,7 +219,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
     pkg = pkg_resources.require("schema_salad")
     if pkg:
         if args.version:
-            print("{} Current version: {}".format(sys.argv[0], pkg[0].version))
+            print(f"{sys.argv[0]} Current version: {pkg[0].version}")
             return 0
         else:
             _logger.info("%s Current version: %s", sys.argv[0], pkg[0].version)
@@ -265,11 +265,11 @@ def main(argsl: Optional[List[str]] = None) -> int:
 
     # Optionally print the schema after ref resolution
     if not args.document and args.print_pre:
-        print(json_dumps(schema_doc, indent=4))
+        json_dump(schema_doc, fp=sys.stdout, indent=4)
         return 0
 
     if not args.document and args.print_index:
-        print(json_dumps(list(metaschema_loader.idx.keys()), indent=4))
+        json_dump(list(metaschema_loader.idx.keys()), fp=sys.stdout, indent=4)
         return 0
 
     # Validate the schema document against the metaschema
@@ -289,7 +289,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         (schema_ctx, rdfs) = jsonld_context.salad_to_jsonld_context(schema_doc, metactx)
     else:
         raise ValidationException(
-            "Expected a CommentedSeq, got {}: {}.".format(type(schema_doc), schema_doc)
+            f"Expected a CommentedSeq, got {type(schema_doc)}: {schema_doc}."
         )
 
     # Create the loader that will be used to load the target document.
@@ -322,7 +322,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
                 exc_info=((type(err), err, None) if args.debug else None),
             )
             if args.print_avro:
-                print(json_dumps(avsc_obj, indent=4))
+                json_dump(avsc_obj, fp=sys.stdout, indent=4)
             return 1
     else:
         _logger.error("Schema `%s` must be a list.", args.schema)
@@ -330,22 +330,22 @@ def main(argsl: Optional[List[str]] = None) -> int:
 
     # Optionally print Avro-compatible schema from schema
     if args.print_avro:
-        print(json_dumps(avsc_obj, indent=4))
+        json_dump(avsc_obj, fp=sys.stdout, indent=4)
         return 0
 
     # Optionally print the json-ld context from the schema
     if args.print_jsonld_context:
         j = {"@context": schema_ctx}
-        print(json_dumps(j, indent=4, sort_keys=True))
+        json_dump(j, fp=sys.stdout, indent=4, sort_keys=True)
         return 0
 
     # Optionally print the RDFS graph from the schema
     if args.print_rdfs:
-        print(rdfs.serialize(format=args.rdf_serializer).decode("utf-8"))
+        rdfs.serialize(destination=stdout(), format=args.rdf_serializer)
         return 0
 
     if args.print_metadata and not args.document:
-        print(json_dumps(schema_metadata, indent=4))
+        json_dump(schema_metadata, fp=sys.stdout, indent=4)
         return 0
 
     if args.print_inheritance_dot:
@@ -379,11 +379,11 @@ def main(argsl: Optional[List[str]] = None) -> int:
 
     # Optionally print the document after ref resolution
     if args.print_pre:
-        print(json_dumps(document, indent=4))
+        json_dump(document, fp=sys.stdout, indent=4)
         return 0
 
     if args.print_index:
-        print(json_dumps(list(document_loader.idx.keys()), indent=4))
+        json_dump(list(document_loader.idx.keys()), fp=sys.stdout, indent=4)
         return 0
 
     # Validate the user document against the schema
@@ -410,7 +410,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
             return 1
 
     if args.print_metadata:
-        print(json_dumps(doc_metadata, indent=4))
+        json_dump(doc_metadata, fp=sys.stdout, indent=4)
         return 0
 
     print(f"Document `{args.document}` is valid")

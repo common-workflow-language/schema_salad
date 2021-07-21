@@ -458,7 +458,7 @@ class Loader:
 
         if not isinstance(lref, str):
             raise ValidationException(
-                "Expected CommentedMap or string, got {}: `{}`".format(type(lref), lref)
+                f"Expected CommentedMap or string, got {type(lref)}: `{lref}`"
             )
 
         if isinstance(lref, str) and os.sep == "\\":
@@ -1175,7 +1175,7 @@ class Loader:
                     if docid2 is not None:
                         errors.append(
                             ValidationException(
-                                "checking object `{}`".format(relname(docid2)), sl, [v]
+                                f"checking object `{relname(docid2)}`", sl, [v]
                             )
                         )
                     else:

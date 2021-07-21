@@ -746,7 +746,7 @@ public enum {clazz} {{
         return self.declare_type(
             TypeDef(
                 instance_type=instance_type,
-                name="idmap_{}_{}".format(self.safe_name(field), inner.name),
+                name=f"idmap_{self.safe_name(field)}_{inner.name}",
                 init='new IdMapLoader({}, "{}", "{}")'.format(
                     inner.name, map_subject, map_predicate
                 ),
@@ -832,8 +832,8 @@ public enum {clazz} {{
         vocab = ""
         rvocab = ""
         for k in sorted(self.vocab.keys()):
-            vocab += """    vocab.put("{}", "{}");\n""".format(k, self.vocab[k])
-            rvocab += """    rvocab.put("{}", "{}");\n""".format(self.vocab[k], k)
+            vocab += f"""    vocab.put("{k}", "{self.vocab[k]}");\n"""
+            rvocab += f"""    rvocab.put("{self.vocab[k]}", "{k}");\n"""
 
         loader_instances = ""
         for _, collected_type in self.collected_types.items():

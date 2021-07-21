@@ -1,5 +1,7 @@
 import json
 import os
+import sys
+from io import BufferedWriter
 from typing import (
     IO,
     TYPE_CHECKING,
@@ -108,3 +110,8 @@ def json_dumps(
 ):  # type: (...) -> str
     """Force use of unicode."""
     return json.dumps(convert_to_dict(obj), **kwargs)
+
+
+def stdout() -> BufferedWriter:
+    """Build a replacement for sys.stdout that allow for writing binary data."""
+    return os.fdopen(sys.stdout.fileno(), "wb", closefd=False)

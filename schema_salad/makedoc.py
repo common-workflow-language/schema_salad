@@ -24,9 +24,9 @@ from urllib.parse import urldefrag
 import mistune
 
 from . import schema
-from .validate import avro_type_name
 from .exceptions import SchemaSaladException, ValidationException
 from .utils import add_dictlist, aslist
+from .validate import avro_type_name
 
 _logger = logging.getLogger("salad")
 
@@ -51,7 +51,7 @@ def has_types(items: Any) -> List[str]:
 
 def linkto(item: str) -> str:
     frg = urldefrag(item)[1]
-    return "[{}](#{})".format(frg, to_id(frg))
+    return f"[{frg}](#{to_id(frg)})"
 
 
 class MyRenderer(mistune.Renderer):
@@ -323,7 +323,7 @@ class RenderType:
                 if tp["name"] in redirects:
                     return """<a href="{}">{}</a>""".format(redirects[tp["name"]], frg)
                 if tp["name"] in self.typemap:
-                    return """<a href="#{}">{}</a>""".format(to_id(frg), frg)
+                    return f"""<a href="#{to_id(frg)}">{frg}</a>"""
                 if (
                     tp["type"] == "https://w3id.org/cwl/salad#enum"
                     and len(tp["symbols"]) == 1
@@ -336,7 +336,7 @@ class RenderType:
                 return self.typefmt(tp["type"], redirects)
         else:
             if str(tp) in redirects:
-                return """<a href="{}">{}</a>""".format(redirects[tp], redirects[tp])
+                return f"""<a href="{redirects[tp]}">{redirects[tp]}</a>"""
             if str(tp) in basicTypes:
                 return """<a href="{}">{}</a>""".format(
                     self.primitiveType, avro_type_name(str(tp))
@@ -344,7 +344,7 @@ class RenderType:
             frg2 = urldefrag(tp)[1]
             if frg2 != "":
                 tp = frg2
-            return """<a href="#{}">{}</a>""".format(to_id(tp), tp)
+            return f"""<a href="#{to_id(tp)}">{tp}</a>"""
         raise SchemaSaladException("We should not be here!")
 
     def render_type(self, f: Dict[str, Any], depth: int) -> None:

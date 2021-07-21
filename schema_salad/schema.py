@@ -761,7 +761,7 @@ def print_inheritance(doc: List[Dict[str, Any]], stream: IO[Any]) -> None:
             stream.write(f'"{name}" [shape={shape} label="{label}"];\n')
             if "extends" in entry:
                 for target in aslist(entry["extends"]):
-                    stream.write('"{}" -> "{}";\n'.format(shortname(target), name))
+                    stream.write(f'"{shortname(target)}" -> "{name}";\n')
     stream.write("}\n")
 
 
