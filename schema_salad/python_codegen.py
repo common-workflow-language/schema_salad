@@ -129,14 +129,14 @@ class PythonCodeGen(CodeGenBase):
         safe_inits = ["        self,"]  # type: List[str]
         safe_inits.extend(
             [
-                "        {},  # type: Any".format(self.safe_name(f))
+                f"        {self.safe_name(f)},  # type: Any"
                 for f in required_field_names
                 if f != "class"
             ]
         )
         safe_inits.extend(
             [
-                "        {}=None,  # type: Any".format(self.safe_name(f))
+                f"        {self.safe_name(f)}=None,  # type: Any"
                 for f in optional_field_names
                 if f != "class"
             ]
@@ -396,9 +396,7 @@ class PythonCodeGen(CodeGenBase):
             return
 
         if optional:
-            self.out.write(
-                "        if '{fieldname}' in _doc:\n".format(fieldname=shortname(name))
-            )
+            self.out.write(f"        if '{shortname(name)}' in _doc:\n")
             spc = "    "
         else:
             spc = ""
@@ -433,7 +431,7 @@ class PythonCodeGen(CodeGenBase):
         if name == self.idfield or not self.idfield:
             baseurl = "base_url"
         else:
-            baseurl = "self.{}".format(self.safe_name(self.idfield))
+            baseurl = f"self.{self.safe_name(self.idfield)}"
 
         if fieldtype.is_uri:
             self.serializer.write(
@@ -489,7 +487,7 @@ class PythonCodeGen(CodeGenBase):
         # type: (str, TypeDef, str, Union[str, None]) -> TypeDef
         return self.declare_type(
             TypeDef(
-                "idmap_{}_{}".format(self.safe_name(field), inner.name),
+                f"idmap_{self.safe_name(field)}_{inner.name}",
                 "_IdMapLoader({}, '{}', '{}')".format(
                     inner.name, map_subject, map_predicate
                 ),
@@ -518,12 +516,12 @@ class PythonCodeGen(CodeGenBase):
         # type: (TypeDef) -> None
         self.out.write("_vocab = {\n")
         for k in sorted(self.vocab.keys()):
-            self.out.write('    "{}": "{}",\n'.format(k, self.vocab[k]))
+            self.out.write(f'    "{k}": "{self.vocab[k]}",\n')
         self.out.write("}\n")
 
         self.out.write("_rvocab = {\n")
         for k in sorted(self.vocab.keys()):
-            self.out.write('    "{}": "{}",\n'.format(self.vocab[k], k))
+            self.out.write(f'    "{self.vocab[k]}": "{k}",\n')
         self.out.write("}\n\n")
 
         for _, collected_type in self.collected_types.items():

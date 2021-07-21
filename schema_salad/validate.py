@@ -90,7 +90,7 @@ def friendly(v):  # type: (Any) -> Any
     if isinstance(v, avro.schema.NamedSchema):
         return avro_shortname(v.name)
     if isinstance(v, avro.schema.ArraySchema):
-        return "array of <{}>".format(friendly(v.items))
+        return f"array of <{friendly(v.items)}>"
     elif isinstance(v, avro.schema.PrimitiveSchema):
         return v.type
     elif isinstance(v, avro.schema.UnionSchema):
@@ -156,22 +156,20 @@ def validate_ex(
         if isinstance(datum, int) and INT_MIN_VALUE <= datum <= INT_MAX_VALUE:
             return True
         if raise_ex:
-            raise ValidationException("`{}` is not int".format(vpformat(datum)))
+            raise ValidationException(f"`{vpformat(datum)}` is not int")
         return False
     elif schema_type == "long":
         if (isinstance(datum, int)) and LONG_MIN_VALUE <= datum <= LONG_MAX_VALUE:
             return True
         if raise_ex:
-            raise ValidationException(
-                "the value `{}` is not long".format(vpformat(datum))
-            )
+            raise ValidationException(f"the value `{vpformat(datum)}` is not long")
         return False
     elif schema_type in ["float", "double"]:
         if isinstance(datum, int) or isinstance(datum, float):
             return True
         if raise_ex:
             raise ValidationException(
-                "the value `{}` is not float or double".format(vpformat(datum))
+                f"the value `{vpformat(datum)}` is not float or double"
             )
         return False
     elif isinstance(expected_schema, avro.schema.EnumSchema):
@@ -184,7 +182,7 @@ def validate_ex(
         if not isinstance(datum, str):
             if raise_ex:
                 raise ValidationException(
-                    "value is a {} but expected a string".format(type(datum).__name__)
+                    f"value is a {type(datum).__name__} but expected a string"
                 )
             return False
         if expected_schema.name == "org.w3id.cwl.cwl.Expression":
@@ -300,9 +298,7 @@ def validate_ex(
                 "",
                 None,
                 [
-                    ValidationException(
-                        "tried {} but".format(friendly(check)), None, [err]
-                    )
+                    ValidationException(f"tried {friendly(check)} but", None, [err])
                     for (check, err) in zip(checked, errors)
                 ],
                 "-",

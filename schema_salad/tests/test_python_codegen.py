@@ -1,7 +1,7 @@
 import inspect
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Text, cast
+from typing import Any, Dict, List, cast
 
 import schema_salad.metaschema as cg_metaschema
 from schema_salad import codegen
@@ -46,7 +46,7 @@ def python_codegen(file_uri: str, target: Path) -> None:
     )
     codegen.codegen(
         "python",
-        cast(List[Dict[Text, Any]], schema_doc),
+        cast(List[Dict[str, Any]], schema_doc),
         schema_metadata,
         document_loader,
         target=str(target),

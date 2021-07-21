@@ -95,7 +95,7 @@ class Schema:
         # Ensure valid ctor args
         if not isinstance(atype, str):
             raise SchemaParseException(
-                "Schema type '{}' must be a string, was '{}.".format(atype, type(atype))
+                f"Schema type '{atype}' must be a string, was '{type(atype)}."
             )
         elif atype not in VALID_TYPES:
             fail_msg = f"{atype} is not a valid type."

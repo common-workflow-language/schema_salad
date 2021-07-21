@@ -208,7 +208,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
     args = parser.parse_args(argsl)
 
     if args.version is None and args.schema is None:
-        print("{}: error: too few arguments".format(sys.argv[0]))
+        print(f"{sys.argv[0]}: error: too few arguments.")
         return 1
 
     if args.quiet:
@@ -219,7 +219,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
     pkg = pkg_resources.require("schema_salad")
     if pkg:
         if args.version:
-            print("{} Current version: {}".format(sys.argv[0], pkg[0].version))
+            print(f"{sys.argv[0]} Current version: {pkg[0].version}")
             return 0
         else:
             _logger.info("%s Current version: %s", sys.argv[0], pkg[0].version)
@@ -289,7 +289,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         (schema_ctx, rdfs) = jsonld_context.salad_to_jsonld_context(schema_doc, metactx)
     else:
         raise ValidationException(
-            "Expected a CommentedSeq, got {}: {}.".format(type(schema_doc), schema_doc)
+            f"Expected a CommentedSeq, got {type(schema_doc)}: {schema_doc}."
         )
 
     # Create the loader that will be used to load the target document.
