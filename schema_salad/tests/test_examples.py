@@ -8,7 +8,7 @@ import schema_salad.schema
 from schema_salad.jsonld_context import makerdf
 from schema_salad.ref_resolver import Loader, file_uri, uri_file_path
 from schema_salad.sourceline import SourceLine, cmap
-from schema_salad.utils import ContextType
+from schema_salad.utils import ContextType, stdout
 
 from .util import get_data
 
@@ -273,7 +273,7 @@ def test_scoped_id() -> None:
     } == ra
 
     g = makerdf(None, ra, ctx)
-    print(g.serialize(format="n3"))
+    g.serialize(destination=stdout(), format="n3")
 
     ra, _ = ldr.resolve_all(
         cmap({"location": "foo", "bar": {"location": "baz"}}),
@@ -286,7 +286,7 @@ def test_scoped_id() -> None:
     } == ra
 
     g = makerdf(None, ra, ctx)
-    print(g.serialize(format="n3"))
+    g.serialize(destination=stdout(), format="n3")
 
     ra, _ = ldr.resolve_all(
         cmap({"id": "foo", "bar": {"location": "baz"}}),
@@ -299,7 +299,7 @@ def test_scoped_id() -> None:
     } == ra
 
     g = makerdf(None, ra, ctx)
-    print(g.serialize(format="n3"))
+    g.serialize(destination=stdout(), format="n3")
 
     ra, _ = ldr.resolve_all(
         cmap({"location": "foo", "bar": {"id": "baz"}}),
@@ -312,7 +312,7 @@ def test_scoped_id() -> None:
     } == ra
 
     g = makerdf(None, ra, ctx)
-    print(g.serialize(format="n3"))
+    g.serialize(destination=stdout(), format="n3")
 
 
 def test_subscoped_id() -> None:

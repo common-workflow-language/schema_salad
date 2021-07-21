@@ -17,7 +17,7 @@ from .avro.schema import SchemaParseException
 from .exceptions import ValidationException, to_one_line_messages
 from .makedoc import makedoc
 from .ref_resolver import Loader, file_uri
-from .utils import json_dumps
+from .utils import json_dumps, stdout
 
 register("json-ld", Parser, "rdflib_jsonld.parser", "JsonLDParser")
 _logger = logging.getLogger("salad")
@@ -30,7 +30,7 @@ def printrdf(
     sr: str,
 ) -> None:
     g = jsonld_context.makerdf(workflow, wf, ctx)
-    print(g.serialize(format=sr, encoding="utf-8").decode("utf-8"))
+    g.serialize(destination=stdout(), format=sr)
 
 
 def main(argsl: Optional[List[str]] = None) -> int:
@@ -341,7 +341,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
 
     # Optionally print the RDFS graph from the schema
     if args.print_rdfs:
-        print(rdfs.serialize(format=args.rdf_serializer).decode("utf-8"))
+        rdfs.serialize(destination=stdout(), format=args.rdf_serializer)
         return 0
 
     if args.print_metadata and not args.document:
