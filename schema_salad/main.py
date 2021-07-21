@@ -17,7 +17,7 @@ from .avro.schema import SchemaParseException
 from .exceptions import ValidationException, to_one_line_messages
 from .makedoc import makedoc
 from .ref_resolver import Loader, file_uri
-from .utils import json_dumps, stdout
+from .utils import json_dump, stdout
 
 register("json-ld", Parser, "rdflib_jsonld.parser", "JsonLDParser")
 _logger = logging.getLogger("salad")
@@ -265,11 +265,11 @@ def main(argsl: Optional[List[str]] = None) -> int:
 
     # Optionally print the schema after ref resolution
     if not args.document and args.print_pre:
-        print(json_dumps(schema_doc, indent=4))
+        json_dump(schema_doc, fp=sys.stdout, indent=4)
         return 0
 
     if not args.document and args.print_index:
-        print(json_dumps(list(metaschema_loader.idx.keys()), indent=4))
+        json_dump(list(metaschema_loader.idx.keys()), fp=sys.stdout, indent=4)
         return 0
 
     # Validate the schema document against the metaschema
@@ -322,7 +322,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
                 exc_info=((type(err), err, None) if args.debug else None),
             )
             if args.print_avro:
-                print(json_dumps(avsc_obj, indent=4))
+                json_dump(avsc_obj, fp=sys.stdout, indent=4)
             return 1
     else:
         _logger.error("Schema `%s` must be a list.", args.schema)
@@ -330,13 +330,13 @@ def main(argsl: Optional[List[str]] = None) -> int:
 
     # Optionally print Avro-compatible schema from schema
     if args.print_avro:
-        print(json_dumps(avsc_obj, indent=4))
+        json_dump(avsc_obj, fp=sys.stdout, indent=4)
         return 0
 
     # Optionally print the json-ld context from the schema
     if args.print_jsonld_context:
         j = {"@context": schema_ctx}
-        print(json_dumps(j, indent=4, sort_keys=True))
+        json_dump(j, fp=sys.stdout, indent=4, sort_keys=True)
         return 0
 
     # Optionally print the RDFS graph from the schema
@@ -345,7 +345,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         return 0
 
     if args.print_metadata and not args.document:
-        print(json_dumps(schema_metadata, indent=4))
+        json_dump(schema_metadata, fp=sys.stdout, indent=4)
         return 0
 
     if args.print_inheritance_dot:
@@ -379,11 +379,11 @@ def main(argsl: Optional[List[str]] = None) -> int:
 
     # Optionally print the document after ref resolution
     if args.print_pre:
-        print(json_dumps(document, indent=4))
+        json_dump(document, fp=sys.stdout, indent=4)
         return 0
 
     if args.print_index:
-        print(json_dumps(list(document_loader.idx.keys()), indent=4))
+        json_dump(list(document_loader.idx.keys()), fp=sys.stdout, indent=4)
         return 0
 
     # Validate the user document against the schema
@@ -410,7 +410,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
             return 1
 
     if args.print_metadata:
-        print(json_dumps(doc_metadata, indent=4))
+        json_dump(doc_metadata, fp=sys.stdout, indent=4)
         return 0
 
     print(f"Document `{args.document}` is valid")
