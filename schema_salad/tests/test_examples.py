@@ -1,5 +1,6 @@
 import os
 
+from pytest import CaptureFixture
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from ruamel.yaml.main import YAML
 
@@ -41,6 +42,81 @@ def test_self_validate() -> None:
     assert path
     assert 0 == schema_salad.main.main(argsl=[path])
     assert 0 == schema_salad.main.main(argsl=[path, path])
+
+
+def test_print_rdf(capfdbinary: CaptureFixture[bytes]) -> None:
+    """Test --print-rdf."""
+    schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    document_path = get_data("tests/test_real_cwl/bio-cwl-tools/bamtools_stats.cwl")
+    assert schema_path and document_path
+    assert 0 == schema_salad.main.main(
+        argsl=["--print-rdf", schema_path, document_path]
+    )
+    captured = capfdbinary.readouterr()
+    assert captured.out
+
+
+def test_print_pre_schema(capfdbinary: CaptureFixture[bytes]) -> None:
+    """Test --print-pre only schema."""
+    schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    assert schema_path
+    assert 0 == schema_salad.main.main(argsl=["--print-pre", schema_path])
+    captured = capfdbinary.readouterr()
+    assert captured.out
+
+
+def test_print_pre(capfdbinary: CaptureFixture[bytes]) -> None:
+    """Test --print-pre."""
+    schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    document_path = get_data("tests/test_real_cwl/bio-cwl-tools/bamtools_stats.cwl")
+    assert schema_path and document_path
+    assert 0 == schema_salad.main.main(
+        argsl=["--print-pre", schema_path, document_path]
+    )
+    captured = capfdbinary.readouterr()
+    assert captured.out
+
+
+def test_print_schema_index(capfdbinary: CaptureFixture[bytes]) -> None:
+    """Test --print-index only with a schema."""
+    schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    assert schema_path
+    assert 0 == schema_salad.main.main(argsl=["--print-index", schema_path])
+    captured = capfdbinary.readouterr()
+    assert captured.out
+
+
+def test_print_index(capfdbinary: CaptureFixture[bytes]) -> None:
+    """Test --print-index."""
+    schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    document_path = get_data("tests/test_real_cwl/bio-cwl-tools/bamtools_stats.cwl")
+    assert schema_path and document_path
+    assert 0 == schema_salad.main.main(
+        argsl=["--print-index", schema_path, document_path]
+    )
+    captured = capfdbinary.readouterr()
+    assert captured.out
+
+
+def test_print_schema_metadata(capfdbinary: CaptureFixture[bytes]) -> None:
+    """Test --print-metadata only for a schema."""
+    schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    assert schema_path
+    assert 0 == schema_salad.main.main(argsl=["--print-metadata", schema_path])
+    captured = capfdbinary.readouterr()
+    assert captured.out
+
+
+def test_print_metadata(capfdbinary: CaptureFixture[bytes]) -> None:
+    """Test --print-metadata."""
+    schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    document_path = get_data("tests/test_real_cwl/bio-cwl-tools/bamtools_stats.cwl")
+    assert schema_path and document_path
+    assert 0 == schema_salad.main.main(
+        argsl=["--print-metadata", schema_path, document_path]
+    )
+    captured = capfdbinary.readouterr()
+    assert captured.out
 
 
 def test_avro_regression() -> None:

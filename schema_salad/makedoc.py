@@ -24,9 +24,9 @@ from urllib.parse import urldefrag
 import mistune
 
 from . import schema
-from .validate import avro_type_name
 from .exceptions import SchemaSaladException, ValidationException
 from .utils import add_dictlist, aslist
+from .validate import avro_type_name
 
 _logger = logging.getLogger("salad")
 

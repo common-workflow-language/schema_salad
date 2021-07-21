@@ -124,18 +124,6 @@ diff_pylint_report: pylint_report.txt
 	$(COVBASE) -m schema_salad.main \
 		--print-avro schema_salad/metaschema/metaschema.yml \
 		> /dev/null
-	$(COVBASE) -m schema_salad.main \
-		--print-rdf schema_salad/metaschema/metaschema.yml \
-		> /dev/null
-	$(COVBASE) -m schema_salad.main \
-		--print-pre schema_salad/metaschema/metaschema.yml \
-		> /dev/null
-	$(COVBASE) -m schema_salad.main \
-		--print-index schema_salad/metaschema/metaschema.yml \
-		> /dev/null
-	$(COVBASE) -m schema_salad.main \
-		--print-metadata schema_salad/metaschema/metaschema.yml \
-		> /dev/null
 	$(COVBASE) -m schema_salad.makedoc \
 		schema_salad/metaschema/metaschema.yml \
 		> /dev/null
