@@ -59,7 +59,7 @@ jobs:
           fail_ci_if_error: true
   test-aarch64:
     name: "Test ${{ matrix.pyver }} aarch64"
-  :  strategy:
+  strategy:
       matrix:
         pyver: [cp39-cp39]
         arch: [aarch64]
