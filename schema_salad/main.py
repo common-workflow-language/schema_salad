@@ -268,11 +268,11 @@ def main(argsl: Optional[List[str]] = None) -> int:
     args.documents = [item for sublist in map(lambda fn: glob.glob(fn), args.documents) for item in sublist]
 
     # Optionally print the schema after ref resolution
-    if not args.document and args.print_pre:
+    if not args.documents and args.print_pre:
         json_dump(schema_doc, fp=sys.stdout, indent=4)
         return 0
 
-    if not args.document and args.print_index:
+    if not args.documents and args.print_index:
         json_dump(list(metaschema_loader.idx.keys()), fp=sys.stdout, indent=4)
         return 0
 
@@ -348,7 +348,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         rdfs.serialize(destination=stdout(), format=args.rdf_serializer)
         return 0
 
-    if args.print_metadata and not args.document:
+    if args.print_metadata and not args.documents:
         json_dump(schema_metadata, fp=sys.stdout, indent=4)
         return 0
 
