@@ -1,0 +1,29 @@
+name: publish-quay
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch: {}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Get image tags
+        id: image_tags
+        run: |
+          echo -n ::set-output name=IMAGE_TAGS::${GITHUB_REF#refs/*/}
+      - name: Login to Quay.io
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ secrets.REGISTRY_SERVER }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - name: Build and publish schema-salad image to Quay
+        uses: docker/build-push-action@v2
+        with:
+          file: schema_salad.Dockerfile
+          tags: quay.io/commonwl/schema_salad:${{ steps.image_tags.outputs.IMAGE_TAGS }}
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
