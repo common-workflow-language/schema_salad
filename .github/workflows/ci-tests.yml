@@ -85,7 +85,7 @@ jobs:
             ${{ env.img }} \
             bash -exc '${{ env.py }} -m pip install virtualenv && ${{ env.py }} -m venv .env && \
             source .env/bin/activate && \
-            python -m pip install --upgrade pip -r mypy_requirements.txt && \
+            python -m pip install --upgrade pip -r mypy_requirements.txt -r requirements.txt && \
             MYPYPATH=typeshed SCHEMA_SALAD_USE_MYPYC=1 pip install -e . && \
             deactivate'
     - name: Test with pytest
