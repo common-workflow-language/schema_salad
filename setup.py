@@ -84,12 +84,11 @@ install_requires = [
     "ruamel.yaml >= 0.12.4, != 0.16.6, < 0.18",
     # once the minimum version for ruamel.yaml >= 0.15.99
     # then please update the mypy targets in the Makefile
-    "rdflib >= 4.2.2, <= 5.0.0",
+    "rdflib >= 4.2.2, < 7.0.0",
     "rdflib-jsonld >= 0.3.0, < 0.6.0",
     "mistune >= 0.8.1, < 0.9",
     "CacheControl >= 0.11.7, < 0.13",
     "lockfile >= 0.9",
-    "typing-extensions",
 ]
 
 extras_require = {
@@ -98,7 +97,7 @@ extras_require = {
 
 setup(
     name="schema-salad",
-    version="8.0",  # update the VERSION prefix in the Makefile as well 🙂
+    version="8.1",  # update the VERSION prefix in the Makefile as well 🙂
     description="Schema Annotations for Linked Avro Data (SALAD)",
     long_description=open(README).read(),
     long_description_content_type="text/x-rst",

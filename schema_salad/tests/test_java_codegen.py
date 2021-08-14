@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Text, cast
+from typing import Any, Dict, List, Optional, cast
 
 from schema_salad import codegen, ref_resolver
 from schema_salad.schema import load_schema
@@ -61,7 +61,7 @@ def java_codegen(file_uri: str, target: Path, examples: Optional[Path] = None) -
     )
     codegen.codegen(
         "java",
-        cast(List[Dict[Text, Any]], schema_doc),
+        cast(List[Dict[str, Any]], schema_doc),
         schema_metadata,
         document_loader,
         target=str(target),

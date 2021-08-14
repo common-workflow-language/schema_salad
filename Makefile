@@ -33,7 +33,7 @@ COVBASE=coverage run --append
 
 # Updating the Major & Minor version below?
 # Don't forget to update setup.py as well
-VERSION=8.0.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
+VERSION=8.1.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
 
 ## all         : default task
@@ -123,18 +123,6 @@ diff_pylint_report: pylint_report.txt
 		> /dev/null
 	$(COVBASE) -m schema_salad.main \
 		--print-avro schema_salad/metaschema/metaschema.yml \
-		> /dev/null
-	$(COVBASE) -m schema_salad.main \
-		--print-rdf schema_salad/metaschema/metaschema.yml \
-		> /dev/null
-	$(COVBASE) -m schema_salad.main \
-		--print-pre schema_salad/metaschema/metaschema.yml \
-		> /dev/null
-	$(COVBASE) -m schema_salad.main \
-		--print-index schema_salad/metaschema/metaschema.yml \
-		> /dev/null
-	$(COVBASE) -m schema_salad.main \
-		--print-metadata schema_salad/metaschema/metaschema.yml \
 		> /dev/null
 	$(COVBASE) -m schema_salad.makedoc \
 		schema_salad/metaschema/metaschema.yml \

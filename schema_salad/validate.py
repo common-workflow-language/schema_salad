@@ -1,6 +1,6 @@
 import logging
 import pprint
-from typing import Any, List, MutableMapping, MutableSequence, Optional, Set
+from typing import Any, List, Mapping, MutableMapping, MutableSequence, Optional, Set
 from urllib.parse import urlsplit
 
 from . import avro
@@ -21,6 +21,7 @@ def validate(
     identifiers: Optional[List[str]] = None,
     strict: bool = False,
     foreign_properties: Optional[Set[str]] = None,
+    vocab: Optional[Mapping[str, str]] = None,
 ) -> bool:
     if not identifiers:
         identifiers = []
@@ -33,6 +34,7 @@ def validate(
         strict=strict,
         foreign_properties=foreign_properties,
         raise_ex=False,
+        vocab=vocab,
     )
 
 
@@ -47,11 +49,48 @@ def avro_shortname(name: str) -> str:
     return name.split(".")[-1]
 
 
+saladp = "https://w3id.org/cwl/salad#"
+primitives = {
+    "http://www.w3.org/2001/XMLSchema#string": "string",
+    "http://www.w3.org/2001/XMLSchema#boolean": "boolean",
+    "http://www.w3.org/2001/XMLSchema#int": "int",
+    "http://www.w3.org/2001/XMLSchema#long": "long",
+    "http://www.w3.org/2001/XMLSchema#float": "float",
+    "http://www.w3.org/2001/XMLSchema#double": "double",
+    saladp + "null": "null",
+    saladp + "enum": "enum",
+    saladp + "array": "array",
+    saladp + "record": "record",
+}
+
+
+def avro_type_name(url: str) -> str:
+    """
+    Turn a URL into an Avro-safe name.
+
+    If the URL has no fragment, return this plain URL.
+
+    Extract either the last part of the URL fragment past the slash, otherwise
+    the whole fragment.
+    """
+    global primitives
+
+    if url in primitives:
+        return primitives[url]
+
+    u = urlsplit(url)
+    joined = filter(
+        lambda x: x,
+        list(reversed(u.netloc.split("."))) + u.path.split("/") + u.fragment.split("/"),
+    )
+    return ".".join(joined)
+
+
 def friendly(v):  # type: (Any) -> Any
     if isinstance(v, avro.schema.NamedSchema):
         return avro_shortname(v.name)
     if isinstance(v, avro.schema.ArraySchema):
-        return "array of <{}>".format(friendly(v.items))
+        return f"array of <{friendly(v.items)}>"
     elif isinstance(v, avro.schema.PrimitiveSchema):
         return v.type
     elif isinstance(v, avro.schema.UnionSchema):
@@ -77,6 +116,7 @@ def validate_ex(
     strict_foreign_properties=False,  # type: bool
     logger=_logger,  # type: logging.Logger
     skip_foreign_properties=False,  # type: bool
+    vocab=None,  # type: Optional[Mapping[str, str]]
 ):
     # type: (...) -> bool
     """Determine if a python datum is an instance of a schema."""
@@ -86,6 +126,9 @@ def validate_ex(
 
     if not foreign_properties:
         foreign_properties = set()
+
+    if vocab is None:
+        raise Exception("vocab must be provided")
 
     schema_type = expected_schema.type
 
@@ -113,26 +156,24 @@ def validate_ex(
         if isinstance(datum, int) and INT_MIN_VALUE <= datum <= INT_MAX_VALUE:
             return True
         if raise_ex:
-            raise ValidationException("`{}` is not int".format(vpformat(datum)))
+            raise ValidationException(f"`{vpformat(datum)}` is not int")
         return False
     elif schema_type == "long":
         if (isinstance(datum, int)) and LONG_MIN_VALUE <= datum <= LONG_MAX_VALUE:
             return True
         if raise_ex:
-            raise ValidationException(
-                "the value `{}` is not long".format(vpformat(datum))
-            )
+            raise ValidationException(f"the value `{vpformat(datum)}` is not long")
         return False
     elif schema_type in ["float", "double"]:
         if isinstance(datum, int) or isinstance(datum, float):
             return True
         if raise_ex:
             raise ValidationException(
-                "the value `{}` is not float or double".format(vpformat(datum))
+                f"the value `{vpformat(datum)}` is not float or double"
             )
         return False
     elif isinstance(expected_schema, avro.schema.EnumSchema):
-        if expected_schema.name == "w3id.org.cwl.salad.Any":
+        if expected_schema.name in ("org.w3id.cwl.salad.Any", "Any"):
             if datum is not None:
                 return True
             if raise_ex:
@@ -141,10 +182,10 @@ def validate_ex(
         if not isinstance(datum, str):
             if raise_ex:
                 raise ValidationException(
-                    "value is a {} but expected a string".format(type(datum).__name__)
+                    f"value is a {type(datum).__name__} but expected a string"
                 )
             return False
-        if expected_schema.name == "w3id.org.cwl.cwl.Expression":
+        if expected_schema.name == "org.w3id.cwl.cwl.Expression":
             if "$(" in datum or "${" in datum:
                 return True
             if raise_ex:
@@ -182,6 +223,7 @@ def validate_ex(
                         strict_foreign_properties=strict_foreign_properties,
                         logger=logger,
                         skip_foreign_properties=skip_foreign_properties,
+                        vocab=vocab,
                     ):
                         return False
                 except ValidationException as v:
@@ -208,6 +250,7 @@ def validate_ex(
                 strict_foreign_properties=strict_foreign_properties,
                 logger=logger,
                 skip_foreign_properties=skip_foreign_properties,
+                vocab=vocab,
             ):
                 return True
 
@@ -244,6 +287,7 @@ def validate_ex(
                     strict_foreign_properties=strict_foreign_properties,
                     logger=logger,
                     skip_foreign_properties=skip_foreign_properties,
+                    vocab=vocab,
                 )
             except ClassValidationException:
                 raise
@@ -254,9 +298,7 @@ def validate_ex(
                 "",
                 None,
                 [
-                    ValidationException(
-                        "tried {} but".format(friendly(check)), None, [err]
-                    )
+                    ValidationException(f"tried {friendly(check)} but", None, [err])
                     for (check, err) in zip(checked, errors)
                 ],
                 "-",
@@ -284,7 +326,10 @@ def validate_ex(
                         raise ValidationException(f"Missing '{f.name}' field")
                     else:
                         return False
-                if avro_shortname(expected_schema.name) != d:
+                avroname = None
+                if d in vocab:
+                    avroname = avro_type_name(vocab[d])
+                if expected_schema.name != d and expected_schema.name != avroname:
                     if raise_ex:
                         raise ValidationException(
                             "Expected class '{}' but this is '{}'".format(
@@ -321,6 +366,7 @@ def validate_ex(
                     strict_foreign_properties=strict_foreign_properties,
                     logger=logger,
                     skip_foreign_properties=skip_foreign_properties,
+                    vocab=vocab,
                 ):
                     return False
             except ValidationException as v:
