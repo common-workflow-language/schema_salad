@@ -85,8 +85,8 @@ jobs:
             ${{ env.img }} \
             bash -exc '${{ env.py }} -m pip install virtualenv && ${{ env.py }} -m venv .env && \
             source .env/bin/activate && \
-            python -m pip install --upgrade pip && \
-            pip install -e . && \
+            python -m pip install --upgrade pip -r mypy_requirements.txt && \
+            SCHEMA_SALAD_USE_MYPYC=1 pip install -e . && \
             deactivate'
     - name: Test with pytest
       run: |
@@ -94,9 +94,8 @@ jobs:
             ${{ env.img }} \
             bash -exc '\
             source .env/bin/activate && \
-            pip install setuptools wheel && \
-            pip install tox tox-gh-actions && \
-            tox && \
+            pip install setuptools wheel -r test-requirements.txt && \
+            make mypyc
             deactivate'
 
   tox-style:
