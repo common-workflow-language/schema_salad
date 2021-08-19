@@ -1,3 +1,5 @@
+.coverage
+coverage.xml
 .tox/
 .eggs/
 .vscode/
@@ -16,4 +18,10 @@ testenv*/
 .github/
 schema_salad/*.so
 *.Dockerfile
+build-schema_salad-docker.sh
+__pycache__/
 */__pycache__/
+**/__pycache__/
+*.egg-info/
+*.orig
+.dockerignore
