@@ -1,6 +1,6 @@
 FROM python:3.9-alpine as builder
 
-RUN apk add --no-cache git gcc python3-dev libxml2-dev libxslt-dev libc-dev linux-headers
+RUN apk add --no-cache git gcc python3-dev libc-dev
 
 WORKDIR /schema_salad
 COPY . .
