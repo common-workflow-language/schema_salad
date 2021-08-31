@@ -2,8 +2,6 @@
 import collections
 from typing import Any, Dict, List, MutableSequence, Optional, Set, Union
 
-from . import schema
-
 
 class TypeDef:  # pylint: disable=too-few-public-methods
     """Schema Salad type description."""
@@ -66,7 +64,7 @@ class CodeGenBase:
     @staticmethod
     def safe_name(name: str) -> str:
         """Generate a safe version of the given name."""
-        return schema.avro_field_name(name)
+        raise NotImplementedError()
 
     def begin_class(
         self,  # pylint: disable=too-many-arguments

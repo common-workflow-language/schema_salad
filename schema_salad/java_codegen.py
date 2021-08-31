@@ -160,6 +160,8 @@ class JavaCodeGen(CodeGenBase):
         if avn in ("class", "extends", "abstract", "default", "package"):
             # reserved words
             avn = avn + "_"
+        if avn and avn.startswith("anon."):
+            avn = avn[5:]
         return avn
 
     def interface_name(self, n: str) -> str:
@@ -685,6 +687,7 @@ public enum {clazz} {{
         self.declare_field(name, fieldtype, doc, True)
         if optional:
             set_uri = """
+    Boolean __original_is_null = {safename} == null;
     if ({safename} == null) {{
       if (__docRoot != null) {{
         {safename} = java.util.Optional.of(__docRoot);
@@ -692,7 +695,11 @@ public enum {clazz} {{
         {safename} = java.util.Optional.of("_:" + java.util.UUID.randomUUID().toString());
       }}
     }}
-    __baseUri = (String) {safename}.orElse(null);
+    if (__original_is_null) {{
+        __baseUri = __baseUri_;
+    }} else {{
+        __baseUri = (String) {safename}.orElse(null);
+    }}
 """
         else:
             set_uri = """
