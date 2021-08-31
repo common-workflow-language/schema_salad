@@ -1,0 +1,53 @@
+{
+  "id": "placeholder1",
+  "update_date": "2020-12-08",
+  "host": {
+    "host_species": "http://purl.obolibrary.org/obo/NCBITaxon_9606"
+  },
+  "sample": {
+    "sample_id": "MW343767.1",
+    "database": "https://www.ncbi.nlm.nih.gov/genbank/",
+    "source_database_accession": [
+      "http://identifiers.org/insdc/MW343767.1#sequence"
+    ],
+    "collection_date": "2020-10-27",
+    "specimen_source": [
+      "http://purl.obolibrary.org/obo/NCIT_C155831"
+    ],
+    "original_collection_location": "USA",
+    "collection_location": "http://www.wikidata.org/entity/Q23556",
+    "country": "USA",
+    "place": "Atlanta"
+  },
+  "virus": {
+    "virus_strain": "SARS-CoV-2/human/USA/GA-CDC-7701/2020",
+    "virus_species": "http://purl.obolibrary.org/obo/NCBITaxon_2697049"
+  },
+  "technology": {
+    "alignment_protocol": "freebayes v. 1.3 ",
+    "sample_sequencing_technology": [
+      "http://purl.obolibrary.org/obo/OBI_0000759"
+    ],
+    "assembly_method": "http://purl.obolibrary.org/obo/GENEPIO_0002028"
+  },
+  "submitter": {
+    "authors": [
+      "Li,Y.",
+      "Tao,Y.",
+      "Zhang,J.",
+      "Queen,K.",
+      "Uehara,A.",
+      "Cook,P.",
+      "Paden,C.R.",
+      "Wang,H.",
+      "Tong,S."
+    ],
+    "submitter_name": [
+      " Respiratory Viruses Branch"
+    ],
+    "submitter_address": "Centers for Disease Control and Prevention, 1600 Clifton Rd, Atlanta, GA 30329, USA"
+  },
+  "warnings": [
+
+  ]
+}

@@ -1,0 +1,20 @@
+#! /bin/sh
+#
+# This script sets up a Guix container. Make sure guix is in the path
+# - after installing Guix (on Debian).
+#
+# Note that pyshex etc are part of the guix-bioinformatics channel at
+#
+#   https://git.genenetwork.org/guix-bioinformatics/guix-bioinformatics
+
+env GUIX_PACKAGE_PATH=~/guix-bioinformatics/ guix environment -C guix --ad-hoc git python python-pyyaml python-pycurl python-magic  nss-certs python-pyshex --network openssl python-schema-salad python-pytest which less vim python-toml python-iniconfig  python-tox python-mypy python-pylint
+
+# Once in the shell you can do
+# --- run tests (takes 1 minute, skips lint and mypy)
+# tox 
+# --- install and run
+# python3 setup.py install --user
+# ~/.local/bin/schema-salad-tool --help
+# --- Example
+# ~/.local/bin/schema-salad-tool --debug --print-rdf schema_salad/tests/data/pubseq/pubseq-schema.yml schema_salad/tests/data/pubseq/MW084447.1.json schema_salad/tests/data/pubseq/MW343767.1.json
+

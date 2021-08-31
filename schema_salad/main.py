@@ -1,6 +1,7 @@
 """Command line interface to schema-salad."""
 
 import argparse
+import glob
 import logging
 import os
 import sys
@@ -200,7 +201,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
     )
 
     parser.add_argument("schema", type=str, nargs="?", default=None)
-    parser.add_argument("document", type=str, nargs="?", default=None)
+    parser.add_argument("documents", nargs="*", default=None)
     parser.add_argument(
         "--version", "-v", action="store_true", help="Print version", default=None
     )
@@ -263,12 +264,15 @@ def main(argsl: Optional[List[str]] = None) -> int:
         makedoc(args)
         return 0
 
+    # Use globbing to expand the list of documents - and flatten again
+    args.documents = [item for sublist in map(lambda fn: glob.glob(fn), args.documents) for item in sublist]
+
     # Optionally print the schema after ref resolution
-    if not args.document and args.print_pre:
+    if not args.documents and args.print_pre:
         json_dump(schema_doc, fp=sys.stdout, indent=4)
         return 0
 
-    if not args.document and args.print_index:
+    if not args.documents and args.print_index:
         json_dump(list(metaschema_loader.idx.keys()), fp=sys.stdout, indent=4)
         return 0
 
@@ -344,7 +348,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         rdfs.serialize(destination=stdout(), format=args.rdf_serializer)
         return 0
 
-    if args.print_metadata and not args.document:
+    if args.print_metadata and not args.documents:
         json_dump(schema_metadata, fp=sys.stdout, indent=4)
         return 0
 
@@ -357,25 +361,36 @@ def main(argsl: Optional[List[str]] = None) -> int:
         return 0
 
     # If no document specified, all done.
-    if not args.document:
+    if not args.documents:
         print(f"Schema `{args.schema}` is valid")
         return 0
 
-    # Load target document and resolve refs
-    try:
-        uri = args.document
-        document, doc_metadata = document_loader.resolve_ref(
-            uri, strict_foreign_properties=args.strict_foreign_properties
-        )
-    except ValidationException as e:
-        msg = to_one_line_messages(e) if args.print_oneline else str(e)
-        _logger.error(
-            "Document `%s` failed validation:\n%s",
-            args.document,
-            msg,
-            exc_info=args.debug,
-        )
-        return 1
+    # Load target document and resolve refs. Note that this can now
+    # take multiple document files. doc_metadata only returns the
+    # metadata for the last document as they should be the same
+    document = []
+    ids = {} # check for duplicate use of document id as it creates
+             # unpredictable output
+    for uri in args.documents:
+        try:
+            document1, doc_metadata = document_loader.resolve_ref(
+                uri, strict_foreign_properties=args.strict_foreign_properties
+            )
+            if "id" in document1:
+                doc_id = document1["id"]
+                if doc_id in ids:
+                    raise Exception(f"Document id {doc_id} is duplicated in {uri}!")
+                ids[doc_id] = True
+            document.append(document1)
+        except ValidationException as e:
+            msg = to_one_line_messages(e) if args.print_oneline else str(e)
+            _logger.error(
+                "Document `%s` failed validation:\n%s",
+                document,
+                msg,
+                exc_info=args.debug,
+            )
+            return 1
 
     # Optionally print the document after ref resolution
     if args.print_pre:
@@ -397,13 +412,13 @@ def main(argsl: Optional[List[str]] = None) -> int:
         )
     except ValidationException as e:
         msg2 = to_one_line_messages(e) if args.print_oneline else str(e)
-        _logger.error(f"While validating document `{args.document}`:\n{msg2}")
+        _logger.error(f"While validating document `{args.documents}`:\n{msg2}")
         return 1
 
     # Optionally convert the document to RDF
     if args.print_rdf:
         if isinstance(document, (Mapping, MutableSequence)):
-            printrdf(args.document, document, schema_ctx, args.rdf_serializer)
+            printrdf(args.documents, document, schema_ctx, args.rdf_serializer)
             return 0
         else:
             print("Document must be a dictionary or list.")
@@ -413,7 +428,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         json_dump(doc_metadata, fp=sys.stdout, indent=4)
         return 0
 
-    print(f"Document `{args.document}` is valid")
+    print(f"Document `{args.documents}` is valid")
 
     return 0
 

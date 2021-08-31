@@ -1,0 +1,326 @@
+$base: http://biohackathon.org/bh20-seq-schema
+$namespaces:
+  cc:  https://creativecommons.org/ns#
+  dc:  http://purl.org/metadata/dublin_core_elements#
+  sch: https://schema.org/
+  efo: http://www.ebi.ac.uk/efo/
+  obo: http://purl.obolibrary.org/obo/
+  sio: http://semanticscience.org/resource/
+  edam: http://edamontology.org/
+  # Vocabulary for clinical care, translational and basic research,
+  # and public information and administrative activities
+  evs: http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#
+  # Software Ontology
+  swo: http://www.ebi.ac.uk/swo/
+
+$graph:
+
+- name: licenseSchema
+  type: record
+  fields:
+    license_type:
+      doc: License types as defined in https://wiki.creativecommons.org/images/d/d6/Ccrel-1.0.pdf
+      type: string
+      jsonldPredicate:
+          _id: https://creativecommons.org/ns#License
+          _type: "@id"
+          noLinkCheck: true
+    title:
+      doc: Attribution title related to data license
+      type: string?
+      jsonldPredicate:
+          _id: http://purl.org/metadata/dublin_core_elements#Title
+    attribution_name:
+      doc: Attribution NAME related to data license
+      type: string?
+      jsonldPredicate:
+          _id: https://creativecommons.org/ns#attributionName
+    attribution_url:
+      doc: Attribution URL related to data license
+      type: string?
+      jsonldPredicate:
+          _id: https://creativecommons.org/ns#attributionURL
+          _type: "@id"
+          noLinkCheck: true
+    attribution_source:
+      doc: Attribution source URL related to data license
+      type: string?
+      jsonldPredicate:
+          _id: https://creativecommons.org/ns#attributionSource
+          _type: "@id"
+          noLinkCheck: true
+
+- name: hostSchema
+  type: record
+  fields:
+    host_species:
+        doc: Host species as defined in NCBITaxon, e.g. http://purl.obolibrary.org/obo/NCBITaxon_9606 for Homo sapiens
+        type: string
+        jsonldPredicate:
+          _id: http://www.ebi.ac.uk/efo/EFO_0000532
+          _type: "@id"
+          noLinkCheck: true
+    host_id:
+        doc: Identifer for the host. If you submit multiple samples from the same host, use the same host_id for those samples
+        type: string?
+        jsonldPredicate:
+          _id: http://semanticscience.org/resource/SIO_000115
+    host_sex:
+        doc: Sex of the host as defined in PATO, expect Male (http://purl.obolibrary.org/obo/PATO_0000384) or Female (http://purl.obolibrary.org/obo/PATO_0000383) or in Intersex (http://purl.obolibrary.org/obo/PATO_0001340)
+        type: string?
+        jsonldPredicate:
+          _id: http://purl.obolibrary.org/obo/PATO_0000047
+          _type: "@id"
+          noLinkCheck: true
+    host_age:
+        doc: Age of the host as number (e.g. 50)
+        type: int?
+        jsonldPredicate:
+          _id: http://purl.obolibrary.org/obo/PATO_0000011
+    host_age_unit:
+        doc: Unit of host age e.g. http://purl.obolibrary.org/obo/UO_0000036
+        type: string?
+        jsonldPredicate:
+          _id: http://purl.obolibrary.org/obo/NCIT_C42574
+          _type: "@id"
+          noLinkCheck: true
+    host_health_status:
+        doc: A condition or state at a particular time, must be one of the following (obo:NCIT_C115935 obo:NCIT_C3833 obo:NCIT_C25269 obo:GENEPIO_0002020 obo:GENEPIO_0001849 obo:NCIT_C28554 obo:NCIT_C37987)
+        type: string?
+        jsonldPredicate:
+          _id: http://purl.obolibrary.org/obo/NCIT_C25688
+          _type: "@id"
+          noLinkCheck: true
+    host_treatment:
+      doc: Process in which the act is intended to modify or alter host status
+      type: string?
+      jsonldPredicate:
+          _id: http://www.ebi.ac.uk/efo/EFO_0000727
+    host_vaccination:
+      doc: List of vaccines given to the host
+      type: string[]?
+      jsonldPredicate:
+          _id: http://purl.obolibrary.org/obo/VO_0000002
+    ethnicity:
+      doc: Ethinicity of the host e.g. http://purl.obolibrary.org/obo/HANCESTRO_0010
+      type: string?
+      jsonldPredicate:
+          _id: http://semanticscience.org/resource/SIO_001014
+          _type: "@id"
+          noLinkCheck: true
+    additional_host_information:
+      doc: Field for additional host information
+      type: string?
+      jsonldPredicate:
+          _id: http://semanticscience.org/resource/SIO_001167
+
+- name: sampleSchema
+  type: record
+  fields:
+    sample_id:
+      doc: Unique sample identifier as defined by the submitter
+      type: string
+      jsonldPredicate:
+        _id: http://semanticscience.org/resource/SIO_000115
+    collection_date:
+      doc: Date when the sample was taken
+      type: string
+      jsonldPredicate:
+        _id: https://ncit.nci.nih.gov/ncitbrowser/ConceptReport.jsp?dictionary=NCI_Thesaurus&ns=ncit&code=C164024
+    collection_location:
+      doc: Geographical location where the sample was collected as wikidata reference, e.g. http://www.wikidata.org/entity/Q148 (China)
+      type: string?
+      jsonldPredicate:
+        _id: http://purl.obolibrary.org/obo/GAZ_00000448
+        _type: "@id"
+        noLinkCheck: true
+    original_collection_location:
+      doc: Original geographical location where the sample was collected as a string
+      type: string?
+      jsonldPredicate:
+        _id: http://purl.obolibrary.org/obo/GAZ_00000448
+    country:
+      doc: Original country location as text
+      type: string?
+      jsonldPredicate:
+        _id: http://purl.obolibrary.org/obo/OBI_0001627
+    place:
+      doc: Original place as text
+      type: string?
+      jsonldPredicate:
+        # Geographical region
+        _id: http://purl.obolibrary.org/obo/GEO_000000372
+    collector_name:
+      doc: Name of the person that took the sample
+      type: string?
+      jsonldPredicate:
+          _id: http://purl.obolibrary.org/obo/OBI_0001895
+    collecting_institution:
+      doc: Institute that was responsible for sampling
+      type: string?
+      jsonldPredicate:
+          _id: http://purl.obolibrary.org/obo/NCIT_C41206
+    specimen_source:
+      doc: Method how the specimen was derived as NCIT IRI, e.g. http://purl.obolibrary.org/obo/NCIT_C155831 (=nasopharyngeal swab)
+      type: string[]?
+      jsonldPredicate:
+          _id: http://purl.obolibrary.org/obo/OBI_0001479
+          _type: "@id"
+          noLinkCheck: true
+    sample_storage_conditions:
+      doc: Information about storage of a specified type, e.g.  frozen specimen, paraffin, fresh ....
+      type: string?
+      jsonldPredicate:
+          _id: http://purl.obolibrary.org/obo/OBI_0001472
+    additional_collection_information:
+      doc: Add additional comment about the circumstances that a sample was taken
+      type: string?
+      jsonldPredicate:
+          _id: http://semanticscience.org/resource/SIO_001167
+    database:
+      doc: URI to database, e.g. https://www.ncbi.nlm.nih.gov/genbank/
+      type: string?
+      jsonldPredicate:
+          _id: https://schema.org/maintainer
+    source_database_accession:
+      doc: If data is deposit at a public resource (e.g. Genbank, ENA) enter the Accession Id here. Please use a resolveable URL (e.g. http://identifiers.org/insdc/LC522350.1#sequence)
+      type: string[]?
+      jsonldPredicate:
+          _id: http://edamontology.org/data_2091
+          _type: "@id"
+          noLinkCheck: true
+
+- name: virusSchema
+  type: record
+  fields:
+    virus_species:
+      doc: The name of virus species from the NCBI taxonomy database, e.g. http://purl.obolibrary.org/obo/NCBITaxon_2697049 for Severe acute respiratory syndrome coronavirus 2
+      type: string
+      jsonldPredicate:
+          _id: http://edamontology.org/data_1875
+          _type: "@id"
+          noLinkCheck: true
+    virus_strain:
+      doc: Name of the virus strain
+      type: string?
+      jsonldPredicate:
+          _id: http://semanticscience.org/resource/SIO_010055
+
+- name: technologySchema
+  type: record
+  fields:
+    sample_sequencing_technology:
+      doc: Technology device that was used to sequence the sample (e.g Sanger, Nanopore MiniION)
+      type: string[]
+      jsonldPredicate:
+        _id: http://purl.obolibrary.org/obo/NCIT_C153598
+        _type: "@id"
+        noLinkCheck: true
+    assembly_method:
+      doc: Assembly method refers to how the reads were assembled into contigs for which either a de novo (http://purl.obolibrary.org/obo/GENEPIO_0001628) or mapping/reference based (http://purl.obolibrary.org/obo/GENEPIO_0002028) strategy is used.
+      type: string
+      jsonldPredicate:
+        _id: http://purl.obolibrary.org/obo/GENEPIO_0000090
+        _type: "@id"
+    alignment_protocol:
+      doc: Protocol which provides detailed instructions to obtain the assembly
+      type: string?
+      jsonldPredicate:
+        _id: http://www.ebi.ac.uk/efo/EFO_0004917
+    sequencing_coverage:
+      doc: Sequence coverage defined as the average number of reads representing a given nucleotide (e.g. [100]) - if multiple technologies were used multiple float values can be submitted e.g. [100, 20]
+      type: double[]?
+      jsonldPredicate:
+        _id: http://purl.obolibrary.org/obo/FLU_0000848
+    additional_technology_information:
+      doc: Field for additional technology information
+      type: string?
+      jsonldPredicate:
+        _id: http://semanticscience.org/resource/SIO_001167
+
+- name: submitterSchema
+  type: record
+  fields:
+    authors:
+      doc: Name(s) of the author(s) of the sequence data in the scientific publication
+      type: string[]
+      jsonldPredicate:
+          _id: http://purl.obolibrary.org/obo/NCIT_C42781
+    submitter_name:
+      doc: Name of the submitter(s) of the sequence data
+      type: string[]?
+      jsonldPredicate:
+          _id: http://semanticscience.org/resource/SIO_000116
+    submitter_address:
+      doc: Address of the submitter of the sequence data
+      type: string?
+      jsonldPredicate:
+          _id: http://semanticscience.org/resource/SIO_000172
+    originating_lab:
+      doc: Laboratory name or identifier where the sample to sequence was produced
+      type: string?
+      jsonldPredicate:
+          _id: http://purl.obolibrary.org/obo/NCIT_C37984
+    lab_address:
+      doc: Address of the laboratory where the sample was produced
+      type: string?
+      jsonldPredicate:
+          _id: http://purl.obolibrary.org/obo/NCIT_C25407
+    provider:
+      doc: Name or identifier of the provider of the sample
+      type: string?
+      jsonldPredicate:
+          _id: http://purl.obolibrary.org/obo/NCIT_C37900
+    submitter_sample_id:
+      doc: Identifier given to the sample by the submitter
+      type: string?
+      jsonldPredicate:
+          _id: http://purl.obolibrary.org/obo/NCIT_C164332
+    publication:
+      doc: Reference to the scientifc publication of the sequence (e.g. DOI, pubmed ID, ...)
+      type: string?
+      jsonldPredicate:
+        _id: http://purl.obolibrary.org/obo/NCIT_C19026
+    submitter_orcid:
+      # An identifier curated by ORCID, Inc. to denote some academic author
+      doc: ORCID of the submitter as a full URI, e.g. https://orcid.org/0000-0002-1825-0097
+      type: string[]?
+      jsonldPredicate:
+          _id: http://purl.obolibrary.org/obo/APOLLO_SV_00000496
+          _type: "@id"
+          noLinkCheck: true
+    additional_submitter_information:
+      doc: Field for additional submitter information
+      type: string?
+      jsonldPredicate:
+        _id: http://semanticscience.org/resource/SIO_001167
+
+
+- name: MainSchema
+  type: record
+  documentRoot: true
+  fields:
+    host: hostSchema
+    sample: sampleSchema
+    virus: virusSchema
+    technology: technologySchema
+    submitter: submitterSchema
+    license: ["null", licenseSchema]
+    id:
+      doc: The subject (eg the fasta/fastq file) that the metadata describes
+      type: string
+      jsonldPredicate:
+        _id: "@id"
+        _type: "@id"
+        noLinkCheck: true
+    update_date:
+      doc: Date when record was last updated
+      type: string
+      jsonldPredicate:
+        _id: https://schema.org/dateModified
+    warnings:
+      doc: List processing warnings An error correction is a data transformation objective where the aim is to remove (correct for) erroneous contributions arising from the input data, or the transformation itself.
+      type: string[]?
+      jsonldPredicate:
+        _id: http://www.ebi.ac.uk/swo/objective/SWO_7000012
+        _type: string?

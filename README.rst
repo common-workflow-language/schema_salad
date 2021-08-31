@@ -10,15 +10,21 @@
 Schema Salad
 ------------
 
-Salad is a schema language for describing JSON or YAML structured
-linked data documents.  Salad schema describes rules for
-preprocessing, structural validation, and hyperlink checking for
-documents described by a Salad schema. Salad supports rich data
-modeling with inheritance, template specialization, object
-identifiers, object references, documentation generation, code
-generation, and transformation to RDF_. Salad provides a bridge
-between document and record oriented data modeling and the Semantic
-Web.
+Schema Salad is a schema language for YAML (or JSON) that also lets
+you map your YAML data structures into RDF structured linked data
+documents via JSON-LD. In other words, a schema validates and
+transforms YAML or JSON documents into structured linked data
+documents - the missing link between a NoSQL JSON document and a
+linked data document that can be reasoned about, e.g. for human and
+machine processing.
+
+Salad schema describes rules for preprocessing, structural validation,
+and hyperlink checking for documents described by a Salad
+schema. Salad supports rich data modeling with inheritance, template
+specialization, object identifiers, object references, documentation
+generation, code generation, and transformation to RDF_. Salad
+provides a bridge between document and record oriented data modeling
+and the Semantic Web.
 
 The Schema Salad library is Python 3.6+ only.
 
@@ -62,6 +68,14 @@ Validate a schema::
 Validate a document using a schema::
 
    $ schema-salad-tool myschema.yml mydocument.yml
+
+Validate a JSON document using a schema::
+
+   $ schema-salad-tool myschema.yml mydocument.json
+
+Multiple documents and (lazy) expansion can be used::
+
+   $ schema-salad-tool myschema.yml 'my*.yml'
 
 Generate HTML documentation::
 
