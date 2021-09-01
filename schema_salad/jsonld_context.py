@@ -263,10 +263,16 @@ def makerdf(
     if isinstance(wf, MutableSequence):
         for w in wf:
             w["@context"] = ctx
-            g.parse(data=json_dumps(w), format="json-ld", publicID=str(workflow))
+            g.parse(
+                data=json_dumps(w, default=str),
+                format="json-ld",
+                publicID=str(workflow),
+            )
     elif isinstance(wf, MutableMapping):
         wf["@context"] = ctx
-        g.parse(data=json_dumps(wf), format="json-ld", publicID=str(workflow))
+        g.parse(
+            data=json_dumps(wf, default=str), format="json-ld", publicID=str(workflow)
+        )
     else:
         raise SchemaException(f"{wf} is not a workflow")
 
