@@ -1,4 +1,7 @@
+"""Test examples."""
+import datetime
 import os
+from typing import cast
 
 from pytest import CaptureFixture
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
@@ -389,6 +392,37 @@ def test_scoped_id() -> None:
 
     g = makerdf(None, ra, ctx)
     g.serialize(destination=stdout(), format="n3")
+
+
+def test_rdf_datetime() -> None:
+    """Affirm that datetime objects can be serialized in makerdf()."""
+    ldr = Loader({})
+    ctx: ContextType = {
+        "id": "@id",
+        "location": {"@id": "@id", "@type": "@id"},
+        "bar": "http://example.com/bar",
+        "ex": "http://example.com/",
+    }
+    ldr.add_context(ctx)
+
+    ra: CommentedMap = cast(
+        CommentedMap,
+        ldr.resolve_all(
+            cmap(
+                {
+                    "id": "foo",
+                    "bar": {"id": "baz"},
+                }
+            ),
+            "http://example.com",
+        )[0],
+    )
+    ra["s:dateCreated"] = datetime.datetime(2020, 10, 8)
+
+    g = makerdf(None, ra, ctx)
+    g.serialize(destination=stdout(), format="n3")
+    g2 = makerdf(None, CommentedSeq([ra]), ctx)
+    g2.serialize(destination=stdout(), format="n3")
 
 
 def test_subscoped_id() -> None:
