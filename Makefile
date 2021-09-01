@@ -148,11 +148,11 @@ diff-cover.html: coverage.xml
 
 ## test        : run the ${MODULE} test suite
 test: $(PYSOURCES)
-	python setup.py test
+	python setup.py test ${PYTEST_EXTRA}
 
 ## testcov     : run the ${MODULE} test suite and collect coverage
 testcov: $(PYSOURCES)
-	python setup.py test --addopts "--cov"
+	python setup.py test --addopts "--cov" ${PYTEST_EXTRA}
 
 sloccount.sc: $(PYSOURCES) Makefile
 	sloccount --duplicates --wide --details $^ > $@

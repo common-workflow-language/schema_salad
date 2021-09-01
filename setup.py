@@ -19,14 +19,6 @@ except ImportError:
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
 pytest_runner = ["pytest < 7", "pytest-runner"] if needs_pytest else []
 
-if os.path.exists("requirements.txt"):
-    requirements = [
-        r for r in open("requirements.txt").read().split("\n") if ";" not in r
-    ]
-else:
-    # In tox, it will cover them anyway.
-    requirements = []
-
 USE_MYPYC = False
 # To compile with mypyc, a mypyc checkout must be present on the PYTHONPATH
 if len(sys.argv) > 1 and sys.argv[1] == "--use-mypyc":
