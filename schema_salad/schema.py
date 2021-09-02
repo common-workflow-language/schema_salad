@@ -21,7 +21,6 @@ from urllib.parse import urlparse
 
 from pkg_resources import resource_stream
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
-from ruamel.yaml.main import YAML
 
 from schema_salad.utils import (
     CacheType,
@@ -31,6 +30,7 @@ from schema_salad.utils import (
     convert_to_dict,
     flatten,
     json_dumps,
+    yaml_no_ts,
 )
 
 from . import _logger, jsonld_context, ref_resolver, validate
@@ -183,7 +183,7 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
     with resource_stream("schema_salad", "metaschema/metaschema.yml") as stream:
         loader.cache["https://w3id.org/cwl/salad"] = stream.read().decode("UTF-8")
 
-    yaml = YAML()
+    yaml = yaml_no_ts()
     j = yaml.load(loader.cache["https://w3id.org/cwl/salad"])
     add_lc_filename(j, "metaschema.yml")
     j2 = loader.resolve_all(j, saladp)[0]

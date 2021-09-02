@@ -541,8 +541,7 @@ def load_document(doc, baseuri=None, loadingOptions=None):
 
 def load_document_by_string(string, uri, loadingOptions=None):
     # type: (Any, str, Optional[LoadingOptions]) -> Any
-    yaml = YAML()
-    yaml.preserve_quotes = True  # type: ignore
+    yaml = yaml_no_ts()
     result = yaml.load(string)
     add_lc_filename(result, uri)
 
