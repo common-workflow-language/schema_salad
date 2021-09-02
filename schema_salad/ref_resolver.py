@@ -28,7 +28,6 @@ from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.plugins.parsers.notation3 import BadSyntax
 from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
 from ruamel.yaml.error import MarkedYAMLError
-from ruamel.yaml.main import YAML
 
 from .exceptions import SchemaSaladException, ValidationException
 from .fetcher import DefaultFetcher
@@ -44,6 +43,7 @@ from .utils import (
     ResolveType,
     aslist,
     onWindows,
+    yaml_no_ts,
 )
 
 _logger = logging.getLogger("salad")
@@ -984,8 +984,7 @@ class Loader:
             else:
                 textIO = StringIO(text)
             textIO.name = str(url)
-            yaml = YAML()
-            yaml.preserve_quotes = True  # type: ignore
+            yaml = yaml_no_ts()
             attachments = yaml.load_all(textIO)
             result = cast(Union[CommentedSeq, CommentedMap], next(attachments))
 

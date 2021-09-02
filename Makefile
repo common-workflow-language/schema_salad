@@ -33,7 +33,7 @@ COVBASE=coverage run --append
 
 # Updating the Major & Minor version below?
 # Don't forget to update setup.py as well
-VERSION=8.1.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
+VERSION=8.2.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
 
 ## all         : default task
@@ -70,7 +70,8 @@ docs: FORCE
 
 ## clean       : clean up all temporary / machine-generated files
 clean: FORCE
-	rm -f ${MODILE}/*.pyc tests/*.pyc
+	rm -rf ${MODULE}/__pycache__ ${MODULE}/tests/__pycache__
+	rm -f *.so ${MODULE}/*.so ${MODULE}/tests/*.so ${MODULE}/avro/*.so
 	python setup.py clean --all || true
 	rm -Rf .coverage
 	rm -f diff-cover.html

@@ -19,6 +19,8 @@ from typing import (
 import requests
 from rdflib.graph import Graph
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
+from ruamel.yaml.constructor import RoundTripConstructor
+from ruamel.yaml.main import YAML
 
 if TYPE_CHECKING:
     from .fetcher import Fetcher
@@ -115,3 +117,26 @@ def json_dumps(
 def stdout() -> BufferedWriter:
     """Build a replacement for sys.stdout that allow for writing binary data."""
     return os.fdopen(sys.stdout.fileno(), "wb", closefd=False)
+
+
+class _RoundTripNoTimeStampConstructor(RoundTripConstructor):
+    def construct_yaml_timestamp(self: Any, node: Any, values: Any = None) -> Any:
+        return node.value
+
+
+_RoundTripNoTimeStampConstructor.add_constructor(
+    u"tag:yaml.org,2002:timestamp",
+    _RoundTripNoTimeStampConstructor.construct_yaml_timestamp,
+)
+
+
+def yaml_no_ts() -> YAML:
+    """
+    Get a YAML loader that won't parse timestamps into datetime objects.
+
+    Such datetime objects can't be easily dumped into JSON.
+    """
+    yaml = YAML(typ="rt")
+    yaml.preserve_quotes = True  # type: ignore
+    yaml.Constructor = _RoundTripNoTimeStampConstructor
+    return yaml

@@ -1,18 +1,18 @@
 """Test examples."""
 import datetime
 import os
-from typing import cast
+from io import StringIO
+from typing import cast, Any, Dict
 
 from pytest import CaptureFixture
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
-from ruamel.yaml.main import YAML
 
 import schema_salad.main
 import schema_salad.schema
 from schema_salad.jsonld_context import makerdf
 from schema_salad.ref_resolver import Loader, file_uri, uri_file_path
 from schema_salad.sourceline import SourceLine, cmap
-from schema_salad.utils import ContextType, stdout
+from schema_salad.utils import ContextType, stdout, yaml_no_ts
 
 from .util import get_data
 
@@ -278,7 +278,7 @@ def test_examples() -> None:
         ldr, _, _, _ = schema_salad.schema.load_schema(path)
         path2 = get_data(f"metaschema/{a}_src.yml")
         assert path2
-        yaml = YAML()
+        yaml = yaml_no_ts()
         with open(path2) as src_fp:
             src = ldr.resolve_all(yaml.load(src_fp), "", checklinks=False)[0]
         path3 = get_data(f"metaschema/{a}_proc.yml")
@@ -289,7 +289,7 @@ def test_examples() -> None:
 
 
 def test_yaml_float_test() -> None:
-    assert YAML().load("float-test: 2e-10")["float-test"] == 2e-10
+    assert yaml_no_ts().load("float-test: 2e-10")["float-test"] == 2e-10
 
 
 def test_typedsl_ref() -> None:
@@ -423,6 +423,21 @@ def test_rdf_datetime() -> None:
     g.serialize(destination=stdout(), format="n3")
     g2 = makerdf(None, CommentedSeq([ra]), ctx)
     g2.serialize(destination=stdout(), format="n3")
+
+
+def test_yaml_datetime() -> None:
+    """Affirm that yaml_no_ts prevents the creation of datetime objects."""
+    example: Dict[str, Any] = {
+        "id": "foo",
+        "bar": {"id": "baz"},
+    }
+    example["s:dateCreated"] = datetime.datetime(2020, 10, 8)
+    yaml = yaml_no_ts()
+    stream = StringIO()
+    yaml.dump(example, stream)
+    stream2 = StringIO(stream.getvalue())
+    example2 = yaml.load(stream2)
+    assert isinstance(example2["s:dateCreated"], str)
 
 
 def test_subscoped_id() -> None:

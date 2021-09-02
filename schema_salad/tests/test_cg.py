@@ -3,11 +3,11 @@ import os
 from typing import Any
 
 import pytest
-from ruamel.yaml.main import YAML
 
 import schema_salad.metaschema as cg_metaschema
 from schema_salad.exceptions import ValidationException
 from schema_salad.ref_resolver import file_uri
+from schema_salad.utils import yaml_no_ts
 
 from .matcher import JsonDiffMatcher
 from .util import get_data
@@ -203,8 +203,7 @@ def test_load_by_yaml_metaschema(metaschema_pre: Any) -> None:
     path = get_data("metaschema/metaschema.yml")
     assert path
     with open(path) as path_handle:
-        yaml = YAML()
-        yaml.preserve_quotes = True  # type: ignore
+        yaml = yaml_no_ts()
         yaml_doc = yaml.load(path_handle)
     doc = cg_metaschema.load_document_by_yaml(
         yaml_doc,
