@@ -328,6 +328,25 @@ class _SecondaryDSLLoader(_Loader):
                     raise ValidationException(
                         "Expected a string or sequence of (strings or mappings)."
                     )
+        elif isinstance(doc, MutableMapping):
+            new_dict = {}
+            if "pattern" in doc:
+                new_dict["pattern"] = doc.pop("pattern")
+            else:
+                raise ValidationException(
+                    "Missing pattern in secondaryFiles specification entry: {}".format(
+                        doc
+                    )
+                )
+            new_dict["required"] = doc.pop("required") if "required" in doc else None
+
+            if len(doc):
+                raise ValidationException(
+                    "Unallowed values in secondaryFiles specification entry: {}".format(
+                        doc
+                    )
+                )
+
         elif isinstance(doc, str):
             if doc.endswith("?"):
                 r.append({"pattern": doc[:-1], "required": False})
