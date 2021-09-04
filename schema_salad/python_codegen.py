@@ -374,12 +374,14 @@ class PythonCodeGen(CodeGenBase):
 
         self.out.write(
             """
+        __original_{safename}_is_none = {safename} is None
         if {safename} is None:
             if docRoot is not None:
                 {safename} = docRoot
             else:
                 {opt}
-        baseuri = {safename}
+        if not __original_{safename}_is_none:
+            baseuri = {safename}
 """.format(
                 safename=self.safe_name(name), opt=opt
             )
