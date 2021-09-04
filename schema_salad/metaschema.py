@@ -704,12 +704,14 @@ A field of a record.
         else:
             name = None
 
+        __original_name_is_none = name is None
         if name is None:
             if docRoot is not None:
                 name = docRoot
             else:
                 raise ValidationException("Missing name")
-        baseuri = name
+        if not __original_name_is_none:
+            baseuri = name
         if 'doc' in _doc:
             try:
                 doc = load_field(_doc.get(
@@ -1639,12 +1641,14 @@ A field of a record.
         else:
             name = None
 
+        __original_name_is_none = name is None
         if name is None:
             if docRoot is not None:
                 name = docRoot
             else:
                 raise ValidationException("Missing name")
-        baseuri = name
+        if not __original_name_is_none:
+            baseuri = name
         if 'doc' in _doc:
             try:
                 doc = load_field(_doc.get(
@@ -1843,12 +1847,14 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         else:
             name = None
 
+        __original_name_is_none = name is None
         if name is None:
             if docRoot is not None:
                 name = docRoot
             else:
                 raise ValidationException("Missing name")
-        baseuri = name
+        if not __original_name_is_none:
+            baseuri = name
         if 'inVocab' in _doc:
             try:
                 inVocab = load_field(_doc.get(
@@ -2227,12 +2233,14 @@ Define an enumerated type.
         else:
             name = None
 
+        __original_name_is_none = name is None
         if name is None:
             if docRoot is not None:
                 name = docRoot
             else:
                 raise ValidationException("Missing name")
-        baseuri = name
+        if not __original_name_is_none:
+            baseuri = name
         if 'inVocab' in _doc:
             try:
                 inVocab = load_field(_doc.get(
@@ -2562,12 +2570,14 @@ schemas but has no role in formal validation.
         else:
             name = None
 
+        __original_name_is_none = name is None
         if name is None:
             if docRoot is not None:
                 name = docRoot
             else:
                 raise ValidationException("Missing name")
-        baseuri = name
+        if not __original_name_is_none:
+            baseuri = name
         if 'inVocab' in _doc:
             try:
                 inVocab = load_field(_doc.get(
