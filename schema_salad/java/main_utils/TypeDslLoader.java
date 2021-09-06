@@ -72,7 +72,7 @@ public class TypeDslLoader<T> implements Loader<T> {
           r.add(d);
         }
       }
-      doc = docList;
+      doc = r;
     } else if (doc instanceof String) {
       doc = this.resolve((String) doc, baseUri, loadingOptions);
     }
