@@ -51,6 +51,21 @@ public class SecondaryFilesDslLoader<T> implements Loader<T> {
 	  throw new ValidationException("Expected a string or sequence of (strings or mappings).");
 	}
       }
+    } else if (doc instanceof Map) {
+      Map<String, Object> entry = new HashMap<String, Object>();
+      Map<String, Object> dMap = (Map<String, Object>) doc;
+      if (dMap.containsKey("pattern")) {
+        entry.put("pattern", dMap.remove("pattern"));
+      } else {
+        throw new ValidationException("Missing 'pattern' in secondaryFiles specification entry.");
+      }
+      if (dMap.containsKey("required")) {
+        entry.put("required", dMap.remove("required"));
+      }
+      if (dMap.size() > 0) {
+        throw new ValidationException("Unallowed values in secondaryFiles specification entry.");
+      }
+      r.add(entry);
     } else if (doc instanceof String) {
 	  String dString = (String) doc;
 	  Map<String, Object> entry = new HashMap<String, Object>();
