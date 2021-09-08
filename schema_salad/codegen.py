@@ -21,6 +21,8 @@ from .ref_resolver import Loader
 from .schema import shortname
 from .utils import aslist
 
+FIELD_SORT_ORDER = ["id", "class", "name"]
+
 
 def codegen(
     lang: str,
@@ -102,7 +104,14 @@ def codegen(
             )
             gen.add_vocab(shortname(rec["name"]), rec["name"])
 
-            for field in rec.get("fields", []):
+            sorted_fields = sorted(
+                rec.get("fields", []),
+                key=lambda i: FIELD_SORT_ORDER.index(i["name"].split("/")[-1])
+                if i["name"].split("/")[-1] in FIELD_SORT_ORDER
+                else 100,
+            )
+
+            for field in sorted_fields:
                 if field.get("jsonldPredicate") == "@id":
                     subscope = field.get("subscope")
                     fieldpred = field["name"]
@@ -115,7 +124,7 @@ def codegen(
                     )
                     break
 
-            for field in rec.get("fields", []):
+            for field in sorted_fields:
                 optional = bool("https://w3id.org/cwl/salad#null" in field["type"])
                 type_loader = gen.type_loader(field["type"])
                 jld = field.get("jsonldPredicate")
