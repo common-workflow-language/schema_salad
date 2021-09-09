@@ -1055,7 +1055,7 @@ class ArraySchema(Savable):
         _errors__ = []
         try:
             items = load_field(_doc.get(
-                'items'), typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2, baseuri, loadingOptions)
+                'items'), uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2, baseuri, loadingOptions)
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
@@ -1106,11 +1106,14 @@ class ArraySchema(Savable):
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 
         if self.items is not None:
-            r['items'] = save(
+            u = save_relative_uri(
                 self.items,
-                top=False,
-                base_url=base_url,
-                relative_uris=relative_uris)
+                base_url,
+                False,
+                2,
+                relative_uris)
+            if u:
+                r['items'] = u
 
         if self.type is not None:
             r['type'] = save(
@@ -2854,6 +2857,7 @@ typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2 = _TypeDSLLoader(e
 uri_array_of_strtype_True_False_None = _URILoader(array_of_strtype, True, False, None)
 enum_d961d79c225752b9fadb617367615ab176b47d77Loader = _EnumLoader(("enum",))
 typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2 = _TypeDSLLoader(enum_d961d79c225752b9fadb617367615ab176b47d77Loader, 2)
+uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2 = _URILoader(union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype, False, True, 2)
 enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader = _EnumLoader(("array",))
 typedsl_enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader_2 = _TypeDSLLoader(enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader, 2)
 union_of_None_type_or_strtype = _UnionLoader((None_type, strtype,))
