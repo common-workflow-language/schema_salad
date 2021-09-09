@@ -265,8 +265,7 @@
                 "jsonldPredicate": {
                     "_id": "https://w3id.org/cwl/salad#items",
                     "_type": "@vocab",
-                    "refScope": 2,
-                    "typeDSL": true
+                    "refScope": 2
                 }
             },
             {
