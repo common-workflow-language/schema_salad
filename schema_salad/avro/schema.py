@@ -303,8 +303,8 @@ class Field:
                 type_schema = make_avsc_object(atype, names)
             except Exception as e:
                 raise SchemaParseException(
-                    f'Type property "{atype}" not a valid Avro schema: {e}'
-                )
+                    f'Type property "{atype}" not a valid Avro schema.'
+                ) from e
         self.set_prop("type", type_schema)
         self.set_prop("name", name)
         self.type = type_schema
@@ -409,9 +409,9 @@ class ArraySchema(Schema):
                 items_schema = make_avsc_object(items, names)
             except Exception as err:
                 raise SchemaParseException(
-                    "Items schema ({}) not a valid Avro schema: {} (known "
-                    "names: {})".format(items, err, list(names.names.keys()))
-                )
+                    f"Items schema ({items}) not a valid Avro schema: (known "
+                    f"names: {list(names.names.keys())})."
+                ) from err
 
         self.set_prop("items", items_schema)
 
@@ -451,8 +451,8 @@ class UnionSchema(Schema):
                     new_schema = make_avsc_object(schema, names)
                 except Exception as err:
                     raise SchemaParseException(
-                        f"Union item must be a valid Avro schema: {err}. {schema}"
-                    )
+                        f"Union item must be a valid Avro schema: {schema}"
+                    ) from err
             # check the new schema
             if (
                 new_schema.type in VALID_TYPES

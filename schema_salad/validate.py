@@ -121,6 +121,7 @@ def validate_ex(
     # type: (...) -> bool
     """Determine if a python datum is an instance of a schema."""
 
+    debug = _logger.isEnabledFor(logging.DEBUG)
     if not identifiers:
         identifiers = []
 
@@ -228,7 +229,10 @@ def validate_ex(
                         return False
                 except ValidationException as v:
                     if raise_ex:
-                        raise ValidationException("item is invalid because", sl, [v])
+                        source = v if debug else None
+                        raise ValidationException(
+                            "item is invalid because", sl, [v]
+                        ) from source
                     return False
             return True
         else:
