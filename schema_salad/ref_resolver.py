@@ -997,12 +997,15 @@ class Loader:
         except MarkedYAMLError as e:
             raise to_validation_exception(e) from e
         if isinstance(result, CommentedMap) and inject_ids and bool(self.identifiers):
+            missing_identifier = True
             for identifier in self.identifiers:
-                if identifier not in result:
-                    result[identifier] = url
-                self.idx[
-                    self.expand_url(result[identifier], url, scoped_id=True)
-                ] = result
+                if identifier in result:
+                    missing_identifier = False
+                    self.idx[
+                        self.expand_url(result[identifier], url, scoped_id=True)
+                    ] = result
+            if missing_identifier:
+                result[self.identifiers[0]] = url
         self.idx[url] = result
         return result
 
