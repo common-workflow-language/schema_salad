@@ -66,7 +66,7 @@ if USE_MYPYC:
     from mypyc.build import mypycify
 
     opt_level = os.getenv("MYPYC_OPT_LEVEL", "3")
-    ext_modules = mypycify(mypyc_targets, opt_level=opt_level)
+    ext_modules = mypycify(mypyc_targets, opt_level=opt_level, verbose=True)
 else:
     ext_modules = []
 
