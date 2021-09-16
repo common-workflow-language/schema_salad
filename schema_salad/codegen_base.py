@@ -14,6 +14,7 @@ class TypeDef:  # pylint: disable=too-few-public-methods
         "ref_scope",
         "loader_type",
         "instance_type",
+        "abstract",
     ]
 
     # switch to class-style typing.NamedTuple once support for Python < 3.6
@@ -27,12 +28,14 @@ class TypeDef:  # pylint: disable=too-few-public-methods
         ref_scope: Optional[int] = 0,
         loader_type: Optional[str] = None,
         instance_type: Optional[str] = None,
+        abstract: bool = False,
     ) -> None:
         self.name = name
         self.init = init
         self.is_uri = is_uri
         self.scoped_id = scoped_id
         self.ref_scope = ref_scope
+        self.abstract = abstract
         # Follow attributes used by Java but not Python.
         self.loader_type = loader_type
         self.instance_type = instance_type
