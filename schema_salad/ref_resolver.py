@@ -297,11 +297,7 @@ class Loader:
                             )
                             self.graph += self.cache[fetchurl]
                             break
-                        except xml.sax.SAXParseException:
-                            pass
-                        except TypeError:
-                            pass
-                        except BadSyntax:
+                        except (xml.sax.SAXParseException, TypeError, BadSyntax):
                             pass
             except Exception as e:
                 _logger.warning(
