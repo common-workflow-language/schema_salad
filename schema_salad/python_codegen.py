@@ -85,7 +85,8 @@ class PythonCodeGen(CodeGenBase):
             )
 
         stream = resource_stream(__name__, "python_codegen_support.py")
-        self.out.write(stream.read().decode("UTF-8"))
+        python_codegen_support = stream.read().decode("UTF-8")
+        self.out.write(python_codegen_support[python_codegen_support.find("\n") + 1 :])
         stream.close()
         self.out.write("\n\n")
 
@@ -192,9 +193,10 @@ class PythonCodeGen(CodeGenBase):
 
         self.serializer.write(
             """
-    def save(self, top=False, base_url="", relative_uris=True):
-        # type: (bool, str, bool) -> Dict[str, Any]
-        r = CommentedMap()  # type: Dict[str, Any]
+    def save(
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True
+    ) -> Dict[str, Any]:
+        r: Dict[str, Any] = {}
         for ef in self.extension_fields:
             r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
 """
@@ -227,7 +229,7 @@ class PythonCodeGen(CodeGenBase):
 
         self.out.write(
             """
-        extension_fields = CommentedMap()
+        extension_fields: Dict[str, Any] = {{}}
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
@@ -329,8 +331,9 @@ class PythonCodeGen(CodeGenBase):
                     TypeDef(
                         self.safe_name(type_declaration["name"]) + "Loader",
                         "_RecordLoader({})".format(
-                            self.safe_name(type_declaration["name"])
+                            self.safe_name(type_declaration["name"]),
                         ),
+                        abstract=type_declaration.get("abstract", False),
                     )
                 )
             raise SchemaException("wft {}".format(type_declaration["type"]))
@@ -527,7 +530,8 @@ class PythonCodeGen(CodeGenBase):
         self.out.write("}\n\n")
 
         for _, collected_type in self.collected_types.items():
-            self.out.write(f"{collected_type.name} = {collected_type.init}\n")
+            if not collected_type.abstract:
+                self.out.write(f"{collected_type.name} = {collected_type.init}\n")
         self.out.write("\n")
 
         self.out.write(

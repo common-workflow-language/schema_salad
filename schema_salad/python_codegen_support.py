@@ -1,3 +1,5 @@
+"""Template code used by python_codgen.py."""
+from abc import ABC, abstractmethod
 import copy
 import os
 import pathlib
@@ -27,33 +29,23 @@ from schema_salad.fetcher import DefaultFetcher, Fetcher
 from schema_salad.sourceline import SourceLine, add_lc_filename
 from schema_salad.utils import yaml_no_ts  # requires schema-salad v8.2+
 
-_vocab = {}  # type: Dict[str, str]
-_rvocab = {}  # type: Dict[str, str]
-
-
-class Savable:
-    @classmethod
-    def fromDoc(cls, _doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str]) -> Savable
-        pass
-
-    def save(self, top=False, base_url="", relative_uris=True):
-        # type: (bool, str, bool) -> Dict[str, str]
-        pass
+_vocab: Dict[str, str] = {}
+_rvocab: Dict[str, str] = {}
 
 
 class LoadingOptions:
     def __init__(
         self,
-        fetcher=None,  # type: Optional[Fetcher]
-        namespaces=None,  # type: Optional[Dict[str, str]]
-        schemas=None,  # type: Optional[Dict[str, str]]
-        fileuri=None,  # type: Optional[str]
-        copyfrom=None,  # type: Optional[LoadingOptions]
-        original_doc=None,  # type: Optional[Any]
-    ):  # type: (...) -> None
-        self.idx = {}  # type: Dict[str, Dict[str, Any]]
-        self.fileuri = fileuri  # type: Optional[str]
+        fetcher: Optional[Fetcher] = None,
+        namespaces: Optional[Dict[str, str]] = None,
+        schemas: Optional[Dict[str, str]] = None,
+        fileuri: Optional[str] = None,
+        copyfrom: Optional["LoadingOptions"] = None,
+        original_doc: Optional[Any] = None,
+    ) -> None:
+        """Create a LoadingOptions object."""
+        self.idx: Dict[str, Dict[str, Any]] = {}
+        self.fileuri: Optional[str] = fileuri
         self.namespaces = namespaces
         self.schemas = schemas
         self.original_doc = original_doc
@@ -93,6 +85,29 @@ class LoadingOptions:
                 self.rvocab[v] = k
 
 
+class Savable(ABC):
+    """Mark classes than have a save() and fromDoc() function."""
+
+    @classmethod
+    @abstractmethod
+    def fromDoc(
+        cls,
+        _doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+    ) -> "Savable":
+        """Construct this object from the result of yaml.load()."""
+        pass
+
+    @abstractmethod
+    def save(
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True
+    ) -> Dict[str, Any]:
+        """Convert this object to a JSON/YAML friendly dictionary."""
+        pass
+
+
 def load_field(val, fieldtype, baseuri, loadingOptions):
     # type: (Union[str, Dict[str, str]], _Loader, str, LoadingOptions) -> Any
     if isinstance(val, MutableMapping):
@@ -113,15 +128,15 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
     return fieldtype.load(val, baseuri, loadingOptions)
 
 
-save_type = Union[Dict[str, str], List[Union[Dict[str, str], List[Any], None]], None]
+save_type = Union[Dict[str, Any], List[Union[Dict[str, Any], List[Any], None]], None]
 
 
 def save(
-    val,  # type: Optional[Union[Savable, MutableSequence[Savable]]]
-    top=True,  # type: bool
-    base_url="",  # type: str
-    relative_uris=True,  # type: bool
-):  # type: (...) -> save_type
+    val: Optional[Union[Savable, MutableSequence[Savable]]],
+    top: bool = True,
+    base_url: str = "",
+    relative_uris: bool = True,
+) -> save_type:
 
     if isinstance(val, Savable):
         return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
@@ -603,15 +618,22 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         return f"file://{urlpath}{frag}"
 
 
-def prefix_url(url, namespaces):  # type: (str, Dict[str, str]) -> str
+def prefix_url(url: str, namespaces: Dict[str, str]) -> str:
+    """Expand short forms into full URLs using the given namespace dictionary."""
     for k, v in namespaces.items():
         if url.startswith(v):
             return k + ":" + url[len(v) :]
     return url
 
 
-def save_relative_uri(uri, base_url, scoped_id, ref_scope, relative_uris):
-    # type: (str, str, bool, Optional[int], bool) -> Union[str, List[str]]
+def save_relative_uri(
+    uri: Any,
+    base_url: str,
+    scoped_id: bool,
+    ref_scope: Optional[int],
+    relative_uris: bool,
+) -> Any:
+    """Convert any URI to a relative one, obeying the scoping rules."""
     if not relative_uris or uri == base_url:
         return uri
     if isinstance(uri, MutableSequence):

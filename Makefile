@@ -86,10 +86,10 @@ remove_unused_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 
 pep257: pydocstyle
 ## pydocstyle      : check Python code style
-pydocstyle: $(PYSOURCES)
+pydocstyle: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 	pydocstyle --add-ignore=D100,D101,D102,D103 $^ || true
 
-pydocstyle_report.txt: $(PYSOURCES)
+pydocstyle_report.txt: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 	pydocstyle setup.py $^ > $@ 2>&1 || true
 
 diff_pydocstyle_report: pydocstyle_report.txt
