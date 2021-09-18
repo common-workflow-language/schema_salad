@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Mapping, MutableSequence, Optional, Union, c
 from urllib.parse import urlparse
 
 import pkg_resources  # part of setuptools
+from rdflib import __version__ as rdflib_version
 from rdflib.parser import Parser
 from rdflib.plugin import register
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
@@ -19,7 +20,8 @@ from .makedoc import makedoc
 from .ref_resolver import Loader, file_uri
 from .utils import json_dump, stdout
 
-register("json-ld", Parser, "rdflib_jsonld.parser", "JsonLDParser")
+if int(rdflib_version.split(".")[0]) < 6:
+    register("json-ld", Parser, "rdflib_jsonld.parser", "JsonLDParser")
 _logger = logging.getLogger("salad")
 
 
