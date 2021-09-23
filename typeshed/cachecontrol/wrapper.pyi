@@ -7,4 +7,10 @@ from typing import Any, Optional
 from .adapter import CacheControlAdapter
 from .cache import DictCache
 
-def CacheControl(sess: Any, cache: Optional[Any] = ..., cache_etags: bool = ..., serializer: Optional[Any] = ..., heuristic: Optional[Any] = ...): ...
+def CacheControl(
+    sess: Any,
+    cache: Optional[Any] = ...,
+    cache_etags: bool = ...,
+    serializer: Optional[Any] = ...,
+    heuristic: Optional[Any] = ...,
+): ...

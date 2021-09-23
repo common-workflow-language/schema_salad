@@ -2,7 +2,7 @@
 import datetime
 import os
 from io import StringIO
-from typing import cast, Any, Dict
+from typing import Any, Dict, cast
 
 from pytest import CaptureFixture
 from ruamel.yaml.comments import CommentedMap, CommentedSeq

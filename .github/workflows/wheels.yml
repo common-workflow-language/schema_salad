@@ -13,12 +13,12 @@ jobs:
       uses: RalfG/python-wheels-manylinux-build@v0.3.4-manylinux2010_x86_64
       with:
         pre-build-command: source .github/workflows/wheel-prep.sh
-        build-requirements: -rrequirements.txt -rmypy_requirements.txt
+        build-requirements: -rrequirements.txt -rmypy-requirements.txt
     - name: Build manylinux2014 Python wheels
       uses: RalfG/python-wheels-manylinux-build@v0.3.4-manylinux2014_x86_64
       with:
         pre-build-command: source .github/workflows/wheel-prep.sh
-        build-requirements: -rrequirements.txt -rmypy_requirements.txt
+        build-requirements: -rrequirements.txt -rmypy-requirements.txt
     - name: Move audited wheels to new directory
       run: mkdir audited_wheels && cp dist/*-manylinux*.whl audited_wheels/
     - name: Publish wheels to PyPI
@@ -38,7 +38,7 @@ jobs:
       uses: RalfG/python-wheels-manylinux-build@v0.3.4-manylinux2014_aarch64
       with:
         pre-build-command: source .github/workflows/wheel-prep.sh
-        build-requirements: -rrequirements.txt -rmypy_requirements.txt
+        build-requirements: -rrequirements.txt -rmypy-requirements.txt
     - name: Move audited wheels to new directory
       run: mkdir audited_wheels && cp dist/*-manylinux*.whl audited_wheels/
     - name: Publish wheels to PyPI

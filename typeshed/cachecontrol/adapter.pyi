@@ -15,7 +15,16 @@ class CacheControlAdapter(HTTPAdapter):
     cache = ...  # type: Any
     heuristic = ...  # type: Any
     controller = ...  # type: Any
-    def __init__(self, cache=None, cache_etags=True, controller_class=None, serializer=None, heuristic=None, *args, **kw): ...
+    def __init__(
+        self,
+        cache=None,
+        cache_etags=True,
+        controller_class=None,
+        serializer=None,
+        heuristic=None,
+        *args,
+        **kw
+    ): ...
     def send(self, request, **kw): ...
     def build_response(self, request, response, from_cache=False): ...
     def close(self): ...

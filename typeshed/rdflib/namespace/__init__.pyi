@@ -1,6 +1,37 @@
 from typing import Any
+
 from rdflib.term import URIRef
-__all__ = ["is_ncname", "split_uri", "Namespace", "ClosedNamespace", "NamespaceManager", "RDF", "RDFS", "CSVW", "DC", "DCAT", "DCTERMS", "DOAP", "FOAF", "ODRL2", "ORG", "OWL", "PROF", "PROV", "QB", "SDO", "SH", "SKOS", "SOSA", "SSN", "TIME", "VOID", "XSD", "OWL"]
+
+__all__ = [
+    "is_ncname",
+    "split_uri",
+    "Namespace",
+    "ClosedNamespace",
+    "NamespaceManager",
+    "RDF",
+    "RDFS",
+    "CSVW",
+    "DC",
+    "DCAT",
+    "DCTERMS",
+    "DOAP",
+    "FOAF",
+    "ODRL2",
+    "ORG",
+    "OWL",
+    "PROF",
+    "PROV",
+    "QB",
+    "SDO",
+    "SH",
+    "SKOS",
+    "SOSA",
+    "SSN",
+    "TIME",
+    "VOID",
+    "XSD",
+    "OWL",
+]
 
 class Namespace(str):
     def __new__(cls, value: Any): ...
@@ -36,7 +67,7 @@ class ClosedNamespace(Namespace):
     def __contains__(self, ref): ...
 
 NAME_START_CATEGORIES = ["Ll", "Lu", "Lo", "Lt", "Nl"]
-SPLIT_START_CATEGORIES = NAME_START_CATEGORIES + ['Nd']
+SPLIT_START_CATEGORIES = NAME_START_CATEGORIES + ["Nd"]
 
 class NamespaceManager:
     graph: Any
@@ -50,14 +81,17 @@ class NamespaceManager:
     def normalizeUri(self, rdfTerm) -> str: ...
     def compute_qname(self, uri, generate: bool = ...): ...
     def compute_qname_strict(self, uri, generate: bool = ...): ...
-    def bind(self, prefix, namespace, override: bool = ..., replace: bool = ...) -> None: ...
+    def bind(
+        self, prefix, namespace, override: bool = ..., replace: bool = ...
+    ) -> None: ...
     def namespaces(self) -> None: ...
     def absolutize(self, uri, defrag: int = ...): ...
 
 def is_ncname(name): ...
 
 XMLNS = "http://www.w3.org/XML/1998/namespace"
-def split_uri(uri: Any, split_start: Any=...): ...
+
+def split_uri(uri: Any, split_start: Any = ...): ...
 
 from rdflib.namespace._CSVW import CSVW
 from rdflib.namespace._DC import DC

@@ -1,4 +1,5 @@
-from rdflib.namespace import DefinedNamespace as DefinedNamespace, Namespace as Namespace
+from rdflib.namespace import DefinedNamespace as DefinedNamespace
+from rdflib.namespace import Namespace as Namespace
 from rdflib.term import URIRef as URIRef
 
 class DCTERMS(DefinedNamespace):

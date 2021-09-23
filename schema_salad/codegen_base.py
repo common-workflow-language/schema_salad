@@ -1,5 +1,5 @@
 """Base class for the generation of loaders from schema-salad definitions."""
-import collections
+from collections import OrderedDict
 from typing import Any, Dict, List, MutableSequence, Optional, Set, Union
 
 
@@ -45,10 +45,8 @@ class CodeGenBase:
     """Abstract base class for schema salad code generators."""
 
     def __init__(self) -> None:
-        self.collected_types = (
-            collections.OrderedDict()
-        )  # type: collections.OrderedDict[str, TypeDef]
-        self.vocab = {}  # type: Dict[str, str]
+        self.collected_types: OrderedDict[str, TypeDef] = OrderedDict()
+        self.vocab: Dict[str, str] = {}
 
     def declare_type(self, declared_type: TypeDef) -> TypeDef:
         """Add this type to our collection, if needed."""
@@ -138,5 +136,5 @@ class CodeGenBase:
         raise NotImplementedError()
 
     def secondaryfilesdsl_loader(self, inner: TypeDef) -> TypeDef:
-        """Construct the TypeDef for secondary files"""
+        """Construct the TypeDef for secondary files."""
         raise NotImplementedError()

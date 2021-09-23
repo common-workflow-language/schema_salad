@@ -1,3 +1,4 @@
 mypy==0.910
 types-pkg_resources
 types-requests
+types-dataclasses;python_version < "3.7"

@@ -4,8 +4,8 @@
 
 from typing import Any
 
-#from .cache import DictCache as DictCache
-#from .serialize import Serializer as Serializer
+# from .cache import DictCache as DictCache
+# from .serialize import Serializer as Serializer
 
 logger = ...  # type: Any
 URI = ...  # type: Any

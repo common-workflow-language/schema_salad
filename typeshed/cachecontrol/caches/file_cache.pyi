@@ -12,7 +12,15 @@ class FileCache(BaseCache):
     filemode = ...  # type: str
     dirmode = ...  # type: str
     lock_class = ...  # type: Callable
-    def __init__(self, directory: Union[str, PathLike[str]], forever=False, filemode=384, dirmode=448, use_dir_lock=None, lock_class=None) -> None: ...
+    def __init__(
+        self,
+        directory: Union[str, PathLike[str]],
+        forever=False,
+        filemode=384,
+        dirmode=448,
+        use_dir_lock=None,
+        lock_class=None,
+    ) -> None: ...
     @staticmethod
     def encode(x): ...
     def get(self, key): ...
