@@ -292,11 +292,13 @@ class PythonCodeGen(CodeGenBase):
 
         if isinstance(type_declaration, MutableSequence):
 
-            sub = [self.type_loader(i) for i in type_declaration]
+            sub_names: List[str] = list(
+                dict.fromkeys([self.type_loader(i).name for i in type_declaration])
+            )
             return self.declare_type(
                 TypeDef(
-                    "union_of_{}".format("_or_".join(s.name for s in sub)),
-                    "_UnionLoader(({},))".format(", ".join(s.name for s in sub)),
+                    "union_of_{}".format("_or_".join(sub_names)),
+                    "_UnionLoader(({},))".format(", ".join(sub_names)),
                 )
             )
         if isinstance(type_declaration, MutableMapping):
