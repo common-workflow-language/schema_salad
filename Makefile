@@ -28,7 +28,7 @@ PACKAGE=schema-salad
 PYSOURCES=$(wildcard ${MODULE}/**.py ${MODULE}/avro/*.py ${MODULE}/tests/*.py) setup.py
 DEVPKGS=diff_cover black pylint pep257 pydocstyle flake8 tox tox-pyenv \
 	isort wheel autoflake flake8-bugbear pyupgrade bandit \
-	-rtest-requirements.txt -rmypy_requirements.txt
+	-rtest-requirements.txt -rmypy-requirements.txt
 COVBASE=coverage run --append
 
 # Updating the Major & Minor version below?
@@ -79,7 +79,7 @@ clean: FORCE
 # Linting and code style related targets
 ## sorting imports using isort: https://github.com/timothycrosley/isort
 sort_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
-	isort $^
+	isort $^ typeshed
 
 remove_unused_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 	autoflake --in-place --remove-all-unused-imports $^
@@ -97,10 +97,10 @@ diff_pydocstyle_report: pydocstyle_report.txt
 
 ## format      : check/fix all code indentation and formatting (runs black)
 format:
-	black --exclude metaschema.py schema_salad setup.py
+	black --exclude metaschema.py schema_salad setup.py typeshed
 
 format-check:
-	black --diff --check --exclude metaschema.py schema_salad setup.py
+	black --diff --check --exclude metaschema.py schema_salad setup.py typeshed
 
 ## pylint      : run static code analysis on Python code
 pylint: $(PYSOURCES)

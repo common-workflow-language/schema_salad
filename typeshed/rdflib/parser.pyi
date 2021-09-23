@@ -18,7 +18,9 @@ class URLInputSource(InputSource):
     url: Any
     content_type: Any
     response_info: Any
-    def __init__(self, system_id: Any | None = ..., format: Any | None = ...) -> None: ...
+    def __init__(
+        self, system_id: Any | None = ..., format: Any | None = ...
+    ) -> None: ...
 
 class FileInputSource(InputSource):
     file: Any

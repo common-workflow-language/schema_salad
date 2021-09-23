@@ -1,5 +1,6 @@
-from rdflib.exceptions import Error
 from typing import Any, Type, TypeVar
+
+from rdflib.exceptions import Error
 
 class PluginException(Error): ...
 
@@ -19,7 +20,8 @@ class PKGPlugin(Plugin):
     def getClass(self): ...
 
 def register(name: str, kind, module_path, class_name): ...
-PluginT = TypeVar('PluginT')
+
+PluginT = TypeVar("PluginT")
 
 def get(name: str, kind: Type[PluginT]) -> Type[PluginT]: ...
 def plugins(name: Any | None = ..., kind: Any | None = ...) -> None: ...

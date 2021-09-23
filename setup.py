@@ -82,6 +82,7 @@ install_requires = [
     "mistune >= 0.8.1, < 0.9",
     "CacheControl >= 0.11.7, < 0.13",
     "lockfile >= 0.9",
+    "black",
 ]
 
 extras_require = {

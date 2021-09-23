@@ -1,5 +1,6 @@
-from .paths import AlternativePath, InvPath, NegatedPath, Path, SequencePath
 from typing import Any, Callable, Union
+
+from .paths import AlternativePath, InvPath, NegatedPath, Path, SequencePath
 
 class Node: ...
 
@@ -45,7 +46,13 @@ class BNode(Identifier):
 
 class Literal(Identifier):
     __doc__: str
-    def __new__(cls, lexical_or_value, lang: Any | None = ..., datatype: Any | None = ..., normalize: Any | None = ...): ...
+    def __new__(
+        cls,
+        lexical_or_value,
+        lang: Any | None = ...,
+        datatype: Any | None = ...,
+        normalize: Any | None = ...,
+    ): ...
     def normalize(self): ...
     @property
     def value(self): ...
@@ -71,7 +78,13 @@ class Literal(Identifier):
     def n3(self, namespace_manager: Any | None = ...): ...
     def toPython(self): ...
 
-def bind(datatype, pythontype, constructor: Any | None = ..., lexicalizer: Any | None = ..., datatype_specific: bool = ...) -> None: ...
+def bind(
+    datatype,
+    pythontype,
+    constructor: Any | None = ...,
+    lexicalizer: Any | None = ...,
+    datatype_specific: bool = ...,
+) -> None: ...
 
 class Variable(Identifier):
     def __new__(cls, value): ...

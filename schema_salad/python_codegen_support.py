@@ -1,11 +1,11 @@
 """Template code used by python_codgen.py."""
-from abc import ABC, abstractmethod
 import copy
 import os
 import pathlib
 import re
 import tempfile
 import uuid as _uuid__  # pylint: disable=unused-import # noqa: F401
+from abc import ABC, abstractmethod
 from io import StringIO
 from typing import (
     Any,

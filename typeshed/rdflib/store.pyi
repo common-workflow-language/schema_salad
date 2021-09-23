@@ -1,6 +1,7 @@
 import pickle
-from rdflib.events import Event
 from typing import Any
+
+from rdflib.events import Event
 
 Pickler = pickle.Pickler
 Unpickler = pickle.Unpickler
@@ -22,7 +23,9 @@ class Store:
     transaction_aware: bool
     graph_aware: bool
     dispatcher: Any
-    def __init__(self, configuration: Any | None = ..., identifier: Any | None = ...) -> None: ...
+    def __init__(
+        self, configuration: Any | None = ..., identifier: Any | None = ...
+    ) -> None: ...
     node_pickler: Any
     def create(self, configuration) -> None: ...
     def open(self, configuration, create: bool = ...): ...

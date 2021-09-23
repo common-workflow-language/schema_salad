@@ -22,7 +22,7 @@ def test_load() -> None:
         doc, "http://example.com/", cg_metaschema.LoadingOptions()
     )
     assert "record" == rs.type
-    assert "http://example.com/#hello" == rs.fields[0].name
+    assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
     assert "Hello test case" == rs.fields[0].doc
     assert "string" == rs.fields[0].type
     assert {
@@ -71,7 +71,7 @@ def test_import() -> None:
         doc, "http://example.com/", cg_metaschema.LoadingOptions(fileuri=lead + "/_")
     )
     assert "record" == rs.type
-    assert lead + "/hellofield.yml#hello" == rs.fields[0].name
+    assert rs.fields and lead + "/hellofield.yml#hello" == rs.fields[0].name
     assert "hello world!\n" == rs.fields[0].doc
     assert "string" == rs.fields[0].type
     assert {
@@ -130,7 +130,7 @@ def test_idmap() -> None:
         doc, "http://example.com/", cg_metaschema.LoadingOptions()
     )
     assert "record" == rs.type
-    assert "http://example.com/#hello" == rs.fields[0].name
+    assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
     assert "Hello test case" == rs.fields[0].doc
     assert "string" == rs.fields[0].type
     assert {
@@ -151,7 +151,7 @@ def test_idmap2() -> None:
         doc, "http://example.com/", cg_metaschema.LoadingOptions()
     )
     assert "record" == rs.type
-    assert "http://example.com/#hello" == rs.fields[0].name
+    assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
     assert rs.fields[0].doc is None
     assert "string" == rs.fields[0].type
     assert {

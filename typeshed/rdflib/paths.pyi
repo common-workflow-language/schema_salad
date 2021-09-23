@@ -1,5 +1,7 @@
-from rdflib.term import Node as Node, URIRef as URIRef
 from typing import Any, Callable, Union
+
+from rdflib.term import Node as Node
+from rdflib.term import URIRef as URIRef
 
 ZeroOrMore: str
 OneOrMore: str
@@ -44,7 +46,9 @@ class MulPath(Path):
     zero: bool
     more: bool
     def __init__(self, path, mod) -> None: ...
-    def eval(self, graph, subj: Any | None = ..., obj: Any | None = ..., first: bool = ...) -> None: ...
+    def eval(
+        self, graph, subj: Any | None = ..., obj: Any | None = ..., first: bool = ...
+    ) -> None: ...
     def n3(self): ...
 
 class NegatedPath(Path):
