@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         py-ver-major: [3]
-        py-ver-minor: [6, 7, 8, 9]
+        py-ver-minor: [6, 7, 8, 9, 10]
         step: [lint, unit, mypy]
 
     env:
@@ -61,7 +61,7 @@ jobs:
     name: "Test ${{ matrix.pyver }} aarch64"
     strategy:
       matrix:
-        pyver: [cp39-cp39]
+        pyver: [cp39-cp39, cp310-cp310]
         arch: [aarch64]
       fail-fast: false
     runs-on: ubuntu-latest
@@ -151,7 +151,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.7
 
       - name: Cache for pip
         uses: actions/cache@v2
