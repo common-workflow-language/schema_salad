@@ -17,8 +17,8 @@ else
     HEAD=$(git rev-parse HEAD)
 fi
 run_tests="bin/py.test --pyargs ${module}"
-pipver=20.3b1 # minimum required version of pip for Python 3.9
-setuptoolsver=41.1.0 # required for Python 3.9
+pipver=20.3 # minimum required version of pip for Python 3.10
+setuptoolsver=50.0.0 # required for Python 3.10
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 rm -Rf testenv? || /bin/true
@@ -34,7 +34,7 @@ then
 	rm -f testenv1/lib/python-wheels/setuptools* \
 		&& pip install --force-reinstall -U pip==${pipver} \
 		&& pip install setuptools==${setuptoolsver} wheel
-	pip install -rtest-requirements.txt
+	pip install -rtest-requirements.txt .
 	make test
 	pip uninstall -y ${package} || true; pip uninstall -y ${package} || true; make install
 	mkdir testenv1/not-${module}
