@@ -112,7 +112,7 @@ def test_error_message4() -> None:
     match = r"""
 ^.+test4\.cwl:5:1: checking field\s+`outputs`
 .+test4\.cwl:6:3:   checking object\s+`.+test4\.cwl#bar`
-\s+`type` field is\s+int,\s+expected\s+string,\s+list, or\s+a\s+dict.$"""[
+\s+`type`\s+field\s+is\s+int,\s+expected\s+string,\s+list,\s+or\s+a\s+dict.$"""[
         1:
     ]
     with pytest.raises(ValidationException, match=match):
