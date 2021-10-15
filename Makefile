@@ -22,6 +22,7 @@
 
 MODULE=schema_salad
 PACKAGE=schema-salad
+EXTRAS=[pycodegen]
 
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
@@ -52,11 +53,11 @@ install-dependencies: FORCE
 
 ## install     : install the ${MODULE} module and schema-salad-tool
 install: FORCE
-	pip install .
+	pip install .$(EXTRAS)
 
 ## dev     : install the ${MODULE} module in dev mode
 dev: install-dep
-	pip install -e .
+	pip install -e .$(EXTRAS)
 
 ## dist        : create a module package for distribution
 dist: dist/${MODULE}-$(VERSION).tar.gz

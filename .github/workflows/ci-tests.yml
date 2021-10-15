@@ -87,7 +87,7 @@ jobs:
             source .env/bin/activate && \
             python -m pip install --upgrade pip wheel setuptools && \
             python -m pip install -r mypy-requirements.txt -r requirements.txt && \
-            MYPYPATH=typeshed SCHEMA_SALAD_USE_MYPYC=1 pip install -e . && \
+            MYPYPATH=typeshed SCHEMA_SALAD_USE_MYPYC=1 pip install -e .[pycodegen] && \
             deactivate'
     - name: Test with pytest
       run: |
@@ -96,7 +96,7 @@ jobs:
             bash -exc '\
             source .env/bin/activate && \
             pip install setuptools wheel -r test-requirements.txt && \
-            make mypyc
+            make test
             deactivate'
 
   tox-style:

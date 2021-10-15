@@ -82,11 +82,11 @@ install_requires = [
     "mistune >= 0.8.1, < 0.9",
     "CacheControl >= 0.11.7, < 0.13",
     "lockfile >= 0.9",  # needed for CacheControl's FileCache
-    "black",
 ]
 
 extras_require = {
     "docs": ["sphinx >= 2.2", "sphinx-rtd-theme", "pytest < 7"],
+    "pycodegen": ["black"],
 }
 
 setup(

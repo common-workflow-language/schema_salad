@@ -22,18 +22,24 @@ Web.
 
 The Schema Salad library is Python 3.6+ only.
 
-Usage
------
+Installation
+------------
 
 ::
 
-   $ pip install schema_salad
+   pip3 install schema_salad
+
+If you intend to use the `schema-salad-tool --codegen=python` feature, please
+include the `[pycodegen]` extra::
+
+   pip3 install schema_salad[pycodegen]
 
 To install from source::
 
-  git clone https://github.com/common-workflow-language/schema_salad
-  cd schema_salad
-  python3 setup.py install
+   git clone https://github.com/common-workflow-language/schema_salad
+   cd schema_salad
+   pip3 install .
+   # or pip3 install .[pycodegen] if needed
 
 Commands
 --------
@@ -41,15 +47,17 @@ Commands
 Schema salad can be used as a command line tool or imported as a Python module::
 
    $ schema-salad-tool
-   usage: schema-salad-tool [-h] [--rdf-serializer RDF_SERIALIZER]
-                         [--print-jsonld-context | --print-rdfs | --print-avro
-                         | --print-rdf | --print-pre | --print-index
-                         | --print-metadata | --print-inheritance-dot
-                         | --print-fieldrefs-dot | --codegen language
-                         | --print-oneline]
-                         [--strict | --non-strict] [--verbose | --quiet
-                         | --debug]
-                         [--version]
+   usage: schema-salad-tool [-h] [--rdf-serializer RDF_SERIALIZER] [--skip-schemas]
+                         [--strict-foreign-properties] [--print-jsonld-context]
+                         [--print-rdfs] [--print-avro] [--print-rdf] [--print-pre]
+                         [--print-index] [--print-metadata] [--print-inheritance-dot]
+                         [--print-fieldrefs-dot] [--codegen language] [--codegen-target CODEGEN_TARGET]
+                         [--codegen-examples directory] [--codegen-package dotted.package]
+                         [--codegen-copyright copyright_string] [--print-oneline]
+                         [--print-doc] [--strict | --non-strict]
+                         [--verbose | --quiet | --debug] [--only ONLY] [--redirect REDIRECT]
+                         [--brand BRAND] [--brandlink BRANDLINK] [--brandstyle BRANDSTYLE]
+                         [--brandinverse] [--primtype PRIMTYPE] [--version]
                          [schema] [document]
 
    $ python
@@ -75,7 +83,8 @@ Convert a document to JSON-LD::
 
    $ schema-salad-tool --print-pre myschema.yml mydocument.yml > mydocument.jsonld
 
-Generate Python classes for loading/generating documents described by the schema::
+Generate Python classes for loading/generating documents described by the schema
+(Requires the `[pycodegen]` extra)::
 
    $ schema-salad-tool --codegen=python myschema.yml > myschema.py
 
