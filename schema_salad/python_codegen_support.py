@@ -1,4 +1,4 @@
-"""Template code used by python_codgen.py."""
+"""Template code used by python_codegen.py."""
 import copy
 import os
 import pathlib
