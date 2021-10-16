@@ -103,7 +103,7 @@ class DefaultFetcher(Fetcher):
 
         if scheme in ["http", "https"] and self.session is not None:
             try:
-                resp = self.session.head(url)
+                resp = self.session.head(url, allow_redirects=True)
                 resp.raise_for_status()
             except Exception:
                 return False
