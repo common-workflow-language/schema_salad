@@ -1,9 +1,12 @@
-|Linux Build Status| |Code coverage| |CII Best Practices|
+|Linux Build Status| |Code coverage| |Documentation Status| |CII Best Practices|
 
 .. |Linux Build Status| image:: https://github.com/common-workflow-language/schema-salad/actions/workflows/ci-tests.yml/badge.svg?branch=main
    :target: https://github.com/common-workflow-language/schema-salad/actions/workflows/ci-tests.yml
 .. |Code coverage| image:: https://codecov.io/gh/common-workflow-language/schema_salad/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/common-workflow-language/schema_salad
+.. |Documentation Status| image:: https://readthedocs.org/projects/schema-salad/badge/?version=latest
+   :target: https://schema-salad.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
 .. |CII Best Practices| image:: https://bestpractices.coreinfrastructure.org/projects/1867/badge
    :target: https://bestpractices.coreinfrastructure.org/projects/1867
 

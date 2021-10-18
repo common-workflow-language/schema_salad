@@ -35,10 +35,8 @@ def printrdf(
     g.serialize(destination=stdout(), format=sr)
 
 
-def main(argsl: Optional[List[str]] = None) -> int:
-    if argsl is None:
-        argsl = sys.argv[1:]
-
+def arg_parser() -> argparse.ArgumentParser:
+    """Build the argument parser."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--rdf-serializer",
@@ -206,8 +204,14 @@ def main(argsl: Optional[List[str]] = None) -> int:
     parser.add_argument(
         "--version", "-v", action="store_true", help="Print version", default=None
     )
+    return parser
 
-    args = parser.parse_args(argsl)
+
+def main(argsl: Optional[List[str]] = None) -> int:
+    if argsl is None:
+        argsl = sys.argv[1:]
+
+    args = arg_parser().parse_args(argsl)
 
     if args.version is None and args.schema is None:
         print(f"{sys.argv[0]}: error: too few arguments.")
