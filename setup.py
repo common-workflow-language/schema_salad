@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import sys
+from typing import List
 
 import setuptools.command.egg_info as egg_info_cmd
 from setuptools import setup
@@ -17,7 +18,7 @@ except ImportError:
     tagger = egg_info_cmd.egg_info
 
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
-pytest_runner = ["pytest < 7", "pytest-runner"] if needs_pytest else []
+pytest_runner: List[str] = ["pytest < 7", "pytest-runner"] if needs_pytest else []
 
 USE_MYPYC = False
 # To compile with mypyc, a mypyc checkout must be present on the PYTHONPATH
@@ -102,7 +103,7 @@ setup(
     ext_modules=ext_modules,
     license="Apache 2.0",
     python_requires=">=3.6",
-    setup_requires=[] + pytest_runner,
+    setup_requires=pytest_runner,
     packages=["schema_salad", "schema_salad.tests"],
     package_data={"schema_salad": ["metaschema/*", "py.typed"]},
     include_package_data=True,

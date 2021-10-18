@@ -33,7 +33,11 @@ author = 'Peter Amstutz and contributors'
 extensions = [
         "sphinx.ext.autodoc",
         "sphinx.ext.autosummary",
+        "sphinx.ext.inheritance_diagram",
+        "autoapi.extension",
+        "sphinx_autodoc_typehints",
         "sphinx_rtd_theme",
+        "sphinxcontrib.autoprogram"
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -60,3 +64,14 @@ html_static_path = ['_static']
 
 release = get_distribution('schema-salad').version
 version = '.'.join(release.split('.')[:2])
+
+autoapi_dirs = ['../schema_salad']
+autodoc_typehints = 'description'
+autoapi_keep_files = True
+autoapi_ignore = ['*migrations*', '*.pyi']
+autoapi_options = [ 'members', 'undoc-members', 'show-inheritance', 'show-inheritance-diagram', 'show-module-summary', 'imported-members', 'special-members' ]
+#sphinx-autodoc-typehints
+always_document_param_types = True
+# If False, do not add type info for undocumented parameters.
+# If True, add stub documentation for undocumented parameters to be able to add type info.
+
