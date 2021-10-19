@@ -249,3 +249,13 @@ def test_attachments() -> None:
     with open(path) as f:
         content = f.read()
         assert {"foo": "bar", "baz": content, "quux": content} == r3
+
+
+def test_check_exists_follows_redirects() -> None:
+    fetcher = DefaultFetcher({}, Session())
+    # This tests that the redirect from http to https doesn't cause a
+    # false positive, this URL doesn't exist and it should return
+    # False because if it follows the redirect it'll get a 404.  Tests
+    # for previous bug where allow_redirects wasn't set and as a
+    # result it would return True even though the result was 3xx.
+    assert not fetcher.check_exists("http://commonwl.org/does/not/exist")
