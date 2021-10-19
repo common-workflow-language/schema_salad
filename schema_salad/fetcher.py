@@ -101,7 +101,9 @@ class DefaultFetcher(Fetcher):
         split = urllib.parse.urlsplit(url)
         scheme, path = split.scheme, split.path
 
-        if scheme in ["http", "https"] and self.session is not None:
+        if scheme in ["http", "https"]:
+            if self.session is None:
+                raise ValidationException(f"Can't check {scheme} URL, session is None")
             try:
                 resp = self.session.head(url, allow_redirects=True)
                 resp.raise_for_status()
@@ -113,7 +115,7 @@ class DefaultFetcher(Fetcher):
             return os.path.exists(urllib.request.url2pathname(str(path)))
         if scheme == "mailto":
             return True
-        raise ValidationException(f"Unsupported scheme in url: {url}")
+        raise ValidationException(f"Unsupported scheme '{scheme}' in url: {url}")
 
     def urljoin(self, base_url: str, url: str) -> str:
         if url.startswith("_:"):
