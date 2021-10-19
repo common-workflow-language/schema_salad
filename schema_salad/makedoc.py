@@ -683,7 +683,8 @@ def avrold_doc(
     )
 
 
-def main() -> None:
+def arg_parser() -> argparse.ArgumentParser:
+    """Build the argument parser."""
     parser = argparse.ArgumentParser()
     parser.add_argument("schema")
     parser.add_argument("--only", action="append")
@@ -693,9 +694,11 @@ def main() -> None:
     parser.add_argument("--brandstyle")
     parser.add_argument("--brandinverse", default=False, action="store_true")
     parser.add_argument("--primtype", default="#PrimitiveType")
+    return parser
 
-    args = parser.parse_args()
 
+def main() -> None:
+    args = arg_parser().parse_args()
     makedoc(args)
 
 

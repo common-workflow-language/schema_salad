@@ -12,16 +12,20 @@ generation, and transformation to RDF_. Salad provides a bridge
 between document and record oriented data modeling and the Semantic
 Web.
 
-
 Modules
 =======
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
-   modules
-   typeshed
+Command Line Options
+====================
+
+.. autoprogram:: schema_salad.main:arg_parser()
+   :prog: schema-salad-tool
+
+.. autoprogram:: schema_salad.makedoc:arg_parser()
+   :prog: schema-salad-doc
 
 Indices and tables
 ==================

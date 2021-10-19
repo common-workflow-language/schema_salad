@@ -49,7 +49,7 @@ install-dep: install-dependencies
 
 install-dependencies: FORCE
 	pip install --upgrade $(DEVPKGS)
-	pip install -r requirements.txt
+	pip install -r requirements.txt -r mypy-requirements.txt -r docs/requirements.txt
 
 ## install     : install the ${MODULE} module and schema-salad-tool
 install: FORCE
