@@ -334,6 +334,7 @@ class _SecondaryDSLLoader(_Loader):
                                 d
                             )
                         )
+                    r.append(new_dict)
 
                 else:
                     raise ValidationException(
@@ -357,6 +358,7 @@ class _SecondaryDSLLoader(_Loader):
                         doc
                     )
                 )
+            r.append(new_dict)
 
         elif isinstance(doc, str):
             if doc.endswith("?"):
