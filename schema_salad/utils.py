@@ -125,7 +125,7 @@ class _RoundTripNoTimeStampConstructor(RoundTripConstructor):
 
 
 _RoundTripNoTimeStampConstructor.add_constructor(
-    u"tag:yaml.org,2002:timestamp",
+    "tag:yaml.org,2002:timestamp",
     _RoundTripNoTimeStampConstructor.construct_yaml_timestamp,
 )
 

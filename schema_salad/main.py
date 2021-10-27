@@ -266,7 +266,17 @@ def main(argsl: Optional[List[str]] = None) -> int:
         return 1
 
     if args.print_doc:
-        makedoc(args)
+        makedoc(
+            sys.stdout,
+            args.schema,
+            args.redirect,
+            args.only,
+            args.brand,
+            args.brandlink,
+            args.primtype,
+            args.brandstyle,
+            args.brandinverse,
+        )
         return 0
 
     # Optionally print the schema after ref resolution

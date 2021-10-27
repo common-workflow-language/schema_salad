@@ -122,6 +122,15 @@ def test_print_metadata(capfdbinary: CaptureFixture[bytes]) -> None:
     assert captured.out
 
 
+def test_schema_salad_doc_oneline_doc() -> None:
+    """Test schema-salad-doc when the 1st type has only a single doc line."""
+    schema_path = get_data("tests/test_schema/one_line_primary_doc.yml")
+    assert schema_path
+    stdout = StringIO()
+    schema_salad.makedoc.makedoc(stdout, schema_path)
+    assert "<title>Schema</title>" in stdout.getvalue()
+
+
 def test_avro_regression() -> None:
     path = get_data("tests/Process.yml")
     assert path
