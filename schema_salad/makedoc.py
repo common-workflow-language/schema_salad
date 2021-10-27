@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import sys
-from codecs import StreamWriter
 from io import StringIO, TextIOWrapper
 from typing import (
     IO,
@@ -17,14 +16,13 @@ from typing import (
     Set,
     Tuple,
     Union,
-    cast,
 )
 from urllib.parse import urldefrag
 
 import mistune
 
-from . import schema
 from .exceptions import SchemaSaladException, ValidationException
+from .schema import avro_field_name, extend_and_specialize, get_metaschema
 from .utils import add_dictlist, aslist
 from .validate import avro_type_name
 
@@ -219,8 +217,8 @@ class RenderType:
             if t.get("docAfter"):
                 add_dictlist(self.docAfter, t["docAfter"], t["name"])
 
-        metaschema_loader = schema.get_metaschema()[2]
-        alltypes = schema.extend_and_specialize(j, metaschema_loader)
+        metaschema_loader = get_metaschema()[2]
+        alltypes = extend_and_specialize(j, metaschema_loader)
 
         self.typemap = {}  # type: Dict[str, Dict[str, str]]
         self.uses = {}  # type: Dict[str, List[Tuple[str, str]]]
@@ -329,7 +327,7 @@ class RenderType:
                     and len(tp["symbols"]) == 1
                 ):
                     return "constant value <code>{}</code>".format(
-                        schema.avro_field_name(tp["symbols"][0])
+                        avro_field_name(tp["symbols"][0])
                     )
                 return frg
             if isinstance(tp["type"], MutableMapping):
@@ -408,12 +406,12 @@ class RenderType:
         else:
             doc = ""
 
+        # Save the first line of the first type definition for the
+        # HTML <title> tag
         if self.title is None and f["doc"]:
-            title = f["doc"][0 : f["doc"].index("\n")]
-            if title.startswith("# "):
-                self.title = title[2:]
-            else:
-                self.title = title
+            self.title = f["doc"].partition("\n")[0]
+            if self.title.startswith("# "):
+                self.title = self.title[2:]
 
         if f["type"] == "documentation":
             f["doc"] = number_headings(self.toc, f["doc"])
@@ -447,7 +445,7 @@ class RenderType:
 
                 desc = i["doc"]
 
-                rfrg = schema.avro_field_name(i["name"])
+                rfrg = avro_field_name(i["name"])
                 tr = """
 <div class="row responsive-table-row">
 <div class="col-xs-3 col-lg-2"><code>{}</code></div>
@@ -476,7 +474,7 @@ class RenderType:
             for e in ex:
                 for i in e.get("symbols", []):
                     doc += "<tr>"
-                    efrg = schema.avro_field_name(i)
+                    efrg = avro_field_name(i)
                     doc += "<td><code>{}</code></td><td>{}</td>".format(
                         efrg, enumDesc.get(efrg, "")
                     )
@@ -499,7 +497,7 @@ class RenderType:
 
 def avrold_doc(
     j: List[Dict[str, Any]],
-    outdoc: Union[IO[Any], StreamWriter],
+    outdoc: IO[Any],
     renderlist: List[str],
     redirects: Dict[str, str],
     brand: str,
@@ -698,26 +696,46 @@ def arg_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    """Shortcut entrypoint."""
     args = arg_parser().parse_args()
-    makedoc(args)
+    makedoc(
+        sys.stdout,
+        args.schema,
+        args.redirect,
+        args.only,
+        args.brand,
+        args.brandlink,
+        args.primtype,
+        args.brandstyle,
+        args.brandinverse,
+    )
 
 
-def makedoc(args: argparse.Namespace) -> None:
-
-    s = []  # type: List[Dict[str, Any]]
-    a = args.schema
-    with open(a, encoding="utf-8") as f:
-        if a.endswith("md"):
+def makedoc(
+    stdout: IO[Any],
+    schema: str,
+    redirects: Optional[List[str]] = None,
+    only: Optional[List[str]] = None,
+    brand: Optional[str] = None,
+    brandlink: Optional[str] = None,
+    primtype: Optional[str] = None,
+    brandstyle: Optional[str] = None,
+    brandinverse: Optional[bool] = False,
+) -> None:
+    """Emit HTML representation of a given schema."""
+    s: List[Dict[str, Any]] = []
+    with open(schema, encoding="utf-8") as f:
+        if schema.endswith("md"):
             s.append(
                 {
-                    "name": os.path.splitext(os.path.basename(a))[0],
+                    "name": os.path.splitext(os.path.basename(schema))[0],
                     "type": "documentation",
                     "doc": f.read(),
                 }
             )
         else:
-            uri = "file://" + os.path.abspath(a)
-            metaschema_loader = schema.get_metaschema()[2]
+            uri = "file://" + os.path.abspath(schema)
+            metaschema_loader = get_metaschema()[2]
             j = metaschema_loader.resolve_ref(uri, "")[0]
             if isinstance(j, MutableSequence):
                 s.extend(j)
@@ -726,24 +744,25 @@ def makedoc(args: argparse.Namespace) -> None:
             else:
                 raise ValidationException("Schema must resolve to a list or a dict")
     redirect = {}
-    for r in args.redirect or []:
+    for r in redirects or []:
         redirect[r.split("=")[0]] = r.split("=")[1]
-    renderlist = args.only if args.only else []
-    stdout = (
-        TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-        if sys.stdout.encoding != "UTF-8"
-        else cast(TextIOWrapper, sys.stdout)
-    )  # type: Union[TextIOWrapper, StreamWriter]
+    renderlist = only or []
+    if hasattr(stdout, "buffer") and getattr(stdout, "encoding", None) != "UTF-8":
+        wrapped_stdout: IO[Any] = TextIOWrapper(
+            stdout.buffer, encoding="utf-8"  # type: ignore[attr-defined]
+        )
+    else:
+        wrapped_stdout = stdout
     avrold_doc(
         s,
-        stdout,
+        wrapped_stdout,
         renderlist,
         redirect,
-        args.brand,
-        args.brandlink,
-        args.primtype,
-        brandstyle=args.brandstyle,
-        brandinverse=args.brandinverse,
+        brand or "",
+        brandlink or "",
+        primtype or "",
+        brandstyle=brandstyle,
+        brandinverse=brandinverse,
     )
 
 

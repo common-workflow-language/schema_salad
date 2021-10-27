@@ -76,7 +76,9 @@ Validate a document using a schema::
 
 Generate HTML documentation::
 
-   $ schema-salad-tool myschema.yml > myschema.html
+   $ schema-salad-tool --print-doc myschema.yml > myschema.html
+   $ # or
+   $ schema-salad-doc myschema.yml > myschema.html
 
 Get JSON-LD context::
 
