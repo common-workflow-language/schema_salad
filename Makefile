@@ -115,7 +115,7 @@ pylint_report.txt: $(PYSOURCES)
 diff_pylint_report: pylint_report.txt
 	diff-quality --violations=pylint pylint_report.txt
 
-.coverage: testcov
+.coverage:
 	python setup.py test --addopts "--cov --cov-config=.coveragerc --cov-report= -n auto"
 	$(COVBASE) -m schema_salad.main \
 		--print-jsonld-context schema_salad/metaschema/metaschema.yml \
