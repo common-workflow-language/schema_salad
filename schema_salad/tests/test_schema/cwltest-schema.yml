@@ -1,5 +1,6 @@
 $base: "https://w3id.org/cwl/cwltest#"
 $graph:
+  - $import: "../../metaschema/metaschema_base.yml"
   - name: TestCase
     type: record
     documentRoot: true
@@ -10,7 +11,9 @@ $graph:
           _type: "@id"
           identity: true
       label: string?
-      doc: string?
+      doc:
+        type: string?
+        jsonldPredicate: "rdfs:comment"
       tags: string[]?
       tool:
         type: string
