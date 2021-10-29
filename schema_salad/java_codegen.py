@@ -3,7 +3,7 @@ import os
 import shutil
 import string
 from io import StringIO
-from io import open as io_open
+from pathlib import Path
 from typing import (
     Any,
     Dict,
@@ -18,7 +18,7 @@ from urllib.parse import urlsplit
 
 import pkg_resources
 
-from . import schema
+from . import schema, _logger
 from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
@@ -30,10 +30,10 @@ from .schema import shortname
 USE_ONE_OR_LIST_OF_TYPES = False
 
 
-def _ensure_directory_and_write(path: str, contents: str) -> None:
-    dirname = os.path.dirname(path)
-    _safe_makedirs(dirname)
-    with io_open(path, mode="w", encoding="utf-8") as f:
+def _ensure_directory_and_write(path: Path, contents: str) -> None:
+    _safe_makedirs(path.parent)
+    with open(path, mode="w", encoding="utf-8") as f:
+        _logger.info("Writing file: %s", path)
         f.write(contents)
 
 
@@ -48,10 +48,10 @@ def doc_to_doc_string(doc: Optional[str], indent_level: int = 0) -> str:
     return doc_str
 
 
-def _safe_makedirs(path):
-    # type: (str) -> None
-    if not os.path.exists(path):
+def _safe_makedirs(path: Path) -> None:
+    if not path.exists():
         os.makedirs(path)
+        _logger.info("Created directory: %s", path)
 
 
 _string_type_def = TypeDef(
@@ -145,18 +145,13 @@ class JavaCodeGen(CodeGenBase):
         )
         self.artifact = self.package.split(".")[-1]
         self.copyright = copyright
-        target = target or "."
-        self.target_dir = target
+        self.target_dir = Path(target or ".").resolve()
         rel_package_dir = self.package.replace(".", "/")
-        self.rel_package_dir = rel_package_dir
-        self.main_src_dir = os.path.join(
-            self.target_dir, "src", "main", "java", rel_package_dir
-        )
-        self.test_src_dir = os.path.join(
-            self.target_dir, "src", "test", "java", rel_package_dir
-        )
-        self.test_resources_dir = os.path.join(
-            self.target_dir, "src", "test", "resources", rel_package_dir
+        self.rel_package_dir = Path(rel_package_dir)
+        self.main_src_dir = self.target_dir / "src" / "main" / "java" / rel_package_dir
+        self.test_src_dir = self.target_dir / "src" / "test" / "java" / rel_package_dir
+        self.test_resources_dir = (
+            self.target_dir / "src" / "test" / "resources" / rel_package_dir
         )
 
     def prologue(self) -> None:
@@ -198,7 +193,7 @@ class JavaCodeGen(CodeGenBase):
         self.current_class = cls
         self.current_class_is_abstract = abstract
         self.current_loader = StringIO()
-        self.current_fieldtypes = {}  # type: Dict[str, TypeDef]
+        self.current_fieldtypes: Dict[str, TypeDef] = {}
         self.current_fields = StringIO()
         interface_doc_str = f"* Auto-generated interface for <I>{classname}</I><BR>"
         if not abstract:
@@ -209,8 +204,9 @@ class JavaCodeGen(CodeGenBase):
             f"* Auto-generated class implementation for <I>{classname}</I><BR>"
         )
         class_doc_str += doc_to_doc_string(doc)
-        with open(os.path.join(self.main_src_dir, f"{cls}.java"), "w") as f:
-
+        target = self.main_src_dir / f"{cls}.java"
+        with open(target, "w") as f:
+            _logger.info("Writing file: %s", target)
             if extends:
                 ext = (
                     "extends "
@@ -262,7 +258,9 @@ public interface {cls} {ext} {{""".format(
         if self.current_class_is_abstract:
             return
 
-        with open(os.path.join(self.main_src_dir, f"{cls}Impl.java"), "w") as f:
+        target = self.main_src_dir / f"{cls}Impl.java"
+        with open(target, "w") as f:
+            _logger.info("Writing file: %s", target)
             f.write(
                 """// Copyright Common Workflow Language project contributors
 """
@@ -346,11 +344,9 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
             )
         )
 
-    def end_class(self, classname, field_names):
-        # type: (str, List[str]) -> None
-        with open(
-            os.path.join(self.main_src_dir, f"{self.current_class}.java"), "a"
-        ) as f:
+    def end_class(self, classname: str, field_names: List[str]) -> None:
+        """Finish this class."""
+        with open(self.main_src_dir / f"{self.current_class}.java", "a") as f:
             f.write(
                 """
 }
@@ -377,9 +373,9 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
             )
 
         self.current_loader.write("""  }""")
-
+        target = self.main_src_dir / f"{self.current_class}Impl.java"
         with open(
-            os.path.join(self.main_src_dir, f"{self.current_class}Impl.java"),
+            target,
             "a",
         ) as f:
             f.write(self.current_fields.getvalue())
@@ -513,8 +509,9 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
         symbols_decl = 'new String[] {{"{}"}}'.format(
             '", "'.join(sym for sym in symbols)
         )
-        enum_path = os.path.join(self.main_src_dir, f"{clazz}.java")
+        enum_path = self.main_src_dir / f"{clazz}.java"
         with open(enum_path, "w") as f:
+            _logger.info("Writing file: %s", enum_path)
             f.write(
                 """// Copyright Common Workflow Language project contributors
 """
@@ -610,9 +607,8 @@ public enum {clazz} {{
 """.format(
             fieldname=fieldname, field_doc_str=doc_to_doc_string(doc, indent_level=1)
         )
-        with open(
-            os.path.join(self.main_src_dir, f"{self.current_class}.java"), "a"
-        ) as f:
+        target = self.main_src_dir / f"{self.current_class}.java"
+        with open(target, "a") as f:
             f.write(
                 """
 {getter_doc_str}
@@ -805,7 +801,7 @@ public enum {clazz} {{
         pd = pd + " for parsing documents corresponding to the "
         pd = pd + str(self.base_uri) + " schema."
 
-        template_vars = dict(
+        template_vars: MutableMapping[str, str] = dict(
             base_uri=self.base_uri,
             package=self.package,
             group_id=self.package,
@@ -815,43 +811,32 @@ public enum {clazz} {{
             project_description=pd,
             license_name="Apache License, Version 2.0",
             license_url="https://www.apache.org/licenses/LICENSE-2.0.txt",
-        )  # type: MutableMapping[str, str]
+        )
 
-        def template_from_resource(resource):
-            # type: (str) -> string.Template
+        def template_from_resource(resource: str) -> string.Template:
             template_str = pkg_resources.resource_string(
                 __name__, f"java/{resource}"
             ).decode("utf-8")
             template = string.Template(template_str)
             return template
 
-        def expand_resource_template_to(resource, path):
-            # type: (str, str) -> None
+        def expand_resource_template_to(resource: str, path: Path) -> None:
             template = template_from_resource(resource)
             src = template.safe_substitute(template_vars)
             _ensure_directory_and_write(path, src)
 
-        expand_resource_template_to("pom.xml", os.path.join(self.target_dir, "pom.xml"))
-        expand_resource_template_to(
-            "gitignore", os.path.join(self.target_dir, ".gitignore")
-        )
-        expand_resource_template_to(
-            "package.html", os.path.join(self.main_src_dir, "package.html")
-        )
+        expand_resource_template_to("pom.xml", self.target_dir / "pom.xml")
+        expand_resource_template_to("gitignore", self.target_dir / ".gitignore")
+        expand_resource_template_to("package.html", self.main_src_dir / "package.html")
         expand_resource_template_to(
             "overview.html",
-            os.path.join(self.target_dir, "src", "main", "javadoc", "overview.html"),
+            self.target_dir / "src" / "main" / "javadoc" / "overview.html",
         )
         expand_resource_template_to(
             "MANIFEST.MF",
-            os.path.join(
-                self.target_dir, "src", "main", "resources", "META-INF", "MANIFEST.MF"
-            ),
+            self.target_dir / "src" / "main" / "resources" / "META-INF" / "MANIFEST.MF",
         )
-        expand_resource_template_to(
-            "README.md",
-            os.path.join(self.target_dir, "README.md"),
-        )
+        expand_resource_template_to("README.md", self.target_dir / "README.md")
 
         vocab = ""
         rvocab = ""
@@ -868,7 +853,7 @@ public enum {clazz} {{
         example_tests = ""
         if self.examples:
             _safe_makedirs(self.test_resources_dir)
-            utils_resources = os.path.join(self.test_resources_dir, "utils")
+            utils_resources = self.test_resources_dir / "utils"
             if os.path.exists(utils_resources):
                 shutil.rmtree(utils_resources)
             shutil.copytree(self.examples, utils_resources)
@@ -904,7 +889,7 @@ public enum {clazz} {{
                         example_name=example_name,
                     )
 
-        template_args = dict(
+        template_args: MutableMapping[str, str] = dict(
             package=self.package,
             vocab=vocab,
             rvocab=rvocab,
@@ -912,7 +897,7 @@ public enum {clazz} {{
             root_loader_name=root_loader.name,
             root_loader_instance_type=root_loader.instance_type or "Object",
             example_tests=example_tests,
-        )  # type: MutableMapping[str, str]
+        )
 
         util_src_dirs = {
             "main_utils": self.main_src_dir,
@@ -920,7 +905,7 @@ public enum {clazz} {{
         }
         for (util_src, util_target) in util_src_dirs.items():
             for util in pkg_resources.resource_listdir(__name__, f"java/{util_src}"):
-                src_path = os.path.join(util_target, "utils", util)
+                src_path = util_target / "utils" / util
                 src_template = template_from_resource(os.path.join(util_src, util))
                 src = src_template.safe_substitute(template_args)
                 _ensure_directory_and_write(src_path, src)
