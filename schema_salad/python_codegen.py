@@ -21,7 +21,7 @@ from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
 
-_string_type_def = TypeDef("strtype", "_PrimitiveLoader((str, str))")
+_string_type_def = TypeDef("strtype", "_PrimitiveLoader(str)")
 _int_type_def = TypeDef("inttype", "_PrimitiveLoader(int)")
 _float_type_def = TypeDef("floattype", "_PrimitiveLoader(float)")
 _bool_type_def = TypeDef("booltype", "_PrimitiveLoader(bool)")
