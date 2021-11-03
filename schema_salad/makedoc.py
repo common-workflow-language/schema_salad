@@ -29,6 +29,11 @@ from .validate import avro_type_name
 _logger = logging.getLogger("salad")
 
 
+def vocab_type_name(url: str) -> str:
+    """Remove the avro namespace, if any."""
+    return avro_type_name(url).split(".")[-1]
+
+
 def has_types(items: Any) -> List[str]:
     r = []  # type: List[str]
     if isinstance(items, MutableMapping):
@@ -317,7 +322,7 @@ class RenderType:
                 "https://w3id.org/cwl/salad#record",
                 "https://w3id.org/cwl/salad#enum",
             ):
-                frg = avro_type_name(tp["name"])
+                frg = vocab_type_name(tp["name"])
                 if tp["name"] in redirects:
                     return """<a href="{}">{}</a>""".format(redirects[tp["name"]], frg)
                 if tp["name"] in self.typemap:
@@ -337,7 +342,7 @@ class RenderType:
                 return f"""<a href="{redirects[tp]}">{redirects[tp]}</a>"""
             if str(tp) in basicTypes:
                 return """<a href="{}">{}</a>""".format(
-                    self.primitiveType, avro_type_name(str(tp))
+                    self.primitiveType, vocab_type_name(str(tp))
                 )
             frg2 = urldefrag(tp)[1]
             if frg2 != "":
@@ -692,12 +697,15 @@ def arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--brandstyle")
     parser.add_argument("--brandinverse", default=False, action="store_true")
     parser.add_argument("--primtype", default="#PrimitiveType")
+    parser.add_argument("--debug", action="store_true")
     return parser
 
 
 def main() -> None:
     """Shortcut entrypoint."""
     args = arg_parser().parse_args()
+    if args.debug:
+        _logger.setLevel(logging.DEBUG)
     makedoc(
         sys.stdout,
         args.schema,
