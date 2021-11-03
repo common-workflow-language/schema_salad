@@ -3054,7 +3054,7 @@ _rvocab = {
     "http://www.w3.org/2001/XMLSchema#string": "string",
 }
 
-strtype = _PrimitiveLoader((str, str))
+strtype = _PrimitiveLoader(str)
 inttype = _PrimitiveLoader(int)
 floattype = _PrimitiveLoader(float)
 booltype = _PrimitiveLoader(bool)
