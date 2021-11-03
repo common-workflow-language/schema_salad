@@ -39,6 +39,14 @@ prims = {
         "None_type", "_PrimitiveLoader(type(None))"
     ),
     "https://w3id.org/cwl/salad#Any": TypeDef("Any_type", "_AnyLoader()"),
+    "string": TypeDef("strtype", "_PrimitiveLoader((str, str))"),
+    "int": _int_type_def,
+    "long": _int_type_def,
+    "float": _float_type_def,
+    "double": _float_type_def,
+    "boolean": TypeDef("booltype", "_PrimitiveLoader(bool)"),
+    "null": TypeDef("None_type", "_PrimitiveLoader(type(None))"),
+    "Any": TypeDef("Any_type", "_AnyLoader()"),
 }
 
 

@@ -103,6 +103,54 @@ prims = {
         init="new AnyLoader()",
         loader_type="Loader<Object>",
     ),
+    "string": TypeDef(
+        instance_type="String",
+        init="new PrimitiveLoader<String>(String.class)",
+        name="StringInstance",
+        loader_type="Loader<String>",
+    ),
+    "int": TypeDef(
+        instance_type="Integer",
+        init="new PrimitiveLoader<Integer>(Integer.class)",
+        name="IntegerInstance",
+        loader_type="Loader<Integer>",
+    ),
+    "long": TypeDef(
+        instance_type="Long",
+        name="LongInstance",
+        loader_type="Loader<Long>",
+        init="new PrimitiveLoader<Long>(Long.class)",
+    ),
+    "float": TypeDef(
+        instance_type="Double",
+        name="DoubleInstance",
+        loader_type="Loader<Double>",
+        init="new PrimitiveLoader<Double>(Double.class)",
+    ),
+    "double": TypeDef(
+        instance_type="Double",
+        name="DoubleInstance",
+        loader_type="Loader<Double>",
+        init="new PrimitiveLoader<Double>(Double.class)",
+    ),
+    "boolean": TypeDef(
+        instance_type="Boolean",
+        name="BooleanInstance",
+        loader_type="Loader<Boolean>",
+        init="new PrimitiveLoader<Boolean>(Boolean.class)",
+    ),
+    "null": TypeDef(
+        instance_type="Object",
+        name="NullInstance",
+        loader_type="Loader<Object>",
+        init="new NullLoader()",
+    ),
+    "Any": TypeDef(
+        instance_type="Object",
+        name="AnyInstance",
+        init="new AnyLoader()",
+        loader_type="Loader<Object>",
+    ),
 }
 
 
