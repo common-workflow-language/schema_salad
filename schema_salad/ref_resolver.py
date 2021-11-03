@@ -685,7 +685,11 @@ class Loader:
                 datum2 = datum = document[d]
                 if isinstance(datum, str):
                     datum2 = self._apply_dsl(
-                        datum, d, loader, document.lc.data[d], document.lc.filename
+                        datum,
+                        d,
+                        loader,
+                        document.lc.data[d] if document.lc.data else document.lc,
+                        getattr(document.lc, "filename", None),
                     )
                 elif isinstance(datum, CommentedSeq):
                     datum2 = CommentedSeq()
