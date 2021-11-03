@@ -21,24 +21,30 @@ from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
 
+_string_type_def = TypeDef("strtype", "_PrimitiveLoader(str)")
 _int_type_def = TypeDef("inttype", "_PrimitiveLoader(int)")
 _float_type_def = TypeDef("floattype", "_PrimitiveLoader(float)")
+_bool_type_def = TypeDef("booltype", "_PrimitiveLoader(bool)")
+_null_type_def = TypeDef("None_type", "_PrimitiveLoader(type(None))")
+_any_type_def = TypeDef("Any_type", "_AnyLoader()")
 
 prims = {
-    "http://www.w3.org/2001/XMLSchema#string": TypeDef(
-        "strtype", "_PrimitiveLoader((str, str))"
-    ),
+    "http://www.w3.org/2001/XMLSchema#string": _string_type_def,
     "http://www.w3.org/2001/XMLSchema#int": _int_type_def,
     "http://www.w3.org/2001/XMLSchema#long": _int_type_def,
     "http://www.w3.org/2001/XMLSchema#float": _float_type_def,
     "http://www.w3.org/2001/XMLSchema#double": _float_type_def,
-    "http://www.w3.org/2001/XMLSchema#boolean": TypeDef(
-        "booltype", "_PrimitiveLoader(bool)"
-    ),
-    "https://w3id.org/cwl/salad#null": TypeDef(
-        "None_type", "_PrimitiveLoader(type(None))"
-    ),
-    "https://w3id.org/cwl/salad#Any": TypeDef("Any_type", "_AnyLoader()"),
+    "http://www.w3.org/2001/XMLSchema#boolean": _bool_type_def,
+    "https://w3id.org/cwl/salad#null": _null_type_def,
+    "https://w3id.org/cwl/salad#Any": _any_type_def,
+    "string": _string_type_def,
+    "int": _int_type_def,
+    "long": _int_type_def,
+    "float": _float_type_def,
+    "double": _float_type_def,
+    "boolean": _bool_type_def,
+    "null": _null_type_def,
+    "Any": _any_type_def,
 }
 
 

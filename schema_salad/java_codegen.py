@@ -54,55 +54,72 @@ def _safe_makedirs(path):
         os.makedirs(path)
 
 
+_string_type_def = TypeDef(
+    instance_type="String",
+    init="new PrimitiveLoader<String>(String.class)",
+    name="StringInstance",
+    loader_type="Loader<String>",
+)
+
+_int_type_def = TypeDef(
+    instance_type="Integer",
+    init="new PrimitiveLoader<Integer>(Integer.class)",
+    name="IntegerInstance",
+    loader_type="Loader<Integer>",
+)
+
+_long_type_def = TypeDef(
+    instance_type="Long",
+    name="LongInstance",
+    loader_type="Loader<Long>",
+    init="new PrimitiveLoader<Long>(Long.class)",
+)
+
+_float_type_def = TypeDef(
+    instance_type="Double",
+    name="DoubleInstance",
+    loader_type="Loader<Double>",
+    init="new PrimitiveLoader<Double>(Double.class)",
+)
+
+_bool_type_def = TypeDef(
+    instance_type="Boolean",
+    name="BooleanInstance",
+    loader_type="Loader<Boolean>",
+    init="new PrimitiveLoader<Boolean>(Boolean.class)",
+)
+
+_null_type_def = TypeDef(
+    instance_type="Object",
+    name="NullInstance",
+    loader_type="Loader<Object>",
+    init="new NullLoader()",
+)
+
+_any_type_def = TypeDef(
+    instance_type="Object",
+    name="AnyInstance",
+    init="new AnyLoader()",
+    loader_type="Loader<Object>",
+)
+
 prims = {
-    "http://www.w3.org/2001/XMLSchema#string": TypeDef(
-        instance_type="String",
-        init="new PrimitiveLoader<String>(String.class)",
-        name="StringInstance",
-        loader_type="Loader<String>",
-    ),
-    "http://www.w3.org/2001/XMLSchema#int": TypeDef(
-        instance_type="Integer",
-        init="new PrimitiveLoader<Integer>(Integer.class)",
-        name="IntegerInstance",
-        loader_type="Loader<Integer>",
-    ),
-    "http://www.w3.org/2001/XMLSchema#long": TypeDef(
-        instance_type="Long",
-        name="LongInstance",
-        loader_type="Loader<Long>",
-        init="new PrimitiveLoader<Long>(Long.class)",
-    ),
-    "http://www.w3.org/2001/XMLSchema#float": TypeDef(
-        instance_type="Double",
-        name="DoubleInstance",
-        loader_type="Loader<Double>",
-        init="new PrimitiveLoader<Double>(Double.class)",
-    ),
-    "http://www.w3.org/2001/XMLSchema#double": TypeDef(
-        instance_type="Double",
-        name="DoubleInstance",
-        loader_type="Loader<Double>",
-        init="new PrimitiveLoader<Double>(Double.class)",
-    ),
-    "http://www.w3.org/2001/XMLSchema#boolean": TypeDef(
-        instance_type="Boolean",
-        name="BooleanInstance",
-        loader_type="Loader<Boolean>",
-        init="new PrimitiveLoader<Boolean>(Boolean.class)",
-    ),
-    "https://w3id.org/cwl/salad#null": TypeDef(
-        instance_type="Object",
-        name="NullInstance",
-        loader_type="Loader<Object>",
-        init="new NullLoader()",
-    ),
-    "https://w3id.org/cwl/salad#Any": TypeDef(
-        instance_type="Object",
-        name="AnyInstance",
-        init="new AnyLoader()",
-        loader_type="Loader<Object>",
-    ),
+    "http://www.w3.org/2001/XMLSchema#string": _string_type_def,
+    "http://www.w3.org/2001/XMLSchema#int": _int_type_def,
+    "http://www.w3.org/2001/XMLSchema#long": _long_type_def,
+    "http://www.w3.org/2001/XMLSchema#float": _float_type_def,
+    "http://www.w3.org/2001/XMLSchema#double": _float_type_def,
+    "http://www.w3.org/2001/XMLSchema#boolean": _bool_type_def,
+    "https://w3id.org/cwl/salad#null": _null_type_def,
+    "https://w3id.org/cwl/salad#Any": _any_type_def,
+    "string": _string_type_def,
+    "int": _int_type_def,
+    "long": _long_type_def,
+    "float": _float_type_def,
+    "double": _float_type_def,
+    "boolean": _bool_type_def,
+    "null": _null_type_def,
+    "Any": _any_type_def,
 }
 
 
