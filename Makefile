@@ -126,7 +126,7 @@ diff_pylint_report: pylint_report.txt
 	$(COVBASE) -m schema_salad.main \
 		--print-avro schema_salad/metaschema/metaschema.yml \
 		> /dev/null
-	$(COVBASE) -m schema_salad.makedoc \
+	$(COVBASE) -m schema_salad.makedoc --debug \
 		schema_salad/metaschema/metaschema.yml \
 		> /dev/null
 
