@@ -110,7 +110,7 @@ jobs:
 
     strategy:
       matrix:
-        step: [lint-readme, pydocstyle]
+        step: [lintreadme, pydocstyle]
 
     env:
       py-semver: "3.10"
