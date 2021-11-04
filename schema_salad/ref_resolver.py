@@ -689,7 +689,7 @@ class Loader:
                         d,
                         loader,
                         document.lc.data[d] if document.lc.data else document.lc,
-                        getattr(document.lc, "filename", None),
+                        getattr(document.lc, "filename", ""),
                     )
                 elif isinstance(datum, CommentedSeq):
                     datum2 = CommentedSeq()
