@@ -33,6 +33,7 @@ def codegen(
     examples: Optional[str] = None,
     package: Optional[str] = None,
     copyright: Optional[str] = None,
+    parser_info: Optional[str] = None,
 ) -> None:
     """Generate classes with loaders for the given Schema Salad description."""
 
@@ -46,7 +47,7 @@ def codegen(
             )
         else:
             dest = sys.stdout
-        gen = PythonCodeGen(dest, copyright=copyright)
+        gen = PythonCodeGen(dest, copyright=copyright, parser_info=parser_info)
     elif lang == "java":
         gen = JavaCodeGen(
             schema_metadata.get("$base", schema_metadata.get("id")),
