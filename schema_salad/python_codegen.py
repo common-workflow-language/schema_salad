@@ -118,14 +118,9 @@ class PythonCodeGen(CodeGenBase):
         stream.close()
         self.out.write("\n\n")
 
-        if self.parser_info:
-            info = self.parser_info
-        else:
-            info = ""
-
         self.out.write(
             f"""def parser_info() -> str:
-    return "{info}"
+    return "{self.parser_info or ""}"
 
 
 """
