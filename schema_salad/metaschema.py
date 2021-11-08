@@ -674,6 +674,10 @@ def save_relative_uri(
         return save(uri, top=False, base_url=base_url)
 
 
+def parser_info() -> str:
+    return ""
+
+
 class Documented(Savable):
     pass
 
