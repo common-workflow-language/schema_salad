@@ -47,7 +47,15 @@ def codegen(
             )
         else:
             dest = sys.stdout
-        gen = PythonCodeGen(dest, copyright=copyright, parser_info=parser_info)
+
+        if parser_info:
+            info: Optional[str] = parser_info
+        elif package:
+            info = package
+        else:
+            info = None
+
+        gen = PythonCodeGen(dest, copyright=copyright, parser_info=info)
     elif lang == "java":
         gen = JavaCodeGen(
             schema_metadata.get("$base", schema_metadata.get("id")),
