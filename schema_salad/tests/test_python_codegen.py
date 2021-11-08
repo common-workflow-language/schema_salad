@@ -36,7 +36,10 @@ def test_meta_schema_gen_up_to_date(tmp_path: Path) -> None:
 
 
 def python_codegen(
-    file_uri: str, target: Path, parser_info: Optional[str] = None
+    file_uri: str,
+    target: Path,
+    parser_info: Optional[str] = None,
+    package: Optional[str] = None,
 ) -> None:
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
         file_uri
@@ -53,12 +56,21 @@ def python_codegen(
         document_loader,
         target=str(target),
         parser_info=parser_info,
+        package=package,
     )
 
 
 def test_parser_info(tmp_path: Path) -> None:
     src_target = tmp_path / "src.py"
     python_codegen(metaschema_file_uri, src_target, parser_info="cwl")
+    assert os.path.exists(src_target)
+    with open(src_target) as f:
+        assert 'def parser_info() -> str:\n    return "cwl"' in f.read()
+
+
+def test_use_of_package_for_parser_info(tmp_path: Path) -> None:
+    src_target = tmp_path / "src.py"
+    python_codegen(metaschema_file_uri, src_target, package="cwl")
     assert os.path.exists(src_target)
     with open(src_target) as f:
         assert 'def parser_info() -> str:\n    return "cwl"' in f.read()
