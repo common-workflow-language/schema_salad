@@ -127,6 +127,7 @@ class PythonCodeGen(CodeGenBase):
             f"""
 def parser_info() -> str:
     return "{info}"
+
 """
         )
 
