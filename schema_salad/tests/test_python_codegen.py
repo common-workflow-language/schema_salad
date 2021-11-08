@@ -58,4 +58,4 @@ def test_parser_info(tmp_path: Path) -> None:
     python_codegen(metaschema_file_uri, src_target, parser_info="cwl")
     assert os.path.exists(src_target)
     with open(src_target) as f:
-        assert "def parser_info() -> str:    return \"cwl\"" in f.read()
+        assert 'def parser_info() -> str:    return "cwl"' in f.read()
