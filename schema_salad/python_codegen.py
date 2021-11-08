@@ -124,9 +124,7 @@ class PythonCodeGen(CodeGenBase):
             info = ""
 
         self.out.write(
-            f"""
-
-def parser_info() -> str:
+            f"""def parser_info() -> str:
     return "{info}"
 
 
