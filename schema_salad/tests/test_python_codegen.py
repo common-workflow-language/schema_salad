@@ -35,7 +35,9 @@ def test_meta_schema_gen_up_to_date(tmp_path: Path) -> None:
         assert f.read() == inspect.getsource(cg_metaschema)
 
 
-def python_codegen(file_uri: str, target: Path, parser_info: Optional[str] = None) -> None:
+def python_codegen(
+    file_uri: str, target: Path, parser_info: Optional[str] = None
+) -> None:
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
         file_uri
     )
