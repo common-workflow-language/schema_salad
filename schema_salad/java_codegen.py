@@ -14,7 +14,6 @@ from typing import (
     Set,
     Union,
 )
-from urllib.parse import urlsplit
 
 import pkg_resources
 
@@ -129,20 +128,13 @@ class JavaCodeGen(CodeGenBase):
         base: str,
         target: Optional[str],
         examples: Optional[str],
-        package: Optional[str],
+        package: str,
         copyright: Optional[str],
     ) -> None:
         super().__init__()
         self.base_uri = base
-        sp = urlsplit(base)
         self.examples = examples
-        self.package = (
-            package
-            if package
-            else ".".join(
-                list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/")
-            )
-        )
+        self.package = package
         self.artifact = self.package.split(".")[-1]
         self.copyright = copyright
         self.target_dir = Path(target or ".").resolve()
