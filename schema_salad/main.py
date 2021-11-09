@@ -134,7 +134,7 @@ def arg_parser() -> argparse.ArgumentParser:
         metavar="parser_info",
         type=str,
         default=None,
-        help="Optional parser name which is accessible via resulted parser API.",
+        help="Optional parser name which is accessible via resulted parser API (Python only)",
     )
 
     exgroup.add_argument(
