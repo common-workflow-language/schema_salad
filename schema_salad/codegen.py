@@ -11,6 +11,7 @@ from typing import (
     TextIO,
     Union,
 )
+from urllib.parse import urlsplit
 
 from . import schema
 from .codegen_base import CodeGenBase
@@ -40,6 +41,16 @@ def codegen(
     j = schema.extend_and_specialize(i, loader)
 
     gen = None  # type: Optional[CodeGenBase]
+    base = schema_metadata.get("$base", schema_metadata.get("id"))
+    sp = urlsplit(base)
+    pkg = (
+        package
+        if package
+        else ".".join(
+            list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/")
+        )
+    )
+    info = parser_info or pkg
     if lang == "python":
         if target:
             dest: Union[TextIOWrapper, TextIO] = open(
@@ -48,20 +59,13 @@ def codegen(
         else:
             dest = sys.stdout
 
-        if parser_info:
-            info: Optional[str] = parser_info
-        elif package:
-            info = package
-        else:
-            info = None
-
         gen = PythonCodeGen(dest, copyright=copyright, parser_info=info)
     elif lang == "java":
         gen = JavaCodeGen(
-            schema_metadata.get("$base", schema_metadata.get("id")),
+            base,
             target=target,
             examples=examples,
-            package=package,
+            package=pkg,
             copyright=copyright,
         )
     else:

@@ -72,7 +72,7 @@ class PythonCodeGen(CodeGenBase):
         self,
         out: IO[str],
         copyright: Optional[str],
-        parser_info: Optional[str],
+        parser_info: str,
     ) -> None:
         super().__init__()
         self.out = out
@@ -120,7 +120,7 @@ class PythonCodeGen(CodeGenBase):
 
         self.out.write(
             f"""def parser_info() -> str:
-    return "{self.parser_info or ""}"
+    return "{self.parser_info}"
 
 
 """
