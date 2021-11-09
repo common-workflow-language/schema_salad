@@ -65,7 +65,7 @@ def test_default_parser_info(tmp_path: Path) -> None:
     python_codegen(metaschema_file_uri, src_target)
     assert os.path.exists(src_target)
     with open(src_target) as f:
-        assert 'def parser_info() -> str:\n    return ""' in f.read()
+        assert 'def parser_info() -> str:\n    return "org.w3id.cwl.salad"' in f.read()
 
 
 def test_parser_info(tmp_path: Path) -> None:

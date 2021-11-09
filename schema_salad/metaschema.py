@@ -675,7 +675,7 @@ def save_relative_uri(
 
 
 def parser_info() -> str:
-    return ""
+    return "org.w3id.cwl.salad"
 
 
 class Documented(Savable):
