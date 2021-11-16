@@ -532,7 +532,7 @@ def make_valid_avro(
     # Possibly could be integrated into our fork of avro/schema.py?
     if isinstance(items, MutableMapping):
         avro = copy.copy(items)
-        if avro.get("name") and avro.get("inVocab", True):
+        if avro.get("name"):
             if fielddef:
                 avro["name"] = avro_field_name(avro["name"])
             else:
