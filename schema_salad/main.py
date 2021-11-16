@@ -129,6 +129,14 @@ def arg_parser() -> argparse.ArgumentParser:
         help="Optional copyright of the input schema.",
     ),
 
+    parser.add_argument(
+        "--codegen-parser-info",
+        metavar="parser_info",
+        type=str,
+        default=None,
+        help="Optional parser name which is accessible via resulted parser API (Python only)",
+    )
+
     exgroup.add_argument(
         "--print-oneline",
         action="store_true",
@@ -323,6 +331,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
             examples=args.codegen_examples,
             package=args.codegen_package,
             copyright=args.codegen_copyright,
+            parser_info=args.codegen_parser_info,
         )
         return 0
 

@@ -68,13 +68,19 @@ def fmt(text: str, indent: int) -> str:
 class PythonCodeGen(CodeGenBase):
     """Generation of Python code for a given Schema Salad definition."""
 
-    def __init__(self, out: IO[str], copyright: Optional[str]) -> None:
+    def __init__(
+        self,
+        out: IO[str],
+        copyright: Optional[str],
+        parser_info: str,
+    ) -> None:
         super().__init__()
         self.out = out
         self.current_class_is_abstract = False
         self.serializer = StringIO()
         self.idfield = ""
         self.copyright = copyright
+        self.parser_info = parser_info
 
     @staticmethod
     def safe_name(name: str) -> str:
@@ -111,6 +117,14 @@ class PythonCodeGen(CodeGenBase):
         self.out.write(python_codegen_support[python_codegen_support.find("\n") + 1 :])
         stream.close()
         self.out.write("\n\n")
+
+        self.out.write(
+            f"""def parser_info() -> str:
+    return "{self.parser_info}"
+
+
+"""
+        )
 
         for primative in prims.values():
             self.declare_type(primative)

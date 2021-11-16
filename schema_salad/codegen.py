@@ -11,6 +11,7 @@ from typing import (
     TextIO,
     Union,
 )
+from urllib.parse import urlsplit
 
 from . import schema
 from .codegen_base import CodeGenBase
@@ -33,12 +34,23 @@ def codegen(
     examples: Optional[str] = None,
     package: Optional[str] = None,
     copyright: Optional[str] = None,
+    parser_info: Optional[str] = None,
 ) -> None:
     """Generate classes with loaders for the given Schema Salad description."""
 
     j = schema.extend_and_specialize(i, loader)
 
     gen = None  # type: Optional[CodeGenBase]
+    base = schema_metadata.get("$base", schema_metadata.get("id"))
+    sp = urlsplit(base)
+    pkg = (
+        package
+        if package
+        else ".".join(
+            list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/")
+        )
+    )
+    info = parser_info or pkg
     if lang == "python":
         if target:
             dest: Union[TextIOWrapper, TextIO] = open(
@@ -46,13 +58,14 @@ def codegen(
             )
         else:
             dest = sys.stdout
-        gen = PythonCodeGen(dest, copyright=copyright)
+
+        gen = PythonCodeGen(dest, copyright=copyright, parser_info=info)
     elif lang == "java":
         gen = JavaCodeGen(
-            schema_metadata.get("$base", schema_metadata.get("id")),
+            base,
             target=target,
             examples=examples,
-            package=package,
+            package=pkg,
             copyright=copyright,
         )
     else:
