@@ -1,5 +1,5 @@
+"""TypeScript code generator for a given schema salad definition."""
 import os
-import shutil
 import string
 from io import StringIO
 from pathlib import Path
@@ -20,6 +20,7 @@ from . import schema, _logger
 from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
+
 
 # TODO: Remove duplication with javaCodegen
 def _ensure_directory_and_write(path: Path, contents: str) -> None:
@@ -85,8 +86,11 @@ prims = {
 
 
 class TypeScriptCodeGen(CodeGenBase):
+    """Generation of TypeScript code for a given Schema Salad definition."""
+
     # region constructor
     def __init__(self, base: str, target: Optional[str], package: str) -> None:
+        """Initialize the TypeScript codegen."""
         super().__init__()
         self.target_dir = Path(target or ".").resolve()
         self.main_src_dir = self.target_dir / "src"
@@ -98,6 +102,7 @@ class TypeScriptCodeGen(CodeGenBase):
 
     # region prologue
     def prologue(self) -> None:
+        """Trigger to generate the prolouge code."""
         for src_dir in [self.main_src_dir]:
             _safe_makedirs(src_dir)
 
@@ -132,6 +137,7 @@ class TypeScriptCodeGen(CodeGenBase):
         idfield: str,
         optional_fields: Set[str],
     ) -> None:
+        """Produce the header for the given class."""
         classname = self.safe_name(classname)
         self.current_class = classname
         self.current_constructor_signature = StringIO()
@@ -139,12 +145,38 @@ class TypeScriptCodeGen(CodeGenBase):
         self.current_loader = StringIO()
         self.current_fieldtypes: Dict[str, TypeDef] = {}
         target_file = self.main_src_dir / f"{classname[0].lower() + classname[1:]}.ts"
+        self.record_types.append(classname)
+        self.current_class_is_abstract = abstract
+        if self.current_class_is_abstract:
+            with open(target_file, "w") as f:
+                _logger.info("Writing file: %s", target_file)
+                if extends:
+                    ext = " implements " + ", ".join(self.safe_name(e) for e in extends)
+                else:
+                    ext = ""
+                f.write(
+                    """
+import {{
+  {imports}
+}} from './util/internal'
+export interface {cls} {ext} {{ }}
+                    """.format(
+                        cls=classname,
+                        ext=ext,
+                        imports=",\n  ".join(
+                            e for e in self.record_types if e != self.current_class
+                        ),
+                    )
+                )
+            return
 
         with open(target_file, "w") as f:
             _logger.info("Writing file: %s", target_file)
             if extends:
                 # TypeScript doesn't natively support multiple inheritrance (maybe mixins)
-                raise NotImplementedError
+                ext = "extends Saveable implements " + ", ".join(
+                    self.safe_name(e) for e in extends
+                )
             else:
                 ext = "extends Saveable"
             f.write(
@@ -156,14 +188,19 @@ import {{
   LoaderInstances,
   LoadingOptions,
   Saveable,
-  ValidationException
+  ValidationException,
+  {imports}
 }} from './util/internal'
 
 export class {cls} {ext} {{
   loadingOptions: LoadingOptions
   extensionFields?: Dictionary<any>
 """.format(
-                    cls=classname, ext=ext
+                    cls=classname,
+                    ext=ext,
+                    imports=",\n  ".join(
+                        e for e in self.record_types if e != self.current_class
+                    ),
                 )
             )
         self.current_constructor_signature.write(
@@ -178,8 +215,9 @@ export class {cls} {ext} {{
         )
         self.current_loader.write(
             """
-  static override async fromDoc (doc: any, baseuri: string, loadingOptions: LoadingOptions, docRoot?: string): Promise<Saveable> {
-    const _doc = Object.assign({}, doc)
+  static override async fromDoc (__doc: any, baseuri: string, loadingOptions: LoadingOptions,
+    docRoot?: string): Promise<Saveable> {
+    const _doc = Object.assign({}, __doc)
     const errors: ValidationException[] = []
             """
         )
@@ -188,11 +226,13 @@ export class {cls} {ext} {{
 
     # region end_class
     def end_class(self, classname: str, field_names: List[str]) -> None:
+        """Signal that we are done with this class."""
+        if self.current_class_is_abstract:
+            return
+
         self.current_constructor_signature.write(
-            """} : {loadingOptions?: LoadingOptions, extensionFields?: Dictionary<any>, """
-        )
-        self.current_constructor_signature.write(
-            ", ".join(
+            "} : {loadingOptions?: LoadingOptions, extensionFields?: Dictionary<any>, "
+            + ", ".join(
                 [
                     self.safe_name(f)
                     + " : "
@@ -217,7 +257,10 @@ export class {cls} {ext} {{
           const ex = expandUrl(key, '', loadingOptions, false, false)
           extensionFields[ex] = value
         }} else {{
-          errors.push(new ValidationException(`invalid field ${{key as string}}, expected one of: {fields}`))
+          errors.push(
+            new ValidationException(`invalid field ${{key as string}}, \
+            expected one of: {fields}`)
+          )
           break
         }}
       }}
@@ -225,15 +268,20 @@ export class {cls} {ext} {{
 
     if (errors.length > 0) {{
       throw new ValidationException("Trying '{classname}'", errors)
-    }} 
+    }}
 
-    const schema = new {classname}({{extensionFields: extensionFields, loadingOptions: loadingOptions, """.format(
+    const schema = new {classname}({{
+      extensionFields: extensionFields,
+      loadingOptions: loadingOptions,
+        """.format(
                 classname=self.current_class,
-                fields=",".join(["\`" + f + "\`" for f in field_names if f != "class"]),
+                fields=",".join(
+                    ["\\`" + f + "\\`" for f in field_names if f != "class"]
+                ),
             )
         )
         self.current_loader.write(
-            ",".join(
+            ",\n  ".join(
                 self.safe_name(f) + ": " + self.safe_name(f)
                 for f in field_names
                 if f != "class"
@@ -305,7 +353,7 @@ export class {cls} {ext} {{
                     TypeDef(
                         f"arrayOf{i.name}",
                         f"new ArrayLoader([{i.name}])",
-                        instance_type=i.instance_type + "[]",
+                        instance_type=f"Array<{i.instance_type}>",
                     )
                 )
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
@@ -320,6 +368,7 @@ export class {cls} {ext} {{
                                 for sym in type_declaration["symbols"]
                             )
                         ),
+                        instance_type="string",
                     )
                 )
 
@@ -327,7 +376,6 @@ export class {cls} {ext} {{
                 "record",
                 "https://w3id.org/cwl/salad#record",
             ):
-                self.record_types.append(self.safe_name(type_declaration["name"]))
                 return self.declare_type(
                     TypeDef(
                         self.safe_name(type_declaration["name"]) + "Loader",
@@ -348,6 +396,7 @@ export class {cls} {ext} {{
                 TypeDef(
                     self.safe_name(type_declaration) + "Loader",
                     "new ExpressionLoader(string)",
+                    instance_type="string",
                 )
             )
         return self.collected_types[self.safe_name(type_declaration) + "Loader"]
@@ -362,6 +411,10 @@ export class {cls} {ext} {{
         doc: Optional[str],
         optional: bool,
     ) -> None:
+        """Output the code to load the given field."""
+        if self.current_class_is_abstract:
+            return
+
         target_file = (
             self.main_src_dir
             / f"{self.current_class[0].lower() + self.current_class[1:]}.ts"
@@ -379,7 +432,6 @@ export class {cls} {ext} {{
         self.current_constructor_signature.write(
             ", {safename}".format(
                 safename=safename,
-                type=fieldtype.instance_type,
             )
         )
         self.current_constructor_body.write(
@@ -407,12 +459,15 @@ export class {cls} {ext} {{
         self.current_loader.write(
             """
 {spc}    try {{
-{spc}      {safename} = await loadField(_doc.{fieldname}, LoaderInstances.{fieldtype}, baseuri, loadingOptions)
+{spc}      {safename} = await loadField(_doc.{fieldname}, LoaderInstances.{fieldtype},
+{spc}        baseuri, loadingOptions)
 {spc}    }} catch (e) {{
 {spc}      if (e instanceof ValidationException) {{
-{spc}        errors.push(new ValidationException('the `{fieldname}` field is not valid because: ', [e]))
+{spc}        errors.push(
+{spc}          new ValidationException('the `{fieldname}` field is not valid because: ', [e])
+{spc}        )
 {spc}      }}
-{spc}    }}            
+{spc}    }}
             """.format(
                 safename=safename,
                 fieldname=fieldname,
@@ -424,9 +479,7 @@ export class {cls} {ext} {{
             self.current_loader.write(
                 """
     }}
-                """.format(
-                    fieldname=fieldname
-                )
+                """
             )
 
     # endregion
@@ -440,6 +493,7 @@ export class {cls} {ext} {{
         optional: bool,
         subscope: Optional[str],
     ) -> None:
+        """Output the code to handle the given ID field."""
         self.declare_field(name, fieldtype, doc, True)
         if optional:
             # TODO: Generate UUID
@@ -455,15 +509,15 @@ export class {cls} {ext} {{
         self.current_loader.write(
             """
     const original{safename}IsUndefined = ({safename} === undefined)
-    if (original{safename}IsUndefined ) {
-      if (docRoot != null) {
+    if (original{safename}IsUndefined ) {{
+      if (docRoot != null) {{
         {safename} = docRoot
-      } else {
+      }} else {{
         {opt}
-      }
-    } else {
+      }}
+    }} else {{
       baseuri = {safename} as string
-    }
+    }}
             """.format(
                 safename=self.safe_name(name), opt=opt
             )
@@ -472,6 +526,7 @@ export class {cls} {ext} {{
     # endregion
 
     def to_typescript(self, val: Any) -> Any:
+        """Convert a Python keyword to a TypeScript keyword."""
         if val is True:
             return "true"
         elif val is None:
@@ -488,6 +543,7 @@ export class {cls} {ext} {{
         vocab_term: bool,
         ref_scope: Optional[int],
     ) -> TypeDef:
+        """Construct the TypeDef for the given URI loader."""
         instance_type = inner.instance_type or "any"
         return self.declare_type(
             TypeDef(
@@ -508,8 +564,8 @@ export class {cls} {ext} {{
     def idmap_loader(
         self, field: str, inner: TypeDef, map_subject: str, map_predicate: Optional[str]
     ) -> TypeDef:
-        instance_type = inner.instance_type or "any"
         """Construct the TypeDef for the given mapped ID loader."""
+        instance_type = inner.instance_type or "any"
         return self.declare_type(
             TypeDef(
                 f"idmap{self.safe_name(field)}{inner.name}",
@@ -521,6 +577,7 @@ export class {cls} {ext} {{
         )
 
     def typedsl_loader(self, inner: TypeDef, ref_scope: Optional[int]) -> TypeDef:
+        """Construct the TypeDef for the given DSL loader."""
         instance_type = inner.instance_type or "any"
         return self.declare_type(
             TypeDef(
@@ -531,6 +588,7 @@ export class {cls} {ext} {{
         )
 
     def epilogue(self, root_loader: TypeDef) -> None:
+        """Trigger to generate the epilouge code."""
         pd = "This project contains TypeScript objects and utilities "
         pd = pd + ' auto-generated by <a href=\\"https://github.com/'
         pd = pd + 'common-workflow-language/schema_salad\\">Schema Salad</a>'
@@ -570,10 +628,11 @@ export class {cls} {ext} {{
 
         loader_instances = ""
         for _, collected_type in self.collected_types.items():
-            loader_instances += "export const {} = {};\n".format(
-                collected_type.name, collected_type.init
-            )
-        generated_class_imports = ",\n".join(self.record_types)
+            if not collected_type.abstract:
+                loader_instances += "export const {} = {};\n".format(
+                    collected_type.name, collected_type.init
+                )
+        generated_class_imports = ",\n  ".join(self.record_types)
         internal_module_exports = "\n".join(
             "export * from '../{}'".format(f[0].lower() + f[1:])
             for f in self.record_types
@@ -603,6 +662,7 @@ export class {cls} {ext} {{
                 _ensure_directory_and_write(src_path, src)
 
     def secondaryfilesdsl_loader(self, inner: TypeDef) -> TypeDef:
+        """Construct the TypeDef for secondary files."""
         instance_type = inner.instance_type or "any"
         return self.declare_type(
             TypeDef(
