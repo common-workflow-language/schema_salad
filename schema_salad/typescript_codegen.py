@@ -230,19 +230,18 @@ export class {cls} {ext} {{
         if self.current_class_is_abstract:
             return
 
-        self.current_constructor_signature.write(
-            "} : {loadingOptions?: LoadingOptions, extensionFields?: Dictionary<any>, "
-            + ", ".join(
-                [
-                    self.safe_name(f)
-                    + " : "
-                    + self.current_fieldtypes[self.safe_name(f)].instance_type
-                    for f in field_names
-                    if f != "class"
-                ]
+        for field_name in field_names:
+            fieldtype = self.current_fieldtypes.get(self.safe_name(field_name))
+            if fieldtype is None:
+                raise SchemaException(
+                    f"{self.safe_name(field_name)} has no valid fieldtype"
+                )
+            self.current_constructor_signature.write(
+                """ {safename} : {type}""".format(
+                    safename=self.safe_name(field_name), type=fieldtype.instance_type
+                )
             )
-            + "}) {"
-        )
+        self.current_constructor_signature.write("}) {")
         self.current_constructor_body.write(
             """
   }
@@ -298,6 +297,7 @@ export class {cls} {ext} {{
             self.main_src_dir
             / f"{self.current_class[0].lower() + self.current_class[1:]}.ts"
         )
+
         with open(
             target_file,
             "a",
@@ -323,24 +323,22 @@ export class {cls} {ext} {{
 
     # region type_loader
     def type_loader(
-        self, type_declaration: Union[List[Any], Dict[str, Any]]
+        self, type_declaration: Union[List[Any], Dict[str, Any], str]
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
-
-            sub_names: List[str] = list(
-                dict.fromkeys([self.type_loader(i).name for i in type_declaration])
-            )
-            sub_types: List[str] = list(
+            sub_types = [self.type_loader(i) for i in type_declaration]
+            sub_names: List[str] = list(dict.fromkeys([i.name for i in sub_types]))
+            sub_instance_types: List[str] = list(
                 dict.fromkeys(
-                    [self.type_loader(i).instance_type for i in type_declaration]
+                    [i.instance_type for i in type_declaration if i is not None]
                 )
             )
             return self.declare_type(
                 TypeDef(
                     "unionOf{}".format("Or".join(sub_names)),
                     "new UnionLoader([{}])".format(", ".join(sub_names)),
-                    instance_type=" | ".join(sub_types),
+                    instance_type=" | ".join(sub_instance_types),
                 )
             )
         if isinstance(type_declaration, MutableMapping):
