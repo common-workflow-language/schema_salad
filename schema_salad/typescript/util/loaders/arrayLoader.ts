@@ -26,10 +26,11 @@ export class ArrayLoader implements Loader {
           errors.push(e)
         }
       }
-      if (errors.length > 0) {
-        throw new ValidationException('', errors)
-      }
-      return r
     }
+    
+    if (errors.length > 0) {
+      throw new ValidationException('', errors)
+    }
+    return r
   }
 }

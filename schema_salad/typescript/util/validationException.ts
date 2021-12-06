@@ -1,7 +1,7 @@
 export class ValidationException extends Error {
   static indentPerLevel = 2
 
-  childen: ValidationException[]
+  children: ValidationException[]
   bullet: string = ''
 
   constructor (message: string);
@@ -13,7 +13,7 @@ export class ValidationException extends Error {
     for (const child of _children) {
       children.push(...child.simplify())
     }
-    this.childen = children
+    this.children = children
   }
 
   withBullet (bullet: string): ValidationException {
@@ -25,7 +25,7 @@ export class ValidationException extends Error {
     if (this.toString().length > 0) {
       return new Array(this)
     }
-    return this.childen
+    return this.children
   }
 
   summary (level: number): string {
@@ -42,7 +42,7 @@ export class ValidationException extends Error {
       nextLevel++
     }
 
-    for (const child of this.childen) {
+    for (const child of this.children) {
       parts.push(child.prettyStr(nextLevel))
     }
 

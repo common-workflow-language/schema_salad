@@ -140,18 +140,19 @@ class TypeScriptCodeGen(CodeGenBase):
         """Produce the header for the given class."""
         classname = self.safe_name(classname)
         self.current_class = classname
+        self.current_class_is_abstract = abstract
+        self.record_types.append(classname)
         self.current_constructor_signature = StringIO()
         self.current_constructor_body = StringIO()
         self.current_loader = StringIO()
         self.current_fieldtypes: Dict[str, TypeDef] = {}
         target_file = self.main_src_dir / f"{classname[0].lower() + classname[1:]}.ts"
-        self.record_types.append(classname)
-        self.current_class_is_abstract = abstract
+
         if self.current_class_is_abstract:
             with open(target_file, "w") as f:
                 _logger.info("Writing file: %s", target_file)
                 if extends:
-                    ext = " implements " + ", ".join(self.safe_name(e) for e in extends)
+                    ext = " extends " + ", ".join(self.safe_name(e) for e in extends)
                 else:
                     ext = ""
                 f.write(
@@ -173,7 +174,6 @@ export interface {cls} {ext} {{ }}
         with open(target_file, "w") as f:
             _logger.info("Writing file: %s", target_file)
             if extends:
-                # TypeScript doesn't natively support multiple inheritrance (maybe mixins)
                 ext = "extends Saveable implements " + ", ".join(
                     self.safe_name(e) for e in extends
                 )
@@ -230,15 +230,17 @@ export class {cls} {ext} {{
         if self.current_class_is_abstract:
             return
 
+        self.current_constructor_signature.write(
+            "} : {extensionFields?: Dictionary<any>, loadingOptions?: LoadingOptions, "
+        )
         for field_name in field_names:
-            fieldtype = self.current_fieldtypes.get(self.safe_name(field_name))
+            safe_field_name = self.safe_name(field_name)
+            fieldtype = self.current_fieldtypes.get(safe_field_name)
             if fieldtype is None:
-                raise SchemaException(
-                    f"{self.safe_name(field_name)} has no valid fieldtype"
-                )
+                raise SchemaException(f"{safe_field_name} has no valid fieldtype")
             self.current_constructor_signature.write(
-                """ {safename} : {type}""".format(
-                    safename=self.safe_name(field_name), type=fieldtype.instance_type
+                """ {safename}: {type},""".format(
+                    safename=safe_field_name, type=fieldtype.instance_type
                 )
             )
         self.current_constructor_signature.write("}) {")
@@ -257,7 +259,7 @@ export class {cls} {ext} {{
           extensionFields[ex] = value
         }} else {{
           errors.push(
-            new ValidationException(`invalid field ${{key as string}}, \
+            new ValidationException(`invalid field ${{key as string}}, \\
             expected one of: {fields}`)
           )
           break
@@ -274,16 +276,12 @@ export class {cls} {ext} {{
       loadingOptions: loadingOptions,
         """.format(
                 classname=self.current_class,
-                fields=",".join(
-                    ["\\`" + f + "\\`" for f in field_names if f != "class"]
-                ),
+                fields=",".join(["\\`" + f + "\\`" for f in field_names]),
             )
         )
         self.current_loader.write(
             ",\n  ".join(
-                self.safe_name(f) + ": " + self.safe_name(f)
-                for f in field_names
-                if f != "class"
+                self.safe_name(f) + ": " + self.safe_name(f) for f in field_names
             )
             + "})"
         )
@@ -308,9 +306,7 @@ export class {cls} {ext} {{
             f.write(
                 "\n"
                 + "  static attr: Set<string> = new Set(["
-                + ",".join(
-                    ["'" + shortname(f) + "'" for f in field_names if f != "class"]
-                )
+                + ",".join(["'" + shortname(f) + "'" for f in field_names])
                 + "])"
             )
             f.write(
@@ -331,7 +327,7 @@ export class {cls} {ext} {{
             sub_names: List[str] = list(dict.fromkeys([i.name for i in sub_types]))
             sub_instance_types: List[str] = list(
                 dict.fromkeys(
-                    [i.instance_type for i in type_declaration if i is not None]
+                    [i.instance_type for i in sub_types if i.instance_type is not None]
                 )
             )
             return self.declare_type(
@@ -618,10 +614,10 @@ export class {cls} {ext} {{
         expand_resource_template_to("tsconfig.json", self.target_dir / "tsconfig.json")
 
         vocab = ",\n  ".join(
-            f"""  {k}: '{self.vocab[k]}'""" for k in sorted(self.vocab.keys())
+            f"""{k}: '{self.vocab[k]}'""" for k in sorted(self.vocab.keys())
         )
         rvocab = ",\n  ".join(
-            f"""  '{self.vocab[k]}': '{k}'""" for k in sorted(self.vocab.keys())
+            f"""'{self.vocab[k]}': '{k}'""" for k in sorted(self.vocab.keys())
         )
 
         loader_instances = ""

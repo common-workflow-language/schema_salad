@@ -1,6 +1,6 @@
 export const VOCAB = {
-${vocab}
+  ${vocab}
 }
 export const RVOCAB = {
-${rvocab}
+  ${rvocab}
 }
