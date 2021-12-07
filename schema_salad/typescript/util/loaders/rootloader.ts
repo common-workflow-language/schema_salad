@@ -1,5 +1,7 @@
-import { LoadingOptions, Loader, TypeGuards } from '../internal'
+import { LoadingOptions, Loader, TypeGuards, LoaderInstances } from '../internal'
+import * as Internal from  '../internal'
 import * as yaml from 'js-yaml'
+import * as URL from 'url'
 
 export async function documentLoad (loader: Loader, doc: unknown, baseuri: string, loadingOptions: LoadingOptions): Promise<any> {
   if (typeof doc === 'string') {
@@ -42,4 +44,27 @@ export async function documentLoadByUrl (loader: Loader, url: string, loadingOpt
   loadingOptions.idx[url] = result
   loadingOptions = new LoadingOptions({ copyFrom: loadingOptions, fileUri: url })
   return await documentLoad(loader, result, url, loadingOptions)
+}
+
+export async function loadDocument (doc: any, baseuri?: string, loadingOptions?: LoadingOptions): Promise<${root_loader_type}> {
+  if (baseuri == null) {
+    baseuri = URL.pathToFileURL(process.cwd() + '/').toString()
+  }
+
+  if (loadingOptions == null) {
+    loadingOptions = new LoadingOptions({})
+  }
+
+  return await documentLoad(LoaderInstances.${root_loader}, doc, baseuri, loadingOptions)
+}
+
+export async function loadDocumentByString (doc: string, uri: string, loadingOptions?: LoadingOptions): Promise<${root_loader_type}> {
+  const result = yaml.load(doc)
+
+  if (loadingOptions == null) {
+    loadingOptions = new LoadingOptions({ fileUri: uri })
+  }
+  loadingOptions.idx[uri] = result
+
+  return await documentLoad(LoaderInstances.${root_loader}, result, uri, loadingOptions)
 }

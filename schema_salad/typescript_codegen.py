@@ -595,6 +595,8 @@ export class {cls} {ext} {{
             generated_class_imports=generated_class_imports,
             vocab=vocab,
             rvocab=rvocab,
+            root_loader=root_loader.name,
+            root_loader_type=root_loader.instance_type or "any",
         )
 
         util_src_dirs = {
