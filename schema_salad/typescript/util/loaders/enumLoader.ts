@@ -1,6 +1,6 @@
 import { Loader, LoadingOptions, ValidationException } from '../internal'
 
-export class EnumLoader implements Loader {
+export class _EnumLoader implements Loader {
   symbols: string[]
 
   constructor (symbols: string[]) {

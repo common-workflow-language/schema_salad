@@ -1,6 +1,6 @@
 import { Loader, LoadingOptions, ValidationException } from '../internal'
 
-export class PrimitiveLoader implements Loader {
+export class _PrimitiveLoader implements Loader {
   typeGuard: (val: any) => boolean
 
   constructor (tp: (val: any) => boolean) {

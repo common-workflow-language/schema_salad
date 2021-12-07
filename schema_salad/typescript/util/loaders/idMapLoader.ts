@@ -1,6 +1,6 @@
 import { Dictionary, TypeGuards, Loader, LoadingOptions, ValidationException } from '../internal'
 
-export class IdMapLoader implements Loader {
+export class _IdMapLoader implements Loader {
   inner: Loader
   mapSubject: string
   mapPredicate?: string

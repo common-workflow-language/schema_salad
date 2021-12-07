@@ -1,7 +1,7 @@
 import { Loader, LoadingOptions, Dictionary, TypeGuards } from '../internal'
 import { ValidationException } from '../validationException'
 
-export class TypeDSLLoader implements Loader {
+export class _SecondaryDSLLoader implements Loader {
   inner: Loader
 
   constructor (inner: Loader) {

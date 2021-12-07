@@ -1,6 +1,6 @@
-import { Loader, loadField, LoadingOptions, UnionLoader, ValidationException } from '../internal'
+import { Loader, loadField, LoadingOptions, _UnionLoader, ValidationException } from '../internal'
 
-export class ArrayLoader implements Loader {
+export class _ArrayLoader implements Loader {
   items: Loader[]
 
   constructor (items: Loader[]) {
@@ -15,7 +15,7 @@ export class ArrayLoader implements Loader {
     const errors: ValidationException[] = []
     for (var val of doc) {
       try {
-        const lf = await loadField(val, new UnionLoader([this, ...this.items]), baseuri, loadingOptions)
+        const lf = await loadField(val, new _UnionLoader([this, ...this.items]), baseuri, loadingOptions)
         if (Array.isArray(lf)) {
           r = r.concat(lf)
         } else {

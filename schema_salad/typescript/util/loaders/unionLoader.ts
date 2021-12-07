@@ -1,6 +1,6 @@
 import { Loader, LoadingOptions, Saveable, ValidationException } from '../internal'
 
-export class UnionLoader implements Loader {
+export class _UnionLoader implements Loader {
   alternates: Loader[]
 
   constructor (alternates: Loader[]) {

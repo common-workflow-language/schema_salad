@@ -1,6 +1,6 @@
 import { Dictionary, expandUrl, Loader, LoadingOptions } from '../internal'
 
-export class TypeDSLLoader implements Loader {
+export class _TypeDSLLoader implements Loader {
   typeDSLRegex = /^([^[?]+)(\[\])?(\?)?$/
   inner: Loader
   refScope?: number

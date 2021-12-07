@@ -20,50 +20,36 @@ from . import schema, _logger
 from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
-
-
-# TODO: Remove duplication with javaCodegen
-def _ensure_directory_and_write(path: Path, contents: str) -> None:
-    _safe_makedirs(path.parent)
-    with open(path, mode="w", encoding="utf-8") as f:
-        _logger.info("Writing file: %s", path)
-        f.write(contents)
-
-
-def _safe_makedirs(path: Path) -> None:
-    if not path.exists():
-        os.makedirs(path)
-        _logger.info("Created directory: %s", path)
-
+from .java_codegen import _ensure_directory_and_write, _safe_makedirs
 
 _string_type_def = TypeDef(
     name="strtype",
-    init="new PrimitiveLoader(TypeGuards.String)",
+    init="new _PrimitiveLoader(TypeGuards.String)",
     instance_type="string",
 )
 
 _int_type_def = TypeDef(
-    name="inttype", init="new PrimitiveLoader(TypeGuards.Int)", instance_type="number"
+    name="inttype", init="new _PrimitiveLoader(TypeGuards.Int)", instance_type="number"
 )
 
 _float_type_def = TypeDef(
     name="floattype",
-    init="new PrimitiveLoader(TypeGuards.Float)",
+    init="new _PrimitiveLoader(TypeGuards.Float)",
     instance_type="number",
 )
 _bool_type_def = TypeDef(
     name="booltype",
-    init="new PrimitiveLoader(TypeGuards.Bool)",
+    init="new _PrimitiveLoader(TypeGuards.Bool)",
     instance_type="boolean",
 )
 
 _null_type_def = TypeDef(
     name="undefinedtype",
-    init="new PrimitiveLoader(TypeGuards.Undefined)",
+    init="new _PrimitiveLoader(TypeGuards.Undefined)",
     instance_type="undefined",
 )
 
-_any_type_def = TypeDef(name="anyType", init="new AnyLoader()", instance_type="any")
+_any_type_def = TypeDef(name="anyType", init="new _AnyLoader()", instance_type="any")
 
 prims = {
     "http://www.w3.org/2001/XMLSchema#string": _string_type_def,
@@ -88,7 +74,6 @@ prims = {
 class TypeScriptCodeGen(CodeGenBase):
     """Generation of TypeScript code for a given Schema Salad definition."""
 
-    # region constructor
     def __init__(self, base: str, target: Optional[str], package: str) -> None:
         """Initialize the TypeScript codegen."""
         super().__init__()
@@ -98,9 +83,6 @@ class TypeScriptCodeGen(CodeGenBase):
         self.base_uri = base
         self.record_types: List[str] = []
 
-    # endregion
-
-    # region prologue
     def prologue(self) -> None:
         """Trigger to generate the prolouge code."""
         for src_dir in [self.main_src_dir]:
@@ -109,24 +91,26 @@ class TypeScriptCodeGen(CodeGenBase):
         for primitive in prims.values():
             self.declare_type(primitive)
 
-    # endregion
-
-    # region safe_name
     @staticmethod
     def safe_name(name: str) -> str:
         """Generate a safe version of the given name."""
         avn = schema.avro_field_name(name)
         if avn.startswith("anon."):
             avn = avn[5:]
-        if avn in ("class", "in", "extends", "abstract"):
+        if avn in (
+            "class",
+            "in",
+            "extends",
+            "abstract",
+            "default",
+            "package",
+            "arguments",
+        ):
             # reserved words
             avn = avn + "_"
 
         return avn
 
-    # endregion
-
-    # region begin_class
     def begin_class(
         self,  # pylint: disable=too-many-arguments
         classname: str,
@@ -152,21 +136,19 @@ class TypeScriptCodeGen(CodeGenBase):
             with open(target_file, "w") as f:
                 _logger.info("Writing file: %s", target_file)
                 if extends:
-                    ext = " extends " + ", ".join(self.safe_name(e) for e in extends)
+                    ext = " extends Internal." + ", Internal.".join(
+                        self.safe_name(e) for e in extends
+                    )
                 else:
                     ext = ""
                 f.write(
                     """
-import {{
-  {imports}
-}} from './util/internal'
+import * as Internal from './util/internal'
+
 export interface {cls} {ext} {{ }}
                     """.format(
                         cls=classname,
                         ext=ext,
-                        imports=",\n  ".join(
-                            e for e in self.record_types if e != self.current_class
-                        ),
                     )
                 )
             return
@@ -174,7 +156,7 @@ export interface {cls} {ext} {{ }}
         with open(target_file, "w") as f:
             _logger.info("Writing file: %s", target_file)
             if extends:
-                ext = "extends Saveable implements " + ", ".join(
+                ext = "extends Saveable implements Internal." + ", Internal.".join(
                     self.safe_name(e) for e in extends
                 )
             else:
@@ -189,8 +171,9 @@ import {{
   LoadingOptions,
   Saveable,
   ValidationException,
-  {imports}
 }} from './util/internal'
+import {{ v4 as uuidv4 }} from 'uuid'
+import * as Internal from './util/internal'
 
 export class {cls} {ext} {{
   loadingOptions: LoadingOptions
@@ -198,9 +181,6 @@ export class {cls} {ext} {{
 """.format(
                     cls=classname,
                     ext=ext,
-                    imports=",\n  ".join(
-                        e for e in self.record_types if e != self.current_class
-                    ),
                 )
             )
         self.current_constructor_signature.write(
@@ -222,9 +202,6 @@ export class {cls} {ext} {{
             """
         )
 
-    # endregion
-
-    # region end_class
     def end_class(self, classname: str, field_names: List[str]) -> None:
         """Signal that we are done with this class."""
         if self.current_class_is_abstract:
@@ -244,11 +221,7 @@ export class {cls} {ext} {{
                 )
             )
         self.current_constructor_signature.write("}) {")
-        self.current_constructor_body.write(
-            """
-  }
-"""
-        )
+        self.current_constructor_body.write("  }\n")
         self.current_loader.write(
             """
     const extensionFields: Dictionary<any> = {{}}
@@ -274,16 +247,16 @@ export class {cls} {ext} {{
     const schema = new {classname}({{
       extensionFields: extensionFields,
       loadingOptions: loadingOptions,
-        """.format(
+      """.format(
                 classname=self.current_class,
                 fields=",".join(["\\`" + f + "\\`" for f in field_names]),
             )
         )
         self.current_loader.write(
-            ",\n  ".join(
+            ",\n      ".join(
                 self.safe_name(f) + ": " + self.safe_name(f) for f in field_names
             )
-            + "})"
+            + "\n    })"
         )
         self.current_loader.write(
             """
@@ -315,9 +288,6 @@ export class {cls} {ext} {{
 """
             )
 
-    # endregion
-
-    # region type_loader
     def type_loader(
         self, type_declaration: Union[List[Any], Dict[str, Any], str]
     ) -> TypeDef:
@@ -333,7 +303,7 @@ export class {cls} {ext} {{
             return self.declare_type(
                 TypeDef(
                     "unionOf{}".format("Or".join(sub_names)),
-                    "new UnionLoader([{}])".format(", ".join(sub_names)),
+                    "new _UnionLoader([{}])".format(", ".join(sub_names)),
                     instance_type=" | ".join(sub_instance_types),
                 )
             )
@@ -346,7 +316,7 @@ export class {cls} {ext} {{
                 return self.declare_type(
                     TypeDef(
                         f"arrayOf{i.name}",
-                        f"new ArrayLoader([{i.name}])",
+                        f"new _ArrayLoader([{i.name}])",
                         instance_type=f"Array<{i.instance_type}>",
                     )
                 )
@@ -356,7 +326,7 @@ export class {cls} {ext} {{
                 return self.declare_type(
                     TypeDef(
                         self.safe_name(type_declaration["name"]) + "Loader",
-                        'new EnumLoader(["{}"])'.format(
+                        'new _EnumLoader(["{}"])'.format(
                             '", "'.join(
                                 self.safe_name(sym)
                                 for sym in type_declaration["symbols"]
@@ -373,10 +343,11 @@ export class {cls} {ext} {{
                 return self.declare_type(
                     TypeDef(
                         self.safe_name(type_declaration["name"]) + "Loader",
-                        "new RecordLoader({}.fromDoc)".format(
+                        "new _RecordLoader({}.fromDoc)".format(
                             self.safe_name(type_declaration["name"]),
                         ),
-                        instance_type=self.safe_name(type_declaration["name"]),
+                        instance_type="Internal."
+                        + self.safe_name(type_declaration["name"]),
                         abstract=type_declaration.get("abstract", False),
                     )
                 )
@@ -389,15 +360,12 @@ export class {cls} {ext} {{
             return self.declare_type(
                 TypeDef(
                     self.safe_name(type_declaration) + "Loader",
-                    "new ExpressionLoader(string)",
+                    "new _ExpressionLoader()",
                     instance_type="string",
                 )
             )
         return self.collected_types[self.safe_name(type_declaration) + "Loader"]
 
-    # endregion
-
-    # region declare_field
     def declare_field(
         self,
         name: str,
@@ -441,8 +409,7 @@ export class {cls} {ext} {{
         if optional:
             self.current_loader.write(
                 """
-    if ('{fieldname}' in _doc) {{
-                """.format(
+    if ('{fieldname}' in _doc) {{""".format(
                     fieldname=fieldname
                 )
             )
@@ -462,7 +429,7 @@ export class {cls} {ext} {{
 {spc}        )
 {spc}      }}
 {spc}    }}
-            """.format(
+""".format(
                 safename=safename,
                 fieldname=fieldname,
                 fieldtype=fieldtype.name,
@@ -470,15 +437,8 @@ export class {cls} {ext} {{
             )
         )
         if optional:
-            self.current_loader.write(
-                """
-    }}
-                """
-            )
+            self.current_loader.write("    }\n")
 
-    # endregion
-
-    # region declare_id_field
     def declare_id_field(
         self,
         name: str,
@@ -490,8 +450,9 @@ export class {cls} {ext} {{
         """Output the code to handle the given ID field."""
         self.declare_field(name, fieldtype, doc, True)
         if optional:
-            # TODO: Generate UUID
-            raise NotImplementedError()
+            opt = """{safename} = "_" + uuidv4()""".format(
+                safename=self.safe_name(name)
+            )
         else:
             opt = """throw new ValidationException("Missing {fieldname}")""".format(
                 fieldname=shortname(name)
@@ -517,8 +478,6 @@ export class {cls} {ext} {{
             )
         )
 
-    # endregion
-
     def to_typescript(self, val: Any) -> Any:
         """Convert a Python keyword to a TypeScript keyword."""
         if val is True:
@@ -529,7 +488,6 @@ export class {cls} {ext} {{
             return "false"
         return val
 
-    # region rest
     def uri_loader(
         self,
         inner: TypeDef,
@@ -542,7 +500,7 @@ export class {cls} {ext} {{
         return self.declare_type(
             TypeDef(
                 f"uri{inner.name}{scoped_id}{vocab_term}{ref_scope}",
-                "new URILoader({}, {}, {}, {})".format(
+                "new _URILoader({}, {}, {}, {})".format(
                     inner.name,
                     self.to_typescript(scoped_id),
                     self.to_typescript(vocab_term),
@@ -563,7 +521,7 @@ export class {cls} {ext} {{
         return self.declare_type(
             TypeDef(
                 f"idmap{self.safe_name(field)}{inner.name}",
-                "new IdMapLoader({}, '{}', '{}')".format(
+                "new _IdMapLoader({}, '{}', '{}')".format(
                     inner.name, map_subject, map_predicate
                 ),
                 instance_type=instance_type,
@@ -576,7 +534,7 @@ export class {cls} {ext} {{
         return self.declare_type(
             TypeDef(
                 f"typedsl{self.safe_name(inner.name)}{ref_scope}",
-                f"new TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope})",
+                f"new _TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope})",
                 instance_type=instance_type,
             )
         )
@@ -614,7 +572,7 @@ export class {cls} {ext} {{
         expand_resource_template_to("tsconfig.json", self.target_dir / "tsconfig.json")
 
         vocab = ",\n  ".join(
-            f"""{k}: '{self.vocab[k]}'""" for k in sorted(self.vocab.keys())
+            f"""'{k}': '{self.vocab[k]}'""" for k in sorted(self.vocab.keys())
         )
         rvocab = ",\n  ".join(
             f"""'{self.vocab[k]}': '{k}'""" for k in sorted(self.vocab.keys())
@@ -641,19 +599,28 @@ export class {cls} {ext} {{
 
         util_src_dirs = {
             "util": self.main_src_dir / "util",
-            "util/loaders": self.main_src_dir / "util/loaders",
+            "test": self.main_src_dir / "test",
         }
-        for (util_src, util_target) in util_src_dirs.items():
+
+        def copy_utils_recursive(util_src: str, util_target: Path) -> None:
             for util in pkg_resources.resource_listdir(
                 __name__, f"typescript/{util_src}"
             ):
-                # TODO: check if util is dir instead of using this hardcoded "loaders" string
-                if util == "loaders":
+                template_path = os.path.join(util_src, util)
+                if pkg_resources.resource_isdir(
+                    __name__, f"typescript/{template_path}"
+                ):
+                    copy_utils_recursive(
+                        os.path.join(util_src, util), util_target / util
+                    )
                     continue
                 src_path = util_target / util
-                src_template = template_from_resource(os.path.join(util_src, util))
+                src_template = template_from_resource(template_path)
                 src = src_template.safe_substitute(template_args)
                 _ensure_directory_and_write(src_path, src)
+
+        for (util_src, util_target) in util_src_dirs.items():
+            copy_utils_recursive(util_src, util_target)
 
     def secondaryfilesdsl_loader(self, inner: TypeDef) -> TypeDef:
         """Construct the TypeDef for secondary files."""
@@ -661,9 +628,7 @@ export class {cls} {ext} {{
         return self.declare_type(
             TypeDef(
                 f"secondaryfilesdsl{inner.name}",
-                f"new SecondaryDSLLoader({inner.name})",
+                f"new _SecondaryDSLLoader({inner.name})",
                 instance_type=instance_type,
             )
         )
-
-    # endregion

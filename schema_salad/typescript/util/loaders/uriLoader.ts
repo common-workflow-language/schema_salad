@@ -1,6 +1,6 @@
 import { expandUrl, Loader, LoadingOptions } from '../internal'
 
-export class URILoader implements Loader {
+export class _URILoader implements Loader {
   inner: Loader
   scopedID: boolean
   vocabTerm: boolean
