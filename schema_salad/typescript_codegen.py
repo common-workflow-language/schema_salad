@@ -22,6 +22,17 @@ from .exceptions import SchemaException
 from .schema import shortname
 from .java_codegen import _ensure_directory_and_write, _safe_makedirs
 
+
+def doc_to_doc_string(doc: Optional[str], indent_level: int = 0) -> str:
+    """Generate a documentation string from a schema salad doc field."""
+    lead = " " + "  " * indent_level + "* "
+    if doc:
+        doc_str = "\n".join([f"{lead}{line}" for line in doc.split("\n")])
+    else:
+        doc_str = ""
+    return doc_str
+
+
 _string_type_def = TypeDef(
     name="strtype",
     init="new _PrimitiveLoader(TypeGuards.String)",
@@ -122,17 +133,25 @@ class TypeScriptCodeGen(CodeGenBase):
         optional_fields: Set[str],
     ) -> None:
         """Produce the header for the given class."""
-        classname = self.safe_name(classname)
-        self.current_class = classname
+        cls = self.safe_name(classname)
+        self.current_class = cls
         self.current_class_is_abstract = abstract
-        self.record_types.append(classname)
+        self.record_types.append(cls)
         self.current_constructor_signature = StringIO()
         self.current_constructor_body = StringIO()
         self.current_loader = StringIO()
         self.current_fieldtypes: Dict[str, TypeDef] = {}
-        target_file = self.main_src_dir / f"{classname[0].lower() + classname[1:]}.ts"
-
+        target_file = self.main_src_dir / f"{cls[0].lower() + cls[1:]}.ts"
         if self.current_class_is_abstract:
+            doc_string = f"""
+/**
+ * Auto-generated interface for {classname}
+"""
+            if doc:
+                doc_string += " *\n"
+                doc_string += doc_to_doc_string(doc)
+                doc_string += "\n"
+            doc_string += " */"
             with open(target_file, "w") as f:
                 _logger.info("Writing file: %s", target_file)
                 if extends:
@@ -145,14 +164,24 @@ class TypeScriptCodeGen(CodeGenBase):
                     """
 import * as Internal from './util/internal'
 
+{docstring}
 export interface {cls} {ext} {{ }}
                     """.format(
-                        cls=classname,
+                        docstring=doc_string,
+                        cls=cls,
                         ext=ext,
                     )
                 )
             return
-
+        doc_string = f"""
+/**
+ * Auto-generated class implementation for {classname}
+"""
+        if doc:
+            doc_string += " *\n"
+            doc_string += doc_to_doc_string(doc)
+            doc_string += "\n"
+        doc_string += " */"
         with open(target_file, "w") as f:
             _logger.info("Writing file: %s", target_file)
             if extends:
@@ -175,12 +204,12 @@ import {{
 import {{ v4 as uuidv4 }} from 'uuid'
 import * as Internal from './util/internal'
 
+{docstring}
 export class {cls} {ext} {{
   loadingOptions: LoadingOptions
   extensionFields?: Dictionary<any>
 """.format(
-                    cls=classname,
-                    ext=ext,
+                    cls=cls, ext=ext, docstring=doc_string
                 )
             )
         self.current_constructor_signature.write(
@@ -195,11 +224,24 @@ export class {cls} {ext} {{
         )
         self.current_loader.write(
             """
+  /**
+   * Used to construct instances of {{@link {cls} }}.
+   *
+   * @param __doc                           Document fragment to load this record object from.
+   * @param baseuri                         Base URI to generate child document IDs against.
+   * @param loadingOptions                  Context for loading URIs and populating objects.
+   * @param docRoot                         ID at this position in the document (if available)
+   * @returns                               An instance of {{@link {cls} }}
+   * @throws {{@link ValidationException}}    If the document fragment is not a
+   *                                        {{@link Dictionary}} or validation of fields fails.
+   */
   static override async fromDoc (__doc: any, baseuri: string, loadingOptions: LoadingOptions,
-    docRoot?: string): Promise<Saveable> {
-    const _doc = Object.assign({}, __doc)
+    docRoot?: string): Promise<Saveable> {{
+    const _doc = Object.assign({{}}, __doc)
     const errors: ValidationException[] = []
-            """
+            """.format(
+                cls=cls
+            )
         )
 
     def end_class(self, classname: str, field_names: List[str]) -> None:
@@ -385,6 +427,16 @@ export class {cls} {ext} {{
         fieldname = shortname(name)
         self.current_fieldtypes[safename] = fieldtype
         with open(target_file, "a") as f:
+            if doc:
+                f.write(
+                    """
+  /**
+{doc_str}
+   */
+""".format(
+                        doc_str=doc_to_doc_string(doc, indent_level=1)
+                    )
+                )
             f.write(
                 "  {safename}: {type}\n".format(
                     safename=safename,
