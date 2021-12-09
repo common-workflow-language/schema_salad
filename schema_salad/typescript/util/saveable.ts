@@ -1,5 +1,4 @@
-import { LoadingOptions, Dictionary } from './internal'
-import { isDictionary } from './typeguards'
+import { LoadingOptions, Dictionary, TypeGuards } from './internal'
 import * as URI from 'uri-js'
 import path from 'path'
 
@@ -24,7 +23,7 @@ export function save (val: any, top: boolean = true, baseUrl: string = '', relat
     return r
   }
 
-  if (isDictionary(val)) {
+  if (TypeGuards.isDictionary(val)) {
     const newDict: Dictionary<any> = {}
     for (const key in val) {
       newDict[key] = save(val[key], false, baseUrl, relativeUris)
