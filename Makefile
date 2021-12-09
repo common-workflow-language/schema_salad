@@ -51,7 +51,7 @@ install-dependencies: FORCE
 	pip install --upgrade $(DEVPKGS)
 	pip install -r requirements.txt -r mypy-requirements.txt -r docs/requirements.txt
 
-## install     : install the ${MODULE} module and schema-salad-tool
+## install     : install the ${MODULE} module and script(s)
 install: FORCE
 	pip install .$(EXTRAS)
 
@@ -168,7 +168,7 @@ list-author-emails:
 	@git log --format='%aN,%aE' | sort -u | grep -v 'root'
 
 mypy3: mypy
-mypy: $(filter-out setup.py gittagger.py,$(PYSOURCES))
+mypy: $(filter-out setup.py,$(PYSOURCES))
 	if ! test -f $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))')/py.typed ; \
 	then \
 		rm -Rf typeshed/ruamel/yaml ; \
