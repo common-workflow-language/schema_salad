@@ -5,7 +5,7 @@ import * as URL from 'url'
 
 export async function documentLoad (loader: Loader, doc: unknown, baseuri: string, loadingOptions: LoadingOptions): Promise<any> {
   if (typeof doc === 'string') {
-    await documentLoadByUrl(loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions)
+    return await documentLoadByUrl(loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions)
   }
 
   if (Array.isArray(doc)) {

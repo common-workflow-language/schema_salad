@@ -666,12 +666,13 @@ export class {cls} {ext} {{
         pd = pd + 'common-workflow-language/schema_salad\\">Schema Salad</a>'
         pd = pd + " for parsing documents corresponding to the "
         pd = pd + str(self.base_uri) + " schema."
-
+        generated_class_imports = ",\n  ".join(self.record_types)
         template_vars: MutableMapping[str, str] = dict(
             project_name=self.package,
             version="0.0.1-SNAPSHOT",
             project_description=pd,
             license_name="Apache License, Version 2.0",
+            generated_class_imports=generated_class_imports,
         )
 
         def template_from_resource(resource: str) -> string.Template:
@@ -690,6 +691,7 @@ export class {cls} {ext} {{
         expand_resource_template_to(".gitignore", self.target_dir / ".gitignore")
         expand_resource_template_to("LICENSE", self.target_dir / "LICENSE")
         expand_resource_template_to("tsconfig.json", self.target_dir / "tsconfig.json")
+        expand_resource_template_to("index.ts", self.main_src_dir / "index.ts")
 
         vocab = ",\n  ".join(
             f"""'{k}': '{self.vocab[k]}'""" for k in sorted(self.vocab.keys())
@@ -704,7 +706,7 @@ export class {cls} {ext} {{
                 loader_instances += "export const {} = {};\n".format(
                     collected_type.name, collected_type.init
                 )
-        generated_class_imports = ",\n  ".join(self.record_types)
+
         internal_module_exports = "\n".join(
             "export * from '../{}'".format(f[0].lower() + f[1:])
             for f in self.record_types
