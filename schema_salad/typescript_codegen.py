@@ -93,6 +93,7 @@ class TypeScriptCodeGen(CodeGenBase):
         self.package = package
         self.base_uri = base
         self.record_types: List[str] = []
+        self.id_field = ""
 
     def prologue(self) -> None:
         """Trigger to generate the prolouge code."""
@@ -140,6 +141,7 @@ class TypeScriptCodeGen(CodeGenBase):
         self.current_constructor_signature = StringIO()
         self.current_constructor_body = StringIO()
         self.current_loader = StringIO()
+        self.current_serializer = StringIO()
         self.current_fieldtypes: Dict[str, TypeDef] = {}
         target_file = self.main_src_dir / f"{cls[0].lower() + cls[1:]}.ts"
         if self.current_class_is_abstract:
@@ -173,6 +175,7 @@ export interface {cls} {ext} {{ }}
                     )
                 )
             return
+        self.idfield = idfield
         doc_string = f"""
 /**
  * Auto-generated class implementation for {classname}
@@ -200,6 +203,9 @@ import {{
   LoadingOptions,
   Saveable,
   ValidationException,
+  prefixUrl,
+  save,
+  saveRelativeUri
 }} from './util/internal'
 import {{ v4 as uuidv4 }} from 'uuid'
 import * as Internal from './util/internal'
@@ -242,6 +248,17 @@ export class {cls} {ext} {{
             """.format(
                 cls=cls
             )
+        )
+
+        self.current_serializer.write(
+            """
+  save (top: boolean = false, baseUrl: string = '', relativeUris: boolean = true)
+  : Dictionary<any> {
+    const r: Dictionary<any> = {}
+    for (const ef in this.extensionFields) {
+      r[prefixUrl(ef, this.loadingOptions.vocab)] = this.extensionFields.ef
+    }
+"""
         )
 
     def end_class(self, classname: str, field_names: List[str]) -> None:
@@ -306,6 +323,20 @@ export class {cls} {ext} {{
   }
         """
         )
+        self.current_serializer.write(
+            """
+    if (top) {
+      if (this.loadingOptions.namespaces != null) {
+        r.$namespaces = this.loadingOptions.namespaces
+      }
+      if (this.loadingOptions.schemas != null) {
+        r.$schemas = this.loadingOptions.schemas
+      }
+    }
+    return r
+  }
+            """
+        )
         target_file = (
             self.main_src_dir
             / f"{self.current_class[0].lower() + self.current_class[1:]}.ts"
@@ -318,6 +349,7 @@ export class {cls} {ext} {{
             f.write(self.current_constructor_signature.getvalue())
             f.write(self.current_constructor_body.getvalue())
             f.write(self.current_loader.getvalue())
+            f.write(self.current_serializer.getvalue())
             f.write(
                 "\n"
                 + "  static attr: Set<string> = new Set(["
@@ -490,6 +522,42 @@ export class {cls} {ext} {{
         )
         if optional:
             self.current_loader.write("    }\n")
+
+        if name == self.idfield or not self.idfield:
+            baseurl = "baseUrl"
+        else:
+            baseurl = f"this.{self.safe_name(self.idfield)}"
+
+        if fieldtype.is_uri:
+            self.current_serializer.write(
+                """
+    if (this.{safename} != null) {{
+      const u = saveRelativeUri(this.{safename}, {base_url}, {scoped_id},
+                                relativeUris, {ref_scope})
+      if (u != null) {{
+        r.{fieldname} = u
+      }}
+    }}
+                """.format(
+                    safename=self.safe_name(name),
+                    fieldname=shortname(name).strip(),
+                    base_url=baseurl,
+                    scoped_id=self.to_typescript(fieldtype.scoped_id),
+                    ref_scope=self.to_typescript(fieldtype.ref_scope),
+                )
+            )
+        else:
+            self.current_serializer.write(
+                """
+    if (this.{safename} != null) {{
+      r.{fieldname} = save(this.{safename}, false, {base_url}, relativeUris)
+    }}
+                """.format(
+                    safename=self.safe_name(name),
+                    fieldname=shortname(name).strip(),
+                    base_url=baseurl,
+                )
+            )
 
     def declare_id_field(
         self,
