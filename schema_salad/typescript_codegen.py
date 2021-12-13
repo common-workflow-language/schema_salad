@@ -1,5 +1,6 @@
 """TypeScript code generator for a given schema salad definition."""
 import os
+import shutil
 import string
 from io import StringIO
 from pathlib import Path
@@ -85,15 +86,19 @@ prims = {
 class TypeScriptCodeGen(CodeGenBase):
     """Generation of TypeScript code for a given Schema Salad definition."""
 
-    def __init__(self, base: str, target: Optional[str], package: str) -> None:
+    def __init__(
+        self, base: str, examples: Optional[str], target: Optional[str], package: str
+    ) -> None:
         """Initialize the TypeScript codegen."""
         super().__init__()
         self.target_dir = Path(target or ".").resolve()
         self.main_src_dir = self.target_dir / "src"
+        self.test_resources_dir = self.target_dir / "src" / "test" / "data"
         self.package = package
         self.base_uri = base
         self.record_types: List[str] = []
         self.id_field = ""
+        self.examples = examples
 
     def prologue(self) -> None:
         """Trigger to generate the prolouge code."""
@@ -284,8 +289,8 @@ export class {cls} {ext} {{
         self.current_loader.write(
             """
     const extensionFields: Dictionary<any> = {{}}
-    for (const [key, value] of _doc) {{
-      if (!this.attr.has(key)) {{
+    for (const [key, value] of Object.entries(_doc)) {{
+      if (!{classname}.attr.has(key)) {{
         if ((key as string).includes(':')) {{
           const ex = expandUrl(key, '', loadingOptions, false, false)
           extensionFields[ex] = value
@@ -711,6 +716,29 @@ export class {cls} {ext} {{
             "export * from '../{}'".format(f[0].lower() + f[1:])
             for f in self.record_types
         )
+
+        example_tests = ""
+        if self.examples:
+            _safe_makedirs(self.test_resources_dir)
+            utils_resources = self.test_resources_dir / "examples"
+            if os.path.exists(utils_resources):
+                shutil.rmtree(utils_resources)
+            shutil.copytree(self.examples, utils_resources)
+            for example_name in os.listdir(self.examples):
+                if example_name.startswith("valid"):
+                    basename = os.path.basename(example_name).rsplit(".", 1)[0]
+                    example_tests += """
+    it('{basename}', async () => {{
+        await loadDocument(__dirname + '/data/examples/{example_name}')
+    }})
+    it('{basename} by string', async () => {{
+        let doc = fs.readFileSync(__dirname + '/data/examples/{example_name}').toString()
+        await loadDocumentByString(doc, '')
+    }})""".format(
+                        basename=basename.replace("-", "_").replace(".", "_"),
+                        example_name=example_name,
+                    )
+
         template_args: MutableMapping[str, str] = dict(
             internal_module_exports=internal_module_exports,
             loader_instances=loader_instances,
@@ -719,6 +747,7 @@ export class {cls} {ext} {{
             rvocab=rvocab,
             root_loader=root_loader.name,
             root_loader_type=root_loader.instance_type or "any",
+            tests=example_tests,
         )
 
         util_src_dirs = {
