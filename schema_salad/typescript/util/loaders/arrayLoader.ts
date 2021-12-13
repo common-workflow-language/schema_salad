@@ -24,6 +24,8 @@ export class _ArrayLoader implements Loader {
       } catch (e) {
         if (e instanceof ValidationException) {
           errors.push(e)
+        } else {
+          throw e
         }
       }
     }

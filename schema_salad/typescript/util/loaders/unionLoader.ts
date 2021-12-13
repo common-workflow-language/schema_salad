@@ -15,6 +15,8 @@ export class _UnionLoader implements Loader {
       } catch (e) {
         if (e instanceof ValidationException) {
           errors.push(new ValidationException(`tried ${t.constructor.name} but`, [e]))
+        } else {
+          throw e
         }
       }
     }

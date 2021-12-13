@@ -249,7 +249,7 @@ export class {cls} {ext} {{
   static override async fromDoc (__doc: any, baseuri: string, loadingOptions: LoadingOptions,
     docRoot?: string): Promise<Saveable> {{
     const _doc = Object.assign({{}}, __doc)
-    const errors: ValidationException[] = []
+    const __errors: ValidationException[] = []
             """.format(
                 cls=cls
             )
@@ -295,7 +295,7 @@ export class {cls} {ext} {{
           const ex = expandUrl(key, '', loadingOptions, false, false)
           extensionFields[ex] = value
         }} else {{
-          errors.push(
+          __errors.push(
             new ValidationException(`invalid field ${{key as string}}, \\
             expected one of: {fields}`)
           )
@@ -304,8 +304,8 @@ export class {cls} {ext} {{
       }}
     }}
 
-    if (errors.length > 0) {{
-      throw new ValidationException("Trying '{classname}'", errors)
+    if (__errors.length > 0) {{
+      throw new ValidationException("Trying '{classname}'", __errors)
     }}
 
     const schema = new {classname}({{
@@ -513,9 +513,11 @@ export class {cls} {ext} {{
 {spc}        baseuri, loadingOptions)
 {spc}    }} catch (e) {{
 {spc}      if (e instanceof ValidationException) {{
-{spc}        errors.push(
+{spc}        __errors.push(
 {spc}          new ValidationException('the `{fieldname}` field is not valid because: ', [e])
 {spc}        )
+{spc}      }} else {{
+{spc}        throw e
 {spc}      }}
 {spc}    }}
 """.format(
@@ -733,7 +735,8 @@ export class {cls} {ext} {{
     }})
     it('{basename} by string', async () => {{
         let doc = fs.readFileSync(__dirname + '/data/examples/{example_name}').toString()
-        await loadDocumentByString(doc, '')
+        await loadDocumentByString(doc, url.pathToFileURL(__dirname +
+            '/data/examples/').toString())
     }})""".format(
                         basename=basename.replace("-", "_").replace(".", "_"),
                         example_name=example_name,

@@ -29,6 +29,8 @@ export class DefaultFetcher extends Fetcher {
         } catch (e) {
           if (e instanceof Error) {
             throw new ValidationException(`Error fetching ${urlString}: ${e.message}`)
+          } else {
+            throw e
           }
         }
       } else if (scheme === 'file') {
@@ -37,6 +39,8 @@ export class DefaultFetcher extends Fetcher {
         } catch (e) {
           if (e instanceof Error) {
             throw new ValidationException(`Error reading file ${urlString}: ${e.message}`)
+          } else {
+            throw e
           }
         }
       }
