@@ -94,7 +94,8 @@ def arg_parser() -> argparse.ArgumentParser:
         "--codegen",
         type=str,
         metavar="language",
-        help="Generate classes in target language, currently supported: python, java",
+        help="Generate classes in target language, currently supported: "
+        "python, java, typescript",
     )
 
     parser.add_argument(
