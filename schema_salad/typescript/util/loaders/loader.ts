@@ -93,9 +93,9 @@ export function expandUrl (url: string, baseUrl: string, loadingOptions: Loading
     if (split.scheme !== undefined) {
       if (url in loadingOptions.rvocab) {
         return loadingOptions.rvocab[url]
-      } else {
-        throw new ValidationException(`Term '${url}' not in vocabulary`)
-      }
+      } 
+    } else {
+      throw new ValidationException(`Term '${url}' not in vocabulary`)
     }
   }
   return url
