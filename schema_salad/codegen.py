@@ -71,7 +71,7 @@ def codegen(
             copyright=copyright,
         )
     elif lang == "typescript":
-        gen = TypeScriptCodeGen(base, target=target, package=pkg)
+        gen = TypeScriptCodeGen(base, target=target, package=pkg, examples=examples)
     else:
         raise SchemaSaladException(f"Unsupported code generation language '{lang}'")
 
