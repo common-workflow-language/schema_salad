@@ -279,9 +279,18 @@ export class {cls} {ext} {{
             fieldtype = self.current_fieldtypes.get(safe_field_name)
             if fieldtype is None:
                 raise SchemaException(f"{safe_field_name} has no valid fieldtype")
+            if (
+                fieldtype.instance_type is not None
+                and "undefined" in fieldtype.instance_type
+            ):
+                optionalstring = "?"
+            else:
+                optionalstring = ""
             self.current_constructor_signature.write(
-                """ {safename}: {type},""".format(
-                    safename=safe_field_name, type=fieldtype.instance_type
+                """ {safename}{optionalstring}: {type},""".format(
+                    safename=safe_field_name,
+                    type=fieldtype.instance_type,
+                    optionalstring=optionalstring,
                 )
             )
         self.current_constructor_signature.write("}) {")
@@ -463,6 +472,14 @@ export class {cls} {ext} {{
         safename = self.safe_name(name)
         fieldname = shortname(name)
         self.current_fieldtypes[safename] = fieldtype
+        if (
+            fieldtype.instance_type is not None
+            and "undefined" in fieldtype.instance_type
+        ):
+            optionalstring = "?"
+        else:
+            optionalstring = ""
+
         with open(target_file, "a") as f:
             if doc:
                 f.write(
@@ -475,9 +492,10 @@ export class {cls} {ext} {{
                     )
                 )
             f.write(
-                "  {safename}: {type}\n".format(
+                "  {safename}{optionalstring}: {type}\n".format(
                     safename=safename,
                     type=fieldtype.instance_type,
+                    optionalstring=optionalstring,
                 )
             )
         self.current_constructor_signature.write(
