@@ -25,7 +25,7 @@ def test_cwl_gen(tmp_path: Path) -> None:
     assert package_json_path.exists
     tests_dir = target_dir / "src" / "test"
     assert tests_dir.exists()
-    with open(tests_dir / "exampleTest.ts") as f:
+    with open(tests_dir / "ExampleTest.ts") as f:
         assert "topmed" in f.read()
 
 
@@ -37,7 +37,7 @@ def test_meta_schema_gen(tmp_path: Path) -> None:
     assert package_json_path.exists()
     src_dir = target_dir / "src"
     assert src_dir.exists()
-    record_schema_dir = src_dir / "recordSchema.ts"
+    record_schema_dir = src_dir / "RecordSchema.ts"
     assert record_schema_dir.exists()
     with open(record_schema_dir) as f:
         assert (

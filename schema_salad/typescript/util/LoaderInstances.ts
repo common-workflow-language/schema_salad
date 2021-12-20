@@ -12,6 +12,6 @@ import {
   _SecondaryDSLLoader,
   TypeGuards,
   ${generated_class_imports}
-} from './internal'
+} from './Internal'
 
 ${loader_instances}

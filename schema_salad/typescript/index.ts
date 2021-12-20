@@ -2,4 +2,4 @@ export {
   loadDocument,
   loadDocumentByString,
   ${generated_class_imports}
-} from './util/internal'
+} from './util/Internal'

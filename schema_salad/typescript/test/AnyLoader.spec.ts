@@ -1,7 +1,7 @@
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 
-import { _AnyLoader, LoadingOptions } from '../util/internal'
+import { _AnyLoader, LoadingOptions } from '../util/Internal'
 
 chai.use(chaiAsPromised)
 const assert = chai.assert

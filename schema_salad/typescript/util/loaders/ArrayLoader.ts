@@ -1,4 +1,4 @@
-import { Loader, loadField, LoadingOptions, _UnionLoader, ValidationException } from '../internal'
+import { Loader, loadField, LoadingOptions, _UnionLoader, ValidationException } from '../Internal'
 
 export class _ArrayLoader implements Loader {
   items: Loader[]

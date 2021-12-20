@@ -1,4 +1,4 @@
-import { Dictionary, TypeGuards, Loader, LoadingOptions, ValidationException } from '../internal'
+import { Dictionary, TypeGuards, Loader, LoadingOptions, ValidationException } from '../Internal'
 
 export class _IdMapLoader implements Loader {
   inner: Loader

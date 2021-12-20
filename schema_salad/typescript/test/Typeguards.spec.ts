@@ -1,5 +1,5 @@
 import { assert } from 'chai'
-import { TypeGuards } from '../util/internal'
+import { TypeGuards } from '../util/Internal'
 
 describe('Test Typeguards', () => {
   describe('Int', () => {

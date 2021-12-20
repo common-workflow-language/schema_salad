@@ -96,7 +96,8 @@ class TypeScriptCodeGen(CodeGenBase):
         self.test_resources_dir = self.target_dir / "src" / "test" / "data"
         self.package = package
         self.base_uri = base
-        self.record_types: List[str] = []
+        self.record_types: Set[str] = set()
+        self.modules: Set[str] = set()
         self.id_field = ""
         self.examples = examples
 
@@ -143,14 +144,12 @@ class TypeScriptCodeGen(CodeGenBase):
         cls = self.safe_name(classname)
         self.current_class = cls
         self.current_class_is_abstract = abstract
+        interface_module_name = self.current_interface
         self.current_interface_target_file = (
-            self.main_src_dir
-            / f"{self.current_class [0].lower() + self.current_class [1:]}Properties.ts"
+            self.main_src_dir / f"{interface_module_name}.ts"
         )
-        self.current_class_target_file = (
-            self.main_src_dir
-            / f"{self.current_class [0].lower() + self.current_class [1:]}.ts"
-        )
+        class_module_name = self.current_class
+        self.current_class_target_file = self.main_src_dir / f"{class_module_name}.ts"
         self.current_constructor_signature = StringIO()
         self.current_constructor_body = StringIO()
         self.current_loader = StringIO()
@@ -168,7 +167,8 @@ class TypeScriptCodeGen(CodeGenBase):
             doc_string += "\n"
         doc_string += " */"
 
-        self.record_types.append(f"{self.current_interface}")
+        self.record_types.add(f"{self.current_interface}")
+        self.modules.add(interface_module_name)
         with open(self.current_interface_target_file, "w") as f:
             _logger.info("Writing file: %s", self.current_interface_target_file)
             if extends:
@@ -179,7 +179,7 @@ class TypeScriptCodeGen(CodeGenBase):
                 ext = ""
             f.write(
                 """
-import * as Internal from './util/internal'
+import * as Internal from './util/Internal'
 
 {docstring}
 export interface {cls} {ext} {{
@@ -192,7 +192,8 @@ export interface {cls} {ext} {{
         if self.current_class_is_abstract:
             return
 
-        self.record_types.append(cls)
+        self.record_types.add(cls)
+        self.modules.add(class_module_name)
         with open(self.current_interface_target_file, "a") as f:
             f.write(
                 """
@@ -223,9 +224,9 @@ import {{
   prefixUrl,
   save,
   saveRelativeUri
-}} from './util/internal'
+}} from './util/Internal'
 import {{ v4 as uuidv4 }} from 'uuid'
-import * as Internal from './util/internal'
+import * as Internal from './util/Internal'
 
 {docstring}
 export class {cls} extends Saveable implements Internal.{current_interface} {{
@@ -398,20 +399,7 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                     )
                 )
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
-                for sym in type_declaration["symbols"]:
-                    self.add_vocab(shortname(sym), sym)
-                return self.declare_type(
-                    TypeDef(
-                        self.safe_name(type_declaration["name"]) + "Loader",
-                        'new _EnumLoader(["{}"])'.format(
-                            '", "'.join(
-                                self.safe_name(sym)
-                                for sym in type_declaration["symbols"]
-                            )
-                        ),
-                        instance_type="string",
-                    )
-                )
+                return self.type_loader_enum(type_declaration)
 
             if type_declaration["type"] in (
                 "record",
@@ -442,6 +430,40 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                 )
             )
         return self.collected_types[self.safe_name(type_declaration) + "Loader"]
+
+    def type_loader_enum(self, type_declaration: Dict[str, Any]) -> TypeDef:
+        for sym in type_declaration["symbols"]:
+            self.add_vocab(shortname(sym), sym)
+        enum_name = self.safe_name(type_declaration["name"])
+        enum_module_name = enum_name
+        enum_path = self.main_src_dir / f"{enum_module_name}.ts"
+        self.modules.add(enum_module_name)
+        self.record_types.add(enum_name)
+        with open(enum_path, "w") as f:
+            _logger.info("Writing file: %s", enum_path)
+            f.write(
+                """
+export enum {enum_name} {{
+""".format(
+                    enum_name=enum_name
+                )
+            )
+            for sym in type_declaration["symbols"]:
+                val = self.safe_name(sym)
+                const = self.safe_name(sym).replace("-", "_").replace(".", "_").upper()
+                f.write("""  {const}='{val}',\n""".format(const=const, val=val))
+            f.write(
+                """}
+"""
+            )
+        return self.declare_type(
+            TypeDef(
+                instance_type="Internal." + enum_name,
+                name=self.safe_name(type_declaration["name"]) + "Loader",
+                init=f"new _EnumLoader((Object.keys({enum_name}) as Array<keyof typeof "
+                f"{enum_name}>).map(key => {enum_name}[key]))",
+            )
+        )
 
     def declare_field(
         self,
@@ -502,11 +524,20 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                     optionalstring=optionalstring,
                 )
             )
-        self.current_constructor_signature.write(
-            ", {safename}".format(
-                safename=safename,
+        if fieldname == "class":
+            self.current_constructor_signature.write(
+                ", {safename} = {type}.{val}".format(
+                    safename=safename,
+                    type=fieldtype.instance_type,
+                    val=self.current_class.replace("-", "_").replace(".", "_").upper(),
+                )
             )
-        )
+        else:
+            self.current_constructor_signature.write(
+                ", {safename}".format(
+                    safename=safename,
+                )
+            )
         self.current_constructor_body.write(
             "    this.{safeName} = {safeName}\n".format(safeName=safename)
         )
@@ -737,8 +768,7 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                 )
 
         internal_module_exports = "\n".join(
-            "export * from '../{}'".format(f[0].lower() + f[1:])
-            for f in self.record_types
+            "export * from '../{}'".format(f) for f in self.modules
         )
 
         example_tests = ""

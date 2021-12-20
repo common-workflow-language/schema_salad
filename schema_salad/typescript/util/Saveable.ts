@@ -1,4 +1,4 @@
-import { LoadingOptions, Dictionary, TypeGuards } from './internal'
+import { LoadingOptions, Dictionary, TypeGuards } from './Internal'
 import * as URI from 'uri-js'
 import path from 'path'
 

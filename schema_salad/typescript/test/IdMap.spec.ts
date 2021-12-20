@@ -1,5 +1,5 @@
 import { assert } from 'chai'
-import { _IdMapLoader, Loader, LoadingOptions, ValidationException } from '../util/internal'
+import { _IdMapLoader, Loader, LoadingOptions, ValidationException } from '../util/Internal'
 
 class TestLoader implements Loader {
   async load (doc: any, baseuri: string, loadingOptions: LoadingOptions, docRoot?: string | undefined): Promise<any> {

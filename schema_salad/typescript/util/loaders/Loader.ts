@@ -1,4 +1,4 @@
-import { LoadingOptions, documentLoadByUrl, TypeGuards, ValidationException } from '../internal'
+import { LoadingOptions, documentLoadByUrl, TypeGuards, ValidationException } from '../Internal'
 import * as URI from 'uri-js'
 
 export interface Loader {

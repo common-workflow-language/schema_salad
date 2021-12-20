@@ -1,4 +1,4 @@
-import { Dictionary, DefaultFetcher, Fetcher, RVOCAB, VOCAB } from './internal'
+import { Dictionary, DefaultFetcher, Fetcher, RVOCAB, VOCAB } from './Internal'
 
 export class LoadingOptions {
   fetcher: Fetcher

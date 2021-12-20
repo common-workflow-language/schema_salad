@@ -1,5 +1,4 @@
-import { Loader, LoadingOptions, Dictionary, TypeGuards } from '../internal'
-import { ValidationException } from '../validationException'
+import { Loader, LoadingOptions, Dictionary, TypeGuards, ValidationException } from '../Internal'
 
 export class _SecondaryDSLLoader implements Loader {
   inner: Loader

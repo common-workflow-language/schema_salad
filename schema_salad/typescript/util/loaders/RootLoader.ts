@@ -1,5 +1,5 @@
-import { LoadingOptions, Loader, TypeGuards, LoaderInstances } from '../internal'
-import * as Internal from  '../internal'
+import { LoadingOptions, Loader, TypeGuards, LoaderInstances } from '../Internal'
+import * as Internal from  '../Internal'
 import * as yaml from 'js-yaml'
 import * as URL from 'url'
 

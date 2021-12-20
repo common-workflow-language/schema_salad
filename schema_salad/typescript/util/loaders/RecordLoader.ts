@@ -1,4 +1,4 @@
-import { Saveable, Loader, LoadingOptions, TypeGuards, ValidationException } from '../internal'
+import { Saveable, Loader, LoadingOptions, TypeGuards, ValidationException } from '../Internal'
 
 export class _RecordLoader implements Loader {
   creatorFunc: (doc: any, baseuri: string, loadingOptions: LoadingOptions, docRoot?: string) => Promise<Saveable>

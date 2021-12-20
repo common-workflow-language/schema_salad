@@ -1,5 +1,5 @@
 import { assert } from 'chai'
-import { DefaultFetcher, ValidationException } from '../util/internal'
+import { DefaultFetcher, ValidationException } from '../util/Internal'
 import sinon from 'sinon'
 import * as fetchModule from 'node-fetch'
 import { Response } from 'node-fetch'

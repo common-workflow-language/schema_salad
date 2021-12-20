@@ -1,4 +1,4 @@
-import { expandUrl, Loader, LoadingOptions } from '../internal'
+import { expandUrl, Loader, LoadingOptions } from '../Internal'
 
 export class _URILoader implements Loader {
   inner: Loader

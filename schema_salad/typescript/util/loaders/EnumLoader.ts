@@ -1,4 +1,4 @@
-import { Loader, LoadingOptions, ValidationException } from '../internal'
+import { Loader, LoadingOptions, ValidationException } from '../Internal'
 
 export class _EnumLoader implements Loader {
   symbols: string[]

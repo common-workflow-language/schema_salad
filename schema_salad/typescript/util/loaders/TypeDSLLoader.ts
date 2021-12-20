@@ -1,4 +1,4 @@
-import { Dictionary, expandUrl, Loader, LoadingOptions } from '../internal'
+import { Dictionary, expandUrl, Loader, LoadingOptions } from '../Internal'
 
 export class _TypeDSLLoader implements Loader {
   typeDSLRegex = /^([^[?]+)(\[\])?(\?)?$/
