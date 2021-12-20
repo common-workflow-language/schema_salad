@@ -4,6 +4,10 @@ import path from 'path'
 
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export abstract class Saveable {
+  loadingOptions: LoadingOptions
+  constructor(loadingOptions?: LoadingOptions) {
+    this.loadingOptions = loadingOptions ?? new LoadingOptions({})
+  }
   static async fromDoc (doc: any, baseuri: string, loadingOptions: LoadingOptions, docRoot?: string): Promise<Saveable> {
     throw new Error('Not Implemented')
   }

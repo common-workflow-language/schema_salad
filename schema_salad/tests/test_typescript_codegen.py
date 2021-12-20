@@ -40,7 +40,10 @@ def test_meta_schema_gen(tmp_path: Path) -> None:
     record_schema_dir = src_dir / "recordSchema.ts"
     assert record_schema_dir.exists()
     with open(record_schema_dir) as f:
-        assert "export class RecordSchema extends Saveable {\n" in f.read()
+        assert (
+            "export class RecordSchema extends Saveable implements "
+            "Internal.RecordSchemaProperties {\n" in f.read()
+        )
 
 
 def get_data_uri(resource_path: str) -> str:

@@ -139,48 +139,66 @@ class TypeScriptCodeGen(CodeGenBase):
         optional_fields: Set[str],
     ) -> None:
         """Produce the header for the given class."""
+        self.current_interface = self.safe_name(classname) + "Properties"
         cls = self.safe_name(classname)
         self.current_class = cls
         self.current_class_is_abstract = abstract
-        self.record_types.append(cls)
+        self.current_interface_target_file = (
+            self.main_src_dir
+            / f"{self.current_class [0].lower() + self.current_class [1:]}Properties.ts"
+        )
+        self.current_class_target_file = (
+            self.main_src_dir
+            / f"{self.current_class [0].lower() + self.current_class [1:]}.ts"
+        )
         self.current_constructor_signature = StringIO()
         self.current_constructor_body = StringIO()
         self.current_loader = StringIO()
         self.current_serializer = StringIO()
         self.current_fieldtypes: Dict[str, TypeDef] = {}
-        target_file = self.main_src_dir / f"{cls[0].lower() + cls[1:]}.ts"
-        if self.current_class_is_abstract:
-            doc_string = f"""
+        self.idfield = idfield
+
+        doc_string = f"""
 /**
  * Auto-generated interface for {classname}
 """
-            if doc:
-                doc_string += " *\n"
-                doc_string += doc_to_doc_string(doc)
-                doc_string += "\n"
-            doc_string += " */"
-            with open(target_file, "w") as f:
-                _logger.info("Writing file: %s", target_file)
-                if extends:
-                    ext = " extends Internal." + ", Internal.".join(
-                        self.safe_name(e) for e in extends
-                    )
-                else:
-                    ext = ""
-                f.write(
-                    """
+        if doc:
+            doc_string += " *\n"
+            doc_string += doc_to_doc_string(doc)
+            doc_string += "\n"
+        doc_string += " */"
+
+        self.record_types.append(f"{self.current_interface}")
+        with open(self.current_interface_target_file, "w") as f:
+            _logger.info("Writing file: %s", self.current_interface_target_file)
+            if extends:
+                ext = "extends Internal." + ", Internal.".join(
+                    self.safe_name(e) + "Properties" for e in extends
+                )
+            else:
+                ext = ""
+            f.write(
+                """
 import * as Internal from './util/internal'
 
 {docstring}
-export interface {cls} {ext} {{ }}
+export interface {cls} {ext} {{
                     """.format(
-                        docstring=doc_string,
-                        cls=cls,
-                        ext=ext,
-                    )
+                    docstring=doc_string,
+                    cls=f"{self.current_interface}",
+                    ext=ext,
                 )
+            )
+        if self.current_class_is_abstract:
             return
-        self.idfield = idfield
+
+        self.record_types.append(cls)
+        with open(self.current_interface_target_file, "a") as f:
+            f.write(
+                """
+  extensionFields?: Internal.Dictionary<any>
+                    """
+            )
         doc_string = f"""
 /**
  * Auto-generated class implementation for {classname}
@@ -190,14 +208,8 @@ export interface {cls} {ext} {{ }}
             doc_string += doc_to_doc_string(doc)
             doc_string += "\n"
         doc_string += " */"
-        with open(target_file, "w") as f:
-            _logger.info("Writing file: %s", target_file)
-            if extends:
-                ext = "extends Saveable implements Internal." + ", Internal.".join(
-                    self.safe_name(e) for e in extends
-                )
-            else:
-                ext = "extends Saveable"
+        with open(self.current_class_target_file, "w") as f:
+            _logger.info("Writing file: %s", self.current_class_target_file)
             f.write(
                 """
 import {{
@@ -216,21 +228,21 @@ import {{ v4 as uuidv4 }} from 'uuid'
 import * as Internal from './util/internal'
 
 {docstring}
-export class {cls} {ext} {{
-  loadingOptions: LoadingOptions
-  extensionFields?: Dictionary<any>
+export class {cls} extends Saveable implements Internal.{current_interface} {{
+  extensionFields?: Internal.Dictionary<any>
 """.format(
-                    cls=cls, ext=ext, docstring=doc_string
+                    cls=cls,
+                    current_interface=self.current_interface,
+                    docstring=doc_string,
                 )
             )
         self.current_constructor_signature.write(
-            "\n" + "\n" + "  constructor ({extensionFields, loadingOptions"
+            "\n" + "\n" + "  constructor ({loadingOptions, extensionFields"
         )
         self.current_constructor_body.write(
             """
-    super()
+    super(loadingOptions)
     this.extensionFields = extensionFields ?? {}
-    this.loadingOptions = loadingOptions ?? new LoadingOptions({})
 """
         )
         self.current_loader.write(
@@ -268,32 +280,14 @@ export class {cls} {ext} {{
 
     def end_class(self, classname: str, field_names: List[str]) -> None:
         """Signal that we are done with this class."""
+        with open(self.current_interface_target_file, "a") as f:
+            f.write("}")
         if self.current_class_is_abstract:
             return
 
         self.current_constructor_signature.write(
-            "} : {extensionFields?: Dictionary<any>, loadingOptions?: LoadingOptions, "
+            f"}} : {{loadingOptions?: LoadingOptions}} & Internal.{self.current_interface}) {{"
         )
-        for field_name in field_names:
-            safe_field_name = self.safe_name(field_name)
-            fieldtype = self.current_fieldtypes.get(safe_field_name)
-            if fieldtype is None:
-                raise SchemaException(f"{safe_field_name} has no valid fieldtype")
-            if (
-                fieldtype.instance_type is not None
-                and "undefined" in fieldtype.instance_type
-            ):
-                optionalstring = "?"
-            else:
-                optionalstring = ""
-            self.current_constructor_signature.write(
-                """ {safename}{optionalstring}: {type},""".format(
-                    safename=safe_field_name,
-                    type=fieldtype.instance_type,
-                    optionalstring=optionalstring,
-                )
-            )
-        self.current_constructor_signature.write("}) {")
         self.current_constructor_body.write("  }\n")
         self.current_loader.write(
             """
@@ -351,13 +345,8 @@ export class {cls} {ext} {{
   }
             """
         )
-        target_file = (
-            self.main_src_dir
-            / f"{self.current_class[0].lower() + self.current_class[1:]}.ts"
-        )
-
         with open(
-            target_file,
+            self.current_class_target_file,
             "a",
         ) as f:
             f.write(self.current_constructor_signature.getvalue())
@@ -462,13 +451,6 @@ export class {cls} {ext} {{
         optional: bool,
     ) -> None:
         """Output the code to load the given field."""
-        if self.current_class_is_abstract:
-            return
-
-        target_file = (
-            self.main_src_dir
-            / f"{self.current_class[0].lower() + self.current_class[1:]}.ts"
-        )
         safename = self.safe_name(name)
         fieldname = shortname(name)
         self.current_fieldtypes[safename] = fieldtype
@@ -480,7 +462,29 @@ export class {cls} {ext} {{
         else:
             optionalstring = ""
 
-        with open(target_file, "a") as f:
+        with open(self.current_interface_target_file, "a") as f:
+            if doc:
+                f.write(
+                    """
+  /**
+{doc_str}
+   */
+""".format(
+                        doc_str=doc_to_doc_string(doc, indent_level=1)
+                    )
+                )
+            f.write(
+                "  {safename}{optionalstring}: {type}\n".format(
+                    safename=safename,
+                    type=fieldtype.instance_type,
+                    optionalstring=optionalstring,
+                )
+            )
+
+        if self.current_class_is_abstract:
+            return
+
+        with open(self.current_class_target_file, "a") as f:
             if doc:
                 f.write(
                     """
