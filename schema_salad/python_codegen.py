@@ -13,7 +13,11 @@ from typing import (
     Union,
 )
 
-import black
+try:
+    import black
+except ModuleNotFoundError:
+    black = None  # type: ignore[assignment]
+
 from pkg_resources import resource_stream
 
 from . import schema
@@ -54,6 +58,11 @@ def fmt(text: str, indent: int) -> str:
 
     :param indent the indent level for the current context
     """
+    if not black:
+        raise Exception(
+            "Must install 'black' to use the Python code generator. "
+            "If installing schema-salad via pip, try `pip install schema-salad[pycodegen]`."
+        )
     return textwrap.indent(
         black.format_str(
             text,
