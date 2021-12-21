@@ -17,7 +17,7 @@ from typing import (
 
 import pkg_resources
 
-from . import schema, _logger
+from . import _logger, schema
 from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname

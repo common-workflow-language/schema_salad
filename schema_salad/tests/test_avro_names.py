@@ -1,6 +1,6 @@
 """Avro related tests."""
-from schema_salad.schema import load_schema
 from schema_salad.avro.schema import Names
+from schema_salad.schema import load_schema
 
 from .util import get_data
 
