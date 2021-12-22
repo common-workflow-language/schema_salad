@@ -11,7 +11,7 @@ export class _UnionLoader implements Loader {
     const errors: ValidationException[] = []
     for (const t of this.alternates) {
       try {
-        return await t.load(doc, baseuri, loadingOptions)
+        return await t.load(doc, baseuri, loadingOptions, docRoot)
       } catch (e) {
         if (e instanceof ValidationException) {
           errors.push(new ValidationException(`tried ${t.constructor.name} but`, [e]))

@@ -39,7 +39,7 @@ export function save (val: any, top: boolean = true, baseUrl: string = '', relat
 }
 
 export function saveRelativeUri (uri: any, baseUrl: string='', scopedId: boolean, relativeUris: boolean, refScope?: number): any {
-  if (relativeUris == null || uri === baseUrl) {
+  if (relativeUris === false || uri === baseUrl) {
     return uri
   }
   if (Array.isArray(uri)) {

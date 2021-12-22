@@ -27,7 +27,7 @@ export async function documentLoad (loader: Loader, doc: unknown, baseuri: strin
       if ('$graph' in doc) {
         return await loader.load(doc.$graph, baseuri, loadingOptions)
       } else {
-        return await loader.load(doc, baseuri, loadingOptions)
+        return await loader.load(doc, baseuri, loadingOptions, baseuri)
       }
     }
   }
