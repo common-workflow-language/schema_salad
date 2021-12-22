@@ -198,7 +198,7 @@ export interface {cls} {ext} {{
             f.write(
                 """
   extensionFields?: Internal.Dictionary<any>
-                    """
+"""
             )
         doc_string = f"""
 /**
