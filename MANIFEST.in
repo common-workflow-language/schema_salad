@@ -2,6 +2,7 @@ include gittaggers.py Makefile LICENSE.txt requirements.txt mypy-requirements.tx
 include schema_salad/py.typed
 include schema_salad/avro/*
 recursive-include schema_salad/java *
+recursive-include schema_salad/typescript *
 include schema_salad/tests/*
 include schema_salad/tests/test_schema/*.md
 include schema_salad/tests/test_schema/*.yml
