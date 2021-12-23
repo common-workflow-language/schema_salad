@@ -1,4 +1,4 @@
-mypy==0.921
+mypy==0.930
 black>=19.10b0
 types-pkg_resources
 types-requests
