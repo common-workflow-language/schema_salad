@@ -68,6 +68,7 @@ describe('Test Typeguards', () => {
   describe('Undefined', () => {
     it('Should return true', () => {
       assert.equal(TypeGuards.Undefined(undefined), true)
+      assert.equal(TypeGuards.Undefined(null), true)
     })
 
     it('Should return false', () => {
@@ -76,7 +77,6 @@ describe('Test Typeguards', () => {
       assert.equal(TypeGuards.Undefined(1), false)
       assert.equal(TypeGuards.Undefined(1.1), false)
       assert.equal(TypeGuards.Undefined({}), false)
-      assert.equal(TypeGuards.Undefined(null), false)
     })
   })
 
