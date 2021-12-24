@@ -17,7 +17,7 @@ export function String (doc: any): boolean {
 }
 
 export function Undefined (doc: any): boolean {
-  return typeof doc === 'undefined'
+  return doc == null
 }
 
 export function isDictionary (doc: any): doc is Dictionary {
