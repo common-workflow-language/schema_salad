@@ -26,7 +26,28 @@ from .schema import avro_field_name, extend_and_specialize, get_metaschema
 from .utils import add_dictlist, aslist
 from .validate import avro_type_name
 
+try:
+    from mistune import Renderer as HTMLRenderer
+
+    mistune_0_renderer = mistune.markdown
+    mistune_2_renderer = None
+except ImportError:  # mistune 2.x
+    from mistune import HTMLRenderer  # type: ignore[attr-defined,no-redef]
+
+    mistune_0_renderer = None  # type: ignore[assignment]
+    mistune_2_renderer = mistune.create_markdown  # type: ignore[attr-defined]
+
+
 _logger = logging.getLogger("salad")
+
+
+def mistune_render(doc: str, renderer: Optional[HTMLRenderer] = None) -> str:
+    """Cope with both mistune 0.8.x and 2.x."""
+    if mistune_0_renderer:
+        return mistune_0_renderer(doc, escape=False, renderer=renderer)
+    return mistune_2_renderer(
+        escape=False, renderer=renderer, plugins=["url", "table"]
+    )(doc)
 
 
 def vocab_type_name(url: str) -> str:
@@ -57,23 +78,29 @@ def linkto(item: str) -> str:
     return f"[{frg}](#{to_id(frg)})"
 
 
-class MyRenderer(mistune.Renderer):
+class MyRenderer(HTMLRenderer):
+    """Custom Mistune HTMLRenderer."""
+
     def __init__(self) -> None:
-        super().__init__()
-        self.options = {}
+        """Never escape input."""
+        super().__init__(escape=False)
 
     def header(self, text: str, level: int, raw: Optional[Any] = None) -> str:
+        """Mistune 0.8.x custom headers."""
+        return self.heading(text, level)
+
+    def heading(self, text: str, level: int) -> str:
+        """Mistune 2.x custom headers."""
         return (
-            """<h{} id="{}" class="section">{} <a href="#{}">&sect;</a></h{}>""".format(
-                level, to_id(text), text, to_id(text), level
-            )
+            f'<h{level} id="{to_id(text)}" class="section">{text} '
+            f'<a href="#{to_id(text)}">&sect;</a></h{level}>'
         )
 
     def table(self, header: str, body: str) -> str:
-        return (
-            '<table class="table table-striped">\n<thead>{}</thead>\n'
-            "<tbody>\n{}</tbody>\n</table>\n"
-        ).format(header, body)
+        """Add our custom CSS classes to <table>."""
+        table = f'<table class="table table-striped">\n<thead>{header}</thead>\n'
+        table += f"<tbody>\n{body}</tbody>\n</table>\n"
+        return table
 
 
 def to_id(text: str) -> str:
@@ -423,7 +450,7 @@ class RenderType:
 
         doc = doc + "\n\n" + f["doc"]
 
-        doc = mistune.markdown(doc, renderer=MyRenderer())
+        doc = mistune_render(doc, renderer=MyRenderer())
 
         if f["type"] == "record":
             doc += "<h3>Fields</h3>"
@@ -463,7 +490,7 @@ class RenderType:
                     self.typefmt(
                         tp, self.redirects, jsonldPredicate=i.get("jsonldPredicate")
                     ),
-                    mistune.markdown(desc),
+                    mistune_render(desc),
                 )
                 if opt:
                     required.append(tr)
