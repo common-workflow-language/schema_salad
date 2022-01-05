@@ -525,13 +525,22 @@ export enum {enum_name} {{
                 )
             )
         if fieldname == "class":
-            self.current_constructor_signature.write(
-                ", {safename} = {type}.{val}".format(
-                    safename=safename,
-                    type=fieldtype.instance_type,
-                    val=self.current_class.replace("-", "_").replace(".", "_").upper(),
+            if fieldtype.instance_type == "string":
+                self.current_constructor_signature.write(
+                    ", {safename} = '{val}'".format(
+                        safename=safename, val=self.current_class
+                    )
                 )
-            )
+            else:
+                self.current_constructor_signature.write(
+                    ", {safename} = {type}.{val}".format(
+                        safename=safename,
+                        type=fieldtype.instance_type,
+                        val=self.current_class.replace("-", "_")
+                        .replace(".", "_")
+                        .upper(),
+                    )
+                )
         else:
             self.current_constructor_signature.write(
                 ", {safename}".format(
