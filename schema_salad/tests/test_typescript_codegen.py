@@ -46,6 +46,35 @@ def test_meta_schema_gen(tmp_path: Path) -> None:
         )
 
 
+def test_class_field(tmp_path: Path) -> None:
+    schema_path = get_data_uri("tests/class_field_test.yml")
+    assert schema_path
+    target_dir = tmp_path / "target"
+
+    target_dir.mkdir()
+    typescript_codegen(schema_path, target_dir)
+
+    package_json_path = target_dir / "package.json"
+    assert package_json_path.exists
+
+    tests_dir = target_dir / "src" / "test"
+    assert tests_dir.exists()
+
+    with open(target_dir / "src" / "ClassFieldString.ts") as f:
+        assert (
+            "  constructor ({loadingOptions, extensionFields, class_ = 'ClassFieldString'} :"
+            + " {loadingOptions?: LoadingOptions} & Internal.ClassFieldStringProperties) {\n"
+            in f.read()
+        )
+    with open(target_dir / "src" / "ClassFieldEnum.ts") as f:
+        assert (
+            "  constructor ({loadingOptions, extensionFields, class_ = "
+            + "Internal.ClassFieldEnum_class.CLASSFIELDENUM} :"
+            + " {loadingOptions?: LoadingOptions} & Internal.ClassFieldEnumProperties) {\n"
+            in f.read()
+        )
+
+
 def get_data_uri(resource_path: str) -> str:
     path = get_data(resource_path)
     assert path
