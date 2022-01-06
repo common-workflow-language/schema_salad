@@ -4,7 +4,8 @@
   "description": "${project_description}",
   "main": "index.js",
   "scripts": {
-    "test": "nyc --reporter=lcov mocha --require ts-node/register src/test/**/*.ts"
+    "test": "nyc --reporter=lcov mocha --require ts-node/register src/test/**/*.ts",
+    "doc": "rm -rf ./docs && typedoc src/index.ts"
   },
   "license": "${license_name}",
   "devDependencies": {
@@ -22,6 +23,7 @@
     "nyc": "^15.1.0",
     "sinon": "^12.0.1",
     "ts-node": "^10.4.0",
+    "typedoc": "^0.22.10",
     "typescript": "^4.4.4",
     "codecov.io": "^0.1.6"
   },
