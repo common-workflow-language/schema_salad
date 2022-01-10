@@ -6,7 +6,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "nyc --reporter=lcov mocha --require ts-node/register src/test/**/*.ts",
-    "doc": "rm -rf ./docs && typedoc src/index.ts"
+    "doc": "rimraf ./docs && typedoc src/index.ts"
   },
   "license": "${license_name}",
   "devDependencies": {
@@ -26,7 +26,8 @@
     "ts-node": "^10.4.0",
     "typedoc": "^0.22.10",
     "typescript": "^4.4.4",
-    "codecov.io": "^0.1.6"
+    "codecov.io": "^0.1.6",
+    "rimraf": "^3.0.2"
   },
   "dependencies": {
     "js-yaml": "^4.1.0",
