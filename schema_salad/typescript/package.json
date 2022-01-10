@@ -2,7 +2,8 @@
   "name": "${project_name}",
   "version": "${version}",
   "description": "${project_description}",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "nyc --reporter=lcov mocha --require ts-node/register src/test/**/*.ts",
     "doc": "rm -rf ./docs && typedoc src/index.ts"
@@ -32,5 +33,8 @@
     "node-fetch": "^2.6.6",
     "uri-js": "^4.4.1",
     "uuid": "^8.3.2"
-  }
+  },
+  "files": [
+    "/dist"
+  ]
 }
