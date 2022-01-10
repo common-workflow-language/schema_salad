@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
+    "build": "rimraf ./dist && tsc",
     "test": "nyc --reporter=lcov mocha --require ts-node/register src/test/**/*.ts",
     "doc": "rimraf ./docs && typedoc src/index.ts"
   },
