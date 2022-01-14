@@ -446,11 +446,16 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                 "https://w3id.org/cwl/salad#array",
             ):
                 i = self.type_loader(type_declaration["items"])
+                instance_type = (
+                    "java.util.List<String>"
+                    if i.instance_type == "String"
+                    else "java.util.List<Object>"
+                )
                 return self.declare_type(
                     TypeDef(
                         # special doesn't work out with subclassing, gotta be more clever
                         # instance_type="List<{}>".format(i.instance_type),
-                        instance_type="java.util.List<Object>",
+                        instance_type=instance_type,
                         name=f"array_of_{i.name}",
                         init=f"new ArrayLoader({i.name})",
                         loader_type="Loader<java.util.List<{}>>".format(
