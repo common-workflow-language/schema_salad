@@ -495,14 +495,22 @@ export enum {enum_name} {{
                         doc_str=doc_to_doc_string(doc, indent_level=1)
                     )
                 )
-            f.write(
-                "  {safename}{optionalstring}: {type}\n".format(
-                    safename=safename,
-                    type=fieldtype.instance_type,
-                    optionalstring=optionalstring,
+            if fieldname == "class":
+                f.write(
+                    "  {safename}{optionalstring}: {type}\n".format(
+                        safename=safename,
+                        type=fieldtype.instance_type,
+                        optionalstring="?",
+                    )
                 )
-            )
-
+            else:
+                f.write(
+                    "  {safename}{optionalstring}: {type}\n".format(
+                        safename=safename,
+                        type=fieldtype.instance_type,
+                        optionalstring=optionalstring,
+                    )
+                )
         if self.current_class_is_abstract:
             return
 
