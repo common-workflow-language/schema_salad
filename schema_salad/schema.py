@@ -562,7 +562,7 @@ def make_valid_avro(
         if "symbols" in avro:
             avro["symbols"] = [avro_field_name(sym) for sym in avro["symbols"]]
         return avro
-    if isinstance(items, MutableSequence):
+    if items and isinstance(items, MutableSequence):
         ret = []
         for i in items:
             ret.append(
