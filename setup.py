@@ -77,9 +77,7 @@ install_requires = [
     "ruamel.yaml >= 0.12.4, != 0.16.6, < 0.18",
     # once the minimum version for ruamel.yaml >= 0.15.99
     # then please update the mypy targets in the Makefile
-    "rdflib >= 4.2.2, < 6.0.0;python_version<='3.6'",
     "rdflib >= 4.2.2, < 7.0.0",
-    "rdflib-jsonld >= 0.3.0, <= 0.6.1;python_version<='3.6'",
     "mistune >= 0.8.1, < 2.1",
     "CacheControl >= 0.11.7, < 0.13",
     "lockfile >= 0.9",  # needed for CacheControl's FileCache
@@ -102,7 +100,7 @@ setup(
     download_url="https://github.com/common-workflow-language/schema_salad/releases",
     ext_modules=ext_modules,
     license="Apache 2.0",
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     setup_requires=pytest_runner,
     packages=["schema_salad", "schema_salad.tests"],
     package_data={"schema_salad": ["metaschema/*", "py.typed"]},
@@ -126,7 +124,6 @@ setup(
         "Operating System :: POSIX",
         "Operating System :: MacOS :: MacOS X",
         "Development Status :: 5 - Production/Stable",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

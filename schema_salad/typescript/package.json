@@ -2,9 +2,12 @@
   "name": "${project_name}",
   "version": "${version}",
   "description": "${project_description}",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "test": "nyc --reporter=lcov mocha --require ts-node/register src/test/**/*.ts"
+    "build": "rimraf ./dist && tsc",
+    "test": "nyc --reporter=lcov mocha --require ts-node/register src/test/**/*.ts",
+    "doc": "rimraf ./docs && typedoc src/index.ts"
   },
   "license": "${license_name}",
   "devDependencies": {
@@ -22,13 +25,18 @@
     "nyc": "^15.1.0",
     "sinon": "^12.0.1",
     "ts-node": "^10.4.0",
+    "typedoc": "^0.22.10",
     "typescript": "^4.4.4",
-    "codecov.io": "^0.1.6"
+    "codecov.io": "^0.1.6",
+    "rimraf": "^3.0.2"
   },
   "dependencies": {
     "js-yaml": "^4.1.0",
     "node-fetch": "^2.6.6",
     "uri-js": "^4.4.1",
     "uuid": "^8.3.2"
-  }
+  },
+  "files": [
+    "/dist"
+  ]
 }

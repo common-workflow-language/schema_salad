@@ -94,7 +94,7 @@ public class LoadingOptions {
       final ArrayList<String> sp = new ArrayList(Arrays.asList(splitbase.fragment.split("/")));
       int n = scopedRef;
       while (n > 0 && sp.size() > 0) {
-        sp.remove(0);
+        sp.remove(sp.size()-1);
         n -= 1;
       }
       sp.add(url);
