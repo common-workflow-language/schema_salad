@@ -13,15 +13,14 @@ from typing import (
 )
 from urllib.parse import urlsplit
 
-
 from . import schema
 from .codegen_base import CodeGenBase
 from .exceptions import SchemaSaladException
 from .java_codegen import JavaCodeGen
 from .python_codegen import PythonCodeGen
-from .typescript_codegen import TypeScriptCodeGen
 from .ref_resolver import Loader
 from .schema import shortname
+from .typescript_codegen import TypeScriptCodeGen
 from .utils import aslist
 
 FIELD_SORT_ORDER = ["id", "class", "name"]

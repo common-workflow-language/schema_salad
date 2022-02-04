@@ -14,6 +14,7 @@ import requests
 from _pytest.tmpdir import TempPathFactory
 
 from schema_salad.avro.schema import Names, SchemaParseException
+from schema_salad.exceptions import ValidationException
 from schema_salad.ref_resolver import Loader
 from schema_salad.schema import load_and_validate, load_schema
 
@@ -64,3 +65,13 @@ def test_outputBinding(cwl_v1_2_schema: SchemaType) -> None:
         cwl_v1_2_schema, src="test_real_cwl/bio-cwl-tools/bamtools_stats.cwl"
     )
     print(f"the res:{res}")
+
+
+def test_yaml_tab_error(cwl_v1_2_schema: SchemaType) -> None:
+    """Tabs in the file."""
+    with pytest.raises(
+        ValidationException,
+        match=r".+found\s+character\s+'\\t'\s+that\s+cannot\s+start\s+any\s+token$",
+    ):
+        res = load_cwl(cwl_v1_2_schema, src="test_real_cwl/tabs_rna_seq_workflow.cwl")
+        print(res)

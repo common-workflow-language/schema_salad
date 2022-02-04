@@ -17,11 +17,11 @@ from typing import (
 
 import pkg_resources
 
-from . import schema, _logger
+from . import _logger, schema
 from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
-from .schema import shortname
 from .java_codegen import _ensure_directory_and_write, _safe_makedirs
+from .schema import shortname
 
 
 def doc_to_doc_string(doc: Optional[str], indent_level: int = 0) -> str:
