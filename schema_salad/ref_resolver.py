@@ -91,9 +91,10 @@ def to_validation_exception(e: MarkedYAMLError) -> ValidationException:
 
     if e.context:
         parent = ValidationException(e.context)
-        mark = e.context_mark
-        parent.file = re.sub(fname_regex, "", mark.name)
-        parent.start = (mark.line + 1, mark.column + 1)
+        context_mark = e.context_mark
+        if context_mark:
+            parent.file = re.sub(fname_regex, "", context_mark.name)
+            parent.start = (context_mark.line + 1, context_mark.column + 1)
         parent.end = None
         parent.children = [exc]
         return parent
