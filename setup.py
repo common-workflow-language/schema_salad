@@ -18,7 +18,7 @@ except ImportError:
     tagger = egg_info_cmd.egg_info
 
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
-pytest_runner: List[str] = ["pytest < 7", "pytest-runner"] if needs_pytest else []
+pytest_runner: List[str] = ["pytest < 8", "pytest-runner"] if needs_pytest else []
 
 USE_MYPYC = False
 # To compile with mypyc, a mypyc checkout must be present on the PYTHONPATH
@@ -84,7 +84,7 @@ install_requires = [
 ]
 
 extras_require = {
-    "docs": ["sphinx >= 2.2", "sphinx-rtd-theme", "pytest < 7"],
+    "docs": ["sphinx >= 2.2", "sphinx-rtd-theme", "pytest < 8"],
     "pycodegen": ["black"],
 }
 
