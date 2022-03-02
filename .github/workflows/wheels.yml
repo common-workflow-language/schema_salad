@@ -8,7 +8,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Build manylinux2010 Python wheels
       uses: RalfG/python-wheels-manylinux-build@v0.3.4-manylinux2010_x86_64
       with:
@@ -33,7 +33,7 @@ jobs:
   deploy_aarch64:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
     - name: Build manylinux2014 Python wheels
