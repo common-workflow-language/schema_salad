@@ -34,7 +34,8 @@ public class SecondaryFilesDslLoader<T> implements Loader<T> {
 	  }
 	  r.add(entry);
 	} else if (d instanceof Map) {
-	  Map<String, Object> dMap = (Map<String, Object>) d;
+	  @SuppressWarnings("unchecked")
+	  Map<String, Object> dMap = new HashMap<String, Object>((Map<String, Object>) d);
 	  if (dMap.containsKey("pattern")) {
             entry.put("pattern", dMap.remove("pattern"));
 	  } else {
@@ -53,7 +54,8 @@ public class SecondaryFilesDslLoader<T> implements Loader<T> {
       }
     } else if (doc instanceof Map) {
       Map<String, Object> entry = new HashMap<String, Object>();
-      Map<String, Object> dMap = (Map<String, Object>) doc;
+      @SuppressWarnings("unchecked")
+      Map<String, Object> dMap = new HashMap<String, Object>((Map<String, Object>) doc);
       if (dMap.containsKey("pattern")) {
         entry.put("pattern", dMap.remove("pattern"));
       } else {
