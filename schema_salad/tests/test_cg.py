@@ -177,6 +177,16 @@ def test_load_pt() -> None:
     ] == doc.symbols
 
 
+def test_shortname() -> None:
+    """Test shortname() function."""
+    assert cg_metaschema.shortname("http://example.com/foo") == "foo"
+    assert cg_metaschema.shortname("http://example.com/#bar") == "bar"
+    assert cg_metaschema.shortname("http://example.com/foo/bar") == "bar"
+    assert cg_metaschema.shortname("http://example.com/foo#bar") == "bar"
+    assert cg_metaschema.shortname("http://example.com/#foo/bar") == "bar"
+    assert cg_metaschema.shortname("http://example.com/foo#bar/baz") == "baz"
+
+
 @pytest.fixture
 def metaschema_pre() -> Any:
     """Prep-parsed schema for testing."""
