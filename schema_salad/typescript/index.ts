@@ -2,6 +2,6 @@ export {
   loadDocument,
   loadDocumentByString,
   ValidationException,
-  shortName,
+  shortname,
   ${generated_class_imports}
 } from './util/Internal'
