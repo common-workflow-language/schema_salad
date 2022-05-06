@@ -672,6 +672,12 @@ def is_subtype(existing: PropType, new: PropType) -> bool:
         return True
     if isinstance(existing, list) and (new in existing):
         return True
+    if existing == "Any":
+        if new is None or new == [] or new == ["null"] or new == "null":
+            return False
+        if isinstance(new, list) and "null" in new:
+            return False
+        return True
     if (
         isinstance(existing, dict)
         and "type" in existing
@@ -681,6 +687,33 @@ def is_subtype(existing: PropType, new: PropType) -> bool:
         and new["type"] == "array"
     ):
         return is_subtype(existing["items"], new["items"])
+    if (
+        isinstance(existing, dict)
+        and "type" in existing
+        and existing["type"] == "enum"
+        and isinstance(new, dict)
+        and "type" in new
+        and new["type"] == "enum"
+    ):
+        return is_subtype(existing["symbols"], new["symbols"])
+    if (
+        isinstance(existing, dict)
+        and "type" in existing
+        and existing["type"] == "record"
+        and isinstance(new, dict)
+        and "type" in new
+        and new["type"] == "record"
+    ):
+        for new_field in cast(List[Dict[str, Any]], new["fields"]):
+            new_field_missing = True
+            for existing_field in cast(List[Dict[str, Any]], existing["fields"]):
+                if new_field["name"] == existing_field["name"]:
+                    if not is_subtype(existing_field["type"], new_field["type"]):
+                        return False
+                    new_field_missing = False
+            if new_field_missing:
+                return False
+        return True
     if isinstance(existing, list) and isinstance(new, list):
         missing = False
         for _type in new:

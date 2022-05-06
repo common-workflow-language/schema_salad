@@ -14,6 +14,35 @@ types = [
         {"type": "array", "items": ["int", "float"]},
         True,
     ),
+    ("Any", "int", True),
+    ("Any", ["int", "null"], False),
+    ("Any", ["int"], True),
+    (
+        {"type": "enum", "symbols": ["homo_sapiens", "mus_musculus"]},
+        {"type": "enum", "symbols": ["homo_sapiens"]},
+        True,
+    ),
+    (
+        {"type": "enum", "symbols": ["homo_sapiens", "mus_musculus"]},
+        {"type": "enum", "symbols": ["homo_sapiens", "drosophila_melanogaster"]},
+        False,
+    ),
+    (
+        {"type": "record", "fields": [{"name": "species", "type": "string"}]},
+        {"type": "enum", "symbols": ["homo_sapiens"]},
+        False,
+    ),
+    (
+        {
+            "type": "record",
+            "fields": [
+                {"name": "species", "type": "string"},
+                {"name": "id", "type": "int"},
+            ],
+        },
+        {"type": "record", "fields": [{"name": "species", "type": "string"}]},
+        True,
+    ),
 ]
 
 
