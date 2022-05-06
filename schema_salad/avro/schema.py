@@ -477,7 +477,7 @@ class RecordSchema(NamedSchema):
     def make_field_objects(field_data: List[PropsType], names: Names) -> List[Field]:
         """We're going to need to make message parameters too."""
         field_objects = []  # type: List[Field]
-        field_names = []  # type: List[str]
+        parsed_fields: Dict[str, PropsType] = {}
         for field in field_data:
             if hasattr(field, "get") and callable(field.get):
                 atype = field.get("type")
@@ -504,10 +504,19 @@ class RecordSchema(NamedSchema):
                     atype, name, has_default, default, order, names, doc, other_props
                 )
                 # make sure field name has not been used yet
-                if new_field.name in field_names:
-                    fail_msg = f"Field name {new_field.name} already in use."
-                    raise SchemaParseException(fail_msg)
-                field_names.append(new_field.name)
+                if new_field.name in parsed_fields:
+                    old_field = parsed_fields[new_field.name]
+                    if "inherited_from" not in old_field:
+                        raise SchemaParseException(
+                            f"Field name {new_field.name} already in use."
+                        )
+                    if not is_subtype(old_field["type"], field["type"]):
+                        raise SchemaParseException(
+                            f"Field name {new_field.name} already in use with "
+                            "incompatible type. "
+                            f"{field['type']} vs {old_field['type']}."
+                        )
+                parsed_fields[new_field.name] = field
             else:
                 raise SchemaParseException(f"Not a valid field: {field}")
             field_objects.append(new_field)
@@ -655,3 +664,29 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
     # not for us!
     fail_msg = f"Could not make an Avro Schema object from {json_data}."
     raise SchemaParseException(fail_msg)
+
+
+def is_subtype(existing: PropType, new: PropType) -> bool:
+    """Checks if a new type specification is compatible with an existing type spec."""
+    if existing == new:
+        return True
+    if isinstance(existing, list) and (new in existing):
+        return True
+    if (
+        isinstance(existing, dict)
+        and "type" in existing
+        and existing["type"] == "array"
+        and isinstance(new, dict)
+        and "type" in new
+        and new["type"] == "array"
+    ):
+        return is_subtype(existing["items"], new["items"])
+    if isinstance(existing, list) and isinstance(new, list):
+        missing = False
+        for _type in new:
+            if _type not in existing and (
+                not is_subtype(existing, cast(PropType, _type))
+            ):
+                missing = True
+        return not missing
+    return False
