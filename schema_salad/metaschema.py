@@ -22,7 +22,7 @@ from typing import (
     Type,
     Union,
 )
-from urllib.parse import quote, urlsplit, urlunsplit, urlparse
+from urllib.parse import quote, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
 from ruamel.yaml.comments import CommentedMap

@@ -20,3 +20,7 @@ $graph:
   doc: |
     This is an arbitrary abstract thing from a base schema that might
     be extended.
+  fields:
+    override_me:
+      type: [ string, int ]
+      jsonldPredicate: "bs:override_me"

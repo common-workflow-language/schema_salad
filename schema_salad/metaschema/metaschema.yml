@@ -309,7 +309,8 @@ $graph:
       type: boolean?
       doc: |
         If true, this record is abstract and may be used as a base for other
-        records, but is not valid on its own.
+        records, but is not valid on its own. Inherited fields may be
+        re-specified to narrow their type.
 
     - name: extends
       type:
@@ -321,7 +322,7 @@ $graph:
         refScope: 1
       doc: |
         Indicates that this record inherits fields from one or more base records.
-
+        Inherited fields may be re-specified to narrow their type.
     - name: specialize
       type:
         - SpecializeDef[]?

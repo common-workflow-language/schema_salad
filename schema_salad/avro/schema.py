@@ -303,7 +303,7 @@ class Field:
                 type_schema = make_avsc_object(atype, names)
             except Exception as e:
                 raise SchemaParseException(
-                    f'Type property "{atype}" not a valid Avro schema.'
+                    f'Type property "{atype}" not a valid Avro schema: {e}'
                 ) from e
         self.set_prop("type", type_schema)
         self.set_prop("name", name)
@@ -409,8 +409,8 @@ class ArraySchema(Schema):
                 items_schema = make_avsc_object(items, names)
             except Exception as err:
                 raise SchemaParseException(
-                    f"Items schema ({items}) not a valid Avro schema: (known "
-                    f"names: {list(names.names.keys())})."
+                    f"Items schema ({items}) not a valid Avro schema: {err}. "
+                    f"Known names: {list(names.names.keys())})."
                 ) from err
 
         self.set_prop("items", items_schema)
@@ -451,7 +451,7 @@ class UnionSchema(Schema):
                     new_schema = make_avsc_object(schema, names)
                 except Exception as err:
                     raise SchemaParseException(
-                        f"Union item must be a valid Avro schema: {schema}"
+                        f"Union item must be a valid Avro schema: {err}; {schema},"
                     ) from err
             # check the new schema
             if (
@@ -506,10 +506,6 @@ class RecordSchema(NamedSchema):
                 # make sure field name has not been used yet
                 if new_field.name in parsed_fields:
                     old_field = parsed_fields[new_field.name]
-                    if "inherited_from" not in old_field:
-                        raise SchemaParseException(
-                            f"Field name {new_field.name} already in use."
-                        )
                     if not is_subtype(old_field["type"], field["type"]):
                         raise SchemaParseException(
                             f"Field name {new_field.name} already in use with "
