@@ -98,3 +98,21 @@ export function prefixUrl (url: string, namespaces: Dictionary<string>): string 
   }
   return url
 }
+
+/**
+ * Compute the shortname of a fully qualified identifer.
+ * See https://w3id.org/cwl/v1.2/SchemaSalad.html#Short_names. 
+ *
+ */
+export function shortName (inputId: string): string {
+  const parsedId = URI.parse(inputId)
+  if (parsedId.fragment != null) {
+    const fragmentSplit = parsedId.fragment.split('/')
+    return fragmentSplit[fragmentSplit.length - 1]
+  } else if (parsedId.path != null) {
+    const pathSplit = parsedId.path.split('/')
+    return pathSplit[pathSplit.length - 1]
+  } else {
+    return inputId
+  }
+}
