@@ -9,6 +9,7 @@ Contributors:
 * The developers of Apache Avro
 * The developers of JSON-LD
 * Nebojša Tijanić <nebojsa.tijanic@sbgenomics.com>, Seven Bridges Genomics
+* Michael R. Crusoe, ELIXIR-DE
 
 # Abstract
 
@@ -85,6 +86,13 @@ specification, the following changes have been made:
 * The `$mixin` feature has been removed from the specification, as it
   is poorly documented, not included in conformance testing,
   and not widely supported.
+
+## Introduction to v1.2
+
+This is the fourth version of the Schema Salad specification. It was created to
+ease the development of extensions to CWL v1.2. The only change is that
+inherited records can narrow the types of fields if those fields are re-specified
+with a matching jsonldPredicate.
 
 ## References to Other Specifications
 
