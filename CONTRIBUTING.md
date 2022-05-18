@@ -1,5 +1,5 @@
 Style guide:
-- Python 3.7+ compatible code
+- Python 3.6+ compatible code
 - PEP-484 type hints
 - Prefer new style format strings https://pyformat.info/
 - Use ``make format`` to format your code
