@@ -66,8 +66,8 @@ def fmt(text: str, indent: int) -> str:
     return textwrap.indent(
         black.format_str(
             text,
-            mode=black.Mode(
-                target_versions={black.TargetVersion.PY36}, line_length=88 - indent
+            mode=black.mode.Mode(
+                target_versions={black.mode.TargetVersion.PY36}, line_length=88 - indent
             ),
         ),
         " " * indent,
