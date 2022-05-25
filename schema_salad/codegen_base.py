@@ -1,19 +1,44 @@
 """Base class for the generation of loaders from schema-salad definitions."""
 from collections import OrderedDict
-from typing import Any, Dict, List, MutableSequence, NamedTuple, Optional, Set, Union
+from typing import Any, Dict, List, MutableSequence, Optional, Set, Union
 
 
-class TypeDef(NamedTuple):
+class TypeDef:  # pylint: disable=too-few-public-methods
     """Schema Salad type description."""
 
-    name: str
-    init: str
-    is_uri: bool = False
-    scoped_id: bool = False
-    ref_scope: Optional[int] = 0
-    loader_type: Optional[str] = None
-    instance_type: Optional[str] = None
-    abstract: bool = False
+    __slots__ = [
+        "name",
+        "init",
+        "is_uri",
+        "scoped_id",
+        "ref_scope",
+        "loader_type",
+        "instance_type",
+        "abstract",
+    ]
+
+    # switch to class-style typing.NamedTuple once support for Python < 3.6
+    # is dropped
+    def __init__(
+        self,  # pylint: disable=too-many-arguments
+        name: str,
+        init: str,
+        is_uri: bool = False,
+        scoped_id: bool = False,
+        ref_scope: Optional[int] = 0,
+        loader_type: Optional[str] = None,
+        instance_type: Optional[str] = None,
+        abstract: bool = False,
+    ) -> None:
+        self.name = name
+        self.init = init
+        self.is_uri = is_uri
+        self.scoped_id = scoped_id
+        self.ref_scope = ref_scope
+        self.abstract = abstract
+        # Follow attributes used by Java but not Python.
+        self.loader_type = loader_type
+        self.instance_type = instance_type
 
 
 class CodeGenBase:
