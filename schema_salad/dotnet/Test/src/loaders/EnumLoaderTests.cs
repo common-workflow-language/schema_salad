@@ -17,7 +17,7 @@ public class EnumLoaderTests
         public static readonly TestEnum A = new TestEnum("A");
         public static readonly TestEnum B = new TestEnum("B");
         public static readonly TestEnum C = new TestEnum("C");
-        public static readonly TestEnum C = new TestEnum("D");
+        public static readonly TestEnum D = new TestEnum("D");
         public string Name
         {
             get { return _Name; }
