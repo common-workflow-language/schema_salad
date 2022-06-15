@@ -43,6 +43,11 @@ def codegen(
 
     gen = None  # type: Optional[CodeGenBase]
     base = schema_metadata.get("$base", schema_metadata.get("id"))
+    # ``urlsplit`` decides whether to return an encoded result based
+    # on the object type. To ensure the code behaves the same for Py
+    # 3.6+, we enforce that the input value is of type ``str``.
+    if base is None:
+        base = ""
     sp = urlsplit(base)
     pkg = (
         package
