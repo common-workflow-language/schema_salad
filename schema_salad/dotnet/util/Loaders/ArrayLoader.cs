@@ -4,9 +4,9 @@ namespace ${project_name};
 
 internal class ArrayLoader<T> : ILoader<List<T>>
 {
-    private readonly ILoader<T> itemLoader;
+    private readonly ILoader itemLoader;
 
-    public ArrayLoader(in ILoader<T> itemLoader)
+    public ArrayLoader(in ILoader itemLoader)
     {
         this.itemLoader = itemLoader;
     }

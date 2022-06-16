@@ -7,8 +7,15 @@ public interface ISavable
     public static abstract ISavable FromDoc(object doc, string baseUri, LoadingOptions loadingOptions, string? docRoot = null);
     public abstract Dictionary<object, object> Save(bool top, string baseUrl, bool relativeUris);
 
-    public static object Save(object val, bool top = true, string baseurl = "", bool relativeUris = true)
+    public static object Save(object val_, bool top = true, string baseurl = "", bool relativeUris = true)
     {
+        object val = val_;
+
+        if(val is IEnumClass) 
+        {
+            val = val.ToString()!;
+        }
+
         if (val is ISavable valSaveable)
         {
             return valSaveable.Save(top, baseurl, relativeUris);
@@ -41,8 +48,15 @@ public interface ISavable
         return val;
     }
 
-    public static object SaveRelativeUri(object uri, bool scopedId, bool relativeUris, int? refScope, string baseUrl = "")
+    public static object SaveRelativeUri(object uri_, bool scopedId, bool relativeUris, int? refScope, string baseUrl = "")
     {
+        object uri = uri_;
+
+        if(uri is IEnumClass) 
+        {
+            uri = uri.ToString()!;
+        }
+
         if (relativeUris == false || (uri is string @string && @string == baseUrl))
         {
             return uri;
