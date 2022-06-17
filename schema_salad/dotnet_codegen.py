@@ -116,9 +116,7 @@ class DotNetCodeGen(CodeGenBase):
         self.test_resources_dir = self.test_src_dir / "data"
         self.package = package
         self.base_uri = base
-        self.record_types: Set[str] = set()
-        self.modules: Set[str] = set()
-        self.id_field = ""
+        # self.id_field = "" is this needed?
         self.examples = examples
 
     def prologue(self) -> None:
@@ -172,6 +170,7 @@ class DotNetCodeGen(CodeGenBase):
         class_module_name = self.current_class
         self.current_class_target_file = self.main_src_dir / f"{class_module_name}.cs"
         self.current_constructor_signature = StringIO()
+        self.current_constructor_signature_optionals = StringIO()
         self.current_constructor_body = StringIO()
         self.current_loader = StringIO()
         self.current_serializer = StringIO()
@@ -188,8 +187,6 @@ class DotNetCodeGen(CodeGenBase):
             doc_string += "\n"
         doc_string += "/// </summary>"
 
-        self.record_types.add(f"{self.current_interface}")
-        self.modules.add(interface_module_name)
         with open(self.current_interface_target_file, "w") as f:
             _logger.info("Writing file: %s", self.current_interface_target_file)
             if extends:
@@ -197,7 +194,8 @@ class DotNetCodeGen(CodeGenBase):
             else:
                 ext = ""
             f.write(
-                """using LanguageExt;
+                """#pragma warning disable CS0108
+using LanguageExt;
 
 namespace {package};
 {docstring}
@@ -212,8 +210,6 @@ public interface {cls} {ext} {{
         if self.current_class_is_abstract:
             return
 
-        self.record_types.add(cls)
-        self.modules.add(class_module_name)
         doc_string = f"""
 /// <summary>
 /// Auto-generated class implementation for {classname}
@@ -294,6 +290,9 @@ public class {cls} : {current_interface}, ISavable {{
             return
 
         self.current_constructor_signature.write(
+            self.current_constructor_signature_optionals.getvalue()
+        )
+        self.current_constructor_signature.write(
             (
                 "LoadingOptions? loadingOptions = null, "
                 "Dictionary<object, object>? extensionFields = null) {"
@@ -363,7 +362,7 @@ public class {cls} : {current_interface}, ISavable {{
         return r;
     }
 
-            """
+"""
         )
         with open(
             self.current_class_target_file,
@@ -374,8 +373,7 @@ public class {cls} : {current_interface}, ISavable {{
             f.write(self.current_loader.getvalue())
             f.write(self.current_serializer.getvalue())
             f.write(
-                "\n"
-                + "    static readonly System.Collections.Generic.HashSet<string>"
+                "    static readonly System.Collections.Generic.HashSet<string>"
                 + "attr = new() { "
                 + ", ".join(['"' + shortname(f) + '"' for f in field_names])
                 + " };"
@@ -480,8 +478,6 @@ public class {cls} : {current_interface}, ISavable {{
         enum_name = self.safe_name(type_declaration["name"])
         enum_module_name = enum_name
         enum_path = self.main_src_dir / f"{enum_module_name}.cs"
-        self.modules.add(enum_module_name)
-        self.record_types.add(enum_name)
         with open(enum_path, "w") as f:
             _logger.info("Writing file: %s", enum_path)
             f.write(
@@ -583,6 +579,14 @@ public class {enum_name} : IEnumClass<{enum_name}>
         safename = self.safe_name(name)
         fieldname = shortname(name)
         self.current_fieldtypes[safename] = fieldtype
+        if (
+            fieldtype.instance_type is not None
+            and not fieldtype.instance_type.startswith("Option<")
+            and optional
+        ):
+            optionalstring = "?"
+        else:
+            optionalstring = ""
 
         with open(self.current_interface_target_file, "a") as f:
             if doc:
@@ -597,16 +601,18 @@ public class {enum_name} : IEnumClass<{enum_name}>
                 )
             if fieldname == "class":
                 f.write(
-                    "    public new {type} {safename} {{ get; set; }}\n".format(
+                    "    public {type}{optionalstring} {safename} {{ get; set; }}\n".format(
                         safename=safename,
                         type=fieldtype.instance_type,
+                        optionalstring=optionalstring,
                     )
                 )
             else:
                 f.write(
-                    "    public {type} {safename} {{ get; set; }}\n".format(
+                    "    public {type}{optionalstring} {safename} {{ get; set; }}\n".format(
                         safename=safename,
                         type=fieldtype.instance_type,
+                        optionalstring=optionalstring,
                     )
                 )
         if self.current_class_is_abstract:
@@ -624,31 +630,62 @@ public class {enum_name} : IEnumClass<{enum_name}>
                     )
                 )
             f.write(
-                "    public {type} {safename} {{ get; set; }}\n".format(
-                    safename=safename, type=fieldtype.instance_type
+                "    public {type}{optionalstring} {safename} {{ get; set; }}\n".format(
+                    safename=safename,
+                    type=fieldtype.instance_type,
+                    optionalstring=optionalstring,
                 )
             )
         if fieldname == "class":
             if fieldtype.instance_type == "string":
-                self.current_constructor_signature.write(
-                    "string {safename},".format(safename=safename)
+                self.current_constructor_signature_optionals.write(
+                    "string {safename}={val}, ".format(
+                        safename=safename, val=self.current_class
+                    )
                 )
             else:
-                self.current_constructor_signature.write(
-                    "{type} {safename},".format(
+                self.current_constructor_signature_optionals.write(
+                    "{type}? {safename} = null, ".format(
                         safename=safename, type=fieldtype.instance_type
                     )
                 )
         else:
-            self.current_constructor_signature.write(
-                "{type} {safename},".format(
-                    safename=safename,
+            if not optional:
+                self.current_constructor_signature.write(
+                    "{type} {safename}, ".format(
+                        safename=safename,
+                        type=fieldtype.instance_type,
+                    )
+                )
+            else:
+                if (fieldtype.instance_type is not None 
+                and fieldtype.instance_type.startswith("Option<")):
+                    self.current_constructor_signature_optionals.write(
+                        "{type} {safename} = new {type}(), ".format(
+                            safename=safename,
+                            type=fieldtype.instance_type,
+                        )
+                    )
+                else:
+                    self.current_constructor_signature_optionals.write(
+                        "{type}? {safename} = null, ".format(
+                            safename=safename,
+                            type=fieldtype.instance_type,
+                        )
+                    )
+        if fieldname == "class" and fieldtype.instance_type != "string":
+            self.current_constructor_body.write(
+                "        this.{safeName} = {safeName} ?? {type}.{val};\n".format(
+                    safeName=safename,
                     type=fieldtype.instance_type,
+                    val=self.current_class.replace("-", "_").replace(".", "_").upper(),
                 )
             )
-        self.current_constructor_body.write(
-            "        this.{safeName} = {safeName};\n".format(safeName=safename)
-        )
+
+        else:
+            self.current_constructor_body.write(
+                "        this.{safeName} = {safeName};\n".format(safeName=safename)
+            )
 
         self.current_loader.write(
             """
@@ -722,7 +759,8 @@ public class {enum_name} : IEnumClass<{enum_name}>
             self.current_serializer.write(
                 """
 {spc}    r["{fieldname}"] = ISavable.SaveRelativeUri({safename}, {scoped_id},
-{spc}                              relativeUris, {ref_scope}, (string){base_url}!);""".format(
+{spc}                              relativeUris, {ref_scope}, (string){base_url}!);
+""".format(
                     safename=self.safe_name(name),
                     fieldname=shortname(name).strip(),
                     base_url=baseurl,
@@ -735,7 +773,8 @@ public class {enum_name} : IEnumClass<{enum_name}>
             self.current_serializer.write(
                 """
 {spc}    r["{fieldname}"] =
-{spc}       ISavable.Save({safename}, false, (string){base_url}!, relativeUris);""".format(
+{spc}       ISavable.Save({safename}, false, (string){base_url}!, relativeUris);
+""".format(
                     safename=self.safe_name(name),
                     fieldname=shortname(name).strip(),
                     base_url=baseurl,
@@ -749,14 +788,12 @@ public class {enum_name} : IEnumClass<{enum_name}>
                 and fieldtype.instance_type.startswith("Option<")
             ):
                 self.current_serializer.write(
-                    """
-        });
+                    """        });
                     """
                 )
             else:
                 self.current_serializer.write(
-                    """
-        }
+                    """        }
                     """
                 )
 
@@ -880,14 +917,11 @@ public class {enum_name} : IEnumClass<{enum_name}>
         pd = pd + " for parsing documents corresponding to the "
         pd = pd + str(self.base_uri) + " schema."
 
-        sorted_record_types = sorted(self.record_types)
-        generated_class_imports = ",\n  ".join(sorted_record_types)
         template_vars: MutableMapping[str, str] = dict(
             project_name=self.package,
             version="0.0.1-SNAPSHOT",
             project_description=pd,
             license_name="Apache License, Version 2.0",
-            generated_class_imports=generated_class_imports,
         )
 
         def template_from_resource(resource: str) -> string.Template:
@@ -954,7 +988,6 @@ public class {enum_name} : IEnumClass<{enum_name}>
         template_args: MutableMapping[str, str] = dict(
             project_name=self.package,
             loader_instances=loader_instances,
-            generated_class_imports=generated_class_imports,
             vocab=vocab,
             rvocab=rvocab,
             root_loader=root_loader.name,
