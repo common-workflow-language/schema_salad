@@ -69,7 +69,7 @@ _bool_type_def = TypeDef(
 )
 
 _null_type_def = TypeDef(
-    instance_type="object",
+    instance_type="None",
     name="NullInstance",
     loader_type="ILoader<object>",
     init="new NullLoader()",
@@ -116,7 +116,6 @@ class DotNetCodeGen(CodeGenBase):
         self.test_resources_dir = self.test_src_dir / "data"
         self.package = package
         self.base_uri = base
-        # self.id_field = "" is this needed?
         self.examples = examples
 
     def prologue(self) -> None:
@@ -175,6 +174,8 @@ class DotNetCodeGen(CodeGenBase):
         self.current_loader = StringIO()
         self.current_serializer = StringIO()
         self.current_fieldtypes: Dict[str, TypeDef] = {}
+        self.optional_field_names: List[str] = []
+        self.mandatory_field_names: List[str] = []
         self.idfield = idfield
 
         doc_string = f"""
@@ -195,8 +196,6 @@ class DotNetCodeGen(CodeGenBase):
                 ext = ""
             f.write(
                 """#pragma warning disable CS0108
-using LanguageExt;
-
 namespace {package};
 {docstring}
 public interface {cls} {ext} {{
@@ -223,8 +222,8 @@ public interface {cls} {ext} {{
             _logger.info("Writing file: %s", self.current_class_target_file)
             f.write(
                 """using System.Collections;
-using LanguageExt;
-
+using OneOf;
+using OneOf.Types;
 namespace {package};
 {docstring}
 public class {cls} : {current_interface}, ISavable {{
@@ -327,23 +326,31 @@ public class {cls} : {current_interface}, ISavable {{
             throw new ValidationException("", errors);
         }}
 
-        return new {classname}(
+        var res__ = new {classname}(
           """.format(
                 classname=self.current_class,
                 fields=", ".join(["`" + f + "`" for f in field_names]),
             )
         )
-        self.current_loader.write(
-            ",\n          ".join(
-                self.safe_name(f) + ": " + self.safe_name(f) for f in field_names
+        self.current_loader.write("loadingOptions: loadingOptions")
+        if len(self.mandatory_field_names) > 0:
+            self.current_loader.write(
+                ",\n          "
+                + ",\n          ".join(f + ": " + f for f in self.mandatory_field_names)
             )
-            + ",\n          "
-            + "loadingOptions: loadingOptions"
-            + "\n        );"
-            + "\n    "
-            + "}"
-            + "\n"
-        )
+        self.current_loader.write("\n        );\n")
+
+        for optionalField in self.optional_field_names:
+            self.current_loader.write(
+                f"""
+        if({optionalField} != null)
+        {{
+            res__.{optionalField} = {optionalField};
+        }}
+        """
+            )
+        self.current_loader.write("\n        return res__;")
+        self.current_loader.write("\n    " + "}" + "\n")
         self.current_serializer.write(
             """
         if (top)
@@ -388,38 +395,21 @@ public class {cls} : {current_interface}, ISavable {{
         self, type_declaration: Union[List[Any], Dict[str, Any], str]
     ) -> TypeDef:
         if isinstance(type_declaration, MutableSequence):
-            sub = [self.type_loader(i) for i in type_declaration]
-            if len(sub) < 2:
-                return sub[0]
-
-            if len(sub) == 2:
-                type_1 = sub[0]
-                type_2 = sub[1]
-                type_1_name = type_1.name
-                type_2_name = type_2.name
-                if type_1_name == "NullInstance" or type_2_name == "NullInstance":
-                    non_null_type = type_1 if type_1.name != "NullInstance" else type_2
-                    return self.declare_type(
-                        TypeDef(
-                            instance_type=f"Option<{non_null_type.instance_type}>",
-                            name=f"optional_{non_null_type.name}",
-                            init=(
-                                (
-                                    "new OptionalLoader"
-                                    f"<{non_null_type.instance_type}>({non_null_type.name})"
-                                )
-                            ),
-                            loader_type=f"ILoader<Option<{non_null_type.instance_type}>>",
-                        )
-                    )
+            sub_types = [self.type_loader(i) for i in type_declaration]
+            sub_names: List[str] = list(dict.fromkeys([i.name for i in sub_types]))
+            sub_instance_types: List[str] = list(
+                dict.fromkeys(
+                    [i.instance_type for i in sub_types if i.instance_type is not None]
+                )
+            )
             return self.declare_type(
                 TypeDef(
-                    instance_type="object",
-                    name="union_of_{}".format("_or_".join(s.name for s in sub)),
-                    loader_type="ILoader<object>",
+                    name="union_of_{}".format("_or_".join(sub_names)),
                     init="new UnionLoader(new List<ILoader> {{ {} }})".format(
-                        ", ".join(s.name for s in sub)
+                        ", ".join(sub_names)
                     ),
+                    instance_type="OneOf<" + " , ".join(sub_instance_types) + ">",
+                    loader_type="ILoader<object>",
                 )
             )
         if isinstance(type_declaration, MutableMapping):
@@ -428,15 +418,12 @@ public class {cls} : {current_interface}, ISavable {{
                 "https://w3id.org/cwl/salad#array",
             ):
                 i = self.type_loader(type_declaration["items"])
-                inner_instance_type = (
-                    "string" if i.instance_type == "string" else "object"
-                )
                 return self.declare_type(
                     TypeDef(
-                        instance_type=f"List<{inner_instance_type}>",
+                        instance_type=f"List<{i.instance_type}>",
                         name=f"array_of_{i.name}",
-                        loader_type=f"ILoader<List<{inner_instance_type}>>",
-                        init=f"new ArrayLoader<{inner_instance_type}>({i.name})",
+                        loader_type=f"ILoader<List<{i.instance_type}>>",
+                        init=f"new ArrayLoader<{i.instance_type}>({i.name})",
                     )
                 )
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
@@ -576,47 +563,24 @@ public class {enum_name} : IEnumClass<{enum_name}>
         optional: bool,
     ) -> None:
         """Output the code to load the given field."""
+        if self.current_class_is_abstract:
+            return
         safename = self.safe_name(name)
         fieldname = shortname(name)
         self.current_fieldtypes[safename] = fieldtype
-        if (
-            fieldtype.instance_type is not None
-            and not fieldtype.instance_type.startswith("Option<")
-            and optional
-        ):
-            optionalstring = "?"
-        else:
-            optionalstring = ""
 
-        with open(self.current_interface_target_file, "a") as f:
-            if doc:
-                f.write(
-                    """
-    /// <summary>
-{doc_str}
-    /// </summary>
-""".format(
-                        doc_str=doc_to_doc_string(doc, indent_level=1)
-                    )
-                )
-            if fieldname == "class":
-                f.write(
-                    "    public {type}{optionalstring} {safename} {{ get; set; }}\n".format(
-                        safename=safename,
-                        type=fieldtype.instance_type,
-                        optionalstring=optionalstring,
-                    )
-                )
+        if optional:
+            self.optional_field_names.append(safename)
+            if (
+                fieldtype.instance_type is not None
+                and not fieldtype.instance_type.startswith("OneOf<None")
+            ):
+                optionalstring = "?"
             else:
-                f.write(
-                    "    public {type}{optionalstring} {safename} {{ get; set; }}\n".format(
-                        safename=safename,
-                        type=fieldtype.instance_type,
-                        optionalstring=optionalstring,
-                    )
-                )
-        if self.current_class_is_abstract:
-            return
+                optionalstring = ""
+        else:
+            self.mandatory_field_names.append(safename)
+            optionalstring = ""
 
         with open(self.current_class_target_file, "a") as f:
             if doc:
@@ -658,10 +622,12 @@ public class {enum_name} : IEnumClass<{enum_name}>
                     )
                 )
             else:
-                if (fieldtype.instance_type is not None 
-                and fieldtype.instance_type.startswith("Option<")):
+                if (
+                    fieldtype.instance_type is not None
+                    and fieldtype.instance_type.startswith("OneOf<None")
+                ):
                     self.current_constructor_signature_optionals.write(
-                        "{type} {safename} = new {type}(), ".format(
+                        "{type} {safename} = default, ".format(
                             safename=safename,
                             type=fieldtype.instance_type,
                         )
@@ -689,8 +655,8 @@ public class {enum_name} : IEnumClass<{enum_name}>
 
         self.current_loader.write(
             """
-        {type} {safename} = default!;""".format(
-                safename=safename, type=fieldtype.instance_type
+        dynamic {safename} = default!;""".format(
+                safename=safename
             )
         )
         if optional:
@@ -709,7 +675,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
             """
 {spc}    try
 {spc}    {{
-{spc}        {safename} = ({instancetype})LoaderInstances.{fieldtype}
+{spc}        {safename} = LoaderInstances.{fieldtype}
 {spc}           .LoadField(doc_.GetValueOrDefault("{fieldname}", null!), baseUri,
 {spc}               loadingOptions);
 {spc}    }}
@@ -723,7 +689,6 @@ public class {enum_name} : IEnumClass<{enum_name}>
                 safename=safename,
                 fieldname=fieldname,
                 fieldtype=fieldtype.name,
-                instancetype=fieldtype.instance_type,
                 spc=spc,
             )
         )
@@ -732,70 +697,41 @@ public class {enum_name} : IEnumClass<{enum_name}>
 
         if name == self.idfield or not self.idfield:
             baseurl = "baseUrl"
-        else:
-            baseurl = f"this.{self.safe_name(self.idfield)}"
-
-        if optional:
-            if (
-                fieldtype.instance_type is not None
-                and fieldtype.instance_type.startswith("Option<")
-            ):
-                self.current_serializer.write(
-                    """
-        {safename}.IfSome({safename} =>
-        {{""".format(
-                        safename=self.safe_name(name)
-                    )
-                )
+        elif self.id_field_type.instance_type is not None:
+            if self.id_field_type.instance_type.startswith("OneOf"):
+                baseurl = f"this.{self.safe_name(self.idfield)}.AsT1"
             else:
-                self.current_serializer.write(
-                    """
-        if({safename} != null)
-        {{""".format(
-                        safename=self.safe_name(name)
-                    )
-                )
+                baseurl = f"this.{self.safe_name(self.idfield)}"
+
         if fieldtype.is_uri:
             self.current_serializer.write(
                 """
-{spc}    r["{fieldname}"] = ISavable.SaveRelativeUri({safename}, {scoped_id},
-{spc}                              relativeUris, {ref_scope}, (string){base_url}!);
+        var {safename}Val = ISavable.SaveRelativeUri({safename}, {scoped_id},
+            relativeUris, {ref_scope}, (string){base_url}!);
+        if({safename}Val is not None) {{
+            r["{fieldname}"] = {safename}Val;
+        }}
 """.format(
                     safename=self.safe_name(name),
                     fieldname=shortname(name).strip(),
                     base_url=baseurl,
                     scoped_id=self.to_dotnet(fieldtype.scoped_id),
                     ref_scope=self.to_dotnet(fieldtype.ref_scope),
-                    spc=spc,
                 )
             )
         else:
             self.current_serializer.write(
                 """
-{spc}    r["{fieldname}"] =
-{spc}       ISavable.Save({safename}, false, (string){base_url}!, relativeUris);
+        var {safename}Val = ISavable.Save({safename}, false, (string){base_url}!, relativeUris);
+        if({safename}Val is not None) {{
+            r["{fieldname}"] = {safename}Val;
+        }}
 """.format(
                     safename=self.safe_name(name),
                     fieldname=shortname(name).strip(),
                     base_url=baseurl,
-                    spc=spc,
                 )
             )
-
-        if optional:
-            if (
-                fieldtype.instance_type is not None
-                and fieldtype.instance_type.startswith("Option<")
-            ):
-                self.current_serializer.write(
-                    """        });
-                    """
-                )
-            else:
-                self.current_serializer.write(
-                    """        }
-                    """
-                )
 
     def declare_id_field(
         self,
@@ -806,6 +742,9 @@ public class {enum_name} : IEnumClass<{enum_name}>
         subscope: Optional[str],
     ) -> None:
         """Output the code to handle the given ID field."""
+        self.id_field_type = fieldtype
+        if self.current_class_is_abstract:
+            return
         self.declare_field(name, fieldtype, doc, True)
         if optional:
             opt = """{safename} = "_" + Guid.NewGuid();""".format(
@@ -864,9 +803,8 @@ public class {enum_name} : IEnumClass<{enum_name}>
             TypeDef(
                 instance_type=instance_type,
                 name=f"uri{inner.name}{scoped_id}{vocab_term}{ref_scope}",
-                loader_type="ILoader<{}>".format(instance_type),
-                init="new UriLoader<{}>({}, {}, {}, {})".format(
-                    instance_type,
+                loader_type="ILoader<object>",
+                init="new UriLoader({}, {}, {}, {})".format(
                     inner.name,
                     self.to_dotnet(scoped_id),
                     self.to_dotnet(vocab_term),
@@ -887,9 +825,9 @@ public class {enum_name} : IEnumClass<{enum_name}>
             TypeDef(
                 instance_type=instance_type,
                 name=f"idmap{self.safe_name(field)}{inner.name}",
-                loader_type=f"ILoader<{instance_type}>",
-                init='new IdMapLoader<{}>({}, "{}", "{}")'.format(
-                    instance_type, inner.name, map_subject, map_predicate
+                loader_type="ILoader<object>",
+                init='new IdMapLoader({}, "{}", "{}")'.format(
+                    inner.name, map_subject, map_predicate
                 ),
             )
         )
@@ -901,10 +839,9 @@ public class {enum_name} : IEnumClass<{enum_name}>
             TypeDef(
                 instance_type=instance_type,
                 name=f"typedsl{self.safe_name(inner.name)}{ref_scope}",
-                loader_type=f"ILoader<{instance_type}>",
+                loader_type="ILoader<object>",
                 init=(
-                    f"new TypeDSLLoader<{instance_type}>"
-                    f"({self.safe_name(inner.name)}, {ref_scope})"
+                    f"new TypeDSLLoader" f"({self.safe_name(inner.name)}, {ref_scope})"
                 ),
             )
         )
@@ -991,7 +928,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
             vocab=vocab,
             rvocab=rvocab,
             root_loader=root_loader.name,
-            root_loader_type=root_loader.instance_type or "any",
+            root_loader_type=root_loader.instance_type or "object",
             tests=example_tests,
         )
 
@@ -1019,8 +956,8 @@ public class {enum_name} : IEnumClass<{enum_name}>
         return self.declare_type(
             TypeDef(
                 name=f"secondaryfilesdsl{inner.name}",
-                init=f"new SecondaryDSLLoader<{instance_type}>({inner.name})",
-                loader_type=f"ILoader<{instance_type}>",
+                init=f"new SecondaryDSLLoader({inner.name})",
+                loader_type="ILoader<object>",
                 instance_type=instance_type,
             )
         )

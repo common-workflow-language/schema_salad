@@ -2,20 +2,20 @@
 
 namespace ${project_name};
 
-internal class IdMapLoader<T> : ILoader<T>
+internal class IdMapLoader : ILoader<object>
 {
-    readonly ILoader<T> inner;
+    readonly ILoader inner;
     readonly string mapSubject;
     readonly string? mapPredicate;
 
-    public IdMapLoader(ILoader<T> inner, string mapSubject, string? mapPredicate = null)
+    public IdMapLoader(ILoader inner, string mapSubject, string? mapPredicate = null)
     {
         this.inner = inner;
         this.mapSubject = mapSubject;
         this.mapPredicate = mapPredicate;
     }
 
-    public T Load(in object doc_, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot = null)
+    public object Load(in object doc_, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot = null)
     {
         object doc = doc_;
         if (doc_ is IDictionary docDict)

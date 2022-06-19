@@ -1,6 +1,6 @@
 ﻿using ${project_name};
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-
+using OneOf.Types;
 namespace Test.Loader;
 
 [TestClass]
@@ -11,7 +11,7 @@ public class NullLoaderTests
     [TestMethod]
     public void TestLoad()
     {
-        Assert.AreEqual(null!, loader.Load(null!, "", new LoadingOptions()));
+        Assert.AreEqual(typeof(None), loader.Load(null!, "", new LoadingOptions()).GetType());
     }
 
     [TestMethod]

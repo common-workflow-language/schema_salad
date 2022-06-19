@@ -2,14 +2,14 @@
 
 namespace ${project_name};
 
-internal class UriLoader<T> : ILoader<T>
+internal class UriLoader : ILoader<object>
 {
-    readonly ILoader<T> inner;
+    readonly ILoader inner;
     readonly bool scopedID;
     readonly bool vocabTerm;
     readonly int? scopedRef;
 
-    public UriLoader(in ILoader<T> inner, in bool scopedID, in bool vocabTerm, in int? scopedRef)
+    public UriLoader(in ILoader inner, in bool scopedID, in bool vocabTerm, in int? scopedRef)
     {
         this.inner = inner;
         this.scopedID = scopedID;
@@ -17,7 +17,7 @@ internal class UriLoader<T> : ILoader<T>
         this.scopedRef = scopedRef;
     }
 
-    public T Load(in object doc_, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot = null)
+    public object Load(in object doc_, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot = null)
     {
         object doc = doc_;
         if (doc is IList)
@@ -43,7 +43,7 @@ internal class UriLoader<T> : ILoader<T>
             doc = loadingOptions.ExpandUrl(docString, baseuri, scopedID, vocabTerm, scopedRef);
         }
 
-        return inner.Load(doc, baseuri, loadingOptions);
+        return (object)inner.Load(doc, baseuri, loadingOptions);
     }
 
     object ILoader.Load(in object doc, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot)

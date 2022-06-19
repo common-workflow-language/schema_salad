@@ -16,6 +16,8 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="RichardSzalay.MockHttp" Version="6.0.0" />
+    <PackageReference Include="OneOf" Version="3.0.216" />
+    <PackageReference Include="OneOf.Extended" Version="3.0.216" />
   </ItemGroup>
 
   <ItemGroup>

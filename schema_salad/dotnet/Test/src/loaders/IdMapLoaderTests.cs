@@ -13,7 +13,7 @@ public class IdMapLoaderTests
     [TestMethod]
     public void TestLoad()
     {
-        IdMapLoader<object> loader = new(innerLoader, "key", "value");
+        IdMapLoader loader = new(innerLoader, "key", "value");
         Dictionary<string, object> doc = new()
         {
             { "shaggy", new Dictionary<string, string>() { { "value", "scooby" } } },
@@ -33,7 +33,7 @@ public class IdMapLoaderTests
     [TestMethod]
     public void TestException()
     {
-        IdMapLoader<object> loader = new(innerLoader, "key");
+        IdMapLoader loader = new(innerLoader, "key");
         Dictionary<string, object> doc = new()
         {
             {"fred", "daphne"}

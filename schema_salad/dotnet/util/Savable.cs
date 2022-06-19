@@ -1,16 +1,28 @@
-﻿using System.Collections;
-
-namespace ${project_name};
+﻿namespace ${project_name};
+using System.Collections;
+using OneOf;
+using OneOf.Types;
 
 public interface ISavable
 {
     public static abstract ISavable FromDoc(object doc, string baseUri, LoadingOptions loadingOptions, string? docRoot = null);
     public abstract Dictionary<object, object> Save(bool top, string baseUrl, bool relativeUris);
 
-    public static object Save(object val_, bool top = true, string baseurl = "", bool relativeUris = true)
+    public static object Save(object? val_, bool top = true, string baseurl = "", bool relativeUris = true)
     {
-        object val = val_;
+        object? val = val_;
+        if(val is IOneOf oneOfVal) {
+            return Save(oneOfVal.Value, top, baseurl, relativeUris);
+        }
 
+        if(val is None) {
+            return val;
+        }
+
+        if(val_ is null) {
+            return new None();
+        }
+        
         if(val is IEnumClass) 
         {
             val = val.ToString()!;
@@ -21,10 +33,9 @@ public interface ISavable
             return valSaveable.Save(top, baseurl, relativeUris);
         }
 
-        if (val is IList)
+        if (val is IList valList)
         {
             List<object> r = new();
-            List<object> valList = (List<object>)val;
             foreach (object v in valList)
             {
                 r.Add(Save(v, false, baseurl, relativeUris));
@@ -45,12 +56,24 @@ public interface ISavable
             return newDict;
         }
 
-        return val;
+        return val!;
     }
 
-    public static object SaveRelativeUri(object uri_, bool scopedId, bool relativeUris, int? refScope, string baseUrl = "")
+    public static object SaveRelativeUri(object? uri_, bool scopedId, bool relativeUris, int? refScope, string baseUrl = "")
     {
-        object uri = uri_;
+        object? uri = uri_;
+
+        if(uri is IOneOf oneOfVal) {
+            return SaveRelativeUri(oneOfVal.Value, scopedId,relativeUris, refScope, baseUrl);
+        }
+
+        if(uri is None) {
+            return uri;
+        }
+
+        if(uri is null) {
+            return new None();
+        }
 
         if(uri is IEnumClass) 
         {

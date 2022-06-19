@@ -1,4 +1,6 @@
 ﻿namespace ${project_name};
+
+using OneOf.Types;
 internal class NullLoader : ILoader<object>
 {
     public object Load(in object doc, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot = null)
@@ -8,6 +10,7 @@ internal class NullLoader : ILoader<object>
             throw new ValidationException("Expected null");
         }
 
-        return doc!;
+        return new None();
     }
 }
+

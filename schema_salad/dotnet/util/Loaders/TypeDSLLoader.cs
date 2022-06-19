@@ -3,14 +3,14 @@ using System.Text.RegularExpressions;
 
 namespace ${project_name};
 
-internal class TypeDSLLoader<T> : ILoader<T>
+internal class TypeDSLLoader: ILoader<object>
 {
-    readonly ILoader<T> inner;
+    readonly ILoader inner;
     readonly int refScope;
 
     private static readonly Regex typeDSLRegex = new(@"^([^\\[?]+)(\\[\\])?(\\?)?$");
 
-    public TypeDSLLoader(in ILoader<T> inner, in int refScope)
+    public TypeDSLLoader(in ILoader inner, in int refScope)
     {
         this.inner = inner;
         this.refScope = refScope;
@@ -45,7 +45,7 @@ internal class TypeDSLLoader<T> : ILoader<T>
         return doc_;
     }
 
-    public T Load(in object doc_, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot = null)
+    public object Load(in object doc_, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot = null)
     {
         object doc = doc_;
         if (doc is IList)
@@ -89,7 +89,7 @@ internal class TypeDSLLoader<T> : ILoader<T>
             doc = Resolve(docString, baseuri, loadingOptions);
         }
 
-        return inner.Load(doc, baseuri, loadingOptions);
+        return (object)inner.Load(doc, baseuri, loadingOptions);
     }
 
     object ILoader.Load(in object doc, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot)

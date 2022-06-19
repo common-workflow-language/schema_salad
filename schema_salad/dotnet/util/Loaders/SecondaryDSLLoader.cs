@@ -2,16 +2,16 @@
 
 namespace ${project_name};
 
-internal class SecondaryDSLLoader<T> : ILoader<T>
+internal class SecondaryDSLLoader : ILoader<object>
 {
-    readonly ILoader<T> inner;
+    readonly ILoader inner;
 
-    public SecondaryDSLLoader(ILoader<T> inner)
+    public SecondaryDSLLoader(ILoader inner)
     {
         this.inner = inner;
     }
 
-    public T Load(in object doc_, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot = null)
+    public object Load(in object doc_, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot = null)
     {
         List<Dictionary<string, object>> r = new();
         object doc = doc_;
@@ -115,7 +115,7 @@ internal class SecondaryDSLLoader<T> : ILoader<T>
             throw new ValidationException("Expected a string or sequence of (strings or mappings).");
         }
 
-        return inner.Load(r, baseuri, loadingOptions, docRoot);
+        return (object)inner.Load(r, baseuri, loadingOptions, docRoot);
     }
 
     object ILoader.Load(in object doc, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot)
