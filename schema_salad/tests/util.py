@@ -40,4 +40,4 @@ def get_data_uri(resource_path: str) -> str:
 
 cwl_file_uri = get_data_uri("tests/test_schema/CommonWorkflowLanguage.yml")
 metaschema_file_uri = get_data_uri("metaschema/metaschema.yml")
-basket_file_uri = get_data_uri("basket.yml")
+basket_file_uri = get_data_uri("tests/basket_schema.yml")
