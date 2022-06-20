@@ -519,10 +519,10 @@ def avrold_doc(
 
     if brandstyle is None:
         bootstrap_url = (
-            "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"
+            "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
         )
         bootstrap_integrity = (
-            "sha384-604wwakM23pEysLJAhja8Lm42IIwYrJ0dEAqzFsj9pJ/P5buiujjywArgPCi8eoz"
+            "sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
         )
         brandstyle_template = (
             '<link rel="stylesheet" href={} integrity={} crossorigin="anonymous">'
@@ -564,15 +564,43 @@ def avrold_doc(
       padding-top: 61px;
       margin-top: -61px;
     }
-    body {
-      padding-top: 61px;
-    }
     .tocnav ol {
       list-style: none
     }
     pre {
-      margin-left: 2em;
-      margin-right: 2em;
+      margin: 0 2em 10px 2em;
+      padding: 9.5px;
+      line-height: 1.42857143;
+      color: #333;
+      word-break: break-all;
+      word-wrap: break-word;
+      background-color: #f5f5f5;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    pre code {
+      padding: 0;
+      font-size: inherit;
+      color: inherit;
+      white-space: pre-wrap;
+      background-color: transparent;
+      border-radius: 0;
+    }
+    code {
+      background-color: #f9f2f4;
+      border-radius: 4px;
+      padding: 2px 4px;
+      color: #c7254e;
+    }
+    blockquote {
+      padding: 10px 20px 1px 20px;
+      border-left: 5px solid #eee;
+    }
+    a {
+      text-decoration: none;
+    }
+    a code {
+      color: #c7254e;
     }
     .section a {
       visibility: hidden;
@@ -629,10 +657,9 @@ def avrold_doc(
     navbar_extraclass = "navbar-inverse" if brandinverse else ""
     outdoc.write(
         """
-      <nav class="navbar navbar-default navbar-fixed-top {}">
+      <nav class="navbar sticky-top navbar-expand-lg navbar-light bg-light {}">
         <div class="container">
-          <div class="navbar-header">
-            <a class="navbar-brand" href="{}">{}</a>
+          <a class="navbar-brand" href="{}">{}</a>
     """.format(
             navbar_extraclass, brandlink, brand
         )
@@ -642,15 +669,14 @@ def avrold_doc(
         content = content.replace("<!--ToC-->", toc.contents("toc"))
         outdoc.write(
             """
-                <ul class="nav navbar-nav">
-                  <li><a href="#toc">Table of contents</a></li>
-                </ul>
+              <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" href="#toc">Table of contents</a></li>
+              </ul>
         """
         )
 
     outdoc.write(
         """
-          </div>
         </div>
       </nav>
     """
@@ -658,7 +684,7 @@ def avrold_doc(
 
     outdoc.write(
         """
-    <div class="container">
+    <div class="container mt-4">
     """
     )
 

@@ -223,6 +223,6 @@ provides for robust support of inline documentation.
 .. _JSON-LD: http://json-ld.org
 .. _Avro: http://avro.apache.org
 .. _metaschema: https://github.com/common-workflow-language/schema_salad/blob/main/schema_salad/metaschema/metaschema.yml
-.. _specification: http://www.commonwl.org/v1.0/SchemaSalad.html
-.. _Language: https://github.com/common-workflow-language/common-workflow-language/blob/main/v1.0/CommandLineTool.yml
+.. _specification: http://www.commonwl.org/v1.2/SchemaSalad.html
+.. _Language: https://github.com/common-workflow-language/cwl-v1.2/blob/v1.2.0/CommandLineTool.yml
 .. _RDF: https://www.w3.org/RDF/
