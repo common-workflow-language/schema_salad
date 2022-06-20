@@ -1,0 +1,9 @@
+# N.B.: this example is used in a test that needs a file without $base,
+#       so please do not include $base here.
+- name: Basket
+  doc: A basket of products.
+  type: record
+  documentRoot: true
+  fields:
+    product: string
+    price: float

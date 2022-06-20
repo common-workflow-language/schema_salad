@@ -8,7 +8,7 @@ from schema_salad import codegen
 from schema_salad.avro.schema import Names
 from schema_salad.schema import load_schema
 
-from .test_java_codegen import cwl_file_uri, metaschema_file_uri
+from .util import cwl_file_uri, metaschema_file_uri, basket_file_uri
 
 
 def test_cwl_gen(tmp_path: Path) -> None:
@@ -33,6 +33,14 @@ def test_meta_schema_gen_up_to_date(tmp_path: Path) -> None:
     assert os.path.exists(src_target)
     with open(src_target) as f:
         assert f.read() == inspect.getsource(cg_metaschema)
+
+
+def test_meta_schema_gen_no_base(tmp_path: Path) -> None:
+    src_target = tmp_path / "src.py"
+    python_codegen(basket_file_uri, src_target)
+    assert os.path.exists(src_target)
+    with open(src_target) as f:
+        assert "class Basket" in f.read()
 
 
 def python_codegen(
