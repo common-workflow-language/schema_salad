@@ -19,6 +19,7 @@ from .dotnet_codegen import DotNetCodeGen
 from .exceptions import SchemaSaladException
 from .java_codegen import JavaCodeGen
 from .python_codegen import PythonCodeGen
+from .cpp_codegen import CppCodeGen
 from .ref_resolver import Loader
 from .schema import shortname
 from .typescript_codegen import TypeScriptCodeGen
@@ -39,8 +40,6 @@ def codegen(
     parser_info: Optional[str] = None,
 ) -> None:
     """Generate classes with loaders for the given Schema Salad description."""
-
-    j = schema.extend_and_specialize(i, loader)
 
     gen = None  # type: Optional[CodeGenBase]
     base = schema_metadata.get("$base", schema_metadata.get("id"))
@@ -79,6 +78,16 @@ def codegen(
         gen = TypeScriptCodeGen(base, target=target, package=pkg, examples=examples)
     elif lang == "dotnet":
         gen = DotNetCodeGen(base, target=target, package=pkg, examples=examples)
+    elif lang == "cpp":
+        gen = CppCodeGen(
+            base,
+            target=sys.stdout,
+            examples=examples,
+            package=pkg,
+            copyright=copyright,
+        )
+        gen.run(i);
+        return
     else:
         raise SchemaSaladException(f"Unsupported code generation language '{lang}'")
 
@@ -86,6 +95,7 @@ def codegen(
 
     document_roots = []
 
+    j = schema.extend_and_specialize(i, loader)
     for rec in j:
         if rec["type"] in ("enum", "record"):
             gen.type_loader(rec)
