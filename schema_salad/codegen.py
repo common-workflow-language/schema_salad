@@ -13,6 +13,8 @@ from typing import (
 )
 from urllib.parse import urlsplit
 
+from .dotnet_codegen import DotNetCodeGen
+
 from . import schema
 from .codegen_base import CodeGenBase
 from .exceptions import SchemaSaladException
@@ -76,6 +78,8 @@ def codegen(
         )
     elif lang == "typescript":
         gen = TypeScriptCodeGen(base, target=target, package=pkg, examples=examples)
+    elif lang == "dotnet":
+        gen = DotNetCodeGen(base, target=target, package=pkg, examples=examples)
     else:
         raise SchemaSaladException(f"Unsupported code generation language '{lang}'")
 
