@@ -1,10 +1,11 @@
-﻿namespace ${project_name};
+﻿using OneOf;
 using YamlDotNet.Serialization;
-using OneOf;
+
+namespace ${project_name};
 
 public class RootLoader
 {
-    public static ${root_loader_type} LoadDocument(in Dictionary<object,object> doc, in string baseUri_, in LoadingOptions? loadingOptions_ = null)
+    public static ${root_loader_type} LoadDocument(in Dictionary<object, object> doc, in string baseUri_, in LoadingOptions? loadingOptions_ = null)
     {
         string baseUri = EnsureBaseUri(baseUri_);
         LoadingOptions loadingOptions;
@@ -13,7 +14,7 @@ public class RootLoader
         {
             loadingOptions = new LoadingOptions(fileUri: baseUri);
         }
-        else 
+        else
         {
             loadingOptions = loadingOptions_;
         }
@@ -30,8 +31,8 @@ public class RootLoader
         if (loadingOptions_ == null)
         {
             loadingOptions = new LoadingOptions(fileUri: uri);
-        } 
-        else 
+        }
+        else
         {
             loadingOptions = loadingOptions_;
         }
@@ -39,7 +40,7 @@ public class RootLoader
         IDeserializer deserializer = new DeserializerBuilder().WithNodeTypeResolver(new ScalarNodeTypeResolver()).Build();
         object? yamlObject = deserializer.Deserialize(new StringReader(doc));
         loadingOptions.idx.Add(uri, yamlObject!);
-        return LoadDocument((Dictionary<object,object>) yamlObject!, uri, loadingOptions);
+        return LoadDocument((Dictionary<object, object>)yamlObject!, uri, loadingOptions);
     }
 
     static string EnsureBaseUri(in string baseUri_)

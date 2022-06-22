@@ -1,8 +1,8 @@
-﻿using ${project_name};
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Linq;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using ${project_name};
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Test.Loader;
 
@@ -12,12 +12,12 @@ public class EnumLoaderTests
     public class TestEnum : IEnumClass<TestEnum>
     {
         private string _Name;
-        private static List<TestEnum> members = new List<TestEnum>();
+        private static readonly List<TestEnum> members = new();
 
-        public static readonly TestEnum A = new TestEnum("A");
-        public static readonly TestEnum B = new TestEnum("B");
-        public static readonly TestEnum C = new TestEnum("C");
-        public static readonly TestEnum D = new TestEnum("D");
+        public static readonly TestEnum A = new("A");
+        public static readonly TestEnum B = new("B");
+        public static readonly TestEnum C = new("C");
+        public static readonly TestEnum D = new("D");
         public string Name
         {
             get { return _Name; }

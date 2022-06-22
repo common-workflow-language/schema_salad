@@ -26,20 +26,21 @@ public static class Utilities
         }
     }
 
-    public static UriBuilder Split(string uri) 
+    public static UriBuilder Split(string uri)
     {
         Uri splitUri = new(uri, UriKind.RelativeOrAbsolute);
         UriBuilder split;
-        if(!splitUri.IsAbsoluteUri)
+        if (!splitUri.IsAbsoluteUri)
         {
-            var guid = Guid.NewGuid();
-            Uri stubUri = new ("http://"+ guid + ".com");
-            Uri absoluteUri = new(stubUri,splitUri);
+            Guid guid = Guid.NewGuid();
+            Uri stubUri = new("http://" + guid + ".com");
+            Uri absoluteUri = new(stubUri, splitUri);
             split = new(absoluteUri);
             split.Scheme = "";
             split.Host = "";
             return split;
-        } else 
+        }
+        else
         {
             return new UriBuilder(splitUri);
         }
@@ -53,7 +54,7 @@ public interface IEnumClass
 
 public interface IEnumClass<T> : IEnumClass
 {
-    public abstract static T Parse(string value);
-    public abstract static bool Contains(string value);
-    public abstract static List<string> Symbols();
+    public static abstract T Parse(string value);
+    public static abstract bool Contains(string value);
+    public static abstract List<string> Symbols();
 }

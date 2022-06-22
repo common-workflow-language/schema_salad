@@ -11,19 +11,22 @@ public interface ISavable
     public static object Save(object? val_, bool top = true, string baseurl = "", bool relativeUris = true)
     {
         object? val = val_;
-        if(val is IOneOf oneOfVal) {
+        if (val is IOneOf oneOfVal)
+        {
             return Save(oneOfVal.Value, top, baseurl, relativeUris);
         }
 
-        if(val is None) {
+        if (val is None)
+        {
             return null!;
         }
 
-        if(val_ is null) {
+        if (val_ is null)
+        {
             return null!;
         }
-        
-        if(val is IEnumClass) 
+
+        if (val is IEnumClass)
         {
             val = val.ToString()!;
         }
@@ -62,19 +65,22 @@ public interface ISavable
     {
         object? uri = uri_;
 
-        if(uri is IOneOf oneOfVal) {
-            return SaveRelativeUri(oneOfVal.Value, scopedId,relativeUris, refScope, baseUrl);
+        if (uri is IOneOf oneOfVal)
+        {
+            return SaveRelativeUri(oneOfVal.Value, scopedId, relativeUris, refScope, baseUrl);
         }
 
-        if(uri is None) {
+        if (uri is None)
+        {
             return null!;
         }
 
-        if(uri is null) {
+        if (uri is null)
+        {
             return null!;
         }
 
-        if(uri is IEnumClass) 
+        if (uri is IEnumClass)
         {
             uri = uri.ToString()!;
         }
@@ -87,7 +93,7 @@ public interface ISavable
         if (uri is IList uriList)
         {
             List<object> r = new();
-            foreach (var v in uriList)
+            foreach (object v in uriList)
             {
                 r.Add(SaveRelativeUri(v, scopedId, relativeUris, refScope, baseUrl));
             }
@@ -97,7 +103,7 @@ public interface ISavable
         else if (uri is string uriString)
         {
             Uri uriSplit = new(uriString, UriKind.RelativeOrAbsolute);
-            Uri baseSplit = new(baseUrl,  UriKind.RelativeOrAbsolute);
+            Uri baseSplit = new(baseUrl, UriKind.RelativeOrAbsolute);
             if (((uriSplit.IsAbsoluteUri && uriSplit.AbsolutePath.Length < 1)
                 && (baseSplit.IsAbsoluteUri && baseSplit.AbsolutePath.Length < 1)))
             {

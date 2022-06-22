@@ -192,14 +192,15 @@ class DotNetCodeGen(CodeGenBase):
         with open(self.current_interface_target_file, "w") as f:
             _logger.info("Writing file: %s", self.current_interface_target_file)
             if extends:
-                ext = ": " + ",".join("I" + self.safe_name(e) for e in extends)
+                ext = " : " + ", ".join("I" + self.safe_name(e) for e in extends)
             else:
                 ext = ""
             f.write(
                 """#pragma warning disable CS0108
 namespace {package};
 {docstring}
-public interface {cls} {ext} {{
+public interface {cls}{ext}
+{{
 """.format(
                     docstring=doc_string,
                     cls=f"{self.current_interface}",
@@ -225,9 +226,11 @@ public interface {cls} {ext} {{
                 """using System.Collections;
 using OneOf;
 using OneOf.Types;
+
 namespace {package};
 {docstring}
-public class {cls} : {current_interface}, ISavable {{
+public class {cls} : {current_interface}, ISavable
+{{
     readonly LoadingOptions loadingOptions;
 
     readonly Dictionary<object, object> extensionFields;
@@ -241,7 +244,7 @@ public class {cls} : {current_interface}, ISavable {{
         self.current_constructor_signature.write(
             "\n"
             + "\n"
-            + "    public {cls} (".format(
+            + "    public {cls}(".format(
                 cls=cls,
             )
         )
@@ -266,7 +269,7 @@ public class {cls} : {current_interface}, ISavable {{
         Dictionary<object, object> doc_ = ((IDictionary)doc__)
             .Cast<dynamic>()
             .ToDictionary(entry => entry.Key, entry => entry.Value);
-            """
+"""
         )
 
         self.current_serializer.write(
@@ -285,7 +288,7 @@ public class {cls} : {current_interface}, ISavable {{
     def end_class(self, classname: str, field_names: List[str]) -> None:
         """Signal that we are done with this class."""
         with open(self.current_interface_target_file, "a") as f:
-            f.write("}")
+            f.write("}\n")
         if self.current_class_is_abstract:
             return
 
@@ -295,7 +298,9 @@ public class {cls} : {current_interface}, ISavable {{
         self.current_constructor_signature.write(
             (
                 "LoadingOptions? loadingOptions = null, "
-                "Dictionary<object, object>? extensionFields = null) {"
+                "Dictionary<object, object>? extensionFields = null)"
+                "\n    "
+                "{"
             )
         )
         self.current_constructor_body.write("    }\n")
@@ -327,7 +332,7 @@ public class {cls} : {current_interface}, ISavable {{
             throw new ValidationException("", errors);
         }}
 
-        var res__ = new {classname}(
+        {classname} res__ = new(
           """.format(
                 classname=self.current_class,
                 fields=", ".join(["`" + f + "`" for f in field_names]),
@@ -344,11 +349,11 @@ public class {cls} : {current_interface}, ISavable {{
         for optionalField in self.optional_field_names:
             self.current_loader.write(
                 f"""
-        if({optionalField} != null)
+        if ({optionalField} != null)
         {{
             res__.{optionalField} = {optionalField};
         }}
-        """
+"""
             )
         self.current_loader.write("\n        return res__;")
         self.current_loader.write("\n    " + "}" + "\n")
@@ -382,7 +387,7 @@ public class {cls} : {current_interface}, ISavable {{
             f.write(self.current_serializer.getvalue())
             f.write(
                 "    static readonly System.Collections.Generic.HashSet<string>"
-                + "attr = new() { "
+                + " attr = new() { "
                 + ", ".join(['"' + shortname(f) + '"' for f in field_names])
                 + " };"
             )
@@ -409,7 +414,7 @@ public class {cls} : {current_interface}, ISavable {{
                     init="new UnionLoader(new List<ILoader> {{ {} }})".format(
                         ", ".join(sub_names)
                     ),
-                    instance_type="OneOf<" + " , ".join(sub_instance_types) + ">",
+                    instance_type="OneOf<" + ", ".join(sub_instance_types) + ">",
                     loader_type="ILoader<object>",
                 )
             )
@@ -475,6 +480,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
 {{
     private string _Name;
     private static readonly List<{enum_name}> members = new();
+
 """.format(
                     enum_name=enum_name, package=self.package
                 )
@@ -604,7 +610,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
         if fieldname == "class":
             if fieldtype.instance_type == "string":
                 self.current_constructor_signature_optionals.write(
-                    "string {safename}={val}, ".format(
+                    'string {safename} = "{val}", '.format(
                         safename=safename, val=self.current_class
                     )
                 )
@@ -707,9 +713,10 @@ public class {enum_name} : IEnumClass<{enum_name}>
         if fieldtype.is_uri:
             self.current_serializer.write(
                 """
-        var {safename}Val = ISavable.SaveRelativeUri({safename}, {scoped_id},
+        object? {safename}Val = ISavable.SaveRelativeUri({safename}, {scoped_id},
             relativeUris, {ref_scope}, (string){base_url}!);
-        if({safename}Val is not null) {{
+        if ({safename}Val is not null)
+        {{
             r["{fieldname}"] = {safename}Val;
         }}
 """.format(
@@ -723,8 +730,10 @@ public class {enum_name} : IEnumClass<{enum_name}>
         else:
             self.current_serializer.write(
                 """
-        var {safename}Val = ISavable.Save({safename}, false, (string){base_url}!, relativeUris);
-        if({safename}Val is not null) {{
+        object? {safename}Val = ISavable.Save({safename},
+                                        false, (string){base_url}!, relativeUris);
+        if ({safename}Val is not null)
+        {{
             r["{fieldname}"] = {safename}Val;
         }}
 """.format(
@@ -776,7 +785,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
         {{
             baseUri = (string){safename};
         }}
-            """.format(
+""".format(
                 safename=self.safe_name(name), opt=opt
             )
         )
@@ -874,6 +883,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
             src = template.safe_substitute(template_vars)
             _ensure_directory_and_write(path, src)
 
+        expand_resource_template_to("editorconfig", self.target_dir / ".editorconfig")
         expand_resource_template_to(".gitignore", self.target_dir / ".gitignore")
         expand_resource_template_to("LICENSE", self.target_dir / "LICENSE")
         expand_resource_template_to("Solution.sln", self.target_dir / "Solution.sln")
@@ -895,7 +905,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
         loader_instances = ""
         for _, collected_type in self.collected_types.items():
             if not collected_type.abstract:
-                loader_instances += "public static readonly {} {} = {};\n".format(
+                loader_instances += "    internal static readonly {} {} = {};\n".format(
                     collected_type.loader_type, collected_type.name, collected_type.init
                 )
 
@@ -914,11 +924,11 @@ public class {enum_name} : IEnumClass<{enum_name}>
     [TestMethod]
     public void Test{basename}()
     {{
-        var file = System.IO.File.ReadAllText("data/examples/{example_name}");
-        var doc = RootLoader.LoadDocument(file,
+        string? file = System.IO.File.ReadAllText("data/examples/{example_name}");
+        RootLoader.LoadDocument(file!,
             new Uri(Path.GetFullPath("data/examples/{example_name}")).AbsoluteUri);
     }}
-    """.format(
+""".format(
                         basename=basename.replace("-", "_").replace(".", "_"),
                         example_name=example_name,
                     )

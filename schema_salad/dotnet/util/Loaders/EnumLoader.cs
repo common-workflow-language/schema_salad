@@ -17,7 +17,7 @@ internal class EnumLoader<T> : ILoader<T> where T : IEnumClass<T>
         else
         {
             throw new ValidationException(
-                $"Symbol not contained in {typeof(T).Name} Enum, expected one of {string.Join(", ",T.Symbols())}");
+                $"Symbol not contained in {typeof(T).Name} Enum, expected one of {string.Join(", ", T.Symbols())}");
         }
     }
 

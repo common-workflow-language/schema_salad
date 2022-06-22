@@ -40,7 +40,7 @@ def test_meta_schema_gen(tmp_path: Path) -> None:
     record_schema_dir = src_dir / "RecordSchema.cs"
     assert record_schema_dir.exists()
     with open(record_schema_dir) as f:
-        assert "public class RecordSchema : IRecordSchema, " "ISavable {\n" in f.read()
+        assert "public class RecordSchema : IRecordSchema, " "ISavable\n{\n" in f.read()
 
 
 def test_class_field(tmp_path: Path) -> None:
@@ -59,16 +59,16 @@ def test_class_field(tmp_path: Path) -> None:
 
     with open(target_dir / "DotnetTest" / "src" / "ClassFieldString.cs") as f:
         assert (
-            "public ClassFieldString (string class_=ClassFieldString,"
+            'public ClassFieldString(string class_ = "ClassFieldString",'
             + " LoadingOptions? loadingOptions = null,"
-            + " Dictionary<object, object>? extensionFields = null) {\n"
+            + " Dictionary<object, object>? extensionFields = null)\n    {\n"
             in f.read()
         )
     with open(target_dir / "DotnetTest" / "src" / "ClassFieldEnum.cs") as f:
         assert (
-            "public ClassFieldEnum (ClassFieldEnum_class? class_ = null,"
+            "public ClassFieldEnum(ClassFieldEnum_class? class_ = null,"
             + " LoadingOptions? loadingOptions = null,"
-            + " Dictionary<object, object>? extensionFields = null) {\n"
+            + " Dictionary<object, object>? extensionFields = null)\n    {\n"
             in f.read()
         )
 
