@@ -1,7 +1,7 @@
 ﻿using ${project_name};
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Test.Loader;
+namespace Test;
 
 [TestClass]
 public class UtilitiesTests

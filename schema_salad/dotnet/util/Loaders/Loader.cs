@@ -58,7 +58,7 @@ internal interface ILoader<T> : ILoader
         LoadingOptions loadingOptions = loadingOptions_;
         if (doc.ContainsKey("$namespaces"))
         {
-            Dictionary<string, string> namespaces = ((Dictionary<object, object>)doc["$namespaces"]).ToDictionary(entry => entry.Key.ToString(), entry => entry.Value.ToString())!;
+            Dictionary<string, string> namespaces = ((Dictionary<object, object>)doc["$namespaces"]).ToDictionary(entry => (string)entry.Key, entry => entry.Value.ToString())!;
             loadingOptions = new LoadingOptions(copyFrom: loadingOptions, namespaces: namespaces);
             doc = new Dictionary<object, object>(doc);
             doc.Remove("$namespaces");

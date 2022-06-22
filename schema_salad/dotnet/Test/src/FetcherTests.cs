@@ -6,7 +6,7 @@ using ${project_name};
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using RichardSzalay.MockHttp;
 
-namespace Test.Loader;
+namespace Test;
 
 [TestClass]
 public class FetcherTests
@@ -35,7 +35,7 @@ public class FetcherTests
     public void TestFetchTextFile()
     {
         DefaultFetcher fetcher = new();
-        Assert.AreEqual("test", fetcher.FetchText(Path.Combine(Environment.CurrentDirectory, "data/test.txt")));
+        Assert.AreEqual("test", fetcher.FetchText(new Uri(Path.Combine(Environment.CurrentDirectory, "data/test.txt")).AbsoluteUri));
     }
 
     [TestMethod]

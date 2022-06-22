@@ -916,8 +916,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
     {{
         var file = System.IO.File.ReadAllText("data/examples/{example_name}");
         var doc = RootLoader.LoadDocument(file,
-            new Uri(Path.GetFullPath("data/examples/{example_name}")).AbsoluteUri,
-            new LoadingOptions());
+            new Uri(Path.GetFullPath("data/examples/{example_name}")).AbsoluteUri);
     }}
     """.format(
                         basename=basename.replace("-", "_").replace(".", "_"),

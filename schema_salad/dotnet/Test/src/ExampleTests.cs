@@ -6,7 +6,8 @@ using OneOf;
 using OneOf.Types;
 using System;
 using System.IO;
-namespace Test.Loader;
+
+namespace Test;
 
 [TestClass]
 public class ExampleTests

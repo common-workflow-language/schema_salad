@@ -40,7 +40,7 @@ internal class SecondaryDSLLoader : ILoader<object>
                 {
                     if (dMap.Contains("pattern"))
                     {
-                        entry.Add("pattern", dMap["pattern"]);
+                        entry.Add("pattern", dMap["pattern"]!);
                         dMap.Remove("pattern");
                     }
                     else
@@ -50,7 +50,7 @@ internal class SecondaryDSLLoader : ILoader<object>
 
                     if (dMap.Contains("required"))
                     {
-                        entry.Add("required", dMap["required"]);
+                        entry.Add("required", dMap["required"]!);
                         dMap.Remove("required");
                     }
 
