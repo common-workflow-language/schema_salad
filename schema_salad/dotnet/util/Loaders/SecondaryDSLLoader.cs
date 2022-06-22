@@ -36,10 +36,9 @@ internal class SecondaryDSLLoader : ILoader<object>
 
                     r.Add(entry);
                 }
-                else if (d is IDictionary)
+                else if (d is IDictionary dMap)
                 {
-                    Dictionary<string, object> dMap = new((Dictionary<string, object>)d);
-                    if (dMap.ContainsKey("pattern"))
+                    if (dMap.Contains("pattern"))
                     {
                         entry.Add("pattern", dMap["pattern"]);
                         dMap.Remove("pattern");
@@ -49,7 +48,7 @@ internal class SecondaryDSLLoader : ILoader<object>
                         throw new ValidationException("Missing 'pattern' in secondaryFiles specification entry.");
                     }
 
-                    if (dMap.ContainsKey("required"))
+                    if (dMap.Contains("required"))
                     {
                         entry.Add("required", dMap["required"]);
                         dMap.Remove("required");

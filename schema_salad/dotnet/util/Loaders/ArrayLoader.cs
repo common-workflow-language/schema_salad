@@ -30,21 +30,21 @@ internal class ArrayLoader<T> : ILoader<List<T>>
             this,
             itemLoader
         };
-        UnionLoader unionLoader = new(loaders);
+        ILoader<object> unionLoader = new UnionLoader(loaders);
         List<ValidationException> errors = new();
 
         foreach (object? e1 in docList)
         {
             try
             {
-                object loadedField = unionLoader.Load(e1, baseuri, loadingOptions, docRoot);
+                dynamic loadedField = unionLoader.LoadField(e1, baseuri, loadingOptions);
                 if (loadedField is IList)
                 {
                     returnValue.AddRange((List<T>)loadedField);
                 }
                 else
                 {
-                    returnValue.Add((T)loadedField);
+                    returnValue.Add(loadedField);
                 }
             }
             catch (ValidationException e)

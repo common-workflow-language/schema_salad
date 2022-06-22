@@ -4,7 +4,7 @@ public class LoadingOptions
 {
     public IFetcher fetcher;
     public string? fileUri;
-    public Dictionary<string, string> namespaces;
+    public Dictionary<string, string>? namespaces;
     public List<string>? schemas;
     public Dictionary<string, object> idx;
     public Dictionary<string, string> vocab;
@@ -20,7 +20,7 @@ public class LoadingOptions
         LoadingOptions? copyFrom = null)
     {
         this.fileUri = fileUri;
-        this.namespaces = namespaces ?? new Dictionary<string, string>();
+        this.namespaces = namespaces;
         this.schemas = schemas;
         this.idx = idx ?? new Dictionary<string, object>();
 
@@ -60,11 +60,11 @@ public class LoadingOptions
         this.vocab = Vocabs.Vocab;
         this.rvocab = Vocabs.Rvocab;
 
-        if (namespaces != null)
+        if (this.namespaces != null)
         {
             this.vocab = new Dictionary<string, string>(Vocabs.Vocab);
             this.rvocab = new Dictionary<string, string>(Vocabs.Rvocab);
-            foreach (KeyValuePair<string, string> namespaceEntry in namespaces)
+            foreach (KeyValuePair<string, string> namespaceEntry in this.namespaces)
             {
                 this.vocab.Add(namespaceEntry.Key, namespaceEntry.Value);
                 this.rvocab.Add(namespaceEntry.Value, namespaceEntry.Key);
@@ -87,16 +87,16 @@ public class LoadingOptions
 
         if (vocab.Count > 0 && url.Contains(':'))
         {
-            string prefix = url.Split(":", 1)[0];
+            string prefix = url.Split(":")[0];
             if (vocab.ContainsKey(prefix))
             {
                 url = string.Concat(vocab[prefix], url.AsSpan(prefix.Length + 1));
             }
         }
 
-        Uri split = new(url, UriKind.RelativeOrAbsolute);
-        bool hasFragment = split.IsAbsoluteUri && split.Fragment != "";
-        if ((split.IsAbsoluteUri && (split.Scheme.Equals("http") || split.Scheme.Equals("https") || split.Scheme.Equals("file")))
+        UriBuilder split = Utilities.Split(url);
+        bool hasFragment = split.Fragment != "";
+        if (split.Scheme.Equals("http") || split.Scheme.Equals("https") || split.Scheme.Equals("file")
             || url.StartsWith("$(")
             || url.StartsWith("${"))
         {
@@ -104,32 +104,22 @@ public class LoadingOptions
         }
         else if (scopeId && !hasFragment)
         {
-            Uri splitbase = new(baseUrl);
+            UriBuilder splitbase = Utilities.Split(baseUrl);
             string frg;
             if (splitbase.Fragment.Length > 0)
             {
-                frg = splitbase.FragmentWithoutFragmentation() + "/" + split.AbsolutePath;
+                frg = splitbase.FragmentWithoutFragmentation() + split.Path;
             }
             else
             {
-                frg = split.IsAbsoluteUri ? split.AbsolutePath : split.OriginalString;
-            }
-
-            string pt;
-            if (!splitbase.AbsolutePath.Equals(""))
-            {
-                pt = splitbase.AbsolutePath;
-            }
-            else
-            {
-                pt = "/";
+                frg = split.Path.Substring(1);
             }
 
             UriBuilder builder = new()
             {
                 Scheme = splitbase.Scheme,
                 Host = splitbase.Host,
-                Path = pt,
+                Path = splitbase.Path,
                 Fragment = frg
             };
 
@@ -137,7 +127,7 @@ public class LoadingOptions
         }
         else if (scopedRef != null && !hasFragment)
         {
-            Uri splitbase = new(baseUrl);
+            UriBuilder splitbase = Utilities.Split(baseUrl);
             List<string> sp = new(splitbase.FragmentWithoutFragmentation().Split("/").ToList());
             int? n = scopedRef;
             while (n > 0 && sp.Count > 0)
@@ -153,7 +143,7 @@ public class LoadingOptions
             {
                 Scheme = splitbase.Scheme,
                 Host = splitbase.Host,
-                Path = splitbase.AbsolutePath,
+                Path = splitbase.Path,
                 Query = splitbase.Query,
                 Fragment = fragment
             };
@@ -167,17 +157,18 @@ public class LoadingOptions
 
         if (vocabTerm)
         {
-            split = new Uri(url, UriKind.RelativeOrAbsolute);
-            if (split.IsAbsoluteUri && split.Scheme.Length > 0)
+            split = Utilities.Split(url);
+            if (split.Scheme.Length > 0)
             {
                 if (rvocab.ContainsKey(url))
                 {
                     return rvocab[url];
                 }
-                else
-                {
-                    throw new ValidationException($"Term '{url}' not in vocabulary");
-                }
+
+            }
+            else
+            {
+                throw new ValidationException($"Term '{url}' not in vocabulary");
             }
         }
 

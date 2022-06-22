@@ -7,4 +7,9 @@ internal static class UriExtensions
     {
         return uri.Fragment.Length > 0 ? uri.Fragment.Substring(1) : "";
     }
+
+    public static string FragmentWithoutFragmentation(this UriBuilder uri)
+    {
+        return uri.Fragment.Length > 0 ? uri.Fragment.Substring(1) : "";
+    }
 }

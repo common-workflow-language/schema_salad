@@ -14,7 +14,7 @@ internal class ScalarNodeTypeResolver : INodeTypeResolver
             {
                 // Expressions taken from https://github.com/aaubry/YamlDotNet/blob/feat-schemas/YamlDotNet/Core/Schemas/JsonSchema.cs
 
-                if (Regex.IsMatch(scalar.Value, @"^(true|false)$", RegexOptions.IgnorePatternWhitespace))
+                if (Regex.IsMatch(scalar.Value, @"^(true|false|True|False)$", RegexOptions.IgnorePatternWhitespace))
                 {
                     currentType = typeof(bool);
                     return true;
@@ -31,7 +31,7 @@ internal class ScalarNodeTypeResolver : INodeTypeResolver
                     @"^-? ( 0 | [1-9] [0-9]* ) ( \. [0-9]* )? ( [eE] [-+]? [0-9]+ )?$",
                     RegexOptions.IgnorePatternWhitespace))
                 {
-                    currentType = typeof(float);
+                    currentType = typeof(double);
                     return true;
                 }
 

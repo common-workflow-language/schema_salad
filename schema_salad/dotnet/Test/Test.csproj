@@ -24,7 +24,7 @@
     <ProjectReference Include="..\${project_name}\${project_name}.csproj" />
   </ItemGroup>
   <ItemGroup>
-      <None Update="data/test.txt">
+      <None Update="data/**">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
   </ItemGroup>

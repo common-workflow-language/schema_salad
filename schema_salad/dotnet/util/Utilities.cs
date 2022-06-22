@@ -25,6 +25,25 @@ public static class Utilities
             return inputId;
         }
     }
+
+    public static UriBuilder Split(string uri) 
+    {
+        Uri splitUri = new(uri, UriKind.RelativeOrAbsolute);
+        UriBuilder split;
+        if(!splitUri.IsAbsoluteUri)
+        {
+            var guid = Guid.NewGuid();
+            Uri stubUri = new ("http://"+ guid + ".com");
+            Uri absoluteUri = new(stubUri,splitUri);
+            split = new(absoluteUri);
+            split.Scheme = "";
+            split.Host = "";
+            return split;
+        } else 
+        {
+            return new UriBuilder(splitUri);
+        }
+    }
 }
 
 public interface IEnumClass

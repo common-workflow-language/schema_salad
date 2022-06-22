@@ -1,5 +1,6 @@
 """DotNet code generator for a given schema salad definition."""
 import os
+import shutil
 import string
 from io import StringIO
 from pathlib import Path
@@ -708,7 +709,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
                 """
         var {safename}Val = ISavable.SaveRelativeUri({safename}, {scoped_id},
             relativeUris, {ref_scope}, (string){base_url}!);
-        if({safename}Val is not None) {{
+        if({safename}Val is not null) {{
             r["{fieldname}"] = {safename}Val;
         }}
 """.format(
@@ -723,7 +724,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
             self.current_serializer.write(
                 """
         var {safename}Val = ISavable.Save({safename}, false, (string){base_url}!, relativeUris);
-        if({safename}Val is not None) {{
+        if({safename}Val is not null) {{
             r["{fieldname}"] = {safename}Val;
         }}
 """.format(
@@ -900,27 +901,28 @@ public class {enum_name} : IEnumClass<{enum_name}>
 
         example_tests = ""
 
-        #     if self.examples:
-        #         _safe_makedirs(self.test_resources_dir)
-        #         utils_resources = self.test_resources_dir / "examples"
-        #         if os.path.exists(utils_resources):
-        #             shutil.rmtree(utils_resources)
-        #         shutil.copytree(self.examples, utils_resources)
-        #         for example_name in os.listdir(self.examples):
-        #             if example_name.startswith("valid"):
-        #                 basename = os.path.basename(example_name).rsplit(".", 1)[0]
-        #                 example_tests += """
-        # it('{basename}', async () => {{
-        #     await loadDocument(__dirname + '/data/examples/{example_name}')
-        # }})
-        # it('{basename} by string', async () => {{
-        #     let doc = fs.readFileSync(__dirname + '/data/examples/{example_name}').toString()
-        #     await loadDocumentByString(doc, url.pathToFileURL(__dirname +
-        #         '/data/examples/').toString())
-        # }})""".format(
-        #                     basename=basename.replace("-", "_").replace(".", "_"),
-        #                     example_name=example_name,
-        #                 )
+        if self.examples:
+            _safe_makedirs(self.test_resources_dir)
+            utils_resources = self.test_resources_dir / "examples"
+            if os.path.exists(utils_resources):
+                shutil.rmtree(utils_resources)
+            shutil.copytree(self.examples, utils_resources)
+            for example_name in os.listdir(self.examples):
+                if example_name.startswith("valid"):
+                    basename = os.path.basename(example_name).rsplit(".", 1)[0]
+                    example_tests += """
+    [TestMethod]
+    public void Test{basename}()
+    {{
+        var file = System.IO.File.ReadAllText("data/examples/{example_name}");
+        var doc = RootLoader.LoadDocument(file,
+            new Uri(Path.GetFullPath("data/examples/{example_name}")).AbsoluteUri,
+            new LoadingOptions());
+    }}
+    """.format(
+                        basename=basename.replace("-", "_").replace(".", "_"),
+                        example_name=example_name,
+                    )
 
         template_args: MutableMapping[str, str] = dict(
             project_name=self.package,

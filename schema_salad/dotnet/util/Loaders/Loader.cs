@@ -15,27 +15,27 @@ internal interface ILoader<T> : ILoader
     T LoadField(in object value_, in string baseUri, in LoadingOptions loadingOptions)
     {
         object value = value_;
-        if (value is IDictionary)
+        if (value is IDictionary valMap)
         {
-            Dictionary<object, object> valMap = (Dictionary<object, object>)value;
-            if (valMap.ContainsKey("$import"))
+            //Dictionary<object, object> valMap = (Dictionary<object, object>)value;
+            if (valMap.Contains("$import"))
             {
                 if (loadingOptions.fileUri == null)
                 {
                     throw new ValidationException("Cannot load $import without fileuri");
                 }
 
-                return DocumentLoadByUrl(loadingOptions.fetcher.Urljoin(loadingOptions.fileUri, (string)valMap["$import"]), loadingOptions);
+                return DocumentLoadByUrl(loadingOptions.fetcher.Urljoin(loadingOptions.fileUri, (string)valMap["$import"]!), loadingOptions);
             }
-            else if (valMap.ContainsKey("$include"))
+            else if (valMap.Contains("$include"))
             {
                 if (loadingOptions.fileUri == null)
                 {
-                    throw new ValidationException("Cannot load $import without fileuri");
+                    throw new ValidationException("Cannot load $include without fileuri");
                 }
 
                 value = loadingOptions.fetcher
-                    .FetchText(loadingOptions.fetcher.Urljoin(loadingOptions.fileUri, (string)valMap["$include"]));
+                    .FetchText(loadingOptions.fetcher.Urljoin(loadingOptions.fileUri, (string)valMap["$include"]!));
             }
         }
 
@@ -58,11 +58,20 @@ internal interface ILoader<T> : ILoader
         LoadingOptions loadingOptions = loadingOptions_;
         if (doc.ContainsKey("$namespaces"))
         {
-            Dictionary<string, string> namespaces = (Dictionary<string, string>)doc["$namespaces"];
+            Dictionary<string, string> namespaces = ((Dictionary<object, object>)doc["$namespaces"]).ToDictionary(entry => entry.Key.ToString(), entry => entry.Value.ToString())!;
             loadingOptions = new LoadingOptions(copyFrom: loadingOptions, namespaces: namespaces);
             doc = new Dictionary<object, object>(doc);
             doc.Remove("$namespaces");
         }
+
+        if (doc.ContainsKey("$schemas"))
+        {
+            List<string> schemas = ((List<object>)doc["$schemas"]).Select(i => i.ToString()).ToList()!;
+            loadingOptions = new LoadingOptions(copyFrom: loadingOptions, schemas: schemas);
+            doc = new Dictionary<object, object>(doc);
+            doc.Remove("$schemas");
+        }
+
 
         string baseUri = baseUri_;
         if (doc.ContainsKey("$base"))

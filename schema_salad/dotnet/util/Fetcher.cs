@@ -31,7 +31,7 @@ public class DefaultFetcher : IFetcher
 
     public string FetchText(string uri)
     {
-        Uri split = new(uri);
+        UriBuilder split = Utilities.Split(uri);
         string scheme = split.Scheme;
         if (IFetcher.Schemes.Contains(scheme))
         {
@@ -52,7 +52,7 @@ public class DefaultFetcher : IFetcher
             {
                 try
                 {
-                    string fileContent = System.IO.File.ReadAllText(split.AbsolutePath);
+                    string fileContent = System.IO.File.ReadAllText(Path.GetFullPath(split.Path));
                     return fileContent;
                 }
                 catch (Exception e)
