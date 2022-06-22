@@ -14,14 +14,27 @@ from typing import (
     Set,
     Union,
 )
+from schema_salad.utils import (
+    CacheType,
+    ResolveType,
+    add_dictlist,
+    aslist,
+    convert_to_dict,
+    flatten,
+    json_dumps,
+    yaml_no_ts,
+)
+from . import _logger, jsonld_context, ref_resolver, validate
 
 import pkg_resources
 import re
+from .utils import aslist
+import copy
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
-from .schema import shortname
+from .schema import shortname, deepcopy_strip, replace_type
 
 def safename(name: str) -> str:
     return re.sub("[^a-zA-Z0-9]", "_", name)
@@ -123,6 +136,16 @@ class EnumDefinition:
 
 def getType(s: str) -> str:
     return s.split('#')[1]
+
+def split_name(s: str) -> (str, str):
+    t = s.split('#')
+    assert(len(t) == 2)
+    return (t[0], t[1])
+def split_field(s: str) -> (str, str, str):
+    (namespace, field) = split_name(s)
+    t = field.split("/")
+    assert(len(t) == 2)
+    return (namespace, t[0], t[1])
 
 class CppCodeGen(CodeGenBase):
     def __init__(
@@ -253,6 +276,9 @@ class CppCodeGen(CodeGenBase):
         )
 
     def epilogue(self, root_loader: TypeDef) -> None:
+        self.epilogue2()
+
+    def epilogue2(self) -> None:
         self.target.write("#pragma once\n\n")
         self.target.write("#include <cassert>\n")
         self.target.write("#include <map>\n")
@@ -296,13 +322,51 @@ auto toYaml(T const& t) {
         for key in self.namespaces:
             self.namespaces[key].write(self.target, "    ")
 
-    def run(items) -> None:
+    def run(self, items) -> None:
         items2 = deepcopy_strip(items)
         types = {i["name"]: i for i in items2}  # type: Dict[str, Any]
         results = []
 
         for stype in items2:
+            assert("type" in stype)
+            if stype["type"] == "record":
+                (namespace, classname) = split_name(stype["name"])
+                cd = ClassDefinition(
+                    classname
+                )
+                cd.abstract = stype.get("abstract", False)
+                if "extends" in stype:
+                    for ex in aslist(stype["extends"]):
+                        (base_namespace, base_classname) = split_name(ex)
+                        name = base_classname
+                        if base_namespace != namespace:
+                            name = f"{base_namespace}::{name}"
+                        cd.extends.append(name)
+
+#
+                if not namespace in self.namespaces:
+                    self.namespaces[namespace] = NamespaceDefinition(namespace)
+
+                self.namespaces[namespace].classDefinitions[classname] = cd
+
+                if "fields" in stype:
+                    for field in stype["fields"]:
+                        print(f"{field}")
+                        (namespace, classname, fieldname) = split_field(field["name"])
+                        if isinstance(field["type"], dict):
+                            if (field["type"]["type"] == "enum":
+                                fieldtype = field["type"]["type"]
+                        else:
+                            fieldtype = field["type"]
+
+                        self.namespaces[namespace].classDefinitions[classname].fields.append(
+                            FieldDefinition(fieldname, fieldtype)
+                        )
+
+
+
             print(stype)
+            print(stype["type"])
             if "extends" in stype:
                 print("blub?")
                 specs = {}  # type: Dict[str, str]
@@ -380,9 +444,9 @@ auto toYaml(T const& t) {
 
         for result in results:
             if "fields" in result:
-                result["fields"] = replace_type(
-                    result["fields"], extended_by, loader, set()
-                )
-
-        return results
+                pass
+#                result["fields"] = replace_type(
+#                    result["fields"], extended_by, loader, set()
+#                )
+        self.epilogue2()
 
