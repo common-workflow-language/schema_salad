@@ -443,7 +443,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         json_dump(doc_metadata, fp=sys.stdout, indent=4, default=str)
         return 0
 
-    print(f"Document `{args.document}` is valid")
+    _logger.info(f"Document `{args.document}` is valid")
 
     return 0
 
