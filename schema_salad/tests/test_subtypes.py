@@ -101,9 +101,8 @@ def test_avro_loading_subtype_bad() -> None:
     path = get_data("tests/test_schema/avro_subtype_bad.yml")
     assert path
     target_error = (
-        r"Union\s+item\s+must\s+be\s+a\s+valid\s+Avro\s+schema:\s+"
-        r"Field\s+name\s+override_me\s+already\s+in\s+use\s+with\s+incompatible\s+"
-        r"type\.\s+org\.w3id\.cwl\.salad\.Any\s+vs\s+\['string',\s+'int'\]\."
+        r"Field name .*\/override_me already in use with incompatible type. "
+        r"Any vs \['string', 'int'\]\."
     )
     with pytest.raises(SchemaParseException, match=target_error):
         document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(

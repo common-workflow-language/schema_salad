@@ -34,7 +34,7 @@ from schema_salad.utils import (
 )
 
 from . import _logger, jsonld_context, ref_resolver, validate
-from .avro.schema import Names, SchemaParseException, make_avsc_object
+from .avro.schema import Names, SchemaParseException, make_avsc_object, is_subtype
 from .exceptions import (
     ClassValidationException,
     SchemaSaladException,
@@ -617,7 +617,7 @@ def extend_and_specialize(
                 for spec in aslist(stype["specialize"]):
                     specs[spec["specializeFrom"]] = spec["specializeTo"]
 
-            exfields = []  # type: List[str]
+            exfields = []  # type: List[Any]
             exsym = []  # type: List[str]
             for ex in aslist(stype["extends"]):
                 if ex not in types:
@@ -645,8 +645,46 @@ def extend_and_specialize(
 
             if stype["type"] == "record":
                 stype = copy.copy(stype)
-                exfields.extend(stype.get("fields", []))
-                stype["fields"] = exfields
+                combined_fields = []
+                fields = stype.get("fields", [])
+                # We use short names here so that if a type inherits a field
+                # (e.g. Child#id) from a parent (Parent#id) we avoid adding
+                # the same field twice (previously we had just
+                # ``exfields.extends(stype.fields)``).
+                sns_fields = {shortname(field["name"]): field for field in fields}
+                sns_exfields = {
+                    shortname(exfield["name"]): exfield for exfield in exfields
+                }
+
+                # N.B.: This could be simpler. We could have a single loop
+                #       to create the list of fields. The reason for this more
+                #       convoluted solution is to make sure we keep the order
+                #       of ``exfields`` first, and then the type fields. That's
+                #       because we have unit tests that rely on the order that
+                #       fields are written. Codegen output changes as well.
+                #       We are relying on the insertion order preserving
+                #       property of python dicts (i.e. relyig on Py3.5+).
+
+                # First pass adding the exfields.
+                for sn_exfield, exfield in sns_exfields.items():
+                    field = sns_fields.get(sn_exfield, None)
+                    if field is None:
+                        field = exfield
+                    else:
+                        # make sure field name has not been used yet
+                        if not is_subtype(exfield["type"], field["type"]):
+                            raise SchemaParseException(
+                                f"Field name {field['name']} already in use with "
+                                "incompatible type. "
+                                f"{field['type']} vs {exfield['type']}."
+                            )
+                    combined_fields.append(field)
+                # Second pass, now add the ones that are specific to the subtype.
+                for field in sns_fields.values():
+                    if field not in combined_fields:
+                        combined_fields.append(field)
+
+                stype["fields"] = combined_fields
 
                 fieldnames = set()  # type: Set[str]
                 for field in stype["fields"]:
