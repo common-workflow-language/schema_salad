@@ -26,7 +26,7 @@ public static class Utilities
         }
     }
 
-    public static UriBuilder Split(string uri)
+    internal static UriBuilder Split(string uri)
     {
         Uri splitUri = new(uri, UriKind.RelativeOrAbsolute);
         UriBuilder split;

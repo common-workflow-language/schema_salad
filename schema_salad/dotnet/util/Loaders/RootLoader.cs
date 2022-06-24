@@ -5,7 +5,7 @@ namespace ${project_name};
 
 public class RootLoader
 {
-    public static ${root_loader_type} LoadDocument(in Dictionary<object, object> doc, in string baseUri_, in LoadingOptions? loadingOptions_ = null)
+    public static ${root_loader_type} LoadDocument(Dictionary<object, object> doc, string baseUri_, LoadingOptions? loadingOptions_ = null)
     {
         string baseUri = EnsureBaseUri(baseUri_);
         LoadingOptions loadingOptions;
@@ -23,7 +23,7 @@ public class RootLoader
         return outDoc;
     }
 
-    public static ${root_loader_type} LoadDocument(in string doc, in string uri_, in LoadingOptions? loadingOptions_ = null)
+    public static ${root_loader_type} LoadDocument(string doc, string uri_, LoadingOptions? loadingOptions_ = null)
     {
         string uri = EnsureBaseUri(uri_);
         LoadingOptions loadingOptions;
