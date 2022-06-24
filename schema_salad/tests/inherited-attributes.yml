@@ -1,0 +1,25 @@
+- name: Parent
+  doc: |
+    Parent record
+  documentRoot: true
+  docChild:
+    - "#Child"
+  type: record
+  fields:
+    - name: id
+      jsonldPredicate:
+        _id: "#id"
+      type: int
+      doc: Parent ID
+
+- name: Child
+  doc: |
+    Child record
+  type: record
+  extends: Parent
+  fields:
+    - name: id
+      jsonldPredicate:
+        _id: "#id"
+      type: int
+      doc: Child ID

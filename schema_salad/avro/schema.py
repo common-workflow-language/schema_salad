@@ -503,15 +503,6 @@ class RecordSchema(NamedSchema):
                 new_field = Field(
                     atype, name, has_default, default, order, names, doc, other_props
                 )
-                # make sure field name has not been used yet
-                if new_field.name in parsed_fields:
-                    old_field = parsed_fields[new_field.name]
-                    if not is_subtype(old_field["type"], field["type"]):
-                        raise SchemaParseException(
-                            f"Field name {new_field.name} already in use with "
-                            "incompatible type. "
-                            f"{field['type']} vs {old_field['type']}."
-                        )
                 parsed_fields[new_field.name] = field
             else:
                 raise SchemaParseException(f"Not a valid field: {field}")
