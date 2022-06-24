@@ -895,7 +895,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
         )
         expand_resource_template_to(
             "Test.csproj.template",
-            self.test_src_dir / "Test.csproj" ,
+            self.test_src_dir / "Test.csproj",
         )
         expand_resource_template_to(
             "docfx.json",
