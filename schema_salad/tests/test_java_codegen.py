@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, cast
 from schema_salad import codegen
 from schema_salad.schema import load_schema
 
-from .util import cwl_file_uri, metaschema_file_uri, get_data
+from .util import cwl_file_uri, get_data, metaschema_file_uri
 
 
 def test_cwl_gen(tmp_path: Path) -> None:

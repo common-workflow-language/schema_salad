@@ -1,8 +1,5 @@
-import pytest
-
 from schema_salad.avro.schema import Names
-from schema_salad.exceptions import ValidationException
-from schema_salad.schema import load_and_validate, load_schema
+from schema_salad.schema import load_schema
 
 from .util import get_data
 
@@ -12,4 +9,3 @@ def test_misc() -> None:
     assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
-
