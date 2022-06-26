@@ -3,6 +3,7 @@ name: Python package build and publish
 on:
   release:
     types: [created]
+  workflow_dispatch: {}
 
 jobs:
   deploy:
