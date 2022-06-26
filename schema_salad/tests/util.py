@@ -2,6 +2,7 @@ import os
 from typing import Optional, Text
 
 from pkg_resources import Requirement, ResolutionError, resource_filename
+
 from schema_salad import ref_resolver
 
 
