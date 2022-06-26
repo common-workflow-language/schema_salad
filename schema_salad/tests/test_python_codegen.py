@@ -8,7 +8,7 @@ from schema_salad import codegen
 from schema_salad.avro.schema import Names
 from schema_salad.schema import load_schema
 
-from .util import cwl_file_uri, metaschema_file_uri, basket_file_uri
+from .util import basket_file_uri, cwl_file_uri, metaschema_file_uri
 
 
 def test_cwl_gen(tmp_path: Path) -> None:

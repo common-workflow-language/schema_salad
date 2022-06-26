@@ -520,10 +520,7 @@ class RecordSchema(NamedSchema):
         other_props: Optional[PropsType] = None,
     ) -> None:
         # Ensure valid ctor args
-        if fields is None:
-            fail_msg = "Record schema requires a non-empty fields property."
-            raise SchemaParseException(fail_msg)
-        elif not isinstance(fields, list):
+        if not isinstance(fields, list):
             fail_msg = "Fields property must be a list of Avro schemas."
             raise SchemaParseException(fail_msg)
 
@@ -622,7 +619,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
                     symbols = cast(List[str], symbols)
                 return EnumSchema(name, namespace, symbols, names, doc, other_props)
             if atype in ["record", "error"]:
-                fields = json_data.get("fields")
+                fields = json_data.get("fields", [])
                 if not isinstance(fields, list):
                     raise SchemaParseException(
                         '"fields" for type {} must be a list of mappings: {}'.format(
