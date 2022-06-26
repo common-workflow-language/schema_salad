@@ -699,7 +699,7 @@ def extend_and_specialize(
             elif stype["type"] == "enum":
                 stype = copy.copy(stype)
                 exsym.extend(stype.get("symbols", []))
-                stype["symbol"] = exsym
+                stype["symbols"] = exsym
 
             types[stype["name"]] = stype
 
