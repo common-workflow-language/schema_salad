@@ -707,7 +707,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
             baseurl = "baseUrl"
         elif self.id_field_type.instance_type is not None:
             if self.id_field_type.instance_type.startswith("OneOf"):
-                baseurl = f"this.{self.safe_name(self.idfield)}.AsT1"
+                baseurl = f"(this.{self.safe_name(self.idfield)}.Value is None ? \"\" : {self.safe_name(self.idfield)}.Value)"
             else:
                 baseurl = f"this.{self.safe_name(self.idfield)}"
 
