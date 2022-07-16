@@ -49,11 +49,11 @@ jobs:
       with:
         pre-build-command: source .github/workflows/wheel-prep.sh
         build-requirements: -rrequirements.txt -rmypy-requirements.txt setuptools==50.0.0
-    - name: Build manylinux2_24 aarch64 Python wheels
-      uses: RalfG/python-wheels-manylinux-build@v0.4.2-manylinux2_24_aarch64
-      with:
-        pre-build-command: source .github/workflows/wheel-prep.sh
-        build-requirements: -rrequirements.txt -rmypy-requirements.txt setuptools==50.0.0
+    # - name: Build manylinux2_24 aarch64 Python wheels
+    #   uses: RalfG/python-wheels-manylinux-build@v0.4.2-manylinux2_24_aarch64
+    #   with:
+    #     pre-build-command: source .github/workflows/wheel-prep.sh
+    #     build-requirements: -rrequirements.txt -rmypy-requirements.txt setuptools==50.0.0
     # - name: Build manylinux2_28 aarch64 Python wheels
     #   uses: RalfG/python-wheels-manylinux-build@v0.4.2-manylinux2_28_aarch64
     #   with:
