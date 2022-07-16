@@ -592,9 +592,11 @@ class Loader:
                                 )
                                 v.lc.filename = document.lc.filename
                             else:
+                                sl = SourceLine(document, idmapField, str)
                                 raise ValidationException(
                                     "mapSubject '{}' value '{}' is not a dict "
-                                    "and does not have a mapPredicate.".format(k, v)
+                                    "and does not have a mapPredicate.".format(k, v),
+                                    sl,
                                 )
                         else:
                             v = val
