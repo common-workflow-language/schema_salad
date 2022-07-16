@@ -13,15 +13,13 @@ jobs:
       with:
         fetch-depth: 0  # slow, but gets all the tags
     - name: Build manylinux2010 Python wheels
-      uses: RalfG/python-wheels-manylinux-build@v0.3.4-manylinux2010_x86_64
+      uses: RalfG/python-wheels-manylinux-build@v0.4.2-manylinux2010_x86_64
       with:
-        python-versions: 'cp36-cp36m cp37-cp37m cp38-cp38 cp39-cp39 cp310-cp310'
         pre-build-command: source .github/workflows/wheel-prep.sh
         build-requirements: -rrequirements.txt -rmypy-requirements.txt
     - name: Build manylinux2014 Python wheels
-      uses: RalfG/python-wheels-manylinux-build@v0.3.4-manylinux2014_x86_64
+      uses: RalfG/python-wheels-manylinux-build@v0.4.2-manylinux2014_x86_64
       with:
-        python-versions: 'cp36-cp36m cp37-cp37m cp38-cp38 cp39-cp39 cp310-cp310'
         pre-build-command: source .github/workflows/wheel-prep.sh
         build-requirements: -rrequirements.txt -rmypy-requirements.txt
     - name: Move audited wheels to new directory
@@ -42,9 +40,8 @@ jobs:
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
     - name: Build manylinux2014 Python wheels
-      uses: RalfG/python-wheels-manylinux-build@v0.3.4-manylinux2014_aarch64
+      uses: RalfG/python-wheels-manylinux-build@v0.4.2-manylinux2014_aarch64
       with:
-        python-versions: 'cp36-cp36m cp37-cp37m cp38-cp38 cp39-cp39 cp310-cp310'
         pre-build-command: source .github/workflows/wheel-prep.sh
         build-requirements: -rrequirements.txt -rmypy-requirements.txt
     - name: Move audited wheels to new directory
