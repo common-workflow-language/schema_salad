@@ -188,12 +188,13 @@ release-test: FORCE
 	./release-test.sh
 
 release: release-test
+	git tag ${VERSION}
 	. testenv2/bin/activate && \
 		python testenv2/src/${PACKAGE}/setup.py sdist bdist_wheel
 	. testenv2/bin/activate && \
 		pip install twine && \
 		twine upload testenv2/src/${PACKAGE}/dist/* && \
-		git tag ${VERSION} && git push --tags
+		git push --tags
 
 flake8: $(PYSOURCES)
 	flake8 $^
