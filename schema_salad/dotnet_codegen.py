@@ -14,7 +14,7 @@ from typing import (
     Set,
     Union,
 )
-from xml.sax.saxutils import escape
+from xml.sax.saxutils import escape  # nosec
 
 import pkg_resources
 
