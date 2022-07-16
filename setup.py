@@ -4,18 +4,10 @@ import os
 import sys
 from typing import List
 
-import setuptools.command.egg_info as egg_info_cmd
 from setuptools import setup
 
 SETUP_DIR = os.path.dirname(__file__)
 README = os.path.join(SETUP_DIR, "README.rst")
-
-try:
-    import gittaggers
-
-    tagger = gittaggers.EggInfoFromGit
-except ImportError:
-    tagger = egg_info_cmd.egg_info
 
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
 pytest_runner: List[str] = ["pytest < 8", "pytest-runner"] if needs_pytest else []
@@ -101,7 +93,7 @@ setup(
     ext_modules=ext_modules,
     license="Apache 2.0",
     python_requires=">=3.6",
-    setup_requires=pytest_runner,
+    setup_requires=pytest_runner + ["setuptools_scm"],
     packages=["schema_salad", "schema_salad.tests"],
     package_data={"schema_salad": ["metaschema/*", "py.typed"]},
     include_package_data=True,
@@ -116,7 +108,6 @@ setup(
         ]
     },
     zip_safe=True,
-    cmdclass={"egg_info": tagger},
     classifiers=[
         "Environment :: Console",
         "Intended Audience :: Science/Research",
@@ -131,4 +122,5 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Typing :: Typed",
     ],
+    use_scm_version=True,
 )
