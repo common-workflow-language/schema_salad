@@ -5,13 +5,14 @@ import os
 import shutil
 import sys
 import tempfile
-from typing import Union
+from typing import Union, Any
 
 import pytest
 from _pytest.fixtures import FixtureRequest
 from requests import Session
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
+import schema_salad.main
 from schema_salad.exceptions import ValidationException
 from schema_salad.fetcher import DefaultFetcher
 from schema_salad.ref_resolver import Loader, file_uri
@@ -259,3 +260,17 @@ def test_check_exists_follows_redirects() -> None:
     # for previous bug where allow_redirects wasn't set and as a
     # result it would return True even though the result was 3xx.
     assert not fetcher.check_exists("http://commonwl.org/does/not/exist")
+
+
+def test_resolve_missing_step_id(caplog: Any) -> None:
+    """From issue #cwltool/issues/1635. A Workflow with a Step without
+    the name attribute must raise a ValidationException that contains
+    the SourceLine data."""
+    schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    document_path = get_data("tests/missing_step_name.cwl")
+    if not schema_path or not document_path:
+        pytest.fail("Could not get data for the test")
+    assert 1 == schema_salad.main.main(
+        argsl=["--print-rdf", schema_path, document_path]
+    )
+    assert "missing_step_name.cwl:13:1" in "\n".join(caplog.messages)
