@@ -188,14 +188,14 @@ release-test: FORCE
 	./release-test.sh
 
 release:
-	git tag ${VERSION}
+	export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_SCHEMA_SALAD=${VERSION}
 	./release-test.sh
 	. testenv2/bin/activate && \
 		python testenv2/src/${PACKAGE}/setup.py sdist bdist_wheel
 	. testenv2/bin/activate && \
 		pip install twine && \
 		twine upload testenv2/src/${PACKAGE}/dist/* && \
-		git push --tags
+		git tag ${VERSION} && git push --tags
 
 flake8: $(PYSOURCES)
 	flake8 $^
