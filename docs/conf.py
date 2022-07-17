@@ -13,10 +13,9 @@
 import os
 import sys
 
-from importlib.metadata import version
-
 sys.path.insert(0, os.path.abspath('..'))
 
+from schema_salad import _version
 
 # -- Project information -----------------------------------------------------
 
@@ -59,11 +58,10 @@ html_theme = "sphinx_rtd_theme"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
 
 
-release = version('schema-salad')
-version = '.'.join(release.split('.')[:2])
+version = _version.version
 
 autoapi_dirs = ['../schema_salad']
 autodoc_typehints = 'description'
