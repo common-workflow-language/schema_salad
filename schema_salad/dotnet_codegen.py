@@ -14,9 +14,9 @@ from typing import (
     Set,
     Union,
 )
+from xml.sax.saxutils import escape  # nosec
 
 import pkg_resources
-from xml.sax.saxutils import escape
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, TypeDef

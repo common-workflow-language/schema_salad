@@ -13,7 +13,7 @@
 import os
 import sys
 
-from pkg_resources import get_distribution
+from importlib.metadata import version
 
 sys.path.insert(0, os.path.abspath('..'))
 
@@ -62,7 +62,7 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ['_static']
 
 
-release = get_distribution('schema-salad').version
+release = version('schema-salad')
 version = '.'.join(release.split('.')[:2])
 
 autoapi_dirs = ['../schema_salad']

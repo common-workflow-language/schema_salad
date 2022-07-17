@@ -13,10 +13,9 @@ from typing import (
 )
 from urllib.parse import urlsplit
 
-from .dotnet_codegen import DotNetCodeGen
-
 from . import schema
 from .codegen_base import CodeGenBase
+from .dotnet_codegen import DotNetCodeGen
 from .exceptions import SchemaSaladException
 from .java_codegen import JavaCodeGen
 from .python_codegen import PythonCodeGen

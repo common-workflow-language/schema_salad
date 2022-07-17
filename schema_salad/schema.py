@@ -34,7 +34,7 @@ from schema_salad.utils import (
 )
 
 from . import _logger, jsonld_context, ref_resolver, validate
-from .avro.schema import Names, SchemaParseException, make_avsc_object, is_subtype
+from .avro.schema import Names, SchemaParseException, is_subtype, make_avsc_object
 from .exceptions import (
     ClassValidationException,
     SchemaSaladException,

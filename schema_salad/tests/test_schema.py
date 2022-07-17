@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any, Dict, List, cast
 
 from schema_salad import schema
+
 from .util import get_data_uri
 
 cwl_file_uri = get_data_uri("tests/test_schema/CommonWorkflowLanguage.yml")
