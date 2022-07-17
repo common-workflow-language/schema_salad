@@ -76,7 +76,15 @@ install_requires = [
 ]
 
 extras_require = {
-    "docs": ["sphinx >= 2.2", "sphinx-rtd-theme", "pytest < 8"],
+    "docs": [
+        "sphinx >= 2.2",
+        "sphinx-rtd-theme",
+        "pytest < 8",
+        "sphinx-autoapi",
+        "sphinx-autodoc-typehints",
+        "typed_ast;python_version<'3.8'",
+        "sphinxcontrib-autoprogram",
+    ],
     "pycodegen": ["black"],
 }
 
