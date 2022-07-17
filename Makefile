@@ -187,8 +187,9 @@ release-test: FORCE
 	git diff-index --quiet HEAD -- || ( echo You have uncommited changes, please commit them and try again; false )
 	./release-test.sh
 
-release: release-test
+release:
 	git tag ${VERSION}
+	./release-test.sh
 	. testenv2/bin/activate && \
 		python testenv2/src/${PACKAGE}/setup.py sdist bdist_wheel
 	. testenv2/bin/activate && \
