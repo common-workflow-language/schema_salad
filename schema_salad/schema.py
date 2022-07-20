@@ -81,7 +81,7 @@ SALAD_FILES = (
 
 saladp = "https://w3id.org/cwl/salad#"
 
-cached_metaschema = None
+cached_metaschema: Optional[Tuple[Names, List[Dict[str, str]], Loader]] = None
 
 
 def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
