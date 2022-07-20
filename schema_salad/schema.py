@@ -86,7 +86,7 @@ cached_metaschema = None
 
 def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
     """Instantiate the metaschema."""
-
+    global cached_metaschema
     if cached_metaschema is not None:
         return cached_metaschema
 
