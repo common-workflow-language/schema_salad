@@ -81,9 +81,15 @@ SALAD_FILES = (
 
 saladp = "https://w3id.org/cwl/salad#"
 
+cached_metaschema = None
+
 
 def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
     """Instantiate the metaschema."""
+
+    if cached_metaschema is not None:
+        return cached_metaschema
+
     loader = ref_resolver.Loader(
         {
             "Any": saladp + "Any",
@@ -199,7 +205,8 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
         _logger.error("Metaschema error, avro was:\n%s", json_dumps(sch_obj, indent=4))
         raise
     validate_doc(sch_names, j2, loader, strict=True)
-    return (sch_names, j2, loader)
+    cached_metaschema = (sch_names, j2, loader)
+    return cached_metaschema
 
 
 def add_namespaces(
