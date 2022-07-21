@@ -214,7 +214,7 @@ def test_error_message10() -> None:
 
     t = "test_schema/test10.cwl"
     match = r"""
-^.+test10\.cwl:2:1: Object\s+`.+test10\.cwl`\s+is not valid because
+^.+test10\.cwl:2:1: Object\s+`.+test10\.cwl`\s+is\s+not\s+valid\s+because
 \s+tried `Workflow`\s+but
 .+test10\.cwl:7:1:     the `steps`\s+field\s+is\s+not\s+valid\s+because
 \s+tried array\s+of\s+<WorkflowStep>\s+but
