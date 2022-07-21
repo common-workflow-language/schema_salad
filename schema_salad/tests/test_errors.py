@@ -240,7 +240,7 @@ def test_error_message11() -> None:
     match = r"""
 ^.+test11\.cwl:7:1: checking field\s+`steps`
 .+test11\.cwl:8:3:   checking object\s+`.+test11\.cwl#step1`
-.+test11\.cwl:9:5:     Field `run`\s+contains\s+undefined\s+reference to
+.+test11\.cwl:9:5:     Field `run`\s+contains\s+undefined\s+reference\s+to
 \s+`file://.+/tests/test_schema/blub\.cwl`$"""[
         1:
     ]
