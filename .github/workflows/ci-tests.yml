@@ -91,7 +91,7 @@ jobs:
             source .env/bin/activate && \
             python -m pip install --upgrade pip wheel setuptools_scm[toml] && \
             python -m pip install -r mypy-requirements.txt -r requirements.txt && \
-            MYPYPATH=typeshed SCHEMA_SALAD_USE_MYPYC=1 python -m pip install -e .[pycodegen] && \
+            MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python -m pip install -e .[pycodegen] && \
             deactivate'
     - name: Test with pytest
       run: |

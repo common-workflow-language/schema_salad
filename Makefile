@@ -49,7 +49,7 @@ install-dep: install-dependencies
 
 install-dependencies: FORCE
 	pip install --upgrade $(DEVPKGS)
-	pip install -r requirements.txt -r mypy-requirements.txt -r docs/requirements.txt
+	pip install -r requirements.txt -r mypy-requirements.txt
 
 ## install     : install the ${MODULE} module and script(s)
 install: FORCE
@@ -80,7 +80,7 @@ clean: FORCE
 # Linting and code style related targets
 ## sorting imports using isort: https://github.com/timothycrosley/isort
 sort_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
-	isort $^ typeshed
+	isort $^ mypy-stubs
 
 remove_unused_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 	autoflake --in-place --remove-all-unused-imports $^
@@ -98,10 +98,10 @@ diff_pydocstyle_report: pydocstyle_report.txt
 
 ## format      : check/fix all code indentation and formatting (runs black)
 format:
-	black --exclude metaschema.py --exclude _version.py schema_salad setup.py typeshed
+	black --exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
 
 format-check:
-	black --diff --check --exclude metaschema.py --exclude _version.py schema_salad setup.py typeshed
+	black --diff --check --exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
 
 ## pylint      : run static code analysis on Python code
 pylint: $(PYSOURCES)
@@ -169,16 +169,10 @@ list-author-emails:
 
 mypy3: mypy
 mypy: $(filter-out setup.py,$(PYSOURCES))
-	if ! test -f $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))')/py.typed ; \
-	then \
-		rm -Rf typeshed/ruamel/yaml ; \
-		ln -s $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))') \
-			typeshed/ruamel/ ; \
-	fi  # if minimally required ruamel.yaml version is 0.15.99 or greater, than the above can be removed
-	MYPYPATH=$$MYPYPATH:typeshed mypy $^
+	MYPYPATH=$$MYPYPATH:mypy-stubs mypy $^
 
 mypyc: $(PYSOURCES)
-	MYPYPATH=typeshed SCHEMA_SALAD_USE_MYPYC=1 python setup.py test
+	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python setup.py test
 
 pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 	pyupgrade --exit-zero-even-if-changed --py36-plus $^
