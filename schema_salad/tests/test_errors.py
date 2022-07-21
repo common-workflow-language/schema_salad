@@ -72,7 +72,7 @@ def test_error_message2() -> None:
 
     t = "test_schema/test2.cwl"
     match = r"""
-^.+test2\.cwl:2:1: Field `class`\s+contains\s+undefined\s+reference to
+^.+test2\.cwl:2:1: Field `class`\s+contains\s+undefined\s+reference\s+to
 \s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$"""[
         1:
     ]
