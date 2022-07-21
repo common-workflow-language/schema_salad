@@ -72,7 +72,7 @@ def test_error_message2() -> None:
 
     t = "test_schema/test2.cwl"
     match = r"""
-^.+test2\.cwl:2:1: Field `class`\s+contains\s+undefined\s+reference to
+^.+test2\.cwl:2:1: Field `class`\s+contains\s+undefined\s+reference\s+to
 \s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$"""[
         1:
     ]
@@ -214,7 +214,7 @@ def test_error_message10() -> None:
 
     t = "test_schema/test10.cwl"
     match = r"""
-^.+test10\.cwl:2:1: Object\s+`.+test10\.cwl`\s+is not valid because
+^.+test10\.cwl:2:1: Object\s+`.+test10\.cwl`\s+is\s+not\s+valid\s+because
 \s+tried `Workflow`\s+but
 .+test10\.cwl:7:1:     the `steps`\s+field\s+is\s+not\s+valid\s+because
 \s+tried array\s+of\s+<WorkflowStep>\s+but
@@ -240,7 +240,7 @@ def test_error_message11() -> None:
     match = r"""
 ^.+test11\.cwl:7:1: checking field\s+`steps`
 .+test11\.cwl:8:3:   checking object\s+`.+test11\.cwl#step1`
-.+test11\.cwl:9:5:     Field `run`\s+contains\s+undefined\s+reference to
+.+test11\.cwl:9:5:     Field `run`\s+contains\s+undefined\s+reference\s+to
 \s+`file://.+/tests/test_schema/blub\.cwl`$"""[
         1:
     ]
