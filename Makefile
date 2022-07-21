@@ -71,7 +71,7 @@ docs: FORCE
 
 ## clean       : clean up all temporary / machine-generated files
 clean: FORCE
-	rm -rf ${MODULE}/__pycache__ ${MODULE}/tests/__pycache__
+	rm -rf ${MODULE}/__pycache__ ${MODULE}/tests/__pycache__ schema_salad/_version.py
 	rm -f *.so ${MODULE}/*.so ${MODULE}/tests/*.so ${MODULE}/avro/*.so
 	python setup.py clean --all || true
 	rm -Rf .coverage
@@ -182,11 +182,10 @@ release-test: FORCE
 	./release-test.sh
 
 release:
-	export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_SCHEMA_SALAD=${VERSION}
-	./release-test.sh
+	export SETUPTOOLS_SCM_PRETEND_VERSION=${VERSION} && \
+	./release-test.sh && \
 	. testenv2/bin/activate && \
-		python testenv2/src/${PACKAGE}/setup.py sdist bdist_wheel
-	. testenv2/bin/activate && \
+		python testenv2/src/${PACKAGE}/setup.py sdist bdist_wheel && \
 		pip install twine && \
 		twine upload testenv2/src/${PACKAGE}/dist/* && \
 		git tag ${VERSION} && git push --tags
