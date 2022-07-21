@@ -3,12 +3,12 @@ How to add new types to the local Typeshed
 
 
 If when running ``make mypy`` you receive errors about modules that can't be
-found you may need to add type stubs for new modules to the ``typeshed/``
+found you may need to add type stubs for new modules to the ``mypy-stubs/``
 directory.
 
 ::
 
- stubgen -o typeshed module_name
+ stubgen -o mypy-stubs module_name
  make mypy
 
 Note: the module name is not always the name of the PyPI package

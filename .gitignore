@@ -5,8 +5,7 @@
 
 build/
 dist/
-ruamel
-typeshed/ruamel/yaml
+mypy-stubs/ruamel/yaml
 # virtualenv 
 venv/
 .cache/

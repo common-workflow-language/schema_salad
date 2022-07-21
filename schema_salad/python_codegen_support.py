@@ -98,14 +98,12 @@ class Savable(ABC):
         docRoot: Optional[str] = None,
     ) -> "Savable":
         """Construct this object from the result of yaml.load()."""
-        pass
 
     @abstractmethod
     def save(
         self, top: bool = False, base_url: str = "", relative_uris: bool = True
     ) -> Dict[str, Any]:
         """Convert this object to a JSON/YAML friendly dictionary."""
-        pass
 
 
 def load_field(val, fieldtype, baseuri, loadingOptions):

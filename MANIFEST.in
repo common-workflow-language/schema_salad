@@ -12,6 +12,6 @@ include schema_salad/tests/foreign/*.cwl
 recursive-include schema_salad/tests/test_real_cwl *
 include schema_salad/metaschema/*
 include schema_salad/tests/docimp/*
-recursive-include typeshed *.py?
+recursive-include mypy-stubs *.py?
 global-exclude *~
 global-exclude *.pyc

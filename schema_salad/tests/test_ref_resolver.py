@@ -5,7 +5,7 @@ import os
 import shutil
 import sys
 import tempfile
-from typing import Union, Any
+from typing import Any, Union
 
 import pytest
 from _pytest.fixtures import FixtureRequest
