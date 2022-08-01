@@ -249,7 +249,14 @@ def load_schema(
 
     metaschema_names, _metaschema_doc, metaschema_loader = get_metaschema()
     if cache is not None:
-        metaschema_loader.cache.update(cache)
+        # we want to replace some items in the cache, so we need to
+        # make a new Loader with an empty index.
+        for k, v in metaschema_loader.cache.items():
+            if k not in cache:
+                cache[k] = v
+        metaschema_loader = Loader(
+            ctx=metaschema_loader.ctx, cache=cache, session=metaschema_loader.session
+        )
     schema_doc, schema_metadata = metaschema_loader.resolve_ref(schema_ref, "")
 
     if not isinstance(schema_doc, MutableSequence):
