@@ -255,9 +255,7 @@ def load_schema(
             if k not in cache:
                 cache[k] = v
         metaschema_loader = Loader(
-            ctx=metaschema_loader.ctx,
-            cache=cache,
-            session=metaschema_loader.session
+            ctx=metaschema_loader.ctx, cache=cache, session=metaschema_loader.session
         )
     schema_doc, schema_metadata = metaschema_loader.resolve_ref(schema_ref, "")
 
