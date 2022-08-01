@@ -88,7 +88,26 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
     """Instantiate the metaschema."""
     global cached_metaschema
     if cached_metaschema is not None:
-        return cached_metaschema
+        loader = cached_metaschema[2]
+        # Need to duplicate the cache, don't want to share it because
+        # there can be conflicting entries (e.g. two different
+        # versions of a schema with the same document id)
+        return (
+            cached_metaschema[0],
+            cached_metaschema[1],
+            Loader(
+                loader.ctx,
+                schemagraph=loader.graph,
+                foreign_properties=loader.foreign_properties,
+                idx=loader.idx,
+                cache=copy.copy(loader.cache),
+                fetcher_constructor=loader.fetcher_constructor,
+                skip_schemas=loader.skip_schemas,
+                url_fields=loader.url_fields,
+                allow_attachments=loader.allow_attachments,
+                session=loader.session,
+            ),
+        )
 
     loader = ref_resolver.Loader(
         {
