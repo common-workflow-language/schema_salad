@@ -12,60 +12,11 @@ concurrency:
 
 jobs:
 
-  tox:
-    name: CI tests via Tox
-
-    runs-on: ubuntu-20.04
-
-    strategy:
-      matrix:
-        py-ver-major: [3]
-        py-ver-minor: [6, 7, 8, 9, 10]
-        step: [lint, unit, mypy]
-
-    env:
-      py-semver: ${{ format('{0}.{1}', matrix.py-ver-major, matrix.py-ver-minor) }}
-      TOXENV: ${{ format('py{0}{1}-{2}', matrix.py-ver-major, matrix.py-ver-minor, matrix.step) }}
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.py-semver }}
-
-      - name: Cache for pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.step }}-${{ hashFiles('requirements.txt', 'tox.ini') }}
-
-      - name: Upgrade setuptools and install tox
-        run: |
-          pip install -U pip setuptools wheel
-          pip install tox tox-gh-actions
-
-      - name: MyPy cache
-        if: ${{ matrix.step == 'mypy' }}
-        uses: actions/cache@v3
-        with:
-          path: .mypy_cache/${{ env.py-semver }}
-          key: mypy-${{ env.py-semver }}
-
-      - name: Test with tox
-        run: tox
-
-      - name: Upload coverage to Codecov
-        if: ${{ matrix.step == 'unit' }}
-        uses: codecov/codecov-action@v3
-        with:
-          fail_ci_if_error: true
   test-aarch64:
     name: "Test ${{ matrix.pyver }} aarch64"
     strategy:
       matrix:
-        pyver: [cp39-cp39, cp310-cp310]
+        pyver: [cp37-cp37m, cp38-cp38, cp39-cp39]
         arch: [aarch64]
       fail-fast: false
     runs-on: ubuntu-latest
@@ -103,72 +54,4 @@ jobs:
             make test
             deactivate'
 
-  tox-style:
-    name: CI linters via Tox
 
-    runs-on: ubuntu-20.04
-
-    strategy:
-      matrix:
-        step: [lintreadme, pydocstyle]
-
-    env:
-      py-semver: "3.10"
-      TOXENV: ${{ format('py310-{0}', matrix.step) }}
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.py-semver }}
-
-      - name: Cache for pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.step }}-${{ hashFiles('requirements.txt') }}
-
-      - name: Upgrade setuptools and install tox
-        run: |
-          pip install -U pip setuptools wheel
-          pip install tox tox-gh-actions
-
-      - if: ${{ matrix.step == 'pydocstyle' && github.event_name == 'pull_request'}}
-        name: Create local branch for diff-quality for PRs
-        run: git branch ${{github.base_ref}} origin/${{github.base_ref}}
-
-      - name: Test with tox
-        run: tox
-
-  release_test:
-    name: Schema Salad release test
-
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"  # quoted, otherwise that turns into the number 3.1
-
-      - name: Cache for pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-release-${{ hashFiles('requirements.txt', 'test-requirements.txt') }}
-
-      - name: Install packages
-        run: |
-          pip install -U pip setuptools wheel
-          pip install virtualenv
-
-      - name: Release test
-        env:
-          RELEASE_SKIP: head
-        run: ./release-test.sh

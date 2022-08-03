@@ -66,6 +66,7 @@ else:
 install_requires = [
     "setuptools",
     "requests >= 1.0",
+    "ruamel.yaml.clib == 0.2.2",
     "ruamel.yaml >= 0.17.6, < 0.17.22;python_version>='3.7'",
     "ruamel.yaml >= 0.16.12, < 0.17.22",
     "rdflib >= 4.2.2, < 7.0.0",
