@@ -1,7 +1,9 @@
+from typing import Dict, Optional, Union
+
+from rdflib.graph import Graph
+
 from schema_salad.avro.schema import Names
 from schema_salad.schema import load_schema
-from typing import Optional, Dict, Union
-from rdflib.graph import Graph
 
 from .util import get_data
 
