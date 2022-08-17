@@ -8,35 +8,43 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # strategy; can't use a matrix reference in "uses": https://github.com/orgs/community/discussions/25824#discussioncomment-3249394
     steps:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0  # slow, but gets all the tags
     - name: set version
       run: pip install setuptools_scm[toml] && python -m setuptools_scm
-    - name: Build manylinux2014 x86 Python wheels
-      uses: RalfG/python-wheels-manylinux-build@v0.4.2-manylinux2014_x86_64
+    - name: Build musllinux_1_1 x86_64 Python wheels
+      uses: RalfG/python-wheels-manylinux-build@v0.5.0-musllinux_1_1_x86_64
       with:
         pre-build-command: source .github/workflows/wheel-prep.sh
         build-requirements: -rrequirements.txt -rmypy-requirements.txt
-    - name: Build manylinux_2_24 x86 Python wheels
-      uses: RalfG/python-wheels-manylinux-build@v0.4.2-manylinux_2_24_x86_64
+    - name: Build manylinux2014 x86_64 Python wheels
+      uses: RalfG/python-wheels-manylinux-build@v0.5.0-manylinux2014_x86_64
       with:
         pre-build-command: source .github/workflows/wheel-prep.sh
         build-requirements: -rrequirements.txt -rmypy-requirements.txt
-    # - name: Build manylinux_2_28 x86 Python wheels
-    #   uses: RalfG/python-wheels-manylinux-build@v0.4.2-manylinux_2_28_x86_64
-    #   with:
-    #     pre-build-command: source .github/workflows/wheel-prep.sh
-    #     build-requirements: -rrequirements.txt -rmypy-requirements.txt
+    - name: Build manylinux_2_24 x86_64 Python wheels
+      uses: RalfG/python-wheels-manylinux-build@v0.5.0-manylinux_2_24_x86_64
+      with:
+        pre-build-command: source .github/workflows/wheel-prep.sh
+        build-requirements: -rrequirements.txt -rmypy-requirements.txt
+    - name: Build manylinux_2_28 x86_64 Python wheels
+      uses: RalfG/python-wheels-manylinux-build@v0.5.0-manylinux_2_28_x86_64
+      with:
+        pre-build-command: source .github/workflows/wheel-prep.sh
+        build-requirements: -rrequirements.txt -rmypy-requirements.txt
     - name: Move audited wheels to new directory
-      run: mkdir audited_wheels && cp dist/*-manylinux*.whl audited_wheels/
+      run: mkdir audited_wheels && cp dist/*-manylinux*.whl dist/*-musllinux*.whl audited_wheels/
     - name: Publish wheels to PyPI
+      if: ${{ github.event_name == 'release' }}
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
         packages_dir: audited_wheels
+        skip_existing: true
 
   deploy_aarch64:
     runs-on: ubuntu-latest
@@ -48,26 +56,33 @@ jobs:
       uses: docker/setup-qemu-action@v2
     - name: set version
       run: pip install setuptools_scm[toml] && python -m setuptools_scm
+    # - name: Build musllinux_1_1 aarch64 Python wheels
+    #   uses: RalfG/python-wheels-manylinux-build@v0.5.0-musllinux_1_1_aarch64
+    #   with:
+    #     pre-build-command: source .github/workflows/wheel-prep.sh
+    #     build-requirements: -rrequirements.txt -rmypy-requirements.txt
     - name: Build manylinux2014 aarch64 Python wheels
-      uses: RalfG/python-wheels-manylinux-build@v0.4.2-manylinux2014_aarch64
+      uses: RalfG/python-wheels-manylinux-build@v0.5.0-manylinux2014_aarch64
       with:
         pre-build-command: source .github/workflows/wheel-prep.sh
         build-requirements: -rrequirements.txt -rmypy-requirements.txt
-    # - name: Build manylinux2_24 aarch64 Python wheels
-    #   uses: RalfG/python-wheels-manylinux-build@v0.4.2-manylinux2_24_aarch64
-    #   with:
-    #     pre-build-command: source .github/workflows/wheel-prep.sh
-    #     build-requirements: -rrequirements.txt -rmypy-requirements.txt
-    # - name: Build manylinux2_28 aarch64 Python wheels
-    #   uses: RalfG/python-wheels-manylinux-build@v0.4.2-manylinux2_28_aarch64
-    #   with:
-    #     pre-build-command: source .github/workflows/wheel-prep.sh
-    #     build-requirements: -rrequirements.txt -rmypy-requirements.txt
+    - name: Build manylinux2_24 aarch64 Python wheels
+      uses: RalfG/python-wheels-manylinux-build@v0.5.0-manylinux_2_24_aarch64
+      with:
+        pre-build-command: source .github/workflows/wheel-prep.sh
+        build-requirements: -rrequirements.txt -rmypy-requirements.txt
+    - name: Build manylinux2_28 aarch64 Python wheels
+      uses: RalfG/python-wheels-manylinux-build@v0.5.0-manylinux_2_28_aarch64
+      with:
+        pre-build-command: source .github/workflows/wheel-prep.sh
+        build-requirements: -rrequirements.txt -rmypy-requirements.txt
     - name: Move audited wheels to new directory
-      run: mkdir audited_wheels && cp dist/*-manylinux*.whl audited_wheels/
+      run: mkdir audited_wheels && cp dist/*-manylinux*.whl dist/*-musllinux*.whl audited_wheels/
     - name: Publish wheels to PyPI
+      if: ${{ github.event_name == 'release' }}
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
         packages_dir: audited_wheels
+        skip_existing: true
