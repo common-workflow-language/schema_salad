@@ -4,3 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 write_to = "schema_salad/_version.py"
+
+[tool.cibuildwheel]
+before-build = "python -m pip install -r requirements.txt -r mypy-requirements.txt"
+test-command = "python -m pytest -n 2 --pyargs schema_salad"
+test-requires = "-r test-requirements.txt black"
+skip = "pp* "
+# ^ skip building wheels on pypy
+test-skip = "cp*"
+# ^ tests skipped to save time
+#build-verbosity = "1"
