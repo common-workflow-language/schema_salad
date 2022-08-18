@@ -20,7 +20,22 @@ if len(sys.argv) > 1 and sys.argv[1] == "--use-mypyc":
 if os.getenv("SCHEMA_SALAD_USE_MYPYC", None) == "1":
     USE_MYPYC = True
 
-if USE_MYPYC:
+if USE_MYPYC and any(
+    item in sys.argv
+    for item in [
+        "build",
+        "bdist_wheel",
+        "build_ext",
+        "install",
+        "install-lib",
+        "bdist",
+        "bdist_dumb",
+        "bdist_rpm",
+        "develop",
+        "bdist_egg",
+        "editable_wheel",
+    ]
+):
     mypyc_targets = [
         # "schema_salad/codegen_base.py",  # interpreted classes cannot inherit from compiled
         # "schema_salad/codegen.py",
