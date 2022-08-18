@@ -1,0 +1,84 @@
+version: 2.1
+
+jobs:
+  arm-wheels:
+    parameters:
+      build:
+        type: string
+      many_image:
+        type: string
+
+    machine:
+      image: ubuntu-2204:2022.07.1
+    resource_class: arm.medium  # two vCPUs
+
+    environment:
+      CIBW_ARCHS: "aarch64"
+      CIBW_MANYLINUX_AARCH64_IMAGE: "<< parameters.many_image >>"
+      CIBW_MUSLLINUX_AARCH64_IMAGE: quay.io/pypa/musllinux_1_1_aarch64
+      CIBW_BUILD: "<< parameters.build >>"
+
+    steps:
+      - checkout
+      - run:
+          name: install cibuildwheel and other build reqs
+          command: |
+            python3 -m pip install --upgrade pip setuptools setuptools_scm[toml]
+            python3 -m pip install cibuildwheel
+            python3 -m setuptools_scm
+
+      - run:
+          name: pip freeze
+          command: |
+            python3 -m pip freeze
+
+      - run:
+          name: list wheels
+          command: |
+            python3 -m cibuildwheel . --print-build-identifiers
+
+      - run:
+          name: cibuildwheel
+          command: |
+            source .github/workflows/wheel-prep.sh
+            export CIBW_ENVIRONMENT="SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH=/project/mypy-stubs SETUPTOOLS_SCM_PRETEND_VERSION=${SETUPTOOLS_SCM_PRETEND_VERSION}"
+            python3 -m cibuildwheel .
+            # "/project" is the project path inside the cibuildwheel container itself
+
+      - store_artifacts:
+          path: wheelhouse/
+
+      - when:
+          condition:
+            matches:
+              pattern: ".+"
+              value: "<< pipeline.git.tag >>"
+          steps:
+            - run:
+                environment:
+                  TWINE_NONINTERACTIVE: "1"
+                  TWINE_USERNAME: __token__
+                  TWINE_PASSWORD: $TWINE_PASSWORD
+                command: |
+                  python3 -m pip install twine
+                  twine upload --skip-existing wheelhouse/*
+
+workflows:
+  wheels: # This is the name of the workflow, feel free to change it to better match your workflow.
+    # Inside the workflow, you define the jobs you want to run.
+    jobs:
+      - arm-wheels:
+          matrix:
+            parameters:
+              build:
+                - "*manylinux*"
+                - "*musllinux*"
+              many_image:
+                - quay.io/pypa/manylinux2014_aarch64
+                - quay.io/pypa/manylinux_2_24_aarch64
+                - quay.io/pypa/manylinux_2_28_aarch64
+            exclude:
+              - build: "*musllinux*"
+                many_image: quay.io/pypa/manylinux_2_24_aarch64
+              - build: "*musllinux*"
+                many_image: quay.io/pypa/manylinux_2_28_aarch64
