@@ -69,6 +69,7 @@ install_requires = [
     "ruamel.yaml >= 0.17.6, < 0.17.22;python_version>='3.7'",
     "ruamel.yaml >= 0.16.12, < 0.17.22",
     "rdflib >= 4.2.2, < 7.0.0",
+    "rdflib-jsonld>=0.4.0, <= 0.6.1;python_version<='3.6'",
     "mistune >= 0.8.1, < 0.9",
     "CacheControl >= 0.11.7, < 0.13",
     "lockfile >= 0.9",  # needed for CacheControl's FileCache
@@ -99,7 +100,7 @@ setup(
     download_url="https://github.com/common-workflow-language/schema_salad/releases",
     ext_modules=ext_modules,
     license="Apache 2.0",
-    python_requires=">=3.6",
+    python_requires=">=3.6,<3.11",
     setup_requires=pytest_runner + ["setuptools_scm"],
     packages=["schema_salad", "schema_salad.tests"],
     package_data={"schema_salad": ["metaschema/*", "py.typed"]},
