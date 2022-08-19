@@ -45,6 +45,13 @@ jobs:
             python3 -m cibuildwheel .
             # "/project" is the project path inside the cibuildwheel container itself
 
+      - run:
+          name: move tests results out of the wheelhouse
+          command: mv wheelhouse/test-results ./
+
+      - store_test_results:
+          path: test-results/
+
       - store_artifacts:
           path: wheelhouse/
 
