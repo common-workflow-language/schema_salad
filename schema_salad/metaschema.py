@@ -99,6 +99,7 @@ class LoadingOptions:
 
     @property
     def graph(self) -> Graph:
+        """Generate a merged rdflib.Graph from all entries in self.schemas."""
         graph = Graph()
         if not self.schemas:
             return graph
