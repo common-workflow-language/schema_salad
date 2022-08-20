@@ -3,11 +3,13 @@
 # The code itself is released under the Apache 2.0 license and the help text is
 # subject to the license of the original schema.
 import copy
+import logging
 import os
 import pathlib
 import re
 import tempfile
 import uuid as _uuid__  # pylint: disable=unused-import # noqa: F401
+import xml.sax
 from abc import ABC, abstractmethod
 from io import StringIO
 from typing import (
@@ -25,15 +27,20 @@ from typing import (
 from urllib.parse import quote, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
+from rdflib import Graph
+from rdflib.plugins.parsers.notation3 import BadSyntax
 from ruamel.yaml.comments import CommentedMap
 
 from schema_salad.exceptions import SchemaSaladException, ValidationException
 from schema_salad.fetcher import DefaultFetcher, Fetcher
 from schema_salad.sourceline import SourceLine, add_lc_filename
-from schema_salad.utils import yaml_no_ts  # requires schema-salad v8.2+
+from schema_salad.utils import aslist, yaml_no_ts  # requires schema-salad v8.2+
 
 _vocab: Dict[str, str] = {}
 _rvocab: Dict[str, str] = {}
+
+
+_logger = logging.getLogger("salad")
 
 
 class LoadingOptions:
@@ -86,6 +93,36 @@ class LoadingOptions:
             for k, v in namespaces.items():
                 self.vocab[k] = v
                 self.rvocab[v] = k
+
+    @property
+    def graph(self) -> Graph:
+        graph = Graph()
+        if not self.schemas:
+            return graph
+        for schema in aslist(self.schemas):
+            fetchurl = self.fetcher.urljoin(self.fileuri, schema)
+            try:
+                if (
+                    fetchurl not in self.fetcher.cache
+                    or self.fetcher.cache[fetchurl] is True
+                ):
+                    _logger.debug("Getting external schema %s", fetchurl)
+                    content = self.fetcher.fetch_text(fetchurl)
+                    self.fetcher.cache[fetchurl] = newGraph = Graph()
+                    for fmt in ["xml", "turtle", "rdfa"]:
+                        try:
+                            newGraph.parse(
+                                data=content, format=fmt, publicID=str(fetchurl)
+                            )
+                            break
+                        except (xml.sax.SAXParseException, TypeError, BadSyntax):
+                            pass
+                graph += self.fetcher.cache[fetchurl]
+            except Exception as e:
+                _logger.warning(
+                    "Could not load extension schema %s: %s", fetchurl, str(e)
+                )
+        return graph
 
 
 class Savable(ABC):
