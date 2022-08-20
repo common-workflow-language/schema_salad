@@ -47,7 +47,7 @@ class LoadingOptions:
         self,
         fetcher: Optional[Fetcher] = None,
         namespaces: Optional[Dict[str, str]] = None,
-        schemas: Optional[Dict[str, str]] = None,
+        schemas: Optional[List[str]] = None,
         fileuri: Optional[str] = None,
         copyfrom: Optional["LoadingOptions"] = None,
         original_doc: Optional[Any] = None,
@@ -102,7 +102,7 @@ class LoadingOptions:
         graph = Graph()
         if not self.schemas:
             return graph
-        for schema in aslist(self.schemas):
+        for schema in self.schemas:
             fetchurl = self.fetcher.urljoin(self.fileuri, schema)
             try:
                 if fetchurl not in self.cache or self.cache[fetchurl] is True:
