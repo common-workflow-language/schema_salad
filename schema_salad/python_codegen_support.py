@@ -29,13 +29,12 @@ from rdflib.plugins.parsers.notation3 import BadSyntax
 from ruamel.yaml.comments import CommentedMap
 
 from schema_salad.exceptions import SchemaSaladException, ValidationException
-from schema_salad.fetcher import DefaultFetcher, Fetcher
+from schema_salad.fetcher import DefaultFetcher, Fetcher, MemoryCachingFetcher
 from schema_salad.sourceline import SourceLine, add_lc_filename
 from schema_salad.utils import aslist, yaml_no_ts  # requires schema-salad v8.2+
 
 _vocab: Dict[str, str] = {}
 _rvocab: Dict[str, str] = {}
-
 
 _logger = logging.getLogger("salad")
 
@@ -81,6 +80,10 @@ class LoadingOptions:
         else:
             self.fetcher = fetcher
 
+        self.cache = (
+            self.fetcher.cache if isinstance(self.fetcher, MemoryCachingFetcher) else {}
+        )
+
         self.vocab = _vocab
         self.rvocab = _rvocab
 
@@ -99,13 +102,10 @@ class LoadingOptions:
         for schema in aslist(self.schemas):
             fetchurl = self.fetcher.urljoin(self.fileuri, schema)
             try:
-                if (
-                    fetchurl not in self.fetcher.cache
-                    or self.fetcher.cache[fetchurl] is True
-                ):
+                if fetchurl not in self.cache or self.cache[fetchurl] is True:
                     _logger.debug("Getting external schema %s", fetchurl)
                     content = self.fetcher.fetch_text(fetchurl)
-                    self.fetcher.cache[fetchurl] = newGraph = Graph()
+                    self.cache[fetchurl] = newGraph = Graph()
                     for fmt in ["xml", "turtle"]:
                         try:
                             newGraph.parse(
@@ -114,7 +114,7 @@ class LoadingOptions:
                             break
                         except (xml.sax.SAXParseException, TypeError, BadSyntax):
                             pass
-                graph += self.fetcher.cache[fetchurl]
+                graph += self.cache[fetchurl]
             except Exception as e:
                 _logger.warning(
                     "Could not load extension schema %s: %s", fetchurl, str(e)
@@ -172,7 +172,6 @@ def save(
     base_url: str = "",
     relative_uris: bool = True,
 ) -> save_type:
-
     if isinstance(val, Savable):
         return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
     if isinstance(val, MutableSequence):

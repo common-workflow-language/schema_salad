@@ -3,7 +3,9 @@ import logging
 import os
 import re
 import sys
-import urllib
+import urllib.parse
+import urllib.request
+from abc import ABC, abstractmethod
 from typing import List, Optional
 
 import requests
@@ -15,22 +17,18 @@ _re_drive = re.compile(r"/([a-zA-Z]):")
 _logger = logging.getLogger("salad")
 
 
-class Fetcher:
-    def __init__(
-        self,
-        cache: CacheType,
-        session: Optional[requests.sessions.Session],
-    ) -> None:
-        pass
-
+class Fetcher(ABC):
+    @abstractmethod
     def fetch_text(self, url: str, content_types: Optional[List[str]] = None) -> str:
-        raise NotImplementedError()
+        ...
 
+    @abstractmethod
     def check_exists(self, url: str) -> bool:
-        raise NotImplementedError()
+        ...
 
+    @abstractmethod
     def urljoin(self, base_url: str, url: str) -> str:
-        raise NotImplementedError()
+        ...
 
     schemes = ["file", "http", "https", "mailto"]
 
@@ -38,13 +36,18 @@ class Fetcher:
         return self.schemes
 
 
-class DefaultFetcher(Fetcher):
+class MemoryCachingFetcher(Fetcher, ABC):
+    def __init__(self, cache: CacheType) -> None:
+        self.cache = cache
+
+
+class DefaultFetcher(MemoryCachingFetcher):
     def __init__(
         self,
         cache: CacheType,
         session: Optional[requests.sessions.Session],
     ) -> None:
-        self.cache = cache
+        super().__init__(cache)
         self.session = session
 
     def fetch_text(self, url: str, content_types: Optional[List[str]] = None) -> str:
