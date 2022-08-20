@@ -20,6 +20,7 @@ from typing import (
     Tuple,
     Type,
     Union,
+    cast,
 )
 from urllib.parse import quote, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
@@ -31,7 +32,7 @@ from ruamel.yaml.comments import CommentedMap
 from schema_salad.exceptions import SchemaSaladException, ValidationException
 from schema_salad.fetcher import DefaultFetcher, Fetcher, MemoryCachingFetcher
 from schema_salad.sourceline import SourceLine, add_lc_filename
-from schema_salad.utils import aslist, yaml_no_ts  # requires schema-salad v8.2+
+from schema_salad.utils import yaml_no_ts  # requires schema-salad v8.2+
 
 _vocab: Dict[str, str] = {}
 _rvocab: Dict[str, str] = {}
@@ -100,6 +101,9 @@ class LoadingOptions:
         graph = Graph()
         if not self.schemas:
             return graph
+        key = str(hash(tuple(self.schemas)))
+        if key in self.cache:
+            return cast(Graph, self.cache[key])
         for schema in self.schemas:
             fetchurl = (
                 self.fetcher.urljoin(self.fileuri, schema)
@@ -124,6 +128,7 @@ class LoadingOptions:
                 _logger.warning(
                     "Could not load extension schema %s: %s", fetchurl, str(e)
                 )
+        self.cache[key] = graph
         return graph
 
 
