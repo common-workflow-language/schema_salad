@@ -6,7 +6,7 @@ import pathlib
 import re
 import tempfile
 import uuid as _uuid__  # pylint: disable=unused-import # noqa: F401
-import xml.sax
+import xml.sax  # nosec
 from abc import ABC, abstractmethod
 from io import StringIO
 from typing import (
