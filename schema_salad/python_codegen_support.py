@@ -100,7 +100,11 @@ class LoadingOptions:
         if not self.schemas:
             return graph
         for schema in self.schemas:
-            fetchurl = self.fetcher.urljoin(self.fileuri, schema)
+            fetchurl = (
+                self.fetcher.urljoin(self.fileuri, schema)
+                if self.fileuri is not None
+                else schema
+            )
             try:
                 if fetchurl not in self.cache or self.cache[fetchurl] is True:
                     _logger.debug("Getting external schema %s", fetchurl)
