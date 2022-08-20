@@ -106,7 +106,7 @@ class LoadingOptions:
                     _logger.debug("Getting external schema %s", fetchurl)
                     content = self.fetcher.fetch_text(fetchurl)
                     self.fetcher.cache[fetchurl] = newGraph = Graph()
-                    for fmt in ["xml", "turtle", "rdfa"]:
+                    for fmt in ["xml", "turtle"]:
                         try:
                             newGraph.parse(
                                 data=content, format=fmt, publicID=str(fetchurl)
