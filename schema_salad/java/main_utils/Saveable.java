@@ -1,6 +1,6 @@
 package ${package}.utils;
 
-public interface Savable {
+public interface Saveable {
   // TODO: implement writable interface
   // public abstract void save(boolean top, String baseUrl, boolean relativeUris);
 }

@@ -132,7 +132,7 @@ class LoadingOptions:
         return graph
 
 
-class Savable(ABC):
+class Saveable(ABC):
     """Mark classes than have a save() and fromDoc() function."""
 
     @classmethod
@@ -143,7 +143,7 @@ class Savable(ABC):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: Optional[str] = None,
-    ) -> "Savable":
+    ) -> "Saveable":
         """Construct this object from the result of yaml.load()."""
 
     @abstractmethod
@@ -177,12 +177,12 @@ save_type = Union[Dict[str, Any], List[Union[Dict[str, Any], List[Any], None]], 
 
 
 def save(
-    val: Optional[Union[Savable, MutableSequence[Savable]]],
+    val: Optional[Union[Saveable, MutableSequence[Saveable]]],
     top: bool = True,
     base_url: str = "",
     relative_uris: bool = True,
 ) -> save_type:
-    if isinstance(val, Savable):
+    if isinstance(val, Saveable):
         return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
     if isinstance(val, MutableSequence):
         return [
@@ -416,7 +416,7 @@ class _SecondaryDSLLoader(_Loader):
 
 class _RecordLoader(_Loader):
     def __init__(self, classtype):
-        # type: (Type[Savable]) -> None
+        # type: (Type[Saveable]) -> None
         self.classtype = classtype
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):

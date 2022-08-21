@@ -230,7 +230,7 @@ using OneOf.Types;
 
 namespace {package};
 {docstring}
-public class {cls} : {current_interface}, ISavable
+public class {cls} : {current_interface}, ISaveable
 {{
     readonly LoadingOptions loadingOptions;
 
@@ -257,7 +257,7 @@ public class {cls} : {current_interface}, ISavable
         )
         self.current_loader.write(
             """
-    public static ISavable FromDoc(object doc__, string baseUri, LoadingOptions loadingOptions,
+    public static ISaveable FromDoc(object doc__, string baseUri, LoadingOptions loadingOptions,
         string? docRoot = null)
     {
         List<ValidationException> errors = new();
@@ -717,7 +717,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
         if fieldtype.is_uri:
             self.current_serializer.write(
                 """
-        object? {safename}Val = ISavable.SaveRelativeUri({safename}, {scoped_id},
+        object? {safename}Val = ISaveable.SaveRelativeUri({safename}, {scoped_id},
             relativeUris, {ref_scope}, (string){base_url}!);
         if ({safename}Val is not null)
         {{
@@ -734,7 +734,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
         else:
             self.current_serializer.write(
                 """
-        object? {safename}Val = ISavable.Save({safename},
+        object? {safename}Val = ISaveable.Save({safename},
                                         false, (string){base_url}!, relativeUris);
         if ({safename}Val is not null)
         {{

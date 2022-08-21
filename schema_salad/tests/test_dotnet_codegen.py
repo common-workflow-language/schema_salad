@@ -40,7 +40,9 @@ def test_meta_schema_gen(tmp_path: Path) -> None:
     record_schema_dir = src_dir / "RecordSchema.cs"
     assert record_schema_dir.exists()
     with open(record_schema_dir) as f:
-        assert "public class RecordSchema : IRecordSchema, " "ISavable\n{\n" in f.read()
+        assert (
+            "public class RecordSchema : IRecordSchema, " "ISaveable\n{\n" in f.read()
+        )
 
 
 def test_class_field(tmp_path: Path) -> None:

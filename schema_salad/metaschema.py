@@ -135,7 +135,7 @@ class LoadingOptions:
         return graph
 
 
-class Savable(ABC):
+class Saveable(ABC):
     """Mark classes than have a save() and fromDoc() function."""
 
     @classmethod
@@ -146,7 +146,7 @@ class Savable(ABC):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: Optional[str] = None,
-    ) -> "Savable":
+    ) -> "Saveable":
         """Construct this object from the result of yaml.load()."""
 
     @abstractmethod
@@ -180,12 +180,12 @@ save_type = Union[Dict[str, Any], List[Union[Dict[str, Any], List[Any], None]], 
 
 
 def save(
-    val: Optional[Union[Savable, MutableSequence[Savable]]],
+    val: Optional[Union[Saveable, MutableSequence[Saveable]]],
     top: bool = True,
     base_url: str = "",
     relative_uris: bool = True,
 ) -> save_type:
-    if isinstance(val, Savable):
+    if isinstance(val, Saveable):
         return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
     if isinstance(val, MutableSequence):
         return [
@@ -419,7 +419,7 @@ class _SecondaryDSLLoader(_Loader):
 
 class _RecordLoader(_Loader):
     def __init__(self, classtype):
-        # type: (Type[Savable]) -> None
+        # type: (Type[Saveable]) -> None
         self.classtype = classtype
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
@@ -734,7 +734,7 @@ def parser_info() -> str:
     return "org.w3id.cwl.salad"
 
 
-class Documented(Savable):
+class Documented(Saveable):
     pass
 
 
@@ -896,7 +896,7 @@ class RecordField(Documented):
     attrs = frozenset(["doc", "name", "type"])
 
 
-class RecordSchema(Savable):
+class RecordSchema(Saveable):
     def __init__(
         self,
         type: Any,
@@ -1016,7 +1016,7 @@ class RecordSchema(Savable):
     attrs = frozenset(["fields", "type"])
 
 
-class EnumSchema(Savable):
+class EnumSchema(Saveable):
     """
     Define an enumerated type.
 
@@ -1138,7 +1138,7 @@ class EnumSchema(Savable):
     attrs = frozenset(["symbols", "type"])
 
 
-class ArraySchema(Savable):
+class ArraySchema(Saveable):
     def __init__(
         self,
         items: Any,
@@ -1255,7 +1255,7 @@ class ArraySchema(Savable):
     attrs = frozenset(["items", "type"])
 
 
-class JsonldPredicate(Savable):
+class JsonldPredicate(Saveable):
     """
     Attached to a record field to define how the parent record field is handled for
     URI resolution and JSON-LD context generation.
@@ -1638,7 +1638,7 @@ class JsonldPredicate(Savable):
     )
 
 
-class SpecializeDef(Savable):
+class SpecializeDef(Saveable):
     def __init__(
         self,
         specializeFrom: Any,
@@ -1757,7 +1757,7 @@ class SpecializeDef(Savable):
     attrs = frozenset(["specializeFrom", "specializeTo"])
 
 
-class NamedType(Savable):
+class NamedType(Saveable):
     pass
 
 
