@@ -720,7 +720,7 @@ def save_relative_uri(
 
 def shortname(inputid: str) -> str:
     """
-    Compute the shortname of a fully qualified identifer.
+    Compute the shortname of a fully qualified identifier.
 
     See https://w3id.org/cwl/v1.2/SchemaSalad.html#Short_names.
     """

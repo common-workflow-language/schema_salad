@@ -30,7 +30,7 @@ def test_version() -> None:
 
 
 def test_empty_input() -> None:
-    # running schema_salad tool wihtout any args
+    # running schema_salad tool without any args
     args = []  # type: List[str]
     with captured_output() as (out, err):
         cli_parser.main(args)

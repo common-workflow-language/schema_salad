@@ -102,7 +102,7 @@ diff_pydocstyle_report: pydocstyle_report.txt
 
 ## codespell              : check for common misspellings
 codespell:
-	codespell -w $(shell git ls-files | grep -v mypy-stubs | grep -v gitignore | grep -v EDAM.owl | grep -v pre.yml)
+	codespell -w $(shell git ls-files | grep -v mypy-stubs | grep -v gitignore | grep -v EDAM.owl | grep -v pre.yml | grep -v test_schema)
 
 ## format                 : check/fix all code indentation and formatting (runs black)
 format:
@@ -189,7 +189,7 @@ pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 	pyupgrade --exit-zero-even-if-changed --py36-plus $^
 
 release-test: FORCE
-	git diff-index --quiet HEAD -- || ( echo You have uncommited changes, please commit them and try again; false )
+	git diff-index --quiet HEAD -- || ( echo You have uncommitted changes, please commit them and try again; false )
 	./release-test.sh
 
 release:

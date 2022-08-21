@@ -100,7 +100,7 @@ export function prefixUrl (url: string, namespaces: Dictionary<string>): string 
 }
 
 /**
- * Compute the shortname of a fully qualified identifer.
+ * Compute the shortname of a fully qualified identifier.
  * See https://w3id.org/cwl/v1.2/SchemaSalad.html#Short_names. 
  *
  */
