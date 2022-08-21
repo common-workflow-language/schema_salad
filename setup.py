@@ -34,6 +34,7 @@ if USE_MYPYC and any(
         "develop",
         "bdist_egg",
         "editable_wheel",
+        "test",
     ]
 ):
     mypyc_targets = [
@@ -117,7 +118,7 @@ setup(
     download_url="https://github.com/common-workflow-language/schema_salad/releases",
     ext_modules=ext_modules,
     license="Apache 2.0",
-    python_requires=">=3.6,<3.11",
+    python_requires=">=3.6,<=3.11",
     setup_requires=pytest_runner + ["setuptools_scm"],
     packages=["schema_salad", "schema_salad.tests", "schema_salad.avro"],
     package_data={
