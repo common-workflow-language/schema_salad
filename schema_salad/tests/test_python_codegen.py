@@ -99,7 +99,7 @@ def test_use_of_package_for_parser_info(tmp_path: Path) -> None:
 
 
 def test_graph_property() -> None:
-    schema = get_data("tests/EDAM.owl")
+    schema = cast(str, get_data("tests/EDAM.owl"))
     fetcher = DefaultFetcher({}, Session())
     fetchurl = pathlib.Path(schema).resolve().as_uri()
     content = fetcher.fetch_text(fetchurl)
@@ -110,7 +110,7 @@ def test_graph_property() -> None:
 
 
 def test_graph_property_cache() -> None:
-    schema = get_data("tests/EDAM.owl")
+    schema = cast(str, get_data("tests/EDAM.owl"))
     loading_options = LoadingOptions(schemas=[schema])
     graph1 = loading_options.graph
     graph2 = loading_options.graph
