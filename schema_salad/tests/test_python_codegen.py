@@ -1,13 +1,19 @@
 import inspect
 import os
+import pathlib
 from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
+
+from rdflib import Graph
+from rdflib.compare import to_canonical_graph
+from requests import Session
 
 import schema_salad.metaschema as cg_metaschema
 from schema_salad import codegen
 from schema_salad.avro.schema import Names
+from schema_salad.fetcher import DefaultFetcher
+from schema_salad.python_codegen_support import LoadingOptions
 from schema_salad.schema import load_schema
-
 from .util import basket_file_uri, cwl_file_uri, metaschema_file_uri
 
 
@@ -90,3 +96,29 @@ def test_use_of_package_for_parser_info(tmp_path: Path) -> None:
     assert os.path.exists(src_target)
     with open(src_target) as f:
         assert 'def parser_info() -> str:\n    return "cwl"' in f.read()
+
+
+def test_graph_property() -> None:
+    schema = "tests/EDAM.owl"
+    fetcher = DefaultFetcher({}, Session())
+    fetchurl = pathlib.Path(schema).resolve().as_uri()
+    content = fetcher.fetch_text(fetchurl)
+    graph = Graph()
+    graph.parse(data=content, format="xml", publicID=fetchurl)
+    loading_options = LoadingOptions(schemas=[schema])
+    assert (
+        to_canonical_graph(graph).serialize()
+        == to_canonical_graph(loading_options.graph).serialize()
+    )
+
+
+def test_graph_property_cache() -> None:
+    loading_options = LoadingOptions(schemas=["tests/EDAM.owl"])
+    graph1 = loading_options.graph
+    graph2 = loading_options.graph
+    assert graph1 == graph2
+
+
+def test_graph_property_empty_schema() -> None:
+    loading_options = LoadingOptions()
+    assert loading_options.graph.serialize() == "\n"

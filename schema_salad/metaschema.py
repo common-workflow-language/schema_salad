@@ -111,7 +111,7 @@ class LoadingOptions:
             fetchurl = (
                 self.fetcher.urljoin(self.fileuri, schema)
                 if self.fileuri is not None
-                else schema
+                else pathlib.Path(schema).resolve().as_uri()
             )
             try:
                 if fetchurl not in self.cache or self.cache[fetchurl] is True:
