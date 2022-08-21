@@ -1,9 +1,10 @@
 from typing import Dict, Union
 
-from rdflib.graph import Graph, ReadOnlyGraphAggregate
+from rdflib.graph import ConjunctiveGraph, Graph
 
 Stats = Dict[str, Union[int, str]]
 
-def to_canonical_graph(
-    g1: Graph, stats: Stats | None = ...
-) -> ReadOnlyGraphAggregate: ...
+class IsomorphicGraph(ConjunctiveGraph):
+    pass
+
+def to_isomorphic(graph: Graph = ...) -> IsomorphicGraph: ...
