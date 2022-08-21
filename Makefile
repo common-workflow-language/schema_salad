@@ -37,39 +37,42 @@ COVBASE=coverage run --append
 VERSION=8.3.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
 
-## all         : default task
+## all                    : default task (install schema-salad in dev mode)
 all: dev
 
-## help        : print this help message and exit
+## help                   : print this help message and exit
 help: Makefile
 	@sed -n 's/^##//p' $<
 
-## install-dep : install most of the development dependencies via pip
+## cleanup                : shortcut for "make sort_imports format flake8 diff_pydocstyle_report"
+cleanup: sort_imports format flake8 diff_pydocstyle_report
+
+## install-dep            : install most of the development dependencies via pip
 install-dep: install-dependencies
 
 install-dependencies: FORCE
 	pip install --upgrade $(DEVPKGS)
 	pip install -r requirements.txt -r mypy-requirements.txt
 
-## install     : install the ${MODULE} module and script(s)
+## install                : install the schema-salad package and scripts
 install: FORCE
 	pip install .$(EXTRAS)
 
-## dev     : install the ${MODULE} module in dev mode
+## dev                    : install the schema-salad package in dev mode
 dev: install-dep
 	pip install -e .$(EXTRAS)
 
-## dist        : create a module package for distribution
+## dist                   : create a module package for distribution
 dist: dist/${MODULE}-$(VERSION).tar.gz
 
 dist/${MODULE}-$(VERSION).tar.gz: $(SOURCES)
 	python setup.py sdist bdist_wheel
 
-## docs	       : make the docs
+## docs                   : make the docs
 docs: FORCE
 	cd docs && $(MAKE) html
 
-## clean       : clean up all temporary / machine-generated files
+## clean                  : clean up all temporary / machine-generated files
 clean: FORCE
 	rm -rf ${MODULE}/__pycache__ ${MODULE}/tests/__pycache__ schema_salad/_version.py
 	rm -f *.so ${MODULE}/*.so ${MODULE}/tests/*.so ${MODULE}/avro/*.so
@@ -78,32 +81,37 @@ clean: FORCE
 	rm -f diff-cover.html
 
 # Linting and code style related targets
-## sorting imports using isort: https://github.com/timothycrosley/isort
-sort_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
-	isort $^ mypy-stubs
+## sort_import            : sorting imports using isort: https://github.com/timothycrosley/isort
+sort_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES)) mypy-stubs
+	isort $^
 
 remove_unused_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 	autoflake --in-place --remove-all-unused-imports $^
 
 pep257: pydocstyle
-## pydocstyle      : check Python code style
+## pydocstyle             : check Python docstring style
 pydocstyle: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 	pydocstyle --add-ignore=D100,D101,D102,D103 $^ || true
 
 pydocstyle_report.txt: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 	pydocstyle setup.py $^ > $@ 2>&1 || true
 
+## diff_pydocstyle_report : check Python docstring style for changed files only
 diff_pydocstyle_report: pydocstyle_report.txt
 	diff-quality --compare-branch=main --violations=pydocstyle --fail-under=100 $^
 
-## format      : check/fix all code indentation and formatting (runs black)
+## codespell              : check for common misspellings
+codespell:
+	codespell -w $(shell git ls-files | grep -v mypy-stubs | grep -v gitignore | grep -v EDAM.owl | grep -v pre.yml)
+
+## format                 : check/fix all code indentation and formatting (runs black)
 format:
 	black --exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
 
 format-check:
 	black --diff --check --exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
 
-## pylint      : run static code analysis on Python code
+## pylint                 : run static code analysis on Python code
 pylint: $(PYSOURCES)
 	pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
                 $^ -j0|| true
@@ -113,7 +121,7 @@ pylint_report.txt: $(PYSOURCES)
 		$^ -j0> $@ || true
 
 diff_pylint_report: pylint_report.txt
-	diff-quality --violations=pylint pylint_report.txt
+	diff-quality --compare-branch=main --violations=pylint pylint_report.txt
 
 .coverage:
 	python setup.py test --addopts "--cov --cov-config=.coveragerc --cov-report= -n auto"
@@ -143,23 +151,23 @@ coverage-report: .coverage
 	coverage report
 
 diff-cover: coverage.xml
-	diff-cover $^
+	diff-cover --compare-branch=main $^
 
 diff-cover.html: coverage.xml
-	diff-cover $^ --html-report $@
+	diff-cover --compare-branch=main $^ --html-report $@
 
-## test        : run the ${MODULE} test suite
+## test                   : run the schema-salad test suite
 test: $(PYSOURCES)
-	python setup.py test ${PYTEST_EXTRA}
+	python -m pytest -rs ${PYTEST_EXTRA}
 
-## testcov     : run the ${MODULE} test suite and collect coverage
+## testcov                : run the schema-salad test suite and collect coverage
 testcov: $(PYSOURCES)
 	python setup.py test --addopts "--cov" ${PYTEST_EXTRA}
 
 sloccount.sc: $(PYSOURCES) Makefile
 	sloccount --duplicates --wide --details $^ > $@
 
-## sloccount   : count lines of code
+## sloccount              : count lines of code
 sloccount: $(PYSOURCES) Makefile
 	sloccount $^
 
@@ -173,6 +181,9 @@ mypy: $(filter-out setup.py,$(PYSOURCES))
 
 mypyc: $(PYSOURCES)
 	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python setup.py test
+
+shellcheck: FORCE
+	shellcheck build-schema_salad-docker.sh release-test.sh
 
 pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 	pyupgrade --exit-zero-even-if-changed --py36-plus $^
