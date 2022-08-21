@@ -247,6 +247,9 @@ class ConjunctiveGraph(Graph):
         **args: Any,
     ) -> Graph: ...
 
+class ReadOnlyGraphAggregate(ConjunctiveGraph):
+    pass
+
 class Seq:
     def __init__(self, graph: Graph, subject: Any) -> None: ...
     def toPython(self) -> Seq: ...
