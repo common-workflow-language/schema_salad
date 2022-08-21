@@ -3,9 +3,9 @@ using System.Collections;
 using OneOf;
 using OneOf.Types;
 
-public interface ISavable
+public interface ISaveable
 {
-    public static abstract ISavable FromDoc(object doc, string baseUri, LoadingOptions loadingOptions, string? docRoot = null);
+    public static abstract ISaveable FromDoc(object doc, string baseUri, LoadingOptions loadingOptions, string? docRoot = null);
     public abstract Dictionary<object, object> Save(bool top, string baseUrl, bool relativeUris);
 
     public static object Save(object? val_, bool top = true, string baseurl = "", bool relativeUris = true)
@@ -31,7 +31,7 @@ public interface ISavable
             val = val.ToString()!;
         }
 
-        if (val is ISavable valSaveable)
+        if (val is ISaveable valSaveable)
         {
             return valSaveable.Save(top, baseurl, relativeUris);
         }

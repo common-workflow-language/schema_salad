@@ -153,7 +153,7 @@ class PythonCodeGen(CodeGenBase):
         if extends:
             ext = ", ".join(self.safe_name(e) for e in extends)
         else:
-            ext = "Savable"
+            ext = "Saveable"
 
         self.out.write(fmt(f"class {classname}({ext}):\n    pass", 0)[:-9])
         # make a valid class for Black, but then trim off the "pass"

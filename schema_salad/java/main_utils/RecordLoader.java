@@ -3,11 +3,11 @@ package ${package}.utils;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
-public class RecordLoader<T extends Savable> implements Loader<T> {
-  private final Class<? extends T> savableClass;
+public class RecordLoader<T extends Saveable> implements Loader<T> {
+  private final Class<? extends T> saveableClass;
 
-  public RecordLoader(final Class<? extends T> savableClass) {
-    this.savableClass = savableClass;
+  public RecordLoader(final Class<? extends T> saveableClass) {
+    this.saveableClass = saveableClass;
   }
 
   public T load(
@@ -18,7 +18,7 @@ public class RecordLoader<T extends Savable> implements Loader<T> {
     Loader.validateOfJavaType(java.util.Map.class, doc);
     try {
       final Constructor<? extends T> constructor =
-          this.savableClass.getConstructor(
+          this.saveableClass.getConstructor(
               new Class[] {Object.class, String.class, LoadingOptions.class, String.class});
       final T ret = constructor.newInstance(doc, baseUri, loadingOptions, docRoot);
       return ret;

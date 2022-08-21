@@ -2,7 +2,7 @@
 
 namespace ${project_name};
 
-internal class RecordLoader<T> : ILoader<T> where T : ISavable
+internal class RecordLoader<T> : ILoader<T> where T : ISaveable
 {
     public T Load(in object doc, in string baseUri, in LoadingOptions loadingOptions, in string? docRoot = null)
     {

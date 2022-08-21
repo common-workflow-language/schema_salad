@@ -203,10 +203,10 @@ class JavaCodeGen(CodeGenBase):
                 ext = (
                     "extends "
                     + ", ".join(self.interface_name(e) for e in extends)
-                    + ", Savable"
+                    + ", Saveable"
                 )
             else:
-                ext = "extends Savable"
+                ext = "extends Saveable"
             f.write(
                 """// Copyright Common Workflow Language project contributors
 """
@@ -234,7 +234,7 @@ class JavaCodeGen(CodeGenBase):
 
 package {package};
 
-import {package}.utils.Savable;
+import {package}.utils.Saveable;
 
 /**
 {interface_doc_str}
@@ -283,13 +283,13 @@ package {package};
 import {package}.utils.LoaderInstances;
 import {package}.utils.LoadingOptions;
 import {package}.utils.LoadingOptionsBuilder;
-import {package}.utils.SavableImpl;
+import {package}.utils.SaveableImpl;
 import {package}.utils.ValidationException;
 
 /**
 {class_doc_str}
  */
-public class {cls}Impl extends SavableImpl implements {cls} {{
+public class {cls}Impl extends SaveableImpl implements {cls} {{
   private LoadingOptions loadingOptions_ = new LoadingOptionsBuilder().build();
   private java.util.Map<String, Object> extensionFields_ =
       new java.util.HashMap<String, Object>();

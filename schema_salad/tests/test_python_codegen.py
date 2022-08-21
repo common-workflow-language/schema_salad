@@ -14,6 +14,7 @@ from schema_salad.avro.schema import Names
 from schema_salad.fetcher import DefaultFetcher
 from schema_salad.python_codegen_support import LoadingOptions
 from schema_salad.schema import load_schema
+
 from .util import basket_file_uri, cwl_file_uri, get_data, metaschema_file_uri
 
 
@@ -30,7 +31,7 @@ def test_meta_schema_gen(tmp_path: Path) -> None:
     python_codegen(metaschema_file_uri, src_target)
     assert os.path.exists(src_target)
     with open(src_target) as f:
-        assert "class RecordSchema(Savable):" in f.read()
+        assert "class RecordSchema(Saveable):" in f.read()
 
 
 def test_meta_schema_gen_up_to_date(tmp_path: Path) -> None:
