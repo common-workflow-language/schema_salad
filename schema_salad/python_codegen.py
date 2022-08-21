@@ -135,8 +135,8 @@ class PythonCodeGen(CodeGenBase):
 """
         )
 
-        for primative in prims.values():
-            self.declare_type(primative)
+        for primitive in prims.values():
+            self.declare_type(primitive)
 
     def begin_class(
         self,  # pylint: disable=too-many-arguments

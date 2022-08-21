@@ -154,7 +154,7 @@ $graph:
         then finally `#foo`.  The first valid URI in the search order shall be
         used as the fully resolved value of the identifier.  The value of the
         refScope field is the specified number of levels from the containing
-        identifer scope before starting the search, so if `refScope: 2` then
+        identifier scope before starting the search, so if `refScope: 2` then
         "baz" and "bar" must be stripped to get the base `#foo` and search
         `#foo/foo` and the `#foo`.  The last scope searched must be the top
         level scope before determining if the identifier cannot be resolved.

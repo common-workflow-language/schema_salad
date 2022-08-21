@@ -734,21 +734,21 @@ class Loader:
         self, document: CommentedMap, loader: "Loader", base_url: str
     ) -> str:
         # Expand identifier field (usually 'id') to resolve scope
-        for identifer in loader.identifiers:
-            if identifer in document:
-                if isinstance(document[identifer], str):
-                    document[identifer] = loader.expand_url(
-                        document[identifer], base_url, scoped_id=True
+        for identifier in loader.identifiers:
+            if identifier in document:
+                if isinstance(document[identifier], str):
+                    document[identifier] = loader.expand_url(
+                        document[identifier], base_url, scoped_id=True
                     )
-                    if document[identifer] not in loader.idx or isinstance(
-                        loader.idx[document[identifer]], str
+                    if document[identifier] not in loader.idx or isinstance(
+                        loader.idx[document[identifier]], str
                     ):
-                        loader.idx[document[identifer]] = document
-                    base_url = document[identifer]
+                        loader.idx[document[identifier]] = document
+                    base_url = document[identifier]
                 else:
                     raise ValidationException(
                         "identifier field '{}' must be a string".format(
-                            document[identifer]
+                            document[identifier]
                         )
                     )
         return base_url
@@ -761,17 +761,17 @@ class Loader:
     ) -> None:
         # Resolve scope for identity fields (fields where the value is the
         # identity of a standalone node, such as enum symbols)
-        for identifer in loader.identity_links:
-            if identifer in document and isinstance(
-                document[identifer], MutableSequence
+        for identifier in loader.identity_links:
+            if identifier in document and isinstance(
+                document[identifier], MutableSequence
             ):
-                for n, v in enumerate(document[identifer]):
+                for n, v in enumerate(document[identifier]):
                     if isinstance(v, str):
-                        document[identifer][n] = loader.expand_url(  # type: ignore
+                        document[identifier][n] = loader.expand_url(  # type: ignore
                             v, base_url, scoped_id=True
                         )
-                        if document[identifer][n] not in loader.idx:
-                            loader.idx[cast(str, document[identifer][n])] = v
+                        if document[identifier][n] not in loader.idx:
+                            loader.idx[cast(str, document[identifier][n])] = v
 
     def _normalize_fields(self, document: CommentedMap, loader: "Loader") -> None:
         # Normalize fields which are prefixed or full URIn to vocabulary terms
@@ -877,13 +877,13 @@ class Loader:
             if newctx is not None:
                 loader = newctx
 
-            for identifer in loader.identity_links:
-                if identifer in document:
-                    if isinstance(document[identifer], str):
-                        document[identifer] = loader.expand_url(
-                            document[identifer], base_url, scoped_id=True
+            for identifier in loader.identity_links:
+                if identifier in document:
+                    if isinstance(document[identifier], str):
+                        document[identifier] = loader.expand_url(
+                            document[identifier], base_url, scoped_id=True
                         )
-                        loader.idx[document[identifer]] = document
+                        loader.idx[document[identifier]] = document
 
             metadata = document
             if "$graph" in document:
