@@ -99,6 +99,7 @@ def test_use_of_package_for_parser_info(tmp_path: Path) -> None:
 
 
 def test_graph_property() -> None:
+    """Test the RDFLib Graph representation of the `$schemas` directive."""
     schema = cast(str, get_data("tests/EDAM.owl"))
     fetcher = DefaultFetcher({}, Session())
     fetchurl = pathlib.Path(schema).resolve().as_uri()
@@ -110,6 +111,7 @@ def test_graph_property() -> None:
 
 
 def test_graph_property_cache() -> None:
+    """Test that LoadingOptions properly cache the `$schemas` RDFLib Graph representations."""
     schema = cast(str, get_data("tests/EDAM.owl"))
     loading_options = LoadingOptions(schemas=[schema])
     graph1 = loading_options.graph
@@ -118,5 +120,6 @@ def test_graph_property_cache() -> None:
 
 
 def test_graph_property_empty_schema() -> None:
+    """Test that an empty RDFLib Graph is returned when not `$schemas` directive is present."""
     loading_options = LoadingOptions()
     assert to_isomorphic(loading_options.graph) == to_isomorphic(Graph())
