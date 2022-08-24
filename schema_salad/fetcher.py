@@ -18,12 +18,16 @@ _logger = logging.getLogger("salad")
 
 
 class Fetcher(ABC):
+    """Fetch resources from URIs."""
+
     @abstractmethod
     def fetch_text(self, url: str, content_types: Optional[List[str]] = None) -> str:
+        """Retrieve the given resource as a string."""
         ...
 
     @abstractmethod
     def check_exists(self, url: str) -> bool:
+        """Check if the given resource exists."""
         ...
 
     @abstractmethod
@@ -33,25 +37,31 @@ class Fetcher(ABC):
     schemes = ["file", "http", "https", "mailto"]
 
     def supported_schemes(self) -> List[str]:
+        """Return the list of supported URI schemes."""
         return self.schemes
 
 
 class MemoryCachingFetcher(Fetcher):
+    """Fetcher that caches resources in memory after retrieval."""
+
     def __init__(self, cache: CacheType) -> None:
+        """Create a MemoryCachingFetcher object."""
         self.cache = cache
 
 
 class DefaultFetcher(MemoryCachingFetcher):
+    """The default Fetcher implementation."""
+
     def __init__(
         self,
         cache: CacheType,
         session: Optional[requests.sessions.Session],
     ) -> None:
+        """Create a DefaultFetcher object."""
         super().__init__(cache)
         self.session = session
 
     def fetch_text(self, url: str, content_types: Optional[List[str]] = None) -> str:
-        """Retrieve the given resource as a string."""
         result = self.cache.get(url, None)
         if isinstance(result, str):
             return result
