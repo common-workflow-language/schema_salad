@@ -36,7 +36,7 @@ class Fetcher(ABC):
         return self.schemes
 
 
-class MemoryCachingFetcher(Fetcher, ABC):
+class MemoryCachingFetcher(Fetcher):
     def __init__(self, cache: CacheType) -> None:
         self.cache = cache
 
