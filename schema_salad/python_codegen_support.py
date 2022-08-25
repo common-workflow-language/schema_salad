@@ -1,10 +1,12 @@
 """Template code used by python_codegen.py."""
 import copy
+import logging
 import os
 import pathlib
 import re
 import tempfile
 import uuid as _uuid__  # pylint: disable=unused-import # noqa: F401
+import xml.sax  # nosec
 from abc import ABC, abstractmethod
 from io import StringIO
 from typing import (
@@ -18,19 +20,24 @@ from typing import (
     Tuple,
     Type,
     Union,
+    cast,
 )
 from urllib.parse import quote, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
+from rdflib import Graph
+from rdflib.plugins.parsers.notation3 import BadSyntax
 from ruamel.yaml.comments import CommentedMap
 
 from schema_salad.exceptions import SchemaSaladException, ValidationException
-from schema_salad.fetcher import DefaultFetcher, Fetcher
+from schema_salad.fetcher import DefaultFetcher, Fetcher, MemoryCachingFetcher
 from schema_salad.sourceline import SourceLine, add_lc_filename
 from schema_salad.utils import yaml_no_ts  # requires schema-salad v8.2+
 
 _vocab: Dict[str, str] = {}
 _rvocab: Dict[str, str] = {}
+
+_logger = logging.getLogger("salad")
 
 
 class LoadingOptions:
@@ -38,7 +45,7 @@ class LoadingOptions:
         self,
         fetcher: Optional[Fetcher] = None,
         namespaces: Optional[Dict[str, str]] = None,
-        schemas: Optional[Dict[str, str]] = None,
+        schemas: Optional[List[str]] = None,
         fileuri: Optional[str] = None,
         copyfrom: Optional["LoadingOptions"] = None,
         original_doc: Optional[Any] = None,
@@ -74,6 +81,10 @@ class LoadingOptions:
         else:
             self.fetcher = fetcher
 
+        self.cache = (
+            self.fetcher.cache if isinstance(self.fetcher, MemoryCachingFetcher) else {}
+        )
+
         self.vocab = _vocab
         self.rvocab = _rvocab
 
@@ -83,6 +94,42 @@ class LoadingOptions:
             for k, v in namespaces.items():
                 self.vocab[k] = v
                 self.rvocab[v] = k
+
+    @property
+    def graph(self) -> Graph:
+        """Generate a merged rdflib.Graph from all entries in self.schemas."""
+        graph = Graph()
+        if not self.schemas:
+            return graph
+        key = str(hash(tuple(self.schemas)))
+        if key in self.cache:
+            return cast(Graph, self.cache[key])
+        for schema in self.schemas:
+            fetchurl = (
+                self.fetcher.urljoin(self.fileuri, schema)
+                if self.fileuri is not None
+                else pathlib.Path(schema).resolve().as_uri()
+            )
+            try:
+                if fetchurl not in self.cache or self.cache[fetchurl] is True:
+                    _logger.debug("Getting external schema %s", fetchurl)
+                    content = self.fetcher.fetch_text(fetchurl)
+                    self.cache[fetchurl] = newGraph = Graph()
+                    for fmt in ["xml", "turtle"]:
+                        try:
+                            newGraph.parse(
+                                data=content, format=fmt, publicID=str(fetchurl)
+                            )
+                            break
+                        except (xml.sax.SAXParseException, TypeError, BadSyntax):
+                            pass
+                graph += self.cache[fetchurl]
+            except Exception as e:
+                _logger.warning(
+                    "Could not load extension schema %s: %s", fetchurl, str(e)
+                )
+        self.cache[key] = graph
+        return graph
 
 
 class Savable(ABC):
@@ -135,7 +182,6 @@ def save(
     base_url: str = "",
     relative_uris: bool = True,
 ) -> save_type:
-
     if isinstance(val, Savable):
         return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
     if isinstance(val, MutableSequence):

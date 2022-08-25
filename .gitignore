@@ -10,3 +10,6 @@ mypy-stubs/ruamel/yaml
 venv/
 .cache/
 .pytest_cache/
+
+# PyCharm
+.idea/
