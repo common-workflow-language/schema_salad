@@ -77,6 +77,9 @@ class LoadingOptions:
             if addl_metadata is None:
                 self.addl_metadata = copyfrom.addl_metadata
 
+        if self.idx is None:
+            self.idx = {}
+
         if fetcher is None:
             import requests
             from cachecontrol.caches import FileCache

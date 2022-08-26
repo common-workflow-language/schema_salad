@@ -160,10 +160,9 @@ def codegen(
                     subscope = jld.get("subscope")
                     if jld.get("typeDSL"):
                         type_loader = gen.typedsl_loader(type_loader, ref_scope)
-                    if jld.get("secondaryFilesDSL"):
+                    elif jld.get("secondaryFilesDSL"):
                         type_loader = gen.secondaryfilesdsl_loader(type_loader)
-
-                    if jld.get("_type") == "@id":
+                    elif jld.get("_type") == "@id":
                         type_loader = gen.uri_loader(
                             type_loader, jld.get("identity", False), False, ref_scope
                         )
