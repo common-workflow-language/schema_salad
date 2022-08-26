@@ -644,7 +644,7 @@ def load_document_with_metadata(
     if baseuri is None:
         baseuri = file_uri(os.getcwd()) + "/"
     if loadingOptions is None:
-        loadingOptions = LoadingOptions()
+        loadingOptions = LoadingOptions(fileuri=baseuri)
     return _document_load(
         %(name)s,
         doc,
