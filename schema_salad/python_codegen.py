@@ -336,9 +336,16 @@ if _errors__:
         )
 
         self.out.write(
-            "        return cls(\n            "
+            "        _constructed = cls(\n            "
             + ",\n            ".join(safe_inits)
-            + ",\n        )\n"
+            + ",\n        )\n")
+        if self.idfield:
+            self.out.write(
+                f"        loadingOptions.idx[{self.safe_name(self.idfield)}] = (_constructed, loadingOptions)\n"
+            )
+
+        self.out.write(
+            "        return _constructed\n"
         )
 
         self.out.write(str(self.serializer.getvalue()))
@@ -658,7 +665,6 @@ def load_document_by_string(
 
     if loadingOptions is None:
         loadingOptions = LoadingOptions(fileuri=uri)
-    loadingOptions.idx[uri] = result
 
     result, metadata = _document_load(
         %(name)s,
@@ -686,7 +692,6 @@ def load_document_by_yaml(
 
     if loadingOptions is None:
         loadingOptions = LoadingOptions(fileuri=uri)
-    loadingOptions.idx[uri] = yaml
 
     result, metadata = _document_load(
         %(name)s,

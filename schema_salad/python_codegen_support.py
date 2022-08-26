@@ -22,7 +22,7 @@ from typing import (
     Union,
     cast,
 )
-from urllib.parse import quote, urlparse, urlsplit, urlunsplit
+from urllib.parse import quote, urlparse, urlsplit, urlunsplit, urldefrag
 from urllib.request import pathname2url
 
 from rdflib import Graph
@@ -51,9 +51,10 @@ class LoadingOptions:
         original_doc: Optional[Any] = None,
         addl_metadata: Optional[Dict[str, str]] = None,
         baseuri: Optional[str] = None,
+        idx: Dict[str, Dict[str, Any]] = None
     ) -> None:
         """Create a LoadingOptions object."""
-        self.idx: Dict[str, Dict[str, Any]] = {}
+        self.idx: Dict[str, Dict[str, Any]] = idx
         self.fileuri: Optional[str] = fileuri
         self.baseuri: Optional[str] = baseuri
         self.namespaces = namespaces
@@ -61,7 +62,8 @@ class LoadingOptions:
         self.original_doc = original_doc
         self.addl_metadata = addl_metadata
         if copyfrom is not None:
-            self.idx = copyfrom.idx
+            if idx is None:
+                self.idx = copyfrom.idx
             if fetcher is None:
                 fetcher = copyfrom.fetcher
             if fileuri is None:
@@ -662,12 +664,15 @@ def _document_load(loader, doc, baseuri, loadingOptions, addl_metadata_fields=[]
         doc = {k: v for k, v in doc.items() if k not in ("$namespaces", "$schemas", "$base")}
 
         if "$graph" in doc:
-            return loader.load(doc["$graph"], baseuri, loadingOptions), loadingOptions
+            loadingOptions.idx[baseuri] = (loader.load(doc["$graph"], baseuri, loadingOptions), loadingOptions)
         else:
-            return loader.load(doc, baseuri, loadingOptions, docRoot=baseuri), loadingOptions
+            loadingOptions.idx[baseuri] = (loader.load(doc, baseuri, loadingOptions, docRoot=baseuri), loadingOptions)
+
+        return loadingOptions.idx[baseuri]
 
     if isinstance(doc, MutableSequence):
-        return loader.load(doc, baseuri, loadingOptions), loadingOptions
+        loadingOptions.idx[baseuri] = (loader.load(doc, baseuri, loadingOptions), loadingOptions)
+        return loadingOptions.idx[baseuri]
 
     raise ValidationException("Expected URI string, MutableMapping or MutableSequence, got %s" % type(doc))
 
@@ -675,24 +680,25 @@ def _document_load(loader, doc, baseuri, loadingOptions, addl_metadata_fields=[]
 def _document_load_by_url(loader, url, loadingOptions, addl_metadata_fields=[]):
     # type: (_Loader, str, LoadingOptions) -> Any
     if url in loadingOptions.idx:
-        return _document_load(loader, loadingOptions.idx[url], url, loadingOptions)
+        return loadingOptions.idx[url]
 
-    text = loadingOptions.fetcher.fetch_text(url)
+    doc_url, frg = urldefrag(url)
+
+    text = loadingOptions.fetcher.fetch_text(doc_url)
     if isinstance(text, bytes):
         textIO = StringIO(text.decode("utf-8"))
     else:
         textIO = StringIO(text)
-    textIO.name = str(url)
+    textIO.name = str(doc_url)
     yaml = yaml_no_ts()
     result = yaml.load(textIO)
-    add_lc_filename(result, url)
+    add_lc_filename(result, doc_url)
 
-    loadingOptions.idx[url] = result
+    loadingOptions = LoadingOptions(copyfrom=loadingOptions, fileuri=doc_url)
 
-    loadingOptions = LoadingOptions(copyfrom=loadingOptions, fileuri=url)
+    _document_load(loader, result, doc_url, loadingOptions, addl_metadata_fields=addl_metadata_fields)
 
-    return _document_load(loader, result, url, loadingOptions, addl_metadata_fields=addl_metadata_fields)
-
+    return loadingOptions.idx[url]
 
 def file_uri(path, split_frag=False):  # type: (str, bool) -> str
     if path.startswith("file://"):
