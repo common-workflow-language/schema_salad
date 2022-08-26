@@ -157,13 +157,13 @@ def codegen(
 
                 if isinstance(jld, MutableMapping):
                     ref_scope = jld.get("refScope")
+                    subscope = jld.get("subscope")
                     if jld.get("typeDSL"):
                         type_loader = gen.typedsl_loader(type_loader, ref_scope)
-                    elif jld.get("secondaryFilesDSL"):
+                    if jld.get("secondaryFilesDSL"):
                         type_loader = gen.secondaryfilesdsl_loader(type_loader)
-                    elif jld.get("subscope"):
-                        subscope = jld.get("subscope")
-                    elif jld.get("_type") == "@id":
+
+                    if jld.get("_type") == "@id":
                         type_loader = gen.uri_loader(
                             type_loader, jld.get("identity", False), False, ref_scope
                         )

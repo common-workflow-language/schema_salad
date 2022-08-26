@@ -308,7 +308,7 @@ class _ArrayLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if not isinstance(doc, MutableSequence):
-            raise ValidationException("Expected a list")
+            raise ValidationException("Expected a list, was {}".format(type(doc)))
         r = []  # type: List[Any]
         errors = []  # type: List[SchemaSaladException]
         for i in range(0, len(doc)):
@@ -331,9 +331,10 @@ class _ArrayLoader(_Loader):
 
 
 class _EnumLoader(_Loader):
-    def __init__(self, symbols):
+    def __init__(self, symbols, name):
         # type: (Sequence[str]) -> None
         self.symbols = symbols
+        self.name = name
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any
@@ -341,6 +342,9 @@ class _EnumLoader(_Loader):
             return doc
         else:
             raise ValidationException(f"Expected one of {self.symbols}")
+
+    def __repr__(self):  # type: () -> str
+        return self.name
 
 
 class _SecondaryDSLLoader(_Loader):
@@ -422,11 +426,11 @@ class _RecordLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if not isinstance(doc, MutableMapping):
-            raise ValidationException("Expected a dict")
+            raise ValidationException("Expected a dict, was {}".format(type(doc)))
         return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
     def __repr__(self):  # type: () -> str
-        return str(self.classtype)
+        return str(self.classtype.__name__)
 
 
 class _ExpressionLoader(_Loader):
@@ -436,7 +440,7 @@ class _ExpressionLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if not isinstance(doc, str):
-            raise ValidationException("Expected a str")
+            raise ValidationException("Expected a str, was {}".format(type(doc)))
         return doc
 
 
@@ -453,7 +457,7 @@ class _UnionLoader(_Loader):
                 return t.load(doc, baseuri, loadingOptions, docRoot=docRoot)
             except ValidationException as e:
                 errors.append(
-                    ValidationException(f"tried {t.__class__.__name__} but", None, [e])
+                    ValidationException(f"tried {t} but", None, [e])
                 )
         raise ValidationException("", None, errors, "-")
 
@@ -680,14 +684,14 @@ def save_relative_uri(
     relative_uris: bool,
 ) -> Any:
     """Convert any URI to a relative one, obeying the scoping rules."""
-    if not relative_uris or uri == base_url:
-        return uri
     if isinstance(uri, MutableSequence):
         return [
             save_relative_uri(u, base_url, scoped_id, ref_scope, relative_uris)
             for u in uri
         ]
     elif isinstance(uri, str):
+        if not relative_uris or uri == base_url:
+            return uri
         urisplit = urlsplit(uri)
         basesplit = urlsplit(base_url)
         if urisplit.scheme == basesplit.scheme and urisplit.netloc == basesplit.netloc:
@@ -712,7 +716,7 @@ def save_relative_uri(
                 return urisplit.fragment
         return uri
     else:
-        return save(uri, top=False, base_url=base_url)
+        return save(uri, top=False, base_url=base_url, relative_uris=relative_uris)
 
 
 def shortname(inputid: str) -> str:

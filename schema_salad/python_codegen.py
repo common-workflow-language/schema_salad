@@ -243,7 +243,10 @@ class PythonCodeGen(CodeGenBase):
     ) -> Dict[str, Any]:
         r: Dict[str, Any] = {}
         for ef in self.extension_fields:
-            r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+            if relative_uris:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+            else:
+                r[ef] = self.extension_fields[ef]
 """
         )
 
@@ -370,11 +373,12 @@ if _errors__:
                 return self.declare_type(
                     TypeDef(
                         self.safe_name(type_declaration["name"]) + "Loader",
-                        '_EnumLoader(("{}",))'.format(
+                        '_EnumLoader(("{}",), "{}")'.format(
                             '", "'.join(
                                 self.safe_name(sym)
                                 for sym in type_declaration["symbols"]
-                            )
+                            ),
+                            self.safe_name(type_declaration["name"])
                         ),
                     )
                 )
