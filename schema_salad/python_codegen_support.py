@@ -49,23 +49,31 @@ class LoadingOptions:
         fileuri: Optional[str] = None,
         copyfrom: Optional["LoadingOptions"] = None,
         original_doc: Optional[Any] = None,
+        addl_metadata: Optional[Dict[str, str]] = None,
+        baseuri: Optional[str] = None,
     ) -> None:
         """Create a LoadingOptions object."""
         self.idx: Dict[str, Dict[str, Any]] = {}
         self.fileuri: Optional[str] = fileuri
+        self.baseuri: Optional[str] = baseuri
         self.namespaces = namespaces
         self.schemas = schemas
         self.original_doc = original_doc
+        self.addl_metadata = addl_metadata
         if copyfrom is not None:
             self.idx = copyfrom.idx
             if fetcher is None:
                 fetcher = copyfrom.fetcher
             if fileuri is None:
                 self.fileuri = copyfrom.fileuri
+            if baseuri is None:
+                self.baseuri = copyfrom.baseuri
             if namespaces is None:
                 self.namespaces = copyfrom.namespaces
             if schemas is None:
                 self.schemas = copyfrom.schemas
+            if addl_metadata is None:
+                self.addl_metadata = copyfrom.addl_metadata
 
         if fetcher is None:
             import requests
@@ -198,6 +206,33 @@ def save(
         return newdict
     return val
 
+def save_with_metadata(
+    val: Optional[Union[Saveable, MutableSequence[Saveable]]],
+    valLoadingOpts: LoadingOptions,
+    top: bool = True,
+    base_url: str = "",
+    relative_uris: bool = True,
+) -> save_type:
+    val = save(val, top, base_url, relative_uris)
+    newdict = {}
+    if isinstance(val, MutableSequence):
+        newdict = {
+            "$graph": val
+        }
+    elif isinstance(val, MutableMapping):
+        newdict = val
+
+    if valLoadingOpts.namespaces:
+        newdict["$namespaces"] = valLoadingOpts.namespaces
+    if valLoadingOpts.schemas:
+        newdict["$schemas"] = valLoadingOpts.schemas
+    if valLoadingOpts.baseuri:
+        newdict["$base"] = valLoadingOpts.baseuri
+    for k,v in valLoadingOpts.addl_metadata.items():
+        if k not in newdict:
+            newdict[k] = v
+
+    return newdict
 
 def expand_url(
     url,  # type: str
@@ -600,37 +635,44 @@ class _IdMapLoader(_Loader):
         return self.inner.load(doc, baseuri, loadingOptions)
 
 
-def _document_load(loader, doc, baseuri, loadingOptions):
+def _document_load(loader, doc, baseuri, loadingOptions, addl_metadata_fields=[]):
     # type: (_Loader, Any, str, LoadingOptions) -> Any
     if isinstance(doc, str):
         return _document_load_by_url(
-            loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions
+            loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions, addl_metadata_fields=addl_metadata_fields
         )
 
     if isinstance(doc, MutableMapping):
-        if "$namespaces" in doc or "$schemas" in doc:
-            loadingOptions = LoadingOptions(
-                copyfrom=loadingOptions,
-                namespaces=doc.get("$namespaces", None),
-                schemas=doc.get("$schemas", None),
-            )
-            doc = {k: v for k, v in doc.items() if k not in ["$namespaces", "$schemas"]}
+        addl_metadata = {}
+        for mf in addl_metadata_fields:
+            if mf in doc:
+                addl_metadata[mf] = doc[mf]
 
         if "$base" in doc:
             baseuri = doc["$base"]
 
+        loadingOptions = LoadingOptions(
+            copyfrom=loadingOptions,
+            namespaces=doc.get("$namespaces", None),
+            schemas=doc.get("$schemas", None),
+            baseuri=doc.get("$base", None),
+            addl_metadata=addl_metadata
+        )
+
+        doc = {k: v for k, v in doc.items() if k not in ("$namespaces", "$schemas", "$base")}
+
         if "$graph" in doc:
-            return loader.load(doc["$graph"], baseuri, loadingOptions)
+            return loader.load(doc["$graph"], baseuri, loadingOptions), loadingOptions
         else:
-            return loader.load(doc, baseuri, loadingOptions, docRoot=baseuri)
+            return loader.load(doc, baseuri, loadingOptions, docRoot=baseuri), loadingOptions
 
     if isinstance(doc, MutableSequence):
-        return loader.load(doc, baseuri, loadingOptions)
+        return loader.load(doc, baseuri, loadingOptions), loadingOptions
 
-    raise ValidationException("Oops, we shouldn't be here!")
+    raise ValidationException("Expected URI string, MutableMapping or MutableSequence, got %s" % type(doc))
 
 
-def _document_load_by_url(loader, url, loadingOptions):
+def _document_load_by_url(loader, url, loadingOptions, addl_metadata_fields=[]):
     # type: (_Loader, str, LoadingOptions) -> Any
     if url in loadingOptions.idx:
         return _document_load(loader, loadingOptions.idx[url], url, loadingOptions)
@@ -649,7 +691,7 @@ def _document_load_by_url(loader, url, loadingOptions):
 
     loadingOptions = LoadingOptions(copyfrom=loadingOptions, fileuri=url)
 
-    return _document_load(loader, result, url, loadingOptions)
+    return _document_load(loader, result, url, loadingOptions, addl_metadata_fields=addl_metadata_fields)
 
 
 def file_uri(path, split_frag=False):  # type: (str, bool) -> str

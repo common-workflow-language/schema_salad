@@ -242,10 +242,12 @@ class PythonCodeGen(CodeGenBase):
         self, top: bool = False, base_url: str = "", relative_uris: bool = True
     ) -> Dict[str, Any]:
         r: Dict[str, Any] = {}
-        for ef in self.extension_fields:
-            if relative_uris:
+
+        if relative_uris:
+            for ef in self.extension_fields:
                 r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
-            else:
+        else:
+            for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
 """
         )
@@ -618,11 +620,30 @@ def load_document(
         baseuri = file_uri(os.getcwd()) + "/"
     if loadingOptions is None:
         loadingOptions = LoadingOptions()
+    result, metadata = _document_load(
+        %(name)s,
+        doc,
+        baseuri,
+        loadingOptions,
+    )
+    return result
+
+def load_document_with_metadata(
+    doc: Any,
+    baseuri: Optional[str] = None,
+    loadingOptions: Optional[LoadingOptions] = None,
+    addl_metadata_fields: Optional[List[str]] = []
+) -> Any:
+    if baseuri is None:
+        baseuri = file_uri(os.getcwd()) + "/"
+    if loadingOptions is None:
+        loadingOptions = LoadingOptions()
     return _document_load(
         %(name)s,
         doc,
         baseuri,
         loadingOptions,
+        addl_metadata_fields=addl_metadata_fields
     )
 
 
@@ -639,12 +660,13 @@ def load_document_by_string(
         loadingOptions = LoadingOptions(fileuri=uri)
     loadingOptions.idx[uri] = result
 
-    return _document_load(
+    result, metadata = _document_load(
         %(name)s,
         result,
         uri,
         loadingOptions,
     )
+    return result
 
 
 def load_document_by_yaml(
@@ -666,12 +688,13 @@ def load_document_by_yaml(
         loadingOptions = LoadingOptions(fileuri=uri)
     loadingOptions.idx[uri] = yaml
 
-    return _document_load(
+    result, metadata = _document_load(
         %(name)s,
         yaml,
         uri,
         loadingOptions,
     )
+    return result
 """
             % dict(name=root_loader.name)
         )
