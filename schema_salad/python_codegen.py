@@ -517,8 +517,7 @@ if _errors__:
                     """
 if self.{safename} is not None:
     u = save_relative_uri(self.{safename}, {baseurl}, {scoped_id}, {ref_scope}, relative_uris)
-    if u:
-        r["{fieldname}"] = u
+    r["{fieldname}"] = u
 """.format(
                         safename=self.safe_name(name),
                         fieldname=shortname(name).strip(),
