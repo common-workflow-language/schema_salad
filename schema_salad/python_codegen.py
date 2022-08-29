@@ -338,15 +338,14 @@ if _errors__:
         self.out.write(
             "        _constructed = cls(\n            "
             + ",\n            ".join(safe_inits)
-            + ",\n        )\n")
+            + ",\n        )\n"
+        )
         if self.idfield:
             self.out.write(
                 f"        loadingOptions.idx[{self.safe_name(self.idfield)}] = (_constructed, loadingOptions)\n"
             )
 
-        self.out.write(
-            "        return _constructed\n"
-        )
+        self.out.write("        return _constructed\n")
 
         self.out.write(str(self.serializer.getvalue()))
 
@@ -387,7 +386,7 @@ if _errors__:
                                 self.safe_name(sym)
                                 for sym in type_declaration["symbols"]
                             ),
-                            self.safe_name(type_declaration["name"])
+                            self.safe_name(type_declaration["name"]),
                         ),
                     )
                 )
