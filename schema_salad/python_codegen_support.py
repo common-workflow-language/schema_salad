@@ -42,6 +42,7 @@ _logger = logging.getLogger("salad")
 
 IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
 
+
 class LoadingOptions:
 
     idx: IdxType
