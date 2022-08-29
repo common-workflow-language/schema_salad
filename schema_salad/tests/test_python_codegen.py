@@ -108,6 +108,11 @@ def test_graph_property() -> None:
     graph = Graph()
     graph.parse(data=content, format="xml", publicID=fetchurl)
     loading_options = LoadingOptions(schemas=[schema])
+    # for a in graph:
+    #     print(a)
+    # print("--------------")
+    # for a in loading_options.graph:
+    #     print(a)
     assert to_isomorphic(graph) == to_isomorphic(loading_options.graph)
 
 

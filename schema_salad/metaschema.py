@@ -49,7 +49,7 @@ IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
 class LoadingOptions:
 
     idx: IdxType
-    fileuri: str
+    fileuri: Optional[str]
     baseuri: str
     namespaces: MutableMapping[str, str]
     schemas: MutableSequence[str]
@@ -82,7 +82,7 @@ class LoadingOptions:
         if fileuri is not None:
             self.fileuri = fileuri
         else:
-            self.fileuri = copyfrom.fileuri if copyfrom is not None else ""
+            self.fileuri = copyfrom.fileuri if copyfrom is not None else None
 
         if baseuri is not None:
             self.baseuri = baseuri
@@ -213,9 +213,8 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
     return fieldtype.load(val, baseuri, loadingOptions)
 
 
-save_type = Union[
-    MutableMapping[str, Any],
-    MutableSequence[Union[MutableMapping[str, Any], MutableSequence[Any], None]],
+save_type = Optional[
+    Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]
 ]
 
 
@@ -239,7 +238,9 @@ def save(
                 val[key], top=False, base_url=base_url, relative_uris=relative_uris
             )
         return newdict
-    raise Exception("Not a Saveable")
+    if val is None or isinstance(val, (int, float, bool, str)):
+        return val
+    raise Exception("Not Saveable: %s" % type(val))
 
 
 def save_with_metadata(
@@ -685,12 +686,13 @@ def _document_load(
         )
 
     if isinstance(doc, MutableMapping):
+        addl_metadata = {}
         if addl_metadata_fields is not None:
-            addl_metadata = {}
             for mf in addl_metadata_fields:
                 if mf in doc:
                     addl_metadata[mf] = doc[mf]
 
+        docuri = baseuri
         if "$base" in doc:
             baseuri = doc["$base"]
 
@@ -718,6 +720,9 @@ def _document_load(
                 loader.load(doc, baseuri, loadingOptions, docRoot=baseuri),
                 loadingOptions,
             )
+
+        if docuri != baseuri:
+            loadingOptions.idx[docuri] = loadingOptions.idx[baseuri]
 
         return loadingOptions.idx[baseuri]
 
