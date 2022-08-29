@@ -212,12 +212,11 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
 save_type = Union[
     MutableMapping[str, Any],
     MutableSequence[Union[MutableMapping[str, Any], MutableSequence[Any], None]],
-    None,
 ]
 
 
 def save(
-    val: Optional[Union[Saveable, MutableSequence[Saveable]]],
+    val: Any,
     top: bool = True,
     base_url: str = "",
     relative_uris: bool = True,
@@ -236,11 +235,11 @@ def save(
                 val[key], top=False, base_url=base_url, relative_uris=relative_uris
             )
         return newdict
-    return val
+    raise Exception("Not a Saveable")
 
 
 def save_with_metadata(
-    val: Optional[Union[Saveable, MutableSequence[Saveable]]],
+    val: Any,
     valLoadingOpts: LoadingOptions,
     top: bool = True,
     base_url: str = "",
