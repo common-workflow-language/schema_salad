@@ -245,6 +245,7 @@ def save_with_metadata(
     base_url: str = "",
     relative_uris: bool = True,
 ) -> save_type:
+    """Save and set $namespaces, $schemas, $base and any other metadata fields at the top level."""
     saved_val = save(val, top, base_url, relative_uris)
     newdict: MutableMapping[str, Any] = {}
     if isinstance(saved_val, MutableSequence):
@@ -669,7 +670,7 @@ def _document_load(
     doc: Union[str, MutableMapping[str, Any], MutableSequence[Any]],
     baseuri: str,
     loadingOptions: LoadingOptions,
-    addl_metadata_fields: MutableSequence[str] = [],
+    addl_metadata_fields: Optional[MutableSequence[str]] = None,
 ) -> Tuple[Any, LoadingOptions]:
     if isinstance(doc, str):
         return _document_load_by_url(
@@ -680,10 +681,11 @@ def _document_load(
         )
 
     if isinstance(doc, MutableMapping):
-        addl_metadata = {}
-        for mf in addl_metadata_fields:
-            if mf in doc:
-                addl_metadata[mf] = doc[mf]
+        if addl_metadata_fields is not None:
+            addl_metadata = {}
+            for mf in addl_metadata_fields:
+                if mf in doc:
+                    addl_metadata[mf] = doc[mf]
 
         if "$base" in doc:
             baseuri = doc["$base"]
@@ -731,7 +733,7 @@ def _document_load_by_url(
     loader: _Loader,
     url: str,
     loadingOptions: LoadingOptions,
-    addl_metadata_fields: MutableSequence[str] = [],
+    addl_metadata_fields: Optional[MutableSequence[str]] = None,
 ) -> Tuple[Any, LoadingOptions]:
     if url in loadingOptions.idx:
         return loadingOptions.idx[url]
