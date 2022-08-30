@@ -3486,11 +3486,12 @@ def load_document(
     )
     return result
 
+
 def load_document_with_metadata(
     doc: Any,
     baseuri: Optional[str] = None,
     loadingOptions: Optional[LoadingOptions] = None,
-    addl_metadata_fields: Optional[MutableSequence[str]] = None
+    addl_metadata_fields: Optional[MutableSequence[str]] = None,
 ) -> Any:
     if baseuri is None:
         baseuri = file_uri(os.getcwd()) + "/"
@@ -3501,7 +3502,7 @@ def load_document_with_metadata(
         doc,
         baseuri,
         loadingOptions,
-        addl_metadata_fields=addl_metadata_fields
+        addl_metadata_fields=addl_metadata_fields,
     )
 
 
