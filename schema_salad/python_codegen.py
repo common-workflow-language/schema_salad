@@ -633,6 +633,7 @@ def load_document(
     )
     return result
 
+
 def load_document_with_metadata(
     doc: Any,
     baseuri: Optional[str] = None,
