@@ -82,7 +82,6 @@ else:
     ext_modules = []
 
 install_requires = [
-    "setuptools",
     "requests >= 1.0",
     "ruamel.yaml >= 0.17.6, < 0.17.22;python_version>='3.7'",
     "ruamel.yaml >= 0.16.12, < 0.17.22",
