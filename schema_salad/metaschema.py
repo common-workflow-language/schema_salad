@@ -25,7 +25,7 @@ from typing import (
     Union,
     cast,
 )
-from urllib.parse import quote, urlparse, urlsplit, urlunsplit, urldefrag
+from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
 from rdflib import Graph
@@ -35,7 +35,7 @@ from ruamel.yaml.comments import CommentedMap
 from schema_salad.exceptions import SchemaSaladException, ValidationException
 from schema_salad.fetcher import DefaultFetcher, Fetcher, MemoryCachingFetcher
 from schema_salad.sourceline import SourceLine, add_lc_filename
-from schema_salad.utils import yaml_no_ts, CacheType  # requires schema-salad v8.2+
+from schema_salad.utils import CacheType, yaml_no_ts  # requires schema-salad v8.2+
 
 _vocab: Dict[str, str] = {}
 _rvocab: Dict[str, str] = {}
@@ -73,6 +73,8 @@ class LoadingOptions:
         idx: Optional[IdxType] = None,
     ) -> None:
         """Create a LoadingOptions object."""
+
+        self.original_doc = original_doc
 
         if idx is not None:
             self.idx = idx
