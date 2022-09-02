@@ -1,5 +1,6 @@
 """Java code generator for a given schema salad definition."""
 import os
+import re
 import shutil
 import string
 from io import StringIO
@@ -27,6 +28,8 @@ from .schema import shortname
 # for simple schema with a single root loader - but doesn't help with CWL at all and
 # may even confuse things a bit so turning these off be default.
 USE_ONE_OR_LIST_OF_TYPES = False
+
+BASIC_JAVA_IDENTIFIER_RE = re.compile(r"[^0-9a-zA-Z]+")
 
 
 def _ensure_directory_and_write(path: Path, contents: str) -> None:
@@ -857,6 +860,7 @@ public enum {clazz} {{
             for example_name in os.listdir(self.examples):
                 if example_name.startswith("valid"):
                     basename = os.path.basename(example_name).rsplit(".", 1)[0]
+                    basename = re.sub(BASIC_JAVA_IDENTIFIER_RE, "_", basename)
                     example_tests += """
   @org.junit.Test
   public void test{basename}ByString() throws Exception {{
@@ -882,7 +886,7 @@ public enum {clazz} {{
     doc = (java.util.Map<String, Object>) YamlUtils.mapFromString(yaml);
     RootLoader.loadDocument(doc, url.toString());
   }}""".format(
-                        basename=basename.replace("-", "_").replace(".", "_"),
+                        basename=basename,
                         example_name=example_name,
                     )
 
