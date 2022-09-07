@@ -242,8 +242,13 @@ class PythonCodeGen(CodeGenBase):
         self, top: bool = False, base_url: str = "", relative_uris: bool = True
     ) -> Dict[str, Any]:
         r: Dict[str, Any] = {}
-        for ef in self.extension_fields:
-            r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
 """
         )
 
@@ -331,10 +336,16 @@ if _errors__:
         )
 
         self.out.write(
-            "        return cls(\n            "
+            "        _constructed = cls(\n            "
             + ",\n            ".join(safe_inits)
             + ",\n        )\n"
         )
+        if self.idfield:
+            self.out.write(
+                f"        loadingOptions.idx[{self.safe_name(self.idfield)}] = (_constructed, loadingOptions)\n"
+            )
+
+        self.out.write("        return _constructed\n")
 
         self.out.write(str(self.serializer.getvalue()))
 
@@ -370,11 +381,12 @@ if _errors__:
                 return self.declare_type(
                     TypeDef(
                         self.safe_name(type_declaration["name"]) + "Loader",
-                        '_EnumLoader(("{}",))'.format(
+                        '_EnumLoader(("{}",), "{}")'.format(
                             '", "'.join(
                                 self.safe_name(sym)
                                 for sym in type_declaration["symbols"]
-                            )
+                            ),
+                            self.safe_name(type_declaration["name"]),
                         ),
                     )
                 )
@@ -504,8 +516,7 @@ if _errors__:
                     """
 if self.{safename} is not None:
     u = save_relative_uri(self.{safename}, {baseurl}, {scoped_id}, {ref_scope}, relative_uris)
-    if u:
-        r["{fieldname}"] = u
+    r["{fieldname}"] = u
 """.format(
                         safename=self.safe_name(name),
                         fieldname=shortname(name).strip(),
@@ -614,11 +625,31 @@ def load_document(
         baseuri = file_uri(os.getcwd()) + "/"
     if loadingOptions is None:
         loadingOptions = LoadingOptions()
+    result, metadata = _document_load(
+        %(name)s,
+        doc,
+        baseuri,
+        loadingOptions,
+    )
+    return result
+
+
+def load_document_with_metadata(
+    doc: Any,
+    baseuri: Optional[str] = None,
+    loadingOptions: Optional[LoadingOptions] = None,
+    addl_metadata_fields: Optional[MutableSequence[str]] = None,
+) -> Any:
+    if baseuri is None:
+        baseuri = file_uri(os.getcwd()) + "/"
+    if loadingOptions is None:
+        loadingOptions = LoadingOptions(fileuri=baseuri)
     return _document_load(
         %(name)s,
         doc,
         baseuri,
         loadingOptions,
+        addl_metadata_fields=addl_metadata_fields,
     )
 
 
@@ -633,14 +664,14 @@ def load_document_by_string(
 
     if loadingOptions is None:
         loadingOptions = LoadingOptions(fileuri=uri)
-    loadingOptions.idx[uri] = result
 
-    return _document_load(
+    result, metadata = _document_load(
         %(name)s,
         result,
         uri,
         loadingOptions,
     )
+    return result
 
 
 def load_document_by_yaml(
@@ -660,14 +691,14 @@ def load_document_by_yaml(
 
     if loadingOptions is None:
         loadingOptions = LoadingOptions(fileuri=uri)
-    loadingOptions.idx[uri] = yaml
 
-    return _document_load(
+    result, metadata = _document_load(
         %(name)s,
         yaml,
         uri,
         loadingOptions,
     )
+    return result
 """
             % dict(name=root_loader.name)
         )

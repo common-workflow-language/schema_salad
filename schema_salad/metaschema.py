@@ -25,7 +25,7 @@ from typing import (
     Union,
     cast,
 )
-from urllib.parse import quote, urlparse, urlsplit, urlunsplit
+from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
 from rdflib import Graph
@@ -35,7 +35,7 @@ from ruamel.yaml.comments import CommentedMap
 from schema_salad.exceptions import SchemaSaladException, ValidationException
 from schema_salad.fetcher import DefaultFetcher, Fetcher, MemoryCachingFetcher
 from schema_salad.sourceline import SourceLine, add_lc_filename
-from schema_salad.utils import yaml_no_ts  # requires schema-salad v8.2+
+from schema_salad.utils import CacheType, yaml_no_ts  # requires schema-salad v8.2+
 
 _vocab: Dict[str, str] = {}
 _rvocab: Dict[str, str] = {}
@@ -43,7 +43,23 @@ _rvocab: Dict[str, str] = {}
 _logger = logging.getLogger("salad")
 
 
+IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
+
+
 class LoadingOptions:
+
+    idx: IdxType
+    fileuri: Optional[str]
+    baseuri: str
+    namespaces: MutableMapping[str, str]
+    schemas: MutableSequence[str]
+    original_doc: Optional[Any]
+    addl_metadata: MutableMapping[str, Any]
+    fetcher: Fetcher
+    vocab: Dict[str, str]
+    rvocab: Dict[str, str]
+    cache: CacheType
+
     def __init__(
         self,
         fetcher: Optional[Fetcher] = None,
@@ -52,25 +68,49 @@ class LoadingOptions:
         fileuri: Optional[str] = None,
         copyfrom: Optional["LoadingOptions"] = None,
         original_doc: Optional[Any] = None,
+        addl_metadata: Optional[Dict[str, str]] = None,
+        baseuri: Optional[str] = None,
+        idx: Optional[IdxType] = None,
     ) -> None:
         """Create a LoadingOptions object."""
-        self.idx: Dict[str, Dict[str, Any]] = {}
-        self.fileuri: Optional[str] = fileuri
-        self.namespaces = namespaces
-        self.schemas = schemas
-        self.original_doc = original_doc
-        if copyfrom is not None:
-            self.idx = copyfrom.idx
-            if fetcher is None:
-                fetcher = copyfrom.fetcher
-            if fileuri is None:
-                self.fileuri = copyfrom.fileuri
-            if namespaces is None:
-                self.namespaces = copyfrom.namespaces
-            if schemas is None:
-                self.schemas = copyfrom.schemas
 
-        if fetcher is None:
+        self.original_doc = original_doc
+
+        if idx is not None:
+            self.idx = idx
+        else:
+            self.idx = copyfrom.idx if copyfrom is not None else {}
+
+        if fileuri is not None:
+            self.fileuri = fileuri
+        else:
+            self.fileuri = copyfrom.fileuri if copyfrom is not None else None
+
+        if baseuri is not None:
+            self.baseuri = baseuri
+        else:
+            self.baseuri = copyfrom.baseuri if copyfrom is not None else ""
+
+        if namespaces is not None:
+            self.namespaces = namespaces
+        else:
+            self.namespaces = copyfrom.namespaces if copyfrom is not None else {}
+
+        if schemas is not None:
+            self.schemas = schemas
+        else:
+            self.schemas = copyfrom.schemas if copyfrom is not None else []
+
+        if addl_metadata is not None:
+            self.addl_metadata = addl_metadata
+        else:
+            self.addl_metadata = copyfrom.addl_metadata if copyfrom is not None else {}
+
+        if fetcher is not None:
+            self.fetcher = fetcher
+        elif copyfrom is not None:
+            self.fetcher = copyfrom.fetcher
+        else:
             import requests
             from cachecontrol.caches import FileCache
             from cachecontrol.wrapper import CacheControl
@@ -81,8 +121,6 @@ class LoadingOptions:
                 cache=FileCache(root / ".cache" / "salad"),
             )
             self.fetcher: Fetcher = DefaultFetcher({}, session)
-        else:
-            self.fetcher = fetcher
 
         self.cache = (
             self.fetcher.cache if isinstance(self.fetcher, MemoryCachingFetcher) else {}
@@ -162,11 +200,12 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
         if "$import" in val:
             if loadingOptions.fileuri is None:
                 raise SchemaSaladException("Cannot load $import without fileuri")
-            return _document_load_by_url(
+            result, metadata = _document_load_by_url(
                 fieldtype,
                 loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$import"]),
                 loadingOptions,
             )
+            return result
         elif "$include" in val:
             if loadingOptions.fileuri is None:
                 raise SchemaSaladException("Cannot load $import without fileuri")
@@ -176,11 +215,13 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
     return fieldtype.load(val, baseuri, loadingOptions)
 
 
-save_type = Union[Dict[str, Any], List[Union[Dict[str, Any], List[Any], None]], None]
+save_type = Optional[
+    Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]
+]
 
 
 def save(
-    val: Optional[Union[Saveable, MutableSequence[Saveable]]],
+    val: Any,
     top: bool = True,
     base_url: str = "",
     relative_uris: bool = True,
@@ -199,7 +240,37 @@ def save(
                 val[key], top=False, base_url=base_url, relative_uris=relative_uris
             )
         return newdict
-    return val
+    if val is None or isinstance(val, (int, float, bool, str)):
+        return val
+    raise Exception("Not Saveable: %s" % type(val))
+
+
+def save_with_metadata(
+    val: Any,
+    valLoadingOpts: LoadingOptions,
+    top: bool = True,
+    base_url: str = "",
+    relative_uris: bool = True,
+) -> save_type:
+    """Save and set $namespaces, $schemas, $base and any other metadata fields at the top level."""
+    saved_val = save(val, top, base_url, relative_uris)
+    newdict: MutableMapping[str, Any] = {}
+    if isinstance(saved_val, MutableSequence):
+        newdict = {"$graph": saved_val}
+    elif isinstance(saved_val, MutableMapping):
+        newdict = saved_val
+
+    if valLoadingOpts.namespaces:
+        newdict["$namespaces"] = valLoadingOpts.namespaces
+    if valLoadingOpts.schemas:
+        newdict["$schemas"] = valLoadingOpts.schemas
+    if valLoadingOpts.baseuri:
+        newdict["$base"] = valLoadingOpts.baseuri
+    for k, v in valLoadingOpts.addl_metadata.items():
+        if k not in newdict:
+            newdict[k] = v
+
+    return newdict
 
 
 def expand_url(
@@ -311,7 +382,7 @@ class _ArrayLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if not isinstance(doc, MutableSequence):
-            raise ValidationException("Expected a list")
+            raise ValidationException("Expected a list, was {}".format(type(doc)))
         r = []  # type: List[Any]
         errors = []  # type: List[SchemaSaladException]
         for i in range(0, len(doc)):
@@ -334,9 +405,10 @@ class _ArrayLoader(_Loader):
 
 
 class _EnumLoader(_Loader):
-    def __init__(self, symbols):
-        # type: (Sequence[str]) -> None
+    def __init__(self, symbols, name):
+        # type: (Sequence[str], str) -> None
         self.symbols = symbols
+        self.name = name
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any
@@ -344,6 +416,9 @@ class _EnumLoader(_Loader):
             return doc
         else:
             raise ValidationException(f"Expected one of {self.symbols}")
+
+    def __repr__(self):  # type: () -> str
+        return self.name
 
 
 class _SecondaryDSLLoader(_Loader):
@@ -425,11 +500,11 @@ class _RecordLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if not isinstance(doc, MutableMapping):
-            raise ValidationException("Expected a dict")
+            raise ValidationException("Expected a dict, was {}".format(type(doc)))
         return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
     def __repr__(self):  # type: () -> str
-        return str(self.classtype)
+        return str(self.classtype.__name__)
 
 
 class _ExpressionLoader(_Loader):
@@ -439,7 +514,7 @@ class _ExpressionLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if not isinstance(doc, str):
-            raise ValidationException("Expected a str")
+            raise ValidationException("Expected a str, was {}".format(type(doc)))
         return doc
 
 
@@ -455,9 +530,7 @@ class _UnionLoader(_Loader):
             try:
                 return t.load(doc, baseuri, loadingOptions, docRoot=docRoot)
             except ValidationException as e:
-                errors.append(
-                    ValidationException(f"tried {t.__class__.__name__} but", None, [e])
-                )
+                errors.append(ValidationException(f"tried {t} but", None, [e]))
         raise ValidationException("", None, errors, "-")
 
     def __repr__(self):  # type: () -> str
@@ -599,56 +672,106 @@ class _IdMapLoader(_Loader):
         return self.inner.load(doc, baseuri, loadingOptions)
 
 
-def _document_load(loader, doc, baseuri, loadingOptions):
-    # type: (_Loader, Any, str, LoadingOptions) -> Any
+def _document_load(
+    loader: _Loader,
+    doc: Union[str, MutableMapping[str, Any], MutableSequence[Any]],
+    baseuri: str,
+    loadingOptions: LoadingOptions,
+    addl_metadata_fields: Optional[MutableSequence[str]] = None,
+) -> Tuple[Any, LoadingOptions]:
     if isinstance(doc, str):
         return _document_load_by_url(
-            loader, loadingOptions.fetcher.urljoin(baseuri, doc), loadingOptions
+            loader,
+            loadingOptions.fetcher.urljoin(baseuri, doc),
+            loadingOptions,
+            addl_metadata_fields=addl_metadata_fields,
         )
 
     if isinstance(doc, MutableMapping):
-        if "$namespaces" in doc or "$schemas" in doc:
-            loadingOptions = LoadingOptions(
-                copyfrom=loadingOptions,
-                namespaces=doc.get("$namespaces", None),
-                schemas=doc.get("$schemas", None),
-            )
-            doc = {k: v for k, v in doc.items() if k not in ["$namespaces", "$schemas"]}
+        addl_metadata = {}
+        if addl_metadata_fields is not None:
+            for mf in addl_metadata_fields:
+                if mf in doc:
+                    addl_metadata[mf] = doc[mf]
 
+        docuri = baseuri
         if "$base" in doc:
             baseuri = doc["$base"]
 
+        loadingOptions = LoadingOptions(
+            copyfrom=loadingOptions,
+            namespaces=doc.get("$namespaces", None),
+            schemas=doc.get("$schemas", None),
+            baseuri=doc.get("$base", None),
+            addl_metadata=addl_metadata,
+        )
+
+        doc = {
+            k: v
+            for k, v in doc.items()
+            if k not in ("$namespaces", "$schemas", "$base")
+        }
+
         if "$graph" in doc:
-            return loader.load(doc["$graph"], baseuri, loadingOptions)
+            loadingOptions.idx[baseuri] = (
+                loader.load(doc["$graph"], baseuri, loadingOptions),
+                loadingOptions,
+            )
         else:
-            return loader.load(doc, baseuri, loadingOptions, docRoot=baseuri)
+            loadingOptions.idx[baseuri] = (
+                loader.load(doc, baseuri, loadingOptions, docRoot=baseuri),
+                loadingOptions,
+            )
+
+        if docuri != baseuri:
+            loadingOptions.idx[docuri] = loadingOptions.idx[baseuri]
+
+        return loadingOptions.idx[baseuri]
 
     if isinstance(doc, MutableSequence):
-        return loader.load(doc, baseuri, loadingOptions)
+        loadingOptions.idx[baseuri] = (
+            loader.load(doc, baseuri, loadingOptions),
+            loadingOptions,
+        )
+        return loadingOptions.idx[baseuri]
 
-    raise ValidationException("Oops, we shouldn't be here!")
+    raise ValidationException(
+        "Expected URI string, MutableMapping or MutableSequence, got %s" % type(doc)
+    )
 
 
-def _document_load_by_url(loader, url, loadingOptions):
-    # type: (_Loader, str, LoadingOptions) -> Any
+def _document_load_by_url(
+    loader: _Loader,
+    url: str,
+    loadingOptions: LoadingOptions,
+    addl_metadata_fields: Optional[MutableSequence[str]] = None,
+) -> Tuple[Any, LoadingOptions]:
     if url in loadingOptions.idx:
-        return _document_load(loader, loadingOptions.idx[url], url, loadingOptions)
+        return loadingOptions.idx[url]
 
-    text = loadingOptions.fetcher.fetch_text(url)
+    doc_url, frg = urldefrag(url)
+
+    text = loadingOptions.fetcher.fetch_text(doc_url)
     if isinstance(text, bytes):
         textIO = StringIO(text.decode("utf-8"))
     else:
         textIO = StringIO(text)
-    textIO.name = str(url)
+    textIO.name = str(doc_url)
     yaml = yaml_no_ts()
     result = yaml.load(textIO)
-    add_lc_filename(result, url)
+    add_lc_filename(result, doc_url)
 
-    loadingOptions.idx[url] = result
+    loadingOptions = LoadingOptions(copyfrom=loadingOptions, fileuri=doc_url)
 
-    loadingOptions = LoadingOptions(copyfrom=loadingOptions, fileuri=url)
+    _document_load(
+        loader,
+        result,
+        doc_url,
+        loadingOptions,
+        addl_metadata_fields=addl_metadata_fields,
+    )
 
-    return _document_load(loader, result, url, loadingOptions)
+    return loadingOptions.idx[url]
 
 
 def file_uri(path, split_frag=False):  # type: (str, bool) -> str
@@ -683,14 +806,14 @@ def save_relative_uri(
     relative_uris: bool,
 ) -> Any:
     """Convert any URI to a relative one, obeying the scoping rules."""
-    if not relative_uris or uri == base_url:
-        return uri
     if isinstance(uri, MutableSequence):
         return [
             save_relative_uri(u, base_url, scoped_id, ref_scope, relative_uris)
             for u in uri
         ]
     elif isinstance(uri, str):
+        if not relative_uris or uri == base_url:
+            return uri
         urisplit = urlsplit(uri)
         basesplit = urlsplit(base_url)
         if urisplit.scheme == basesplit.scheme and urisplit.netloc == basesplit.netloc:
@@ -715,7 +838,7 @@ def save_relative_uri(
                 return urisplit.fragment
         return uri
     else:
-        return save(uri, top=False, base_url=base_url)
+        return save(uri, top=False, base_url=base_url, relative_uris=relative_uris)
 
 
 def shortname(inputid: str) -> str:
@@ -858,24 +981,30 @@ class RecordField(Documented):
 
         if _errors__:
             raise ValidationException("Trying 'RecordField'", None, _errors__)
-        return cls(
+        _constructed = cls(
             doc=doc,
             name=name,
             type=type,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
+        loadingOptions.idx[name] = (_constructed, loadingOptions)
+        return _constructed
 
     def save(
         self, top: bool = False, base_url: str = "", relative_uris: bool = True
     ) -> Dict[str, Any]:
         r: Dict[str, Any] = {}
-        for ef in self.extension_fields:
-            r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
         if self.name is not None:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
-            if u:
-                r["name"] = u
+            r["name"] = u
         if self.doc is not None:
             r["doc"] = save(
                 self.doc, top=False, base_url=self.name, relative_uris=relative_uris
@@ -983,19 +1112,25 @@ class RecordSchema(Saveable):
 
         if _errors__:
             raise ValidationException("Trying 'RecordSchema'", None, _errors__)
-        return cls(
+        _constructed = cls(
             fields=fields,
             type=type,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
+        return _constructed
 
     def save(
         self, top: bool = False, base_url: str = "", relative_uris: bool = True
     ) -> Dict[str, Any]:
         r: Dict[str, Any] = {}
-        for ef in self.extension_fields:
-            r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
         if self.fields is not None:
             r["fields"] = save(
                 self.fields, top=False, base_url=base_url, relative_uris=relative_uris
@@ -1105,23 +1240,28 @@ class EnumSchema(Saveable):
 
         if _errors__:
             raise ValidationException("Trying 'EnumSchema'", None, _errors__)
-        return cls(
+        _constructed = cls(
             symbols=symbols,
             type=type,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
+        return _constructed
 
     def save(
         self, top: bool = False, base_url: str = "", relative_uris: bool = True
     ) -> Dict[str, Any]:
         r: Dict[str, Any] = {}
-        for ef in self.extension_fields:
-            r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
         if self.symbols is not None:
             u = save_relative_uri(self.symbols, base_url, True, None, relative_uris)
-            if u:
-                r["symbols"] = u
+            r["symbols"] = u
         if self.type is not None:
             r["type"] = save(
                 self.type, top=False, base_url=base_url, relative_uris=relative_uris
@@ -1222,23 +1362,28 @@ class ArraySchema(Saveable):
 
         if _errors__:
             raise ValidationException("Trying 'ArraySchema'", None, _errors__)
-        return cls(
+        _constructed = cls(
             items=items,
             type=type,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
+        return _constructed
 
     def save(
         self, top: bool = False, base_url: str = "", relative_uris: bool = True
     ) -> Dict[str, Any]:
         r: Dict[str, Any] = {}
-        for ef in self.extension_fields:
-            r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
         if self.items is not None:
             u = save_relative_uri(self.items, base_url, False, 2, relative_uris)
-            if u:
-                r["items"] = u
+            r["items"] = u
         if self.type is not None:
             r["type"] = save(
                 self.type, top=False, base_url=base_url, relative_uris=relative_uris
@@ -1531,7 +1676,7 @@ class JsonldPredicate(Saveable):
 
         if _errors__:
             raise ValidationException("Trying 'JsonldPredicate'", None, _errors__)
-        return cls(
+        _constructed = cls(
             _id=_id,
             _type=_type,
             _container=_container,
@@ -1546,17 +1691,22 @@ class JsonldPredicate(Saveable):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
+        return _constructed
 
     def save(
         self, top: bool = False, base_url: str = "", relative_uris: bool = True
     ) -> Dict[str, Any]:
         r: Dict[str, Any] = {}
-        for ef in self.extension_fields:
-            r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
         if self._id is not None:
             u = save_relative_uri(self._id, base_url, True, None, relative_uris)
-            if u:
-                r["_id"] = u
+            r["_id"] = u
         if self._type is not None:
             r["_type"] = save(
                 self._type, top=False, base_url=base_url, relative_uris=relative_uris
@@ -1722,29 +1872,33 @@ class SpecializeDef(Saveable):
 
         if _errors__:
             raise ValidationException("Trying 'SpecializeDef'", None, _errors__)
-        return cls(
+        _constructed = cls(
             specializeFrom=specializeFrom,
             specializeTo=specializeTo,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
+        return _constructed
 
     def save(
         self, top: bool = False, base_url: str = "", relative_uris: bool = True
     ) -> Dict[str, Any]:
         r: Dict[str, Any] = {}
-        for ef in self.extension_fields:
-            r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
         if self.specializeFrom is not None:
             u = save_relative_uri(
                 self.specializeFrom, base_url, False, 1, relative_uris
             )
-            if u:
-                r["specializeFrom"] = u
+            r["specializeFrom"] = u
         if self.specializeTo is not None:
             u = save_relative_uri(self.specializeTo, base_url, False, 1, relative_uris)
-            if u:
-                r["specializeTo"] = u
+            r["specializeTo"] = u
 
         # top refers to the directory level
         if top:
@@ -1934,7 +2088,7 @@ class SaladRecordField(RecordField):
 
         if _errors__:
             raise ValidationException("Trying 'SaladRecordField'", None, _errors__)
-        return cls(
+        _constructed = cls(
             doc=doc,
             name=name,
             type=type,
@@ -1943,17 +2097,23 @@ class SaladRecordField(RecordField):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
+        loadingOptions.idx[name] = (_constructed, loadingOptions)
+        return _constructed
 
     def save(
         self, top: bool = False, base_url: str = "", relative_uris: bool = True
     ) -> Dict[str, Any]:
         r: Dict[str, Any] = {}
-        for ef in self.extension_fields:
-            r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
         if self.name is not None:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
-            if u:
-                r["name"] = u
+            r["name"] = u
         if self.doc is not None:
             r["doc"] = save(
                 self.doc, top=False, base_url=self.name, relative_uris=relative_uris
@@ -2301,7 +2461,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
 
         if _errors__:
             raise ValidationException("Trying 'SaladRecordSchema'", None, _errors__)
-        return cls(
+        _constructed = cls(
             name=name,
             inVocab=inVocab,
             fields=fields,
@@ -2318,17 +2478,23 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
+        loadingOptions.idx[name] = (_constructed, loadingOptions)
+        return _constructed
 
     def save(
         self, top: bool = False, base_url: str = "", relative_uris: bool = True
     ) -> Dict[str, Any]:
         r: Dict[str, Any] = {}
-        for ef in self.extension_fields:
-            r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
         if self.name is not None:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
-            if u:
-                r["name"] = u
+            r["name"] = u
         if self.inVocab is not None:
             r["inVocab"] = save(
                 self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris
@@ -2347,16 +2513,13 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             )
         if self.docParent is not None:
             u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
-            if u:
-                r["docParent"] = u
+            r["docParent"] = u
         if self.docChild is not None:
             u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
-            if u:
-                r["docChild"] = u
+            r["docChild"] = u
         if self.docAfter is not None:
             u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
-            if u:
-                r["docAfter"] = u
+            r["docAfter"] = u
         if self.jsonldPredicate is not None:
             r["jsonldPredicate"] = save(
                 self.jsonldPredicate,
@@ -2380,8 +2543,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             )
         if self.extends is not None:
             u = save_relative_uri(self.extends, self.name, False, 1, relative_uris)
-            if u:
-                r["extends"] = u
+            r["extends"] = u
         if self.specialize is not None:
             r["specialize"] = save(
                 self.specialize,
@@ -2695,7 +2857,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
 
         if _errors__:
             raise ValidationException("Trying 'SaladEnumSchema'", None, _errors__)
-        return cls(
+        _constructed = cls(
             name=name,
             inVocab=inVocab,
             symbols=symbols,
@@ -2710,25 +2872,30 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
+        loadingOptions.idx[name] = (_constructed, loadingOptions)
+        return _constructed
 
     def save(
         self, top: bool = False, base_url: str = "", relative_uris: bool = True
     ) -> Dict[str, Any]:
         r: Dict[str, Any] = {}
-        for ef in self.extension_fields:
-            r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
         if self.name is not None:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
-            if u:
-                r["name"] = u
+            r["name"] = u
         if self.inVocab is not None:
             r["inVocab"] = save(
                 self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris
             )
         if self.symbols is not None:
             u = save_relative_uri(self.symbols, self.name, True, None, relative_uris)
-            if u:
-                r["symbols"] = u
+            r["symbols"] = u
         if self.type is not None:
             r["type"] = save(
                 self.type, top=False, base_url=self.name, relative_uris=relative_uris
@@ -2739,16 +2906,13 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             )
         if self.docParent is not None:
             u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
-            if u:
-                r["docParent"] = u
+            r["docParent"] = u
         if self.docChild is not None:
             u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
-            if u:
-                r["docChild"] = u
+            r["docChild"] = u
         if self.docAfter is not None:
             u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
-            if u:
-                r["docAfter"] = u
+            r["docAfter"] = u
         if self.jsonldPredicate is not None:
             r["jsonldPredicate"] = save(
                 self.jsonldPredicate,
@@ -2765,8 +2929,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             )
         if self.extends is not None:
             u = save_relative_uri(self.extends, self.name, False, 1, relative_uris)
-            if u:
-                r["extends"] = u
+            r["extends"] = u
 
         # top refers to the directory level
         if top:
@@ -2995,7 +3158,7 @@ class Documentation(NamedType, DocType):
 
         if _errors__:
             raise ValidationException("Trying 'Documentation'", None, _errors__)
-        return cls(
+        _constructed = cls(
             name=name,
             inVocab=inVocab,
             doc=doc,
@@ -3006,17 +3169,23 @@ class Documentation(NamedType, DocType):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
+        loadingOptions.idx[name] = (_constructed, loadingOptions)
+        return _constructed
 
     def save(
         self, top: bool = False, base_url: str = "", relative_uris: bool = True
     ) -> Dict[str, Any]:
         r: Dict[str, Any] = {}
-        for ef in self.extension_fields:
-            r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
         if self.name is not None:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
-            if u:
-                r["name"] = u
+            r["name"] = u
         if self.inVocab is not None:
             r["inVocab"] = save(
                 self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris
@@ -3027,16 +3196,13 @@ class Documentation(NamedType, DocType):
             )
         if self.docParent is not None:
             u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
-            if u:
-                r["docParent"] = u
+            r["docParent"] = u
         if self.docChild is not None:
             u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
-            if u:
-                r["docChild"] = u
+            r["docChild"] = u
         if self.docAfter is not None:
             u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
-            if u:
-                r["docAfter"] = u
+            r["docAfter"] = u
         if self.type is not None:
             r["type"] = save(
                 self.type, top=False, base_url=self.name, relative_uris=relative_uris
@@ -3129,9 +3295,10 @@ PrimitiveTypeLoader = _EnumLoader(
         "float",
         "double",
         "string",
-    )
+    ),
+    "PrimitiveType",
 )
-AnyLoader = _EnumLoader(("Any",))
+AnyLoader = _EnumLoader(("Any",), "Any")
 RecordFieldLoader = _RecordLoader(RecordField)
 RecordSchemaLoader = _RecordLoader(RecordSchema)
 EnumSchemaLoader = _RecordLoader(EnumSchema)
@@ -3187,12 +3354,16 @@ union_of_None_type_or_array_of_RecordFieldLoader = _UnionLoader(
 idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader = _IdMapLoader(
     union_of_None_type_or_array_of_RecordFieldLoader, "name", "type"
 )
-enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader = _EnumLoader(("record",))
+enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader = _EnumLoader(
+    ("record",), "enum_d9cba076fca539106791a4f46d198c7fcfbdb779"
+)
 typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2 = _TypeDSLLoader(
     enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader, 2
 )
 uri_array_of_strtype_True_False_None = _URILoader(array_of_strtype, True, False, None)
-enum_d961d79c225752b9fadb617367615ab176b47d77Loader = _EnumLoader(("enum",))
+enum_d961d79c225752b9fadb617367615ab176b47d77Loader = _EnumLoader(
+    ("enum",), "enum_d961d79c225752b9fadb617367615ab176b47d77"
+)
 typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2 = _TypeDSLLoader(
     enum_d961d79c225752b9fadb617367615ab176b47d77Loader, 2
 )
@@ -3202,7 +3373,9 @@ uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_Ar
     True,
     2,
 )
-enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader = _EnumLoader(("array",))
+enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader = _EnumLoader(
+    ("array",), "enum_d062602be0b4b8fd33e69e29a841317b6ab665bc"
+)
 typedsl_enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader_2 = _TypeDSLLoader(
     enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader, 2
 )
@@ -3270,7 +3443,9 @@ union_of_None_type_or_array_of_SpecializeDefLoader = _UnionLoader(
 idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader = _IdMapLoader(
     union_of_None_type_or_array_of_SpecializeDefLoader, "specializeFrom", "specializeTo"
 )
-enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader = _EnumLoader(("documentation",))
+enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader = _EnumLoader(
+    ("documentation",), "enum_056429f0e9355680bd9b2411dc96a69c7ff2e76b"
+)
 typedsl_enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader_2 = _TypeDSLLoader(
     enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader, 2
 )
@@ -3305,11 +3480,31 @@ def load_document(
         baseuri = file_uri(os.getcwd()) + "/"
     if loadingOptions is None:
         loadingOptions = LoadingOptions()
+    result, metadata = _document_load(
+        union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader,
+        doc,
+        baseuri,
+        loadingOptions,
+    )
+    return result
+
+
+def load_document_with_metadata(
+    doc: Any,
+    baseuri: Optional[str] = None,
+    loadingOptions: Optional[LoadingOptions] = None,
+    addl_metadata_fields: Optional[MutableSequence[str]] = None,
+) -> Any:
+    if baseuri is None:
+        baseuri = file_uri(os.getcwd()) + "/"
+    if loadingOptions is None:
+        loadingOptions = LoadingOptions(fileuri=baseuri)
     return _document_load(
         union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader,
         doc,
         baseuri,
         loadingOptions,
+        addl_metadata_fields=addl_metadata_fields,
     )
 
 
@@ -3324,14 +3519,14 @@ def load_document_by_string(
 
     if loadingOptions is None:
         loadingOptions = LoadingOptions(fileuri=uri)
-    loadingOptions.idx[uri] = result
 
-    return _document_load(
+    result, metadata = _document_load(
         union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader,
         result,
         uri,
         loadingOptions,
     )
+    return result
 
 
 def load_document_by_yaml(
@@ -3347,11 +3542,11 @@ def load_document_by_yaml(
 
     if loadingOptions is None:
         loadingOptions = LoadingOptions(fileuri=uri)
-    loadingOptions.idx[uri] = yaml
 
-    return _document_load(
+    result, metadata = _document_load(
         union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader,
         yaml,
         uri,
         loadingOptions,
     )
+    return result
