@@ -11,6 +11,7 @@ from typing import (
     Iterable,
     Mapping,
     MutableSequence,
+    Optional,
     Tuple,
     TypeVar,
     Union,
@@ -29,7 +30,8 @@ ContextType = Dict[str, Union[Dict[str, Any], str, Iterable[str]]]
 DocumentType = TypeVar("DocumentType", CommentedSeq, CommentedMap)
 DocumentOrStrType = TypeVar("DocumentOrStrType", CommentedSeq, CommentedMap, str)
 FieldType = TypeVar("FieldType", str, CommentedSeq, CommentedMap)
-ResolveType = Union[int, float, str, CommentedMap, CommentedSeq, None]
+MandatoryResolveType = Union[int, float, str, CommentedMap, CommentedSeq]
+ResolveType = Optional[MandatoryResolveType]
 ResolvedRefType = Tuple[ResolveType, CommentedMap]
 IdxResultType = Union[CommentedMap, CommentedSeq, str, None]
 IdxType = Dict[str, IdxResultType]
