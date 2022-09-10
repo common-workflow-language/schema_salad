@@ -892,7 +892,7 @@ class RecordField(Documented):
         other: Any
     ) -> bool:
         if isinstance(other, RecordField):
-            return (self.doc == other.doc and
+            return bool(self.doc == other.doc and
                     self.name == other.name and
                     self.type == other.type)
         return False
@@ -1067,7 +1067,7 @@ class RecordSchema(Saveable):
         other: Any
     ) -> bool:
         if isinstance(other, RecordSchema):
-            return (self.fields == other.fields and
+            return bool(self.fields == other.fields and
                     self.type == other.type)
         return False
 
@@ -1213,7 +1213,7 @@ class EnumSchema(Saveable):
         other: Any
     ) -> bool:
         if isinstance(other, EnumSchema):
-            return (self.symbols == other.symbols and
+            return bool(self.symbols == other.symbols and
                     self.type == other.type)
         return False
 
@@ -1350,7 +1350,7 @@ class ArraySchema(Saveable):
         other: Any
     ) -> bool:
         if isinstance(other, ArraySchema):
-            return (self.items == other.items and
+            return bool(self.items == other.items and
                     self.type == other.type)
         return False
 
@@ -1511,7 +1511,7 @@ class JsonldPredicate(Saveable):
         other: Any
     ) -> bool:
         if isinstance(other, JsonldPredicate):
-            return (self._id == other._id and
+            return bool(self._id == other._id and
                     self._type == other._type and
                     self._container == other._container and
                     self.identity == other.identity and
@@ -1908,7 +1908,7 @@ class SpecializeDef(Saveable):
         other: Any
     ) -> bool:
         if isinstance(other, SpecializeDef):
-            return (self.specializeFrom == other.specializeFrom and
+            return bool(self.specializeFrom == other.specializeFrom and
                     self.specializeTo == other.specializeTo)
         return False
 
@@ -2073,7 +2073,7 @@ class SaladRecordField(RecordField):
         other: Any
     ) -> bool:
         if isinstance(other, SaladRecordField):
-            return (self.doc == other.doc and
+            return bool(self.doc == other.doc and
                     self.name == other.name and
                     self.type == other.type and
                     self.jsonldPredicate == other.jsonldPredicate and
@@ -2323,7 +2323,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         other: Any
     ) -> bool:
         if isinstance(other, SaladRecordSchema):
-            return (self.name == other.name and
+            return bool(self.name == other.name and
                     self.inVocab == other.inVocab and
                     self.fields == other.fields and
                     self.type == other.type and
@@ -2795,7 +2795,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         other: Any
     ) -> bool:
         if isinstance(other, SaladEnumSchema):
-            return (self.name == other.name and
+            return bool(self.name == other.name and
                     self.inVocab == other.inVocab and
                     self.symbols == other.symbols and
                     self.type == other.type and
@@ -3198,7 +3198,7 @@ class Documentation(NamedType, DocType):
         other: Any
     ) -> bool:
         if isinstance(other, Documentation):
-            return (self.name == other.name and
+            return bool(self.name == other.name and
                     self.inVocab == other.inVocab and
                     self.doc == other.doc and
                     self.docParent == other.docParent and
