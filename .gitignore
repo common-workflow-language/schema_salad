@@ -13,3 +13,6 @@ venv/
 
 # PyCharm
 .idea/
+
+# setuptools_scm
+_version.py
