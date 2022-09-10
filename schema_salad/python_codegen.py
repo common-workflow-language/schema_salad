@@ -222,22 +222,31 @@ class PythonCodeGen(CodeGenBase):
             field_hashes.append("self.{0}".format(self.safe_name(name)))
         field_eq = " and\n                    ".join(field_eqs)
         field_hash = ",\n            ".join(field_hashes)
+        self.out.write(field_inits)
         self.out.write(
-            field_inits
-            + f"""
-    def __eq__(
-        self,
-        other: Any
-    ) -> bool:
-        if isinstance(other, {classname}):
-            return bool({field_eq})
-        return False
-
-    def __hash__(self) -> int:
-        return hash((
-            {field_hash}
-        ))
-"""
+            "\n"
+            + fmt(
+                f"""def __eq__(
+    self,
+    other: Any
+) -> bool:
+    if isinstance(other, {classname}):
+        return bool({field_eq})
+    return False
+""",
+                4,
+            )
+        )
+        self.out.write(
+            "\n"
+            + fmt(
+                f"""def __hash__(self) -> int:
+    return hash((
+        {field_hash}
+    ))
+""",
+                4,
+            )
         )
 
         self.out.write(
