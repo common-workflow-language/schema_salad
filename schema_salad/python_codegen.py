@@ -218,12 +218,8 @@ class PythonCodeGen(CodeGenBase):
         field_eqs = []
         field_hashes = []
         for name in field_names:
-            if name == "class":
-                field_eqs.append("self.class_ == other.class_")
-                field_hashes.append("self.class_")
-            else:
-                field_eqs.append("self.{0} == other.{0}".format(self.safe_name(name)))
-                field_hashes.append("self.{0}".format(self.safe_name(name)))
+            field_eqs.append("self.{0} == other.{0}".format(self.safe_name(name)))
+            field_hashes.append("self.{0}".format(self.safe_name(name)))
         field_eq = " and\n                    ".join(field_eqs)
         field_hash = ",\n            ".join(field_hashes)
         self.out.write(
@@ -234,7 +230,7 @@ class PythonCodeGen(CodeGenBase):
         other: Any
     ) -> bool:
         if isinstance(other, {classname}):
-            return ({field_eq})
+            return bool({field_eq})
         return False
 
     def __hash__(self) -> int:

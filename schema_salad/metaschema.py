@@ -887,6 +887,23 @@ class RecordField(Documented):
         self.name = name
         self.type = type
 
+    def __eq__(
+        self,
+        other: Any
+    ) -> bool:
+        if isinstance(other, RecordField):
+            return (self.doc == other.doc and
+                    self.name == other.name and
+                    self.type == other.type)
+        return False
+
+    def __hash__(self) -> int:
+        return hash((
+            self.doc,
+            self.name,
+            self.type
+        ))
+
     @classmethod
     def fromDoc(
         cls,
@@ -1045,6 +1062,21 @@ class RecordSchema(Saveable):
         self.fields = fields
         self.type = type
 
+    def __eq__(
+        self,
+        other: Any
+    ) -> bool:
+        if isinstance(other, RecordSchema):
+            return (self.fields == other.fields and
+                    self.type == other.type)
+        return False
+
+    def __hash__(self) -> int:
+        return hash((
+            self.fields,
+            self.type
+        ))
+
     @classmethod
     def fromDoc(
         cls,
@@ -1176,6 +1208,21 @@ class EnumSchema(Saveable):
         self.symbols = symbols
         self.type = type
 
+    def __eq__(
+        self,
+        other: Any
+    ) -> bool:
+        if isinstance(other, EnumSchema):
+            return (self.symbols == other.symbols and
+                    self.type == other.type)
+        return False
+
+    def __hash__(self) -> int:
+        return hash((
+            self.symbols,
+            self.type
+        ))
+
     @classmethod
     def fromDoc(
         cls,
@@ -1297,6 +1344,21 @@ class ArraySchema(Saveable):
             self.loadingOptions = LoadingOptions()
         self.items = items
         self.type = type
+
+    def __eq__(
+        self,
+        other: Any
+    ) -> bool:
+        if isinstance(other, ArraySchema):
+            return (self.items == other.items and
+                    self.type == other.type)
+        return False
+
+    def __hash__(self) -> int:
+        return hash((
+            self.items,
+            self.type
+        ))
 
     @classmethod
     def fromDoc(
@@ -1443,6 +1505,39 @@ class JsonldPredicate(Saveable):
         self.typeDSL = typeDSL
         self.secondaryFilesDSL = secondaryFilesDSL
         self.subscope = subscope
+
+    def __eq__(
+        self,
+        other: Any
+    ) -> bool:
+        if isinstance(other, JsonldPredicate):
+            return (self._id == other._id and
+                    self._type == other._type and
+                    self._container == other._container and
+                    self.identity == other.identity and
+                    self.noLinkCheck == other.noLinkCheck and
+                    self.mapSubject == other.mapSubject and
+                    self.mapPredicate == other.mapPredicate and
+                    self.refScope == other.refScope and
+                    self.typeDSL == other.typeDSL and
+                    self.secondaryFilesDSL == other.secondaryFilesDSL and
+                    self.subscope == other.subscope)
+        return False
+
+    def __hash__(self) -> int:
+        return hash((
+            self._id,
+            self._type,
+            self._container,
+            self.identity,
+            self.noLinkCheck,
+            self.mapSubject,
+            self.mapPredicate,
+            self.refScope,
+            self.typeDSL,
+            self.secondaryFilesDSL,
+            self.subscope
+        ))
 
     @classmethod
     def fromDoc(
@@ -1808,6 +1903,21 @@ class SpecializeDef(Saveable):
         self.specializeFrom = specializeFrom
         self.specializeTo = specializeTo
 
+    def __eq__(
+        self,
+        other: Any
+    ) -> bool:
+        if isinstance(other, SpecializeDef):
+            return (self.specializeFrom == other.specializeFrom and
+                    self.specializeTo == other.specializeTo)
+        return False
+
+    def __hash__(self) -> int:
+        return hash((
+            self.specializeFrom,
+            self.specializeTo
+        ))
+
     @classmethod
     def fromDoc(
         cls,
@@ -1957,6 +2067,27 @@ class SaladRecordField(RecordField):
         self.type = type
         self.jsonldPredicate = jsonldPredicate
         self.default = default
+
+    def __eq__(
+        self,
+        other: Any
+    ) -> bool:
+        if isinstance(other, SaladRecordField):
+            return (self.doc == other.doc and
+                    self.name == other.name and
+                    self.type == other.type and
+                    self.jsonldPredicate == other.jsonldPredicate and
+                    self.default == other.default)
+        return False
+
+    def __hash__(self) -> int:
+        return hash((
+            self.doc,
+            self.name,
+            self.type,
+            self.jsonldPredicate,
+            self.default
+        ))
 
     @classmethod
     def fromDoc(
@@ -2186,6 +2317,43 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         self.abstract = abstract
         self.extends = extends
         self.specialize = specialize
+
+    def __eq__(
+        self,
+        other: Any
+    ) -> bool:
+        if isinstance(other, SaladRecordSchema):
+            return (self.name == other.name and
+                    self.inVocab == other.inVocab and
+                    self.fields == other.fields and
+                    self.type == other.type and
+                    self.doc == other.doc and
+                    self.docParent == other.docParent and
+                    self.docChild == other.docChild and
+                    self.docAfter == other.docAfter and
+                    self.jsonldPredicate == other.jsonldPredicate and
+                    self.documentRoot == other.documentRoot and
+                    self.abstract == other.abstract and
+                    self.extends == other.extends and
+                    self.specialize == other.specialize)
+        return False
+
+    def __hash__(self) -> int:
+        return hash((
+            self.name,
+            self.inVocab,
+            self.fields,
+            self.type,
+            self.doc,
+            self.docParent,
+            self.docChild,
+            self.docAfter,
+            self.jsonldPredicate,
+            self.documentRoot,
+            self.abstract,
+            self.extends,
+            self.specialize
+        ))
 
     @classmethod
     def fromDoc(
@@ -2622,6 +2790,39 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         self.documentRoot = documentRoot
         self.extends = extends
 
+    def __eq__(
+        self,
+        other: Any
+    ) -> bool:
+        if isinstance(other, SaladEnumSchema):
+            return (self.name == other.name and
+                    self.inVocab == other.inVocab and
+                    self.symbols == other.symbols and
+                    self.type == other.type and
+                    self.doc == other.doc and
+                    self.docParent == other.docParent and
+                    self.docChild == other.docChild and
+                    self.docAfter == other.docAfter and
+                    self.jsonldPredicate == other.jsonldPredicate and
+                    self.documentRoot == other.documentRoot and
+                    self.extends == other.extends)
+        return False
+
+    def __hash__(self) -> int:
+        return hash((
+            self.name,
+            self.inVocab,
+            self.symbols,
+            self.type,
+            self.doc,
+            self.docParent,
+            self.docChild,
+            self.docAfter,
+            self.jsonldPredicate,
+            self.documentRoot,
+            self.extends
+        ))
+
     @classmethod
     def fromDoc(
         cls,
@@ -2991,6 +3192,31 @@ class Documentation(NamedType, DocType):
         self.docChild = docChild
         self.docAfter = docAfter
         self.type = type
+
+    def __eq__(
+        self,
+        other: Any
+    ) -> bool:
+        if isinstance(other, Documentation):
+            return (self.name == other.name and
+                    self.inVocab == other.inVocab and
+                    self.doc == other.doc and
+                    self.docParent == other.docParent and
+                    self.docChild == other.docChild and
+                    self.docAfter == other.docAfter and
+                    self.type == other.type)
+        return False
+
+    def __hash__(self) -> int:
+        return hash((
+            self.name,
+            self.inVocab,
+            self.doc,
+            self.docParent,
+            self.docChild,
+            self.docAfter,
+            self.type
+        ))
 
     @classmethod
     def fromDoc(
