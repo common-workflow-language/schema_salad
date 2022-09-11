@@ -144,7 +144,10 @@ def codegen(
                         gen.type_loader(field["type"]), True, False, None
                     )
                     gen.declare_id_field(
-                        fieldpred, uri_loader, field.get("doc"), optional, subscope
+                        fieldpred,
+                        uri_loader,
+                        field.get("doc"),
+                        optional,
                     )
                     break
 
@@ -186,7 +189,9 @@ def codegen(
                 if jld == "@id":
                     continue
 
-                gen.declare_field(fieldpred, type_loader, field.get("doc"), optional)
+                gen.declare_field(
+                    fieldpred, type_loader, field.get("doc"), optional, subscope
+                )
 
             gen.end_class(rec["name"], field_names)
 
