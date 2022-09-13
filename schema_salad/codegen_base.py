@@ -96,6 +96,7 @@ class CodeGenBase:
         fieldtype: TypeDef,
         doc: Optional[str],
         optional: bool,
+        subscope: str,
     ) -> None:
         """Output the code to load the given field."""
         raise NotImplementedError()
@@ -106,7 +107,6 @@ class CodeGenBase:
         fieldtype: TypeDef,
         doc: str,
         optional: bool,
-        subscope: Optional[str],
     ) -> None:
         """Output the code to handle the given ID field."""
         raise NotImplementedError()

@@ -173,7 +173,7 @@ def strip_dup_lineno(text: str, maxline: Optional[int] = None) -> str:
 
 
 def cmap(
-    d: Union[int, float, str, Dict[str, Any], List[Any], None],
+    d: Union[int, float, str, MutableMapping[str, Any], MutableSequence[Any], None],
     lc: Optional[List[int]] = None,
     fn: Optional[str] = None,
 ) -> Union[int, float, str, CommentedMap, CommentedSeq, None]:

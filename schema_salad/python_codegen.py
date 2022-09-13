@@ -457,12 +457,11 @@ if _errors__:
         fieldtype: TypeDef,
         doc: str,
         optional: bool,
-        subscope: Optional[str],
     ) -> None:
         if self.current_class_is_abstract:
             return
 
-        self.declare_field(name, fieldtype, doc, True)
+        self.declare_field(name, fieldtype, doc, True, "")
 
         if optional:
             opt = """{safename} = "_:" + str(_uuid__.uuid4())""".format(
@@ -472,9 +471,6 @@ if _errors__:
             opt = """raise ValidationException("Missing {fieldname}")""".format(
                 fieldname=shortname(name)
             )
-
-        if subscope is not None:
-            name = name + subscope
 
         self.out.write(
             """
@@ -492,7 +488,12 @@ if _errors__:
         )
 
     def declare_field(
-        self, name: str, fieldtype: TypeDef, doc: Optional[str], optional: bool
+        self,
+        name: str,
+        fieldtype: TypeDef,
+        doc: Optional[str],
+        optional: bool,
+        subscope: str,
     ) -> None:
 
         if self.current_class_is_abstract:
@@ -506,12 +507,25 @@ if _errors__:
             spc = "    "
         else:
             spc = ""
+
+        if subscope:
+            self.out.write(
+                """
+{spc}        subscope_baseuri = expand_url('{subscope}', baseuri, loadingOptions, True)
+""".format(
+                    subscope=subscope, spc=spc
+                )
+            )
+            baseurivar = "subscope_baseuri"
+        else:
+            baseurivar = "baseuri"
+
         self.out.write(
             """{spc}        try:
 {spc}            {safename} = load_field(
 {spc}                _doc.get("{fieldname}"),
 {spc}                {fieldtype},
-{spc}                baseuri,
+{spc}                {baseurivar},
 {spc}                loadingOptions,
 {spc}            )
 {spc}        except ValidationException as e:
@@ -526,6 +540,7 @@ if _errors__:
                 safename=self.safe_name(name),
                 fieldname=shortname(name),
                 fieldtype=fieldtype.name,
+                baseurivar=baseurivar,
                 spc=spc,
             )
         )

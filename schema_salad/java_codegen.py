@@ -591,6 +591,7 @@ public enum {clazz} {{
         fieldtype: TypeDef,
         doc: Optional[str],
         optional: bool,
+        subscope: str,
     ) -> None:
         fieldname = name
         property_name = self.property_name(fieldname)
@@ -692,12 +693,11 @@ public enum {clazz} {{
         fieldtype: TypeDef,
         doc: str,
         optional: bool,
-        subscope: Optional[str],
     ) -> None:
         if self.current_class_is_abstract:
             return
 
-        self.declare_field(name, fieldtype, doc, True)
+        self.declare_field(name, fieldtype, doc, True, "")
         if optional:
             set_uri = """
     Boolean __original_is_null = {safename} == null;
@@ -725,8 +725,6 @@ public enum {clazz} {{
     }}
     __baseUri = (String) {safename};
 """
-        if subscope is not None:
-            name = name + subscope
 
         self.current_loader.write(
             set_uri.format(safename=self.safe_name(name), fieldname=shortname(name))

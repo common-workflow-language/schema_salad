@@ -471,6 +471,7 @@ export enum {enum_name} {{
         fieldtype: TypeDef,
         doc: Optional[str],
         optional: bool,
+        subscope: str,
     ) -> None:
         """Output the code to load the given field."""
         safename = self.safe_name(name)
@@ -642,10 +643,9 @@ export enum {enum_name} {{
         fieldtype: TypeDef,
         doc: str,
         optional: bool,
-        subscope: Optional[str],
     ) -> None:
         """Output the code to handle the given ID field."""
-        self.declare_field(name, fieldtype, doc, True)
+        self.declare_field(name, fieldtype, doc, True, "")
         if optional:
             opt = """{safename} = "_" + uuidv4()""".format(
                 safename=self.safe_name(name)
@@ -654,9 +654,6 @@ export enum {enum_name} {{
             opt = """throw new ValidationException("Missing {fieldname}")""".format(
                 fieldname=shortname(name)
             )
-
-        if subscope is not None:
-            name = name + subscope
 
         self.current_loader.write(
             """

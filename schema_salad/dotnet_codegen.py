@@ -569,6 +569,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
         fieldtype: TypeDef,
         doc: Optional[str],
         optional: bool,
+        subscope: str,
     ) -> None:
         """Output the code to load the given field."""
         if self.current_class_is_abstract:
@@ -753,13 +754,12 @@ public class {enum_name} : IEnumClass<{enum_name}>
         fieldtype: TypeDef,
         doc: str,
         optional: bool,
-        subscope: Optional[str],
     ) -> None:
         """Output the code to handle the given ID field."""
         self.id_field_type = fieldtype
         if self.current_class_is_abstract:
             return
-        self.declare_field(name, fieldtype, doc, True)
+        self.declare_field(name, fieldtype, doc, True, "")
         if optional:
             opt = """{safename} = "_" + Guid.NewGuid();""".format(
                 safename=self.safe_name(name)
@@ -768,9 +768,6 @@ public class {enum_name} : IEnumClass<{enum_name}>
             opt = """throw new ValidationException("Missing {fieldname}");""".format(
                 fieldname=shortname(name)
             )
-
-        if subscope is not None:
-            name = name + subscope
 
         self.current_loader.write(
             """
