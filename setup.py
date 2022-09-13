@@ -88,8 +88,7 @@ install_requires = [
     "rdflib >= 4.2.2, < 7.0.0",
     "rdflib-jsonld>=0.4.0, <= 0.6.1;python_version<='3.6'",
     "mistune >= 0.8.1, < 0.9",
-    "CacheControl >= 0.11.7, < 0.13",
-    "lockfile >= 0.9",  # needed for CacheControl's FileCache
+    "CacheControl[filecache] >= 0.11.7, < 0.13",
 ]
 
 extras_require = {

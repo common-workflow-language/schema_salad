@@ -10,11 +10,11 @@ class _LockClass:
 _lock_class = ContextManager[_LockClass]
 
 class FileCache(BaseCache):
-    directory: str | PathLike[str]
+    directory: str
     forever: bool
-    filemode: str
-    dirmode: str
-    lock_class: _lock_class
+    filemode: int
+    dirmode: int
+    lock_class: _lock_class | None = None
     def __init__(
         self,
         directory: str | PathLike[str],
@@ -26,6 +26,6 @@ class FileCache(BaseCache):
     ) -> None: ...
     @staticmethod
     def encode(x: str) -> str: ...
-    def get(self, key: str) -> None | str: ...
-    def set(self, key: str, value: str) -> None: ...
+    def get(self, key: str) -> None | bytes: ...
+    def set(self, key: str, value: bytes, expires: int | None = None) -> None: ...
     def delete(self, key: str) -> None: ...
