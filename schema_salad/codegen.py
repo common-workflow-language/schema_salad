@@ -86,7 +86,8 @@ def codegen(
             package=pkg,
             copyright=copyright,
         )
-        gen.parse(i);
+        j = schema.extend_and_specialize(i, loader)
+        gen.parse(j);
         return
     else:
         raise SchemaSaladException(f"Unsupported code generation language '{lang}'")

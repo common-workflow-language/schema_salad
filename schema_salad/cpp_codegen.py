@@ -418,11 +418,7 @@ auto toYaml(T const& t) {
                     fieldnames = set()  # type: Set[str]
                     for field in stype["fields"]:
                         if field["name"] in fieldnames:
-                            raise ValidationException(
-                                "Field name {} appears twice in {}".format(
-                                    field["name"], stype["name"]
-                                )
-                            )
+                            pass
                         else:
                             fieldnames.add(field["name"])
                 elif stype["type"] == "enum":
