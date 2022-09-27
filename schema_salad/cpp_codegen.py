@@ -58,6 +58,13 @@ class NamespaceDefinition:
             self.classDefinitions[key].writeDefinition(target, "", ind)
         target.write(f"}}\n")
 
+    def writeImplDefinition(self, target, ind):
+        name = safename(self.name)
+        target.write(f"namespace {name} {{\n")
+        for key in self.classDefinitions:
+            self.classDefinitions[key].writeImplDefinition(target, "", ind)
+        target.write(f"}}\n")
+
 
 class ClassDefinition:
     def __init__(self, name):
@@ -79,40 +86,48 @@ class ClassDefinition:
         if len(self.extends) > 0:
             target.write(f"\n{fullInd}{ind}: ")
             target.write(f"\n{fullInd}{ind}, ".join(extends))
-            override = "override "
+            override = " override"
             virtual  = ""
-        target.write(f" {{\n\n")
+        target.write(f" {{\n")
 
         for field in self.fields:
             field.writeDefinition(target, fullInd + ind, ind)
 
-        target.write(f"\n")
+
         if self.abstract:
             target.write(f"{fullInd}{ind}virtual ~{name}() = 0;\n")
-        target.write(f"{fullInd}{ind}{virtual}auto toYaml() const -> YAML::Node {override}{{\n")
-        target.write(f"{fullInd}{ind}{ind}using ::toYaml;\n")
-        target.write(f"{fullInd}{ind}{ind}auto n = YAML::Node{{}};\n")
-        for e in extends:
-            target.write(f"{fullInd}{ind}{ind}n = mergeYaml(n, {e}::toYaml());\n")
+        target.write(f"{fullInd}{ind}{virtual}auto toYaml() const -> YAML::Node{override};\n")
+        target.write(f"{fullInd}}};\n\n")
 
-        for field in self.fields:
-            fieldname = safename(field.name)
-            target.write(f"{fullInd}{ind}{ind}n[\"{field.name}\"] = toYaml({fieldname});\n")
-        target.write(f"{fullInd}{ind}{ind}return n;\n{fullInd}{ind}}}\n")
+    def writeImplDefinition(self, target, fullInd, ind):
+        name = safename(self.name)
+        extends = list(map(safename, self.extends))
 
-        target.write(f"{fullInd}}};\n")
         if self.abstract:
             target.write(f"{fullInd}inline {name}::~{name}() = default;\n")
 
-        target.write("\n")
+        target.write(f"""{fullInd}inline auto {name}::toYaml() const -> YAML::Node {{
+{fullInd}{ind}using ::toYaml;
+{fullInd}{ind}auto n = YAML::Node{{}};
+""")
+        for e in extends:
+            target.write(f"{fullInd}{ind}n = mergeYaml(n, {e}::toYaml());\n")
+
+        for field in self.fields:
+            fieldname = safename(field.name)
+            target.write(f"{fullInd}{ind}n[\"{field.name}\"] = toYaml({fieldname});\n")
+        target.write(f"{fullInd}{ind}return n;\n{fullInd}}}\n")
 
 class FieldDefinition:
-    def __init__(self, name, typeStr):
+    def __init__(self, name, typeStr, optional):
         self.name = name
         self.typeStr = typeStr
+        self.optional = optional
+
     def writeDefinition(self, target, fullInd, ind):
         name    = safename(self.name)
-        target.write(f"{fullInd}{self.typeStr} {name};\n")
+        target.write(f"{fullInd}std::unique_ptr<{self.typeStr}> {name};\n")
+
 
 class EnumDefinition:
     def __init__(self, name, values):
@@ -177,6 +192,7 @@ class CppCodeGen(CodeGenBase):
         self.namespaces = {}
         self.enumDefinitions = []
         self.currentClass = None
+        self.target.write("/*\n")
 
     def convertTypeToCpp(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> str:
         if not isinstance(type_declaration, list):
@@ -291,8 +307,12 @@ class CppCodeGen(CodeGenBase):
 
     def epilogue2(self) -> None:
         self.target.write("""
+*/
 #pragma once
+
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <map>
 #include <string>
 #include <string_view>
@@ -326,7 +346,7 @@ auto toYaml(std::vector<T> v) {
 
 template <typename T>
 auto toYaml(T const& t) {
-    return t.toYaml();
+    return t->toYaml();
 }
 """)
         for key in self.namespaces:
@@ -336,6 +356,8 @@ auto toYaml(T const& t) {
             e.writeDefinition(self.target, "    ");
         for key in self.namespaces:
             self.namespaces[key].writeDefinition(self.target, "    ")
+        for key in self.namespaces:
+            self.namespaces[key].writeImplDefinition(self.target, "    ")
 
 
     def run(self, items) -> None:
@@ -368,16 +390,20 @@ auto toYaml(T const& t) {
 
                 if "fields" in stype:
                     for field in stype["fields"]:
-                        print(f"{field}")
+                        print(f"field: {field}")
                         (namespace, classname, fieldname) = split_field(field["name"])
+                        print(f"{namespace} {classname} {fieldname}")
                         if isinstance(field["type"], dict):
                             if (field["type"]["type"] == "enum"):
                                 fieldtype = field["type"]["type"]
                         else:
                             fieldtype = field["type"]
+                            (field_type_namespace, field_type_classname) = split_name(fieldtype)
+                            fieldtype = field_type_classname
+
 
                         self.namespaces[namespace].classDefinitions[classname].fields.append(
-                            FieldDefinition(fieldname, fieldtype)
+                            FieldDefinition(name=fieldname, typeStr=fieldtype, optional=False)
                         )
 
 
