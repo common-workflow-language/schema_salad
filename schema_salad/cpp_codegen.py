@@ -44,11 +44,18 @@ class NamespaceDefinition:
         self.name = name;
         self.classDefinitions = {}
 
-    def write(self, target, ind):
+    def writeFwdDeclaration(self, target, ind):
         name = safename(self.name)
         target.write(f"namespace {name} {{\n")
         for key in self.classDefinitions:
-            self.classDefinitions[key].write(target, ind, ind)
+            self.classDefinitions[key].writeFwdDeclaration(target, "", ind)
+        target.write(f"}}\n")
+
+    def writeDefinition(self, target, ind):
+        name = safename(self.name)
+        target.write(f"namespace {name} {{\n")
+        for key in self.classDefinitions:
+            self.classDefinitions[key].writeDefinition(target, "", ind)
         target.write(f"}}\n")
 
 
@@ -59,9 +66,13 @@ class ClassDefinition:
         self.fields  = []
         self.abstract = False
 
-    def write(self, target, fullInd, ind):
+    def writeFwdDeclaration(self, target, fullInd, ind):
         name = safename(self.name)
-        target.write(f"{ind}struct {name}")
+        target.write(f"{fullInd}struct {name};\n")
+
+    def writeDefinition(self, target, fullInd, ind):
+        name = safename(self.name)
+        target.write(f"{fullInd}struct {name}")
         extends = list(map(safename, self.extends))
         override = ""
         virtual = "virtual "
@@ -70,10 +81,10 @@ class ClassDefinition:
             target.write(f"\n{fullInd}{ind}, ".join(extends))
             override = "override "
             virtual  = ""
-        target.write(f" {{\n")
+        target.write(f" {{\n\n")
 
         for field in self.fields:
-            field.write(target, fullInd + ind, ind)
+            field.writeDefinition(target, fullInd + ind, ind)
 
         target.write(f"\n")
         if self.abstract:
@@ -99,7 +110,7 @@ class FieldDefinition:
     def __init__(self, name, typeStr):
         self.name = name
         self.typeStr = typeStr
-    def write(self, target, fullInd, ind):
+    def writeDefinition(self, target, fullInd, ind):
         name    = safename(self.name)
         target.write(f"{fullInd}{self.typeStr} {name};\n")
 
@@ -108,7 +119,7 @@ class EnumDefinition:
         self.name = name
         self.values = values
 
-    def write(self, target, ind):
+    def writeDefinition(self, target, ind):
         name = safename(self.name)
         target.write(f"enum class {name} : unsigned int {{\n{ind}");
         target.write(f",\n{ind}".join(self.values))
@@ -279,15 +290,16 @@ class CppCodeGen(CodeGenBase):
         self.epilogue2()
 
     def epilogue2(self) -> None:
-        self.target.write("#pragma once\n\n")
-        self.target.write("#include <cassert>\n")
-        self.target.write("#include <map>\n")
-        self.target.write("#include <string>\n")
-        self.target.write("#include <string_view>\n")
-        self.target.write("#include <variant>\n")
-        self.target.write("#include <vector>\n")
-        self.target.write("#include <yaml-cpp/yaml.h>\n\n")
         self.target.write("""
+#pragma once
+#include <cassert>
+#include <map>
+#include <string>
+#include <string_view>
+#include <variant>
+#include <vector>
+#include <yaml-cpp/yaml.h>
+
 inline auto mergeYaml(YAML::Node n1, YAML::Node n2) {
     for (auto const& key : n1) {
         n2[key.as<std::string>()] = n1[key.as<std::string>()];
@@ -317,10 +329,14 @@ auto toYaml(T const& t) {
     return t.toYaml();
 }
 """)
-        for e in self.enumDefinitions:
-            e.write(self.target, "    ");
         for key in self.namespaces:
-            self.namespaces[key].write(self.target, "    ")
+            self.namespaces[key].writeFwdDeclaration(self.target, "    ")
+
+        for e in self.enumDefinitions:
+            e.writeDefinition(self.target, "    ");
+        for key in self.namespaces:
+            self.namespaces[key].writeDefinition(self.target, "    ")
+
 
     def run(self, items) -> None:
         items2 = deepcopy_strip(items)
@@ -329,6 +345,7 @@ auto toYaml(T const& t) {
 
         for stype in items2:
             assert("type" in stype)
+            # parsing a record
             if stype["type"] == "record":
                 (namespace, classname) = split_name(stype["name"])
                 cd = ClassDefinition(
@@ -354,7 +371,7 @@ auto toYaml(T const& t) {
                         print(f"{field}")
                         (namespace, classname, fieldname) = split_field(field["name"])
                         if isinstance(field["type"], dict):
-                            if (field["type"]["type"] == "enum":
+                            if (field["type"]["type"] == "enum"):
                                 fieldtype = field["type"]["type"]
                         else:
                             fieldtype = field["type"]
@@ -364,9 +381,9 @@ auto toYaml(T const& t) {
                         )
 
 
-
             print(stype)
             print(stype["type"])
+            # parsing extends type
             if "extends" in stype:
                 print("blub?")
                 specs = {}  # type: Dict[str, str]
@@ -387,10 +404,10 @@ auto toYaml(T const& t) {
                     basetype = copy.copy(types[ex])
 
                     if stype["type"] == "record":
-                        if specs:
-                            basetype["fields"] = replace_type(
-                                basetype.get("fields", []), specs, loader, set()
-                            )
+#                        if specs:
+#                            basetype["fields"] = replace_type(
+#                                basetype.get("fields", []), specs, loader, set()
+#                            )
 
                         for field in basetype.get("fields", []):
                             if "inherited_from" not in field:
