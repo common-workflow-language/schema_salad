@@ -230,7 +230,8 @@ class CppCodeGen(CodeGenBase):
         # make sure that monostate is the first entry
         if "std::monostate" in type_declaration:
             type_declaration.remove("std::monostate")
-            type_declaration.insert(0, "std::monostate")
+            if len(type_declaration) == 0:
+                raise "must have at least one non 'null' field type"
 
         type_declaration = ", ".join(type_declaration)
         return f"std::variant<{type_declaration}>"
@@ -398,8 +399,11 @@ auto toYaml(T const& t) {
                                 fieldtype = field["type"]["type"]
                         else:
                             fieldtype = field["type"]
-                            (field_type_namespace, field_type_classname) = split_name(fieldtype)
-                            fieldtype = field_type_classname
+                            if '#' in fieldtype:
+                                (field_type_namespace, field_type_classname) = split_name(fieldtype)
+                                fieldtype = field_type_classname
+                            else:
+                                fieldtype = self.convertTypeToCpp(fieldtype)
 
 
                         self.namespaces[namespace].classDefinitions[classname].fields.append(
