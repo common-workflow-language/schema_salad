@@ -86,7 +86,7 @@ def codegen(
             package=pkg,
             copyright=copyright,
         )
-        gen.run(i);
+        gen.parse(i);
         return
     else:
         raise SchemaSaladException(f"Unsupported code generation language '{lang}'")

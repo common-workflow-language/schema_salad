@@ -203,6 +203,10 @@ class CppCodeGen(CodeGenBase):
                 return "std::monostate"
             elif type_declaration[0] == "string":
                 return "std::string"
+            elif type_declaration[0] == "PrimitiveType":
+                return "std::variant<bool, int32_t, int64_t, float, double, std::string>"
+            elif type_declaration[0] == "enum":
+                return "someenum"
             elif isinstance(type_declaration[0], dict):
                 if "type" in type_declaration[0] and type_declaration[0]["type"] == "enum":
                     self.enumDefinitions.append(EnumDefinition(
@@ -211,16 +215,16 @@ class CppCodeGen(CodeGenBase):
                     ))
                     return safename(self.enumDefinitions[-1].name)
                 elif "type" in type_declaration[0] and type_declaration[0]["type"] == "array":
-                    ts = []
-                    for i in type_declaration[0]["items"]:
-                        if isinstance(i, str):
-                            n = i.split("#")[1]
-                            ts.append(i)
-                        else:
-                            n = i["name"].split("#")[1]
-                            ts.append(n)
-                    name = ", ".join(ts)
-                    return f"std::vector<std::variant<{name}>>";
+                    items = type_declaration[0]["items"]
+                    if isinstance(items, list):
+                        ts = []
+                        for i in items:
+                            ts.append(self.convertTypeToCpp(i))
+                        name = ", ".join(ts)
+                        return f"std::vector<std::variant<{name}>>";
+                    else:
+                        i=self.convertTypeToCpp(items)
+                        return f"std::vector<{i}>";
 
                 return "dict"
             return type_declaration[0]
@@ -236,75 +240,6 @@ class CppCodeGen(CodeGenBase):
         type_declaration = ", ".join(type_declaration)
         return f"std::variant<{type_declaration}>"
 
-
-    def prologue(self) -> None:
-        pass
-
-    def begin_class(
-        self,
-        classname: str,
-        extends: MutableSequence[str],
-        doc: str,
-        abstract: bool,
-        field_names: MutableSequence[str],
-        idfield: str,
-        optional_fields: Set[str],
-    ) -> None:
-        assert(self.currentClass == None)
-        namespace = classname.split('#')[0]
-        classname = classname.split('#')[1]
-        cd = ClassDefinition(
-            classname
-        )
-        cd.abstract = abstract
-        extends = list(map(getType, extends))
-        cd.extends  = extends
-
-        self.currentClass = classname
-
-        if not namespace in self.namespaces:
-            self.namespaces[namespace] = NamespaceDefinition(namespace)
-
-        self.namespaces[namespace].classDefinitions[classname] = cd
-
-    def end_class(self, classname: str, field_names: List[str]) -> None:
-        assert(self.currentClass != None)
-        self.currentClass = None
-
-        pass
-
-    def type_loader(
-        self, type_declaration: Union[List[Any], Dict[str, Any], str]
-    ) -> TypeDef:
-        return self.convertTypeToCpp(type_declaration)
-
-    def type_loader_enum(self, type_declaration: Dict[str, Any]) -> TypeDef:
-        pass
-
-    def declare_field(
-        self,
-        name: str,
-        fieldtype: TypeDef,
-        doc: Optional[str],
-        optional: bool,
-    ) -> None:
-        namespace = name.split('#')[0]
-        classname = name.split('#')[1].split('/')[0]
-        fieldname = name.split('#')[1].split('/')[1]
-
-        if self.currentClass != classname:
-            return
-
-        namespaceOfType = fieldtype.split('#')[0]
-        if namespaceOfType == namespace:
-            fieldtype = fieldtype[len(namespaceOfType)+1:]
-
-        self.namespaces[namespace].classDefinitions[classname].fields.append(
-            FieldDefinition(fieldname, fieldtype)
-        )
-
-    def epilogue(self, root_loader: TypeDef) -> None:
-        self.epilogue2()
 
     def epilogue2(self) -> None:
         self.target.write("""
@@ -361,7 +296,7 @@ auto toYaml(T const& t) {
             self.namespaces[key].writeImplDefinition(self.target, "    ")
 
 
-    def run(self, items) -> None:
+    def parse(self, items) -> None:
         items2 = deepcopy_strip(items)
         types = {i["name"]: i for i in items2}  # type: Dict[str, Any]
         results = []
