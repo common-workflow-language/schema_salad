@@ -167,6 +167,7 @@ def split_name(s: str) -> (str, str):
     t = s.split('#')
     assert(len(t) == 2)
     return (t[0], t[1])
+
 def split_field(s: str) -> (str, str, str):
     (namespace, field) = split_name(s)
     t = field.split("/")
@@ -192,7 +193,6 @@ class CppCodeGen(CodeGenBase):
         self.namespaces = {}
         self.enumDefinitions = []
         self.currentClass = None
-        self.target.write("/*\n")
 
     def convertTypeToCpp(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> str:
         if not isinstance(type_declaration, list):
@@ -242,9 +242,7 @@ class CppCodeGen(CodeGenBase):
 
 
     def epilogue2(self) -> None:
-        self.target.write("""
-*/
-#pragma once
+        self.target.write("""#pragma once
 
 #include <cassert>
 #include <cstddef>
@@ -297,11 +295,10 @@ auto toYaml(T const& t) {
 
 
     def parse(self, items) -> None:
-        items2 = deepcopy_strip(items)
-        types = {i["name"]: i for i in items2}  # type: Dict[str, Any]
+        types = {i["name"]: i for i in items}  # type: Dict[str, Any]
         results = []
 
-        for stype in items2:
+        for stype in items:
             assert("type" in stype)
             # parsing a record
             if stype["type"] == "record":
@@ -326,9 +323,7 @@ auto toYaml(T const& t) {
 
                 if "fields" in stype:
                     for field in stype["fields"]:
-                        print(f"field: {field}")
                         (namespace, classname, fieldname) = split_field(field["name"])
-                        print(f"{namespace} {classname} {fieldname}")
                         if isinstance(field["type"], dict):
                             if (field["type"]["type"] == "enum"):
                                 fieldtype = field["type"]["type"]
@@ -346,11 +341,8 @@ auto toYaml(T const& t) {
                         )
 
 
-            print(stype)
-            print(stype["type"])
             # parsing extends type
             if "extends" in stype:
-                print("blub?")
                 specs = {}  # type: Dict[str, str]
                 if "specialize" in stype:
                     for spec in aslist(stype["specialize"]):
