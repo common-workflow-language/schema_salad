@@ -1,0 +1,32 @@
+$base: "https://example.com"
+$graph:
+- name: FieldTypeX
+  type: record
+  fields:
+    y: FieldTypeY
+
+- name: FieldTypeY
+  type: record
+  fields:
+    x: FieldTypeX
+
+- name: FieldTypeA
+  type: record
+  fields: []
+
+- name: FieldTypeB
+  type: record
+  fields: []
+
+- name: ClassA
+  type: record
+  abstract: true
+  fields:
+    fieldA: FieldTypeA
+
+- name: ClassB
+  type: record
+  extends: ClassA
+  documentRoot: true
+  specialize:
+    FieldTypeA: FieldTypeB
