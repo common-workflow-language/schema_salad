@@ -160,9 +160,6 @@ class EnumDefinition:
         target.write(f"inline auto fromYaml(YAML::Node n, {name}& out) {{\n")
         target.write(f"{ind}to_enum(n.as<std::string>(), out);\n}}\n")
 
-def getType(s: str) -> str:
-    return s.split('#')[1]
-
 def split_name(s: str) -> (str, str):
     t = s.split('#')
     assert(len(t) == 2)
@@ -241,7 +238,7 @@ class CppCodeGen(CodeGenBase):
         return f"std::variant<{type_declaration}>"
 
 
-    def epilogue2(self) -> None:
+    def epilogue(self) -> None:
         self.target.write("""#pragma once
 
 #include <cassert>
@@ -422,5 +419,5 @@ auto toYaml(T const& t) {
 #                result["fields"] = replace_type(
 #                    result["fields"], extended_by, loader, set()
 #                )
-        self.epilogue2()
+        self.epilogue()
 
