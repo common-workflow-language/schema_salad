@@ -757,7 +757,6 @@ def extend_and_specialize2(
     results = []
 
     for stype in items2:
-        print(stype)
         if "extends" in stype:
             print("blub?")
             specs = {}  # type: Dict[str, str]

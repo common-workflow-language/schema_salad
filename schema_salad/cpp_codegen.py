@@ -39,47 +39,22 @@ from .schema import shortname, deepcopy_strip, replace_type
 def safename(name: str) -> str:
     return re.sub("[^a-zA-Z0-9]", "_", name)
 
-class NamespaceDefinition:
-    def __init__(self, name):
-        self.name = name;
-        self.classDefinitions = {}
-
-    def writeFwdDeclaration(self, target, ind):
-        name = safename(self.name)
-        target.write(f"namespace {name} {{\n")
-        for key in self.classDefinitions:
-            self.classDefinitions[key].writeFwdDeclaration(target, "", ind)
-        target.write(f"}}\n")
-
-    def writeDefinition(self, target, ind):
-        name = safename(self.name)
-        target.write(f"namespace {name} {{\n")
-        for key in self.classDefinitions:
-            self.classDefinitions[key].writeDefinition(target, "", ind)
-        target.write(f"}}\n")
-
-    def writeImplDefinition(self, target, ind):
-        name = safename(self.name)
-        target.write(f"namespace {name} {{\n")
-        for key in self.classDefinitions:
-            self.classDefinitions[key].writeImplDefinition(target, "", ind)
-        target.write(f"}}\n")
-
-
 class ClassDefinition:
     def __init__(self, name):
-        self.name    = name
+        self.fullName    = name
         self.extends = []
         self.fields  = []
         self.abstract = False
+        (self.namespace, self.classname) = split_name(name)
+        self.classname = safename(self.classname)
+
 
     def writeFwdDeclaration(self, target, fullInd, ind):
-        name = safename(self.name)
-        target.write(f"{fullInd}struct {name};\n")
+        target.write(f"{fullInd}namespace {self.namespace} {{ struct {self.classname}; }}\n")
 
     def writeDefinition(self, target, fullInd, ind):
-        name = safename(self.name)
-        target.write(f"{fullInd}struct {name}")
+        target.write(f"{fullInd}namespace {self.namespace} {{\n")
+        target.write(f"{fullInd}struct {self.classname}")
         extends = list(map(safename, self.extends))
         override = ""
         virtual = "virtual "
@@ -95,18 +70,18 @@ class ClassDefinition:
 
 
         if self.abstract:
-            target.write(f"{fullInd}{ind}virtual ~{name}() = 0;\n")
+            target.write(f"{fullInd}{ind}virtual ~{self.classname}() = 0;\n")
         target.write(f"{fullInd}{ind}{virtual}auto toYaml() const -> YAML::Node{override};\n")
-        target.write(f"{fullInd}}};\n\n")
+        target.write(f"{fullInd}}};\n")
+        target.write(f"{fullInd}}}\n\n")
 
     def writeImplDefinition(self, target, fullInd, ind):
-        name = safename(self.name)
         extends = list(map(safename, self.extends))
 
         if self.abstract:
-            target.write(f"{fullInd}inline {name}::~{name}() = default;\n")
+            target.write(f"{fullInd}inline {self.namespace}::{self.classname}::~{self.classname}() = default;\n")
 
-        target.write(f"""{fullInd}inline auto {name}::toYaml() const -> YAML::Node {{
+        target.write(f"""{fullInd}inline auto {self.namespace}::{self.classname}::toYaml() const -> YAML::Node {{
 {fullInd}{ind}using ::toYaml;
 {fullInd}{ind}auto n = YAML::Node{{}};
 """)
@@ -238,9 +213,8 @@ class CppCodeGen(CodeGenBase):
         self.package = package
         self.copyright = copyright
 
-        self.namespaces = {}
-        self.enumDefinitions = []
-        self.currentClass = None
+        self.classDefinitions = {}
+        self.enumDefinitions  = []
 
     def convertTypeToCpp(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> str:
         if not isinstance(type_declaration, list):
@@ -331,15 +305,15 @@ auto toYaml(T const& t) {
     return t->toYaml();
 }
 """)
-        for key in self.namespaces:
-            self.namespaces[key].writeFwdDeclaration(self.target, "    ")
+        for key in self.classDefinitions:
+            self.classDefinitions[key].writeFwdDeclaration(self.target, "", "    ")
 
         for e in self.enumDefinitions:
             e.writeDefinition(self.target, "    ");
-        for key in self.namespaces:
-            self.namespaces[key].writeDefinition(self.target, "    ")
-        for key in self.namespaces:
-            self.namespaces[key].writeImplDefinition(self.target, "    ")
+        for key in self.classDefinitions:
+            self.classDefinitions[key].writeDefinition(self.target, "", "    ")
+        for key in self.classDefinitions:
+            self.classDefinitions[key].writeImplDefinition(self.target, "", "    ")
 
 
     def parseRecordField(self, field):
@@ -358,33 +332,25 @@ auto toYaml(T const& t) {
                 fieldtype = self.convertTypeToCpp(fieldtype)
 
 
-        self.namespaces[namespace].classDefinitions[classname].fields.append(
-            FieldDefinition(name=fieldname, typeStr=fieldtype, optional=False)
-        )
+        return FieldDefinition(name=fieldname, typeStr=fieldtype, optional=False)
 
     def parseRecordSchema(self, stype):
-        (namespace, classname) = split_name(stype["name"])
-        cd = ClassDefinition(
-            classname
-        )
+        cd = ClassDefinition(name=stype["name"])
         cd.abstract = stype.get("abstract", False)
+
         if "extends" in stype:
             for ex in aslist(stype["extends"]):
                 (base_namespace, base_classname) = split_name(ex)
-                name = base_classname
-                if base_namespace != namespace:
-                    name = f"{base_namespace}::{name}"
+                name = f"{base_namespace}::{base_classname}"
                 cd.extends.append(name)
 
 #
-        if not namespace in self.namespaces:
-            self.namespaces[namespace] = NamespaceDefinition(namespace)
-
-        self.namespaces[namespace].classDefinitions[classname] = cd
-
         if "fields" in stype:
             for field in stype["fields"]:
-                self.parseRecordField(field);
+                cd.fields.append(self.parseRecordField(field))
+
+        self.classDefinitions[stype["name"]] = cd
+
 
 
     def parse(self, items) -> None:
@@ -402,7 +368,6 @@ auto toYaml(T const& t) {
                     isinstance(i, str))
 
 
-            print(stype)
             if not (pred(stype) or isArray(stype, pred)):
                 continue
 #                raise "not a valid SaladRecordField"
