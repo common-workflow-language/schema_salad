@@ -171,6 +171,57 @@ def split_field(s: str) -> (str, str, str):
     assert(len(t) == 2)
     return (namespace, t[0], t[1])
 
+def isPrimitiveType(v):
+    if not isinstance(v, str):
+        return False
+    return v in ["null", "boolean", "int", "long", "float", "double", "string"];
+
+def hasFieldValue(e, f, v):
+    if not isinstance(e, dict):
+        return False
+    if not f in e:
+        return False
+    return e[f] == v;
+
+def isRecordSchema(v):
+    return hasFieldValue(v, "type", "record")
+
+def isEnumSchema(v):
+    if not hasFieldValue(v, "type", "enum"):
+        return False
+    if not "symbols" in v:
+        return False
+    if not isinstance(v["symbols"], list):
+        return False
+    return True
+
+def isArray(v, pred):
+    if not isinstance(v, list):
+        return False
+    for i in v:
+        if not pred(i):
+            return False
+    return True
+
+def isArraySchema(v):
+    if not hasFieldValue(v, "type", "array"):
+        return False
+    if not "items" in v:
+        return False
+    if not isinstance(v["items"], list):
+        return False
+    def pred(i):
+         return (isPrimitiveType(i) or
+                isRecordSchema(i) or
+                isEnumSchema(i) or
+                isArraySchema(i) or
+                isinstance(i, str))
+
+    for i in items:
+        if not (pred(i) or isArray(i, pred)):
+            return False
+    return True
+
 class CppCodeGen(CodeGenBase):
     def __init__(
         self,
@@ -291,51 +342,74 @@ auto toYaml(T const& t) {
             self.namespaces[key].writeImplDefinition(self.target, "    ")
 
 
+    def parseRecordField(self, field):
+        (namespace, classname, fieldname) = split_field(field["name"])
+        if isinstance(field["type"], dict):
+            if (field["type"]["type"] == "enum"):
+                fieldtype = field["type"]["type"]
+            else:
+                fieldtype = field["type"]
+        else:
+            fieldtype = field["type"]
+            if '#' in fieldtype:
+                (field_type_namespace, field_type_classname) = split_name(fieldtype)
+                fieldtype = field_type_classname
+            else:
+                fieldtype = self.convertTypeToCpp(fieldtype)
+
+
+        self.namespaces[namespace].classDefinitions[classname].fields.append(
+            FieldDefinition(name=fieldname, typeStr=fieldtype, optional=False)
+        )
+
+    def parseRecordSchema(self, stype):
+        (namespace, classname) = split_name(stype["name"])
+        cd = ClassDefinition(
+            classname
+        )
+        cd.abstract = stype.get("abstract", False)
+        if "extends" in stype:
+            for ex in aslist(stype["extends"]):
+                (base_namespace, base_classname) = split_name(ex)
+                name = base_classname
+                if base_namespace != namespace:
+                    name = f"{base_namespace}::{name}"
+                cd.extends.append(name)
+
+#
+        if not namespace in self.namespaces:
+            self.namespaces[namespace] = NamespaceDefinition(namespace)
+
+        self.namespaces[namespace].classDefinitions[classname] = cd
+
+        if "fields" in stype:
+            for field in stype["fields"]:
+                self.parseRecordField(field);
+
+
     def parse(self, items) -> None:
         types = {i["name"]: i for i in items}  # type: Dict[str, Any]
         results = []
 
         for stype in items:
             assert("type" in stype)
+
+            def pred(i):
+                return (isPrimitiveType(i) or
+                    isRecordSchema(i) or
+                    isEnumSchema(i) or
+                    isArraySchema(i) or
+                    isinstance(i, str))
+
+
+            print(stype)
+            if not (pred(stype) or isArray(stype, pred)):
+                continue
+#                raise "not a valid SaladRecordField"
+
             # parsing a record
-            if stype["type"] == "record":
-                (namespace, classname) = split_name(stype["name"])
-                cd = ClassDefinition(
-                    classname
-                )
-                cd.abstract = stype.get("abstract", False)
-                if "extends" in stype:
-                    for ex in aslist(stype["extends"]):
-                        (base_namespace, base_classname) = split_name(ex)
-                        name = base_classname
-                        if base_namespace != namespace:
-                            name = f"{base_namespace}::{name}"
-                        cd.extends.append(name)
-
-#
-                if not namespace in self.namespaces:
-                    self.namespaces[namespace] = NamespaceDefinition(namespace)
-
-                self.namespaces[namespace].classDefinitions[classname] = cd
-
-                if "fields" in stype:
-                    for field in stype["fields"]:
-                        (namespace, classname, fieldname) = split_field(field["name"])
-                        if isinstance(field["type"], dict):
-                            if (field["type"]["type"] == "enum"):
-                                fieldtype = field["type"]["type"]
-                        else:
-                            fieldtype = field["type"]
-                            if '#' in fieldtype:
-                                (field_type_namespace, field_type_classname) = split_name(fieldtype)
-                                fieldtype = field_type_classname
-                            else:
-                                fieldtype = self.convertTypeToCpp(fieldtype)
-
-
-                        self.namespaces[namespace].classDefinitions[classname].fields.append(
-                            FieldDefinition(name=fieldname, typeStr=fieldtype, optional=False)
-                        )
+            if isRecordSchema(stype):
+                self.parseRecordSchema(stype)
 
 
             # parsing extends type
