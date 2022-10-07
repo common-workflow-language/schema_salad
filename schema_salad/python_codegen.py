@@ -97,10 +97,12 @@ class PythonCodeGen(CodeGenBase):
         avn = schema.avro_field_name(name)
         if avn.startswith("anon."):
             avn = avn[5:]
-        if avn in ("class", "in"):
+        elif avn[0].isdigit():
+            avn = f"_{avn}"
+        elif avn in ("class", "in"):
             # reserved words
-            avn = avn + "_"
-        return avn
+            avn = f"{avn}_"
+        return avn.replace(".", "_")
 
     def prologue(self) -> None:
         """Trigger to generate the prolouge code."""

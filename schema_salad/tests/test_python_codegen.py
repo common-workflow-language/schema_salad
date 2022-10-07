@@ -12,10 +12,16 @@ import schema_salad.metaschema as cg_metaschema
 from schema_salad import codegen
 from schema_salad.avro.schema import Names
 from schema_salad.fetcher import DefaultFetcher
+from schema_salad.python_codegen import PythonCodeGen
 from schema_salad.python_codegen_support import LoadingOptions
 from schema_salad.schema import load_schema
 
 from .util import basket_file_uri, cwl_file_uri, get_data, metaschema_file_uri
+
+
+def test_safe_identifiers() -> None:
+    """Affirm correct construction of identifiers safe for Python."""
+    assert PythonCodeGen.safe_name("5.8s_pattern") == "_5_8s_pattern"
 
 
 def test_cwl_gen(tmp_path: Path) -> None:
