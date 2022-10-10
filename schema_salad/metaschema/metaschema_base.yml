@@ -100,6 +100,7 @@ $graph:
       doc: "Must be `record`"
       type:
         type: enum
+        name: Record_name
         symbols:
           - "sld:record"
       jsonldPredicate:
@@ -125,6 +126,7 @@ $graph:
       doc: "Must be `enum`"
       type:
         type: enum
+        name: Enum_name
         symbols:
           - "sld:enum"
       jsonldPredicate:
@@ -132,6 +134,9 @@ $graph:
         _type: "@vocab"
         typeDSL: true
         refScope: 2
+    name:
+      type: string?
+      jsonldPredicate: "@id"
     symbols:
       type: string[]
       jsonldPredicate:
@@ -148,6 +153,7 @@ $graph:
       doc: "Must be `array`"
       type:
         type: enum
+        name: Array_name
         symbols:
           - "sld:array"
       jsonldPredicate:
