@@ -1,8 +1,10 @@
 import pytest
+
 import schema_salad.schema
 
-@pytest.fixture(autouse=True, scope='function')
-def isolated_cache():
+
+@pytest.fixture(autouse=True, scope="function")
+def isolated_cache() -> None:
     """A fixture to clear the schema_salad metaschema cache.
 
     Auto-loaded (see autouse) fixture, loaded per test (function scope).
