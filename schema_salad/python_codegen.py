@@ -418,7 +418,7 @@ if _errors__:
                         self.safe_name(type_declaration["name"]) + "Loader",
                         '_EnumLoader(("{}",), "{}")'.format(
                             '", "'.join(
-                                self.safe_name(sym)
+                                schema.avro_field_name(sym)
                                 for sym in type_declaration["symbols"]
                             ),
                             self.safe_name(type_declaration["name"]),
