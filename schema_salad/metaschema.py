@@ -438,8 +438,9 @@ class _SecondaryDSLLoader(_Loader):
                         r.append({"pattern": d})
                 elif isinstance(d, dict):
                     new_dict: Dict[str, Any] = {}
-                    if "pattern" in d:
-                        new_dict["pattern"] = d.pop("pattern")
+                    dict_copy = copy.deepcopy(d)
+                    if "pattern" in dict_copy:
+                        new_dict["pattern"] = dict_copy.pop("pattern")
                     else:
                         raise ValidationException(
                             "Missing pattern in secondaryFiles specification entry: {}".format(
@@ -447,13 +448,13 @@ class _SecondaryDSLLoader(_Loader):
                             )
                         )
                     new_dict["required"] = (
-                        d.pop("required") if "required" in d else None
+                        dict_copy.pop("required") if "required" in dict_copy else None
                     )
 
-                    if len(d):
+                    if len(dict_copy):
                         raise ValidationException(
                             "Unallowed values in secondaryFiles specification entry: {}".format(
-                                d
+                                dict_copy
                             )
                         )
                     r.append(new_dict)
@@ -464,20 +465,23 @@ class _SecondaryDSLLoader(_Loader):
                     )
         elif isinstance(doc, MutableMapping):
             new_dict = {}
-            if "pattern" in doc:
-                new_dict["pattern"] = doc.pop("pattern")
+            doc_copy = copy.deepcopy(doc)
+            if "pattern" in doc_copy:
+                new_dict["pattern"] = doc_copy.pop("pattern")
             else:
                 raise ValidationException(
                     "Missing pattern in secondaryFiles specification entry: {}".format(
                         doc
                     )
                 )
-            new_dict["required"] = doc.pop("required") if "required" in doc else None
+            new_dict["required"] = (
+                doc_copy.pop("required") if "required" in doc_copy else None
+            )
 
-            if len(doc):
+            if len(doc_copy):
                 raise ValidationException(
                     "Unallowed values in secondaryFiles specification entry: {}".format(
-                        doc
+                        doc_copy
                     )
                 )
             r.append(new_dict)
