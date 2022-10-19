@@ -36,8 +36,21 @@ from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname, deepcopy_strip, replace_type
 
+class Object:
+    pass
+
+def replaceKeywords(s: str) -> str:
+    if s in ("class", "enum"):
+        s = s + "_"
+    return s
+
 def safename(name: str) -> str:
-    return re.sub("[^a-zA-Z0-9]", "_", name)
+    classname = re.sub("[^a-zA-Z0-9]", "_", name)
+    return replaceKeywords(classname)
+
+
+def safename2(name: str) -> str:
+    return safename(name.namespace) + "::" + safename(name.classname)
 
 class ClassDefinition:
     def __init__(self, name):
@@ -46,6 +59,7 @@ class ClassDefinition:
         self.fields  = []
         self.abstract = False
         (self.namespace, self.classname) = split_name(name)
+        self.namespace = safename(self.namespace)
         self.classname = safename(self.classname)
 
 
@@ -55,7 +69,7 @@ class ClassDefinition:
     def writeDefinition(self, target, fullInd, ind):
         target.write(f"{fullInd}namespace {self.namespace} {{\n")
         target.write(f"{fullInd}struct {self.classname}")
-        extends = list(map(safename, self.extends))
+        extends = list(map(safename2, self.extends))
         override = ""
         virtual = "virtual "
         if len(self.extends) > 0:
@@ -76,7 +90,7 @@ class ClassDefinition:
         target.write(f"{fullInd}}}\n\n")
 
     def writeImplDefinition(self, target, fullInd, ind):
-        extends = list(map(safename, self.extends))
+        extends = list(map(safename2, self.extends))
 
         if self.abstract:
             target.write(f"{fullInd}inline {self.namespace}::{self.classname}::~{self.classname}() = default;\n")
@@ -90,7 +104,7 @@ class ClassDefinition:
 
         for field in self.fields:
             fieldname = safename(field.name)
-            target.write(f"{fullInd}{ind}n[\"{field.name}\"] = toYaml({fieldname});\n")
+            target.write(f"{fullInd}{ind}n[\"{field.name}\"] = toYaml(*{fieldname});\n")
         target.write(f"{fullInd}{ind}return n;\n{fullInd}}}\n")
 
 class FieldDefinition:
@@ -112,7 +126,7 @@ class EnumDefinition:
     def writeDefinition(self, target, ind):
         name = safename(self.name)
         target.write(f"enum class {name} : unsigned int {{\n{ind}");
-        target.write(f",\n{ind}".join(self.values))
+        target.write(f",\n{ind}".join(map(safename, self.values)))
         target.write(f"\n}};\n");
         target.write(f"inline auto to_string({name} v) {{\n")
         target.write(f"{ind}static auto m = std::vector<std::string_view> {{\n")
@@ -125,7 +139,7 @@ class EnumDefinition:
         target.write(f"inline void to_enum(std::string_view v, {name}& out) {{\n")
         target.write(f"{ind}static auto m = std::map<std::string, {name}, std::less<>> {{\n")
         for v in self.values:
-            target.write(f"{ind}{ind}{{\"{v}\", {name}::{v}}},\n")
+            target.write(f"{ind}{ind}{{\"{v}\", {name}::{safename(v)}}},\n")
         target.write(f"{ind}}};\n{ind}out = m.find(v)->second;\n}}\n")
 
 
@@ -214,29 +228,42 @@ class CppCodeGen(CodeGenBase):
         self.copyright = copyright
 
         self.classDefinitions = {}
-        self.enumDefinitions  = []
+        self.enumDefinitions  = {}
 
     def convertTypeToCpp(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> str:
         if not isinstance(type_declaration, list):
             return self.convertTypeToCpp([type_declaration])
 
         if len(type_declaration) == 1:
-            if type_declaration[0] == "null":
+            if type_declaration[0] in ("null", "https://w3id.org/cwl/salad#null"):
                 return "std::monostate"
-            elif type_declaration[0] == "string":
+            elif type_declaration[0] in ("string","http://www.w3.org/2001/XMLSchema#string"):
                 return "std::string"
-            elif type_declaration[0] == "PrimitiveType":
+            elif type_declaration[0] in ("int", "http://www.w3.org/2001/XMLSchema#int"):
+                return "int32_t"
+            elif type_declaration[0] in ("long", "http://www.w3.org/2001/XMLSchema#long"):
+                return "int64_t"
+            elif type_declaration[0] in ("float", "http://www.w3.org/2001/XMLSchema#float"):
+                return "float"
+            elif type_declaration[0] in ("double", "http://www.w3.org/2001/XMLSchema#double"):
+                return "double"
+            elif type_declaration[0] in ("boolean", "http://www.w3.org/2001/XMLSchema#boolean"):
+                return "bool"
+            elif type_declaration[0] == "https://w3id.org/cwl/salad#Any":
+                return "unknown"
+            elif type_declaration[0] in ("PrimitiveType", "https://w3id.org/cwl/salad#PrimitiveType"):
                 return "std::variant<bool, int32_t, int64_t, float, double, std::string>"
-            elif type_declaration[0] == "enum":
-                return "someenum"
             elif isinstance(type_declaration[0], dict):
-                if "type" in type_declaration[0] and type_declaration[0]["type"] == "enum":
-                    self.enumDefinitions.append(EnumDefinition(
-                        type_declaration[0]["name"],
-                        list(map(shortname, type_declaration[0]["symbols"]))
-                    ))
-                    return safename(self.enumDefinitions[-1].name)
-                elif "type" in type_declaration[0] and type_declaration[0]["type"] == "array":
+                if "type" in type_declaration[0] and type_declaration[0]["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
+                    name = type_declaration[0]["name"]
+                    print(f"// {type_declaration[0]}")
+                    if not name in self.enumDefinitions:
+                        self.enumDefinitions[name] = EnumDefinition(
+                            type_declaration[0]["name"],
+                            list(map(shortname, type_declaration[0]["symbols"]))
+                        )
+                    return safename(name)
+                elif "type" in type_declaration[0] and type_declaration[0]["type"] in ("array", "https://w3id.org/cwl/salad#array"):
                     items = type_declaration[0]["items"]
                     if isinstance(items, list):
                         ts = []
@@ -246,10 +273,22 @@ class CppCodeGen(CodeGenBase):
                         return f"std::vector<std::variant<{name}>>";
                     else:
                         i=self.convertTypeToCpp(items)
-                        return f"std::vector<{i}>";
+                        return f"std::vector<{i}>"
+                elif "type" in type_declaration[0] and type_declaration[0]["type"] == "record":
+                    n = type_declaration[0]["name"]
+                    (namespace, classname) = split_name(n)
+                    return safename(namespace) + "::" + safename(classname)
 
-                return "dict"
-            return type_declaration[0]
+                n = type_declaration[0]["type"]
+                (namespace, classname) = split_name(n)
+                return safename(namespace) + "::" + safename(classname)
+
+            if len(type_declaration[0].split('#')) != 2:
+                print(f"// something weird2 about {type_declaration[0]}")
+                return type_declaration[0]
+
+            (namespace, classname) = split_name(type_declaration[0])
+            return safename(namespace) + "::" + safename(classname)
 
         type_declaration = list(map(self.convertTypeToCpp, type_declaration))
 
@@ -302,14 +341,23 @@ auto toYaml(std::vector<T> v) {
 
 template <typename T>
 auto toYaml(T const& t) {
-    return t->toYaml();
+    return t.toYaml();
 }
+
+template <typename ...Args>
+auto toYaml(std::variant<Args...> const& t) {
+    return std::visit([](auto const& e) {
+        return toYaml(e);
+    }, t);
+}
+
+using Enum = std::string;
 """)
         for key in self.classDefinitions:
             self.classDefinitions[key].writeFwdDeclaration(self.target, "", "    ")
 
-        for e in self.enumDefinitions:
-            e.writeDefinition(self.target, "    ");
+        for key in self.enumDefinitions:
+            self.enumDefinitions[key].writeDefinition(self.target, "    ");
         for key in self.classDefinitions:
             self.classDefinitions[key].writeDefinition(self.target, "", "    ")
         for key in self.classDefinitions:
@@ -320,16 +368,13 @@ auto toYaml(T const& t) {
         (namespace, classname, fieldname) = split_field(field["name"])
         if isinstance(field["type"], dict):
             if (field["type"]["type"] == "enum"):
-                fieldtype = field["type"]["type"]
+                fieldtype = "Enum"
             else:
-                fieldtype = field["type"]
+                fieldtype = self.convertTypeToCpp(field["type"])
+
         else:
             fieldtype = field["type"]
-            if '#' in fieldtype:
-                (field_type_namespace, field_type_classname) = split_name(fieldtype)
-                fieldtype = field_type_classname
-            else:
-                fieldtype = self.convertTypeToCpp(fieldtype)
+            fieldtype = self.convertTypeToCpp(fieldtype)
 
 
         return FieldDefinition(name=fieldname, typeStr=fieldtype, optional=False)
@@ -337,12 +382,15 @@ auto toYaml(T const& t) {
     def parseRecordSchema(self, stype):
         cd = ClassDefinition(name=stype["name"])
         cd.abstract = stype.get("abstract", False)
+        print(f"//- type {stype['name']}")
 
         if "extends" in stype:
             for ex in aslist(stype["extends"]):
                 (base_namespace, base_classname) = split_name(ex)
-                name = f"{base_namespace}::{base_classname}"
-                cd.extends.append(name)
+                ext = Object()
+                ext.namespace = base_namespace
+                ext.classname = base_classname
+                cd.extends.append(ext)
 
 #
         if "fields" in stype:
