@@ -1,9 +1,0 @@
-$base: "https://example.com"
-$graph:
-- name: Basket
-  doc: A basket of products.
-  type: record
-  documentRoot: true
-  fields:
-    product: string
-    price:   float?
