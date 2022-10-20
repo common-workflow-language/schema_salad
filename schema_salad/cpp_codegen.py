@@ -36,26 +36,30 @@ from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname, deepcopy_strip, replace_type
 
-class Object:
-    pass
 
+# replace reserved keywords in C++
 def replaceKeywords(s: str) -> str:
     if s in ("class", "enum", "int", "long", "float", "double", "default"):
         s = s + "_"
     return s
 
+# create a safe name
 def safename(name: str) -> str:
     classname = re.sub("[^a-zA-Z0-9]", "_", name)
     return replaceKeywords(classname)
 
+# create a safe name (todo: this should be somehow not really exists)
 def safename2(name: str) -> str:
-    return safename(name.namespace) + "::" + safename(name.classname)
+    return safename(name["namespace"]) + "::" + safename(name["classname"])
 
+# Splits names like https://xyz.xyz/blub#cwl/class
+# into its class path and non class path
 def split_name(s: str) -> (str, str):
     t = s.split('#')
     assert(len(t) == 2)
     return (t[0], t[1])
 
+# similar to split_name but for field names
 def split_field(s: str) -> (str, str, str):
     (namespace, field) = split_name(s)
     t = field.split("/")
@@ -63,6 +67,7 @@ def split_field(s: str) -> (str, str, str):
     return (namespace, t[0], t[1])
 
 
+# Prototype of a class
 class ClassDefinition:
     def __init__(self, name):
         self.fullName    = name
@@ -119,6 +124,7 @@ class ClassDefinition:
 #            target.write(f"{fullInd}{ind}addYamlIfNotEmpty(n, \"{field.name}\", toYaml(*{fieldname}));\n")
         target.write(f"{fullInd}{ind}return n;\n{fullInd}}}\n")
 
+# Prototype of a single field of a class
 class FieldDefinition:
     def __init__(self, name, typeStr, optional):
         self.name = name
@@ -131,6 +137,7 @@ class FieldDefinition:
         target.write(f"{fullInd}heap_object<{self.typeStr}> {name};\n")
 
 
+# Prototype of an enum definition
 class EnumDefinition:
     def __init__(self, name, values):
         self.name = name
@@ -177,6 +184,7 @@ class EnumDefinition:
         target.write(f"{ind}to_enum(n.as<std::string>(), out);\n}}\n")
 
 
+# !TODO way tot many functions, most of these shouldn't exists
 def isPrimitiveType(v):
     if not isinstance(v, str):
         return False
@@ -228,6 +236,7 @@ def isArraySchema(v):
             return False
     return True
 
+# The genererator class that is being called in codegen.py
 class CppCodeGen(CodeGenBase):
     def __init__(
         self,
@@ -321,6 +330,7 @@ class CppCodeGen(CodeGenBase):
         return f"std::variant<{type_declaration}>"
 
 
+# start of our generated file
     def epilogue(self) -> None:
         self.target.write("""#pragma once
 
@@ -414,6 +424,8 @@ public:
 };
 
 """)
+# main body, printing fwd declaration, class definitions, and then implementations
+
         for key in self.classDefinitions:
             self.classDefinitions[key].writeFwdDeclaration(self.target, "", "    ")
 
@@ -475,9 +487,10 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node {
         if "extends" in stype:
             for ex in aslist(stype["extends"]):
                 (base_namespace, base_classname) = split_name(ex)
-                ext = Object()
-                ext.namespace = base_namespace
-                ext.classname = base_classname
+                ext = {
+                    "namespace": base_namespace,
+                    "classname": base_classname
+                }
                 cd.extends.append(ext)
 
 #
