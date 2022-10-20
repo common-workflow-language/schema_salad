@@ -515,15 +515,15 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node {
         for stype in items:
             assert("type" in stype)
 
+            if "type" in stype and stype["type"] == "documentation":
+                continue
+
             def pred(i):
                 return (isPrimitiveType(i) or
                     isRecordSchema(i) or
                     isEnumSchema(i) or
                     isArraySchema(i) or
                     isinstance(i, str))
-
-            if "type" in stype and stype["type"] == "documentation":
-                continue
 
             if not (pred(stype) or isArray(stype, pred)):
                 raise "not a valid SaladRecordField"
