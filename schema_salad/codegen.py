@@ -41,6 +41,8 @@ def codegen(
 ) -> None:
     """Generate classes with loaders for the given Schema Salad description."""
 
+    j = schema.extend_and_specialize(i, loader)
+
     gen = None  # type: Optional[CodeGenBase]
     base = schema_metadata.get("$base", schema_metadata.get("id"))
     # ``urlsplit`` decides whether to return an encoded result based
@@ -86,7 +88,6 @@ def codegen(
             package=pkg,
             copyright=copyright,
         )
-        j = schema.extend_and_specialize(i, loader)
         gen.parse(j);
         return
     else:
@@ -96,7 +97,6 @@ def codegen(
 
     document_roots = []
 
-    j = schema.extend_and_specialize(i, loader)
     for rec in j:
         if rec["type"] in ("enum", "record"):
             gen.type_loader(rec)
