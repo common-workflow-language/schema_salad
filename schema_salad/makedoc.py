@@ -57,7 +57,7 @@ def linkto(item: str) -> str:
     return f"[{frg}](#{to_id(frg)})"
 
 
-class MyRenderer(mistune.Renderer):
+class MyRenderer(mistune.HTMLRenderer):
     def __init__(self) -> None:
         super().__init__()
         self.options = {}
