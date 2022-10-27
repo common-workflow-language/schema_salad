@@ -1,5 +1,5 @@
-from typing import Any, List, Optional, Union
-from mistune.renderers import AstRenderer, BaseRenderer, HTMLRenderer
+from typing import Any, List, Optional
+from mistune.renderers import BaseRenderer
 
 def markdown(
     text: str,
