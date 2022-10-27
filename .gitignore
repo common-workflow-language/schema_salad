@@ -9,6 +9,7 @@ mypy-stubs/ruamel/yaml
 # virtualenv
 venv/
 .cache/
+.mypy_cache/
 .pytest_cache/
 .coverage
 coverage.xml
