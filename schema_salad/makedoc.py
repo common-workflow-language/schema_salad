@@ -20,6 +20,7 @@ from typing import (
 from urllib.parse import urldefrag
 
 import mistune
+import mistune.renderers
 
 from .exceptions import SchemaSaladException, ValidationException
 from .schema import avro_field_name, extend_and_specialize, get_metaschema
@@ -57,10 +58,10 @@ def linkto(item: str) -> str:
     return f"[{frg}](#{to_id(frg)})"
 
 
-class MyRenderer(mistune.HTMLRenderer):
+class MyRenderer(mistune.renderers.HTMLRenderer):
     def __init__(self) -> None:
         super().__init__()
-        self.options = {}
+        self.options: Dict[str, str] = {}
 
     def header(self, text: str, level: int, raw: Optional[Any] = None) -> str:
         return (

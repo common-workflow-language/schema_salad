@@ -177,10 +177,10 @@ list-author-emails:
 
 mypy3: mypy
 mypy: $(filter-out setup.py,$(PYSOURCES))
-	MYPYPATH=$$MYPYPATH:mypy-stubs mypy $^
+	MYPYPATH=$$MYPYPATH:mypy-stubs mypy --enable-recursive-aliases $^
 
 mypy_3.6: $(filter-out setup.py,$(PYSOURCES))
-	MYPYPATH=$$MYPYPATH:mypy-stubs mypy --python-version 3.6 $^
+	MYPYPATH=$$MYPYPATH:mypy-stubs mypy --enable-recursive-aliases --python-version 3.6 $^
 
 mypyc: $(PYSOURCES)
 	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python setup.py test
