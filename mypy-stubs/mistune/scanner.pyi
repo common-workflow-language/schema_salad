@@ -10,7 +10,7 @@ from typing import (
     Pattern,
     Tuple,
     Type,
-    Union
+    Union,
 )
 from typing_extensions import TypeAlias
 

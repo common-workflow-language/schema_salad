@@ -3,16 +3,16 @@ from typing_extensions import Literal
 
 from mistune._types import DataT
 from mistune.markdown import Markdown
-from mistune.renderers import BaseRenderer
+from mistune.renderers import BaseRenderer, HTMLRenderer
 
-html: Markdown[str]
+html: Markdown[str, HTMLRenderer]
 
 def create_markdown(
     escape: bool = False,
     hard_wrap: bool = False,
     renderer: Optional[Union[Literal["html", "ast"], BaseRenderer[DataT]]] = None,
     plugins: List[str] = ["strikethrough", "footnotes", "table"],  # noqa
-) -> Markdown[DataT]: ...
+) -> Markdown[DataT, HTMLRenderer]: ...
 def markdown(
     text: str,
     escape: bool = True,

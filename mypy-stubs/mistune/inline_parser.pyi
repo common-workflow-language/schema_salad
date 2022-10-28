@@ -1,5 +1,6 @@
 from typing import (
     ClassVar,
+    Generic,
     Iterator,
     List,
     Match,
@@ -12,7 +13,6 @@ from typing import (
 from typing_extensions import Literal
 
 from mistune._types import DataT, State
-from mistune.renderers import BaseRenderer
 from mistune.scanner import ScannerParser
 from mistune.util import ESCAPE_TEXT
 
@@ -22,7 +22,10 @@ ESCAPE_CHAR: Pattern[str]
 LINK_TEXT: str
 LINK_LABEL: str
 
-class InlineParser(ScannerParser):
+# Union[BaseRenderer[DataT], AstRenderer, HTMLRenderer]
+RendererT = TypeVar("RendererT")
+
+class InlineParser(ScannerParser, Generic[RendererT]):
     ESCAPE: ClassVar[str] = ESCAPE_TEXT
     AUTO_LINK: ClassVar[str]
     STD_LINK: ClassVar[str]
@@ -35,11 +38,9 @@ class InlineParser(ScannerParser):
     INLINE_HTML: ClassVar[str]
     RULE_NAMES: ClassVar[Tuple[str, ...]]
 
-    renderer: BaseRenderer[DataT]
+    renderer: RendererT
 
-    def __init__(
-        self, renderer: BaseRenderer[DataT], hard_wrap: bool = False
-    ) -> None: ...
+    def __init__(self, renderer: RendererT, hard_wrap: bool = False) -> None: ...
     def parse_escape(
         self, m: Match[str], state: State
     ) -> Tuple[Literal["text"], str]: ...

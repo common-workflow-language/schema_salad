@@ -7,31 +7,29 @@ from typing import (
     Optional,
     Tuple,
 )
-from typing_extensions import TypeAlias
 
 from mistune._types import DataT, State
 from mistune.block_parser import BlockParser
-from mistune.inline_parser import InlineParser
+from mistune.inline_parser import InlineParser, RendererT
 from mistune.renderers import BaseRenderer
 
 Tokens = List[Dict[str, Any]]
-MarkdownT: TypeAlias = "Markdown"
-ParseHook = Callable[[MarkdownT[DataT], str, State], Tuple[str, State]]
-RenderHook = Callable[[MarkdownT[DataT], Tokens, State], Tokens]
+ParseHook = Callable[[Markdown[DataT, RendererT], str, State], Tuple[str, State]]
+RenderHook = Callable[[Markdown[DataT, RendererT], Tokens, State], Tokens]
 
-class Markdown(Generic[DataT]):
+class Markdown(Generic[DataT, RendererT]):
     renderer: BaseRenderer[DataT]
-    inline: InlineParser
+    inline: InlineParser[RendererT]
     block: BlockParser
-    before_parse_hooks: List[ParseHook[DataT]]
-    before_render_hooks: List[RenderHook[DataT]]
-    after_render_hooks: List[RenderHook[DataT]]
+    before_parse_hooks: List[ParseHook[DataT, RendererT]]
+    before_render_hooks: List[RenderHook[DataT, RendererT]]
+    after_render_hooks: List[RenderHook[DataT, RendererT]]
 
     def __init__(
         self,
         renderer: BaseRenderer[DataT],
         block: Optional[BlockParser] = None,
-        inline: Optional[InlineParser] = None,
+        inline: Optional[InlineParser[RendererT]] = None,
         plugins: Optional[List[str]] = None,
     ) -> None: ...
     def before_parse(self, s: str, state: State) -> Tuple[str, State]: ...

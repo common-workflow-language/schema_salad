@@ -1,4 +1,5 @@
 from typing import (
+    Any,
     ClassVar,
     Iterator,
     List,
@@ -13,7 +14,7 @@ from typing import (
 from typing_extensions import Literal, NotRequired, Required, TypeAlias, TypedDict
 
 from mistune._types import DataT, State, Tokens
-from mistune.inline_parser import InlineParser
+from mistune.inline_parser import InlineParser, RendererT
 from mistune.scanner import Matcher, ScannerParser
 
 _ParsedBlock: TypeAlias = "ParsedBlock"
@@ -93,15 +94,16 @@ class BlockParser(ScannerParser):
     def parse_text(
         self, text: str, state: State
     ) -> Union[
-        ParsedBlock[Literal["block_text"]],
-        List[ParsedBlock[Literal["paragraph"]]]
+        ParsedBlock[Literal["block_text"]], List[ParsedBlock[Literal["paragraph"]]]
     ]: ...
     def parse(
         self, s: str, state: State, rules: Optional[List[str]] = None
     ) -> Tokens: ...
-    def render(self, tokens: Tokens, inline: InlineParser, state: State) -> DataT: ...
+    def render(
+        self, tokens: Tokens, inline: InlineParser[RendererT], state: State
+    ) -> Any: ...  # technically DataT, but defined by 'inline.renderer.finalize'
     def _iter_render(
-        self, tokens: Tokens, inline: InlineParser, state: State
+        self, tokens: Tokens, inline: InlineParser[RendererT], state: State
     ) -> Iterator[DataT]: ...
 
 def cleanup_lines(s: str) -> str: ...
