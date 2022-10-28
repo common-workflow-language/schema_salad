@@ -1,14 +1,4 @@
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generic,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Union
-)
+from typing import Any, Callable, Dict, Generic, Iterable, List, Optional, Tuple, Union
 
 from mistune._types import DataT, State
 from mistune.block_parser import BlockParser
