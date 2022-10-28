@@ -96,7 +96,7 @@ class ClassDefinition:
         target.write(f" {{\n")
 
         for field in self.fields:
-            field.writeDefinition(target, fullInd + ind, ind)
+            field.writeDefinition(target, fullInd + ind, ind, self.namespace)
 
 
         if self.abstract:
@@ -132,10 +132,11 @@ class FieldDefinition:
         self.typeStr = typeStr
         self.optional = optional
 
-    def writeDefinition(self, target, fullInd, ind):
+    def writeDefinition(self, target, fullInd, ind, namespace):
         name    = safename(self.name)
 #        target.write(f"{fullInd}std::unique_ptr<{self.typeStr}> {name} = std::make_unique<{self.typeStr}>();\n")
-        target.write(f"{fullInd}heap_object<{self.typeStr}> {name};\n")
+        typeStr=self.typeStr.replace(namespace + "::", "");
+        target.write(f"{fullInd}heap_object<{typeStr}> {name};\n")
 
 
 # Prototype of an enum definition
