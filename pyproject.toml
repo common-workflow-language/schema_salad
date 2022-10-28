@@ -1,5 +1,15 @@
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2", "mypy==0.961", "black>=19.10b0", "types-pkg_resources", "types-requests", "types-dataclasses", "ruamel.yaml>= 0.12.4, != 0.16.6, < 0.18", "types-setuptools"]
+requires = [
+    "setuptools>=45",
+    "setuptools_scm[toml]>=6.2",
+    "mypy==0.961",
+    "black>=19.10b0",
+    "types-pkg_resources",
+    "types-requests",
+    "types-dataclasses",
+    "ruamel.yaml>= 0.12.4, != 0.16.6, < 0.18",
+    "types-setuptools"
+]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
