@@ -3,6 +3,7 @@ $base: "https://w3id.org/cwl/cwl#"
 $namespaces:
   cwl: "https://w3id.org/cwl/cwl#"
   sld: "https://w3id.org/cwl/salad#"
+  rdfs: "http://www.w3.org/2000/01/rdf-schema#"
 
 $graph:
 
@@ -59,6 +60,7 @@ $graph:
     - name: class
       type:
         type: enum
+        name: File_class
         symbols:
           - cwl:File
       jsonldPredicate:
@@ -223,6 +225,7 @@ $graph:
     - name: class
       type:
         type: enum
+        name: Directory_class
         symbols:
           - cwl:Directory
       jsonldPredicate:
@@ -458,12 +461,19 @@ $graph:
   specialize:
     - specializeFrom: "sld:RecordField"
       specializeTo: InputRecordField
+  fields:
+    - name: name
+      type: string?
+      jsonldPredicate: "@id"
 
 
 - name: InputEnumSchema
   type: record
   extends: ["sld:EnumSchema", InputSchema]
   fields:
+    - name: name
+      type: string?
+      jsonldPredicate: "@id"
     - name: inputBinding
       type: InputBinding?
       jsonldPredicate: "cwl:inputBinding"
