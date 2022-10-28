@@ -59,7 +59,10 @@ def linkto(item: str) -> str:
 
 
 class MyRenderer(mistune.renderers.HTMLRenderer):
+    """Custom renderer with different representations of selected HTML tags."""
+
     def __init__(self) -> None:
+        """Create a MyRenderer object."""
         super().__init__()
         self.options: Dict[str, str] = {}
 
