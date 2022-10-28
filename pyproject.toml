@@ -2,7 +2,8 @@
 requires = [
     "setuptools>=45",
     "setuptools_scm[toml]>=6.2",
-    "mypy==0.981",
+    'mypy==0.961; python_version == "3.6"',
+    'mypy==0.981; python_version >= "3.7"',
     "black>=19.10b0",
     "types-pkg_resources",
     "types-requests",

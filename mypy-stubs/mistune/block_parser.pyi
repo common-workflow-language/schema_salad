@@ -1,3 +1,4 @@
+import sys
 from typing import (
     Any,
     ClassVar,
@@ -17,20 +18,68 @@ from mistune._types import DataT, State, Tokens
 from mistune.inline_parser import InlineParser, RendererT
 from mistune.scanner import Matcher, ScannerParser
 
+ParsedBlockType = Literal[
+    "heading",
+    "newline",
+    "thematic_break",
+    "block_code",
+    "block_html",
+    "block_quote",
+    "block_text",
+    "list",
+    "list_item",
+    "paragraph",
+]
 _ParsedBlock: TypeAlias = "ParsedBlock"
-ParsedTypeT = TypeVar("ParsedTypeT")
-ParsedBlock = TypedDict(
-    "ParsedBlock",
-    {
-        "type": Required[ParsedTypeT],
-        "blank": NotRequired[bool],
-        "raw": NotRequired[str],
-        "text": NotRequired[str],
-        "params": NotRequired[Tuple[Union[int, str], ...]],
-        "children": NotRequired[List[_ParsedBlock]],
-    },
-    total=False,
-)
+if sys.version_info >= (3, 7):
+    ParsedTypeT = TypeVar("ParsedTypeT")
+    ParsedBlock = TypedDict(
+        "ParsedBlock",
+        {
+            "type": Required[ParsedTypeT],
+            "blank": NotRequired[bool],
+            "raw": NotRequired[str],
+            "text": NotRequired[str],
+            "params": NotRequired[Tuple[Union[int, str], ...]],
+            "children": NotRequired[List[_ParsedBlock]],
+        },
+        total=False,
+    )
+    ParsedBlockHeading = ParsedBlock[Literal["heading"]]
+    ParsedBlockNewline = ParsedBlock[Literal["newline"]]
+    ParsedBlockThematicBreak = ParsedBlock[Literal["thematic_break"]]
+    ParsedBlockBlockCode = ParsedBlock[Literal["block_code"]]
+    ParsedBlockBlockHTML = ParsedBlock[Literal["block_html"]]
+    ParsedBlockBlockQuote = ParsedBlock[Literal["block_quote"]]
+    ParsedBlockBlockText = ParsedBlock[Literal["block_text"]]
+    ParsedBlockList = ParsedBlock[Literal["list"]]
+    ParsedBlockListItem = ParsedBlock[Literal["list_item"]]
+    ParsedBlockParagraph = ParsedBlock[Literal["paragraph"]]
+else:  # python 3.6  # no TypedDict+Generic support with TypeVar
+    ParsedBlock = TypedDict(
+        "ParsedBlock",
+        {
+            # best we can do is define an 'AnyOf' allowed literals
+            # we cannot provide explicitly which literal is returned each time
+            "type": Required[ParsedBlockType],
+            "blank": NotRequired[bool],
+            "raw": NotRequired[str],
+            "text": NotRequired[str],
+            "params": NotRequired[Tuple[Union[int, str], ...]],
+            "children": NotRequired[List[_ParsedBlock]],
+        },
+        total=False,
+    )
+    ParsedBlockHeading = ParsedBlock
+    ParsedBlockNewline = ParsedBlock
+    ParsedBlockThematicBreak = ParsedBlock
+    ParsedBlockBlockCode = ParsedBlock
+    ParsedBlockBlockHTML = ParsedBlock
+    ParsedBlockBlockQuote = ParsedBlock
+    ParsedBlockBlockText = ParsedBlock
+    ParsedBlockList = ParsedBlock
+    ParsedBlockListItem = ParsedBlock
+    ParsedBlockParagraph = ParsedBlock
 
 class BlockParser(ScannerParser):
     NEWLINE: Pattern[str]
@@ -51,51 +100,43 @@ class BlockParser(ScannerParser):
     list_rules = List[str]
 
     def __init__(self) -> None: ...
-    def parse_newline(
-        self, m: Match[str], state: State
-    ) -> ParsedBlock[Literal["newline"]]: ...
+    def parse_newline(self, m: Match[str], state: State) -> ParsedBlockNewline: ...
     def parse_thematic_break(
         self, m: Match[str], state: State
-    ) -> ParsedBlock[Literal["thematic_break"]]: ...
+    ) -> ParsedBlockThematicBreak: ...
     def parse_indent_code(
         self, m: Match[str], state: State
-    ) -> ParsedBlock[Literal["block_code"]]: ...
+    ) -> ParsedBlockBlockCode: ...
     def parse_fenced_code(
         self, m: Match[str], state: State
-    ) -> ParsedBlock[Literal["block_code"]]: ...
+    ) -> ParsedBlockBlockCode: ...
     def tokenize_block_code(
         self, code: str, info: Tuple[str, ...], state: State
-    ) -> ParsedBlock[Literal["block_code"]]: ...
-    def parse_axt_heading(
-        self, m: Match[str], state: State
-    ) -> ParsedBlock[Literal["heading"]]: ...
+    ) -> ParsedBlockBlockCode: ...
+    def parse_axt_heading(self, m: Match[str], state: State) -> ParsedBlockHeading: ...
     def parse_setex_heading(
         self, m: Match[str], state: State
-    ) -> ParsedBlock[Literal["heading"]]: ...
+    ) -> ParsedBlockHeading: ...
     def tokenize_heading(
         self, text: str, level: int, state: State
-    ) -> ParsedBlock[Literal["heading"]]: ...
+    ) -> ParsedBlockHeading: ...
     def get_block_quote_rules(self, depth: int) -> List[str]: ...
     def parse_block_quote(
         self, m: Match[str], state: State
-    ) -> ParsedBlock[Literal["block_quote"]]: ...
+    ) -> ParsedBlockBlockQuote: ...
     def get_list_rules(self, depth: int) -> List[str]: ...
     def parse_list_start(
         self, m: Match[str], state: State, string: str
-    ) -> Tuple[ParsedBlock[Literal["list"]], int]: ...
+    ) -> Tuple[ParsedBlockList, int]: ...
     def parse_list_item(
         self, text: str, depth: int, state: State, rules: List[str]
-    ) -> ParsedBlock[Literal["list_item"]]: ...
+    ) -> ParsedBlockListItem: ...
     def normalize_list_item_text(self, text: str) -> str: ...
-    def parse_block_html(
-        self, m: Match[str], state: State
-    ) -> ParsedBlock[Literal["block_html"]]: ...
+    def parse_block_html(self, m: Match[str], state: State) -> ParsedBlockBlockHTML: ...
     def parse_def_link(self, m: Match[str], state: State) -> None: ...
     def parse_text(
         self, text: str, state: State
-    ) -> Union[
-        ParsedBlock[Literal["block_text"]], List[ParsedBlock[Literal["paragraph"]]]
-    ]: ...
+    ) -> Union[ParsedBlockBlockText, List[ParsedBlockParagraph]]: ...
     def parse(
         self, s: str, state: State, rules: Optional[List[str]] = None
     ) -> Tokens: ...
