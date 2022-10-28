@@ -21,6 +21,7 @@ from urllib.parse import urldefrag
 
 import mistune
 import mistune.renderers
+from mistune.plugins.table import parse_table
 
 from .exceptions import SchemaSaladException, ValidationException
 from .schema import avro_field_name, extend_and_specialize, get_metaschema
@@ -58,6 +59,29 @@ def linkto(item: str) -> str:
     return f"[{frg}](#{to_id(frg)})"
 
 
+
+URL_LINK_PATTERN = r'''https?:\/\/[^\s<]+[^<.,:;"')\]\s]'''
+
+
+def parse_url_link(inline, m, state):
+    text = m.group(0)
+    pos = m.end()
+    if state.in_link:
+        inline.process_text(text, state)
+        return pos
+    children = inline.render_tokens([{'type': 'text', 'raw': text}])
+    state.append_token({
+        'type': 'link',
+        'children': children,
+        'attrs': {'url': escape_url(text)},
+    })
+    return pos
+
+
+def url(md):
+    md.inline.register('url_link', URL_LINK_PATTERN, parse_url_link)
+
+
 class MyRenderer(mistune.renderers.HTMLRenderer):
     """Custom renderer with different representations of selected HTML tags."""
 
@@ -66,7 +90,7 @@ class MyRenderer(mistune.renderers.HTMLRenderer):
         super().__init__()
         self.options: Dict[str, str] = {}
 
-    def header(self, text: str, level: int, raw: Optional[Any] = None) -> str:
+    def heading(self, text: str, level: int) -> str:
         return (
             """<h{} id="{}" class="section">{} <a href="#{}">&sect;</a></h{}>""".format(
                 level, to_id(text), text, to_id(text), level
@@ -426,8 +450,8 @@ class RenderType:
             f["doc"] = number_headings(self.toc, f["doc"])
 
         doc = doc + "\n\n" + f["doc"]
-
-        doc = mistune.markdown(doc, renderer=MyRenderer())
+        plugins = ["strikethrough", "footnotes", "table", "url"]
+        doc = mistune.markdown(doc, renderer=MyRenderer(), plugins=plugins)
 
         if f["type"] == "record":
             doc += "<h3>Fields</h3>"

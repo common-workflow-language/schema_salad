@@ -3,9 +3,11 @@ from typing import (
     Callable,
     Dict,
     Generic,
+    Iterable,
     List,
     Optional,
     Tuple,
+    Union
 )
 
 from mistune._types import DataT, State
@@ -30,7 +32,7 @@ class Markdown(Generic[DataT, RendererT]):
         renderer: BaseRenderer[DataT],
         block: Optional[BlockParser] = None,
         inline: Optional[InlineParser[RendererT]] = None,
-        plugins: Optional[List[str]] = None,
+        plugins: Optional[Iterable[Union[ParseHook, RenderHook]]] = None,
     ) -> None: ...
     def before_parse(self, s: str, state: State) -> Tuple[str, State]: ...
     def before_render(self, tokens: Tokens, state: State) -> Tokens: ...
