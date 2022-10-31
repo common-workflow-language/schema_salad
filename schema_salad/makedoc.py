@@ -66,11 +66,6 @@ def linkto(item: str) -> str:
 class MyRenderer(mistune.renderers.HTMLRenderer):
     """Custom renderer with different representations of selected HTML tags."""
 
-    def __init__(self) -> None:
-        """Create a MyRenderer object."""
-        super().__init__()
-        self.options: Dict[str, str] = {}
-
     def heading(self, text: str, level: int) -> str:
         return (
             """<h{} id="{}" class="section">{} <a href="#{}">&sect;</a></h{}>""".format(
@@ -437,7 +432,15 @@ class RenderType:
             "table",
             "url",
         ]  # type: List[PluginName]  # fix error Generic str != explicit Literals
-        doc = mistune.markdown(doc, renderer=MyRenderer(), plugins=plugins)
+        # if escape active, wraps literal HTML into '<p> {HTML} </p>'
+        # we must pass it to both since 'MyRenderer' is predefined
+        escape_html = False
+        doc = mistune.markdown(
+            doc,
+            renderer=MyRenderer(escape=escape_html),
+            plugins=plugins,
+            escape=escape_html,
+        )
 
         if f["type"] == "record":
             doc += "<h3>Fields</h3>"
