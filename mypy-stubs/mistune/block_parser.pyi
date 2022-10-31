@@ -12,12 +12,12 @@ from typing import (
     TypeVar,
     Union,
 )
-from typing_extensions import Literal, NotRequired, Required, TypeAlias, TypedDict
 
 from mistune._types import State, Tokens
 from mistune.inline_parser import InlineParser, RendererT
 from mistune.renderers import DataT
 from mistune.scanner import Matcher, ScannerParser
+from typing_extensions import Literal, NotRequired, Required, TypeAlias, TypedDict
 
 ParsedBlockType = Literal[
     # base block parsers

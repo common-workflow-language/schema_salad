@@ -1,16 +1,15 @@
 from typing import Iterable, Optional, Union
-from typing_extensions import Literal
 
-from mistune.markdown import Markdown, ParseHook, RenderHook
 from mistune.inline_parser import RendererT
+from mistune.markdown import Markdown, ParseHook, RenderHook
+from mistune.plugins import Plugin, PluginName
 from mistune.renderers import BaseRenderer, DataT, HTMLRenderer, HTMLType
-from mistune.plugins import PluginName, Plugin
+from typing_extensions import Literal
 
 html: Markdown[HTMLType, HTMLRenderer]
 
 RendererRef = Union[Literal["html", "ast"], BaseRenderer[DataT]]
 PluginRef = Union[PluginName, Plugin]  # reference to register a plugin
-
 
 def create_markdown(
     escape: bool = False,

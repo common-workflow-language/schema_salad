@@ -10,12 +10,12 @@ from typing import (
     TypeVar,
     Union,
 )
-from typing_extensions import Literal
 
 from mistune._types import State
 from mistune.renderers import AstRenderer, DataT, HTMLRenderer
 from mistune.scanner import ScannerParser
 from mistune.util import ESCAPE_TEXT
+from typing_extensions import Literal
 
 HTML_TAGNAME: str
 HTML_ATTRIBUTES: str

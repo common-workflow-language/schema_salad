@@ -1,10 +1,9 @@
-from typing import Callable, Dict, Generic, Protocol, TypeVar, Union
-from typing_extensions import Literal
+from typing import Dict, Protocol
 
 from mistune.inline_parser import RendererT
 from mistune.markdown import Markdown
 from mistune.renderers import DataT
-
+from typing_extensions import Literal
 
 PluginName = Literal[
     "url",

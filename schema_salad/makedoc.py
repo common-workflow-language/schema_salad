@@ -6,8 +6,8 @@ import re
 import sys
 from io import StringIO, TextIOWrapper
 from typing import (
-    TYPE_CHECKING,
     IO,
+    TYPE_CHECKING,
     Any,
     Dict,
     List,
@@ -431,7 +431,12 @@ class RenderType:
             f["doc"] = number_headings(self.toc, f["doc"])
 
         doc = doc + "\n\n" + f["doc"]
-        plugins = ["strikethrough", "footnotes", "table", "url"]  # type: List[PluginName]
+        plugins = [
+            "strikethrough",
+            "footnotes",
+            "table",
+            "url",
+        ]  # type: List[PluginName]  # fix error Generic str != explicit Literals
         doc = mistune.markdown(doc, renderer=MyRenderer(), plugins=plugins)
 
         if f["type"] == "record":

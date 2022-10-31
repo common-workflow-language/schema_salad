@@ -12,9 +12,9 @@ from typing import (
     Type,
     Union,
 )
-from typing_extensions import TypeAlias
 
 from mistune._types import State
+from typing_extensions import TypeAlias
 
 MethodFunc: TypeAlias = Callable[["ScannerParser", Match, State], Any]
 RuleMethod = Tuple[Pattern[str], MethodFunc]
