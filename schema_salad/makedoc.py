@@ -6,6 +6,7 @@ import re
 import sys
 from io import StringIO, TextIOWrapper
 from typing import (
+    TYPE_CHECKING,
     IO,
     Any,
     Dict,
@@ -21,12 +22,15 @@ from urllib.parse import urldefrag
 
 import mistune
 import mistune.renderers
-from mistune.plugins.table import parse_table
 
 from .exceptions import SchemaSaladException, ValidationException
 from .schema import avro_field_name, extend_and_specialize, get_metaschema
 from .utils import add_dictlist, aslist
 from .validate import avro_type_name
+
+if TYPE_CHECKING:
+    # avoid import error since typing stubs do not exist in actual package
+    from mistune.plugins import PluginName
 
 _logger = logging.getLogger("salad")
 
@@ -427,7 +431,7 @@ class RenderType:
             f["doc"] = number_headings(self.toc, f["doc"])
 
         doc = doc + "\n\n" + f["doc"]
-        plugins = ["strikethrough", "footnotes", "table", "url"]
+        plugins = ["strikethrough", "footnotes", "table", "url"]  # type: List[PluginName]
         doc = mistune.markdown(doc, renderer=MyRenderer(), plugins=plugins)
 
         if f["type"] == "record":

@@ -12,7 +12,8 @@ from typing import (
 )
 from typing_extensions import Literal
 
-from mistune._types import DataT, State
+from mistune._types import State
+from mistune.renderers import AstRenderer, DataT, HTMLRenderer
 from mistune.scanner import ScannerParser
 from mistune.util import ESCAPE_TEXT
 
@@ -23,7 +24,7 @@ LINK_TEXT: str
 LINK_LABEL: str
 
 # Union[BaseRenderer[DataT], AstRenderer, HTMLRenderer]
-RendererT = TypeVar("RendererT")
+RendererT = TypeVar("RendererT", bound=Union[AstRenderer, HTMLRenderer])
 
 class InlineParser(ScannerParser, Generic[RendererT]):
     ESCAPE: ClassVar[str] = ESCAPE_TEXT

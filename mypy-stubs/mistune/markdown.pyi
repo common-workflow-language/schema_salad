@@ -1,12 +1,13 @@
-from typing import Any, Callable, Dict, Generic, Iterable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Generic, Iterable, List, Match, Optional, Tuple
 
-from mistune._types import DataT, State
+from mistune._types import State
 from mistune.block_parser import BlockParser
 from mistune.inline_parser import InlineParser, RendererT
-from mistune.renderers import BaseRenderer
+from mistune.plugins import Plugin
+from mistune.renderers import BaseRenderer, DataT
 
 Tokens = List[Dict[str, Any]]
-ParseHook = Callable[[Markdown[DataT, RendererT], str, State], Tuple[str, State]]
+ParseHook = Callable[[Markdown[DataT, RendererT], Match[str], State], Tuple[str, State]]
 RenderHook = Callable[[Markdown[DataT, RendererT], Tokens, State], Tokens]
 
 class Markdown(Generic[DataT, RendererT]):
@@ -22,7 +23,7 @@ class Markdown(Generic[DataT, RendererT]):
         renderer: BaseRenderer[DataT],
         block: Optional[BlockParser] = None,
         inline: Optional[InlineParser[RendererT]] = None,
-        plugins: Optional[Iterable[Union[ParseHook, RenderHook]]] = None,
+        plugins: Optional[Iterable[Plugin]] = None,
     ) -> None: ...
     def before_parse(self, s: str, state: State) -> Tuple[str, State]: ...
     def before_render(self, tokens: Tokens, state: State) -> Tokens: ...

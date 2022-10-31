@@ -14,11 +14,13 @@ from typing import (
 )
 from typing_extensions import Literal, NotRequired, Required, TypeAlias, TypedDict
 
-from mistune._types import DataT, State, Tokens
+from mistune._types import State, Tokens
 from mistune.inline_parser import InlineParser, RendererT
+from mistune.renderers import DataT
 from mistune.scanner import Matcher, ScannerParser
 
 ParsedBlockType = Literal[
+    # base block parsers
     "heading",
     "newline",
     "thematic_break",
@@ -29,6 +31,14 @@ ParsedBlockType = Literal[
     "list",
     "list_item",
     "paragraph",
+    # plugin 'table'
+    "table",
+    "table_head",
+    "table_body",
+    "table_cell",
+    "table_row",
+    # plugin 'url'
+    "url",
 ]
 _ParsedBlock: TypeAlias = "ParsedBlock"
 if sys.version_info >= (3, 7):
