@@ -15,7 +15,7 @@ jobs:
   tox:
     name: CI tests via Tox
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-20.04  # 22.04 doesn't support Python 3.6
 
     strategy:
       matrix:
@@ -24,7 +24,7 @@ jobs:
         step: [lint, unit, mypy]
         exclude:
           - py-ver-major: 3
-            py-ver-minor: 11
+            py-ver-minor: 6
             step: mypy
 
     env:
@@ -35,23 +35,13 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Set up Python
-        if: matrix.py-ver-minor != 11
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.py-semver }}
-
-      - name: Set up Python 3.11.0-rc.1
-        if: matrix.py-ver-minor == 11
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.11.0-rc.1
-
-
-      - name: Cache for pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.step }}-${{ hashFiles('requirements.txt', 'tox.ini') }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            tox.ini
 
       - name: Upgrade setuptools and install tox
         run: |
@@ -118,7 +108,7 @@ jobs:
   release_test:
     name: Schema Salad release test
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v3

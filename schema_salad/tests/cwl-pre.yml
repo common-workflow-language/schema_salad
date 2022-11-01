@@ -5,6 +5,32 @@
         "doc": "\n"
     },
     {
+        "type": "documentation",
+        "name": "https://w3id.org/cwl/salad#Schema",
+        "doc": "# Schema\n"
+    },
+    {
+        "type": "record",
+        "name": "https://w3id.org/cwl/salad#Documented",
+        "abstract": true,
+        "docParent": "https://w3id.org/cwl/salad#Schema",
+        "fields": [
+          {
+            "doc": "A documentation string for this object, or an array of strings which should be concatenated.",
+            "jsonldPredicate": "rdfs:comment",
+            "name": "https://w3id.org/cwl/salad#Documented/doc",
+            "type": [
+              "null",
+              "string",
+              {
+                "items": "string",
+                "type": "array"
+              }
+            ]
+          }
+        ]
+    },
+    {
         "name": "https://w3id.org/cwl/salad#PrimitiveType",
         "type": "enum",
         "symbols": [
@@ -33,11 +59,13 @@
         "symbols": [
             "https://w3id.org/cwl/salad#Any"
         ],
-        "doc": "The **Any** type validates for any non-null value.\n"
+        "doc": "The **Any** type validates for any non-null value.\n",
+        "docAfter": "https://w3id.org/cwl/salad#PrimitiveType"
     },
     {
         "name": "https://w3id.org/cwl/salad#RecordField",
         "type": "record",
+        "extends": "https://w3id.org/cwl/salad#Documented",
         "doc": "A field of a record.",
         "fields": [
             {
@@ -45,15 +73,6 @@
                 "type": "string",
                 "jsonldPredicate": "@id",
                 "doc": "The name of the field\n"
-            },
-            {
-                "name": "https://w3id.org/cwl/salad#RecordField/doc",
-                "type": [
-                    "null",
-                    "string"
-                ],
-                "doc": "A documentation string for this field\n",
-                "jsonldPredicate": "rdfs:comment"
             },
             {
                 "name": "https://w3id.org/cwl/salad#RecordField/type",
@@ -108,6 +127,7 @@
                 "doc": "Must be `record`",
                 "type": {
                     "type": "enum",
+                    "name": "https://w3id.org/cwl/salad#RecordSchema/type/Record_name",
                     "symbols": [
                         "https://w3id.org/cwl/salad#record"
                     ]
@@ -128,6 +148,14 @@
         "doc": "Define an enumerated type.\n",
         "fields": [
             {
+                "jsonldPredicate": "@id",
+                "name": "https://w3id.org/cwl/salad#EnumSchema/name",
+                "type": [
+                  "null",
+                  "string"
+                ]
+            },
+            {
                 "type": {
                     "type": "array",
                     "items": "string"
@@ -144,6 +172,7 @@
                 "doc": "Must be `enum`",
                 "type": {
                     "type": "enum",
+                    "name": "https://w3id.org/cwl/salad#EnumSchema/type/Enum_name",
                     "symbols": [
                         "https://w3id.org/cwl/salad#enum"
                     ]
@@ -192,6 +221,7 @@
                 "doc": "Must be `array`",
                 "type": {
                     "type": "enum",
+                    "name": "https://w3id.org/cwl/salad#ArraySchema/type/Array_name",
                     "symbols": [
                         "https://w3id.org/cwl/salad#array"
                     ]
@@ -258,6 +288,7 @@
                 "name": "https://w3id.org/cwl/cwl#File/class",
                 "type": {
                     "type": "enum",
+                    "name": "https://w3id.org/cwl/cwl#File/class/File_class",
                     "symbols": [
                         "https://w3id.org/cwl/cwl#File"
                     ]
@@ -389,6 +420,7 @@
                 "name": "https://w3id.org/cwl/cwl#Directory/class",
                 "type": {
                     "type": "enum",
+                    "name": "https://w3id.org/cwl/cwl#Directory/class/Directory_class",
                     "symbols": [
                         "https://w3id.org/cwl/cwl#Directory"
                     ]
@@ -622,6 +654,16 @@
             "https://w3id.org/cwl/salad#RecordSchema",
             "https://w3id.org/cwl/cwl#InputSchema"
         ],
+        "fields": [
+          {
+            "jsonldPredicate": "@id",
+            "name": "https://w3id.org/cwl/cwl#InputRecordSchema/name",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        ],
         "specialize": [
             {
                 "specializeFrom": "https://w3id.org/cwl/salad#RecordField",
@@ -637,6 +679,14 @@
             "https://w3id.org/cwl/cwl#InputSchema"
         ],
         "fields": [
+            {
+                "jsonldPredicate": "@id",
+                "name": "https://w3id.org/cwl/cwl#InputEnumSchema/name",
+                "type": [
+                  "null",
+                  "string"
+                ]
+            },
             {
                 "name": "https://w3id.org/cwl/cwl#InputEnumSchema/inputBinding",
                 "type": [
@@ -1258,6 +1308,16 @@
         "name": "https://w3id.org/cwl/cwl#CommandOutputRecordSchema",
         "type": "record",
         "extends": "https://w3id.org/cwl/cwl#OutputRecordSchema",
+        "fields": [
+            {
+                "jsonldPredicate": "@id",
+                "name": "https://w3id.org/cwl/cwl#CommandOutputRecordSchema/name",
+                "type": [
+                  "null",
+                  "string"
+                ]
+            }
+        ],
         "specialize": [
             {
                 "specializeFrom": "https://w3id.org/cwl/cwl#OutputRecordField",
@@ -1370,7 +1430,7 @@
                     }
                 ],
                 "jsonldPredicate": {
-                    "_id": "https://w3id.org/cwl/salad#type",
+                    "_id": "https://w3id.org/cwl/cwl#CommandOutputParameter/type/type",
                     "_type": "@vocab",
                     "refScope": 2,
                     "typeDSL": true
@@ -1907,7 +1967,7 @@
                     }
                 ],
                 "jsonldPredicate": {
-                    "_id": "https://w3id.org/cwl/salad#type",
+                    "_id": "https://w3id.org/cwl/cwl#ExpressionToolOutputParameter/type/type",
                     "_type": "@vocab",
                     "refScope": 2,
                     "typeDSL": true
@@ -2011,7 +2071,7 @@
                     }
                 ],
                 "jsonldPredicate": {
-                    "_id": "https://w3id.org/cwl/salad#type",
+                    "_id": "https://w3id.org/cwl/cwl#WorkflowOutputParameter/type/type",
                     "_type": "@vocab",
                     "refScope": 2,
                     "typeDSL": true

@@ -189,6 +189,7 @@
                 "doc": "Must be `record`",
                 "type": {
                     "type": "enum",
+                    "name": "https://w3id.org/cwl/salad#RecordSchema/type/Record_name",
                     "symbols": [
                         "https://w3id.org/cwl/salad#record"
                     ]
@@ -209,6 +210,14 @@
         "doc": "Define an enumerated type.\n",
         "fields": [
             {
+                "jsonldPredicate": "@id",
+                "name": "https://w3id.org/cwl/salad#EnumSchema/name",
+                "type": [
+                  "null",
+                  "string"
+                ]
+            },
+            {
                 "type": {
                     "type": "array",
                     "items": "string"
@@ -225,6 +234,7 @@
                 "doc": "Must be `enum`",
                 "type": {
                     "type": "enum",
+                    "name": "https://w3id.org/cwl/salad#EnumSchema/type/Enum_name",
                     "symbols": [
                         "https://w3id.org/cwl/salad#enum"
                     ]
@@ -273,6 +283,7 @@
                 "doc": "Must be `array`",
                 "type": {
                     "type": "enum",
+                    "name": "https://w3id.org/cwl/salad#ArraySchema/type/Array_name",
                     "symbols": [
                         "https://w3id.org/cwl/salad#array"
                     ]
@@ -649,6 +660,7 @@
                 "doc": "Must be `documentation`",
                 "type": {
                     "type": "enum",
+                    "name": "https://w3id.org/cwl/salad#Documentation/type/Documentation_name",
                     "symbols": [
                         "https://w3id.org/cwl/salad#documentation"
                     ]

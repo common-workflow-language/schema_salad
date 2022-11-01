@@ -438,8 +438,9 @@ class _SecondaryDSLLoader(_Loader):
                         r.append({"pattern": d})
                 elif isinstance(d, dict):
                     new_dict: Dict[str, Any] = {}
-                    if "pattern" in d:
-                        new_dict["pattern"] = d.pop("pattern")
+                    dict_copy = copy.deepcopy(d)
+                    if "pattern" in dict_copy:
+                        new_dict["pattern"] = dict_copy.pop("pattern")
                     else:
                         raise ValidationException(
                             "Missing pattern in secondaryFiles specification entry: {}".format(
@@ -447,13 +448,13 @@ class _SecondaryDSLLoader(_Loader):
                             )
                         )
                     new_dict["required"] = (
-                        d.pop("required") if "required" in d else None
+                        dict_copy.pop("required") if "required" in dict_copy else None
                     )
 
-                    if len(d):
+                    if len(dict_copy):
                         raise ValidationException(
                             "Unallowed values in secondaryFiles specification entry: {}".format(
-                                d
+                                dict_copy
                             )
                         )
                     r.append(new_dict)
@@ -464,20 +465,23 @@ class _SecondaryDSLLoader(_Loader):
                     )
         elif isinstance(doc, MutableMapping):
             new_dict = {}
-            if "pattern" in doc:
-                new_dict["pattern"] = doc.pop("pattern")
+            doc_copy = copy.deepcopy(doc)
+            if "pattern" in doc_copy:
+                new_dict["pattern"] = doc_copy.pop("pattern")
             else:
                 raise ValidationException(
                     "Missing pattern in secondaryFiles specification entry: {}".format(
                         doc
                     )
                 )
-            new_dict["required"] = doc.pop("required") if "required" in doc else None
+            new_dict["required"] = (
+                doc_copy.pop("required") if "required" in doc_copy else None
+            )
 
-            if len(doc):
+            if len(doc_copy):
                 raise ValidationException(
                     "Unallowed values in secondaryFiles specification entry: {}".format(
-                        doc
+                        doc_copy
                     )
                 )
             r.append(new_dict)
@@ -1099,7 +1103,7 @@ class RecordSchema(Saveable):
         try:
             type = load_field(
                 _doc.get("type"),
-                typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2,
+                typedsl_Record_nameLoader_2,
                 baseuri,
                 loadingOptions,
             )
@@ -1181,6 +1185,7 @@ class EnumSchema(Saveable):
         self,
         symbols: Any,
         type: Any,
+        name: Optional[Any] = None,
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
@@ -1193,16 +1198,21 @@ class EnumSchema(Saveable):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
+        self.name = name
         self.symbols = symbols
         self.type = type
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, EnumSchema):
-            return bool(self.symbols == other.symbols and self.type == other.type)
+            return bool(
+                self.name == other.name
+                and self.symbols == other.symbols
+                and self.type == other.type
+            )
         return False
 
     def __hash__(self) -> int:
-        return hash((self.symbols, self.type))
+        return hash((self.name, self.symbols, self.type))
 
     @classmethod
     def fromDoc(
@@ -1217,6 +1227,33 @@ class EnumSchema(Saveable):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         _errors__ = []
+        if "name" in _doc:
+            try:
+                name = load_field(
+                    _doc.get("name"),
+                    uri_union_of_None_type_or_strtype_True_False_None,
+                    baseuri,
+                    loadingOptions,
+                )
+            except ValidationException as e:
+                _errors__.append(
+                    ValidationException(
+                        "the `name` field is not valid because:",
+                        SourceLine(_doc, "name", str),
+                        [e],
+                    )
+                )
+        else:
+            name = None
+
+        __original_name_is_none = name is None
+        if name is None:
+            if docRoot is not None:
+                name = docRoot
+            else:
+                name = "_:" + str(_uuid__.uuid4())
+        if not __original_name_is_none:
+            baseuri = name
         try:
             symbols = load_field(
                 _doc.get("symbols"),
@@ -1235,7 +1272,7 @@ class EnumSchema(Saveable):
         try:
             type = load_field(
                 _doc.get("type"),
-                typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2,
+                typedsl_Enum_nameLoader_2,
                 baseuri,
                 loadingOptions,
             )
@@ -1258,7 +1295,7 @@ class EnumSchema(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `symbols`, `type`".format(
+                            "invalid field `{}`, expected one of: `name`, `symbols`, `type`".format(
                                 k
                             ),
                             SourceLine(_doc, k, str),
@@ -1269,11 +1306,13 @@ class EnumSchema(Saveable):
         if _errors__:
             raise ValidationException("Trying 'EnumSchema'", None, _errors__)
         _constructed = cls(
+            name=name,
             symbols=symbols,
             type=type,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
+        loadingOptions.idx[name] = (_constructed, loadingOptions)
         return _constructed
 
     def save(
@@ -1287,12 +1326,15 @@ class EnumSchema(Saveable):
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
+        if self.name is not None:
+            u = save_relative_uri(self.name, base_url, True, None, relative_uris)
+            r["name"] = u
         if self.symbols is not None:
-            u = save_relative_uri(self.symbols, base_url, True, None, relative_uris)
+            u = save_relative_uri(self.symbols, self.name, True, None, relative_uris)
             r["symbols"] = u
         if self.type is not None:
             r["type"] = save(
-                self.type, top=False, base_url=base_url, relative_uris=relative_uris
+                self.type, top=False, base_url=self.name, relative_uris=relative_uris
             )
 
         # top refers to the directory level
@@ -1303,7 +1345,7 @@ class EnumSchema(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["symbols", "type"])
+    attrs = frozenset(["name", "symbols", "type"])
 
 
 class ArraySchema(Saveable):
@@ -1365,7 +1407,7 @@ class ArraySchema(Saveable):
         try:
             type = load_field(
                 _doc.get("type"),
-                typedsl_enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader_2,
+                typedsl_Array_nameLoader_2,
                 baseuri,
                 loadingOptions,
             )
@@ -2401,7 +2443,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         try:
             type = load_field(
                 _doc.get("type"),
-                typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2,
+                typedsl_Record_nameLoader_2,
                 baseuri,
                 loadingOptions,
             )
@@ -2722,9 +2764,9 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
 
     def __init__(
         self,
-        name: Any,
         symbols: Any,
         type: Any,
+        name: Optional[Any] = None,
         inVocab: Optional[Any] = None,
         doc: Optional[Any] = None,
         docParent: Optional[Any] = None,
@@ -2808,7 +2850,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             try:
                 name = load_field(
                     _doc.get("name"),
-                    uri_strtype_True_False_None,
+                    uri_union_of_None_type_or_strtype_True_False_None,
                     baseuri,
                     loadingOptions,
                 )
@@ -2828,7 +2870,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             if docRoot is not None:
                 name = docRoot
             else:
-                raise ValidationException("Missing name")
+                name = "_:" + str(_uuid__.uuid4())
         if not __original_name_is_none:
             baseuri = name
         if "inVocab" in _doc:
@@ -2867,7 +2909,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         try:
             type = load_field(
                 _doc.get("type"),
-                typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2,
+                typedsl_Enum_nameLoader_2,
                 baseuri,
                 loadingOptions,
             )
@@ -3320,7 +3362,7 @@ class Documentation(NamedType, DocType):
         try:
             type = load_field(
                 _doc.get("type"),
-                typedsl_enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader_2,
+                typedsl_Documentation_nameLoader_2,
                 baseuri,
                 loadingOptions,
             )
@@ -3549,31 +3591,8 @@ union_of_None_type_or_array_of_RecordFieldLoader = _UnionLoader(
 idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader = _IdMapLoader(
     union_of_None_type_or_array_of_RecordFieldLoader, "name", "type"
 )
-enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader = _EnumLoader(
-    ("record",), "enum_d9cba076fca539106791a4f46d198c7fcfbdb779"
-)
-typedsl_enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader_2 = _TypeDSLLoader(
-    enum_d9cba076fca539106791a4f46d198c7fcfbdb779Loader, 2
-)
-uri_array_of_strtype_True_False_None = _URILoader(array_of_strtype, True, False, None)
-enum_d961d79c225752b9fadb617367615ab176b47d77Loader = _EnumLoader(
-    ("enum",), "enum_d961d79c225752b9fadb617367615ab176b47d77"
-)
-typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2 = _TypeDSLLoader(
-    enum_d961d79c225752b9fadb617367615ab176b47d77Loader, 2
-)
-uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2 = _URILoader(
-    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype,
-    False,
-    True,
-    2,
-)
-enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader = _EnumLoader(
-    ("array",), "enum_d062602be0b4b8fd33e69e29a841317b6ab665bc"
-)
-typedsl_enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader_2 = _TypeDSLLoader(
-    enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader, 2
-)
+Record_nameLoader = _EnumLoader(("record",), "Record_name")
+typedsl_Record_nameLoader_2 = _TypeDSLLoader(Record_nameLoader, 2)
 union_of_None_type_or_strtype = _UnionLoader(
     (
         None_type,
@@ -3583,6 +3602,17 @@ union_of_None_type_or_strtype = _UnionLoader(
 uri_union_of_None_type_or_strtype_True_False_None = _URILoader(
     union_of_None_type_or_strtype, True, False, None
 )
+uri_array_of_strtype_True_False_None = _URILoader(array_of_strtype, True, False, None)
+Enum_nameLoader = _EnumLoader(("enum",), "Enum_name")
+typedsl_Enum_nameLoader_2 = _TypeDSLLoader(Enum_nameLoader, 2)
+uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2 = _URILoader(
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype,
+    False,
+    True,
+    2,
+)
+Array_nameLoader = _EnumLoader(("array",), "Array_name")
+typedsl_Array_nameLoader_2 = _TypeDSLLoader(Array_nameLoader, 2)
 union_of_None_type_or_booltype = _UnionLoader(
     (
         None_type,
@@ -3638,12 +3668,8 @@ union_of_None_type_or_array_of_SpecializeDefLoader = _UnionLoader(
 idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader = _IdMapLoader(
     union_of_None_type_or_array_of_SpecializeDefLoader, "specializeFrom", "specializeTo"
 )
-enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader = _EnumLoader(
-    ("documentation",), "enum_056429f0e9355680bd9b2411dc96a69c7ff2e76b"
-)
-typedsl_enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader_2 = _TypeDSLLoader(
-    enum_056429f0e9355680bd9b2411dc96a69c7ff2e76bLoader, 2
-)
+Documentation_nameLoader = _EnumLoader(("documentation",), "Documentation_name")
+typedsl_Documentation_nameLoader_2 = _TypeDSLLoader(Documentation_nameLoader, 2)
 union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader = (
     _UnionLoader(
         (

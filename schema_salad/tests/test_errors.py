@@ -1,10 +1,15 @@
+"""Tests of helpful error messages."""
+import re
+
 import pytest
 
 import schema_salad
 import schema_salad.main
 from schema_salad.avro.schema import Names
 from schema_salad.exceptions import ValidationException
+from schema_salad.ref_resolver import Loader, file_uri
 from schema_salad.schema import load_and_validate, load_schema
+from schema_salad.sourceline import cmap
 
 from .util import get_data
 
@@ -317,3 +322,46 @@ def test_bad_schema2() -> None:
     path = get_data("tests/bad_schema2.yml")
     assert path
     assert 1 == schema_salad.main.main(argsl=[path])
+
+
+def test_namespaces_type() -> None:
+    """Confirm helpful error message when $namespaces is the wrong type."""
+    with pytest.raises(
+        ValidationException,
+        match=re.escape("test:1:1: $namespaces must be a dictionary"),
+    ):
+        ldr, _, _, _ = schema_salad.schema.load_schema(
+            cmap(
+                {
+                    "$base": "Y",
+                    "name": "X",
+                    "$namespaces": ["http://example.com/foo#"],
+                    "$graph": [
+                        {
+                            "name": "ExampleType",
+                            "type": "enum",
+                            "symbols": ["asym", "bsym"],
+                        }
+                    ],
+                }
+            )
+        )
+
+
+def test_schemas_type() -> None:
+    """Confirm helpful error message when $schemas is the wrong type."""
+    path = get_data("tests/EDAM.owl")
+    assert path
+    with pytest.raises(
+        ValidationException,
+        match=re.escape("test:1:1: $schemas must be a string or a list of string"),
+    ):
+        ra, _ = Loader({}).resolve_all(
+            cmap(
+                {
+                    "$schemas": {"wrong": file_uri(path)},
+                    "edam:has_format": "edam:format_1915",
+                }
+            ),
+            "",
+        )
