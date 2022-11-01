@@ -1,39 +1,13 @@
 """C++17 code generator for a given schema salad definition."""
-import copy
-import os
 import re
-import shutil
-import string
-from io import StringIO
-from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    List,
-    MutableMapping,
-    MutableSequence,
-    Optional,
-    Set,
-    Union,
-)
+from typing import IO, Any, Dict, List, Optional, Tuple, Union, cast
 
-import pkg_resources
+from schema_salad.utils import aslist
 
-from schema_salad.utils import (
-    CacheType,
-    ResolveType,
-    add_dictlist,
-    aslist,
-    convert_to_dict,
-    flatten,
-    json_dumps,
-    yaml_no_ts,
-)
-
-from . import _logger, jsonld_context, ref_resolver, schema, validate
+from . import _logger
 from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
-from .schema import deepcopy_strip, replace_type, shortname
+from .schema import shortname
 from .utils import aslist
 
 
@@ -51,20 +25,20 @@ def safename(name: str) -> str:
 
 
 # create a safe name (todo: this should be somehow not really exists)
-def safename2(name: str) -> str:
+def safename2(name: Dict[str, str]) -> str:
     return safename(name["namespace"]) + "::" + safename(name["classname"])
 
 
 # Splits names like https://xyz.xyz/blub#cwl/class
 # into its class path and non class path
-def split_name(s: str) -> (str, str):
+def split_name(s: str) -> Tuple[str, str]:
     t = s.split("#")
     assert len(t) == 2
     return (t[0], t[1])
 
 
 # similar to split_name but for field names
-def split_field(s: str) -> (str, str, str):
+def split_field(s: str) -> Tuple[str, str, str]:
     (namespace, field) = split_name(s)
     t = field.split("/")
     assert len(t) == 2
@@ -73,21 +47,21 @@ def split_field(s: str) -> (str, str, str):
 
 # Prototype of a class
 class ClassDefinition:
-    def __init__(self, name):
+    def __init__(self, name: str):
         self.fullName = name
-        self.extends = []
-        self.fields = []
+        self.extends: List[Dict[str, str]] = []
+        self.fields: List[FieldDefinition] = []
         self.abstract = False
         (self.namespace, self.classname) = split_name(name)
         self.namespace = safename(self.namespace)
         self.classname = safename(self.classname)
 
-    def writeFwdDeclaration(self, target, fullInd, ind):
+    def writeFwdDeclaration(self, target: IO[str], fullInd: str, ind: str) -> None:
         target.write(
             f"{fullInd}namespace {self.namespace} {{ struct {self.classname}; }}\n"
         )
 
-    def writeDefinition(self, target, fullInd, ind):
+    def writeDefinition(self, target: IO[Any], fullInd: str, ind: str) -> None:
         target.write(f"{fullInd}namespace {self.namespace} {{\n")
         target.write(f"{fullInd}struct {self.classname}")
         extends = list(map(safename2, self.extends))
@@ -111,7 +85,7 @@ class ClassDefinition:
         target.write(f"{fullInd}}};\n")
         target.write(f"{fullInd}}}\n\n")
 
-    def writeImplDefinition(self, target, fullInd, ind):
+    def writeImplDefinition(self, target: IO[str], fullInd: str, ind: str) -> None:
         extends = list(map(safename2, self.extends))
 
         if self.abstract:
@@ -140,12 +114,14 @@ class ClassDefinition:
 
 # Prototype of a single field of a class
 class FieldDefinition:
-    def __init__(self, name, typeStr, optional):
+    def __init__(self, name: str, typeStr: str, optional: bool):
         self.name = name
         self.typeStr = typeStr
         self.optional = optional
 
-    def writeDefinition(self, target, fullInd, ind, namespace):
+    def writeDefinition(
+        self, target: IO[Any], fullInd: str, ind: str, namespace: str
+    ) -> None:
         name = safename(self.name)
         # target.write(f"{fullInd}std::unique_ptr<{self.typeStr}> {name} = std::make_unique<{self.typeStr}>();\n")
         typeStr = self.typeStr.replace(namespace + "::", "")
@@ -154,11 +130,11 @@ class FieldDefinition:
 
 # Prototype of an enum definition
 class EnumDefinition:
-    def __init__(self, name, values):
+    def __init__(self, name: str, values: List[str]):
         self.name = name
         self.values = values
 
-    def writeDefinition(self, target, ind):
+    def writeDefinition(self, target: IO[str], ind: str) -> None:
         namespace = ""
         if len(self.name.split("#")) == 2:
             (namespace, classname) = split_name(self.name)
@@ -201,25 +177,25 @@ class EnumDefinition:
 
 
 # !TODO way tot many functions, most of these shouldn't exists
-def isPrimitiveType(v):
+def isPrimitiveType(v: Any) -> bool:
     if not isinstance(v, str):
         return False
     return v in ["null", "boolean", "int", "long", "float", "double", "string"]
 
 
-def hasFieldValue(e, f, v):
+def hasFieldValue(e: Any, f: str, v: Any) -> bool:
     if not isinstance(e, dict):
         return False
     if f not in e:
         return False
-    return e[f] == v
+    return bool(e[f] == v)
 
 
-def isRecordSchema(v):
+def isRecordSchema(v: Any) -> bool:
     return hasFieldValue(v, "type", "record")
 
 
-def isEnumSchema(v):
+def isEnumSchema(v: Any) -> bool:
     if not hasFieldValue(v, "type", "enum"):
         return False
     if "symbols" not in v:
@@ -229,7 +205,7 @@ def isEnumSchema(v):
     return True
 
 
-def isArray(v, pred):
+def isArray(v: Any) -> bool:
     if not isinstance(v, list):
         return False
     for i in v:
@@ -238,7 +214,17 @@ def isArray(v, pred):
     return True
 
 
-def isArraySchema(v):
+def pred(i: Any) -> bool:
+    return (
+        isPrimitiveType(i)
+        or isRecordSchema(i)
+        or isEnumSchema(i)
+        or isArraySchema(i)
+        or isinstance(i, str)
+    )
+
+
+def isArraySchema(v: Any) -> bool:
     if not hasFieldValue(v, "type", "array"):
         return False
     if "items" not in v:
@@ -246,17 +232,8 @@ def isArraySchema(v):
     if not isinstance(v["items"], list):
         return False
 
-    def pred(i):
-        return (
-            isPrimitiveType(i)
-            or isRecordSchema(i)
-            or isEnumSchema(i)
-            or isArraySchema(i)
-            or isinstance(i, str)
-        )
-
-    for i in items:
-        if not (pred(i) or isArray(i, pred)):
+    for i in v["items"]:
+        if not (pred(i) or isArray(i)):
             return False
     return True
 
@@ -266,7 +243,7 @@ class CppCodeGen(CodeGenBase):
     def __init__(
         self,
         base: str,
-        target: Optional[str],
+        target: IO[str],
         examples: Optional[str],
         package: str,
         copyright: Optional[str],
@@ -278,8 +255,8 @@ class CppCodeGen(CodeGenBase):
         self.package = package
         self.copyright = copyright
 
-        self.classDefinitions = {}
-        self.enumDefinitions = {}
+        self.classDefinitions: Dict[str, ClassDefinition] = {}
+        self.enumDefinitions: Dict[str, EnumDefinition] = {}
 
     def convertTypeToCpp(
         self, type_declaration: Union[List[Any], Dict[str, Any], str]
@@ -368,8 +345,8 @@ class CppCodeGen(CodeGenBase):
                 return safename(namespace) + "::" + safename(classname)
 
             if len(type_declaration[0].split("#")) != 2:
-                print(f"// something weird2 about {type_declaration[0]}")
-                return type_declaration[0]
+                _logger.debug(f"// something weird2 about {type_declaration[0]}")
+                return cast(str, type_declaration[0])
 
             (namespace, classname) = split_name(type_declaration[0])
             return safename(namespace) + "::" + safename(classname)
@@ -379,7 +356,7 @@ class CppCodeGen(CodeGenBase):
         return f"std::variant<{type_declaration}>"
 
     # start of our generated file
-    def epilogue(self) -> None:
+    def epilogue(self, root_loader: Optional[TypeDef]) -> None:
         self.target.write(
             """#pragma once
 
@@ -543,7 +520,7 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node {
 """
         )
 
-    def parseRecordField(self, field):
+    def parseRecordField(self, field: Dict[str, Any]) -> FieldDefinition:
         (namespace, classname, fieldname) = split_field(field["name"])
         if isinstance(field["type"], dict):
             if field["type"]["type"] == "enum":
@@ -557,7 +534,7 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node {
 
         return FieldDefinition(name=fieldname, typeStr=fieldtype, optional=False)
 
-    def parseRecordSchema(self, stype):
+    def parseRecordSchema(self, stype: Dict[str, Any]) -> None:
         cd = ClassDefinition(name=stype["name"])
         cd.abstract = stype.get("abstract", False)
 
@@ -567,22 +544,21 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node {
                 ext = {"namespace": base_namespace, "classname": base_classname}
                 cd.extends.append(ext)
 
-        #
         if "fields" in stype:
             for field in stype["fields"]:
                 cd.fields.append(self.parseRecordField(field))
 
         self.classDefinitions[stype["name"]] = cd
 
-    def parseEnum(self, stype):
-        name = stype["name"]
+    def parseEnum(self, stype: Dict[str, Any]) -> str:
+        name = cast(str, stype["name"])
         if name not in self.enumDefinitions:
             self.enumDefinitions[name] = EnumDefinition(
                 name, list(map(shortname, stype["symbols"]))
             )
         return name
 
-    def parse(self, items) -> None:
+    def parse(self, items: List[Dict[str, Any]]) -> None:
         types = {i["name"]: i for i in items}  # type: Dict[str, Any]
 
         for stype in items:
@@ -591,16 +567,7 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node {
             if "type" in stype and stype["type"] == "documentation":
                 continue
 
-            def pred(i):
-                return (
-                    isPrimitiveType(i)
-                    or isRecordSchema(i)
-                    or isEnumSchema(i)
-                    or isArraySchema(i)
-                    or isinstance(i, str)
-                )
-
-            if not (pred(stype) or isArray(stype, pred)):
+            if not (pred(stype) or isArray(stype)):
                 raise SchemaException("not a valid SaladRecordField")
 
             # parsing a record
@@ -609,9 +576,10 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node {
             elif isEnumSchema(stype):
                 self.parseEnum(stype)
             else:
-                print(f"not parsed{stype}")
+                _logger.error(f"not parsed{stype}")
 
-        self.epilogue()
+        self.epilogue(None)
+        self.target.close()
 
 
 # If you use this generator on CommonWorkflowLanguage.yml

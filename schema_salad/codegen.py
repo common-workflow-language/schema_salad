@@ -59,15 +59,26 @@ def codegen(
         )
     )
     info = parser_info or pkg
-    if lang == "python":
+    if lang == "python" or lang == "cpp":
         if target:
             dest: Union[TextIOWrapper, TextIO] = open(
                 target, mode="w", encoding="utf-8"
             )
         else:
             dest = sys.stdout
+        if lang == "cpp":
+            gen = CppCodeGen(
+                base,
+                dest,
+                examples,
+                pkg,
+                copyright,
+            )
+            gen.parse(j)
+            return
+        else:
+            gen = PythonCodeGen(dest, copyright=copyright, parser_info=info)
 
-        gen = PythonCodeGen(dest, copyright=copyright, parser_info=info)
     elif lang == "java":
         gen = JavaCodeGen(
             base,
@@ -80,16 +91,6 @@ def codegen(
         gen = TypeScriptCodeGen(base, target=target, package=pkg, examples=examples)
     elif lang == "dotnet":
         gen = DotNetCodeGen(base, target=target, package=pkg, examples=examples)
-    elif lang == "cpp":
-        gen = CppCodeGen(
-            base,
-            target=sys.stdout,
-            examples=examples,
-            package=pkg,
-            copyright=copyright,
-        )
-        gen.parse(j)
-        return
     else:
         raise SchemaSaladException(f"Unsupported code generation language '{lang}'")
 

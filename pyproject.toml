@@ -5,6 +5,10 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 write_to = "schema_salad/_version.py"
 
+[[tool.cibuildwheel.overrides]]
+select = "*-musllinux*"
+before-all = "apk add yaml-cpp-dev"
+
 [tool.cibuildwheel]
 before-build = "python -m pip install -r requirements.txt -r mypy-requirements.txt"
 test-command = "python -m pytest -n 2 --junitxml=/output/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad"
