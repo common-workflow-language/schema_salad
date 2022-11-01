@@ -15,11 +15,11 @@ from urllib.parse import urlsplit
 
 from . import schema
 from .codegen_base import CodeGenBase
+from .cpp_codegen import CppCodeGen
 from .dotnet_codegen import DotNetCodeGen
 from .exceptions import SchemaSaladException
 from .java_codegen import JavaCodeGen
 from .python_codegen import PythonCodeGen
-from .cpp_codegen import CppCodeGen
 from .ref_resolver import Loader
 from .schema import shortname
 from .typescript_codegen import TypeScriptCodeGen
@@ -88,7 +88,7 @@ def codegen(
             package=pkg,
             copyright=copyright,
         )
-        gen.parse(j);
+        gen.parse(j)
         return
     else:
         raise SchemaSaladException(f"Unsupported code generation language '{lang}'")

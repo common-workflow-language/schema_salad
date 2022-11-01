@@ -297,12 +297,10 @@ public class {cls} : {current_interface}, ISaveable
             self.current_constructor_signature_optionals.getvalue()
         )
         self.current_constructor_signature.write(
-            (
-                "LoadingOptions? loadingOptions = null, "
-                "Dictionary<object, object>? extensionFields = null)"
-                "\n    "
-                "{"
-            )
+            "LoadingOptions? loadingOptions = null, "
+            "Dictionary<object, object>? extensionFields = null)"
+            "\n    "
+            "{"
         )
         self.current_constructor_body.write("    }\n")
         self.current_loader.write(
