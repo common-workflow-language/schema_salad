@@ -1,4 +1,24 @@
-"""C++17 code generator for a given schema salad definition."""
+"""
+C++17 code generator for a given Schema Salad definition.
+
+Currently only supports emiting YAML from the C++ objects, not yet parsing
+YAML into C++ objects.
+
+The generated code requires the libyaml-cpp library & headers
+
+To see an example of usage, look at schema_salad/tests/codegen/cwl.cpp
+which can be combined with the CWL V1.0 schema as shown below:
+
+```
+schema-salad-tool --codegen cpp schema_salad/tests/test_schema/CommonWorkflowLanguage.yml \
+        > cwl_v1_0.h
+
+g++ --std=c++20 -I. -lyaml-cpp schema_salad/tests/codegen/cwl.cpp -o cwl-v1_0-test
+./cwl-v1_0-test
+
+# g++ versions older than version 10 may need "--std=c++2a" instead of "--std=c++20"
+```
+"""
 import re
 from typing import IO, Any, Dict, List, Optional, Tuple, Union, cast
 
@@ -11,21 +31,22 @@ from .schema import shortname
 from .utils import aslist
 
 
-# replace reserved keywords in C++
 def replaceKeywords(s: str) -> str:
+    """Rename keywords that are reserved in C++."""
     if s in ("class", "enum", "int", "long", "float", "double", "default"):
         s = s + "_"
     return s
 
 
-# create a safe name
 def safename(name: str) -> str:
+    """Create a C++ safe name."""
     classname = re.sub("[^a-zA-Z0-9]", "_", name)
     return replaceKeywords(classname)
 
 
-# create a safe name (todo: this should be somehow not really exists)
+# TODO: this should be somehow not really exists
 def safename2(name: Dict[str, str]) -> str:
+    """Create a namespaced safename."""
     return safename(name["namespace"]) + "::" + safename(name["classname"])
 
 
@@ -238,8 +259,9 @@ def isArraySchema(v: Any) -> bool:
     return True
 
 
-# The genererator class that is being called in codegen.py
 class CppCodeGen(CodeGenBase):
+    """Generation of C++ code for a given Schema Salad definition."""
+
     def __init__(
         self,
         base: str,
@@ -261,6 +283,7 @@ class CppCodeGen(CodeGenBase):
     def convertTypeToCpp(
         self, type_declaration: Union[List[Any], Dict[str, Any], str]
     ) -> str:
+        """Convert a Schema Salad type to a C++ type."""
         if not isinstance(type_declaration, list):
             return self.convertTypeToCpp([type_declaration])
 
@@ -580,53 +603,3 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node {
 
         self.epilogue(None)
         self.target.close()
-
-
-# If you use this generator on CommonWorkflowLanguage.yml
-# you can use the generated as done in the following code snippet
-#
-#
-##include "generated_code.h"
-##include <iostream>
-#
-# using namespace https___w3id_org_cwl_cwl;
-#
-# int main() {
-#    auto tool = CommandLineTool{};
-#    *tool.cwlVersion = CWLVersion::v1_2;
-#    *tool.id         = "Some id";
-#    *tool.label      = "some label";
-#    *tool.doc        = "documentation that is brief";
-#
-#
-#    {
-#        auto input = CommandInputParameter{};
-#        *input.id = "first";
-#        auto record = CommandInputRecordSchema{};
-#
-#        auto fieldEntry = CommandInputRecordField{};
-#        *fieldEntry.name = "species";
-#
-#        auto species = CommandInputEnumSchema{};
-#        species.symbols->push_back("homo_sapiens");
-#        species.symbols->push_back("mus_musculus");
-#
-#        using ListType = std::vector<std::variant<CWLType, CommandInputRecordSchema, CommandInputEnumSchema, CommandInputArraySchema, std::string>>;
-#        *fieldEntry.type = ListType{species, "null"};
-#
-#        using ListType2 = std::vector<CommandInputRecordField>;
-#        *record.fields = ListType2{fieldEntry};
-#
-#        using ListType3 = std::vector<std::variant<CWLType, CommandInputRecordSchema, CommandInputEnumSchema, CommandInputArraySchema, std::string>>;
-#        *input.type = ListType3{record};
-#
-#        tool.inputs->push_back(input);
-#    }
-#
-#
-#    auto y = toYaml(tool);
-#
-#    YAML::Emitter out;
-#    out << y;
-#    std::cout << out.c_str() << "\n";
-# }

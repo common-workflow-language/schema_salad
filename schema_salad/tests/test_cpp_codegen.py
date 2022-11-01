@@ -1,3 +1,5 @@
+"""Test C++ code generation."""
+
 import os
 import subprocess
 from pathlib import Path
@@ -83,6 +85,7 @@ def cpp_codegen(
     file_uri: str,
     target: Path,
 ) -> None:
+    """Help using the C++ code generation function."""
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
         file_uri
     )
