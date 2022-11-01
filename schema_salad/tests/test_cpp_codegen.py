@@ -75,7 +75,7 @@ def test_cwl_cpp_gen(tmp_path: Path) -> None:
             "label": "some label",
             "doc": "documentation that is brief",
             "cwlVersion": "v1.0",
-            "class": "",  # "CommandLineTool",
+            "class": "CommandLineTool",
         }
     )
     assert exe_yaml == target

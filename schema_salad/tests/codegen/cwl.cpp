@@ -9,7 +9,7 @@ int main() {
    *tool.id         = "Some id";
    *tool.label      = "some label";
    *tool.doc        = "documentation that is brief";
-   //*tool.class_     = CommandLineTool_class_CommandLineTool_class::CommandLineTool;
+   *tool.class_     = "CommandLineTool";
 
    {
        auto input = CommandInputParameter{};
