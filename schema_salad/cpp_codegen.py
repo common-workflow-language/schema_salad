@@ -98,7 +98,7 @@ class ClassDefinition:
             target.write(f"\n{fullInd}{ind}, ".join(extends))
             override = " override"
             virtual = ""
-        target.write(" {{\n")
+        target.write(f" {{\n")
 
         for field in self.fields:
             field.writeDefinition(target, fullInd + ind, ind, self.namespace)
@@ -170,7 +170,7 @@ class EnumDefinition:
             target.write(f"namespace {namespace} {{\n")
         target.write(f"enum class {classname} : unsigned int {{\n{ind}")
         target.write(f",\n{ind}".join(map(safename, self.values)))
-        target.write("\n}};\n")
+        target.write(f"\n}};\n")
         target.write(f"inline auto to_string({classname} v) {{\n")
         target.write(f"{ind}static auto m = std::vector<std::string_view> {{\n")
         target.write(f'{ind}    "')
@@ -181,7 +181,7 @@ class EnumDefinition:
         target.write(f"{ind}return m.at(static_cast<U>(v));\n}}\n")
 
         if len(namespace) > 0:
-            target.write("}}\n")
+            target.write(f"}}\n")
 
         target.write(f"inline void to_enum(std::string_view v, {name}& out) {{\n")
         target.write(
