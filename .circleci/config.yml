@@ -42,12 +42,7 @@ jobs:
           name: cibuildwheel
           command: |
             source .github/workflows/wheel-prep.sh
-            CIBW_ENVIRONMENT="SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH=/project/mypy-stubs SETUPTOOLS_SCM_PRETEND_VERSION=${SETUPTOOLS_SCM_PRETEND_VERSION}"
-            if [ "$CIBW_BUILD" == "*musllinux*" ]; then \
-              export CIBW_ENVIRONMENT+=" CXXFLAGS=-std=c++2a" ; \
-            else \
-              export CIBW_ENVIRONMENT+=" CXXFLAGS=-std=c++20" ; \
-            fi
+            export CIBW_ENVIRONMENT="SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH=/project/mypy-stubs SETUPTOOLS_SCM_PRETEND_VERSION=${SETUPTOOLS_SCM_PRETEND_VERSION}"
             python3 -m cibuildwheel .
             # "/project" is the project path inside the cibuildwheel container itself
 

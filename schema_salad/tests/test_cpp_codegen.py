@@ -14,7 +14,7 @@ from schema_salad.utils import yaml_no_ts
 from .util import cwl_file_uri, get_data
 
 
-def test_cwl_gen(tmp_path: Path) -> None:
+def test_cwl_cpp_gen(tmp_path: Path) -> None:
     """End to end test of C++ generator using the CWL v1.0 schema."""
     src_target = tmp_path / "cwl_v1_0.h"
     exe_target = tmp_path / "cwl_v1_0_test"

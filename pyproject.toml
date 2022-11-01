@@ -5,17 +5,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 write_to = "schema_salad/_version.py"
 
-[[tool.cibuildwheel.overrides]]
-select = "*-musllinux*"
-before-test = "apk add yaml-cpp-dev"
-
-[[tool.cibuildwheel.overrides]]
-select = "*-manylinux*"
-before-test = "(yum install -y epel-release && yum install -y yaml-cpp-devel) || (apt-get update && apt-get install -y libyaml-cpp-dev)"
-
 [tool.cibuildwheel]
 before-build = "python -m pip install -r requirements.txt -r mypy-requirements.txt"
-test-command = "python -m pytest -n 2 -vvv --junitxml=/output/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad"
+test-command = "python -m pytest -n 2 -vvv --junitxml=/output/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad -k 'not test_cwl_cpp_gen'"
 test-requires = "-r test-requirements.txt"
 test-extras = "pycodegen"
 skip = "pp* cp311-*"
