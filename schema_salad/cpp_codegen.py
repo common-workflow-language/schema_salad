@@ -98,7 +98,7 @@ class ClassDefinition:
             target.write(f"\n{fullInd}{ind}, ".join(extends))
             override = " override"
             virtual = ""
-        target.write(f" {{\n")
+        target.write(" {{\n")
 
         for field in self.fields:
             field.writeDefinition(target, fullInd + ind, ind, self.namespace)
@@ -130,7 +130,9 @@ class ClassDefinition:
 
         for field in self.fields:
             fieldname = safename(field.name)
-            target.write(f"{fullInd}{ind}addYamlField(n, \"{field.name}\", toYaml(*{fieldname}));\n")
+            target.write(
+                f'{fullInd}{ind}addYamlField(n, "{field.name}", toYaml(*{fieldname}));\n'
+            )
             # target.write(f"{fullInd}{ind}addYamlIfNotEmpty(n, \"{field.name}\", toYaml(*{fieldname}));\n")
 
         target.write(f"{fullInd}{ind}return n;\n{fullInd}}}\n")
@@ -144,9 +146,9 @@ class FieldDefinition:
         self.optional = optional
 
     def writeDefinition(self, target, fullInd, ind, namespace):
-        name    = safename(self.name)
+        name = safename(self.name)
         # target.write(f"{fullInd}std::unique_ptr<{self.typeStr}> {name} = std::make_unique<{self.typeStr}>();\n")
-        typeStr=self.typeStr.replace(namespace + "::", "");
+        typeStr = self.typeStr.replace(namespace + "::", "")
         target.write(f"{fullInd}heap_object<{typeStr}> {name};\n")
 
 
@@ -170,7 +172,7 @@ class EnumDefinition:
             target.write(f"namespace {namespace} {{\n")
         target.write(f"enum class {classname} : unsigned int {{\n{ind}")
         target.write(f",\n{ind}".join(map(safename, self.values)))
-        target.write(f"\n}};\n")
+        target.write("\n}};\n")
         target.write(f"inline auto to_string({classname} v) {{\n")
         target.write(f"{ind}static auto m = std::vector<std::string_view> {{\n")
         target.write(f'{ind}    "')
@@ -181,7 +183,7 @@ class EnumDefinition:
         target.write(f"{ind}return m.at(static_cast<U>(v));\n}}\n")
 
         if len(namespace) > 0:
-            target.write(f"}}\n")
+            target.write("}}\n")
 
         target.write(f"inline void to_enum(std::string_view v, {name}& out) {{\n")
         target.write(
