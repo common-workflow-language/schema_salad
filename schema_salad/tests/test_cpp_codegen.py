@@ -21,20 +21,26 @@ def test_cwl_gen(tmp_path: Path) -> None:
     assert source
     assert os.path.exists(src_target)
     compiler = os.environ["CXX"] if "CXX" in os.environ else "g++"
+    compiler_flags = (
+        os.environ["CXXFLAGS"] if "CXXFLAGS" in os.environ else "-std=c++20"
+    )
     compile_result = subprocess.run(
         [
             compiler,
             f"-I{str(src_target.parent)}",
-            "-std=c++20",
+            compiler_flags,
             source,
             "-lyaml-cpp",
             "-o",
             str(exe_target),
         ],
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
     assert compile_result.returncode == 0, compile_result.stderr
-    exe_result = subprocess.run([str(exe_target)], capture_output=True, check=True)
+    exe_result = subprocess.run(
+        [str(exe_target)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
+    )
     assert exe_result.returncode == 0, exe_result.stderr
     yaml = yaml_no_ts()
     exe_yaml = yaml.load(exe_result.stdout)
