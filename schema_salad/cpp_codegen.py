@@ -373,13 +373,6 @@ class CppCodeGen(CodeGenBase):
             return safename(namespace) + "::" + safename(classname)
 
         type_declaration = list(map(self.convertTypeToCpp, type_declaration))
-
-        # make sure that monostate is the first entry
-        if "std::monostate" in type_declaration:
-            type_declaration.remove("std::monostate")
-            if len(type_declaration) == 0:
-                raise SchemaException("must have at least one non 'null' field type")
-
         type_declaration = ", ".join(type_declaration)
         return f"std::variant<{type_declaration}>"
 
