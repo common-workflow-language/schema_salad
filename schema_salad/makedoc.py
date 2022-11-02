@@ -97,7 +97,7 @@ def markdown_list_hook(markdown, text, state):
     ```markdown
     * some list
     * item with
-    paragragh
+    paragraph
     * other item
     ```
 
@@ -144,7 +144,17 @@ def markdown_list_hook(markdown, text, state):
         indent_prefix = match.group("indent")
         if indent_prefix:
             intend_list = text[start:end]
-            intend_list = "\n".join([line.strip() for line in intend_list.split("\n")])
+            intend_list = "\n".join(
+                [
+                    line.strip()
+                    for line in intend_list.split("\n")
+                    # mistune is having trouble understanding list items
+                    # if they are separated by an additional line in between
+                    # ignore empty lines to group items together,
+                    # avoiding split into distinct list after injecting <p> tags
+                    if line.strip()
+                ]
+            )
             intend_list, _ = markdown_list_hook(markdown, intend_list, state)
             intend_list = "\n".join(
                 [indent_prefix + line for line in intend_list.split("\n")]
@@ -165,8 +175,18 @@ def markdown_list_hook(markdown, text, state):
             )
             other = match.group("other_lines")
             if other:
-                other = [line.strip() for line in other.split("\n")]
-                result += indent.join(other)
+                other = indent.join(
+                    [
+                        line.strip()
+                        for line in other.split("\n")
+                        # mistune is having trouble understanding list items
+                        # if they are separated by an additional line in between
+                        # ignore empty lines to group items together,
+                        # avoiding split into distinct list after injecting <p> tags
+                        if line.strip()
+                    ]
+                )
+                result += indent + other
             result += match.group("remain") + "\n"
 
         begin = end + 1
