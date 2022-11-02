@@ -1,5 +1,6 @@
 from typing import Iterable, Optional, Union
 
+from mistune._types import *
 from mistune.inline_parser import RendererT
 from mistune.markdown import Markdown, ParseHook, RenderHook
 from mistune.plugins import Plugin, PluginName

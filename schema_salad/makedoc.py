@@ -30,6 +30,8 @@ from .validate import avro_type_name
 
 if TYPE_CHECKING:
     # avoid import error since typing stubs do not exist in actual package
+    from mistune import State
+    from mistune.markdown import Markdown
     from mistune.plugins import PluginName
 
 _logger = logging.getLogger("salad")
@@ -78,6 +80,99 @@ class MyRenderer(mistune.renderers.HTMLRenderer):
             '<table class="table table-striped">\n<thead>{}</thead>\n'
             "<tbody>\n{}</tbody>\n</table>\n"
         ).format(header, body)
+
+
+def markdown_list_hook(markdown, text, state):
+    # type: (Markdown, str, State) -> Tuple[str, State]
+    """Hook that patches problematic Markdown lists for later HTML generation.
+
+    When a Markdown list with paragraphs not indented with the list
+    markers (no spaces before following lines), ``mistune`` v2 does
+    not handle them correctly. This is however permitted as per
+    https://daringfireball.net/projects/markdown/syntax#list
+
+    For example:
+
+    ```markdown
+    * some list
+    * item with
+    paragragh
+    * other item
+    ```
+
+    Similarly, lists that are completely indented or that posses nested lists
+    produce incorrect HTML ``<p>``/``<li>`` tag combinations.
+
+    Because list parsing is deeply nested within ``mistune.block_parser.BlockParser``
+    and that there is no easy way to override utility functions it employs to adjust
+    patterns of list items without reimplementing it or a lot of monkey patching,
+    instead catch the problem cases before rendering and adjust them with a hook.
+
+    See https://github.com/lepture/mistune/issues/296
+    and https://github.com/common-workflow-language/schema_salad/pull/619
+    """
+    pattern = re.compile(
+        r"^"
+        r"(?P<before>\n*)"  # detect newline to start capture on bullet line
+        r"(?P<indent>\s*)"
+        r"(?P<bullet>[0-9]+[.)]?|[*-])"
+        r"(?P<spacing>\s+)"
+        r"(?P<first_line>.*)"
+        # if more than one empty line is found, end search (paragraph after list)
+        r"(?!\n\s*\n\s*)"
+        # otherwise, find all lines part of the same bullet item
+        # if this bullet item is indented (nested list), match indents to collect
+        # use negative lookahead to avoid over capturing following bullets
+        r"(?P<other_lines>(?:\n\s*(?![0-9]+[.)]+|[*-])(?P=indent).*)+)*"
+        # because of negative lookahead logic, there is sometimes a remaining
+        # trailing character to capture on the last list item line
+        r"(?P<remain>.*)",
+        re.MULTILINE,
+    )
+    matches = list(re.finditer(pattern, text))
+    if not matches:
+        return text, state
+    result = ""
+    begin = 0
+    for match in matches:
+        start, end = match.start(), match.end()
+        start += len(match.group("before"))
+        result += text[begin:start]  # add text in between matched lists
+
+        # process and indented list (de-indent, apply fixes, and re-indent)
+        indent_prefix = match.group("indent")
+        if indent_prefix:
+            intend_list = text[start:end]
+            intend_list = [line.strip() for line in intend_list.split("\n")]
+            intend_list = "\n".join(intend_list)
+            intend_list, _ = markdown_list_hook(markdown, intend_list, state)
+            intend_list = [indent_prefix + line for line in intend_list.split("\n")]
+            intend_list = "\n".join(intend_list)
+            result += intend_list + "\n"
+        # process a plain list
+        # pad extra spaces to multi-lines items contents after bullet
+        else:
+            item = (
+                match.group("indent") +
+                match.group("bullet") +
+                match.group("spacing")
+            )
+            result += item + match.group("first_line")
+            indent = (
+                "\n" +
+                match.group("indent").split("\n")[-1] +
+                (" " * len(match.group("bullet"))) +
+                match.group("spacing")
+            )
+            other = match.group("other_lines")
+            if other:
+                other = [line.strip() for line in other.split("\n")]
+                result += indent.join(other)
+            result += match.group("remain") + "\n"
+
+        begin = end + 1
+    result += text[begin:]
+    return result, state
 
 
 def to_id(text: str) -> str:
@@ -435,12 +530,13 @@ class RenderType:
         # if escape active, wraps literal HTML into '<p> {HTML} </p>'
         # we must pass it to both since 'MyRenderer' is predefined
         escape_html = False
-        doc = mistune.markdown(
-            doc,
+        markdown2html = mistune.create_markdown(
             renderer=MyRenderer(escape=escape_html),
             plugins=plugins,
             escape=escape_html,
         )
+        markdown2html.before_parse_hooks.append(markdown_list_hook)
+        doc = markdown2html(doc)
 
         if f["type"] == "record":
             doc += "<h3>Fields</h3>"
@@ -480,7 +576,7 @@ class RenderType:
                     self.typefmt(
                         tp, self.redirects, jsonldPredicate=i.get("jsonldPredicate")
                     ),
-                    mistune.markdown(desc),
+                    markdown2html(desc),
                 )
                 if opt:
                     required.append(tr)
