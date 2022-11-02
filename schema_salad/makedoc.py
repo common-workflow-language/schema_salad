@@ -144,28 +144,24 @@ def markdown_list_hook(markdown, text, state):
         indent_prefix = match.group("indent")
         if indent_prefix:
             intend_list = text[start:end]
-            intend_list = "\n".join([
-                line.strip() for line in intend_list.split("\n")
-            ])
+            intend_list = "\n".join([line.strip() for line in intend_list.split("\n")])
             intend_list, _ = markdown_list_hook(markdown, intend_list, state)
-            intend_list = "\n".join([
-                indent_prefix + line for line in intend_list.split("\n")
-            ])
+            intend_list = "\n".join(
+                [indent_prefix + line for line in intend_list.split("\n")]
+            )
             result += intend_list + "\n"
         # process a plain list
         # pad extra spaces to multi-lines items contents after bullet
         else:
             item = (
-                match.group("indent") +
-                match.group("bullet") +
-                match.group("spacing")
+                match.group("indent") + match.group("bullet") + match.group("spacing")
             )
             result += item + match.group("first_line")
             indent = (
-                "\n" +
-                match.group("indent").split("\n")[-1] +
-                (" " * len(match.group("bullet"))) +
-                match.group("spacing")
+                "\n"
+                + match.group("indent").split("\n")[-1]
+                + (" " * len(match.group("bullet")))
+                + match.group("spacing")
             )
             other = match.group("other_lines")
             if other:
