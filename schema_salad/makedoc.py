@@ -124,7 +124,9 @@ def markdown_list_hook(markdown, text, state):
         # otherwise, find all lines part of the same bullet item
         # if this bullet item is indented (nested list), match indents to collect
         # use negative lookahead to avoid over capturing following bullets
-        r"(?P<other_lines>(?:\n\s*(?![0-9]+[.)]+|[*-])(?P=indent).*)+)*"
+        r"(?P<other_lines>(?:\n\s*(?![0-9]+[.)]+|[*-])(?P=indent).*"
+        r"(?!\n\s*\n\s*)"  # avoid match past list on last indented line
+        r")+)*"  # end 'other_lines'
         # because of negative lookahead logic, there is sometimes a remaining
         # trailing character to capture on the last list item line
         r"(?P<remain>.*)",
@@ -156,6 +158,8 @@ def markdown_list_hook(markdown, text, state):
                 ]
             )
             intend_list, _ = markdown_list_hook(markdown, intend_list, state)
+            # remove final newline from other if/else branch
+            intend_list = intend_list.rstrip()
             intend_list = "\n".join(
                 [indent_prefix + line for line in intend_list.split("\n")]
             )
@@ -186,7 +190,7 @@ def markdown_list_hook(markdown, text, state):
                         if line.strip()
                     ]
                 )
-                result += indent + other
+                result += other
             result += match.group("remain") + "\n"
 
         begin = end + 1
