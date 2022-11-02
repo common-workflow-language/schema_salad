@@ -22,7 +22,7 @@ def test_load_schema_cache() -> None:
     path1 = get_data("tests/test_schema/misc_schema_v1.yml")
     assert path1
 
-    with open(path1, "rt") as f:
+    with open(path1) as f:
         cache1: Optional[Dict[str, Union[str, Graph, bool]]] = {schemaid: f.read()}
 
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
@@ -34,7 +34,7 @@ def test_load_schema_cache() -> None:
     path2 = get_data("tests/test_schema/misc_schema_v2.yml")
     assert path2
 
-    with open(path2, "rt") as f:
+    with open(path2) as f:
         cache2: Optional[Dict[str, Union[str, Graph, bool]]] = {schemaid: f.read()}
 
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
