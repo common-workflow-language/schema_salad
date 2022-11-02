@@ -69,6 +69,7 @@ class MyRenderer(mistune.renderers.HTMLRenderer):
     """Custom renderer with different representations of selected HTML tags."""
 
     def heading(self, text: str, level: int) -> str:
+        """Override HTML heading creation with text IDs."""
         return (
             """<h{} id="{}" class="section">{} <a href="#{}">&sect;</a></h{}>""".format(
                 level, to_id(text), text, to_id(text), level
@@ -84,7 +85,7 @@ class MyRenderer(mistune.renderers.HTMLRenderer):
 
 def markdown_list_hook(markdown, text, state):
     # type: (Markdown, str, State) -> Tuple[str, State]
-    """Hook that patches problematic Markdown lists for later HTML generation.
+    """Patches problematic Markdown lists for later HTML generation.
 
     When a Markdown list with paragraphs not indented with the list
     markers (no spaces before following lines), ``mistune`` v2 does
