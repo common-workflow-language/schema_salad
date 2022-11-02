@@ -84,7 +84,7 @@ class MyRenderer(mistune.renderers.HTMLRenderer):
 
 
 def markdown_list_hook(markdown, text, state):
-    # type: (Markdown, str, State) -> Tuple[str, State]
+    # type: (Markdown[str, Any], str, State) -> Tuple[str, State]
     """Patches problematic Markdown lists for later HTML generation.
 
     When a Markdown list with paragraphs not indented with the list
@@ -144,11 +144,13 @@ def markdown_list_hook(markdown, text, state):
         indent_prefix = match.group("indent")
         if indent_prefix:
             intend_list = text[start:end]
-            intend_list = [line.strip() for line in intend_list.split("\n")]
-            intend_list = "\n".join(intend_list)
+            intend_list = "\n".join([
+                line.strip() for line in intend_list.split("\n")
+            ])
             intend_list, _ = markdown_list_hook(markdown, intend_list, state)
-            intend_list = [indent_prefix + line for line in intend_list.split("\n")]
-            intend_list = "\n".join(intend_list)
+            intend_list = "\n".join([
+                indent_prefix + line for line in intend_list.split("\n")
+            ])
             result += intend_list + "\n"
         # process a plain list
         # pad extra spaces to multi-lines items contents after bullet
@@ -535,7 +537,7 @@ class RenderType:
             renderer=MyRenderer(escape=escape_html),
             plugins=plugins,
             escape=escape_html,
-        )
+        )  # type: Markdown[str, Any]
         markdown2html.before_parse_hooks.append(markdown_list_hook)
         doc = markdown2html(doc)
 

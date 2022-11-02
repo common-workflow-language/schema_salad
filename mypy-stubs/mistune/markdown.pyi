@@ -7,7 +7,7 @@ from mistune.plugins import Plugin
 from mistune.renderers import BaseRenderer, DataT
 
 Tokens = List[Dict[str, Any]]
-ParseHook = Callable[[Markdown[DataT, RendererT], Match[str], State], Tuple[str, State]]
+ParseHook = Callable[[Markdown[DataT, RendererT], DataT, State], Tuple[str, State]]
 RenderHook = Callable[[Markdown[DataT, RendererT], Tokens, State], Tokens]
 
 class Markdown(Generic[DataT, RendererT]):
