@@ -7,7 +7,7 @@ write_to = "schema_salad/_version.py"
 
 [tool.cibuildwheel]
 before-build = "python -m pip install -r requirements.txt -r mypy-requirements.txt"
-test-command = "python -m pytest -n 2 -vvv --junitxml=/output/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad -k 'not test_cwl_cpp_gen'"
+test-command = "python -m pytest -n 2 --junitxml=/output/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad"
 test-requires = "-r test-requirements.txt"
 test-extras = "pycodegen"
 skip = "pp* cp311-*"

@@ -9,7 +9,6 @@ include schema_salad/tests/test_schema/*.md
 include schema_salad/tests/test_schema/*.yml
 include schema_salad/tests/test_schema/*.cwl
 include schema_salad/tests/foreign/*.cwl
-include schema_salad/tests/codegen/*.cpp
 recursive-include schema_salad/tests/test_real_cwl *
 include schema_salad/metaschema/*
 include schema_salad/tests/docimp/*

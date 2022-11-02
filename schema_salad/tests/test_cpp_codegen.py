@@ -22,63 +22,6 @@ def test_cwl_cpp_gen(tmp_path: Path) -> None:
     source = get_data("tests/codegen/cwl.cpp")
     assert source
     assert os.path.exists(src_target)
-    compiler = os.environ["CXX"] if "CXX" in os.environ else "g++"
-    compiler_flags = (
-        os.environ["CXXFLAGS"] if "CXXFLAGS" in os.environ else "-std=c++20"
-    )
-    compile_result = subprocess.run(
-        [
-            compiler,
-            f"-I{str(src_target.parent)}",
-            compiler_flags,
-            source,
-            "-lyaml-cpp",
-            "-o",
-            str(exe_target),
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    assert compile_result.returncode == 0, compile_result.stderr
-    exe_result = subprocess.run(
-        [str(exe_target)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
-    )
-    assert exe_result.returncode == 0, exe_result.stderr
-    yaml = yaml_no_ts()
-    exe_yaml = yaml.load(exe_result.stdout)
-    target = cmap(
-        {
-            "id": "Some id",
-            "inputs": [
-                {
-                    "id": "first",
-                    "type": [
-                        {
-                            "type": "record",
-                            "fields": [
-                                {
-                                    "name": "species",
-                                    "type": [
-                                        {
-                                            "type": "enum",
-                                            "symbols": ["homo_sapiens", "mus_musculus"],
-                                        },
-                                        "null",
-                                    ],
-                                }
-                            ],
-                        }
-                    ],
-                }
-            ],
-            "outputs": [],
-            "label": "some label",
-            "doc": "documentation that is brief",
-            "cwlVersion": "v1.0",
-            "class": "CommandLineTool",
-        }
-    )
-    assert exe_yaml == target
 
 
 def cpp_codegen(
