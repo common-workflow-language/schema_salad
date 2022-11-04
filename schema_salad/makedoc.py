@@ -222,8 +222,8 @@ def markdown_list_hook(markdown, text, state):
                     # only apply the extra space if items are actually
                     # 2 words to avoid incorrect split of compound words
                     # (e.g.: "key-value", not "key- value").
-                    re.match(r".*[0-9a-z]$", result[-2:], re.I)
-                    and re.match(r"^[0-9a-z].*", other[:2], re.I)
+                    re.match(r".*[^-]$", result[-2:], re.I)
+                    and re.match(r"^[^-].*", other[:2], re.I)
                 ):
                     result += " "
                 result += other

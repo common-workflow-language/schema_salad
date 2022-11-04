@@ -33,14 +33,19 @@ def test_schema_salad_inherit_docs() -> None:
     assert 1 == stdout.getvalue().count("Parent ID")
 
 
-@pytest.fixture
-def metaschema_doc() -> str:
-    """Pytest Fixture of the rendered HTML for the metaschema schema."""
+def generate_doc() -> str:
+    """Avoid error when calling fixture directly."""
     schema_path = get_data("schema_salad/metaschema/metaschema.yml")
     assert schema_path
     stdout = StringIO()
     makedoc(stdout, schema_path)
     return stdout.getvalue()
+
+
+@pytest.fixture
+def metaschema_doc() -> str:
+    """Pytest Fixture of the rendered HTML for the metaschema schema."""
+    return generate_doc()
 
 
 def test_doc_headings_target_anchor(metaschema_doc: str) -> None:
@@ -124,22 +129,22 @@ def test_detect_changes_in_html(metaschema_doc: str) -> None:
     # hash value below.
     #
     # Otherwise, follow this procedure verify that the changed HTML rendering
-    # is acceptable:
+    # is acceptable (or use make 'check-metaschema-diff' and 'compute-metaschema-hash'):
     # 1. Render the metaschema schema into using an older, known-working version
     #    of schema-salad:
-    #    `schema-salad-doc schema_salad/metaschema/metaschem.yml > metaschema.orig.html`
-    # 1. Render the metaschema schema into using proposed changed codebase
-    #    `schema-salad-doc schema_salad/metaschema/metaschem.yml > metaschema.new.html`
-    # 2. Confirm the other tests in this file pass using the new code/mistune,
+    #    `schema-salad-doc schema_salad/metaschema/metaschema.yml > /tmp/metaschema.orig.html`
+    # 2. Render the metaschema schema into using proposed changed codebase
+    #    `schema-salad-doc schema_salad/metaschema/metaschema.yml > /tmp/metaschema.new.html`
+    # 3. Confirm the other tests in this file pass using the new code/mistune,
     #    adjusting the test strings if the changes are truly innocent.
-    # 3. Check the `diff` between the saved HTML pages to check for obvious problems
-    #    `diff metaschema.orig.html metaschema.new.html`
-    # 4. Check the HTML in both Firefox and Chrome, especially near areas
+    # 4. Check the `diff` between the saved HTML pages to check for obvious problems
+    #    `diff /tmp/metaschema.orig.html /tmp/metaschema.new.html`
+    # 5. Check the HTML in both Firefox and Chrome, especially near areas
     #    of differences in the diff
-    # 5. If the changes are agreeable, then update the hash below
+    # 6. If the changes are agreeable, then update the hash below
     hasher = hashlib.sha256()
     hasher.update(metaschema_doc.encode("utf-8"))
     assert (
         hasher.hexdigest()
-        == "6fdb6cc7a6c29538da5ba8778d6557d7e0a6ace0a0a4c18fc99e154265adf1bd"
+        == "8cb3b6e45e023c916babae2e6bdf6ae9482cb60cb9e81bb82212863eaee0f2e1"
     )

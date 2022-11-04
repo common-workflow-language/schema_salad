@@ -185,6 +185,27 @@ mypy_3.6: $(filter-out setup.py,$(PYSOURCES))
 mypyc: $(PYSOURCES)
 	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python setup.py test
 
+mypyi:
+	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python setup.py install
+
+check-metaschema-diff:
+	docker run -v "$(realpath ${MODULE}/metaschema/):/tmp/:ro" \
+		"quay.io/commonwl/cwltool_module:latest" \
+		schema-salad-doc /tmp/metaschema.yml > /tmp/metaschema.orig.html
+	schema-salad-doc "$(realpath ${MODULE}/metaschema/metaschema.yml)" > /tmp/metaschema.new.html
+	diff --color /tmp/metaschema.orig.html /tmp/metaschema.new.html
+
+compute-metaschema-hash:
+	@python -c ' \
+        import hashlib; \
+        from schema_salad.tests.test_makedoc import generate_doc; \
+        doc = generate_doc(); \
+        hasher = hashlib.sha256(); \
+        hasher.update(doc.encode("utf-8")); \
+        hash = hasher.hexdigest(); \
+        print(hash); \
+    '
+
 shellcheck: FORCE
 	shellcheck build-schema_salad-docker.sh release-test.sh
 
