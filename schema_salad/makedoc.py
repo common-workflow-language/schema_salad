@@ -23,6 +23,7 @@ from urllib.parse import urldefrag
 
 import mistune
 import mistune.renderers
+import mistune.util
 
 from .exceptions import SchemaSaladException, ValidationException
 from .schema import avro_field_name, extend_and_specialize, get_metaschema
@@ -79,20 +80,30 @@ class MyRenderer(mistune.renderers.HTMLRenderer):
 
     def text(self, text: str) -> str:
         """Don't escape quotation marks."""
-        if self._escape:
-            return mistune.util.escape(text, quote=False)
-        return html.escape(html.unescape(text), quote=False).replace("&#x27;", "'")
+        # avoid convert of & if already escaped
+        text = html.unescape(text)
+        # html.escape does both single/double quotes ('/")
+        # mistune.util.escape does only double quotes
+        return html.escape(text, quote=self._escape)
+
+    def inline_html(self, html: str) -> str:
+        """Don't escape characters in predefined HTML within paragraph tags."""
+        return html + "\n"
+
+    def block_html(self, html: str) -> str:
+        """Don't escape characters nor wrap predefined HTML within paragraph tags."""
+        return html + "\n"
 
     def block_code(self, code: str, info: Optional[str] = None) -> str:
         """Don't escape quotation marks."""
-        html = "<pre><code"
+        text = "<pre><code"
         if info is not None:
             info = info.strip()
         if info:
             lang = info.split(None, 1)[0]
             lang = mistune.util.escape_html(lang)
-            html += ' class="language-' + lang + '"'
-        return html + ">" + mistune.util.escape(code, quote=False) + "</code></pre>\n"
+            text += ' class="language-' + lang + '"'
+        return text + ">" + html.escape(code, quote=self._escape) + "</code></pre>\n"
 
 
 def markdown_list_hook(markdown, text, state):
@@ -202,6 +213,19 @@ def markdown_list_hook(markdown, text, state):
                         if line.strip()
                     ]
                 )
+                # Add a single space to ensure words remain separated.
+                # If we use newline/indent like in other lines above, mistune
+                # splits the items into 2 lists. Although technically the Markdown
+                # will have an extra space, spacing will be patched when generating
+                # the HTML whether newline or space was used.
+                if (
+                    # only apply the extra space if items are actually
+                    # 2 words to avoid incorrect split of compound words
+                    # (e.g.: "key-value", not "key- value").
+                    re.match(r".*[0-9a-z]$", result[-2:], re.I)
+                    and re.match(r"^[0-9a-z].*", other[:2], re.I)
+                ):
+                    result += " "
                 result += other
             result += match.group("remain") + "\n"
 

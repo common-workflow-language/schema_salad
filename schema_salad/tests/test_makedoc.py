@@ -94,15 +94,17 @@ def test_multiline_list_entries_without_indention(metaschema_doc: str) -> None:
     """Hanging indents are not required in Markdown lists."""
     # See https://daringfireball.net/projects/markdown/syntax#list
     # and https://spec.commonmark.org/0.30/#example-290
+    # Some newlines in markdown are replaced by spaces purposely
+    # to avoid invalid Markdown->HTML conversion as preserve words separated.
     assert (
-        "<li><p>At least one record definition object which defines valid fields that\n"
+        "<li><p>At least one record definition object which defines valid fields that "  # purposely no \n
         "make up a record type.  Record field definitions include the valid types\n"
         "that may be assigned to each field and annotations to indicate fields\n"
         'that represent identifiers and links, described below in "Semantic\n'
         'Annotations".</p>\n'
         "</li>\n"
         "<li><p>Any number of enumerated type objects which define a set of finite "
-        "set of symbols that are\n"
+        "set of symbols that are "  # purposely no \n
         "valid value of the type.</p>\n"
         "</li>\n"
         "<li><p>Any number of documentation objects which allow in-line "
