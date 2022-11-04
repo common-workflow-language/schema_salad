@@ -1,5 +1,6 @@
 import argparse
 import copy
+import html
 import logging
 import os
 import re
@@ -76,11 +77,22 @@ class MyRenderer(mistune.renderers.HTMLRenderer):
             )
         )
 
-    def table(self, header: str, body: str) -> str:
-        return (
-            '<table class="table table-striped">\n<thead>{}</thead>\n'
-            "<tbody>\n{}</tbody>\n</table>\n"
-        ).format(header, body)
+    def text(self, text: str) -> str:
+        """Don't escape quotation marks."""
+        if self._escape:
+            return mistune.util.escape(text, quote=False)
+        return html.escape(html.unescape(text), quote=False).replace("&#x27;", "'")
+
+    def block_code(self, code: str, info: Optional[str] = None) -> str:
+        """Don't escape quotation marks."""
+        html = "<pre><code"
+        if info is not None:
+            info = info.strip()
+        if info:
+            lang = info.split(None, 1)[0]
+            lang = mistune.util.escape_html(lang)
+            html += ' class="language-' + lang + '"'
+        return html + ">" + mistune.util.escape(code, quote=False) + "</code></pre>\n"
 
 
 def markdown_list_hook(markdown, text, state):

@@ -43,7 +43,7 @@ def metaschema_doc() -> str:
     return stdout.getvalue()
 
 
-def test_doc_headings_target_anchor(metaschema_doc) -> None:
+def test_doc_headings_target_anchor(metaschema_doc: str) -> None:
     """Doc headers must have an id and section link."""
     assert (
         '<h1 id="Abstract" class="section">Abstract '
@@ -51,12 +51,12 @@ def test_doc_headings_target_anchor(metaschema_doc) -> None:
     )
 
 
-def test_doc_render_table_of_contents(metaschema_doc) -> None:
+def test_doc_render_table_of_contents(metaschema_doc: str) -> None:
     """The special Table of Contents token must be replaced with a rendered table."""
     assert "!--ToC--" not in metaschema_doc
 
 
-def test_plain_links_autolinked(metaschema_doc) -> None:
+def test_plain_links_autolinked(metaschema_doc: str) -> None:
     """Plan links should be treated as if they were wrapped in angle brackets."""
     assert (
         "This document is the product of the "
@@ -77,7 +77,7 @@ def test_embedded_html_unescaped() -> None:
     assert "&lt;table class=&quot;table&quot;&gt;" not in html
 
 
-def test_multiline_list_entries_word_spacing(metaschema_doc) -> None:
+def test_multiline_list_entries_word_spacing(metaschema_doc: str) -> None:
     """Hanging indents in Markdown lists don't lead to wordsmushing."""
     assert "as itis poorly documented" not in metaschema_doc
     assert "base URI for the document used toresolve relative" not in metaschema_doc
@@ -90,7 +90,7 @@ def test_multiline_list_entries_word_spacing(metaschema_doc) -> None:
     assert "set of symbols that arevalid value" not in metaschema_doc
 
 
-def test_multiline_list_entries_without_indention(metaschema_doc) -> None:
+def test_multiline_list_entries_without_indention(metaschema_doc: str) -> None:
     """Hanging indents are not required in Markdown lists."""
     # See https://daringfireball.net/projects/markdown/syntax#list
     # and https://spec.commonmark.org/0.30/#example-290
@@ -115,7 +115,7 @@ def test_multiline_list_entries_without_indention(metaschema_doc) -> None:
     )
 
 
-def test_detect_changes_in_html(metaschema_doc) -> None:
+def test_detect_changes_in_html(metaschema_doc: str) -> None:
     """Catch all for changes in HTML output, please adjust if the changes are innocent."""
     # If the hash changed because the metaschema itself changed (without changes
     # to makedoc.py or the version of mistune) then you can directly update the
