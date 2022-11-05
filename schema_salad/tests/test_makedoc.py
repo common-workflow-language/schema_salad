@@ -42,8 +42,8 @@ def generate_doc() -> str:
     return stdout.getvalue()
 
 
-@pytest.fixture
-def metaschema_doc() -> str:
+@pytest.fixture(scope="session", name="metaschema_doc")
+def fixture_metaschema_doc() -> str:
     """Pytest Fixture of the rendered HTML for the metaschema schema."""
     return generate_doc()
 
@@ -100,7 +100,7 @@ def test_multiline_list_entries_without_indention(metaschema_doc: str) -> None:
     # See https://daringfireball.net/projects/markdown/syntax#list
     # and https://spec.commonmark.org/0.30/#example-290
     # Some newlines in markdown are replaced by spaces purposely
-    # to avoid invalid Markdown->HTML conversion as preserve words separated.
+    # to avoid invalid Markdown to HTML conversion as preserve words separated.
     assert (
         "<li><p>At least one record definition object which defines valid fields that "  # purposely no \n
         "make up a record type.  Record field definitions include the valid types\n"
