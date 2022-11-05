@@ -146,5 +146,5 @@ def test_detect_changes_in_html(metaschema_doc: str) -> None:
     hasher.update(metaschema_doc.encode("utf-8"))
     assert (
         hasher.hexdigest()
-        == "8cb3b6e45e023c916babae2e6bdf6ae9482cb60cb9e81bb82212863eaee0f2e1"
+        == "eec7ce9f289daa68782bb125ff2a545afa239c564c704851bbb601653e4c9e5e"
     )

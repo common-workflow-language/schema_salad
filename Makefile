@@ -189,11 +189,15 @@ mypyi:
 	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python setup.py install
 
 check-metaschema-diff:
-	docker run -v "$(realpath ${MODULE}/metaschema/):/tmp/:ro" \
+	docker run \
+		-v "$(realpath ${MODULE}/metaschema/):/tmp/:ro" \
 		"quay.io/commonwl/cwltool_module:latest" \
-		schema-salad-doc /tmp/metaschema.yml > /tmp/metaschema.orig.html
-	schema-salad-doc "$(realpath ${MODULE}/metaschema/metaschema.yml)" > /tmp/metaschema.new.html
-	diff --color /tmp/metaschema.orig.html /tmp/metaschema.new.html
+		schema-salad-doc /tmp/metaschema.yml \
+		> /tmp/metaschema.orig.html
+	schema-salad-doc \
+		"$(realpath ${MODULE}/metaschema/metaschema.yml)" \
+		> /tmp/metaschema.new.html
+	diff -a --color /tmp/metaschema.orig.html /tmp/metaschema.new.html || true
 
 compute-metaschema-hash:
 	@python -c ' \
