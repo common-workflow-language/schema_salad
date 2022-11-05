@@ -451,7 +451,7 @@ export enum {enum_name} {{
             for sym in type_declaration["symbols"]:
                 val = self.safe_name(sym)
                 const = self.safe_name(sym).replace("-", "_").replace(".", "_").upper()
-                f.write("""  {const}='{val}',\n""".format(const=const, val=val))
+                f.write(f"""  {const}='{val}',\n""")
             f.write(
                 """}
 """
@@ -786,7 +786,7 @@ export enum {enum_name} {{
 
         sorted_modules = sorted(self.modules)
         internal_module_exports = "\n".join(
-            "export * from '../{}'".format(f) for f in sorted_modules
+            f"export * from '../{f}'" for f in sorted_modules
         )
 
         example_tests = ""

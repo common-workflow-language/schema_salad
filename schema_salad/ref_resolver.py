@@ -411,31 +411,29 @@ class Loader:
         if not base_url:
             base_url = file_uri(os.getcwd()) + "/"
 
-        sl = SourceLine(None, None)
         # If `ref` is a dict, look for special directives.
         if isinstance(lref, CommentedMap):
             obj = lref
             if "$import" in obj:
-                sl = SourceLine(obj, "$import")
                 if len(obj) == 1:
                     lref = obj["$import"]
                     obj = None
                 else:
                     raise ValidationException(
-                        f"'$import' must be the only field in {obj}", sl
+                        f"'$import' must be the only field in {obj}",
+                        SourceLine(obj, "$import"),
                     )
             elif "$include" in obj:
-                sl = SourceLine(obj, "$include")
                 if len(obj) == 1:
                     lref = obj["$include"]
                     inc = True
                     obj = None
                 else:
                     raise ValidationException(
-                        f"'$include' must be the only field in {obj}", sl
+                        f"'$include' must be the only field in {obj}",
+                        SourceLine(obj, "$include"),
                     )
             elif "$mixin" in obj:
-                sl = SourceLine(obj, "$mixin")
                 lref = obj["$mixin"]
                 mixin = obj
                 obj = None
@@ -450,7 +448,7 @@ class Loader:
                         "Object `{}` does not have identifier field in {}".format(
                             obj, self.identifiers
                         ),
-                        sl,
+                        SourceLine(obj),
                     )
 
         if not isinstance(lref, str):
@@ -514,7 +512,8 @@ class Loader:
                 # so if we didn't find the reference earlier then it must not
                 # exist.
                 raise ValidationException(
-                    f"Reference `#{frg}` not found in file `{doc_url}`.", sl
+                    f"Reference `#{frg}` not found in file `{doc_url}`.",
+                    SourceLine(self.idx[doc_url]),
                 )
             doc = self.fetch(
                 doc_url, inject_ids=(not mixin), content_types=content_types
@@ -592,11 +591,10 @@ class Loader:
                                 )
                                 v.lc.filename = document.lc.filename
                             else:
-                                sl = SourceLine(document, idmapField, str)
                                 raise ValidationException(
                                     "mapSubject '{}' value '{}' is not a dict "
                                     "and does not have a mapPredicate.".format(k, v),
-                                    sl,
+                                    SourceLine(document, idmapField),
                                 )
                         else:
                             v = val
@@ -852,7 +850,7 @@ class Loader:
         else:
             return (document, metadata)
 
-        newctx = None  # type: Optional["Loader"]
+        newctx: Optional["Loader"] = None
         if isinstance(document, CommentedMap):
             # Handle $base, $profile, $namespaces, $schemas and $graph
             if "$base" in document:
@@ -867,12 +865,26 @@ class Loader:
             if "$namespaces" in document:
                 if newctx is None:
                     newctx = SubLoader(self)
-                newctx.add_namespaces(document["$namespaces"])
+                namespaces = document["$namespaces"]
+                if isinstance(namespaces, dict):
+                    newctx.add_namespaces(document["$namespaces"])
+                else:
+                    raise ValidationException(
+                        "$namespaces must be a dictionary",
+                        SourceLine(document, "$namespaces"),
+                    )
 
             if "$schemas" in document:
                 if newctx is None:
                     newctx = SubLoader(self)
-                newctx.add_schemas(document["$schemas"], file_base)
+                schemas = document["$schemas"]
+                if isinstance(schemas, (list, str)):
+                    newctx.add_schemas(schemas, file_base)
+                else:
+                    raise ValidationException(
+                        "$schemas must be a string or a list of string",
+                        SourceLine(document, "$schemas"),
+                    )
 
             if newctx is not None:
                 loader = newctx
@@ -1118,14 +1130,13 @@ class Loader:
             iterator = enumerate(document)
         elif isinstance(document, MutableMapping):
             for d in self.url_fields:
-                sl = SourceLine(document, d, str)
                 try:
                     if d in document and d not in self.identity_links:
                         document[d] = self.validate_link(
                             d, document[d], docid, all_doc_ids
                         )
                 except SchemaSaladException as v:
-                    v = v.with_sourceline(sl)
+                    v = v.with_sourceline(SourceLine(document, d, str))
                     if d == "$schemas" or (
                         d in self.foreign_properties and not strict_foreign_properties
                     ):

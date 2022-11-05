@@ -15,6 +15,7 @@ from urllib.parse import urlsplit
 
 from . import schema
 from .codegen_base import CodeGenBase
+from .cpp_codegen import CppCodeGen
 from .dotnet_codegen import DotNetCodeGen
 from .exceptions import SchemaSaladException
 from .java_codegen import JavaCodeGen
@@ -58,15 +59,26 @@ def codegen(
         )
     )
     info = parser_info or pkg
-    if lang == "python":
+    if lang == "python" or lang == "cpp":
         if target:
             dest: Union[TextIOWrapper, TextIO] = open(
                 target, mode="w", encoding="utf-8"
             )
         else:
             dest = sys.stdout
+        if lang == "cpp":
+            gen = CppCodeGen(
+                base,
+                dest,
+                examples,
+                pkg,
+                copyright,
+            )
+            gen.parse(j)
+            return
+        else:
+            gen = PythonCodeGen(dest, copyright=copyright, parser_info=info)
 
-        gen = PythonCodeGen(dest, copyright=copyright, parser_info=info)
     elif lang == "java":
         gen = JavaCodeGen(
             base,

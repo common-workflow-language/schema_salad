@@ -221,7 +221,7 @@ class PythonCodeGen(CodeGenBase):
         field_hashes = []
         for name in field_names:
             field_eqs.append("self.{0} == other.{0}".format(self.safe_name(name)))
-            field_hashes.append("self.{0}".format(self.safe_name(name)))
+            field_hashes.append(f"self.{self.safe_name(name)}")
         field_eq = " and\n                    ".join(field_eqs)
         field_hash = ",\n            ".join(field_hashes)
         self.out.write(field_inits)

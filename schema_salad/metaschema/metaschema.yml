@@ -369,6 +369,7 @@ $graph:
       doc: "Must be `documentation`"
       type:
         type: enum
+        name: Documentation_name
         symbols:
           - "sld:documentation"
       jsonldPredicate:
