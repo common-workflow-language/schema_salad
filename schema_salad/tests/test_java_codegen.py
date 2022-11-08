@@ -22,7 +22,7 @@ def test_cwl_gen(tmp_path: Path) -> None:
 
     java_codegen(cwl_file_uri, target_dir, examples=examples_dir)
     pom_xml_path = target_dir / "pom.xml"
-    assert pom_xml_path.exists
+    assert pom_xml_path.exists()
     tests_dir = (
         target_dir / "src" / "test" / "java" / "org" / "w3id" / "cwl" / "cwl" / "utils"
     )
