@@ -22,7 +22,7 @@ def test_cwl_gen(tmp_path: Path) -> None:
 
     typescript_codegen(cwl_file_uri, target_dir, examples=examples_dir)
     package_json_path = target_dir / "package.json"
-    assert package_json_path.exists
+    assert package_json_path.exists()
     tests_dir = target_dir / "src" / "test"
     assert tests_dir.exists()
     with open(tests_dir / "ExampleTest.ts") as f:
@@ -55,7 +55,7 @@ def test_class_field(tmp_path: Path) -> None:
     typescript_codegen(schema_path, target_dir)
 
     package_json_path = target_dir / "package.json"
-    assert package_json_path.exists
+    assert package_json_path.exists()
 
     tests_dir = target_dir / "src" / "test"
     assert tests_dir.exists()

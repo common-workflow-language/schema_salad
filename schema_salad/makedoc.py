@@ -782,9 +782,7 @@ def makedoc(
         redirect[r.split("=")[0]] = r.split("=")[1]
     renderlist = only or []
     if hasattr(stdout, "buffer") and getattr(stdout, "encoding", None) != "UTF-8":
-        wrapped_stdout: IO[Any] = TextIOWrapper(
-            stdout.buffer, encoding="utf-8"  # type: ignore[attr-defined]
-        )
+        wrapped_stdout: IO[Any] = TextIOWrapper(stdout.buffer, encoding="utf-8")
     else:
         wrapped_stdout = stdout
     avrold_doc(

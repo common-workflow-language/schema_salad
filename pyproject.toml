@@ -10,7 +10,8 @@ before-build = "python -m pip install -r requirements.txt -r mypy-requirements.t
 test-command = "python -m pytest -n 2 --junitxml=/output/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad"
 test-requires = "-r test-requirements.txt"
 test-extras = "pycodegen"
-skip = "pp* cp311-*"
+skip = "pp* cp311-* cp36-*"
+# skip building wheels on Python 3.6 (we now need mypy 0.990+ which doesn't support Python 3.6)
 # ^ skip building wheels on PyPy (any version)
 #   and CPython 3.11 (mypyc doesn't support Python 3.11)
 build-verbosity = "1"
