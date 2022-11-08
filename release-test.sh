@@ -63,7 +63,7 @@ rm -f lib/python-wheels/setuptools* \
 # The following can fail if you haven't pushed your commits to ${repo}
 pip install -e "git+${repo}@${HEAD}#egg=${package}${extras}"
 pushd src/${package}
-pip install -rtest-requirements.txt
+pip install -rtest-requirements.txt build
 make dist
 make test
 cp dist/${package}*tar.gz ../../../testenv3/
@@ -84,7 +84,7 @@ rm -f lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \
         && pip install setuptools==${setuptoolsver} wheel
 package_tar=$(find . -name "${package}*tar.gz")
-pip install "-r${DIR}/test-requirements.txt"
+pip install "-r${DIR}/test-requirements.txt" build
 pip install "${package_tar}${extras}"
 mkdir out
 tar --extract --directory=out -z -f ${package}*.tar.gz
