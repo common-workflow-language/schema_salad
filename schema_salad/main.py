@@ -119,7 +119,7 @@ def arg_parser() -> argparse.ArgumentParser:
         metavar="dotted.package",
         default=None,
         help="Optional override of the package name which is other derived "
-        "from the base URL (Java only).",
+        "from the base URL (Java and Dlang only).",
     ),
 
     parser.add_argument(
@@ -135,7 +135,7 @@ def arg_parser() -> argparse.ArgumentParser:
         metavar="parser_info",
         type=str,
         default=None,
-        help="Optional parser name which is accessible via resulted parser API (Python only)",
+        help="Optional parser name which is accessible via resulted parser API (Python and Dlang only)",
     )
 
     exgroup.add_argument(
