@@ -33,7 +33,18 @@ from .utils import aslist
 
 def replaceKeywords(s: str) -> str:
     """Rename keywords that are reserved in C++."""
-    if s in ("class", "enum", "int", "long", "float", "double", "default"):
+    if s in (
+        "class",
+        "enum",
+        "int",
+        "long",
+        "float",
+        "double",
+        "default",
+        "stdin",
+        "stdout",
+        "stderr",
+    ):
         s = s + "_"
     return s
 
