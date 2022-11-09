@@ -102,7 +102,7 @@ def arg_parser() -> argparse.ArgumentParser:
         "--codegen-target",
         type=str,
         default=None,
-        help="Defaults to sys.stdout for Python/C++ and ./ for " "Java/TypeScript/.Net",
+        help="Defaults to sys.stdout for Python/C++/Dlang and ./ for " "Java/TypeScript/.Net",
     )
 
     parser.add_argument(
@@ -110,7 +110,7 @@ def arg_parser() -> argparse.ArgumentParser:
         type=str,
         metavar="directory",
         default=None,
-        help="Directory of example documents for test case generation (Java/TypeScript/.Net only).",
+        help="Directory of example documents for test case generation (Java/TypeScript/.Net/Dlang only).",
     )
 
     parser.add_argument(

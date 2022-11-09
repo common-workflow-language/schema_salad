@@ -60,6 +60,7 @@ import salad.type : None, Either;
 enum parserInfo = "{self.parser_info}";
 ''')
 
+
     def epilogue(self, root_loader: TypeDef) -> None:
         docRootTypeStr = ", ".join(self.docRootTypes)
         docRootType = f"Either!({docRootTypeStr})"
@@ -70,6 +71,28 @@ alias DocumentRootType = {docRootType};
 ///
 alias importFromURI = import_!DocumentRootType;
 """)
+        if self.examples:
+            self.target.write(f"""
+@("Test for generated parser")
+unittest
+{{
+    import std : dirEntries, SpanMode;
+
+    auto resourceDir = "{self.examples}";
+	foreach (file; dirEntries(resourceDir, SpanMode.depth))
+	{{
+		import std : assertNotThrown, baseName, format, startsWith;
+		import salad.resolver : absoluteURI;
+
+		if (!file.baseName.startsWith("valid"))
+		{{
+			continue;
+		}}
+		importFromURI(file.absoluteURI).assertNotThrown(format!"Failed to load %s"(file));
+	}}
+}}
+""")
+
 
     @staticmethod
     def safe_name(name: str) -> str:
