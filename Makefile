@@ -28,7 +28,7 @@ EXTRAS=[pycodegen]
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py ${MODULE}/avro/*.py ${MODULE}/tests/*.py) setup.py
 DEVPKGS=diff_cover black pylint pep257 pydocstyle flake8 tox tox-pyenv \
-	isort wheel autoflake flake8-bugbear pyupgrade bandit \
+	isort wheel autoflake flake8-bugbear pyupgrade bandit build\
 	-rtest-requirements.txt -rmypy-requirements.txt
 COVBASE=coverage run --append
 
@@ -66,7 +66,7 @@ dev: install-dep
 dist: dist/${MODULE}-$(VERSION).tar.gz
 
 dist/${MODULE}-$(VERSION).tar.gz: $(SOURCES)
-	python setup.py sdist bdist_wheel
+	python -m build
 
 ## docs                   : make the docs
 docs: FORCE
@@ -199,7 +199,8 @@ release:
 	export SETUPTOOLS_SCM_PRETEND_VERSION=${VERSION} && \
 	./release-test.sh && \
 	. testenv2/bin/activate && \
-		python testenv2/src/${PACKAGE}/setup.py sdist bdist_wheel && \
+		pip install build && \
+		python -m build testenv2/src/${PACKAGE} && \
 		pip install twine && \
 		twine upload testenv2/src/${PACKAGE}/dist/* && \
 		git tag ${VERSION} && git push --tags

@@ -21,7 +21,7 @@ jobs:
       matrix:
         py-ver-major: [3]
         py-ver-minor: [6, 7, 8, 9, 10, 11]
-        step: [lint, unit, mypy]
+        step: [lint, bandit, unit, mypy]
         exclude:
           - py-ver-major: 3
             py-ver-minor: 6
@@ -74,7 +74,7 @@ jobs:
         step: [lintreadme, pydocstyle]
 
     env:
-      py-semver: "3.10"
+      py-semver: "3.11"
       TOXENV: ${{ format('py310-{0}', matrix.step) }}
 
     steps:

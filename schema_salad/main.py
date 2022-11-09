@@ -95,14 +95,14 @@ def arg_parser() -> argparse.ArgumentParser:
         type=str,
         metavar="language",
         help="Generate classes in target language, currently supported: "
-        "python, java, typescript, dotnet, dlang",
+        "python, java, typescript, dotnet, cpp, dlang",
     )
 
     parser.add_argument(
         "--codegen-target",
         type=str,
         default=None,
-        help="Defaults to sys.stdout for python and ./ for Java",
+        help="Defaults to sys.stdout for Python/C++ and ./ for " "Java/TypeScript/.Net",
     )
 
     parser.add_argument(
@@ -110,7 +110,7 @@ def arg_parser() -> argparse.ArgumentParser:
         type=str,
         metavar="directory",
         default=None,
-        help="Directory of example documents for test case generation (Java only).",
+        help="Directory of example documents for test case generation (Java/TypeScript/.Net only).",
     )
 
     parser.add_argument(
@@ -119,7 +119,7 @@ def arg_parser() -> argparse.ArgumentParser:
         metavar="dotted.package",
         default=None,
         help="Optional override of the package name which is other derived "
-        "from the base URL (Java and Dlang only).",
+        "from the base URL (Java/TypeScript/.Net/Dlang only).",
     ),
 
     parser.add_argument(

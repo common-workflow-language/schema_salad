@@ -20,25 +20,25 @@ jobs:
       with:
         pre-build-command: source .github/workflows/wheel-prep.sh
         build-requirements: -rrequirements.txt -rmypy-requirements.txt
-        python-versions: 'cp37-cp37m cp38-cp38 cp39-cp39 cp310-cp310'
+        python-versions: 'cp37-cp37m cp38-cp38 cp39-cp39 cp310-cp310 cp311-cp311'
     - name: Build manylinux2014 x86_64 Python wheels
       uses: RalfG/python-wheels-manylinux-build@v0.5.0-manylinux2014_x86_64
       with:
         pre-build-command: source .github/workflows/wheel-prep.sh
         build-requirements: -rrequirements.txt -rmypy-requirements.txt
-        python-versions: 'cp37-cp37m cp38-cp38 cp39-cp39 cp310-cp310'
+        python-versions: 'cp37-cp37m cp38-cp38 cp39-cp39 cp310-cp310 cp311-cp311'
     - name: Build manylinux_2_24 x86_64 Python wheels
       uses: RalfG/python-wheels-manylinux-build@v0.5.0-manylinux_2_24_x86_64
       with:
         pre-build-command: source .github/workflows/wheel-prep.sh
         build-requirements: -rrequirements.txt -rmypy-requirements.txt
-        python-versions: 'cp37-cp37m cp38-cp38 cp39-cp39 cp310-cp310'
+        python-versions: 'cp37-cp37m cp38-cp38 cp39-cp39 cp310-cp310 cp311-cp311'
     - name: Build manylinux_2_28 x86_64 Python wheels
       uses: RalfG/python-wheels-manylinux-build@v0.5.0-manylinux_2_28_x86_64
       with:
         pre-build-command: source .github/workflows/wheel-prep.sh
         build-requirements: -rrequirements.txt -rmypy-requirements.txt
-        python-versions: 'cp37-cp37m cp38-cp38 cp39-cp39 cp310-cp310'
+        python-versions: 'cp37-cp37m cp38-cp38 cp39-cp39 cp310-cp310 cp311-cp311'
     - name: Move audited wheels to new directory
       run: mkdir audited_wheels && cp dist/*-manylinux*.whl dist/*-musllinux*.whl audited_wheels/
     - name: Publish wheels to PyPI

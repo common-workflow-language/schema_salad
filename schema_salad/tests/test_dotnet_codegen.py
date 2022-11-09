@@ -22,7 +22,7 @@ def test_cwl_gen(tmp_path: Path) -> None:
 
     dotnet_codegen(cwl_file_uri, target_dir, examples=examples_dir)
     solution_path = target_dir / "Solution.sln"
-    assert solution_path.exists
+    assert solution_path.exists()
     tests_dir = target_dir / "Test" / "src"
     assert tests_dir.exists()
     with open(tests_dir / "ExampleTests.cs") as f:
@@ -54,7 +54,7 @@ def test_class_field(tmp_path: Path) -> None:
     dotnet_codegen(schema_path, target_dir)
 
     solution_path = target_dir / "Solution.sln"
-    assert solution_path.exists
+    assert solution_path.exists()
 
     tests_dir = target_dir / "Test"
     assert tests_dir.exists()
