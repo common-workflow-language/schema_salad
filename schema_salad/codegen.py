@@ -81,9 +81,9 @@ def codegen(
             gen = DlangCodeGen(
                 base,
                 dest,
-                examples,
                 pkg,
-                copyright
+                copyright,
+                info,
             )
             gen.parse(j)
             return
