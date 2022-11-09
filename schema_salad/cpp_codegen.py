@@ -65,7 +65,10 @@ def safename2(name: Dict[str, str]) -> str:
 # into its class path and non class path
 def split_name(s: str) -> Tuple[str, str]:
     t = s.split("#")
-    assert len(t) == 2
+    if len(t) != 2:
+        raise ValueError(
+            "Expected field to be formatted as 'https://xyz.xyz/blub#cwl/class'."
+        )
     return (t[0], t[1])
 
 
@@ -73,7 +76,10 @@ def split_name(s: str) -> Tuple[str, str]:
 def split_field(s: str) -> Tuple[str, str, str]:
     (namespace, field) = split_name(s)
     t = field.split("/")
-    assert len(t) == 2
+    if len(t) != 2:
+        raise ValueError(
+            "Expected field to be formatted as 'https://xyz.xyz/blub#cwl/class'."
+        )
     return (namespace, t[0], t[1])
 
 
@@ -596,8 +602,6 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node {
         types = {i["name"]: i for i in items}  # type: Dict[str, Any]
 
         for stype in items:
-            assert "type" in stype
-
             if "type" in stype and stype["type"] == "documentation":
                 continue
 
