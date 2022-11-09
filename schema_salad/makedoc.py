@@ -21,9 +21,9 @@ from typing import (
 )
 from urllib.parse import urldefrag
 
-import mistune
-import mistune.renderers
-import mistune.util
+from mistune import create_markdown
+from mistune.renderers import HTMLRenderer
+from mistune.util import escape_html
 
 from .exceptions import SchemaSaladException, ValidationException
 from .schema import avro_field_name, extend_and_specialize, get_metaschema
@@ -67,7 +67,7 @@ def linkto(item: str) -> str:
     return f"[{frg}](#{to_id(frg)})"
 
 
-class MyRenderer(mistune.renderers.HTMLRenderer):
+class MyRenderer(HTMLRenderer):
     """Custom renderer with different representations of selected HTML tags."""
 
     def heading(self, text: str, level: int) -> str:
@@ -101,7 +101,7 @@ class MyRenderer(mistune.renderers.HTMLRenderer):
             info = info.strip()
         if info:
             lang = info.split(None, 1)[0]
-            lang = mistune.util.escape_html(lang)
+            lang = escape_html(lang)
             text += ' class="language-' + lang + '"'
         return text + ">" + html.escape(code, quote=self._escape) + "</code></pre>\n"
 
@@ -588,11 +588,11 @@ class RenderType:
         ]  # type: List[PluginName]  # fix error Generic str != explicit Literals
         # if escape active, wraps literal HTML into '<p> {HTML} </p>'
         # we must pass it to both since 'MyRenderer' is predefined
-        escape_html = False
-        markdown2html = mistune.create_markdown(
-            renderer=MyRenderer(escape=escape_html),
+        escape = False
+        markdown2html = create_markdown(
+            renderer=MyRenderer(escape=escape),
             plugins=plugins,
-            escape=escape_html,
+            escape=escape,
         )  # type: Markdown[str, Any]
         markdown2html.before_parse_hooks.append(markdown_list_hook)
         doc = markdown2html(doc)
