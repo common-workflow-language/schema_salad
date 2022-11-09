@@ -81,6 +81,7 @@ def codegen(
             gen = DlangCodeGen(
                 base,
                 dest,
+                examples,
                 pkg,
                 copyright,
                 info,

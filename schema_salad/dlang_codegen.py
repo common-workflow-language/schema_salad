@@ -1,7 +1,7 @@
 """D code generator for a given schema salad definition."""
 
 from typing import Any, IO, Dict, List, Optional, Tuple, Union, cast
-from .codegen_base import CodeGenBase
+from .codegen_base import CodeGenBase, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
 
@@ -18,16 +18,19 @@ class DlangCodeGen(CodeGenBase):
         self,
         base: str,
         target: IO[str],
+        examples: Optional[str],
         package: str,
         copyright: Optional[str],
         parser_info: Optional[str],
     ) -> None:
         super().__init__()
         self.base_uri = base
+        self.examples = examples
         self.target = target
         self.package = package
         self.copyright = copyright
         self.parser_info = parser_info
+        self.docRootTypes = []
 
 
     def prologue(self) -> None:
@@ -46,13 +49,27 @@ module {self.package};
 
 import salad.meta.dumper : genDumper;
 import salad.meta.impl : genCtor, genIdentifier, genOpEq;
+import salad.meta.parser : import_ = importFromURI;
 import salad.meta.uda : documentRoot, id, idMap, link, typeDSL;
 import salad.primitives : SchemaBase;
 import salad.type : None, SumType;
 
 """)
         if self.parser_info:
-            self.target.write(f'enum parserInfo = "{self.parser_info}";\n')
+            self.target.write(f'''/// parser information
+enum parserInfo = "{self.parser_info}";
+''')
+
+    def epilogue(self, root_loader: TypeDef) -> None:
+        docRootTypeStr = ", ".join(self.docRootTypes)
+        docRootType = f"SumType!({docRootTypeStr})"
+        self.target.write(f"""
+///
+alias DocumentRootType = {docRootType};
+
+///
+alias importFromURI = import_!DocumentRootType;
+""")
 
     @staticmethod
     def safe_name(name: str) -> str:
@@ -67,7 +84,7 @@ import salad.type : None, SumType;
 
     def toDocComment(self, doc: Union[None, str, List[str]]):
         if doc is None:
-            return ""
+            return "///\n"
         elif isinstance(doc, str):
             lines = doc.split("\n")
         else:
@@ -159,6 +176,7 @@ import salad.type : None, SumType;
 
         if stype.get("documentRoot", False):
             docRootAnnotation = "@documentRoot "
+            self.docRootTypes.append(classname)
         else:
             docRootAnnotation = ""
 
@@ -178,13 +196,14 @@ import salad.type : None, SumType;
     def parseEnum(self, stype: Dict[str, Any]) -> str:
         name = cast(str, stype["name"])
         if name == "https://w3id.org/cwl/salad#Any":
-            return "\npublic import salad.primitives : Any;"
+            return "\n///\npublic import salad.primitives : Any;"
         classname = self.safe_name(name)
         syms = [f'        s{i} = "{shortname(sym)}"' for i, sym in enumerate(stype["symbols"])]
         symsDef = ",\n".join(syms)
 
         if stype.get("documentRoot", False):
             docRootAnnotation = "@documentRoot "
+            self.docRootTypes.append(classname)
         else:
             docRootAnnotation = ""
 
@@ -235,4 +254,7 @@ import salad.type : None, SumType;
 
         self.target.write("\n".join(dlangDefs))
         self.target.write("\n")
+
+        self.epilogue(None)
+
         self.target.close()
