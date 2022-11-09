@@ -52,7 +52,7 @@ import salad.meta.impl : genCtor, genIdentifier, genOpEq;
 import salad.meta.parser : import_ = importFromURI;
 import salad.meta.uda : documentRoot, id, idMap, link, typeDSL;
 import salad.primitives : SchemaBase;
-import salad.type : None, SumType;
+import salad.type : None, Either;
 
 """)
         if self.parser_info:
@@ -62,7 +62,7 @@ enum parserInfo = "{self.parser_info}";
 
     def epilogue(self, root_loader: TypeDef) -> None:
         docRootTypeStr = ", ".join(self.docRootTypes)
-        docRootType = f"SumType!({docRootTypeStr})"
+        docRootType = f"Either!({docRootTypeStr})"
         self.target.write(f"""
 ///
 alias DocumentRootType = {docRootType};
@@ -134,7 +134,7 @@ alias importFromURI = import_!DocumentRootType;
                 elemType = self.parseRecordFieldType(t, None)[1]
                 tStr.append(elemType)
             unionTypes = ", ".join(tStr)
-            typeStr = f"SumType!({unionTypes})"
+            typeStr = f"Either!({unionTypes})"
         elif shortname(type["type"]) == "array":
             itemType = self.parseRecordFieldType(type["items"], None)[1]
             typeStr = f"{itemType}[]"
@@ -195,8 +195,11 @@ alias importFromURI = import_!DocumentRootType;
 
     def parseEnum(self, stype: Dict[str, Any]) -> str:
         name = cast(str, stype["name"])
-        if name == "https://w3id.org/cwl/salad#Any":
+        if shortname(name) == "Any":
             return "\n///\npublic import salad.primitives : Any;"
+        elif shortname(name) == "Expression":
+            return "\n///\npublic import salad.primitives : Expression;"
+
         classname = self.safe_name(name)
         syms = [f'        s{i} = "{shortname(sym)}"' for i, sym in enumerate(stype["symbols"])]
         symsDef = ",\n".join(syms)
