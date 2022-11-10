@@ -50,7 +50,7 @@ module {self.package};
 import salad.meta.dumper : genDumper;
 import salad.meta.impl : genCtor, genIdentifier, genOpEq;
 import salad.meta.parser : import_ = importFromURI;
-import salad.meta.uda : documentRoot, id, idMap, link, typeDSL;
+import salad.meta.uda : documentRoot, id, idMap, link, secondaryFilesDSL, typeDSL;
 import salad.primitives : SchemaBase;
 import salad.type : None, Either;
 
@@ -129,6 +129,8 @@ unittest
         elif isinstance(jsonldPred, dict):
             if jsonldPred.get("typeDSL", False):
                 annotations.append("@typeDSL")
+            if jsonldPred.get("secondaryFilesDSL", False):
+                annotations.append("@secondaryFilesDSL")
             if "mapSubject" in jsonldPred:
                 subject = jsonldPred["mapSubject"]
                 if "mapPredicate" in jsonldPred:
