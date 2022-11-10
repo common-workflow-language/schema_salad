@@ -1,16 +1,14 @@
 """D code generator for a given schema salad definition."""
 
-from typing import Any, IO, Dict, List, Optional, Tuple, Union, cast
+import datetime
+import textwrap
+from typing import IO, Any, Dict, List, Optional, Tuple, Union, cast
+
+from . import _logger, schema
 from .codegen_base import CodeGenBase, TypeDef
+from .cpp_codegen import isArray, isEnumSchema, isRecordSchema, pred
 from .exceptions import SchemaException
 from .schema import shortname
-
-from . import _logger
-from . import schema
-from .cpp_codegen import pred, isArray, isRecordSchema, isEnumSchema
-
-import textwrap
-import datetime
 
 
 class DlangCodeGen(CodeGenBase):
@@ -32,7 +30,6 @@ class DlangCodeGen(CodeGenBase):
         self.parser_info = parser_info
         self.docRootTypes = []
 
-
     def prologue(self) -> None:
         """Trigger to generate the prolouge code."""
         self.target.write(
@@ -44,7 +41,8 @@ class DlangCodeGen(CodeGenBase):
         )
         if self.copyright:
             self.target.write(f" * Copyright: {self.copyright}\n")
-        self.target.write(f""" */
+        self.target.write(
+            f""" */
 module {self.package};
 
 import salad.meta.dumper : genDumper;
@@ -54,25 +52,30 @@ import salad.meta.uda : documentRoot, id, idMap, link, secondaryFilesDSL, typeDS
 import salad.primitives : SchemaBase;
 import salad.type : None, Either;
 
-""")
+"""
+        )
         if self.parser_info:
-            self.target.write(f'''/// parser information
+            self.target.write(
+                f"""/// parser information
 enum parserInfo = "{self.parser_info}";
-''')
-
+"""
+            )
 
     def epilogue(self, root_loader: TypeDef) -> None:
         docRootTypeStr = ", ".join(self.docRootTypes)
         docRootType = f"Either!({docRootTypeStr})"
-        self.target.write(f"""
+        self.target.write(
+            f"""
 ///
 alias DocumentRootType = {docRootType};
 
 ///
 alias importFromURI = import_!DocumentRootType;
-""")
+"""
+        )
         if self.examples:
-            self.target.write(f"""
+            self.target.write(
+                f"""
 @("Test for generated parser")
 unittest
 {{
@@ -91,8 +94,8 @@ unittest
 		importFromURI(file.absoluteURI).assertNotThrown(format!"Failed to load %s"(file));
 	}}
 }}
-""")
-
+"""
+            )
 
     @staticmethod
     def safe_name(name: str) -> str:
@@ -104,7 +107,6 @@ unittest
             avn = avn[5:]
         return avn
 
-
     def toDocComment(self, doc: Union[None, str, List[str]]):
         if doc is None:
             return "///\n"
@@ -112,7 +114,7 @@ unittest
             lines = doc.split("\n")
         else:
             lines = sum((d.split("\n") for d in doc), [])
-        
+
         docLines = "\n".join((f" * {l}" for l in lines if len(l)))
 
         return f"""/**
@@ -120,8 +122,9 @@ unittest
  */
 """
 
-
-    def parseRecordFieldType(self, type: Any, jsonldPred: Union[None, str, dict]) -> Tuple[str, str]:
+    def parseRecordFieldType(
+        self, type: Any, jsonldPred: Union[None, str, dict]
+    ) -> Tuple[str, str]:
         annotations = []
         if isinstance(jsonldPred, str):
             if jsonldPred == "@id":
@@ -141,7 +144,7 @@ unittest
             if jsonldPred.get("_type", "") == "@id":
                 annotations.append("@link")
         if len(annotations):
-            annotateStr = " ".join(annotations)+" "
+            annotateStr = " ".join(annotations) + " "
         else:
             annotateStr = ""
 
@@ -169,13 +172,25 @@ unittest
             return annotateStr, "'not yet implemented'"
         return annotateStr, typeStr
 
-
-    def parseRecordField(self, field: Dict[str, Any], parentName: Optional[str] = None) -> str:
-        fname = shortname(field["name"])+"_"
+    def parseRecordField(
+        self, field: Dict[str, Any], parentName: Optional[str] = None
+    ) -> str:
+        fname = shortname(field["name"]) + "_"
         jsonldPred = field.get("jsonldPredicate", None)
         docComment = self.toDocComment(field.get("doc", None))
         type = field["type"]
-        if ((isinstance(type, dict) and shortname(type.get("type", "")) == "enum") or (isinstance(type, str) and shortname(type) == "string")) and isinstance(jsonldPred, dict) and (shortname(jsonldPred.get("_id", "")) == "type" or shortname(jsonldPred.get("_id", "")) == "@type") and jsonldPred.get("_type", "") == "@vocab":
+        if (
+            (
+                (isinstance(type, dict) and shortname(type.get("type", "")) == "enum")
+                or (isinstance(type, str) and shortname(type) == "string")
+            )
+            and isinstance(jsonldPred, dict)
+            and (
+                shortname(jsonldPred.get("_id", "")) == "type"
+                or shortname(jsonldPred.get("_id", "")) == "@type"
+            )
+            and jsonldPred.get("_type", "") == "@vocab"
+        ):
             # special case
             if isinstance(type, dict):
                 # assert len(type["symbols"]) == 1
@@ -188,7 +203,6 @@ unittest
 
         return f"{docComment}{annotateStr}{typeStr} {fname};"
 
-
     def parseRecordSchema(self, stype: Dict[str, Any]) -> None:
         name = cast(str, stype["name"])
         classname = self.safe_name(name)
@@ -197,7 +211,7 @@ unittest
         if "fields" in stype:
             for field in stype["fields"]:
                 fieldDecls.append(self.parseRecordField(field, classname))
-        declStr = "\n".join((textwrap.indent(f"{d}", " "*4) for d in fieldDecls))
+        declStr = "\n".join((textwrap.indent(f"{d}", " " * 4) for d in fieldDecls))
 
         if stype.get("documentRoot", False):
             docRootAnnotation = "@documentRoot "
@@ -217,7 +231,6 @@ unittest
     mixin genDumper;
 }}"""
 
-
     def parseEnum(self, stype: Dict[str, Any]) -> str:
         name = cast(str, stype["name"])
         if shortname(name) == "Any":
@@ -226,7 +239,10 @@ unittest
             return "\n///\npublic import salad.primitives : Expression;"
 
         classname = self.safe_name(name)
-        syms = [f'        s{i} = "{shortname(sym)}"' for i, sym in enumerate(stype["symbols"])]
+        syms = [
+            f'        s{i} = "{shortname(sym)}"'
+            for i, sym in enumerate(stype["symbols"])
+        ]
         symsDef = ",\n".join(syms)
 
         if stype.get("documentRoot", False):
@@ -254,7 +270,6 @@ unittest
     mixin genOpEq;
     mixin genDumper;
 }}"""
-
 
     def parse(self, items: List[Dict[str, Any]]) -> None:
         dlangDefs = []

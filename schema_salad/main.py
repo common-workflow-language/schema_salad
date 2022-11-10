@@ -102,7 +102,8 @@ def arg_parser() -> argparse.ArgumentParser:
         "--codegen-target",
         type=str,
         default=None,
-        help="Defaults to sys.stdout for Python/C++/Dlang and ./ for " "Java/TypeScript/.Net",
+        help="Defaults to sys.stdout for Python/C++/Dlang and ./ for "
+        "Java/TypeScript/.Net",
     )
 
     parser.add_argument(
