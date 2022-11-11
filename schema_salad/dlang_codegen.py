@@ -284,8 +284,6 @@ unittest
         self.prologue()
 
         for stype in items:
-            assert "type" in stype
-
             if "type" in stype and stype["type"] == "documentation":
                 continue
 
