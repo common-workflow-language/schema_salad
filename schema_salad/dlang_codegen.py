@@ -86,17 +86,17 @@ unittest
     import std : dirEntries, SpanMode;
 
     auto resourceDir = "{self.examples}";
-	foreach (file; dirEntries(resourceDir, SpanMode.depth))
-	{{
-		import std : assertNotThrown, baseName, format, startsWith;
-		import salad.resolver : absoluteURI;
+    foreach (file; dirEntries(resourceDir, SpanMode.depth))
+    {{
+        import std : assertNotThrown, baseName, format, startsWith;
+        import salad.resolver : absoluteURI;
 
-		if (!file.baseName.startsWith("valid"))
-		{{
-			continue;
-		}}
-		importFromURI(file.absoluteURI).assertNotThrown(format!"Failed to load %s"(file));
-	}}
+        if (!file.baseName.startsWith("valid"))
+        {{
+            continue;
+        }}
+        importFromURI(file.absoluteURI).assertNotThrown(format!"Failed to load %s"(file));
+    }}
 }}
 """
             )
@@ -121,7 +121,7 @@ unittest
         else:
             lines = sum((d.split("\n") for d in doc), [])
 
-        doc_lines = "\n".join((f" * {l}" for l in lines if len(l)))
+        doc_lines = "\n".join((f" * {line}" for line in lines if line))
 
         return f"""/**
 {doc_lines}
