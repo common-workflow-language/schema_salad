@@ -303,6 +303,6 @@ unittest
         self.target.write("\n".join(dlang_defs))
         self.target.write("\n")
 
-        self.epilogue(None)
+        self.epilogue(TypeDef("dummy", "data"))
 
         self.target.close()
