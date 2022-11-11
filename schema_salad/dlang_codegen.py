@@ -12,23 +12,26 @@ from .schema import shortname
 
 
 class DlangCodeGen(CodeGenBase):
+    """Generation of D code for a given Schema Salad definition."""
+
     def __init__(
         self,
         base: str,
         target: IO[str],
         examples: Optional[str],
         package: str,
-        copyright: Optional[str],
+        copyright_: Optional[str],
         parser_info: Optional[str],
     ) -> None:
+        """Initialize the D codegen."""
         super().__init__()
         self.base_uri = base
         self.examples = examples
         self.target = target
         self.package = package
-        self.copyright = copyright
+        self.copyright = copyright_
         self.parser_info = parser_info
-        self.docRootTypes = []
+        self.doc_root_types = []
 
     def prologue(self) -> None:
         """Trigger to generate the prolouge code."""
@@ -62,12 +65,13 @@ enum parserInfo = "{self.parser_info}";
             )
 
     def epilogue(self, root_loader: TypeDef) -> None:
-        docRootTypeStr = ", ".join(self.docRootTypes)
-        docRootType = f"Either!({docRootTypeStr})"
+        """Trigger to generate the epilouge code."""
+        doc_root_type_str = ", ".join(self.doc_root_types)
+        doc_root_type = f"Either!({doc_root_type_str})"
         self.target.write(
             f"""
 ///
-alias DocumentRootType = {docRootType};
+alias DocumentRootType = {doc_root_type};
 
 ///
 alias importFromURI = import_!DocumentRootType;
@@ -99,6 +103,7 @@ unittest
 
     @staticmethod
     def safe_name(name: str) -> str:
+        """Generate a safe version of the given name."""
         avn = schema.avro_field_name(name)
         if avn in ("class", "abstract", "default", "package"):
             # reserved words
@@ -107,135 +112,136 @@ unittest
             avn = avn[5:]
         return avn
 
-    def toDocComment(self, doc: Union[None, str, List[str]]):
+    def to_doc_comment(self, doc: Union[None, str, List[str]]):
+        """Return an embedded documentation comments for a given string."""
         if doc is None:
             return "///\n"
-        elif isinstance(doc, str):
+        if isinstance(doc, str):
             lines = doc.split("\n")
         else:
             lines = sum((d.split("\n") for d in doc), [])
 
-        docLines = "\n".join((f" * {l}" for l in lines if len(l)))
+        doc_lines = "\n".join((f" * {l}" for l in lines if len(l)))
 
         return f"""/**
-{docLines}
+{doc_lines}
  */
 """
 
-    def parseRecordFieldType(
-        self, type: Any, jsonldPred: Union[None, str, dict]
+    def parse_record_field_type(
+        self, type_: Any, jsonld_pred: Union[None, str, dict]
     ) -> Tuple[str, str]:
-        annotations = []
-        if isinstance(jsonldPred, str):
-            if jsonldPred == "@id":
+        """Return an annotation string and a type string."""
+        annotations = []  # type: List[str]
+        if isinstance(jsonld_pred, str):
+            if jsonld_pred == "@id":
                 annotations.append("@id")
-        elif isinstance(jsonldPred, dict):
-            if jsonldPred.get("typeDSL", False):
+        elif isinstance(jsonld_pred, dict):
+            if jsonld_pred.get("typeDSL", False):
                 annotations.append("@typeDSL")
-            if jsonldPred.get("secondaryFilesDSL", False):
+            if jsonld_pred.get("secondaryFilesDSL", False):
                 annotations.append("@secondaryFilesDSL")
-            if "mapSubject" in jsonldPred:
-                subject = jsonldPred["mapSubject"]
-                if "mapPredicate" in jsonldPred:
-                    pred = jsonldPred["mapPredicate"]
-                    annotations.append(f'@idMap("{subject}", "{pred}")')
+            if "mapSubject" in jsonld_pred:
+                subject = jsonld_pred["mapSubject"]
+                if "mapPredicate" in jsonld_pred:
+                    predicate = jsonld_pred["mapPredicate"]
+                    annotations.append(f'@idMap("{subject}", "{predicate}")')
                 else:
                     annotations.append(f'@idMap("{subject}")')
-            if jsonldPred.get("_type", "") == "@id":
+            if jsonld_pred.get("_type", "") == "@id":
                 annotations.append("@link")
-        if len(annotations):
-            annotateStr = " ".join(annotations) + " "
+        if annotations:
+            annotate_str = " ".join(annotations) + " "
         else:
-            annotateStr = ""
+            annotate_str = ""
 
-        if isinstance(type, str):
-            stype = shortname(type)
+        if isinstance(type_, str):
+            stype = shortname(type_)
             if stype == "boolean":
-                typeStr = "bool"
+                type_str = "bool"
             elif stype == "null":
-                typeStr = "None"
+                type_str = "None"
             else:
-                typeStr = stype
-        elif isinstance(type, list):
-            tStr = []
-            for t in type:
-                elemType = self.parseRecordFieldType(t, None)[1]
-                tStr.append(elemType)
-            unionTypes = ", ".join(tStr)
-            typeStr = f"Either!({unionTypes})"
-        elif shortname(type["type"]) == "array":
-            itemType = self.parseRecordFieldType(type["items"], None)[1]
-            typeStr = f"{itemType}[]"
-        elif shortname(type["type"]) == "record":
-            return annotateStr, shortname(type.get("name", "record"))
-        elif shortname(type["type"]) == "enum":
-            return annotateStr, "'not yet implemented'"
-        return annotateStr, typeStr
+                type_str = stype
+        elif isinstance(type_, list):
+            t_str = [self.parse_record_field_type(t, None)[1] for t in type_]
+            union_types = ", ".join(t_str)
+            type_str = f"Either!({union_types})"
+        elif shortname(type_["type"]) == "array":
+            item_type = self.parse_record_field_type(type_["items"], None)[1]
+            type_str = f"{item_type}[]"
+        elif shortname(type_["type"]) == "record":
+            return annotate_str, shortname(type_.get("name", "record"))
+        elif shortname(type_["type"]) == "enum":
+            return annotate_str, "'not yet implemented'"
+        return annotate_str, type_str
 
-    def parseRecordField(
-        self, field: Dict[str, Any], parentName: Optional[str] = None
+    def parse_record_field(
+        self, field: Dict[str, Any], parent_name: Optional[str] = None
     ) -> str:
+        """Return a declaration string for a given record field."""
         fname = shortname(field["name"]) + "_"
-        jsonldPred = field.get("jsonldPredicate", None)
-        docComment = self.toDocComment(field.get("doc", None))
-        type = field["type"]
+        jsonld_pred = field.get("jsonldPredicate", None)
+        doc_comment = self.to_doc_comment(field.get("doc", None))
+        type_ = field["type"]
         if (
             (
-                (isinstance(type, dict) and shortname(type.get("type", "")) == "enum")
-                or (isinstance(type, str) and shortname(type) == "string")
+                (isinstance(type_, dict) and shortname(type_.get("type", "")) == "enum")
+                or (isinstance(type_, str) and shortname(type_) == "string")
             )
-            and isinstance(jsonldPred, dict)
+            and isinstance(jsonld_pred, dict)
             and (
-                shortname(jsonldPred.get("_id", "")) == "type"
-                or shortname(jsonldPred.get("_id", "")) == "@type"
+                shortname(jsonld_pred.get("_id", "")) == "type"
+                or shortname(jsonld_pred.get("_id", "")) == "@type"
             )
-            and jsonldPred.get("_type", "") == "@vocab"
+            and jsonld_pred.get("_type", "") == "@vocab"
         ):
             # special case
-            if isinstance(type, dict):
+            if isinstance(type_, dict):
                 # assert len(type["symbols"]) == 1
-                value = shortname(type["symbols"][0])
+                value = shortname(type_["symbols"][0])
             else:
-                value = parentName
-            return f'{docComment}static immutable {fname} = "{value}";'
-        else:
-            annotateStr, typeStr = self.parseRecordFieldType(type, jsonldPred)
+                value = parent_name
+            return f'{doc_comment}static immutable {fname} = "{value}";'
 
-        return f"{docComment}{annotateStr}{typeStr} {fname};"
+        annotate_str, type_str = self.parse_record_field_type(type_, jsonld_pred)
+        return f"{doc_comment}{annotate_str}{type_str} {fname};"
 
-    def parseRecordSchema(self, stype: Dict[str, Any]) -> None:
+    def parse_record_schema(self, stype: Dict[str, Any]) -> None:
+        """Return a declaration string for a given record schema."""
         name = cast(str, stype["name"])
         classname = self.safe_name(name)
 
-        fieldDecls = []
+        field_decls = []
         if "fields" in stype:
             for field in stype["fields"]:
-                fieldDecls.append(self.parseRecordField(field, classname))
-        declStr = "\n".join((textwrap.indent(f"{d}", " " * 4) for d in fieldDecls))
+                field_decls.append(self.parse_record_field(field, classname))
+        decl_str = "\n".join((textwrap.indent(f"{d}", " " * 4) for d in field_decls))
 
         if stype.get("documentRoot", False):
-            docRootAnnotation = "@documentRoot "
-            self.docRootTypes.append(classname)
+            doc_root_annotation = "@documentRoot "
+            self.doc_root_types.append(classname)
         else:
-            docRootAnnotation = ""
+            doc_root_annotation = ""
 
-        docComment = self.toDocComment(stype.get("doc", None))
+        doc_comment = self.to_doc_comment(stype.get("doc", None))
 
         return f"""
-{docComment}{docRootAnnotation}class {classname} : SchemaBase
+{doc_comment}{doc_root_annotation}class {classname} : SchemaBase
 {{
-{declStr}
+{decl_str}
 
     mixin genCtor;
     mixin genIdentifier;
     mixin genDumper;
 }}"""
 
-    def parseEnum(self, stype: Dict[str, Any]) -> str:
+    def parse_enum(self, stype: Dict[str, Any]) -> str:
+        """Return a declaration string for a given enum schema."""
         name = cast(str, stype["name"])
         if shortname(name) == "Any":
             return "\n///\npublic import salad.primitives : Any;"
-        elif shortname(name) == "Expression":
+        if shortname(name) == "Expression":
             return "\n///\npublic import salad.primitives : Expression;"
 
         classname = self.safe_name(name)
@@ -243,25 +249,25 @@ unittest
             f'        s{i} = "{shortname(sym)}"'
             for i, sym in enumerate(stype["symbols"])
         ]
-        symsDef = ",\n".join(syms)
+        syms_def = ",\n".join(syms)
 
         if stype.get("documentRoot", False):
-            docRootAnnotation = "@documentRoot "
-            self.docRootTypes.append(classname)
+            doc_root_annotation = "@documentRoot "
+            self.doc_root_types.append(classname)
         else:
-            docRootAnnotation = ""
+            doc_root_annotation = ""
 
         if "doc" in stype:
-            docComment = self.toDocComment(stype["doc"])
+            doc_comment = self.to_doc_comment(stype["doc"])
         else:
-            docComment = ""
+            doc_comment = ""
 
         return f"""
-{docComment}{docRootAnnotation}class {classname} : SchemaBase
+{doc_comment}{doc_root_annotation}class {classname} : SchemaBase
 {{
     enum Symbol
     {{
-{symsDef}
+{syms_def}
     }}
 
     Symbol value;
@@ -272,7 +278,8 @@ unittest
 }}"""
 
     def parse(self, items: List[Dict[str, Any]]) -> None:
-        dlangDefs = []
+        """Generate D code from items and write it to target."""
+        dlang_defs = []
 
         self.prologue()
 
@@ -289,13 +296,13 @@ unittest
             if isRecordSchema(stype):
                 if stype.get("abstract", False):
                     continue
-                dlangDefs.append(self.parseRecordSchema(stype))
+                dlang_defs.append(self.parse_record_schema(stype))
             elif isEnumSchema(stype):
-                dlangDefs.append(self.parseEnum(stype))
+                dlang_defs.append(self.parse_enum(stype))
             else:
-                _logger.error(f"not parsed{stype}")
+                _logger.error("not parsed %s", stype)
 
-        self.target.write("\n".join(dlangDefs))
+        self.target.write("\n".join(dlang_defs))
         self.target.write("\n")
 
         self.epilogue(None)
