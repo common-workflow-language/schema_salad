@@ -31,7 +31,7 @@ class DlangCodeGen(CodeGenBase):
         self.package = package
         self.copyright = copyright_
         self.parser_info = parser_info
-        self.doc_root_types = []
+        self.doc_root_types: List[str] = []
 
     def prologue(self) -> None:
         """Trigger to generate the prolouge code."""
@@ -112,7 +112,7 @@ unittest
             avn = avn[5:]
         return avn
 
-    def to_doc_comment(self, doc: Union[None, str, List[str]]):
+    def to_doc_comment(self, doc: Union[None, str, List[str]]) -> str:
         """Return an embedded documentation comments for a given string."""
         if doc is None:
             return "///\n"
@@ -129,10 +129,10 @@ unittest
 """
 
     def parse_record_field_type(
-        self, type_: Any, jsonld_pred: Union[None, str, dict]
+        self, type_: Any, jsonld_pred: Union[None, str, Dict[str, Any]]
     ) -> Tuple[str, str]:
         """Return an annotation string and a type string."""
-        annotations = []  # type: List[str]
+        annotations: List[str] = []
         if isinstance(jsonld_pred, str):
             if jsonld_pred == "@id":
                 annotations.append("@id")
@@ -201,13 +201,13 @@ unittest
                 # assert len(type["symbols"]) == 1
                 value = shortname(type_["symbols"][0])
             else:
-                value = parent_name
+                value = cast(str, parent_name)
             return f'{doc_comment}static immutable {fname} = "{value}";'
 
         annotate_str, type_str = self.parse_record_field_type(type_, jsonld_pred)
         return f"{doc_comment}{annotate_str}{type_str} {fname};"
 
-    def parse_record_schema(self, stype: Dict[str, Any]) -> None:
+    def parse_record_schema(self, stype: Dict[str, Any]) -> str:
         """Return a declaration string for a given record schema."""
         name = cast(str, stype["name"])
         classname = self.safe_name(name)
