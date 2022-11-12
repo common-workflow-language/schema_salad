@@ -12,7 +12,7 @@ from .util import cwl_file_uri
 
 
 def test_cwl_dlang_gen(tmp_path: Path) -> None:
-    """End to end test of C++ generator using the CWL v1.0 schema."""
+    """End to end test of D generator using the CWL v1.0 schema."""
     src_target = tmp_path / "cwl_v1_0.d"
     dlang_codegen(cwl_file_uri, src_target)
     assert os.path.exists(src_target)
