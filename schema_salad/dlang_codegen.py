@@ -39,8 +39,8 @@ class DlangCodeGen(CodeGenBase):
         module_comment = []
 
         if self.parser_info:
-            module_comment.append(self.parser_info+"\n")
-        
+            module_comment.append(self.parser_info + "\n")
+
         module_comment += [
             "This module was generated using schema-salad code generator.",
             "",
@@ -49,7 +49,7 @@ class DlangCodeGen(CodeGenBase):
 
         if self.copyright:
             module_comment.append(f"The original schema is {self.copyright}.")
-        
+
         module_comment += [
             "",
             "License: Apache-2.0",
@@ -137,9 +137,8 @@ unittest
             lines = lines[0:-1]
 
         lines = [
-            line.replace("`(`", "`$(LPAREN)`")
-                .replace("`)`", "`$(RPAREN)`")
-                for line in lines
+            line.replace("`(`", "`$(LPAREN)`").replace("`)`", "`$(RPAREN)`")
+            for line in lines
         ]
 
         doc_lines = "\n".join((f" * {line}" for line in lines))
@@ -269,10 +268,12 @@ unittest
             return "\n///\npublic import salad.primitives : Expression;"
 
         classname = self.safe_name(name)
-        syms = "\n".join((
-            f'        s{i} = "{shortname(sym)}", ///'
-            for i, sym in enumerate(stype["symbols"])
-        ))
+        syms = "\n".join(
+            (
+                f'        s{i} = "{shortname(sym)}", ///'
+                for i, sym in enumerate(stype["symbols"])
+            )
+        )
 
         if stype.get("documentRoot", False):
             doc_root_annotation = "@documentRoot "
