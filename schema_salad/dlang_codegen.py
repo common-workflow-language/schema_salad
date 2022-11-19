@@ -148,7 +148,10 @@ unittest
                     annotations.append(f'@idMap("{subject}", "{predicate}")')
                 else:
                     annotations.append(f'@idMap("{subject}")')
-            if jsonld_pred.get("_type", "") == "@id":
+            if (
+                jsonld_pred.get("_type", "") == "@id"
+                and not jsonld_pred.get("identity", False)
+            ):
                 annotations.append("@link")
         if annotations:
             annotate_str = " ".join(annotations) + " "
