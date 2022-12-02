@@ -11,10 +11,13 @@ Likewise, if the schema-salad metaschema changes and it is missing one or more
 of the features tested below, then please copy those old features to a new file
 and update the affected tests to use those new file(s).
 """
-
 import hashlib
+import inspect
+import json
 from io import StringIO
+from typing import Optional
 
+import tempfile
 import pytest
 
 from schema_salad.makedoc import makedoc
@@ -33,12 +36,19 @@ def test_schema_salad_inherit_docs() -> None:
     assert 1 == stdout.getvalue().count("Parent ID")
 
 
-def generate_doc() -> str:
+def generate_doc(schema_data: Optional[str] = None) -> str:
     """Avoid error when calling fixture directly."""
-    schema_path = get_data("schema_salad/metaschema/metaschema.yml")
-    assert schema_path
     stdout = StringIO()
-    makedoc(stdout, schema_path)
+    if schema_data:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".yml") as tmp_file:
+            tmp_file.write(schema_data)
+            tmp_file.flush()
+            tmp_file.seek(0)
+            makedoc(stdout, tmp_file.name)
+    else:
+        schema_path = get_data("schema_salad/metaschema/metaschema.yml")
+        assert schema_path
+        makedoc(stdout, schema_path)
     return stdout.getvalue()
 
 
@@ -46,6 +56,87 @@ def generate_doc() -> str:
 def fixture_metaschema_doc() -> str:
     """Pytest Fixture of the rendered HTML for the metaschema schema."""
     return generate_doc()
+
+
+def test_doc_fenced_code_contents_preserved() -> None:
+    """
+    Validates that fenced code contents are not interpreted as Markdown definitions and converted into erroneous HTML.
+
+    An example of problem case is when a definition looks like a Markdown list (e.g.: a YAML array).
+    It must not be converted into HTML contents with list tags.
+    However, special characters (e.g.: ``<``, ``>``) must still be escaped, otherwise they will not be correctly
+    rendered within an HTML ``<pre><code>`` block.
+    """
+    data = inspect.cleandoc("""
+    Option one generic example:
+    ```
+    some_cwl_field:
+      - key_field: a_complex_type1
+        field2: foo
+        field3: bar
+      - key_field: a_complex_type2
+        field2: foo2
+        field3: bar2
+      - key_field: a_complex_type3
+    ```
+
+    Option one generic example:
+    ```
+    inputs:
+      - id: workflow_input01
+        type: string
+      - id: workflow_input02
+        type: File
+        format: http://edamontology.org/format_2572
+    ```
+
+    Special Characters:
+    ```
+    data:
+      - test: value 1 < 2 is true
+      - test: value 2 > 1 is false
+    ```
+    """)
+    schema_data = json.dumps(
+        [
+            {
+                "name": "https://w3id.org/cwl/salad#test",
+                "type": "documentation",
+                "doc": data
+            }
+        ]
+    )
+    schema_doc = generate_doc(schema_data)
+    schema_doc = schema_doc.split("</head>")[-1]  # just for nicer/readable assert diffs
+    assert (
+        "<p>Option one generic example:</p>\n"
+        "<pre><code>some_cwl_field:\n"
+        "  - key_field: a_complex_type1\n"
+        "    field2: foo\n"
+        "    field3: bar\n"
+        "  - key_field: a_complex_type2\n"
+        "    field2: foo2\n"
+        "    field3: bar2\n"
+        "  - key_field: a_complex_type3\n"
+        "</code></pre>\n"
+    ) in schema_doc
+    assert (
+        "<p>Option one generic example:</p>\n"
+        "<pre><code>inputs:\n"
+        "  - id: workflow_input01\n"
+        "    type: string\n"
+        "  - id: workflow_input02\n"
+        "    type: File\n"
+        "    format: http://edamontology.org/format_2572\n"
+        "</code></pre>\n"
+    ) in schema_doc
+    assert (
+        "<p>Special Characters:</p>\n"
+        "<pre><code>data:\n"
+        "  - test: value 1 &lt; 2 is true\n"
+        "  - test: value 2 &gt; 1 is false\n"
+        "</code></pre>\n"
+    ) in schema_doc
 
 
 def test_doc_headings_target_anchor(metaschema_doc: str) -> None:
@@ -146,5 +237,5 @@ def test_detect_changes_in_html(metaschema_doc: str) -> None:
     hasher.update(metaschema_doc.encode("utf-8"))
     assert (
         hasher.hexdigest()
-        == "588bac1fdd4f451684482bbce2256cb90828795372f20bcb5c752c98ffae8f8b"
+        == "5fa6b79fdd146a3c73d964295b90e270dc6e91103479072f03d7191e2e5af841"
     )

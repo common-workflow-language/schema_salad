@@ -22,6 +22,7 @@ from typing import (
 from urllib.parse import urldefrag
 
 from mistune import create_markdown
+from mistune.block_parser import BlockParser
 from mistune.renderers import HTMLRenderer
 from mistune.util import escape_html
 
@@ -124,7 +125,7 @@ def markdown_list_hook(markdown, text, state):
     * other item
     ```
 
-    Similarly, lists that are completely indented or that posses nested lists
+    Similarly, lists that are completely indented or that contains nested lists
     produce incorrect HTML ``<p>``/``<li>`` tag combinations.
 
     Because list parsing is deeply nested within ``mistune.block_parser.BlockParser``
@@ -231,7 +232,35 @@ def markdown_list_hook(markdown, text, state):
 
         begin = end + 1
     result += text[begin:]
+    # Because lists regexes are designed to detect line-by-line bullets/paragraphs,
+    # we cannot directly (or easily / with certainty) detect "list-like" encase in
+    # fenced code definitions that could be much above/below the "list-like" items.
+    # Instead, simply revert them after the fact with document-level matches of fenced codes.
+    _logger.debug("Original Markdown:\n\n%s\n\n", text)
+    _logger.debug("Modified Markdown:\n\n%s\n\n", result)
+    result = patch_fenced_code(text, result)
+    _logger.debug("Patched Markdown:\n\n%s\n\n", result)
     return result, state
+
+
+def patch_fenced_code(original_markdown_text: str, modified_markdown_text: str) -> str:
+    """
+    Reverts fenced code fragments found in the modified contents back to their original definition.
+    """
+    matches_original = list(re.finditer(BlockParser.FENCED_CODE, original_markdown_text))
+    matches_modified = list(re.finditer(BlockParser.FENCED_CODE, modified_markdown_text))
+    if len(matches_original) != len(matches_modified):
+        raise ValueError("Cannot patch fenced code definitions with inconsistent matches.")
+    result = ""
+    begin = 0
+    for original, modified in zip(matches_original, matches_modified):
+        ori_s, ori_e = original.start(), original.end()
+        mod_s, mod_e = modified.start(), modified.end()
+        result += modified_markdown_text[begin:mod_s]  # add text in between matches
+        result += original_markdown_text[ori_s:ori_e]  # revert the fenced code
+        begin = mod_e  # skip over the modified fenced code for next match
+    result += modified_markdown_text[begin:]  # left over text after last match
+    return result
 
 
 def to_id(text: str) -> str:
