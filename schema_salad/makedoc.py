@@ -22,7 +22,6 @@ from typing import (
 from urllib.parse import urldefrag
 
 from mistune import create_markdown
-from mistune.block_parser import BlockParser
 from mistune.renderers import HTMLRenderer
 from mistune.util import escape_html
 
@@ -247,12 +246,15 @@ def patch_fenced_code(original_markdown_text: str, modified_markdown_text: str) 
     """
     Reverts fenced code fragments found in the modified contents back to their original definition.
     """
-    matches_original = list(
-        re.finditer(BlockParser.FENCED_CODE, original_markdown_text)
+    # Pattern inspired from 'mistune.block_parser.BlockParser.FENCED_CODE'.
+    # However, instead of the initial ' {0,3}' part to match any indented fenced-code,
+    # use any quantity of spaces, as long as they match at the end as well (using '\1').
+    # Because of nested fenced-code in lists, it can be more indented than "normal".
+    fenced_code_pattern = re.compile(
+        r"( *)(`{3,}|~{3,})([^`\n]*)\n(?:|([\s\S]*?)\n)(?:\1\2[~`]* *\n+|$)"
     )
-    matches_modified = list(
-        re.finditer(BlockParser.FENCED_CODE, modified_markdown_text)
-    )
+    matches_original = list(re.finditer(fenced_code_pattern, original_markdown_text))
+    matches_modified = list(re.finditer(fenced_code_pattern, modified_markdown_text))
     if len(matches_original) != len(matches_modified):
         raise ValueError(
             "Cannot patch fenced code definitions with inconsistent matches."
