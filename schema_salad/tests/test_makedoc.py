@@ -40,7 +40,9 @@ def generate_doc(schema_data: Optional[str] = None) -> str:
     """Avoid error when calling fixture directly."""
     stdout = StringIO()
     if schema_data:
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".yml") as tmp_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", suffix=".yml"
+        ) as tmp_file:
             tmp_file.write(schema_data)
             tmp_file.flush()
             tmp_file.seek(0)
@@ -67,42 +69,44 @@ def test_doc_fenced_code_contents_preserved() -> None:
     However, special characters (e.g.: ``<``, ``>``) must still be escaped, otherwise they will not be correctly
     rendered within an HTML ``<pre><code>`` block.
     """
-    data = inspect.cleandoc("""
-    Option one generic example:
-    ```
-    some_cwl_field:
-      - key_field: a_complex_type1
-        field2: foo
-        field3: bar
-      - key_field: a_complex_type2
-        field2: foo2
-        field3: bar2
-      - key_field: a_complex_type3
-    ```
+    data = inspect.cleandoc(
+        """
+        Option one generic example:
+        ```
+        some_cwl_field:
+          - key_field: a_complex_type1
+            field2: foo
+            field3: bar
+          - key_field: a_complex_type2
+            field2: foo2
+            field3: bar2
+          - key_field: a_complex_type3
+        ```
 
-    Option one generic example:
-    ```
-    inputs:
-      - id: workflow_input01
-        type: string
-      - id: workflow_input02
-        type: File
-        format: http://edamontology.org/format_2572
-    ```
+        Option one generic example:
+        ```
+        inputs:
+          - id: workflow_input01
+            type: string
+          - id: workflow_input02
+            type: File
+            format: http://edamontology.org/format_2572
+        ```
 
-    Special Characters:
-    ```
-    data:
-      - test: value 1 < 2 is true
-      - test: value 2 > 1 is false
-    ```
-    """)
+        Special Characters:
+        ```
+        data:
+          - test: value 1 < 2 is true
+          - test: value 2 > 1 is false
+        ```
+        """
+    )
     schema_data = json.dumps(
         [
             {
                 "name": "https://w3id.org/cwl/salad#test",
                 "type": "documentation",
-                "doc": data
+                "doc": data,
             }
         ]
     )

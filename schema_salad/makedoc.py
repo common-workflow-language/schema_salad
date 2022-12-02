@@ -247,10 +247,16 @@ def patch_fenced_code(original_markdown_text: str, modified_markdown_text: str) 
     """
     Reverts fenced code fragments found in the modified contents back to their original definition.
     """
-    matches_original = list(re.finditer(BlockParser.FENCED_CODE, original_markdown_text))
-    matches_modified = list(re.finditer(BlockParser.FENCED_CODE, modified_markdown_text))
+    matches_original = list(
+        re.finditer(BlockParser.FENCED_CODE, original_markdown_text)
+    )
+    matches_modified = list(
+        re.finditer(BlockParser.FENCED_CODE, modified_markdown_text)
+    )
     if len(matches_original) != len(matches_modified):
-        raise ValueError("Cannot patch fenced code definitions with inconsistent matches.")
+        raise ValueError(
+            "Cannot patch fenced code definitions with inconsistent matches."
+        )
     result = ""
     begin = 0
     for original, modified in zip(matches_original, matches_modified):
