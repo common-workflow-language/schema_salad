@@ -256,7 +256,8 @@ rules:
   field.
 
   * If the value of `jsonldPredicate` is an object, and that
-  object contains the field `_type` with the value `@id`, the field is a
+  object contains the field `_type` with the value `@id` and
+  the field `identity` with the value `false`, the field is a
   link field subject to [link validation](#Link_validation).
 
   * If the value of `jsonldPredicate` is an object which contains the
