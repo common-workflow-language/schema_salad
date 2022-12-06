@@ -51,7 +51,7 @@ module {self.package};
 import salad.meta.dumper : genDumper;
 import salad.meta.impl : genCtor, genIdentifier, genOpEq;
 import salad.meta.parser : import_ = importFromURI;
-import salad.meta.uda : documentRoot, id, idMap, link, secondaryFilesDSL, typeDSL;
+import salad.meta.uda : documentRoot, id, idMap, link, LinkResolver, secondaryFilesDSL, typeDSL;
 import salad.primitives : SchemaBase;
 import salad.type : None, Either;
 
@@ -148,11 +148,11 @@ unittest
                     annotations.append(f'@idMap("{subject}", "{predicate}")')
                 else:
                     annotations.append(f'@idMap("{subject}")')
-            if (
-                jsonld_pred.get("_type", "") == "@id"
-                and not jsonld_pred.get("identity", False)
-            ):
-                annotations.append("@link")
+            if jsonld_pred.get("_type", "") == "@id":
+                if jsonld_pred.get("identity", False):
+                    annotations.append("@link(LinkResolver.id)")
+                else:
+                    annotations.append("@link()")
         if annotations:
             annotate_str = " ".join(annotations) + " "
         else:
