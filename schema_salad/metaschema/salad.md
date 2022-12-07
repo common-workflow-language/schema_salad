@@ -256,9 +256,11 @@ rules:
   field.
 
   * If the value of `jsonldPredicate` is an object, and that
-  object contains the field `_type` with the value `@id` and
-  the field `identity` with the value `false`, the field is a
-  link field subject to [link validation](#Link_validation).
+  object contains the field `_type` with the value `@id`, the
+  field is a link field.  If the field `jsonldPredicate` also
+  has the field `identity` with the value `true`, the field is
+  resolved with [identifier resolution](#Identifier_resolution).
+  Otherwise it is resolved with [link resolution](#Link_resolution).
 
   * If the value of `jsonldPredicate` is an object which contains the
   field `_type` with the value `@vocab`, the field value is subject to
