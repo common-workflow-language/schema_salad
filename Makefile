@@ -27,9 +27,7 @@ EXTRAS=[pycodegen]
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py ${MODULE}/avro/*.py ${MODULE}/tests/*.py) setup.py
-DEVPKGS=diff_cover black pylint pep257 pydocstyle flake8 tox tox-pyenv \
-	isort wheel autoflake flake8-bugbear pyupgrade bandit build\
-	-rtest-requirements.txt -rmypy-requirements.txt
+DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt
 COVBASE=coverage run --append
 
 # Updating the Major & Minor version below?
@@ -52,7 +50,6 @@ install-dep: install-dependencies
 
 install-dependencies: FORCE
 	pip install --upgrade $(DEVPKGS)
-	pip install -r requirements.txt -r mypy-requirements.txt
 
 ## install                : install the schema-salad package and scripts
 install: FORCE
@@ -60,6 +57,7 @@ install: FORCE
 
 ## dev                    : install the schema-salad package in dev mode
 dev: install-dep
+	pip install -U pip setuptools wheel
 	pip install -e .$(EXTRAS)
 
 ## dist                   : create a module package for distribution
