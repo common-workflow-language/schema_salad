@@ -48,7 +48,7 @@ def generate_doc(schema_data: Optional[str] = None) -> str:
             tmp_file.seek(0)
             makedoc(stdout, tmp_file.name)
     else:
-        schema_path = get_data("schema_salad/metaschema/metaschema.yml")
+        schema_path = get_data("metaschema/metaschema.yml")
         assert schema_path
         makedoc(stdout, schema_path)
     return stdout.getvalue()
@@ -241,5 +241,5 @@ def test_detect_changes_in_html(metaschema_doc: str) -> None:
     hasher.update(metaschema_doc.encode("utf-8"))
     assert (
         hasher.hexdigest()
-        == "5fa6b79fdd146a3c73d964295b90e270dc6e91103479072f03d7191e2e5af841"
+        == "3f0764e5a98a8b5dd7a5276786d91e9b8b53448be9ee5eeadbaca57408967681"
     )

@@ -200,15 +200,7 @@ check-metaschema-diff:
 	diff -a --color /tmp/metaschema.orig.html /tmp/metaschema.new.html || true
 
 compute-metaschema-hash:
-	@python -c ' \
-        import hashlib; \
-        from schema_salad.tests.test_makedoc import generate_doc; \
-        doc = generate_doc(); \
-        hasher = hashlib.sha256(); \
-        hasher.update(doc.encode("utf-8")); \
-        hash = hasher.hexdigest(); \
-        print(hash); \
-    '
+	@python -c 'import hashlib; from schema_salad.tests.test_makedoc import generate_doc; hasher = hashlib.sha256(); hasher.update(generate_doc().encode("utf-8")); print(hasher.hexdigest());'
 
 shellcheck: FORCE
 	shellcheck build-schema_salad-docker.sh release-test.sh
