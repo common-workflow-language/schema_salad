@@ -14,6 +14,7 @@ and update the affected tests to use those new file(s).
 import hashlib
 import inspect
 import json
+from pathlib import Path
 from io import StringIO
 from typing import Optional
 
@@ -217,7 +218,7 @@ def test_multiline_list_entries_without_indention(metaschema_doc: str) -> None:
     )
 
 
-def test_detect_changes_in_html(metaschema_doc: str) -> None:
+def test_detect_changes_in_html(metaschema_doc: str, tmp_path: Path) -> None:
     """Catch all for changes in HTML output, please adjust if the changes are innocent."""
     # If the hash changed because the metaschema itself changed (without changes
     # to makedoc.py or the version of mistune) then you can directly update the
@@ -239,7 +240,10 @@ def test_detect_changes_in_html(metaschema_doc: str) -> None:
     # 6. If the changes are agreeable, then update the hash below
     hasher = hashlib.sha256()
     hasher.update(metaschema_doc.encode("utf-8"))
+    result = tmp_path / "result.html"
+    with open(result, "w") as h:
+        h.write(metaschema_doc)
     assert (
         hasher.hexdigest()
-        == "3f0764e5a98a8b5dd7a5276786d91e9b8b53448be9ee5eeadbaca57408967681"
-    )
+        == "0dec6861574d2a80f5f5cd177103747e893fe6b23d1ec9b2b37850408d9ca1d1"
+    ), result
