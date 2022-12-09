@@ -2,14 +2,19 @@
 .eggs
 *.egg-info/
 *pyc
+*.so
 
 build/
 dist/
 mypy-stubs/ruamel/yaml
-# virtualenv 
+# virtualenv
 venv/
 .cache/
+.mypy_cache/
 .pytest_cache/
+.coverage
+coverage.xml
+pydocstyle_report.txt
 
 # PyCharm
 .idea/

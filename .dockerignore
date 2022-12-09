@@ -1,5 +1,6 @@
 .coverage
 coverage.xml
+pydocstyle_report.txt
 .tox/
 .eggs/
 .vscode/
