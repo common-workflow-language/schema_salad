@@ -7,4 +7,4 @@ tox-pyenv < 1.2
 isort < 5.11
 build < 0.9.1
 autoflake < 2.1
-bandit < 1.7.4
+bandit < 1.7.5
