@@ -1,4 +1,4 @@
-diff_cover < 7.3
+diff_cover < 7.4
 pylint < 2.16
 pydocstyle < 6.2
 flake8-bugbear < 22.13
