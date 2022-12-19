@@ -5,4 +5,4 @@ rdflib>= 4.2.2, < 6.0.0;python_version<='3.6'
 rdflib-jsonld>=0.4.0, <= 0.6.1;python_version<='3.6'
 mistune>=2.0.3,<2.1
 CacheControl[filecache]==0.12.11
-black<22.13
+black<23.2
