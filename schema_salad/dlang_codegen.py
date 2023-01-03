@@ -35,7 +35,6 @@ class DlangCodeGen(CodeGenBase):
 
     def prologue(self) -> None:
         """Trigger to generate the prolouge code."""
-
         module_comment = []
 
         if self.parser_info:
@@ -141,7 +140,7 @@ unittest
             for line in lines
         ]
 
-        doc_lines = "\n".join((f" * {line}" for line in lines))
+        doc_lines = "\n".join(f" * {line}" for line in lines)
 
         return f"""/**
 {doc_lines}
@@ -239,7 +238,7 @@ unittest
         if "fields" in stype:
             for field in stype["fields"]:
                 field_decls.append(self.parse_record_field(field, classname))
-        decl_str = "\n".join((textwrap.indent(f"{d}", " " * 4) for d in field_decls))
+        decl_str = "\n".join(textwrap.indent(f"{d}", " " * 4) for d in field_decls)
 
         if stype.get("documentRoot", False):
             doc_root_annotation = "@documentRoot "

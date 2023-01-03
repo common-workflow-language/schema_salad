@@ -244,9 +244,8 @@ def load_schema(
     """
     Load a schema that can be used to validate documents using load_and_validate.
 
-    return: document_loader, avsc_names, schema_metadata, metaschema_loader
+    :returns: document_loader, avsc_names, schema_metadata, metaschema_loader
     """
-
     metaschema_names, _metaschema_doc, metaschema_loader = get_metaschema()
     if cache is not None:
         # we want to replace some items in the cache, so we need to
@@ -538,7 +537,6 @@ def make_valid_avro(
     Avro, MutableMapping[str, str], str, List[Union[Any, MutableMapping[str, str], str]]
 ]:
     """Convert our schema to be more avro like."""
-
     if vocab is None:
         _, _, metaschema_loader = get_metaschema()
         vocab = metaschema_loader.vocab
@@ -605,7 +603,6 @@ def deepcopy_strip(item: Any) -> Any:
     Intentionally do not copy attributes.  This is to discard CommentedMap and
     CommentedSeq metadata which is very expensive with regular copy.deepcopy.
     """
-
     if isinstance(item, MutableMapping):
         return {k: deepcopy_strip(v) for k, v in item.items()}
     if isinstance(item, MutableSequence):
@@ -616,10 +613,7 @@ def deepcopy_strip(item: Any) -> Any:
 def extend_and_specialize(
     items: List[Dict[str, Any]], loader: Loader
 ) -> List[Dict[str, Any]]:
-    """
-    Apply 'extend' and 'specialize' to fully materialize derived record types.
-    """
-
+    """Apply 'extend' and 'specialize' to fully materialize derived record types."""
     items2 = deepcopy_strip(items)
     types = {i["name"]: i for i in items2}  # type: Dict[str, Any]
     results = []
@@ -751,7 +745,6 @@ def make_avro(
     loader: Loader,
     metaschema_vocab: Optional[Dict[str, str]] = None,
 ) -> List[Any]:
-
     j = extend_and_specialize(i, loader)
 
     name_dict = {}  # type: Dict[str, Dict[str, Any]]
@@ -791,7 +784,7 @@ def make_avro_schema_from_avro(avro: List[Union[Avro, Dict[str, str], str]]) -> 
 
 
 def shortname(inputid: str) -> str:
-    """Returns the last segment of the provided fragment or path."""
+    """Return the last segment of the provided fragment or path."""
     parsed_id = urlparse(inputid)
     if parsed_id.fragment:
         return parsed_id.fragment.split("/")[-1]

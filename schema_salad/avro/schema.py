@@ -422,15 +422,16 @@ class ArraySchema(Schema):
 
 
 class UnionSchema(Schema):
-    """
-    names is a dictionary of schema objects
-    """
-
     def __init__(
         self,
         schemas: List[JsonDataType],
         names: Names,
     ) -> None:
+        """
+        Initialize a new UnionSchema.
+
+        :param names: a dictionary of schema objects
+        """
         # Ensure valid ctor args
         if names is None:
             raise SchemaParseException("Must provide Names.")
@@ -555,8 +556,9 @@ def get_other_props(
     all_props: PropsType, reserved_props: Tuple[str, ...]
 ) -> Optional[PropsType]:
     """
-    Retrieve the non-reserved properties from a dictionary of properties
-    @args reserved_props: The set of reserved properties to exclude
+    Retrieve the non-reserved properties from a dictionary of properties.
+
+    :param reserved_props: The set of reserved properties to exclude
     """
     if hasattr(all_props, "items") and callable(all_props.items):
         return {k: v for (k, v) in all_props.items() if k not in reserved_props}
@@ -567,7 +569,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
     """
     Build Avro Schema from data parsed out of JSON string.
 
-    @arg names: A Name object (tracks seen names and default space)
+    :param names: A Name object (tracks seen names and default space)
     """
     if names is None:
         names = Names()
@@ -651,7 +653,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
 
 
 def is_subtype(existing: PropType, new: PropType) -> bool:
-    """Checks if a new type specification is compatible with an existing type spec."""
+    """Check if a new type specification is compatible with an existing type spec."""
     if existing == new:
         return True
     if isinstance(existing, list) and (new in existing):
