@@ -1,3 +1,4 @@
+"""Shared Exception classes."""
 from typing import List, Optional, Sequence, Tuple, Union
 
 from .sourceline import SourceLine, reflow_all, strip_duplicated_lineno
@@ -98,6 +99,7 @@ class SchemaSaladException(Exception):
         return f"{self.prefix()}{spaces}{bullet}{self.message}"
 
     def __str__(self) -> str:
+        """Convert to a string using :py:`pretty_str`."""
         return str(self.pretty_str())
 
     def pretty_str(self, level: int = 0) -> str:

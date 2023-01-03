@@ -14,11 +14,11 @@ and update the affected tests to use those new file(s).
 import hashlib
 import inspect
 import json
-from pathlib import Path
+import tempfile
 from io import StringIO
+from pathlib import Path
 from typing import Optional
 
-import tempfile
 import pytest
 
 from schema_salad.makedoc import makedoc

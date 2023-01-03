@@ -112,7 +112,11 @@ def bullets(textlist: List[str], bul: str) -> str:
 
 
 def strip_duplicated_lineno(text: str) -> str:
-    """Same as `strip_dup_lineno` but without reflow"""
+    """
+    Strip duplicated line numbers.
+
+    Same as :py:`strip_dup_lineno` but without reflow.
+    """
     pre = None  # type: Optional[str]
     msg = []
     for line in text.splitlines():

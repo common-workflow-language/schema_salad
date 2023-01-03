@@ -44,7 +44,6 @@ IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
 
 
 class LoadingOptions:
-
     idx: IdxType
     fileuri: Optional[str]
     baseuri: str
@@ -70,7 +69,6 @@ class LoadingOptions:
         idx: Optional[IdxType] = None,
     ) -> None:
         """Create a LoadingOptions object."""
-
         self.original_doc = original_doc
 
         if idx is not None:

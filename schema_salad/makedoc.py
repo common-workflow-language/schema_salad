@@ -243,9 +243,7 @@ def markdown_list_hook(markdown, text, state):
 
 
 def patch_fenced_code(original_markdown_text: str, modified_markdown_text: str) -> str:
-    """
-    Reverts fenced code fragments found in the modified contents back to their original definition.
-    """
+    """Reverts fenced code fragments found in the modified contents back to their original definition."""
     # Pattern inspired from 'mistune.block_parser.BlockParser.FENCED_CODE'.
     # However, instead of the initial ' {0,3}' part to match any indented fenced-code,
     # use any quantity of spaces, as long as they match at the end as well (using '\1').

@@ -902,7 +902,7 @@ public enum {clazz} {{
             "main_utils": self.main_src_dir,
             "test_utils": self.test_src_dir,
         }
-        for (util_src, util_target) in util_src_dirs.items():
+        for util_src, util_target in util_src_dirs.items():
             for util in pkg_resources.resource_listdir(__name__, f"java/{util_src}"):
                 src_path = util_target / "utils" / util
                 src_template = template_from_resource(os.path.join(util_src, util))

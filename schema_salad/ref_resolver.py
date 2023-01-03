@@ -154,7 +154,6 @@ class Loader:
         allow_attachments: Optional[AttachmentsType] = None,
         doc_cache: Union[str, bool] = True,
     ) -> None:
-
         self.idx = (
             NormDict(lambda url: urllib.parse.urlsplit(url).geturl())
             if idx is None
@@ -401,7 +400,6 @@ class Loader:
         strict_foreign_properties: bool = False,
         content_types: Optional[List[str]] = None,  # Expected content-types
     ) -> ResolvedRefType:
-
         lref = ref
         obj = None  # type: Optional[CommentedMap]
         resolved_obj = None  # type: ResolveType
@@ -618,7 +616,6 @@ class Loader:
         lc: LineCol,
         filename: str,
     ) -> Union[str, CommentedMap, CommentedSeq]:
-
         if not isinstance(t, str):
             return t
 
@@ -646,7 +643,6 @@ class Loader:
         lc: LineCol,
         filename: str,
     ) -> Union[str, CommentedMap, CommentedSeq]:
-
         if not isinstance(t, str):
             return t
         pat = t[0:-1] if t.endswith("?") else t
