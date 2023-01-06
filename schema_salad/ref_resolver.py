@@ -284,25 +284,31 @@ class Loader:
         if self.skip_schemas:
             return
         for sch in aslist(ns):
-            try:
-                fetchurl = self.fetcher.urljoin(base_url, sch)
-                if fetchurl not in self.cache or self.cache[fetchurl] is True:
-                    _logger.debug("Getting external schema %s", fetchurl)
+            fetchurl = self.fetcher.urljoin(base_url, sch)
+            if fetchurl not in self.cache or self.cache[fetchurl] is True:
+                _logger.debug("Getting external schema %s", fetchurl)
+                try:
                     content = self.fetch_text(fetchurl)
-                    self.cache[fetchurl] = newGraph = Graph()
-                    for fmt in ["xml", "turtle", "rdfa"]:
-                        try:
-                            newGraph.parse(
-                                data=content, format=fmt, publicID=str(fetchurl)
-                            )
-                            self.graph += self.cache[fetchurl]
-                            break
-                        except (xml.sax.SAXParseException, TypeError, BadSyntax):
-                            pass
-            except Exception as e:
-                _logger.warning(
-                    "Could not load extension schema %s: %s", fetchurl, str(e)
-                )
+                except Exception as e:
+                    _logger.warning(
+                        "Could not load extension schema %s: %s", fetchurl, str(e)
+                    )
+                    continue
+                newGraph = Graph()
+                err_msg = "unknown error"
+                for fmt in ["xml", "turtle", "rdfa"]:
+                    try:
+                        newGraph.parse(data=content, format=fmt, publicID=str(fetchurl))
+                        self.cache[fetchurl] = newGraph
+                        self.graph += newGraph
+                        break
+                    except (xml.sax.SAXParseException, TypeError, BadSyntax) as e:
+                        err_msg = str(e)
+                        pass
+                else:
+                    _logger.warning(
+                        "Could not load extension schema %s: %s", fetchurl, err_msg
+                    )
 
         for s, _, _ in self.graph.triples((None, RDF.type, RDF.Property)):
             self._add_properties(s)
