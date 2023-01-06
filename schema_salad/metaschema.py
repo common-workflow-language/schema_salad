@@ -149,24 +149,29 @@ class LoadingOptions:
                 if self.fileuri is not None
                 else pathlib.Path(schema).resolve().as_uri()
             )
-            try:
-                if fetchurl not in self.cache or self.cache[fetchurl] is True:
-                    _logger.debug("Getting external schema %s", fetchurl)
+            if fetchurl not in self.cache or self.cache[fetchurl] is True:
+                _logger.debug("Getting external schema %s", fetchurl)
+                try:
                     content = self.fetcher.fetch_text(fetchurl)
-                    self.cache[fetchurl] = newGraph = Graph()
-                    for fmt in ["xml", "turtle"]:
-                        try:
-                            newGraph.parse(
-                                data=content, format=fmt, publicID=str(fetchurl)
-                            )
-                            break
-                        except (xml.sax.SAXParseException, TypeError, BadSyntax):
-                            pass
-                graph += self.cache[fetchurl]
-            except Exception as e:
-                _logger.warning(
-                    "Could not load extension schema %s: %s", fetchurl, str(e)
-                )
+                except Exception as e:
+                    _logger.warning(
+                        "Could not load extension schema %s: %s", fetchurl, str(e)
+                    )
+                    continue
+                newGraph = Graph()
+                err_msg = "unknown error"
+                for fmt in ["xml", "turtle"]:
+                    try:
+                        newGraph.parse(data=content, format=fmt, publicID=str(fetchurl))
+                        self.cache[fetchurl] = newGraph
+                        graph += newGraph
+                        break
+                    except (xml.sax.SAXParseException, TypeError, BadSyntax) as e:
+                        err_msg = str(e)
+                else:
+                    _logger.warning(
+                        "Could not load extension schema %s: %s", fetchurl, err_msg
+                    )
         self.cache[key] = graph
         return graph
 
