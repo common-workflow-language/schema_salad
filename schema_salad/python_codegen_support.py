@@ -216,6 +216,28 @@ save_type = Optional[
     Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]
 ]
 
+def get_line_numbers(doc: CommentedMap) -> dict:
+    line_numbers = {}
+    for key, value in doc.items():
+        line_numbers[key] = {}
+        line_numbers[value] = {}
+        line_numbers[key]["line"] = doc.lc.data[key][0]
+        line_numbers[key]["col"] = doc.lc.data[key][1]
+        line_numbers[value]["line"] = doc.lc.data[key][2]
+        line_numbers[value]["col"] = doc.lc.data[key][3]
+    return line_numbers
+
+def get_max_line_num(doc: CommentedMap) -> int:
+    max_line = 0
+    max_key = ""
+    cur = doc
+    while(type(cur) == CommentedMap):
+        for key in doc.keys():
+            if doc.lc.data[key][2] > max_line:
+                max_line = doc.lc.data[key][2] 
+            max_key = key
+        cur = cur[max_key]
+    return max_line
 
 def save(
     val: Any,
@@ -225,7 +247,7 @@ def save(
     doc = None,
 ) -> save_type:
     if isinstance(val, Saveable):
-        return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
+        return val.save(top=top, base_url=base_url, relative_uris=relative_uris, line_info=doc)
     if isinstance(val, MutableSequence):
         r = CommentedSeq()
         for v in val:
