@@ -27,7 +27,7 @@ from urllib.request import pathname2url
 
 from rdflib import Graph
 from rdflib.plugins.parsers.notation3 import BadSyntax
-from ruamel.yaml.comments import CommentedMap
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from schema_salad.exceptions import SchemaSaladException, ValidationException
 from schema_salad.fetcher import DefaultFetcher, Fetcher, MemoryCachingFetcher
@@ -222,21 +222,38 @@ def save(
     top: bool = True,
     base_url: str = "",
     relative_uris: bool = True,
+    doc = None,
 ) -> save_type:
     if isinstance(val, Saveable):
         return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
     if isinstance(val, MutableSequence):
-        return [
-            save(v, top=False, base_url=base_url, relative_uris=relative_uris)
-            for v in val
-        ]
+        r = CommentedSeq()
+        for v in val:
+            if doc:
+                if v in doc: 
+                    r.lc.data.add_kv_line_col(v, doc.lc.data[v])
+            r.append(save(v, top=False, base_url=base_url, relative_uris=relative_uris, doc=doc))
+        return r
+        # return [
+        #     save(v, top=False, base_url=base_url, relative_uris=relative_uris)
+        #     for v in val
+        # ]
     if isinstance(val, MutableMapping):
-        newdict = {}
+        newdict = CommentedMap()
         for key in val:
+            if doc:
+                if key in doc:
+                    newdict.lc.add_kv_line_col(key, doc.lc.data[key])
             newdict[key] = save(
-                val[key], top=False, base_url=base_url, relative_uris=relative_uris
+                val[key], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc
             )
         return newdict
+        # newdict = {}
+        # for key in val:
+        #     newdict[key] = save(
+        #         val[key], top=False, base_url=base_url, relative_uris=relative_uris
+        #     )
+        # return newdict
     if val is None or isinstance(val, (int, float, bool, str)):
         return val
     raise Exception("Not Saveable: %s" % type(val))
@@ -707,11 +724,11 @@ def _document_load(
             addl_metadata=addl_metadata,
         )
 
-        doc = {
-            k: v
-            for k, v in doc.items()
-            if k not in ("$namespaces", "$schemas", "$base")
-        }
+        # doc = {
+        #     k: v
+        #     for k, v in doc.items()
+        #     if k not in ("$namespaces", "$schemas", "$base")
+        # }
 
         if "$graph" in doc:
             loadingOptions.idx[baseuri] = (
