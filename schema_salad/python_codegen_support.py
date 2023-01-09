@@ -215,7 +215,6 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
 save_type = Optional[
     Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]
 ]
-
 def add_kv(old_doc: CommentedMap, new_doc: CommentedMap, line_numbers: dict, key: str, val: Any, max_len: int, cols: dict)->int:
     if key in line_numbers:
         new_doc.lc.add_kv_line_col(key, old_doc.lc.info["key"])
@@ -231,16 +230,21 @@ def add_kv(old_doc: CommentedMap, new_doc: CommentedMap, line_numbers: dict, key
         new_doc.lc.add_kv_line_col(key, [max_len, 0, max_len, len(key) + 2])
         max_len += 1
     return max_len
-    
+
+
+
+
 def get_line_numbers(doc: CommentedMap) -> dict:
     line_numbers = {}
     for key, value in doc.items():
         line_numbers[key] = {}
-        line_numbers[value] = {}
+
         line_numbers[key]["line"] = doc.lc.data[key][0]
         line_numbers[key]["col"] = doc.lc.data[key][1]
-        line_numbers[value]["line"] = doc.lc.data[key][2]
-        line_numbers[value]["col"] = doc.lc.data[key][3]
+        if type(value) in [str, int]:
+            line_numbers[value] = {}
+            line_numbers[value]["line"] = doc.lc.data[key][2]
+            line_numbers[value]["col"] = doc.lc.data[key][3]
     return line_numbers
 
 def get_max_line_num(doc: CommentedMap) -> int:
@@ -248,12 +252,13 @@ def get_max_line_num(doc: CommentedMap) -> int:
     max_key = ""
     cur = doc
     while(type(cur) == CommentedMap):
-        for key in doc.keys():
-            if doc.lc.data[key][2] > max_line:
-                max_line = doc.lc.data[key][2] 
+        for key in cur.keys():
+            if cur.lc.data[key][2] >= max_line:
+                max_line = cur.lc.data[key][2] 
             max_key = key
         cur = cur[max_key]
     return max_line
+
 
 def save(
     val: Any,
