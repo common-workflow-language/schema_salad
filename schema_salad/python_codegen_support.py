@@ -216,6 +216,22 @@ save_type = Optional[
     Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]
 ]
 
+def add_kv(old_doc: CommentedMap, new_doc: CommentedMap, line_numbers: dict, key: str, val: Any, max_len: int, cols: dict)->int:
+    if key in line_numbers:
+        new_doc.lc.add_kv_line_col(key, old_doc.lc.info["key"])
+    elif val in line_numbers:
+        line = line_numbers[val]["line"]
+        if line in cols:
+            col = max(line_numbers[val]["col"], cols[line])
+        else:
+            col = line_numbers[val]["col"]
+        new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
+        cols[line] = col + len("id") + 2
+    else: 
+        new_doc.lc.add_kv_line_col(key, [max_len, 0, max_len, len(key) + 2])
+        max_len += 1
+    return max_len
+    
 def get_line_numbers(doc: CommentedMap) -> dict:
     line_numbers = {}
     for key, value in doc.items():
