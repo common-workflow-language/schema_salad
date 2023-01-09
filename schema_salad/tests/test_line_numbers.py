@@ -10,6 +10,7 @@ from schema_salad.fetcher import DefaultFetcher
 from schema_salad.python_codegen import PythonCodeGen
 from schema_salad.python_codegen_support import LoadingOptions
 from schema_salad.schema import load_schema
+import os
 
 
 
@@ -54,3 +55,4 @@ def python_codegen(
 
 if __name__ == "__main__":
     python_codegen('https://github.com/common-workflow-language/common-workflow-language/raw/codegen/v1.0/CommonWorkflowLanguage.yml', 'cwl_v1_0.py')
+    assert(os.path.exists('cwl_v1_0.py'))
