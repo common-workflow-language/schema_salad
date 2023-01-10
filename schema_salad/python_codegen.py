@@ -170,6 +170,8 @@ class PythonCodeGen(CodeGenBase):
             self.out.write("    pass\n\n\n")
             return
 
+        field_names.append("_doc")
+
         required_field_names = [f for f in field_names if f not in optional_fields]
         optional_field_names = [f for f in field_names if f in optional_fields]
 
@@ -274,10 +276,16 @@ class PythonCodeGen(CodeGenBase):
         self.serializer.write(
             """
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True
-    ) -> Dict[str, Any]:
-        r: Dict[str, Any] = {}
-
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, line_info = None
+    ) -> CommentedMap:
+        r = CommentedMap()
+        if (line_info != None and type(self._doc) == dict):
+            self._doc = line_info
+        if (type(self._doc) == CommentedMap):
+            r._yaml_set_line_col(self._doc.lc.line,self._doc.lc.col)
+        line_numbers = get_line_numbers(self._doc)
+        max_len = get_max_line_num(self._doc)
+        cols = {}
         if relative_uris:
             for ef in self.extension_fields:
                 r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
@@ -301,6 +309,15 @@ class PythonCodeGen(CodeGenBase):
             self.serializer.write(
                 """
         r["class"] = "{class_}"
+        max_len = add_kv(
+                old_doc=self._doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="class",
+                val=r.get("class"),
+                max_len=max_len,
+                cols=cols,
+            )
 """.format(
                     class_=classname
                 )
@@ -395,6 +412,7 @@ if _errors__:
             sub_names: List[str] = list(
                 dict.fromkeys([self.type_loader(i).name for i in type_declaration])
             )
+
             return self.declare_type(
                 TypeDef(
                     "union_of_{}".format("_or_".join(sub_names)),
@@ -567,12 +585,15 @@ if _errors__:
 if self.{safename} is not None:
     u = save_relative_uri(self.{safename}, {baseurl}, {scoped_id}, {ref_scope}, relative_uris)
     r["{fieldname}"] = u
+    max_len = add_kv(old_doc = self._doc, new_doc = r, line_numbers = line_numbers, key = "{key_1}", val = r.get("{key_2}"), max_len = max_len, cols = cols)
 """.format(
                         safename=self.safe_name(name),
                         fieldname=shortname(name).strip(),
                         baseurl=baseurl,
                         scoped_id=fieldtype.scoped_id,
                         ref_scope=fieldtype.ref_scope,
+                        key_1=self.safe_name(name),
+                        key_2=self.safe_name(name),
                     ),
                     8,
                 )
@@ -583,12 +604,16 @@ if self.{safename} is not None:
                     """
 if self.{safename} is not None:
     r["{fieldname}"] = save(
-        self.{safename}, top=False, base_url={baseurl}, relative_uris=relative_uris
+        self.{safename}, top=False, base_url={baseurl}, relative_uris=relative_uris, doc=self._doc.get("{keyname}")
     )
+    max_len = add_kv(old_doc = self._doc, new_doc = r, line_numbers = line_numbers, key = "{key_1}", val = r.get("{key_2}"), max_len = max_len, cols = cols)
 """.format(
                         safename=self.safe_name(name),
                         fieldname=shortname(name),
                         baseurl=baseurl,
+                        keyname=self.safe_name(name),
+                        key_1=self.safe_name(name),
+                        key_2=self.safe_name(name),
                     ),
                     8,
                 )

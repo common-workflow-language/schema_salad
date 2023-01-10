@@ -215,9 +215,10 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
 save_type = Optional[
     Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]
 ]
+
 def add_kv(old_doc: CommentedMap, new_doc: CommentedMap, line_numbers: dict, key: str, val: Any, max_len: int, cols: dict)->int:
     if key in line_numbers:
-        new_doc.lc.add_kv_line_col(key, old_doc.lc.info["key"])
+        new_doc.lc.add_kv_line_col(key, old_doc.lc.data[key])
     elif val in line_numbers:
         line = line_numbers[val]["line"]
         if line in cols:
@@ -230,9 +231,6 @@ def add_kv(old_doc: CommentedMap, new_doc: CommentedMap, line_numbers: dict, key
         new_doc.lc.add_kv_line_col(key, [max_len, 0, max_len, len(key) + 2])
         max_len += 1
     return max_len
-
-
-
 
 def get_line_numbers(doc: CommentedMap) -> dict:
     line_numbers = {}
@@ -275,6 +273,8 @@ def save(
             if doc:
                 if v in doc: 
                     r.lc.data.add_kv_line_col(v, doc.lc.data[v])
+            if len(r) == 1:
+                return r[0]
             r.append(save(v, top=False, base_url=base_url, relative_uris=relative_uris, doc=doc))
         return r
         # return [
