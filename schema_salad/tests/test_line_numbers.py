@@ -3,31 +3,42 @@ from pathlib import Path
 from schema_salad.utils import yaml_no_ts
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from typing import Any, Dict, List, Optional, cast
-import schema_salad.metaschema as cg_metaschema
 from schema_salad import codegen
 from schema_salad.avro.schema import Names
-from schema_salad.fetcher import DefaultFetcher
-from schema_salad.python_codegen import PythonCodeGen
-from schema_salad.python_codegen_support import LoadingOptions
 from schema_salad.schema import load_schema
-import os
 
 
 
-def check_structure(codegen_doc):
-    assert type(codegen_doc) == CommentedMap
-
-
-def compare_comments(original_doc, codegen_doc):
-    return None
-
-def compare_line_numbers(original_doc, codegen_doc):
+def compare_line_numbers(original_doc:CommentedMap, codegen_doc:CommentedMap)->None:
     assert type(original_doc) == CommentedMap
     assert type(codegen_doc) == CommentedMap
 
-    assert original_doc.lc == codegen_doc.lc
+    assert original_doc.lc.line == codegen_doc.lc.line
+    assert original_doc.lc.col == codegen_doc.lc.col
 
-    assert original_doc.lc.data == codegen_doc.lc.data
+    for key, lc_info in original_doc.lc.data.items():
+        assert key in codegen_doc.lc.data
+        assert lc_info==codegen_doc.lc.data[key]
+
+    max_line = get_max_line_number(original_doc)
+
+    for key, lc_info in codegen_doc.lc.data.items():
+        if key in original_doc:
+            continue
+        assert lc_info == [max_line, 0, max_line, len(key) + 2]
+        max_line += 1
+
+def get_max_line_number(original_doc:CommentedMap)->int:
+    max_key = ""
+    max_line = 0
+    temp_doc = original_doc
+    while (type(temp_doc) == CommentedMap) and len(temp_doc) > 0:
+        for key, lc_info in temp_doc.lc.data.items():
+            if lc_info[0] >= max_line:
+                max_line = lc_info[0]
+                max_key = key
+        temp_doc = temp_doc[max_key]
+    return max_line + 1
 
 def python_codegen(
     file_uri: str,
@@ -50,9 +61,5 @@ def python_codegen(
         document_loader,
         target=str(target),
         parser_info=parser_info,
-        package=package,
+        package=package
     )
-
-if __name__ == "__main__":
-    python_codegen('https://github.com/common-workflow-language/common-workflow-language/raw/codegen/v1.0/CommonWorkflowLanguage.yml', 'cwl_v1_0.py')
-    assert(os.path.exists('cwl_v1_0.py'))

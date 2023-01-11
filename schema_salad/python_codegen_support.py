@@ -186,8 +186,8 @@ class Saveable(ABC):
 
     @abstractmethod
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True
-    ) -> Dict[str, Any]:
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, line_info: Optional[CommentedMap] = None
+    ) -> CommentedMap:
         """Convert this object to a JSON/YAML friendly dictionary."""
 
 
@@ -216,46 +216,65 @@ save_type = Optional[
     Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]
 ]
 
-def add_kv(old_doc: CommentedMap, new_doc: CommentedMap, line_numbers: dict, key: str, val: Any, max_len: int, cols: dict)->int:
-    if key in line_numbers:
+def add_kv(old_doc: CommentedMap, new_doc: CommentedMap, line_numbers: dict[Any,dict[str,int]], key: str, val: Any, max_len: int, cols: dict[int,int])->int:
+    """Add key value pair into Commented Map.
+
+    Function to add key value pair into new CommentedMap given old CommentedMap, line_numbers for each key/val pair in the old CommentedMap,
+    key/val pair to insert, max_line of the old CommentedMap, and max col value taken for each line.
+    """
+    if key in line_numbers:  # If the key to insert is in the original CommentedMap
         new_doc.lc.add_kv_line_col(key, old_doc.lc.data[key])
-    elif val in line_numbers:
-        line = line_numbers[val]["line"]
-        if line in cols:
-            col = max(line_numbers[val]["col"], cols[line])
-        else:
-            col = line_numbers[val]["col"]
-        new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
-        cols[line] = col + len("id") + 2
-    else: 
+    elif isinstance(val, (int, float, bool, str)):  # If the value is hashable
+        if val in line_numbers:  # If the value is in the original CommentedMap
+            line = line_numbers[val]["line"]
+            if line in cols:
+                col = max(line_numbers[val]["col"], cols[line])
+            else:
+                col = line_numbers[val]["col"]
+            new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
+            cols[line] = col + len("id") + 2
+    else:  # If neither the key or value is in the original CommentedMap (or value is not hashable)
         new_doc.lc.add_kv_line_col(key, [max_len, 0, max_len, len(key) + 2])
         max_len += 1
     return max_len
 
-def get_line_numbers(doc: CommentedMap) -> dict:
-    line_numbers = {}
+
+def get_line_numbers(doc: CommentedMap) -> dict[Any, dict[str, int]]:
+    """Get line numbers for kv pairs in CommentedMap.
+
+    For each key/value pair in a CommentedMap, save the line/col info into a dictionary,
+    only save value info if value is hashable.
+    """
+    line_numbers: Dict[Any, dict[str,int]] = {}
+    if type(doc) == dict:
+        return {}
     for key, value in doc.items():
         line_numbers[key] = {}
 
         line_numbers[key]["line"] = doc.lc.data[key][0]
         line_numbers[key]["col"] = doc.lc.data[key][1]
-        if type(value) in [str, int]:
+        if isinstance(value, (int, float, bool, str)):
             line_numbers[value] = {}
             line_numbers[value]["line"] = doc.lc.data[key][2]
             line_numbers[value]["col"] = doc.lc.data[key][3]
     return line_numbers
 
+
 def get_max_line_num(doc: CommentedMap) -> int:
+    """Get the max line number for a CommentedMap.
+
+    Iterate through the the key with the highest line number until you reach a non-CommentedMap value or empty CommentedMap.
+    """
     max_line = 0
     max_key = ""
     cur = doc
-    while(type(cur) == CommentedMap):
+    while type(cur) == CommentedMap and len(cur) > 0:
         for key in cur.keys():
             if cur.lc.data[key][2] >= max_line:
-                max_line = cur.lc.data[key][2] 
+                max_line = cur.lc.data[key][2]
             max_key = key
         cur = cur[max_key]
-    return max_line
+    return max_line + 1
 
 
 def save(
@@ -263,18 +282,21 @@ def save(
     top: bool = True,
     base_url: str = "",
     relative_uris: bool = True,
-    doc = None,
+    doc: Optional[CommentedMap] = None,
 ) -> save_type:
+    """Save a val of any type.
+
+    Recursively calls save method from class if val is of type Saveable. Otherwise, saves val to CommentedMap or CommentedSeq
+    """
     if isinstance(val, Saveable):
         return val.save(top=top, base_url=base_url, relative_uris=relative_uris, line_info=doc)
     if isinstance(val, MutableSequence):
         r = CommentedSeq()
         for v in val:
             if doc:
-                if v in doc: 
-                    r.lc.data.add_kv_line_col(v, doc.lc.data[v])
-            if len(r) == 1:
-                return r[0]
+                if isinstance(v,(int, float, bool, str)):
+                    if v in doc:
+                        r.lc.data.add_kv_line_col(v, doc.lc.data[v])
             r.append(save(v, top=False, base_url=base_url, relative_uris=relative_uris, doc=doc))
         return r
         # return [
@@ -285,8 +307,9 @@ def save(
         newdict = CommentedMap()
         for key in val:
             if doc:
-                if key in doc:
-                    newdict.lc.add_kv_line_col(key, doc.lc.data[key])
+                if isinstance(key, (int, float, bool, str)):
+                    if key in doc:
+                        newdict.lc.add_kv_line_col(key, doc.lc.data[key])
             newdict[key] = save(
                 val[key], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc
             )
@@ -772,6 +795,13 @@ def _document_load(
         #     for k, v in doc.items()
         #     if k not in ("$namespaces", "$schemas", "$base")
         # }
+
+        if "$namespaces" in doc:
+            doc.pop("$namespaces")
+        if "$schemas" in doc:
+            doc.pop("$schemas")
+        if "$base" in doc:
+            doc.pop("$base")
 
         if "$graph" in doc:
             loadingOptions.idx[baseuri] = (

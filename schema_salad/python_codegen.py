@@ -276,16 +276,16 @@ class PythonCodeGen(CodeGenBase):
         self.serializer.write(
             """
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, line_info = None
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, line_info: Optional[CommentedMap] = None
     ) -> CommentedMap:
         r = CommentedMap()
-        if (line_info != None and type(self._doc) == dict):
+        if line_info is not None:
             self._doc = line_info
         if (type(self._doc) == CommentedMap):
             r._yaml_set_line_col(self._doc.lc.line,self._doc.lc.col)
         line_numbers = get_line_numbers(self._doc)
         max_len = get_max_line_num(self._doc)
-        cols = {}
+        cols: Dict[int, int] = {}
         if relative_uris:
             for ef in self.extension_fields:
                 r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
@@ -309,15 +309,7 @@ class PythonCodeGen(CodeGenBase):
             self.serializer.write(
                 """
         r["class"] = "{class_}"
-        max_len = add_kv(
-                old_doc=self._doc,
-                new_doc=r,
-                line_numbers=line_numbers,
-                key="class",
-                val=r.get("class"),
-                max_len=max_len,
-                cols=cols,
-            )
+        max_len = add_kv(old_doc=self._doc, new_doc=r, line_numbers=line_numbers, key="class", val=r.get("class"), max_len=max_len, cols=cols)
 """.format(
                     class_=classname
                 )
@@ -603,17 +595,20 @@ if self.{safename} is not None:
                 fmt(
                     """
 if self.{safename} is not None:
-    r["{fieldname}"] = save(
-        self.{safename}, top=False, base_url={baseurl}, relative_uris=relative_uris, doc=self._doc.get("{keyname}")
+    saved_val = save(
+        self.{safename}, top=False, base_url={baseurl}, relative_uris=relative_uris, doc=self._doc.get("{fieldname}")
     )
-    max_len = add_kv(old_doc = self._doc, new_doc = r, line_numbers = line_numbers, key = "{key_1}", val = r.get("{key_2}"), max_len = max_len, cols = cols)
+
+    if type(saved_val) == list:
+        if len(saved_val) == 1: # If the returned value is a list of size 1, just save the value in the list
+            saved_val = saved_val[0]
+    r["{fieldname}"] = saved_val
+
+    max_len = add_kv(old_doc = self._doc, new_doc = r, line_numbers = line_numbers, key = "{fieldname}", val = r.get("{fieldname}"), max_len = max_len, cols = cols)
 """.format(
                         safename=self.safe_name(name),
                         fieldname=shortname(name),
                         baseurl=baseurl,
-                        keyname=self.safe_name(name),
-                        key_1=self.safe_name(name),
-                        key_2=self.safe_name(name),
                     ),
                     8,
                 )
