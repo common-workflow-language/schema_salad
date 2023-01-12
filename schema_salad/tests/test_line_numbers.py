@@ -7,7 +7,10 @@ from schema_salad import codegen
 from schema_salad.avro.schema import Names
 from schema_salad.schema import load_schema
 
-
+def test_codegen()->None:
+    compare_line_numbers()
+    compare_line_numbers()
+    compare_line_numbers()
 
 def compare_line_numbers(original_doc:CommentedMap, codegen_doc:CommentedMap)->None:
     assert type(original_doc) == CommentedMap
