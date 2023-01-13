@@ -248,7 +248,7 @@ def get_line_numbers(doc: CommentedMap) -> dict[Any, dict[str, int]]:
     line_numbers: Dict[Any, dict[str,int]] = {}
     if type(doc) == dict:
         return {}
-    for key, value in doc.items():
+    for key, value in doc.lc.data.items():
         line_numbers[key] = {}
 
         line_numbers[key]["line"] = doc.lc.data[key][0]
@@ -269,7 +269,7 @@ def get_max_line_num(doc: CommentedMap) -> int:
     max_key = ""
     cur = doc
     while type(cur) == CommentedMap and len(cur) > 0:
-        for key in cur.keys():
+        for key in cur.lc.data.keys():
             if cur.lc.data[key][2] >= max_line:
                 max_line = cur.lc.data[key][2]
             max_key = key
