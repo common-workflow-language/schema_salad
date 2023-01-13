@@ -266,7 +266,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         _logger.debug("Index is %s", list(metaschema_loader.idx.keys()))
         _logger.debug("Vocabulary is %s", list(metaschema_loader.vocab.keys()))
         return 1
-    except (RuntimeError) as e:
+    except RuntimeError as e:
         _logger.error(
             "Schema `%s` read error:\n%s",
             args.schema,

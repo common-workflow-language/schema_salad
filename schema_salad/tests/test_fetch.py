@@ -77,7 +77,6 @@ outputs: []
 
 
 def test_fetcher() -> None:
-
     loader = Loader({}, fetcher_constructor=testFetcher)
     assert {"hello": "foo"} == loader.resolve_ref("foo.txt")[0]
     assert {"hello": "keepfoo"} == loader.resolve_ref(

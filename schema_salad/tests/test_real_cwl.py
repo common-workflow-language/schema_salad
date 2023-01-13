@@ -19,7 +19,6 @@ test_dir_name = "tests/test_real_cwl/"
 
 
 class TestRealWorldCWL:
-
     document_loader = None  # type: Loader
     avsc_names = None  # type: Union[Names, SchemaParseException]
     schema_metadata = None  # type: Dict[str, Any]

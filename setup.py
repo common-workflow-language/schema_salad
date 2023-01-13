@@ -87,7 +87,7 @@ install_requires = [
     "ruamel.yaml >= 0.16.12, < 0.17.22",
     "rdflib >= 4.2.2, < 7.0.0",
     "rdflib-jsonld>=0.4.0, <= 0.6.1;python_version<='3.6'",
-    "mistune >= 0.8.1, < 0.9",
+    "mistune>=2.0.3,<2.1",
     "CacheControl[filecache] >= 0.11.7, < 0.13",
 ]
 

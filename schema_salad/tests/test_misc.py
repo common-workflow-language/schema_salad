@@ -16,7 +16,6 @@ def test_misc() -> None:
 
 
 def test_load_schema_cache() -> None:
-
     schemaid = "http://commonwl.org/schema_salad/test/schema.yml"
 
     path1 = get_data("tests/test_schema/misc_schema_v1.yml")

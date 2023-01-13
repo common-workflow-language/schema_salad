@@ -400,7 +400,6 @@ if _errors__:
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
-
             sub_names: List[str] = list(
                 dict.fromkeys([self.type_loader(i).name for i in type_declaration])
             )
@@ -507,7 +506,6 @@ if _errors__:
         optional: bool,
         subscope: str,
     ) -> None:
-
         if self.current_class_is_abstract:
             return
 

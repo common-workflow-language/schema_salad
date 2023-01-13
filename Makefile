@@ -27,9 +27,7 @@ EXTRAS=[pycodegen]
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py ${MODULE}/avro/*.py ${MODULE}/tests/*.py) setup.py
-DEVPKGS=diff_cover black pylint pep257 pydocstyle flake8 tox tox-pyenv \
-	isort wheel autoflake flake8-bugbear pyupgrade bandit build\
-	-rtest-requirements.txt -rmypy-requirements.txt
+DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt
 COVBASE=coverage run --append
 
 # Updating the Major & Minor version below?
@@ -52,7 +50,6 @@ install-dep: install-dependencies
 
 install-dependencies: FORCE
 	pip install --upgrade $(DEVPKGS)
-	pip install -r requirements.txt -r mypy-requirements.txt
 
 ## install                : install the schema-salad package and scripts
 install: FORCE
@@ -60,6 +57,7 @@ install: FORCE
 
 ## dev                    : install the schema-salad package in dev mode
 dev: install-dep
+	pip install -U pip setuptools wheel
 	pip install -e .$(EXTRAS)
 
 ## dist                   : create a module package for distribution
@@ -184,6 +182,23 @@ mypy_3.6: $(filter-out setup.py,$(PYSOURCES))
 
 mypyc: $(PYSOURCES)
 	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python setup.py test
+
+mypyi:
+	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python setup.py install
+
+check-metaschema-diff:
+	docker run \
+		-v "$(realpath ${MODULE}/metaschema/):/tmp/:ro" \
+		"quay.io/commonwl/cwltool_module:latest" \
+		schema-salad-doc /tmp/metaschema.yml \
+		> /tmp/metaschema.orig.html
+	schema-salad-doc \
+		"$(realpath ${MODULE}/metaschema/metaschema.yml)" \
+		> /tmp/metaschema.new.html
+	diff -a --color /tmp/metaschema.orig.html /tmp/metaschema.new.html || true
+
+compute-metaschema-hash:
+	@python -c 'import hashlib; from schema_salad.tests.test_makedoc import generate_doc; hasher = hashlib.sha256(); hasher.update(generate_doc().encode("utf-8")); print(hasher.hexdigest());'
 
 shellcheck: FORCE
 	shellcheck build-schema_salad-docker.sh release-test.sh

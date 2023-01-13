@@ -181,7 +181,7 @@ def test_import_list() -> None:
 
 
 def test_fetch_inject_id() -> None:
-    path = get_data("schema_salad/tests/inject-id1.yml")
+    path = get_data("tests/inject-id1.yml")
     assert path
     if is_fs_case_sensitive(os.path.dirname(path)):
 
@@ -202,7 +202,7 @@ def test_fetch_inject_id() -> None:
     )
 
     l2 = Loader({"id": "@id"})
-    path2 = get_data("schema_salad/tests/inject-id2.yml")
+    path2 = get_data("tests/inject-id2.yml")
     assert path2
     furi2 = file_uri(path2)
     r2, _ = l2.resolve_ref(furi2)
@@ -210,7 +210,7 @@ def test_fetch_inject_id() -> None:
     assert [lower(furi2)] == sorted(list(lower(k) for k in l2.idx.keys()))
 
     l3 = Loader({"id": "@id"})
-    path3 = get_data("schema_salad/tests/inject-id3.yml")
+    path3 = get_data("tests/inject-id3.yml")
     assert path3
     furi3 = file_uri(path3)
     r3, _ = l3.resolve_ref(furi3)
@@ -221,7 +221,7 @@ def test_fetch_inject_id() -> None:
 
 
 def test_attachments() -> None:
-    path = get_data("schema_salad/tests/multidoc.yml")
+    path = get_data("tests/multidoc.yml")
     assert path
     furi = file_uri(path)
 
