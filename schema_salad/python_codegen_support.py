@@ -301,8 +301,8 @@ def save(
         for i in range(0, len(val)):
             if doc:
                 if isinstance(val[i],(int, float, bool, str)):
-                    if val[i] in doc:
-                        r.lc.data.add_kv_line_col(v, doc.lc.data[v])
+                    if i in doc:
+                        r.lc.data.add_kv_line_col(i, doc.lc.data[i])
                 r.append(save(val[i], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc[i]))
             else:
                 r.append(save(val[i], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc))
