@@ -120,7 +120,6 @@ def validate_ex(
 ):
     # type: (...) -> bool
     """Determine if a python datum is an instance of a schema."""
-
     debug = _logger.isEnabledFor(logging.DEBUG)
     if not identifiers:
         identifiers = []

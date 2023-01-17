@@ -46,24 +46,21 @@ def add_dictlist(di, key, val):  # type: (Dict[Any, Any], Any, Any) -> None
     di[key].append(val)
 
 
-def aslist(thing):  # type: (Any) -> MutableSequence[Any]
+def aslist(thing: Any) -> MutableSequence[Any]:
     """
-    Convenience function to wrap single items and lists.
+    Wrap single items and lists.
 
     Return lists unchanged.
     """
-
     if isinstance(thing, MutableSequence):
         return thing
     else:
         return [thing]
 
 
-# http://rightfootin.blogspot.com/2006/09/more-on-python-flatten.html
-
-
 def flatten(thing, ltypes=(list, tuple)):
     # type: (Any, Any) -> Any
+    # http://rightfootin.blogspot.com/2006/09/more-on-python-flatten.html
     if thing is None:
         return []
     if not isinstance(thing, ltypes):

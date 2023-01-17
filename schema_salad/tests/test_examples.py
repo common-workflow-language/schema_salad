@@ -56,6 +56,18 @@ def test_print_rdf() -> None:
     )
 
 
+def test_print_rdf_invalid_external_ref() -> None:
+    """Test --print-rdf when document references unfetchable external schema."""
+    schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    document_path = get_data(
+        "tests/test_real_cwl/bio-cwl-tools/bamtools_stats_invalid_schema_ref.cwl"
+    )
+    assert schema_path and document_path
+    assert 0 == schema_salad.main.main(
+        argsl=["--print-rdf", schema_path, document_path]
+    )
+
+
 def test_print_pre_schema() -> None:
     """Test --print-pre only schema."""
     schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")

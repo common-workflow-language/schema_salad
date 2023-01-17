@@ -971,7 +971,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
                 src = src_template.safe_substitute(template_args)
                 _ensure_directory_and_write(src_path, src)
 
-        for (util_src, util_target) in util_src_dirs.items():
+        for util_src, util_target in util_src_dirs.items():
             copy_utils_recursive(util_src, util_target)
 
     def secondaryfilesdsl_loader(self, inner: TypeDef) -> TypeDef:

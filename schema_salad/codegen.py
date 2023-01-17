@@ -41,7 +41,6 @@ def codegen(
     parser_info: Optional[str] = None,
 ) -> None:
     """Generate classes with loaders for the given Schema Salad description."""
-
     j = schema.extend_and_specialize(i, loader)
 
     gen = None  # type: Optional[CodeGenBase]
