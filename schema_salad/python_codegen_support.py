@@ -813,7 +813,7 @@ def _document_load(
         #     for k, v in doc.items()
         #     if k not in ("$namespaces", "$schemas", "$base")
         # }
-
+        doc = copy.copy(doc)
         if "$namespaces" in doc:
             doc.pop("$namespaces")
         if "$schemas" in doc:
