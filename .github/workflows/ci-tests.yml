@@ -46,7 +46,7 @@ jobs:
       - name: Upgrade setuptools and install tox
         run: |
           pip install -U pip setuptools wheel
-          pip install tox tox-gh-actions
+          pip install 'tox<4' tox-gh-actions
 
       - name: MyPy cache
         if: ${{ matrix.step == 'mypy' }}
@@ -75,7 +75,7 @@ jobs:
 
     env:
       py-semver: "3.11"
-      TOXENV: ${{ format('py310-{0}', matrix.step) }}
+      TOXENV: ${{ format('py311-{0}', matrix.step) }}
 
     steps:
       - uses: actions/checkout@v3
@@ -96,7 +96,7 @@ jobs:
       - name: Upgrade setuptools and install tox
         run: |
           pip install -U pip setuptools wheel
-          pip install tox tox-gh-actions
+          pip install 'tox<4' tox-gh-actions
 
       - if: ${{ matrix.step == 'pydocstyle' && github.event_name == 'pull_request'}}
         name: Create local branch for diff-quality for PRs
