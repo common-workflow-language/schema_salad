@@ -220,7 +220,9 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
         elif "$include" in val:
             if loadingOptions.fileuri is None:
                 raise SchemaSaladException("Cannot load $import without fileuri")
-            url = loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
+            url = loadingOptions.fetcher.urljoin(
+                loadingOptions.fileuri, val["$include"]
+            )
             val = loadingOptions.fetcher.fetch_text(url)
             loadingOptions.includes.append(url)
     return fieldtype.load(val, baseuri, loadingOptions)
