@@ -281,7 +281,7 @@ class PythonCodeGen(CodeGenBase):
         r = CommentedMap()
         if line_info is not None:
             self._doc = line_info
-        if (type(self._doc) == CommentedMap):
+        if isinstance(self._doc, CommentedMap):
             r._yaml_set_line_col(self._doc.lc.line,self._doc.lc.col)
         line_numbers = get_line_numbers(self._doc)
         max_len = get_max_line_num(self._doc)

@@ -252,7 +252,7 @@ def get_line_numbers(doc: CommentedMap) -> dict[Any, dict[str, int]]:
     only save value info if value is hashable.
     """
     line_numbers: Dict[Any, dict[str,int]] = {}
-    if type(doc) == dict:
+    if isinstance(doc, dict):
         return {}
     for key, value in doc.lc.data.items():
         line_numbers[key] = {}
@@ -274,7 +274,7 @@ def get_max_line_num(doc: CommentedMap) -> int:
     max_line = 0
     max_key = ""
     cur = doc
-    while type(cur) == CommentedMap and len(cur) > 0:
+    while isinstance(cur, CommentedMap) and len(cur) > 0:
         for key in cur.lc.data.keys():
             if cur.lc.data[key][2] >= max_line:
                 max_line = cur.lc.data[key][2]
@@ -303,6 +303,7 @@ def save(
             if doc:
                 if i in doc.lc.data:
                     r.lc.data[i] = doc.lc.data[i]
+            if isinstance(doc, CommentedSeq):
                 r.append(save(val[i], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc[i]))
             else:
                 r.append(save(val[i], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc))
