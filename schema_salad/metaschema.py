@@ -58,6 +58,8 @@ class LoadingOptions:
     vocab: Dict[str, str]
     rvocab: Dict[str, str]
     cache: CacheType
+    imports: List[str]
+    includes: List[str]
 
     def __init__(
         self,
@@ -70,6 +72,8 @@ class LoadingOptions:
         addl_metadata: Optional[Dict[str, str]] = None,
         baseuri: Optional[str] = None,
         idx: Optional[IdxType] = None,
+        imports: Optional[List[str]] = None,
+        includes: Optional[List[str]] = None,
     ) -> None:
         """Create a LoadingOptions object."""
         self.original_doc = original_doc
@@ -103,6 +107,16 @@ class LoadingOptions:
             self.addl_metadata = addl_metadata
         else:
             self.addl_metadata = copyfrom.addl_metadata if copyfrom is not None else {}
+
+        if imports is not None:
+            self.imports = imports
+        else:
+            self.imports = copyfrom.imports if copyfrom is not None else []
+
+        if includes is not None:
+            self.includes = includes
+        else:
+            self.includes = copyfrom.includes if copyfrom is not None else []
 
         if fetcher is not None:
             self.fetcher = fetcher
@@ -203,18 +217,22 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
         if "$import" in val:
             if loadingOptions.fileuri is None:
                 raise SchemaSaladException("Cannot load $import without fileuri")
+            url = loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$import"])
             result, metadata = _document_load_by_url(
                 fieldtype,
-                loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$import"]),
+                url,
                 loadingOptions,
             )
+            loadingOptions.imports.append(url)
             return result
         elif "$include" in val:
             if loadingOptions.fileuri is None:
                 raise SchemaSaladException("Cannot load $import without fileuri")
-            val = loadingOptions.fetcher.fetch_text(
-                loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
+            url = loadingOptions.fetcher.urljoin(
+                loadingOptions.fileuri, val["$include"]
             )
+            val = loadingOptions.fetcher.fetch_text(url)
+            loadingOptions.includes.append(url)
     return fieldtype.load(val, baseuri, loadingOptions)
 
 
