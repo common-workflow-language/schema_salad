@@ -537,7 +537,7 @@ class _UnionLoader(_Loader):
         if isinstance(doc, (CommentedMap, dict)):
             if doc.get("class") not in str(self.alternates):
                 errors.append(ValidationException("Field `class` contains undefined reference to " + baseuri + "/" + doc.get("class"), None, []))
-            raise ValidationException("", None, errors, "-")
+        raise ValidationException("", None, errors, "-")
 
     def __repr__(self):  # type: () -> str
         return " | ".join(str(a) for a in self.alternates)
