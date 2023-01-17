@@ -233,6 +233,9 @@ def add_kv(old_doc: CommentedMap, new_doc: CommentedMap, line_numbers: dict[Any,
                 col = line_numbers[val]["col"]
             new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
             cols[line] = col + len("id") + 2
+        else:  # If neither the key or value is in the original CommentedMap (or value is not hashable)
+            new_doc.lc.add_kv_line_col(key, [max_len, 0, max_len, len(key) + 2])
+            max_len += 1
     else:  # If neither the key or value is in the original CommentedMap (or value is not hashable)
         new_doc.lc.add_kv_line_col(key, [max_len, 0, max_len, len(key) + 2])
         max_len += 1
@@ -292,12 +295,14 @@ def save(
         return val.save(top=top, base_url=base_url, relative_uris=relative_uris, line_info=doc)
     if isinstance(val, MutableSequence):
         r = CommentedSeq()
-        for v in val:
+        for i in range(0, len(val)):
             if doc:
-                if isinstance(v,(int, float, bool, str)):
-                    if v in doc:
+                if isinstance(val[i],(int, float, bool, str)):
+                    if val[i] in doc:
                         r.lc.data.add_kv_line_col(v, doc.lc.data[v])
-            r.append(save(v, top=False, base_url=base_url, relative_uris=relative_uris, doc=doc))
+                r.append(save(val[i], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc[i]))
+            else:
+                r.append(save(val[i], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc))
         return r
         # return [
         #     save(v, top=False, base_url=base_url, relative_uris=relative_uris)
@@ -310,9 +315,18 @@ def save(
                 if isinstance(key, (int, float, bool, str)):
                     if key in doc:
                         newdict.lc.add_kv_line_col(key, doc.lc.data[key])
-            newdict[key] = save(
-                val[key], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc
-            )
+                    newdict[key] = save(
+                        val[key], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc.get(key)
+                    )
+                else:
+                    newdict[key] = save(
+                        val[key], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc
+                    )
+                    
+            else:   
+                newdict[key] = save(
+                            val[key], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc
+                )
         return newdict
         # newdict = {}
         # for key in val:
