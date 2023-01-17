@@ -316,17 +316,11 @@ def save(
         newdict = CommentedMap()
         for key in val:
             if doc:
-                if isinstance(key, (int, float, bool, str)):
-                    if key in doc:
-                        newdict.lc.add_kv_line_col(key, doc.lc.data[key])
-                    newdict[key] = save(
-                        val[key], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc.get(key)
-                    )
-                else:
-                    newdict[key] = save(
-                        val[key], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc
-                    )
-                    
+                if key in doc:
+                    newdict.lc.add_kv_line_col(key, doc.lc.data[key])
+                newdict[key] = save(
+                    val[key], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc.get(key)
+                )     
             else:   
                 newdict[key] = save(
                             val[key], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc
