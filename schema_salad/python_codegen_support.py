@@ -532,8 +532,14 @@ class _UnionLoader(_Loader):
                 return t.load(doc, baseuri, loadingOptions, docRoot=docRoot)
             except ValidationException as e:
                 if isinstance(doc, (CommentedMap, dict)):
-                    if doc.get("class") == str(t):
-                        errors.append(ValidationException(f"Object '{baseuri.split('/')[-1]}' is not valid because", SourceLine(doc, doc.get("class"), str), [e]))
+                    if "class" in doc:
+                        if doc.get("class") == str(t):
+                            errors.append(ValidationException(f"Object '{baseuri.split('/')[-1]}' is not valid because", SourceLine(doc, doc.get("class"), str), [e]))
+                    else:
+                        errors.append(ValidationException("", None, [e]))
+                else:
+                    errors.append(ValidationException("", None, [e]))
+
         if isinstance(doc, (CommentedMap, dict)):
             if doc.get("class") not in str(self.alternates):
                 errors.append(ValidationException("Field `class` contains undefined reference to " + baseuri + "/" + doc.get("class"), None, []))
