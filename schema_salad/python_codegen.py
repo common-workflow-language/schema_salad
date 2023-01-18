@@ -334,7 +334,7 @@ for k in _doc.keys():
             break
 
 if _errors__:
-    raise ValidationException(\"Trying '{class_}'\", None, _errors__)
+    raise ValidationException(\"tried '{class_}'\", None, _errors__)
 """.format(
                     attrstr=", ".join([f"`{f}`" for f in field_names]),
                     class_=self.safe_name(classname),
@@ -531,16 +531,16 @@ if _errors__:
 {spc}                loadingOptions,
 {spc}            )
 {spc}        except ValidationException as e:
-{spc}           if e.message == "Expected a list, was <class 'NoneType'>":
-{spc}               _errors__.append(ValidationException("* missing required field `inputs`", SourceLine(_doc, "inputs", str), []))
-{spc}           else:
-{spc}               _errors__.append(
-{spc}                   ValidationException(
-{spc}                       \"the `{fieldname}` field is not valid because:\",
-{spc}                       SourceLine(_doc, "{fieldname}", str),
-{spc}                       [e],
-{spc}                   )
-{spc}               )
+{spc}            if str(e) == "Expected a list, was <class 'NoneType'>":
+{spc}                _errors__.append(ValidationException("* missing required field `{fieldname}`",None, []))
+{spc}            else:
+{spc}                _errors__.append(
+{spc}                    ValidationException(
+{spc}                        \"the `{fieldname}` field is not valid because:\",
+{spc}                        SourceLine(_doc, "{fieldname}", str),
+{spc}                        [e],
+{spc}                    )
+{spc}                )
 """.format(
                 safename=self.safe_name(name),
                 fieldname=shortname(name),

@@ -534,7 +534,7 @@ class _UnionLoader(_Loader):
                 if isinstance(doc, (CommentedMap, dict)):
                     if "class" in doc:
                         if doc.get("class") == str(t):
-                            errors.append(ValidationException(f"Object '{baseuri.split('/')[-1]}' is not valid because", SourceLine(doc, doc.get("class"), str), [e]))
+                            errors.append(ValidationException(f"\nObject '{baseuri.split('/')[-1]}' is not valid because", SourceLine(doc, "class", str), [e]))
                     else:
                         errors.append(ValidationException("", None, [e]))
                 else:
