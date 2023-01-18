@@ -189,7 +189,11 @@ class Saveable(ABC):
 
     @abstractmethod
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, line_info: Optional[CommentedMap] = None
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        line_info: Optional[CommentedMap] = None,
     ) -> CommentedMap:
         """Convert this object to a JSON/YAML friendly dictionary."""
 
@@ -219,7 +223,16 @@ save_type = Optional[
     Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]
 ]
 
-def add_kv(old_doc: CommentedMap, new_doc: CommentedMap, line_numbers: dict[Any,dict[str,int]], key: str, val: Any, max_len: int, cols: dict[int,int])->int:
+
+def add_kv(
+    old_doc: CommentedMap,
+    new_doc: CommentedMap,
+    line_numbers: dict[Any, dict[str, int]],
+    key: str,
+    val: Any,
+    max_len: int,
+    cols: dict[int, int],
+) -> int:
     """Add key value pair into Commented Map.
 
     Function to add key value pair into new CommentedMap given old CommentedMap, line_numbers for each key/val pair in the old CommentedMap,
@@ -251,7 +264,7 @@ def get_line_numbers(doc: CommentedMap) -> dict[Any, dict[str, int]]:
     For each key/value pair in a CommentedMap, save the line/col info into a dictionary,
     only save value info if value is hashable.
     """
-    line_numbers: Dict[Any, dict[str,int]] = {}
+    line_numbers: Dict[Any, dict[str, int]] = {}
     if isinstance(doc, dict):
         return {}
     for key, value in doc.lc.data.items():
@@ -295,7 +308,9 @@ def save(
     Recursively calls save method from class if val is of type Saveable. Otherwise, saves val to CommentedMap or CommentedSeq
     """
     if isinstance(val, Saveable):
-        return val.save(top=top, base_url=base_url, relative_uris=relative_uris, line_info=doc)
+        return val.save(
+            top=top, base_url=base_url, relative_uris=relative_uris, line_info=doc
+        )
     if isinstance(val, MutableSequence):
         r = CommentedSeq()
         r.lc.data = {}
@@ -304,9 +319,25 @@ def save(
                 if i in doc.lc.data:
                     r.lc.data[i] = doc.lc.data[i]
             if isinstance(doc, CommentedSeq):
-                r.append(save(val[i], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc[i]))
+                r.append(
+                    save(
+                        val[i],
+                        top=False,
+                        base_url=base_url,
+                        relative_uris=relative_uris,
+                        doc=doc[i],
+                    )
+                )
             else:
-                r.append(save(val[i], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc))
+                r.append(
+                    save(
+                        val[i],
+                        top=False,
+                        base_url=base_url,
+                        relative_uris=relative_uris,
+                        doc=doc,
+                    )
+                )
         return r
         # return [
         #     save(v, top=False, base_url=base_url, relative_uris=relative_uris)
@@ -319,11 +350,19 @@ def save(
                 if key in doc:
                     newdict.lc.add_kv_line_col(key, doc.lc.data[key])
                 newdict[key] = save(
-                    val[key], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc.get(key)
-                )     
-            else:   
+                    val[key],
+                    top=False,
+                    base_url=base_url,
+                    relative_uris=relative_uris,
+                    doc=doc.get(key),
+                )
+            else:
                 newdict[key] = save(
-                            val[key], top=False, base_url=base_url, relative_uris=relative_uris, doc=doc
+                    val[key],
+                    top=False,
+                    base_url=base_url,
+                    relative_uris=relative_uris,
+                    doc=doc,
                 )
         return newdict
         # newdict = {}

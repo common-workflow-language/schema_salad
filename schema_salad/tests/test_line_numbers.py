@@ -1,14 +1,16 @@
-#from parser import load_document_by_uri, save
+# from parser import load_document_by_uri, save
 from pathlib import Path
-from schema_salad.utils import yaml_no_ts
-from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from typing import Any, Dict, List, Optional, cast
+
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
+
 from schema_salad import codegen
 from schema_salad.avro.schema import Names
 from schema_salad.schema import load_schema
+from schema_salad.utils import yaml_no_ts
 
 
-def compare_line_numbers(original_doc:CommentedMap, codegen_doc:CommentedMap)->None:
+def compare_line_numbers(original_doc: CommentedMap, codegen_doc: CommentedMap) -> None:
     assert type(original_doc) == CommentedMap
     assert type(codegen_doc) == CommentedMap
 
@@ -17,7 +19,7 @@ def compare_line_numbers(original_doc:CommentedMap, codegen_doc:CommentedMap)->N
 
     for key, lc_info in original_doc.lc.data.items():
         assert key in codegen_doc.lc.data
-        assert lc_info==codegen_doc.lc.data[key]
+        assert lc_info == codegen_doc.lc.data[key]
 
     max_line = get_max_line_number(original_doc)
 
@@ -27,7 +29,8 @@ def compare_line_numbers(original_doc:CommentedMap, codegen_doc:CommentedMap)->N
         assert lc_info == [max_line, 0, max_line, len(key) + 2]
         max_line += 1
 
-def get_max_line_number(original_doc:CommentedMap)->int:
+
+def get_max_line_number(original_doc: CommentedMap) -> int:
     max_key = ""
     max_line = 0
     temp_doc = original_doc
@@ -38,6 +41,7 @@ def get_max_line_number(original_doc:CommentedMap)->int:
                 max_key = key
         temp_doc = temp_doc[max_key]
     return max_line + 1
+
 
 def python_codegen(
     file_uri: str,
@@ -60,5 +64,5 @@ def python_codegen(
         document_loader,
         target=str(target),
         parser_info=parser_info,
-        package=package
+        package=package,
     )
