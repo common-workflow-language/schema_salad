@@ -231,13 +231,15 @@ class Loader:
             prefix = url.split(":")[0]
             if prefix in self.vocab:
                 url = self.vocab[prefix] + url[len(prefix) + 1 :]
-            elif prefix not in self.fetcher.supported_schemes():
-                _logger.warning(
-                    "URI prefix '%s' of '%s' not recognized, are you missing a "
-                    "$namespaces section?",
-                    prefix,
-                    url,
-                )
+            elif (prefix not in self.fetcher.supported_schemes() and
+                  '/' not in prefix and
+                  '#' not in prefix):
+                    _logger.warning(
+                        "URI prefix '%s' of '%s' not recognized, are you missing a "
+                        "$namespaces section?",
+                        prefix,
+                        url,
+                    )
 
         split = urllib.parse.urlsplit(url)
 
