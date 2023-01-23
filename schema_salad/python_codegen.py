@@ -170,8 +170,6 @@ class PythonCodeGen(CodeGenBase):
             self.out.write("    pass\n\n\n")
             return
 
-        field_names.append("_doc")
-
         required_field_names = [f for f in field_names if f not in optional_fields]
         optional_field_names = [f for f in field_names if f in optional_fields]
 
@@ -276,15 +274,28 @@ class PythonCodeGen(CodeGenBase):
         self.serializer.write(
             """
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, line_info: Optional[CommentedMap] = None
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
     ) -> CommentedMap:
+        if keys is None:
+            keys = []
         r = CommentedMap()
-        if line_info is not None:
-            self._doc = line_info
-        if isinstance(self._doc, CommentedMap):
-            r._yaml_set_line_col(self._doc.lc.line,self._doc.lc.col)
-        line_numbers = get_line_numbers(self._doc)
-        max_len = get_max_line_num(self._doc)
+        doc = doc_line_info
+        for key in keys:
+
+            if isinstance(doc, CommentedMap):
+                doc = doc.get(key)
+            elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+                if key < len(doc):
+                    doc = doc[key]
+                else:
+                    doc = None
+            else:
+                doc = None
+                break
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
         cols: Dict[int, int] = {}
         if relative_uris:
             for ef in self.extension_fields:
@@ -309,7 +320,7 @@ class PythonCodeGen(CodeGenBase):
             self.serializer.write(
                 """
         r["class"] = "{class_}"
-        max_len = add_kv(old_doc=self._doc, new_doc=r, line_numbers=line_numbers, key="class", val=r.get("class"), max_len=max_len, cols=cols)
+        max_len = add_kv(old_doc=doc, new_doc=r, line_numbers=line_numbers, key="class", val=r.get("class"), max_len=max_len, cols=cols)
 """.format(
                     class_=classname
                 )
@@ -575,7 +586,7 @@ if _errors__:
 if self.{safename} is not None:
     u = save_relative_uri(self.{safename}, {baseurl}, {scoped_id}, {ref_scope}, relative_uris)
     r["{fieldname}"] = u
-    max_len = add_kv(old_doc = self._doc, new_doc = r, line_numbers = line_numbers, key = "{key_1}", val = r.get("{key_2}"), max_len = max_len, cols = cols)
+    max_len = add_kv(old_doc = doc, new_doc = r, line_numbers = line_numbers, key = "{key_1}", val = r.get("{key_2}"), max_len = max_len, cols = cols)
 """.format(
                         safename=self.safe_name(name),
                         fieldname=shortname(name).strip(),
@@ -594,7 +605,7 @@ if self.{safename} is not None:
                     """
 if self.{safename} is not None:
     saved_val = save(
-        self.{safename}, top=False, base_url={baseurl}, relative_uris=relative_uris, doc=self._doc.get("{fieldname}")
+        self.{safename}, top=False, base_url={baseurl}, relative_uris=relative_uris, keys = keys + ["{fieldname}"]
     )
 
     if type(saved_val) == list:
@@ -602,7 +613,7 @@ if self.{safename} is not None:
             saved_val = saved_val[0]
     r["{fieldname}"] = saved_val
 
-    max_len = add_kv(old_doc = self._doc, new_doc = r, line_numbers = line_numbers, key = "{fieldname}", val = r.get("{fieldname}"), max_len = max_len, cols = cols)
+    max_len = add_kv(old_doc = doc, new_doc = r, line_numbers = line_numbers, key = "{fieldname}", val = r.get("{fieldname}"), max_len = max_len, cols = cols)
 """.format(
                         safename=self.safe_name(name),
                         fieldname=shortname(name),

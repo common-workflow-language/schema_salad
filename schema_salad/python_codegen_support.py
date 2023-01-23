@@ -43,6 +43,9 @@ _logger = logging.getLogger("salad")
 IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
 
 
+doc_line_info = CommentedMap()
+
+
 class LoadingOptions:
     idx: IdxType
     fileuri: Optional[str]
@@ -193,7 +196,7 @@ class Saveable(ABC):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        line_info: Optional[CommentedMap] = None,
+        keys: Optional[list[Any]] = None,
     ) -> CommentedMap:
         """Convert this object to a JSON/YAML friendly dictionary."""
 
@@ -265,7 +268,7 @@ def get_line_numbers(doc: CommentedMap) -> dict[Any, dict[str, int]]:
     only save value info if value is hashable.
     """
     line_numbers: Dict[Any, dict[str, int]] = {}
-    if isinstance(doc, dict):
+    if isinstance(doc, dict) or doc is None:
         return {}
     for key, value in doc.lc.data.items():
         line_numbers[key] = {}
@@ -301,43 +304,49 @@ def save(
     top: bool = True,
     base_url: str = "",
     relative_uris: bool = True,
-    doc: Optional[CommentedMap] = None,
+    keys: Optional[list[Any]] = None,
 ) -> save_type:
     """Save a val of any type.
 
     Recursively calls save method from class if val is of type Saveable. Otherwise, saves val to CommentedMap or CommentedSeq
     """
+    if keys is None:
+        keys = []
+    doc = doc_line_info
+    for key in keys:
+        if isinstance(doc, CommentedMap):
+            doc = doc.get(key)
+        elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+            if key < len(doc):
+                doc = doc[key]
+            else:
+                doc = None
+        else:
+            doc = None
+            break
+
     if isinstance(val, Saveable):
         return val.save(
-            top=top, base_url=base_url, relative_uris=relative_uris, line_info=doc
+            top=top, base_url=base_url, relative_uris=relative_uris, keys=keys
         )
     if isinstance(val, MutableSequence):
         r = CommentedSeq()
         r.lc.data = {}
         for i in range(0, len(val)):
+            new_keys = keys
             if doc:
-                if i in doc.lc.data:
+                if i in doc:
                     r.lc.data[i] = doc.lc.data[i]
-            if isinstance(doc, CommentedSeq):
-                r.append(
-                    save(
-                        val[i],
-                        top=False,
-                        base_url=base_url,
-                        relative_uris=relative_uris,
-                        doc=doc[i],
-                    )
+                    new_keys.append(i)
+            r.append(
+                save(
+                    val[i],
+                    top=False,
+                    base_url=base_url,
+                    relative_uris=relative_uris,
+                    keys=new_keys,
                 )
-            else:
-                r.append(
-                    save(
-                        val[i],
-                        top=False,
-                        base_url=base_url,
-                        relative_uris=relative_uris,
-                        doc=doc,
-                    )
-                )
+            )
         return r
         # return [
         #     save(v, top=False, base_url=base_url, relative_uris=relative_uris)
@@ -345,25 +354,20 @@ def save(
         # ]
     if isinstance(val, MutableMapping):
         newdict = CommentedMap()
+        new_keys = keys
         for key in val:
             if doc:
                 if key in doc:
                     newdict.lc.add_kv_line_col(key, doc.lc.data[key])
-                newdict[key] = save(
-                    val[key],
-                    top=False,
-                    base_url=base_url,
-                    relative_uris=relative_uris,
-                    doc=doc.get(key),
-                )
-            else:
-                newdict[key] = save(
-                    val[key],
-                    top=False,
-                    base_url=base_url,
-                    relative_uris=relative_uris,
-                    doc=doc,
-                )
+                    new_keys.append(key)
+
+            newdict[key] = save(
+                val[key],
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                keys=new_keys,
+            )
         return newdict
         # newdict = {}
         # for key in val:
@@ -809,7 +813,7 @@ class _IdMapLoader(_Loader):
 
 def _document_load(
     loader: _Loader,
-    doc: Union[str, MutableMapping[str, Any], MutableSequence[Any]],
+    doc: Union[CommentedMap, str, MutableMapping[str, Any], MutableSequence[Any]],
     baseuri: str,
     loadingOptions: LoadingOptions,
     addl_metadata_fields: Optional[MutableSequence[str]] = None,
@@ -869,7 +873,9 @@ def _document_load(
             loadingOptions.idx[docuri] = loadingOptions.idx[baseuri]
 
         return loadingOptions.idx[baseuri]
-
+    if isinstance(doc, CommentedMap):
+        global doc_line_info
+        doc_line_info = doc
     if isinstance(doc, MutableSequence):
         loadingOptions.idx[baseuri] = (
             loader.load(doc, baseuri, loadingOptions),

@@ -46,6 +46,9 @@ _logger = logging.getLogger("salad")
 IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
 
 
+doc_line_info = CommentedMap()
+
+
 class LoadingOptions:
     idx: IdxType
     fileuri: Optional[str]
@@ -196,7 +199,7 @@ class Saveable(ABC):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        line_info: Optional[CommentedMap] = None,
+        keys: Optional[list[Any]] = None,
     ) -> CommentedMap:
         """Convert this object to a JSON/YAML friendly dictionary."""
 
@@ -268,7 +271,7 @@ def get_line_numbers(doc: CommentedMap) -> dict[Any, dict[str, int]]:
     only save value info if value is hashable.
     """
     line_numbers: Dict[Any, dict[str, int]] = {}
-    if type(doc) == dict:
+    if isinstance(doc, dict) or doc is None:
         return {}
     for key, value in doc.lc.data.items():
         line_numbers[key] = {}
@@ -290,7 +293,7 @@ def get_max_line_num(doc: CommentedMap) -> int:
     max_line = 0
     max_key = ""
     cur = doc
-    while type(cur) == CommentedMap and len(cur) > 0:
+    while isinstance(cur, CommentedMap) and len(cur) > 0:
         for key in cur.lc.data.keys():
             if cur.lc.data[key][2] >= max_line:
                 max_line = cur.lc.data[key][2]
@@ -304,42 +307,49 @@ def save(
     top: bool = True,
     base_url: str = "",
     relative_uris: bool = True,
-    doc: Optional[CommentedMap] = None,
+    keys: Optional[list[Any]] = None,
 ) -> save_type:
     """Save a val of any type.
 
     Recursively calls save method from class if val is of type Saveable. Otherwise, saves val to CommentedMap or CommentedSeq
     """
+    if keys is None:
+        keys = []
+    doc = doc_line_info
+    for key in keys:
+        if isinstance(doc, CommentedMap):
+            doc = doc.get(key)
+        elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+            if key < len(doc):
+                doc = doc[key]
+            else:
+                doc = None
+        else:
+            doc = None
+            break
+
     if isinstance(val, Saveable):
         return val.save(
-            top=top, base_url=base_url, relative_uris=relative_uris, line_info=doc
+            top=top, base_url=base_url, relative_uris=relative_uris, keys=keys
         )
     if isinstance(val, MutableSequence):
         r = CommentedSeq()
         r.lc.data = {}
         for i in range(0, len(val)):
+            new_keys = keys
             if doc:
-                if i in doc.lc.data:
+                if i in doc:
                     r.lc.data[i] = doc.lc.data[i]
-                r.append(
-                    save(
-                        val[i],
-                        top=False,
-                        base_url=base_url,
-                        relative_uris=relative_uris,
-                        doc=doc[i],
-                    )
+                    new_keys.append(i)
+            r.append(
+                save(
+                    val[i],
+                    top=False,
+                    base_url=base_url,
+                    relative_uris=relative_uris,
+                    keys=new_keys,
                 )
-            else:
-                r.append(
-                    save(
-                        val[i],
-                        top=False,
-                        base_url=base_url,
-                        relative_uris=relative_uris,
-                        doc=doc,
-                    )
-                )
+            )
         return r
         # return [
         #     save(v, top=False, base_url=base_url, relative_uris=relative_uris)
@@ -347,35 +357,20 @@ def save(
         # ]
     if isinstance(val, MutableMapping):
         newdict = CommentedMap()
+        new_keys = keys
         for key in val:
             if doc:
-                if isinstance(key, (int, float, bool, str)):
-                    if key in doc:
-                        newdict.lc.add_kv_line_col(key, doc.lc.data[key])
-                    newdict[key] = save(
-                        val[key],
-                        top=False,
-                        base_url=base_url,
-                        relative_uris=relative_uris,
-                        doc=doc.get(key),
-                    )
-                else:
-                    newdict[key] = save(
-                        val[key],
-                        top=False,
-                        base_url=base_url,
-                        relative_uris=relative_uris,
-                        doc=doc,
-                    )
+                if key in doc:
+                    newdict.lc.add_kv_line_col(key, doc.lc.data[key])
+                    new_keys.append(key)
 
-            else:
-                newdict[key] = save(
-                    val[key],
-                    top=False,
-                    base_url=base_url,
-                    relative_uris=relative_uris,
-                    doc=doc,
-                )
+            newdict[key] = save(
+                val[key],
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                keys=new_keys,
+            )
         return newdict
         # newdict = {}
         # for key in val:
@@ -821,7 +816,7 @@ class _IdMapLoader(_Loader):
 
 def _document_load(
     loader: _Loader,
-    doc: Union[str, MutableMapping[str, Any], MutableSequence[Any]],
+    doc: Union[CommentedMap, str, MutableMapping[str, Any], MutableSequence[Any]],
     baseuri: str,
     loadingOptions: LoadingOptions,
     addl_metadata_fields: Optional[MutableSequence[str]] = None,
@@ -858,7 +853,7 @@ def _document_load(
         #     for k, v in doc.items()
         #     if k not in ("$namespaces", "$schemas", "$base")
         # }
-
+        doc = copy.copy(doc)
         if "$namespaces" in doc:
             doc.pop("$namespaces")
         if "$schemas" in doc:
@@ -881,7 +876,9 @@ def _document_load(
             loadingOptions.idx[docuri] = loadingOptions.idx[baseuri]
 
         return loadingOptions.idx[baseuri]
-
+    if isinstance(doc, CommentedMap):
+        global doc_line_info
+        doc_line_info = doc
     if isinstance(doc, MutableSequence):
         loadingOptions.idx[baseuri] = (
             loader.load(doc, baseuri, loadingOptions),
@@ -1024,7 +1021,6 @@ class RecordField(Documented):
         self,
         name: Any,
         type: Any,
-        _doc: Any,
         doc: Optional[Any] = None,
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
@@ -1040,7 +1036,6 @@ class RecordField(Documented):
         self.doc = doc
         self.name = name
         self.type = type
-        self._doc = _doc
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, RecordField):
@@ -1048,12 +1043,11 @@ class RecordField(Documented):
                 self.doc == other.doc
                 and self.name == other.name
                 and self.type == other.type
-                and self._doc == other._doc
             )
         return False
 
     def __hash__(self) -> int:
-        return hash((self.doc, self.name, self.type, self._doc))
+        return hash((self.doc, self.name, self.type))
 
     @classmethod
     def fromDoc(
@@ -1139,7 +1133,7 @@ class RecordField(Documented):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `doc`, `name`, `type`, `_doc`".format(
+                            "invalid field `{}`, expected one of: `doc`, `name`, `type`".format(
                                 k
                             ),
                             SourceLine(_doc, k, str),
@@ -1153,7 +1147,6 @@ class RecordField(Documented):
             doc=doc,
             name=name,
             type=type,
-            _doc=_doc,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
@@ -1165,15 +1158,27 @@ class RecordField(Documented):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        line_info: Optional[CommentedMap] = None,
+        keys: Optional[list[Any]] = None,
     ) -> CommentedMap:
+        if keys is None:
+            keys = []
         r = CommentedMap()
-        if line_info is not None:
-            self._doc = line_info
-        if type(self._doc) == CommentedMap:
-            r._yaml_set_line_col(self._doc.lc.line, self._doc.lc.col)
-        line_numbers = get_line_numbers(self._doc)
-        max_len = get_max_line_num(self._doc)
+        doc = doc_line_info
+        for key in keys:
+            if isinstance(doc, CommentedMap):
+                doc = doc.get(key)
+            elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+                if key < len(doc):
+                    doc = doc[key]
+                else:
+                    doc = None
+            else:
+                doc = None
+                break
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
         cols: Dict[int, int] = {}
         if relative_uris:
             for ef in self.extension_fields:
@@ -1185,7 +1190,7 @@ class RecordField(Documented):
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="name",
@@ -1199,7 +1204,7 @@ class RecordField(Documented):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("doc"),
+                keys=keys + ["doc"],
             )
 
             if type(saved_val) == list:
@@ -1210,7 +1215,7 @@ class RecordField(Documented):
             r["doc"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="doc",
@@ -1224,7 +1229,7 @@ class RecordField(Documented):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("type"),
+                keys=keys + ["type"],
             )
 
             if type(saved_val) == list:
@@ -1235,7 +1240,7 @@ class RecordField(Documented):
             r["type"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="type",
@@ -1252,14 +1257,13 @@ class RecordField(Documented):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["doc", "name", "type", "_doc"])
+    attrs = frozenset(["doc", "name", "type"])
 
 
 class RecordSchema(Saveable):
     def __init__(
         self,
         type: Any,
-        _doc: Any,
         fields: Optional[Any] = None,
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
@@ -1274,19 +1278,14 @@ class RecordSchema(Saveable):
             self.loadingOptions = LoadingOptions()
         self.fields = fields
         self.type = type
-        self._doc = _doc
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, RecordSchema):
-            return bool(
-                self.fields == other.fields
-                and self.type == other.type
-                and self._doc == other._doc
-            )
+            return bool(self.fields == other.fields and self.type == other.type)
         return False
 
     def __hash__(self) -> int:
-        return hash((self.fields, self.type, self._doc))
+        return hash((self.fields, self.type))
 
     @classmethod
     def fromDoc(
@@ -1345,7 +1344,7 @@ class RecordSchema(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `fields`, `type`, `_doc`".format(
+                            "invalid field `{}`, expected one of: `fields`, `type`".format(
                                 k
                             ),
                             SourceLine(_doc, k, str),
@@ -1358,7 +1357,6 @@ class RecordSchema(Saveable):
         _constructed = cls(
             fields=fields,
             type=type,
-            _doc=_doc,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
@@ -1369,15 +1367,27 @@ class RecordSchema(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        line_info: Optional[CommentedMap] = None,
+        keys: Optional[list[Any]] = None,
     ) -> CommentedMap:
+        if keys is None:
+            keys = []
         r = CommentedMap()
-        if line_info is not None:
-            self._doc = line_info
-        if type(self._doc) == CommentedMap:
-            r._yaml_set_line_col(self._doc.lc.line, self._doc.lc.col)
-        line_numbers = get_line_numbers(self._doc)
-        max_len = get_max_line_num(self._doc)
+        doc = doc_line_info
+        for key in keys:
+            if isinstance(doc, CommentedMap):
+                doc = doc.get(key)
+            elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+                if key < len(doc):
+                    doc = doc[key]
+                else:
+                    doc = None
+            else:
+                doc = None
+                break
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
         cols: Dict[int, int] = {}
         if relative_uris:
             for ef in self.extension_fields:
@@ -1391,7 +1401,7 @@ class RecordSchema(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                doc=self._doc.get("fields"),
+                keys=keys + ["fields"],
             )
 
             if type(saved_val) == list:
@@ -1402,7 +1412,7 @@ class RecordSchema(Saveable):
             r["fields"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="fields",
@@ -1416,7 +1426,7 @@ class RecordSchema(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                doc=self._doc.get("type"),
+                keys=keys + ["type"],
             )
 
             if type(saved_val) == list:
@@ -1427,7 +1437,7 @@ class RecordSchema(Saveable):
             r["type"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="type",
@@ -1444,7 +1454,7 @@ class RecordSchema(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["fields", "type", "_doc"])
+    attrs = frozenset(["fields", "type"])
 
 
 class EnumSchema(Saveable):
@@ -1457,7 +1467,6 @@ class EnumSchema(Saveable):
         self,
         symbols: Any,
         type: Any,
-        _doc: Any,
         name: Optional[Any] = None,
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
@@ -1473,7 +1482,6 @@ class EnumSchema(Saveable):
         self.name = name
         self.symbols = symbols
         self.type = type
-        self._doc = _doc
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, EnumSchema):
@@ -1481,12 +1489,11 @@ class EnumSchema(Saveable):
                 self.name == other.name
                 and self.symbols == other.symbols
                 and self.type == other.type
-                and self._doc == other._doc
             )
         return False
 
     def __hash__(self) -> int:
-        return hash((self.name, self.symbols, self.type, self._doc))
+        return hash((self.name, self.symbols, self.type))
 
     @classmethod
     def fromDoc(
@@ -1569,7 +1576,7 @@ class EnumSchema(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `name`, `symbols`, `type`, `_doc`".format(
+                            "invalid field `{}`, expected one of: `name`, `symbols`, `type`".format(
                                 k
                             ),
                             SourceLine(_doc, k, str),
@@ -1583,7 +1590,6 @@ class EnumSchema(Saveable):
             name=name,
             symbols=symbols,
             type=type,
-            _doc=_doc,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
@@ -1595,15 +1601,27 @@ class EnumSchema(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        line_info: Optional[CommentedMap] = None,
+        keys: Optional[list[Any]] = None,
     ) -> CommentedMap:
+        if keys is None:
+            keys = []
         r = CommentedMap()
-        if line_info is not None:
-            self._doc = line_info
-        if type(self._doc) == CommentedMap:
-            r._yaml_set_line_col(self._doc.lc.line, self._doc.lc.col)
-        line_numbers = get_line_numbers(self._doc)
-        max_len = get_max_line_num(self._doc)
+        doc = doc_line_info
+        for key in keys:
+            if isinstance(doc, CommentedMap):
+                doc = doc.get(key)
+            elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+                if key < len(doc):
+                    doc = doc[key]
+                else:
+                    doc = None
+            else:
+                doc = None
+                break
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
         cols: Dict[int, int] = {}
         if relative_uris:
             for ef in self.extension_fields:
@@ -1615,7 +1633,7 @@ class EnumSchema(Saveable):
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="name",
@@ -1627,7 +1645,7 @@ class EnumSchema(Saveable):
             u = save_relative_uri(self.symbols, self.name, True, None, relative_uris)
             r["symbols"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="symbols",
@@ -1641,7 +1659,7 @@ class EnumSchema(Saveable):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("type"),
+                keys=keys + ["type"],
             )
 
             if type(saved_val) == list:
@@ -1652,7 +1670,7 @@ class EnumSchema(Saveable):
             r["type"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="type",
@@ -1669,7 +1687,7 @@ class EnumSchema(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["name", "symbols", "type", "_doc"])
+    attrs = frozenset(["name", "symbols", "type"])
 
 
 class ArraySchema(Saveable):
@@ -1677,7 +1695,6 @@ class ArraySchema(Saveable):
         self,
         items: Any,
         type: Any,
-        _doc: Any,
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
@@ -1691,19 +1708,14 @@ class ArraySchema(Saveable):
             self.loadingOptions = LoadingOptions()
         self.items = items
         self.type = type
-        self._doc = _doc
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, ArraySchema):
-            return bool(
-                self.items == other.items
-                and self.type == other.type
-                and self._doc == other._doc
-            )
+            return bool(self.items == other.items and self.type == other.type)
         return False
 
     def __hash__(self) -> int:
-        return hash((self.items, self.type, self._doc))
+        return hash((self.items, self.type))
 
     @classmethod
     def fromDoc(
@@ -1759,7 +1771,7 @@ class ArraySchema(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `items`, `type`, `_doc`".format(
+                            "invalid field `{}`, expected one of: `items`, `type`".format(
                                 k
                             ),
                             SourceLine(_doc, k, str),
@@ -1772,7 +1784,6 @@ class ArraySchema(Saveable):
         _constructed = cls(
             items=items,
             type=type,
-            _doc=_doc,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
@@ -1783,15 +1794,27 @@ class ArraySchema(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        line_info: Optional[CommentedMap] = None,
+        keys: Optional[list[Any]] = None,
     ) -> CommentedMap:
+        if keys is None:
+            keys = []
         r = CommentedMap()
-        if line_info is not None:
-            self._doc = line_info
-        if type(self._doc) == CommentedMap:
-            r._yaml_set_line_col(self._doc.lc.line, self._doc.lc.col)
-        line_numbers = get_line_numbers(self._doc)
-        max_len = get_max_line_num(self._doc)
+        doc = doc_line_info
+        for key in keys:
+            if isinstance(doc, CommentedMap):
+                doc = doc.get(key)
+            elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+                if key < len(doc):
+                    doc = doc[key]
+                else:
+                    doc = None
+            else:
+                doc = None
+                break
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
         cols: Dict[int, int] = {}
         if relative_uris:
             for ef in self.extension_fields:
@@ -1803,7 +1826,7 @@ class ArraySchema(Saveable):
             u = save_relative_uri(self.items, base_url, False, 2, relative_uris)
             r["items"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="items",
@@ -1817,7 +1840,7 @@ class ArraySchema(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                doc=self._doc.get("type"),
+                keys=keys + ["type"],
             )
 
             if type(saved_val) == list:
@@ -1828,7 +1851,7 @@ class ArraySchema(Saveable):
             r["type"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="type",
@@ -1845,7 +1868,7 @@ class ArraySchema(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["items", "type", "_doc"])
+    attrs = frozenset(["items", "type"])
 
 
 class JsonldPredicate(Saveable):
@@ -1857,7 +1880,6 @@ class JsonldPredicate(Saveable):
 
     def __init__(
         self,
-        _doc: Any,
         _id: Optional[Any] = None,
         _type: Optional[Any] = None,
         _container: Optional[Any] = None,
@@ -1891,7 +1913,6 @@ class JsonldPredicate(Saveable):
         self.typeDSL = typeDSL
         self.secondaryFilesDSL = secondaryFilesDSL
         self.subscope = subscope
-        self._doc = _doc
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, JsonldPredicate):
@@ -1907,7 +1928,6 @@ class JsonldPredicate(Saveable):
                 and self.typeDSL == other.typeDSL
                 and self.secondaryFilesDSL == other.secondaryFilesDSL
                 and self.subscope == other.subscope
-                and self._doc == other._doc
             )
         return False
 
@@ -1925,7 +1945,6 @@ class JsonldPredicate(Saveable):
                 self.typeDSL,
                 self.secondaryFilesDSL,
                 self.subscope,
-                self._doc,
             )
         )
 
@@ -2151,7 +2170,7 @@ class JsonldPredicate(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `_id`, `_type`, `_container`, `identity`, `noLinkCheck`, `mapSubject`, `mapPredicate`, `refScope`, `typeDSL`, `secondaryFilesDSL`, `subscope`, `_doc`".format(
+                            "invalid field `{}`, expected one of: `_id`, `_type`, `_container`, `identity`, `noLinkCheck`, `mapSubject`, `mapPredicate`, `refScope`, `typeDSL`, `secondaryFilesDSL`, `subscope`".format(
                                 k
                             ),
                             SourceLine(_doc, k, str),
@@ -2173,7 +2192,6 @@ class JsonldPredicate(Saveable):
             typeDSL=typeDSL,
             secondaryFilesDSL=secondaryFilesDSL,
             subscope=subscope,
-            _doc=_doc,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
@@ -2184,15 +2202,27 @@ class JsonldPredicate(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        line_info: Optional[CommentedMap] = None,
+        keys: Optional[list[Any]] = None,
     ) -> CommentedMap:
+        if keys is None:
+            keys = []
         r = CommentedMap()
-        if line_info is not None:
-            self._doc = line_info
-        if type(self._doc) == CommentedMap:
-            r._yaml_set_line_col(self._doc.lc.line, self._doc.lc.col)
-        line_numbers = get_line_numbers(self._doc)
-        max_len = get_max_line_num(self._doc)
+        doc = doc_line_info
+        for key in keys:
+            if isinstance(doc, CommentedMap):
+                doc = doc.get(key)
+            elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+                if key < len(doc):
+                    doc = doc[key]
+                else:
+                    doc = None
+            else:
+                doc = None
+                break
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
         cols: Dict[int, int] = {}
         if relative_uris:
             for ef in self.extension_fields:
@@ -2204,7 +2234,7 @@ class JsonldPredicate(Saveable):
             u = save_relative_uri(self._id, base_url, True, None, relative_uris)
             r["_id"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="_id",
@@ -2218,7 +2248,7 @@ class JsonldPredicate(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                doc=self._doc.get("_type"),
+                keys=keys + ["_type"],
             )
 
             if type(saved_val) == list:
@@ -2229,7 +2259,7 @@ class JsonldPredicate(Saveable):
             r["_type"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="_type",
@@ -2243,7 +2273,7 @@ class JsonldPredicate(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                doc=self._doc.get("_container"),
+                keys=keys + ["_container"],
             )
 
             if type(saved_val) == list:
@@ -2254,7 +2284,7 @@ class JsonldPredicate(Saveable):
             r["_container"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="_container",
@@ -2268,7 +2298,7 @@ class JsonldPredicate(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                doc=self._doc.get("identity"),
+                keys=keys + ["identity"],
             )
 
             if type(saved_val) == list:
@@ -2279,7 +2309,7 @@ class JsonldPredicate(Saveable):
             r["identity"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="identity",
@@ -2293,7 +2323,7 @@ class JsonldPredicate(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                doc=self._doc.get("noLinkCheck"),
+                keys=keys + ["noLinkCheck"],
             )
 
             if type(saved_val) == list:
@@ -2304,7 +2334,7 @@ class JsonldPredicate(Saveable):
             r["noLinkCheck"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="noLinkCheck",
@@ -2318,7 +2348,7 @@ class JsonldPredicate(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                doc=self._doc.get("mapSubject"),
+                keys=keys + ["mapSubject"],
             )
 
             if type(saved_val) == list:
@@ -2329,7 +2359,7 @@ class JsonldPredicate(Saveable):
             r["mapSubject"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="mapSubject",
@@ -2343,7 +2373,7 @@ class JsonldPredicate(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                doc=self._doc.get("mapPredicate"),
+                keys=keys + ["mapPredicate"],
             )
 
             if type(saved_val) == list:
@@ -2354,7 +2384,7 @@ class JsonldPredicate(Saveable):
             r["mapPredicate"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="mapPredicate",
@@ -2368,7 +2398,7 @@ class JsonldPredicate(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                doc=self._doc.get("refScope"),
+                keys=keys + ["refScope"],
             )
 
             if type(saved_val) == list:
@@ -2379,7 +2409,7 @@ class JsonldPredicate(Saveable):
             r["refScope"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="refScope",
@@ -2393,7 +2423,7 @@ class JsonldPredicate(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                doc=self._doc.get("typeDSL"),
+                keys=keys + ["typeDSL"],
             )
 
             if type(saved_val) == list:
@@ -2404,7 +2434,7 @@ class JsonldPredicate(Saveable):
             r["typeDSL"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="typeDSL",
@@ -2418,7 +2448,7 @@ class JsonldPredicate(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                doc=self._doc.get("secondaryFilesDSL"),
+                keys=keys + ["secondaryFilesDSL"],
             )
 
             if type(saved_val) == list:
@@ -2429,7 +2459,7 @@ class JsonldPredicate(Saveable):
             r["secondaryFilesDSL"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="secondaryFilesDSL",
@@ -2443,7 +2473,7 @@ class JsonldPredicate(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                doc=self._doc.get("subscope"),
+                keys=keys + ["subscope"],
             )
 
             if type(saved_val) == list:
@@ -2454,7 +2484,7 @@ class JsonldPredicate(Saveable):
             r["subscope"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="subscope",
@@ -2484,7 +2514,6 @@ class JsonldPredicate(Saveable):
             "typeDSL",
             "secondaryFilesDSL",
             "subscope",
-            "_doc",
         ]
     )
 
@@ -2494,7 +2523,6 @@ class SpecializeDef(Saveable):
         self,
         specializeFrom: Any,
         specializeTo: Any,
-        _doc: Any,
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
@@ -2508,19 +2536,17 @@ class SpecializeDef(Saveable):
             self.loadingOptions = LoadingOptions()
         self.specializeFrom = specializeFrom
         self.specializeTo = specializeTo
-        self._doc = _doc
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, SpecializeDef):
             return bool(
                 self.specializeFrom == other.specializeFrom
                 and self.specializeTo == other.specializeTo
-                and self._doc == other._doc
             )
         return False
 
     def __hash__(self) -> int:
-        return hash((self.specializeFrom, self.specializeTo, self._doc))
+        return hash((self.specializeFrom, self.specializeTo))
 
     @classmethod
     def fromDoc(
@@ -2576,7 +2602,7 @@ class SpecializeDef(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `specializeFrom`, `specializeTo`, `_doc`".format(
+                            "invalid field `{}`, expected one of: `specializeFrom`, `specializeTo`".format(
                                 k
                             ),
                             SourceLine(_doc, k, str),
@@ -2589,7 +2615,6 @@ class SpecializeDef(Saveable):
         _constructed = cls(
             specializeFrom=specializeFrom,
             specializeTo=specializeTo,
-            _doc=_doc,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
@@ -2600,15 +2625,27 @@ class SpecializeDef(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        line_info: Optional[CommentedMap] = None,
+        keys: Optional[list[Any]] = None,
     ) -> CommentedMap:
+        if keys is None:
+            keys = []
         r = CommentedMap()
-        if line_info is not None:
-            self._doc = line_info
-        if type(self._doc) == CommentedMap:
-            r._yaml_set_line_col(self._doc.lc.line, self._doc.lc.col)
-        line_numbers = get_line_numbers(self._doc)
-        max_len = get_max_line_num(self._doc)
+        doc = doc_line_info
+        for key in keys:
+            if isinstance(doc, CommentedMap):
+                doc = doc.get(key)
+            elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+                if key < len(doc):
+                    doc = doc[key]
+                else:
+                    doc = None
+            else:
+                doc = None
+                break
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
         cols: Dict[int, int] = {}
         if relative_uris:
             for ef in self.extension_fields:
@@ -2622,7 +2659,7 @@ class SpecializeDef(Saveable):
             )
             r["specializeFrom"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="specializeFrom",
@@ -2634,7 +2671,7 @@ class SpecializeDef(Saveable):
             u = save_relative_uri(self.specializeTo, base_url, False, 1, relative_uris)
             r["specializeTo"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="specializeTo",
@@ -2651,7 +2688,7 @@ class SpecializeDef(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["specializeFrom", "specializeTo", "_doc"])
+    attrs = frozenset(["specializeFrom", "specializeTo"])
 
 
 class NamedType(Saveable):
@@ -2680,7 +2717,6 @@ class SaladRecordField(RecordField):
         self,
         name: Any,
         type: Any,
-        _doc: Any,
         doc: Optional[Any] = None,
         jsonldPredicate: Optional[Any] = None,
         default: Optional[Any] = None,
@@ -2700,7 +2736,6 @@ class SaladRecordField(RecordField):
         self.type = type
         self.jsonldPredicate = jsonldPredicate
         self.default = default
-        self._doc = _doc
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, SaladRecordField):
@@ -2710,20 +2745,12 @@ class SaladRecordField(RecordField):
                 and self.type == other.type
                 and self.jsonldPredicate == other.jsonldPredicate
                 and self.default == other.default
-                and self._doc == other._doc
             )
         return False
 
     def __hash__(self) -> int:
         return hash(
-            (
-                self.doc,
-                self.name,
-                self.type,
-                self.jsonldPredicate,
-                self.default,
-                self._doc,
-            )
+            (self.doc, self.name, self.type, self.jsonldPredicate, self.default)
         )
 
     @classmethod
@@ -2846,7 +2873,7 @@ class SaladRecordField(RecordField):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `doc`, `name`, `type`, `jsonldPredicate`, `default`, `_doc`".format(
+                            "invalid field `{}`, expected one of: `doc`, `name`, `type`, `jsonldPredicate`, `default`".format(
                                 k
                             ),
                             SourceLine(_doc, k, str),
@@ -2862,7 +2889,6 @@ class SaladRecordField(RecordField):
             type=type,
             jsonldPredicate=jsonldPredicate,
             default=default,
-            _doc=_doc,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
@@ -2874,15 +2900,27 @@ class SaladRecordField(RecordField):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        line_info: Optional[CommentedMap] = None,
+        keys: Optional[list[Any]] = None,
     ) -> CommentedMap:
+        if keys is None:
+            keys = []
         r = CommentedMap()
-        if line_info is not None:
-            self._doc = line_info
-        if type(self._doc) == CommentedMap:
-            r._yaml_set_line_col(self._doc.lc.line, self._doc.lc.col)
-        line_numbers = get_line_numbers(self._doc)
-        max_len = get_max_line_num(self._doc)
+        doc = doc_line_info
+        for key in keys:
+            if isinstance(doc, CommentedMap):
+                doc = doc.get(key)
+            elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+                if key < len(doc):
+                    doc = doc[key]
+                else:
+                    doc = None
+            else:
+                doc = None
+                break
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
         cols: Dict[int, int] = {}
         if relative_uris:
             for ef in self.extension_fields:
@@ -2894,7 +2932,7 @@ class SaladRecordField(RecordField):
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="name",
@@ -2908,7 +2946,7 @@ class SaladRecordField(RecordField):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("doc"),
+                keys=keys + ["doc"],
             )
 
             if type(saved_val) == list:
@@ -2919,7 +2957,7 @@ class SaladRecordField(RecordField):
             r["doc"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="doc",
@@ -2933,7 +2971,7 @@ class SaladRecordField(RecordField):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("type"),
+                keys=keys + ["type"],
             )
 
             if type(saved_val) == list:
@@ -2944,7 +2982,7 @@ class SaladRecordField(RecordField):
             r["type"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="type",
@@ -2958,7 +2996,7 @@ class SaladRecordField(RecordField):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("jsonldPredicate"),
+                keys=keys + ["jsonldPredicate"],
             )
 
             if type(saved_val) == list:
@@ -2969,7 +3007,7 @@ class SaladRecordField(RecordField):
             r["jsonldPredicate"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="jsonldPredicate",
@@ -2983,7 +3021,7 @@ class SaladRecordField(RecordField):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("default"),
+                keys=keys + ["default"],
             )
 
             if type(saved_val) == list:
@@ -2994,7 +3032,7 @@ class SaladRecordField(RecordField):
             r["default"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="default",
@@ -3011,7 +3049,7 @@ class SaladRecordField(RecordField):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["doc", "name", "type", "jsonldPredicate", "default", "_doc"])
+    attrs = frozenset(["doc", "name", "type", "jsonldPredicate", "default"])
 
 
 class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
@@ -3019,7 +3057,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         self,
         name: Any,
         type: Any,
-        _doc: Any,
         inVocab: Optional[Any] = None,
         fields: Optional[Any] = None,
         doc: Optional[Any] = None,
@@ -3055,7 +3092,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         self.abstract = abstract
         self.extends = extends
         self.specialize = specialize
-        self._doc = _doc
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, SaladRecordSchema):
@@ -3073,7 +3109,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 and self.abstract == other.abstract
                 and self.extends == other.extends
                 and self.specialize == other.specialize
-                and self._doc == other._doc
             )
         return False
 
@@ -3093,7 +3128,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 self.abstract,
                 self.extends,
                 self.specialize,
-                self._doc,
             )
         )
 
@@ -3361,7 +3395,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `name`, `inVocab`, `fields`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `abstract`, `extends`, `specialize`, `_doc`".format(
+                            "invalid field `{}`, expected one of: `name`, `inVocab`, `fields`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `abstract`, `extends`, `specialize`".format(
                                 k
                             ),
                             SourceLine(_doc, k, str),
@@ -3385,7 +3419,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             abstract=abstract,
             extends=extends,
             specialize=specialize,
-            _doc=_doc,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
@@ -3397,15 +3430,27 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        line_info: Optional[CommentedMap] = None,
+        keys: Optional[list[Any]] = None,
     ) -> CommentedMap:
+        if keys is None:
+            keys = []
         r = CommentedMap()
-        if line_info is not None:
-            self._doc = line_info
-        if type(self._doc) == CommentedMap:
-            r._yaml_set_line_col(self._doc.lc.line, self._doc.lc.col)
-        line_numbers = get_line_numbers(self._doc)
-        max_len = get_max_line_num(self._doc)
+        doc = doc_line_info
+        for key in keys:
+            if isinstance(doc, CommentedMap):
+                doc = doc.get(key)
+            elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+                if key < len(doc):
+                    doc = doc[key]
+                else:
+                    doc = None
+            else:
+                doc = None
+                break
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
         cols: Dict[int, int] = {}
         if relative_uris:
             for ef in self.extension_fields:
@@ -3417,7 +3462,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="name",
@@ -3431,7 +3476,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("inVocab"),
+                keys=keys + ["inVocab"],
             )
 
             if type(saved_val) == list:
@@ -3442,7 +3487,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             r["inVocab"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="inVocab",
@@ -3456,7 +3501,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("fields"),
+                keys=keys + ["fields"],
             )
 
             if type(saved_val) == list:
@@ -3467,7 +3512,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             r["fields"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="fields",
@@ -3481,7 +3526,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("type"),
+                keys=keys + ["type"],
             )
 
             if type(saved_val) == list:
@@ -3492,7 +3537,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             r["type"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="type",
@@ -3506,7 +3551,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("doc"),
+                keys=keys + ["doc"],
             )
 
             if type(saved_val) == list:
@@ -3517,7 +3562,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             r["doc"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="doc",
@@ -3529,7 +3574,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
             r["docParent"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="docParent",
@@ -3541,7 +3586,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
             r["docChild"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="docChild",
@@ -3553,7 +3598,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
             r["docAfter"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="docAfter",
@@ -3567,7 +3612,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("jsonldPredicate"),
+                keys=keys + ["jsonldPredicate"],
             )
 
             if type(saved_val) == list:
@@ -3578,7 +3623,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             r["jsonldPredicate"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="jsonldPredicate",
@@ -3592,7 +3637,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("documentRoot"),
+                keys=keys + ["documentRoot"],
             )
 
             if type(saved_val) == list:
@@ -3603,7 +3648,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             r["documentRoot"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="documentRoot",
@@ -3617,7 +3662,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("abstract"),
+                keys=keys + ["abstract"],
             )
 
             if type(saved_val) == list:
@@ -3628,7 +3673,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             r["abstract"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="abstract",
@@ -3640,7 +3685,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             u = save_relative_uri(self.extends, self.name, False, 1, relative_uris)
             r["extends"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="extends",
@@ -3654,7 +3699,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("specialize"),
+                keys=keys + ["specialize"],
             )
 
             if type(saved_val) == list:
@@ -3665,7 +3710,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             r["specialize"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="specialize",
@@ -3697,7 +3742,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             "abstract",
             "extends",
             "specialize",
-            "_doc",
         ]
     )
 
@@ -3712,7 +3756,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         self,
         symbols: Any,
         type: Any,
-        _doc: Any,
         name: Optional[Any] = None,
         inVocab: Optional[Any] = None,
         doc: Optional[Any] = None,
@@ -3744,7 +3787,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         self.jsonldPredicate = jsonldPredicate
         self.documentRoot = documentRoot
         self.extends = extends
-        self._doc = _doc
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, SaladEnumSchema):
@@ -3760,7 +3802,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 and self.jsonldPredicate == other.jsonldPredicate
                 and self.documentRoot == other.documentRoot
                 and self.extends == other.extends
-                and self._doc == other._doc
             )
         return False
 
@@ -3778,7 +3819,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 self.jsonldPredicate,
                 self.documentRoot,
                 self.extends,
-                self._doc,
             )
         )
 
@@ -4007,7 +4047,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `name`, `inVocab`, `symbols`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `extends`, `_doc`".format(
+                            "invalid field `{}`, expected one of: `name`, `inVocab`, `symbols`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`, `extends`".format(
                                 k
                             ),
                             SourceLine(_doc, k, str),
@@ -4029,7 +4069,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             jsonldPredicate=jsonldPredicate,
             documentRoot=documentRoot,
             extends=extends,
-            _doc=_doc,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
@@ -4041,15 +4080,27 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        line_info: Optional[CommentedMap] = None,
+        keys: Optional[list[Any]] = None,
     ) -> CommentedMap:
+        if keys is None:
+            keys = []
         r = CommentedMap()
-        if line_info is not None:
-            self._doc = line_info
-        if type(self._doc) == CommentedMap:
-            r._yaml_set_line_col(self._doc.lc.line, self._doc.lc.col)
-        line_numbers = get_line_numbers(self._doc)
-        max_len = get_max_line_num(self._doc)
+        doc = doc_line_info
+        for key in keys:
+            if isinstance(doc, CommentedMap):
+                doc = doc.get(key)
+            elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+                if key < len(doc):
+                    doc = doc[key]
+                else:
+                    doc = None
+            else:
+                doc = None
+                break
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
         cols: Dict[int, int] = {}
         if relative_uris:
             for ef in self.extension_fields:
@@ -4061,7 +4112,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="name",
@@ -4075,7 +4126,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("inVocab"),
+                keys=keys + ["inVocab"],
             )
 
             if type(saved_val) == list:
@@ -4086,7 +4137,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             r["inVocab"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="inVocab",
@@ -4098,7 +4149,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             u = save_relative_uri(self.symbols, self.name, True, None, relative_uris)
             r["symbols"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="symbols",
@@ -4112,7 +4163,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("type"),
+                keys=keys + ["type"],
             )
 
             if type(saved_val) == list:
@@ -4123,7 +4174,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             r["type"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="type",
@@ -4137,7 +4188,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("doc"),
+                keys=keys + ["doc"],
             )
 
             if type(saved_val) == list:
@@ -4148,7 +4199,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             r["doc"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="doc",
@@ -4160,7 +4211,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
             r["docParent"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="docParent",
@@ -4172,7 +4223,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
             r["docChild"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="docChild",
@@ -4184,7 +4235,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
             r["docAfter"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="docAfter",
@@ -4198,7 +4249,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("jsonldPredicate"),
+                keys=keys + ["jsonldPredicate"],
             )
 
             if type(saved_val) == list:
@@ -4209,7 +4260,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             r["jsonldPredicate"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="jsonldPredicate",
@@ -4223,7 +4274,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("documentRoot"),
+                keys=keys + ["documentRoot"],
             )
 
             if type(saved_val) == list:
@@ -4234,7 +4285,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             r["documentRoot"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="documentRoot",
@@ -4246,7 +4297,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             u = save_relative_uri(self.extends, self.name, False, 1, relative_uris)
             r["extends"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="extends",
@@ -4276,7 +4327,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             "jsonldPredicate",
             "documentRoot",
             "extends",
-            "_doc",
         ]
     )
 
@@ -4292,7 +4342,6 @@ class Documentation(NamedType, DocType):
         self,
         name: Any,
         type: Any,
-        _doc: Any,
         inVocab: Optional[Any] = None,
         doc: Optional[Any] = None,
         docParent: Optional[Any] = None,
@@ -4316,7 +4365,6 @@ class Documentation(NamedType, DocType):
         self.docChild = docChild
         self.docAfter = docAfter
         self.type = type
-        self._doc = _doc
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, Documentation):
@@ -4328,7 +4376,6 @@ class Documentation(NamedType, DocType):
                 and self.docChild == other.docChild
                 and self.docAfter == other.docAfter
                 and self.type == other.type
-                and self._doc == other._doc
             )
         return False
 
@@ -4342,7 +4389,6 @@ class Documentation(NamedType, DocType):
                 self.docChild,
                 self.docAfter,
                 self.type,
-                self._doc,
             )
         )
 
@@ -4502,7 +4548,7 @@ class Documentation(NamedType, DocType):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `name`, `inVocab`, `doc`, `docParent`, `docChild`, `docAfter`, `type`, `_doc`".format(
+                            "invalid field `{}`, expected one of: `name`, `inVocab`, `doc`, `docParent`, `docChild`, `docAfter`, `type`".format(
                                 k
                             ),
                             SourceLine(_doc, k, str),
@@ -4520,7 +4566,6 @@ class Documentation(NamedType, DocType):
             docChild=docChild,
             docAfter=docAfter,
             type=type,
-            _doc=_doc,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
@@ -4532,15 +4577,27 @@ class Documentation(NamedType, DocType):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        line_info: Optional[CommentedMap] = None,
+        keys: Optional[list[Any]] = None,
     ) -> CommentedMap:
+        if keys is None:
+            keys = []
         r = CommentedMap()
-        if line_info is not None:
-            self._doc = line_info
-        if type(self._doc) == CommentedMap:
-            r._yaml_set_line_col(self._doc.lc.line, self._doc.lc.col)
-        line_numbers = get_line_numbers(self._doc)
-        max_len = get_max_line_num(self._doc)
+        doc = doc_line_info
+        for key in keys:
+            if isinstance(doc, CommentedMap):
+                doc = doc.get(key)
+            elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+                if key < len(doc):
+                    doc = doc[key]
+                else:
+                    doc = None
+            else:
+                doc = None
+                break
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
         cols: Dict[int, int] = {}
         if relative_uris:
             for ef in self.extension_fields:
@@ -4552,7 +4609,7 @@ class Documentation(NamedType, DocType):
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="name",
@@ -4566,7 +4623,7 @@ class Documentation(NamedType, DocType):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("inVocab"),
+                keys=keys + ["inVocab"],
             )
 
             if type(saved_val) == list:
@@ -4577,7 +4634,7 @@ class Documentation(NamedType, DocType):
             r["inVocab"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="inVocab",
@@ -4591,7 +4648,7 @@ class Documentation(NamedType, DocType):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("doc"),
+                keys=keys + ["doc"],
             )
 
             if type(saved_val) == list:
@@ -4602,7 +4659,7 @@ class Documentation(NamedType, DocType):
             r["doc"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="doc",
@@ -4614,7 +4671,7 @@ class Documentation(NamedType, DocType):
             u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
             r["docParent"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="docParent",
@@ -4626,7 +4683,7 @@ class Documentation(NamedType, DocType):
             u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
             r["docChild"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="docChild",
@@ -4638,7 +4695,7 @@ class Documentation(NamedType, DocType):
             u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
             r["docAfter"] = u
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="docAfter",
@@ -4652,7 +4709,7 @@ class Documentation(NamedType, DocType):
                 top=False,
                 base_url=self.name,
                 relative_uris=relative_uris,
-                doc=self._doc.get("type"),
+                keys=keys + ["type"],
             )
 
             if type(saved_val) == list:
@@ -4663,7 +4720,7 @@ class Documentation(NamedType, DocType):
             r["type"] = saved_val
 
             max_len = add_kv(
-                old_doc=self._doc,
+                old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="type",
@@ -4681,7 +4738,7 @@ class Documentation(NamedType, DocType):
         return r
 
     attrs = frozenset(
-        ["name", "inVocab", "doc", "docParent", "docChild", "docAfter", "type", "_doc"]
+        ["name", "inVocab", "doc", "docParent", "docChild", "docAfter", "type"]
     )
 
 
