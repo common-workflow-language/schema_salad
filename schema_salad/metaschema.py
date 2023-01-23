@@ -1156,7 +1156,7 @@ class RecordField(Documented):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1363,7 +1363,7 @@ class RecordSchema(Saveable):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1595,7 +1595,7 @@ class EnumSchema(Saveable):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1786,7 +1786,7 @@ class ArraySchema(Saveable):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -2192,7 +2192,7 @@ class JsonldPredicate(Saveable):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -2613,7 +2613,7 @@ class SpecializeDef(Saveable):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -2886,7 +2886,7 @@ class SaladRecordField(RecordField):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -3414,7 +3414,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -4062,7 +4062,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -4557,7 +4557,7 @@ class Documentation(NamedType, DocType):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []

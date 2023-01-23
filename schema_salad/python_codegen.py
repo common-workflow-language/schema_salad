@@ -274,7 +274,7 @@ class PythonCodeGen(CodeGenBase):
         self.serializer.write(
             """
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
