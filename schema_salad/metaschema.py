@@ -199,7 +199,7 @@ class Saveable(ABC):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[list[Any]] = None,
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         """Convert this object to a JSON/YAML friendly dictionary."""
 
@@ -307,7 +307,7 @@ def save(
     top: bool = True,
     base_url: str = "",
     relative_uris: bool = True,
-    keys: Optional[list[Any]] = None,
+    keys: Optional[List[Any]] = None,
 ) -> save_type:
     """Save a val of any type.
 
@@ -861,6 +861,10 @@ def _document_load(
         if "$base" in doc:
             doc.pop("$base")
 
+        if isinstance(doc, CommentedMap):
+            global doc_line_info
+            doc_line_info = doc
+
         if "$graph" in doc:
             loadingOptions.idx[baseuri] = (
                 loader.load(doc["$graph"], baseuri, loadingOptions),
@@ -876,9 +880,6 @@ def _document_load(
             loadingOptions.idx[docuri] = loadingOptions.idx[baseuri]
 
         return loadingOptions.idx[baseuri]
-    if isinstance(doc, CommentedMap):
-        global doc_line_info
-        doc_line_info = doc
     if isinstance(doc, MutableSequence):
         loadingOptions.idx[baseuri] = (
             loader.load(doc, baseuri, loadingOptions),
@@ -1025,6 +1026,7 @@ class RecordField(Documented):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1154,17 +1156,14 @@ class RecordField(Documented):
         return _constructed
 
     def save(
-        self,
-        top: bool = False,
-        base_url: str = "",
-        relative_uris: bool = True,
-        keys: Optional[list[Any]] = None,
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = doc_line_info
         for key in keys:
+
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -1268,6 +1267,7 @@ class RecordSchema(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1363,17 +1363,14 @@ class RecordSchema(Saveable):
         return _constructed
 
     def save(
-        self,
-        top: bool = False,
-        base_url: str = "",
-        relative_uris: bool = True,
-        keys: Optional[list[Any]] = None,
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = doc_line_info
         for key in keys:
+
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -1471,6 +1468,7 @@ class EnumSchema(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1597,17 +1595,14 @@ class EnumSchema(Saveable):
         return _constructed
 
     def save(
-        self,
-        top: bool = False,
-        base_url: str = "",
-        relative_uris: bool = True,
-        keys: Optional[list[Any]] = None,
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = doc_line_info
         for key in keys:
+
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -1698,6 +1693,7 @@ class ArraySchema(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1790,17 +1786,14 @@ class ArraySchema(Saveable):
         return _constructed
 
     def save(
-        self,
-        top: bool = False,
-        base_url: str = "",
-        relative_uris: bool = True,
-        keys: Optional[list[Any]] = None,
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = doc_line_info
         for key in keys:
+
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -1894,6 +1887,7 @@ class JsonldPredicate(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -2198,17 +2192,14 @@ class JsonldPredicate(Saveable):
         return _constructed
 
     def save(
-        self,
-        top: bool = False,
-        base_url: str = "",
-        relative_uris: bool = True,
-        keys: Optional[list[Any]] = None,
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = doc_line_info
         for key in keys:
+
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -2526,6 +2517,7 @@ class SpecializeDef(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -2621,17 +2613,14 @@ class SpecializeDef(Saveable):
         return _constructed
 
     def save(
-        self,
-        top: bool = False,
-        base_url: str = "",
-        relative_uris: bool = True,
-        keys: Optional[list[Any]] = None,
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = doc_line_info
         for key in keys:
+
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -2723,6 +2712,7 @@ class SaladRecordField(RecordField):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -2896,17 +2886,14 @@ class SaladRecordField(RecordField):
         return _constructed
 
     def save(
-        self,
-        top: bool = False,
-        base_url: str = "",
-        relative_uris: bool = True,
-        keys: Optional[list[Any]] = None,
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = doc_line_info
         for key in keys:
+
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -3071,6 +3058,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -3426,17 +3414,14 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         return _constructed
 
     def save(
-        self,
-        top: bool = False,
-        base_url: str = "",
-        relative_uris: bool = True,
-        keys: Optional[list[Any]] = None,
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = doc_line_info
         for key in keys:
+
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -3768,6 +3753,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -4076,17 +4062,14 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         return _constructed
 
     def save(
-        self,
-        top: bool = False,
-        base_url: str = "",
-        relative_uris: bool = True,
-        keys: Optional[list[Any]] = None,
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = doc_line_info
         for key in keys:
+
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -4350,6 +4333,7 @@ class Documentation(NamedType, DocType):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
+
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -4573,17 +4557,14 @@ class Documentation(NamedType, DocType):
         return _constructed
 
     def save(
-        self,
-        top: bool = False,
-        base_url: str = "",
-        relative_uris: bool = True,
-        keys: Optional[list[Any]] = None,
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[list[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = doc_line_info
         for key in keys:
+
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
