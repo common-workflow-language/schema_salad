@@ -230,11 +230,11 @@ save_type = Optional[
 def add_kv(
     old_doc: CommentedMap,
     new_doc: CommentedMap,
-    line_numbers: dict[Any, dict[str, int]],
+    line_numbers: Dict[Any, Dict[str, int]],
     key: str,
     val: Any,
     max_len: int,
-    cols: dict[int, int],
+    cols: Dict[int, int],
 ) -> int:
     """Add key value pair into Commented Map.
 
@@ -261,13 +261,13 @@ def add_kv(
     return max_len
 
 
-def get_line_numbers(doc: CommentedMap) -> dict[Any, dict[str, int]]:
+def get_line_numbers(doc: CommentedMap) -> Dict[Any, Dict[str, int]]:
     """Get line numbers for kv pairs in CommentedMap.
 
     For each key/value pair in a CommentedMap, save the line/col info into a dictionary,
     only save value info if value is hashable.
     """
-    line_numbers: Dict[Any, dict[str, int]] = {}
+    line_numbers: Dict[Any, Dict[str, int]] = {}
     if isinstance(doc, dict) or doc is None:
         return {}
     for key, value in doc.lc.data.items():
