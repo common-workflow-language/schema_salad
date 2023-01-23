@@ -1,4 +1,5 @@
 # from parser import load_document_by_uri, save
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
 
@@ -7,24 +8,21 @@ from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from schema_salad import codegen
 from schema_salad.avro.schema import Names
 from schema_salad.schema import load_schema
-from schema_salad.utils import yaml_no_ts, count_lines
-import os
+from schema_salad.utils import yaml_no_ts
 
 
+# def load_yaml(file_name: str) -> CommentedMap:
+#     assert os.path.isfile(file_name)
+#     with open(file_name) as f:
+#         yaml = yaml_no_ts()
+#         doc = yaml.load(f.read())
+#     return doc
 
-def load_yaml(file_name: str) -> CommentedMap:
-    assert(os.path.isfile(file_name))
-    with open(file_name) as f:
-        yaml = yaml_no_ts()
-        doc = yaml.load(f.read())
-    return doc
 
-def test_line_number_comparision()->None:
-    v0_doc = load_yaml(count_lines["v0"])
-    v1_doc = load_yaml(count_lines["v1"])
-    v2_doc = load_yaml(count_lines["v2"])
-    
-    
+# def test_line_number_comparision() -> None:
+    # v0_doc = load_yaml(count_lines["v0"])
+    # v1_doc = load_yaml(count_lines["v1"])
+    # v2_doc = load_yaml(count_lines["v2"])
 
 
 def compare_line_numbers(original_doc: CommentedMap, codegen_doc: CommentedMap) -> None:

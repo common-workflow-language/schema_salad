@@ -196,7 +196,7 @@ class Saveable(ABC):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[list[Any]] = None,
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         """Convert this object to a JSON/YAML friendly dictionary."""
 
@@ -304,7 +304,7 @@ def save(
     top: bool = True,
     base_url: str = "",
     relative_uris: bool = True,
-    keys: Optional[list[Any]] = None,
+    keys: Optional[List[Any]] = None,
 ) -> save_type:
     """Save a val of any type.
 
@@ -858,6 +858,10 @@ def _document_load(
         if "$base" in doc:
             doc.pop("$base")
 
+        if isinstance(doc, CommentedMap):
+            global doc_line_info
+            doc_line_info = doc
+
         if "$graph" in doc:
             loadingOptions.idx[baseuri] = (
                 loader.load(doc["$graph"], baseuri, loadingOptions),
@@ -873,9 +877,6 @@ def _document_load(
             loadingOptions.idx[docuri] = loadingOptions.idx[baseuri]
 
         return loadingOptions.idx[baseuri]
-    if isinstance(doc, CommentedMap):
-        global doc_line_info
-        doc_line_info = doc
     if isinstance(doc, MutableSequence):
         loadingOptions.idx[baseuri] = (
             loader.load(doc, baseuri, loadingOptions),
