@@ -523,10 +523,10 @@ if _errors__:
 
         self.out.write(
             """
-{spc}        if _doc.get("{fieldname}") is None:
-{spc}           raise ValidationException("* missing field '{fieldname}'", None, str)
-{spc}
 {spc}        try:
+{spc}            if _doc.get("{fieldname}") is None:
+{spc}               raise ValidationException("* missing field '{fieldname}'", None, [])
+{spc}
 {spc}            {safename} = load_field(
 {spc}                _doc.get("{fieldname}"),
 {spc}                {fieldtype},
@@ -545,7 +545,7 @@ if _errors__:
             self.out.write(
 """
 {spc}            if not os.path.isfile(_doc.get("run")):
-{spc}                raise ValidationException(f'contains undefined reference to {{run}}')
+{spc}                raise ValidationException(f'contains undefined reference to {{run}}', None, [])
     """.format(spc=spc,)
             )
         self.out.write(
