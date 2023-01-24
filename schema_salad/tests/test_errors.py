@@ -346,7 +346,7 @@ def test_namespaces_type() -> None:
         )
 
 
-def test_namespaces_undeclared(caplog) -> None:
+def test_namespaces_undeclared(caplog: pytest.LogCaptureFixture) -> None:
     """Confirm warning message a namespace is used but not declared."""
 
     ldr, _, _, _ = schema_salad.schema.load_schema(
@@ -370,7 +370,7 @@ def test_namespaces_undeclared(caplog) -> None:
     assert re.match(match, caplog.text)
 
 
-def test_not_a_namespace1(caplog) -> None:
+def test_not_a_namespace1(caplog: pytest.LogCaptureFixture) -> None:
     """Confirm warning message a namespace is used but not declared."""
 
     ldr, _, _, _ = schema_salad.schema.load_schema(
@@ -392,7 +392,7 @@ def test_not_a_namespace1(caplog) -> None:
     assert caplog.text == ""
 
 
-def test_not_a_namespace2(caplog) -> None:
+def test_not_a_namespace2(caplog: pytest.LogCaptureFixture) -> None:
     """Confirm warning message a namespace is used but not declared."""
 
     ldr, _, _, _ = schema_salad.schema.load_schema(
