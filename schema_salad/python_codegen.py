@@ -291,7 +291,7 @@ class PythonCodeGen(CodeGenBase):
             self.out.write(
                 """
         if _doc.get("class") != "{class_}":
-            raise ValidationException("Not a {class_}")
+            raise ValidationException("tried {class_}")
 
 """.format(
                     class_=classname
