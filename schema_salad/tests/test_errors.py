@@ -12,6 +12,7 @@ from schema_salad.schema import load_and_validate, load_schema
 from schema_salad.sourceline import cmap
 
 from .util import get_data
+from .test_cli_args import captured_output
 
 
 def test_errors() -> None:
@@ -77,8 +78,7 @@ def test_error_message2() -> None:
 
     t = "test_schema/test2.cwl"
     match = r"""
-^.+test2\.cwl:2:1: Field `class`\s+contains\s+undefined\s+reference\s+to
-\s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$"""[
+^.+test2\.cwl:2:1: Field `class`\s+contains\s+undefined\s+reference\s+to\s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$"""[
         1:
     ]
     path2 = get_data("tests/" + t)
@@ -182,8 +182,7 @@ def test_error_message8() -> None:
     match = r"""
 ^.+test8\.cwl:7:1: checking field\s+`steps`
 .+test8\.cwl:8:3:   checking object\s+`.+test8\.cwl#step1`
-.+test8\.cwl:9:5:     Field\s+`scatterMethod`\s+contains\s+undefined\s+reference\s+to
-\s+`file:///.+/tests/test_schema/abc`$"""[
+.+test8\.cwl:9:5:     Field\s+`scatterMethod`\s+contains\s+undefined\s+reference\s+to\s+`file:///.+/tests/test_schema/abc`$"""[
         1:
     ]
     with pytest.raises(ValidationException, match=match):
@@ -245,8 +244,7 @@ def test_error_message11() -> None:
     match = r"""
 ^.+test11\.cwl:7:1: checking field\s+`steps`
 .+test11\.cwl:8:3:   checking object\s+`.+test11\.cwl#step1`
-.+test11\.cwl:9:5:     Field `run`\s+contains\s+undefined\s+reference\s+to
-\s+`file://.+/tests/test_schema/blub\.cwl`$"""[
+.+test11\.cwl:9:5:     Field `run`\s+contains\s+undefined\s+reference\s+to\s+`file://.+/tests/test_schema/blub\.cwl`$"""[
         1:
     ]
     with pytest.raises(ValidationException, match=match):
@@ -346,6 +344,74 @@ def test_namespaces_type() -> None:
                 }
             )
         )
+
+
+def test_namespaces_undeclared(caplog) -> None:
+    """Confirm warning message a namespace is used but not declared."""
+
+    ldr, _, _, _ = schema_salad.schema.load_schema(
+        cmap(
+            {
+                "$base": "Y",
+                "name": "X",
+                "$graph": [
+                    {
+                        "name": "namesp:ExampleType",
+                        "type": "enum",
+                        "symbols": ["asym", "bsym"],
+                    }
+                ],
+            }
+        )
+    )
+
+    match = r""".*URI prefix 'namesp' of 'namesp:ExampleType' not recognized, are you missing a \$namespaces section?.*"""
+
+    assert re.match(match, caplog.text)
+
+
+def test_not_a_namespace1(caplog) -> None:
+    """Confirm warning message a namespace is used but not declared."""
+
+    ldr, _, _, _ = schema_salad.schema.load_schema(
+        cmap(
+            {
+                "$base": "Y",
+                "name": "X",
+                "$graph": [
+                    {
+                        "name": "foo/colon:ExampleType",
+                        "type": "enum",
+                        "symbols": ["asym", "bsym"],
+                    }
+                ],
+            }
+        )
+    )
+
+    assert caplog.text == ""
+
+
+def test_not_a_namespace2(caplog) -> None:
+    """Confirm warning message a namespace is used but not declared."""
+
+    ldr, _, _, _ = schema_salad.schema.load_schema(
+        cmap(
+            {
+                "$base": "Y",
+                "name": "X",
+                "$graph": [
+                    {
+                        "name": "foo#colon:ExampleType",
+                        "type": "enum",
+                        "symbols": ["asym", "bsym"],
+                    }
+                ],
+            }
+        )
+    )
+
+    assert caplog.text == ""
 
 
 def test_schemas_type() -> None:

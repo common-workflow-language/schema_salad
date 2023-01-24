@@ -229,7 +229,9 @@ class Loader:
 
         if bool(self.vocab) and ":" in url:
             prefix = url.split(":")[0]
-            if prefix in self.vocab:
+            if not prefix:
+                pass
+            elif prefix in self.vocab:
                 url = self.vocab[prefix] + url[len(prefix) + 1 :]
             elif (
                 prefix not in self.fetcher.supported_schemes()
