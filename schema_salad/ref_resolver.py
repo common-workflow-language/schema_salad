@@ -246,7 +246,7 @@ class Loader:
         split = urllib.parse.urlsplit(url)
 
         if (
-            (bool(split.scheme) and split.scheme in ["http", "https", "file"])
+            (bool(split.scheme) and split.scheme in self.fetcher.supported_schemes())
             or url.startswith("$(")
             or url.startswith("${")
         ):
