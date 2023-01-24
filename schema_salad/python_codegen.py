@@ -331,7 +331,6 @@ for k in _doc.keys():
                     SourceLine(_doc, k, str),
                 )
             )
-            break
 
 if _errors__:
     raise ValidationException(\"tried '{class_}'\", None, _errors__)
@@ -470,7 +469,7 @@ if _errors__:
                 safename=self.safe_name(name)
             )
         else:
-            opt = """raise ValidationException("Missing {fieldname}")""".format(
+            opt = """_errors__.append(ValidationException("* missing {fieldname}"))""".format(
                 fieldname=shortname(name)
             )
 
@@ -523,29 +522,45 @@ if _errors__:
             baseurivar = "baseuri"
 
         self.out.write(
-            """{spc}        try:
+            """
+{spc}        if _doc.get("{fieldname}") is None:
+{spc}           raise ValidationException("* missing field '{fieldname}'", None, str)
+{spc}
+{spc}        try:
 {spc}            {safename} = load_field(
 {spc}                _doc.get("{fieldname}"),
 {spc}                {fieldtype},
 {spc}                {baseurivar},
 {spc}                loadingOptions,
 {spc}            )
-{spc}        except ValidationException as e:
-{spc}            if str(e) == "Expected a list, was <class 'NoneType'>":
-{spc}                _errors__.append(ValidationException("* missing required field `{fieldname}`",None, []))
-{spc}            else:
-{spc}                _errors__.append(
-{spc}                    ValidationException(
-{spc}                        \"the `{fieldname}` field is not valid because:\",
-{spc}                        SourceLine(_doc, "{fieldname}", str),
-{spc}                        [e],
-{spc}                    )
-{spc}                )
-""".format(
+    """.format(
                 safename=self.safe_name(name),
+                    fieldname=shortname(name),
+                    fieldtype=fieldtype.name,
+                    baseurivar=baseurivar,
+                    spc=spc,)
+    )
+
+        if shortname(name) == "run":
+            self.out.write(
+"""
+{spc}            if not os.path.isfile(_doc.get("run")):
+{spc}                raise ValidationException(f'contains undefined reference to {{run}}')
+    """.format(spc=spc,)
+            )
+        self.out.write(
+"""
+{spc}        except ValidationException as e:
+{spc}              _errors__.append(
+{spc}                  ValidationException(
+{spc}                      \"the `{fieldname}` field is not valid because:\",
+{spc}                      SourceLine(_doc, "{fieldname}", str),
+{spc}                      [e],
+{spc}                )
+{spc}              )
+""".format(
+
                 fieldname=shortname(name),
-                fieldtype=fieldtype.name,
-                baseurivar=baseurivar,
                 spc=spc,
             )
         )

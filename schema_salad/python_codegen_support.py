@@ -42,6 +42,7 @@ _logger = logging.getLogger("salad")
 
 IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
 
+line_numbers = CommentedMap()
 
 class LoadingOptions:
 
@@ -362,7 +363,7 @@ class _PrimitiveLoader(_Loader):
         if not isinstance(doc, self.tp):
             raise ValidationException(
                 "Expected a {} but got {}".format(
-                    self.tp.__class__.__name__, doc.__class__.__name__
+                    self.tp, doc.__class__.__name__
                 )
             )
         return doc
@@ -382,6 +383,7 @@ class _ArrayLoader(_Loader):
             raise ValidationException(f"Expected a list, was {type(doc)}")
         r = []  # type: List[Any]
         errors = []  # type: List[SchemaSaladException]
+        fields = [] # type: List[str]
         for i in range(0, len(doc)):
             try:
                 lf = load_field(
@@ -391,6 +393,12 @@ class _ArrayLoader(_Loader):
                     r.extend(lf)
                 else:
                     r.append(lf)
+
+                if doc[i].get("id") is not None:
+                    if doc[i].get("id") in fields:
+                        errors.append(ValidationException(f"Duplicate field '{doc[i].get('id')}'", SourceLine(doc[i], "id", str), []))
+                    else:
+                        fields.append(doc[i].get("id"))
             except ValidationException as e:
                 errors.append(e.with_sourceline(SourceLine(doc, i, str)))
         if errors:
@@ -540,7 +548,7 @@ class _UnionLoader(_Loader):
                 else:
                     errors.append(ValidationException("", None, [e]))
 
-        if isinstance(doc, (CommentedMap, dict)):
+        if isinstance(doc, (CommentedMap, dict)) and 'class' in doc:
             if doc.get("class") not in str(self.alternates):
                 errors.append(ValidationException("Field `class` contains undefined reference to " + baseuri + "/" + doc.get("class"), None, []))
         raise ValidationException("", None, errors, "-")
@@ -718,11 +726,15 @@ def _document_load(
             addl_metadata=addl_metadata,
         )
 
-        doc = {
-            k: v
-            for k, v in doc.items()
-            if k not in ("$namespaces", "$schemas", "$base")
-        }
+        # doc = {
+        #     k: v
+        #     for k, v in doc.items()
+        #     if k not in ("$namespaces", "$schemas", "$base")
+        # }
+
+        if type(doc) == CommentedMap:
+            global line_numbers
+            line_numbers = doc
 
         if "$graph" in doc:
             loadingOptions.idx[baseuri] = (
