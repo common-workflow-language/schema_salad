@@ -424,6 +424,7 @@ def test_not_a_namespace2(caplog: pytest.LogCaptureFixture) -> None:
 
     assert caplog.text == ""
 
+
 def test_not_a_namespace3(caplog: pytest.LogCaptureFixture) -> None:
     """Confirm no warning when relative id starts with a colon."""
 
