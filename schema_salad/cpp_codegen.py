@@ -7,22 +7,19 @@ YAML into C++ objects.
 The generated code requires the libyaml-cpp library & headers
 
 To see an example of usage, look at schema_salad/tests/codegen/cwl.cpp
-which can be combined with the CWL V1.0 schema as shown below:
+which can be combined with the CWL V1.0 schema as shown below::
 
-```
-schema-salad-tool --codegen cpp schema_salad/tests/test_schema/CommonWorkflowLanguage.yml \
-        > cwl_v1_0.h
+  schema-salad-tool --codegen cpp \
+          schema_salad/tests/test_schema/CommonWorkflowLanguage.yml \
+          > cwl_v1_0.h
 
-g++ --std=c++20 -I. -lyaml-cpp schema_salad/tests/codegen/cwl.cpp -o cwl-v1_0-test
-./cwl-v1_0-test
+  g++ --std=c++20 -I. -lyaml-cpp schema_salad/tests/codegen/cwl.cpp -o cwl-v1_0-test
+  ./cwl-v1_0-test
 
-# g++ versions older than version 10 may need "--std=c++2a" instead of "--std=c++20"
-```
+  # g++ versions older than version 10 may need "--std=c++2a" instead of "--std=c++20"
 """
 import re
 from typing import IO, Any, Dict, List, Optional, Tuple, Union, cast
-
-from schema_salad.utils import aslist
 
 from . import _logger
 from .codegen_base import CodeGenBase, TypeDef
@@ -161,7 +158,6 @@ class FieldDefinition:
         self, target: IO[Any], fullInd: str, ind: str, namespace: str
     ) -> None:
         name = safename(self.name)
-        # target.write(f"{fullInd}std::unique_ptr<{self.typeStr}> {name} = std::make_unique<{self.typeStr}>();\n")
         typeStr = self.typeStr.replace(namespace + "::", "")
         target.write(f"{fullInd}heap_object<{typeStr}> {name};\n")
 
@@ -599,8 +595,6 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node {
         return name
 
     def parse(self, items: List[Dict[str, Any]]) -> None:
-        types = {i["name"]: i for i in items}  # type: Dict[str, Any]
-
         for stype in items:
             if "type" in stype and stype["type"] == "documentation":
                 continue

@@ -1,15 +1,12 @@
 """Test C++ code generation."""
 
 import os
-import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, cast
 
 from schema_salad import codegen
 from schema_salad.avro.schema import Names
 from schema_salad.schema import load_schema
-from schema_salad.sourceline import cmap
-from schema_salad.utils import yaml_no_ts
 
 from .util import cwl_file_uri, get_data
 
@@ -17,7 +14,6 @@ from .util import cwl_file_uri, get_data
 def test_cwl_cpp_gen(tmp_path: Path) -> None:
     """End to end test of C++ generator using the CWL v1.0 schema."""
     src_target = tmp_path / "cwl_v1_0.h"
-    exe_target = tmp_path / "cwl_v1_0_test"
     cpp_codegen(cwl_file_uri, src_target)
     source = get_data("tests/codegen/cwl.cpp")
     assert source

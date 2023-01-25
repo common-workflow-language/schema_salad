@@ -229,9 +229,15 @@ class Loader:
 
         if bool(self.vocab) and ":" in url:
             prefix = url.split(":")[0]
-            if prefix in self.vocab:
+            if not prefix:
+                pass
+            elif prefix in self.vocab:
                 url = self.vocab[prefix] + url[len(prefix) + 1 :]
-            elif prefix not in self.fetcher.supported_schemes():
+            elif (
+                prefix not in self.fetcher.supported_schemes()
+                and "/" not in prefix
+                and "#" not in prefix
+            ):
                 _logger.warning(
                     "URI prefix '%s' of '%s' not recognized, are you missing a "
                     "$namespaces section?",
@@ -242,7 +248,7 @@ class Loader:
         split = urllib.parse.urlsplit(url)
 
         if (
-            (bool(split.scheme) and split.scheme in ["http", "https", "file"])
+            (bool(split.scheme) and split.scheme in self.fetcher.supported_schemes())
             or url.startswith("$(")
             or url.startswith("${")
         ):
@@ -304,7 +310,6 @@ class Loader:
                         break
                     except (xml.sax.SAXParseException, TypeError, BadSyntax) as e:
                         err_msg = str(e)
-                        pass
                 else:
                     _logger.warning(
                         "Could not load extension schema %s: %s", fetchurl, err_msg
