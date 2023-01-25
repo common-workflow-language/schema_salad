@@ -382,7 +382,7 @@ def test_namespaces_undeclared(caplog: pytest.LogCaptureFixture) -> None:
 
 
 def test_not_a_namespace1(caplog: pytest.LogCaptureFixture) -> None:
-    """Confirm warning message a namespace is used but not declared."""
+    """Confirm no warning when relative id contains a colon but prefix doesn't look like a namespace."""
 
     ldr, _, _, _ = schema_salad.schema.load_schema(
         cmap(
@@ -404,7 +404,7 @@ def test_not_a_namespace1(caplog: pytest.LogCaptureFixture) -> None:
 
 
 def test_not_a_namespace2(caplog: pytest.LogCaptureFixture) -> None:
-    """Confirm warning message a namespace is used but not declared."""
+    """Confirm no warning when relative id contains a colon but prefix doesn't look like a namespace."""
 
     ldr, _, _, _ = schema_salad.schema.load_schema(
         cmap(
@@ -414,6 +414,28 @@ def test_not_a_namespace2(caplog: pytest.LogCaptureFixture) -> None:
                 "$graph": [
                     {
                         "name": "foo#colon:ExampleType",
+                        "type": "enum",
+                        "symbols": ["asym", "bsym"],
+                    }
+                ],
+            }
+        )
+    )
+
+    assert caplog.text == ""
+
+
+def test_not_a_namespace3(caplog: pytest.LogCaptureFixture) -> None:
+    """Confirm no warning when relative id starts with a colon."""
+
+    ldr, _, _, _ = schema_salad.schema.load_schema(
+        cmap(
+            {
+                "$base": "Y",
+                "name": "X",
+                "$graph": [
+                    {
+                        "name": ":ExampleType",
                         "type": "enum",
                         "symbols": ["asym", "bsym"],
                     }
