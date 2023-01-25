@@ -12,7 +12,6 @@ from schema_salad.schema import load_and_validate, load_schema
 from schema_salad.sourceline import cmap
 
 from .util import get_data
-from .test_cli_args import captured_output
 
 
 def test_errors() -> None:
@@ -77,10 +76,13 @@ def test_error_message2() -> None:
     assert isinstance(avsc_names, Names)
 
     t = "test_schema/test2.cwl"
-    match = r"""
-^.+test2\.cwl:2:1: Field `class`\s+contains\s+undefined\s+reference\s+to\s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$"""[
-        1:
-    ]
+    match = (
+        r"""
+^.+test2\.cwl:2:1: Field """
+        r"""`class`\s+contains\s+undefined\s+reference\s+to\s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$"""[
+            1:
+        ]
+    )
     path2 = get_data("tests/" + t)
     assert path2
     with pytest.raises(ValidationException, match=match):
@@ -179,12 +181,15 @@ def test_error_message8() -> None:
     assert isinstance(avsc_names, Names)
 
     t = "test_schema/test8.cwl"
-    match = r"""
+    match = (
+        r"""
 ^.+test8\.cwl:7:1: checking field\s+`steps`
 .+test8\.cwl:8:3:   checking object\s+`.+test8\.cwl#step1`
-.+test8\.cwl:9:5:     Field\s+`scatterMethod`\s+contains\s+undefined\s+reference\s+to\s+`file:///.+/tests/test_schema/abc`$"""[
-        1:
-    ]
+.+test8\.cwl:9:5:     """
+        r"""Field\s+`scatterMethod`\s+contains\s+undefined\s+reference\s+to\s+`file:///.+/tests/test_schema/abc`$"""[
+            1:
+        ]
+    )
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
             document_loader, avsc_names, str(get_data("tests/" + t)), True
@@ -241,12 +246,15 @@ def test_error_message11() -> None:
     assert isinstance(avsc_names, Names)
 
     t = "test_schema/test11.cwl"
-    match = r"""
+    match = (
+        r"""
 ^.+test11\.cwl:7:1: checking field\s+`steps`
 .+test11\.cwl:8:3:   checking object\s+`.+test11\.cwl#step1`
-.+test11\.cwl:9:5:     Field `run`\s+contains\s+undefined\s+reference\s+to\s+`file://.+/tests/test_schema/blub\.cwl`$"""[
-        1:
-    ]
+.+test11\.cwl:9:5:     """
+        r"""Field `run`\s+contains\s+undefined\s+reference\s+to\s+`file://.+/tests/test_schema/blub\.cwl`$"""[
+            1:
+        ]
+    )
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
             document_loader, avsc_names, str(get_data("tests/" + t)), True
@@ -365,7 +373,10 @@ def test_namespaces_undeclared(caplog: pytest.LogCaptureFixture) -> None:
         )
     )
 
-    match = r""".*URI prefix 'namesp' of 'namesp:ExampleType' not recognized, are you missing a \$namespaces section?.*"""
+    match = (
+        r""".*URI prefix 'namesp' of 'namesp:ExampleType' not recognized, """
+        r"""are you missing a \$namespaces section?.*"""
+    )
 
     assert re.match(match, caplog.text)
 

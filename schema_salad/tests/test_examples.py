@@ -524,7 +524,7 @@ def test_sourceline() -> None:
     except TestExp as e:
         assert str(e).endswith("frag.yml:3:3: Whoops"), e
     except Exception as exc:
-        raise AssertionError("Unexpected exception" + str(exc))
+        raise AssertionError("Unexpected exception" + str(exc)) from exc
 
 
 def test_cmap() -> None:
