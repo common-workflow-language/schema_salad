@@ -310,7 +310,6 @@ class Loader:
                         break
                     except (xml.sax.SAXParseException, TypeError, BadSyntax) as e:
                         err_msg = str(e)
-                        pass
                 else:
                     _logger.warning(
                         "Could not load extension schema %s: %s", fetchurl, err_msg

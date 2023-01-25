@@ -220,8 +220,11 @@ release:
 		twine upload testenv2/src/${PACKAGE}/dist/* && \
 		git tag ${VERSION} && git push --tags
 
-flake8: $(PYSOURCES)
-	flake8 $^
+flake8: FORCE
+	flake8 $(PYSOURCES)
+
+schema_salad/metaschema.py: schema_salad/codegen_base.py schema_salad/python_codegen_support.py schema_salad/python_codegen.py schema_salad/metaschema
+	schema-salad-tool --codegen python schema_salad/metaschema/metaschema.yml > $@
 
 FORCE:
 

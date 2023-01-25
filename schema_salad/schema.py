@@ -369,7 +369,7 @@ def validate_doc(
                 break
 
         if not success:
-            errors = []  # type: List[SchemaSaladException]
+            errors: List[SchemaSaladException] = []
             for root in roots:
                 if hasattr(root, "get_prop"):
                     name = root.get_prop("name")

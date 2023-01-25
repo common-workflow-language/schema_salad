@@ -4,7 +4,7 @@ from typing import Any, List, Mapping, MutableMapping, MutableSequence, Optional
 from urllib.parse import urlsplit
 
 from . import avro
-from .avro.schema import Schema  # pylint: disable=no-name-in-module, import-error
+from .avro.schema import Schema
 from .exceptions import (
     ClassValidationException,
     SchemaSaladException,
@@ -260,7 +260,7 @@ def validate_ex(
         if not raise_ex:
             return False
 
-        errors = []  # type: List[SchemaSaladException]
+        errors: List[SchemaSaladException] = []
         checked = []
         for s in expected_schema.schemas:
             if isinstance(datum, MutableSequence) and not isinstance(

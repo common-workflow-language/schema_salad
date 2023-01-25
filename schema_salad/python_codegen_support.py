@@ -426,8 +426,7 @@ class _ArrayLoader(_Loader):
 
 
 class _EnumLoader(_Loader):
-    def __init__(self, symbols, name):
-        # type: (Sequence[str], str) -> None
+    def __init__(self, symbols: Sequence[str], name: str) -> None:
         self.symbols = symbols
         self.name = name
 
@@ -544,8 +543,7 @@ class _ExpressionLoader(_Loader):
 
 
 class _UnionLoader(_Loader):
-    def __init__(self, alternates):
-        # type: (Sequence[_Loader]) -> None
+    def __init__(self, alternates: Sequence[_Loader]) -> None:
         self.alternates = alternates
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
