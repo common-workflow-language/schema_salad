@@ -179,6 +179,10 @@ def test_import_list() -> None:
 
     assert {"foo": ["bar", "baz"]} == ra
 
+    importfile = "import:file://%s/list.json" % basedir
+
+    assert importfile in loader.idx
+
 
 def test_fetch_inject_id() -> None:
     path = get_data("tests/inject-id1.yml")
