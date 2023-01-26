@@ -179,7 +179,7 @@ def test_import_list() -> None:
 
     assert {"foo": ["bar", "baz"]} == ra
 
-    importfile = "import:file://%s/list.json" % basedir
+    importfile = "import:%s/list.json" % basedir
 
     assert importfile in loader.idx
 
