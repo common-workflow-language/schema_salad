@@ -414,6 +414,7 @@ class Loader:
         lref = ref
         obj = None  # type: Optional[CommentedMap]
         resolved_obj = None  # type: ResolveType
+        imp = False
         inc = False
         mixin = None  # type: Optional[MutableMapping[str, str]]
 
@@ -426,6 +427,7 @@ class Loader:
             if "$import" in obj:
                 if len(obj) == 1:
                     lref = obj["$import"]
+                    imp = True
                     obj = None
                 else:
                     raise ValidationException(
@@ -506,6 +508,8 @@ class Loader:
 
         # "$include" directive means load raw text
         if inc:
+            # Make a note in the index that this was an included string
+            self.idx["include:" + url] = url
             return self.fetch_text(url), CommentedMap()
 
         doc = None
@@ -527,6 +531,10 @@ class Loader:
             doc = self.fetch(
                 doc_url, inject_ids=(not mixin), content_types=content_types
             )
+
+        if imp:
+            # Make a note in the index that this was an imported fragment
+            self.idx["import:" + url] = url
 
         # Recursively expand urls and resolve directives
         if bool(mixin):
