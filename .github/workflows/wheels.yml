@@ -4,11 +4,12 @@ on:
   release:
     types: [created]
   workflow_dispatch: {}
+  repository_dispatch: {}
 
 jobs:
-  deploy:
+  # strategy; can't use a matrix reference in "uses": https://github.com/orgs/community/discussions/25824#discussioncomment-3249394
+  musllinux:
     runs-on: ubuntu-latest
-    # strategy; can't use a matrix reference in "uses": https://github.com/orgs/community/discussions/25824#discussioncomment-3249394
     steps:
     - uses: actions/checkout@v3
       with:
@@ -21,28 +22,85 @@ jobs:
         pre-build-command: source .github/workflows/wheel-prep.sh
         build-requirements: -rrequirements.txt -rmypy-requirements.txt
         python-versions: 'cp37-cp37m cp38-cp38 cp39-cp39 cp310-cp310 cp311-cp311'
+    - name: Copy audited wheels to new directory
+      run: mkdir audited_wheels && cp dist/*-musllinux*.whl audited_wheels/
+    - name: Publish wheels to PyPI
+      if: ${{ github.event_name == 'release' || github.event.client_payload.publish_wheel}}
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        packages_dir: audited_wheels
+        skip_existing: true
+
+  manylinux2014:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # slow, but gets all the tags
+    - name: set version
+      run: pip install setuptools_scm[toml] && python -m setuptools_scm
     - name: Build manylinux2014 x86_64 Python wheels
       uses: RalfG/python-wheels-manylinux-build@v0.7.1-manylinux2014_x86_64
       with:
         pre-build-command: source .github/workflows/wheel-prep.sh
         build-requirements: -rrequirements.txt -rmypy-requirements.txt
         python-versions: 'cp37-cp37m cp38-cp38 cp39-cp39 cp310-cp310 cp311-cp311'
+    - name: Copy audited wheels to new directory
+      run: mkdir audited_wheels && cp dist/*-manylinux*.whl audited_wheels/
+    - name: Publish wheels to PyPI
+      if: ${{ github.event_name == 'release' || github.event.client_payload.publish_wheel}}
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        packages_dir: audited_wheels
+        skip_existing: true
+
+  manylinux_2_24:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # slow, but gets all the tags
+    - name: set version
+      run: pip install setuptools_scm[toml] && python -m setuptools_scm
     - name: Build manylinux_2_24 x86_64 Python wheels
       uses: RalfG/python-wheels-manylinux-build@v0.7.1-manylinux_2_24_x86_64
       with:
         pre-build-command: source .github/workflows/wheel-prep.sh
         build-requirements: -rrequirements.txt -rmypy-requirements.txt
         python-versions: 'cp37-cp37m cp38-cp38 cp39-cp39 cp310-cp310 cp311-cp311'
+    - name: Copy audited wheels to new directory
+      run: mkdir audited_wheels && cp dist/*-manylinux*.whl audited_wheels/
+    - name: Publish wheels to PyPI
+      if: ${{ github.event_name == 'release' || github.event.client_payload.publish_wheel}}
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        packages_dir: audited_wheels
+        skip_existing: true
+
+  manylinux_2_28:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # slow, but gets all the tags
+    - name: set version
+      run: pip install setuptools_scm[toml] && python -m setuptools_scm
     - name: Build manylinux_2_28 x86_64 Python wheels
       uses: RalfG/python-wheels-manylinux-build@v0.7.1-manylinux_2_28_x86_64
       with:
         pre-build-command: source .github/workflows/wheel-prep.sh
         build-requirements: -rrequirements.txt -rmypy-requirements.txt
         python-versions: 'cp37-cp37m cp38-cp38 cp39-cp39 cp310-cp310 cp311-cp311'
-    - name: Move audited wheels to new directory
-      run: mkdir audited_wheels && cp dist/*-manylinux*.whl dist/*-musllinux*.whl audited_wheels/
+    - name: Copy audited wheels to new directory
+      run: mkdir audited_wheels && cp dist/*-manylinux*.whl audited_wheels/
     - name: Publish wheels to PyPI
-      if: ${{ github.event_name == 'release' }}
+      if: ${{ github.event_name == 'release' || github.event.client_payload.publish_wheel}}
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
