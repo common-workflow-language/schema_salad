@@ -1,5 +1,10 @@
 version: 2.1
 
+parameters:
+  REF:
+    type: string
+    default: ''
+
 jobs:
   arm-wheels:
     parameters:
@@ -20,6 +25,15 @@ jobs:
 
     steps:
       - checkout
+      - when:
+          condition: << parameters.REF >>
+          steps:
+          - run:
+              name: Checkout branch/tag << parameters.REF >>
+              command: |
+                echo "Switching to branch/tag << parameters.REF >> if it exists"
+                git checkout << parameters.REF >> || true
+                git pull origin << parameters.REF >> || true
       - run:
           name: install cibuildwheel and other build reqs
           command: |
@@ -57,18 +71,18 @@ jobs:
 
       - when:
           condition:
-            matches:
-              pattern: ".+"
-              value: "<< pipeline.git.tag >>"
+            or:
+              - matches:
+                pattern: ".+"
+                value: "<< pipeline.git.tag >>"
+              - << parameters.REF >>
           steps:
             - run:
                 environment:
                   TWINE_NONINTERACTIVE: "1"
-                  TWINE_USERNAME: __token__
-                  TWINE_PASSWORD: $TWINE_PASSWORD
                 command: |
                   python3 -m pip install twine
-                  python3 -m twine upload --skip-existing wheelhouse/*
+                  python3 -m twine upload --verbose --skip-existing wheelhouse/*
 
 workflows:
   wheels: # This is the name of the workflow, feel free to change it to better match your workflow.
