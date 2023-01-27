@@ -4,6 +4,7 @@ parameters:
   REF:
     type: string
     default: ''
+    description: Optional tag to build 
 
 jobs:
   arm-wheels:
@@ -26,14 +27,14 @@ jobs:
     steps:
       - checkout
       - when:
-          condition: << parameters.REF >>
+          condition: << pipeline.parameters.REF >>
           steps:
           - run:
-              name: Checkout branch/tag << parameters.REF >>
+              name: Checkout branch/tag << pipeline.parameters.REF >>
               command: |
-                echo "Switching to branch/tag << parameters.REF >> if it exists"
-                git checkout << parameters.REF >> || true
-                git pull origin << parameters.REF >> || true
+                echo "Switching to branch/tag << pipeline.parameters.REF >> if it exists"
+                git checkout << pipeline.parameters.REF >> || true
+                git pull origin << pipeline.parameters.REF >> || true
       - run:
           name: install cibuildwheel and other build reqs
           command: |
@@ -73,9 +74,9 @@ jobs:
           condition:
             or:
               - matches:
-                pattern: ".+"
-                value: "<< pipeline.git.tag >>"
-              - << parameters.REF >>
+                  pattern: ".+"
+                  value: "<< pipeline.git.tag >>"
+              - << pipeline.parameters.REF >>
           steps:
             - run:
                 environment:
