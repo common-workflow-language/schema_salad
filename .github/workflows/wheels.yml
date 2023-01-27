@@ -11,9 +11,17 @@ jobs:
   musllinux:
     runs-on: ubuntu-latest
     steps:
+    - name: debug event name
+      run: echo ${{ github.event_name }}
     - uses: actions/checkout@v3
+      if: ${{ github.event_name != 'repository_dispatch' }}
       with:
         fetch-depth: 0  # slow, but gets all the tags
+    - uses: actions/checkout@v3
+      if: ${{ github.event_name == 'repository_dispatch' }}
+      with:
+        fetch-depth: 0  # slow, but gets all the tags
+        ref: ${{ github.event.client_payload.ref }}
     - name: set version
       run: pip install setuptools_scm[toml] && python -m setuptools_scm
     - name: Build musllinux_1_1 x86_64 Python wheels
@@ -37,8 +45,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      if: ${{ github.event_name != 'repository_dispatch' }}
       with:
         fetch-depth: 0  # slow, but gets all the tags
+    - uses: actions/checkout@v3
+      if: ${{ github.event_name == 'repository_dispatch' }}
+      with:
+        fetch-depth: 0  # slow, but gets all the tags
+        ref: ${{ github.event.client_payload.ref }}
     - name: set version
       run: pip install setuptools_scm[toml] && python -m setuptools_scm
     - name: Build manylinux2014 x86_64 Python wheels
@@ -62,8 +76,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      if: ${{ github.event_name != 'repository_dispatch' }}
       with:
         fetch-depth: 0  # slow, but gets all the tags
+    - uses: actions/checkout@v3
+      if: ${{ github.event_name == 'repository_dispatch' }}
+      with:
+        fetch-depth: 0  # slow, but gets all the tags
+        ref: ${{ github.event.client_payload.ref }}
     - name: set version
       run: pip install setuptools_scm[toml] && python -m setuptools_scm
     - name: Build manylinux_2_24 x86_64 Python wheels
@@ -87,8 +107,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      if: ${{ github.event_name != 'repository_dispatch' }}
       with:
         fetch-depth: 0  # slow, but gets all the tags
+    - uses: actions/checkout@v3
+      if: ${{ github.event_name == 'repository_dispatch' }}
+      with:
+        fetch-depth: 0  # slow, but gets all the tags
+        ref: ${{ github.event.client_payload.ref }}
     - name: set version
       run: pip install setuptools_scm[toml] && python -m setuptools_scm
     - name: Build manylinux_2_28 x86_64 Python wheels
