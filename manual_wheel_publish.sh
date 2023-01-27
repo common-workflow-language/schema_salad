@@ -7,4 +7,4 @@ curl \
   -H "Authorization: Bearer $1"\
   -H "X-GitHub-Api-Version: 2022-11-28" \
   https://api.github.com/repos/common-workflow-language/schema_salad/dispatches \
-  -d "{\"event_type\":\"on-demand-wheel\",\"client_payload\":{\"ref\":\"$2\"}}"
+  -d "{\"event_type\":\"on-demand-wheel\",\"client_payload\":{\"ref\":\"$2\", \"publish_wheel\": true}}"
