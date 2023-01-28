@@ -803,10 +803,10 @@ def print_inheritance(doc: List[Dict[str, Any]], stream: IO[Any]) -> None:
                     "\\l* ".join(shortname(field["name"]) for field in fields)
                 )
             shape = "ellipse" if entry.get("abstract") else "box"
-            stream.write(f'"{name}" [shape={shape} label="{label}"];\n')
+            stream.write(f'"{name}" [shape={shape} label="{label}"];\n')  # noqa: B907
             if "extends" in entry:
                 for target in aslist(entry["extends"]):
-                    stream.write(f'"{shortname(target)}" -> "{name}";\n')
+                    stream.write(f'"{shortname(target)}" -> "{name}";\n')  # noqa: B907
     stream.write("}\n")
 
 

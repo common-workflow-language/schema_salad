@@ -360,7 +360,7 @@ def expand_url(
             if url in loadingOptions.rvocab:
                 return loadingOptions.rvocab[url]
         else:
-            raise ValidationException(f"Term '{url}' not in vocabulary")
+            raise ValidationException(f"Term {url!r} not in vocabulary")
 
     return url
 

@@ -904,10 +904,12 @@ public class {enum_name} : IEnumClass<{enum_name}>
             self.target_dir / self.package / "Properties" / "AssemblyInfo.cs",
         )
         vocab = ",\n        ".join(
-            f"""["{k}"] = "{self.vocab[k]}\"""" for k in sorted(self.vocab.keys())
+            f"""["{k}"] = "{self.vocab[k]}\""""  # noqa: B907
+            for k in sorted(self.vocab.keys())
         )
         rvocab = ",\n        ".join(
-            f"""["{self.vocab[k]}"] = "{k}\"""" for k in sorted(self.vocab.keys())
+            f"""["{self.vocab[k]}"] = "{k}\""""  # noqa: B907
+            for k in sorted(self.vocab.keys())
         )
 
         loader_instances = ""

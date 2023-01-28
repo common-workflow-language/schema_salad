@@ -451,7 +451,7 @@ export enum {enum_name} {{
             for sym in type_declaration["symbols"]:
                 val = self.safe_name(sym)
                 const = self.safe_name(sym).replace("-", "_").replace(".", "_").upper()
-                f.write(f"""  {const}='{val}',\n""")
+                f.write(f"""  {const}='{val}',\n""")  # noqa: B907
             f.write(
                 """}
 """
@@ -770,10 +770,12 @@ export enum {enum_name} {{
         expand_resource_template_to("index.ts", self.main_src_dir / "index.ts")
 
         vocab = ",\n  ".join(
-            f"""'{k}': '{self.vocab[k]}'""" for k in sorted(self.vocab.keys())
+            f"""'{k}': '{self.vocab[k]}'"""  # noqa: B907
+            for k in sorted(self.vocab.keys())
         )
         rvocab = ",\n  ".join(
-            f"""'{self.vocab[k]}': '{k}'""" for k in sorted(self.vocab.keys())
+            f"""'{self.vocab[k]}': '{k}'"""  # noqa: B907
+            for k in sorted(self.vocab.keys())
         )
 
         loader_instances = ""

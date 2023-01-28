@@ -532,7 +532,9 @@ class RenderType:
                 return self.typefmt(tp["type"], redirects)
         else:
             if str(tp) in redirects:
-                return f"""<a href="{redirects[tp]}">{redirects[tp]}</a>"""
+                return (
+                    f"""<a href="{redirects[tp]}">{redirects[tp]}</a>"""  # noqa: B907
+                )
             if str(tp) in basicTypes:
                 return """<a href="{}">{}</a>""".format(
                     self.primitiveType, vocab_type_name(str(tp))

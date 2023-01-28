@@ -140,7 +140,7 @@ class ClassDefinition:
         for field in self.fields:
             fieldname = safename(field.name)
             target.write(
-                f'{fullInd}{ind}addYamlField(n, "{field.name}", toYaml(*{fieldname}));\n'
+                f'{fullInd}{ind}addYamlField(n, "{field.name}", toYaml(*{fieldname}));\n'  # noqa: B907
             )
             # target.write(f"{fullInd}{ind}addYamlIfNotEmpty(n, \"{field.name}\", toYaml(*{fieldname}));\n")
 
@@ -200,7 +200,7 @@ class EnumDefinition:
             f"{ind}static auto m = std::map<std::string, {name}, std::less<>> {{\n"
         )
         for v in self.values:
-            target.write(f'{ind}{ind}{{"{v}", {name}::{safename(v)}}},\n')
+            target.write(f'{ind}{ind}{{"{v}", {name}::{safename(v)}}},\n')  # noqa: B907
         target.write(f"{ind}}};\n{ind}out = m.find(v)->second;\n}}\n")
 
         target.write(f"inline auto toYaml({name} v) {{\n")

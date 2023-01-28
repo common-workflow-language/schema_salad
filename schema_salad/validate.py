@@ -326,7 +326,7 @@ def validate_ex(
                 d = datum.get(f.name)
                 if not d:
                     if raise_ex:
-                        raise ValidationException(f"Missing '{f.name}' field")
+                        raise ValidationException(f"Missing {f.name!r} field")
                     else:
                         return False
                 avroname = None
@@ -441,7 +441,7 @@ def validate_ex(
                             "invalid field `{}`, expected one of: {}".format(
                                 d,
                                 ", ".join(
-                                    f"'{fn.name}'" for fn in expected_schema.fields
+                                    f"{fn.name!r}" for fn in expected_schema.fields
                                 ),
                             ),
                             sl,
