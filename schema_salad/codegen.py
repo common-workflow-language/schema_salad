@@ -103,7 +103,7 @@ def codegen(
     elif lang == "dotnet":
         gen = DotNetCodeGen(base, target=target, package=pkg, examples=examples)
     else:
-        raise SchemaSaladException(f"Unsupported code generation language '{lang}'")
+        raise SchemaSaladException(f"Unsupported code generation language {lang!r}")
 
     gen.prologue()
 

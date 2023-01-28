@@ -72,7 +72,7 @@ import salad.type : None, Either;
             self.target.write(
                 f"""/// parser information
 enum parserInfo = "{self.parser_info}";
-"""
+"""  # noqa: B907
             )
 
     def epilogue(self, root_loader: TypeDef) -> None:
@@ -109,7 +109,7 @@ unittest
         importFromURI(file.absoluteURI).assertNotThrown(format!"Failed to load %s"(file));
     }}
 }}
-"""
+"""  # noqa: B907
             )
 
     @staticmethod
@@ -164,9 +164,11 @@ unittest
                 subject = jsonld_pred["mapSubject"]
                 if "mapPredicate" in jsonld_pred:
                     predicate = jsonld_pred["mapPredicate"]
-                    annotations.append(f'@idMap("{subject}", "{predicate}")')
+                    annotations.append(
+                        f'@idMap("{subject}", "{predicate}")'  # noqa: B907
+                    )
                 else:
-                    annotations.append(f'@idMap("{subject}")')
+                    annotations.append(f'@idMap("{subject}")')  # noqa: B907
             if jsonld_pred.get("_type", "") == "@id":
                 if jsonld_pred.get("identity", False):
                     annotations.append("@link(LinkResolver.id)")
@@ -224,7 +226,7 @@ unittest
                 value = shortname(type_["symbols"][0])
             else:
                 value = cast(str, parent_name)
-            return f'{doc_comment}static immutable {fname} = "{value}";'
+            return f'{doc_comment}static immutable {fname} = "{value}";'  # noqa: B907
 
         annotate_str, type_str = self.parse_record_field_type(type_, jsonld_pred)
         return f"{doc_comment}{annotate_str}{type_str} {fname};"
@@ -269,7 +271,7 @@ unittest
         classname = self.safe_name(name)
         syms = "\n".join(
             (
-                f'        s{i} = "{shortname(sym)}", ///'
+                f'        s{i} = "{shortname(sym)}", ///'  # noqa: B907
                 for i, sym in enumerate(stype["symbols"])
             )
         )

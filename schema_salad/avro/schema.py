@@ -98,7 +98,7 @@ class Schema:
         # Ensure valid ctor args
         if not isinstance(atype, str):
             raise SchemaParseException(
-                f"Schema type '{atype}' must be a string, was '{type(atype)}."
+                f"Schema type {atype!r} must be a string, was {type(atype)!r}."
             )
         elif atype not in VALID_TYPES:
             fail_msg = f"{atype} is not a valid type."
@@ -106,7 +106,7 @@ class Schema:
 
         # add members
         if not hasattr(self, "_props"):
-            self._props = {}  # type: PropsType
+            self._props: PropsType = {}
         self.set_prop("type", atype)
         self.type = atype
         self._props.update(other_props or {})
@@ -154,7 +154,7 @@ class Name:
         validate(space_attr, "Space")
         validate(default_space, "Default space")
 
-        self._full = name_attr  # type: Optional[str]
+        self._full: Optional[str] = name_attr
 
         if name_attr is None or name_attr == "":
             return
@@ -185,7 +185,7 @@ class Names:
     """Track name set and default namespace during parsing."""
 
     def __init__(self, default_namespace: Optional[str] = None) -> None:
-        self.names = {}  # type: Dict[str, NamedSchema]
+        self.names: Dict[str, NamedSchema] = {}
         self.default_namespace = default_namespace
 
     def has_name(self, name_attr: str, space_attr: Optional[str]) -> bool:
@@ -217,7 +217,7 @@ class Names:
             fail_msg = f"{to_add.fullname} is a reserved type name."
             raise SchemaParseException(fail_msg)
         elif to_add.fullname in self.names:
-            fail_msg = f'The name "{to_add.fullname}" is already in use.'
+            fail_msg = f"The name {to_add.fullname!r} is already in use."
             raise SchemaParseException(fail_msg)
         elif to_add.fullname is None:
             fail_msg = f"{to_add.fullname} is missing, but this is impossible."
@@ -296,18 +296,18 @@ class Field:
             raise SchemaParseException(fail_msg)
 
         # add members
-        self._props = {}  # type: PropsType
+        self._props: PropsType = {}
         self._has_default = has_default
         self._props.update(other_props or {})
 
         if isinstance(atype, str) and names is not None and names.has_name(atype, None):
-            type_schema = cast(NamedSchema, names.get_name(atype, None))  # type: Schema
+            type_schema: Schema = cast(NamedSchema, names.get_name(atype, None))
         else:
             try:
                 type_schema = make_avsc_object(atype, names)
             except Exception as e:
                 raise SchemaParseException(
-                    f'Type property "{atype}" not a valid Avro schema: {e}'
+                    f"Type property {atype!r} not a valid Avro schema: {e}"
                 ) from e
         self.set_prop("type", type_schema)
         self.set_prop("name", name)
@@ -447,7 +447,7 @@ class UnionSchema(Schema):
         Schema.__init__(self, "union")
 
         # Add class members
-        schema_objects = []  # type: List[Schema]
+        schema_objects: List[Schema] = []
         for schema in schemas:
             if isinstance(schema, str) and names.has_name(schema, None):
                 new_schema = cast(Schema, names.get_name(schema, None))
@@ -481,7 +481,7 @@ class RecordSchema(NamedSchema):
     @staticmethod
     def make_field_objects(field_data: List[PropsType], names: Names) -> List[Field]:
         """We're going to need to make message parameters too."""
-        field_objects = []  # type: List[Field]
+        field_objects: List[Field] = []
         parsed_fields: Dict[str, PropsType] = {}
         for field in field_data:
             if hasattr(field, "get") and callable(field.get):

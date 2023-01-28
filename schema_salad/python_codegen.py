@@ -134,7 +134,7 @@ class PythonCodeGen(CodeGenBase):
     return "{self.parser_info}"
 
 
-"""
+"""  # noqa: B907
         )
 
         for primitive in prims.values():
@@ -266,7 +266,7 @@ class PythonCodeGen(CodeGenBase):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         _errors__ = []
-"""
+"""  # noqa: B907
         )
 
         self.idfield = idfield
@@ -357,7 +357,10 @@ if _errors__:
         self.serializer.write("        return r\n\n")
 
         self.serializer.write(
-            fmt(f"""attrs = frozenset(["{'", "'.join(field_names)}"])\n""", 4)
+            fmt(
+                f"""attrs = frozenset(["{'", "'.join(field_names)}"])\n""",  # noqa: B907
+                4,
+            )
         )
 
         safe_init_fields = [
@@ -504,7 +507,9 @@ if _errors__:
             return
 
         if optional:
-            self.out.write(f"""        if "{shortname(name)}" in _doc:\n""")
+            self.out.write(
+                f"""        if "{shortname(name)}" in _doc:\n"""  # noqa: B907
+            )
             spc = "    "
         else:
             spc = ""
@@ -648,12 +653,12 @@ if self.{safename} is not None:
         """Trigger to generate the epilouge code."""
         self.out.write("_vocab = {\n")
         for k in sorted(self.vocab.keys()):
-            self.out.write(f'    "{k}": "{self.vocab[k]}",\n')
+            self.out.write(f'    "{k}": "{self.vocab[k]}",\n')  # noqa: B907
         self.out.write("}\n")
 
         self.out.write("_rvocab = {\n")
         for k in sorted(self.vocab.keys()):
-            self.out.write(f'    "{self.vocab[k]}": "{k}",\n')
+            self.out.write(f'    "{self.vocab[k]}": "{k}",\n')  # noqa: B907
         self.out.write("}\n\n")
 
         for _, collected_type in self.collected_types.items():

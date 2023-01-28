@@ -83,7 +83,7 @@ class DefaultFetcher(MemoryCachingFetcher):
                 if content_type not in content_types:
                     _logger.warning(
                         f"While fetching {url}, got content-type of "
-                        f"'{content_type}'. Expected one of {content_types}."
+                        f"{content_type!r}. Expected one of {content_types}."
                     )
             return resp.text
         if scheme == "file":
@@ -128,7 +128,7 @@ class DefaultFetcher(MemoryCachingFetcher):
             return os.path.exists(urllib.request.url2pathname(str(path)))
         if scheme == "mailto":
             return True
-        raise ValidationException(f"Unsupported scheme '{scheme}' in url: {url}")
+        raise ValidationException(f"Unsupported scheme {scheme!r} in url: {url}")
 
     def urljoin(self, base_url: str, url: str) -> str:
         if url.startswith("_:"):

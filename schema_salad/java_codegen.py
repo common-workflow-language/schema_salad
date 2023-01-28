@@ -839,8 +839,8 @@ public enum {clazz} {{
         vocab = ""
         rvocab = ""
         for k in sorted(self.vocab.keys()):
-            vocab += f"""    vocab.put("{k}", "{self.vocab[k]}");\n"""
-            rvocab += f"""    rvocab.put("{self.vocab[k]}", "{k}");\n"""
+            vocab += f"""    vocab.put("{k}", "{self.vocab[k]}");\n"""  # noqa: B907
+            rvocab += f"""    rvocab.put("{self.vocab[k]}", "{k}");\n"""  # noqa: B907
 
         loader_instances = ""
         for _, collected_type in self.collected_types.items():
