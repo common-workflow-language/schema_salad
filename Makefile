@@ -104,10 +104,10 @@ codespell:
 
 ## format                 : check/fix all code indentation and formatting (runs black)
 format:
-	black --exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
+	black --force-exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
 
 format-check:
-	black --diff --check --exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
+	black --diff --check --force-exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
 
 ## pylint                 : run static code analysis on Python code
 pylint: $(PYSOURCES)
