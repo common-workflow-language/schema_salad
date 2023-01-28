@@ -32,6 +32,8 @@ A schema may be one of:
 """
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
+from mypy_extensions import mypyc_attr
+
 from schema_salad.exceptions import SchemaException
 
 #
@@ -88,6 +90,7 @@ class SchemaParseException(AvroException):
 #
 
 
+@mypyc_attr(serializable=True)
 class Schema:
     """Base class for all Schema classes."""
 
@@ -268,6 +271,7 @@ class NamedSchema(Schema):
         return cast(str, self.get_prop("name"))
 
 
+@mypyc_attr(serializable=True)
 class Field:
     def __init__(
         self,
