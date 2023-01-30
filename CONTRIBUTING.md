@@ -4,6 +4,9 @@ Style guide:
 - Prefer new style format strings https://pyformat.info/
 - Use ``make format`` to format your code
 
+It is suggested that you run `git config blame.ignoreRevsFile .git-blame-ignore-revs`
+to filter out mass-formatting commits from `git blame`.
+
 In order to contribute to the development of ``schema-salad``, you need to install it from source (preferably in a virtual environment):
 Here's a rough guide (improvements are welcome!)
 - Install virtualenv via pip: ``pip install virtualenv``
