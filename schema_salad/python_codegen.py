@@ -99,7 +99,7 @@ class PythonCodeGen(CodeGenBase):
             avn = avn[5:]
         elif avn[0].isdigit():
             avn = f"_{avn}"
-        elif avn in ("class", "in"):
+        elif avn in ("class", "in", "type"):
             # reserved words
             avn = f"{avn}_"
         return avn.replace(".", "_")
@@ -260,8 +260,17 @@ class PythonCodeGen(CodeGenBase):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: Optional[str] = None,
+        keys: Optional[List[str]] = []
     ) -> "{classname}":
         _doc = copy.copy(doc)
+
+        global_doc = line_numbers
+
+        for key in keys:
+            global_doc = global_doc[key]
+
+        keys = copy.copy(keys)
+
         if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
@@ -290,8 +299,10 @@ class PythonCodeGen(CodeGenBase):
         if "class" in field_names:
             self.out.write(
                 """
+        if "class" not in _doc:
+            raise ValidationException("Missing 'class' field")
         if _doc.get("class") != "{class_}":
-            raise ValidationException("tried {class_}")
+            raise ValidationException("tried {class_} but")
 
 """.format(
                     class_=classname
@@ -483,10 +494,21 @@ if _errors__:
                 {opt}
         if not __original_{safename}_is_none:
             baseuri = {safename}
+
+        
 """.format(
                 safename=self.safe_name(name), opt=opt
             )
         )
+
+        if self.safe_name(name) == "id":
+            self.out.write(
+"""
+        if _doc.get("id") is not None:
+            keys.append(_doc.get("id"))
+
+"""
+            )
 
     def declare_field(
         self,
@@ -525,13 +547,14 @@ if _errors__:
             """
 {spc}        try:
 {spc}            if _doc.get("{fieldname}") is None:
-{spc}               raise ValidationException("* missing field '{fieldname}'", None, [])
+{spc}               raise ValidationException("* missing required field '{fieldname}'", None, [])
 {spc}
 {spc}            {safename} = load_field(
 {spc}                _doc.get("{fieldname}"),
 {spc}                {fieldtype},
 {spc}                {baseurivar},
 {spc}                loadingOptions,
+{spc}                keys = keys + ['{fieldname}']
 {spc}            )
     """.format(
                 safename=self.safe_name(name),
@@ -544,20 +567,34 @@ if _errors__:
         if shortname(name) == "run":
             self.out.write(
 """
-{spc}            if not os.path.isfile(_doc.get("run")):
-{spc}                raise ValidationException(f'contains undefined reference to {{run}}', None, [])
+{spc}            if isinstance(_doc, CommentedMap):
+{spc}               if not os.path.isfile(_doc.get("run")):
+{spc}                   raise ValidationException(f'contains undefined reference to {{run}}', None, [])
     """.format(spc=spc,)
             )
         self.out.write(
 """
 {spc}        except ValidationException as e:
-{spc}              _errors__.append(
-{spc}                  ValidationException(
-{spc}                      \"the `{fieldname}` field is not valid because:\",
-{spc}                      SourceLine(_doc, "{fieldname}", str),
-{spc}                      [e],
-{spc}                )
-{spc}              )
+{spc}               error_message = parse_errors(str(e))
+{spc}
+{spc}               if str(e) == "* missing required field '{fieldname}'":
+{spc}                   _errors__.append(
+{spc}                          ValidationException(
+{spc}                            "",
+{spc}                            None,
+{spc}                            [e]
+{spc}                          )
+{spc}                      )
+{spc}               else:
+{spc}                   if error_message != str(e):
+{spc}                       e = ValidationException(f"Expected one of {{error_message}} was {{type(_doc.get('{fieldname}'))}}")
+{spc}                   _errors__.append(
+{spc}                          ValidationException(
+{spc}                              \"the `{fieldname}` field is not valid because:\",
+{spc}                                SourceLine(_doc, "{fieldname}", str),
+{spc}                               [e],
+{spc}                           )
+{spc}                       )
 """.format(
 
                 fieldname=shortname(name),
