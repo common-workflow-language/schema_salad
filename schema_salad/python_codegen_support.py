@@ -775,10 +775,7 @@ def _document_load_by_url(
     doc_url, frg = urldefrag(url)
 
     text = loadingOptions.fetcher.fetch_text(doc_url)
-    if isinstance(text, bytes):
-        textIO = StringIO(text.decode("utf-8"))
-    else:
-        textIO = StringIO(text)
+    textIO = StringIO(text)
     textIO.name = str(doc_url)
     yaml = yaml_no_ts()
     result = yaml.load(textIO)

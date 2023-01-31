@@ -240,14 +240,11 @@ class NamedSchema(Schema):
     ) -> None:
         # Ensure valid ctor args
         if not name:
-            fail_msg = "Named Schemas must have a non-empty name."
-            raise SchemaParseException(fail_msg)
+            raise SchemaParseException("Named Schemas must have a non-empty name.")
         elif not isinstance(name, str):
-            fail_msg = "The name property must be a string."
-            raise SchemaParseException(fail_msg)
+            raise SchemaParseException("The name property must be a string.")
         elif namespace is not None and not isinstance(namespace, str):
-            fail_msg = "The namespace property must be a string."
-            raise SchemaParseException(fail_msg)
+            raise SchemaParseException("The namespace property must be a string.")
         if names is None:
             raise SchemaParseException("Must provide Names.")
 
@@ -289,7 +286,7 @@ class Field:
             fail_msg = "Fields must have a non-empty name."
             raise SchemaParseException(fail_msg)
         elif not isinstance(name, str):
-            fail_msg = "The name property must be a string."
+            fail_msg = "The name property must be a string."  # type: ignore[unreachable]
             raise SchemaParseException(fail_msg)
         elif order is not None and order not in VALID_FIELD_SORT_ORDERS:
             fail_msg = f"The order property {order} is not valid."
@@ -368,14 +365,13 @@ class EnumSchema(NamedSchema):
     ) -> None:
         # Ensure valid ctor args
         if not isinstance(symbols, list):
-            fail_msg = "Enum Schema requires a JSON array for the symbols property."
-            raise AvroException(fail_msg)
+            raise AvroException(
+                "Enum Schema requires a JSON array for the symbols property."
+            )
         elif False in [isinstance(s, str) for s in symbols]:
-            fail_msg = "Enum Schema requires all symbols to be JSON strings."
-            raise AvroException(fail_msg)
+            raise AvroException("Enum Schema requires all symbols to be JSON strings.")
         elif len(set(symbols)) < len(symbols):
-            fail_msg = f"Duplicate symbol: {symbols}"
-            raise AvroException(fail_msg)
+            raise AvroException(f"Duplicate symbol: {symbols}")
 
         # Call parent ctor
         NamedSchema.__init__(self, "enum", name, namespace, names, other_props)
@@ -440,8 +436,7 @@ class UnionSchema(Schema):
         if names is None:
             raise SchemaParseException("Must provide Names.")
         if not isinstance(schemas, list):
-            fail_msg = "Union schema requires a list of schemas."
-            raise SchemaParseException(fail_msg)
+            raise SchemaParseException("Union schema requires a list of schemas.")
 
         # Call parent ctor
         Schema.__init__(self, "union")
@@ -526,8 +521,9 @@ class RecordSchema(NamedSchema):
     ) -> None:
         # Ensure valid ctor args
         if not isinstance(fields, list):
-            fail_msg = "Fields property must be a list of Avro schemas."
-            raise SchemaParseException(fail_msg)
+            raise SchemaParseException(
+                "Fields property must be a list of Avro schemas."
+            )
 
         # Call parent ctor (adds own name to namespace, too)
         NamedSchema.__init__(self, schema_type, name, namespace, names, other_props)
