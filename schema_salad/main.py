@@ -354,7 +354,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
                 json_dump(avsc_obj, fp=sys.stdout, indent=4, default=str)
             return 1
     else:
-        _logger.error("Schema `%s` must be a list.", args.schema)
+        _logger.error("Schema `%s` must be a list.", args.schema)  # type: ignore[unreachable]
         return 1
 
     # Optionally print Avro-compatible schema from schema

@@ -200,7 +200,7 @@ class Loader:
         self.vocab_fields = set()  # type: Set[str]
         self.identifiers = []  # type: List[str]
         self.identity_links = set()  # type: Set[str]
-        self.standalone = None  # type: Optional[Set[str]]
+        self.standalone: Optional[Set[str]] = None
         self.nolinkcheck = set()  # type: Set[str]
         self.vocab = {}  # type: Dict[str, str]
         self.rvocab = {}  # type: Dict[str, str]
@@ -427,11 +427,11 @@ class Loader:
         content_types: Optional[List[str]] = None,  # Expected content-types
     ) -> ResolvedRefType:
         lref = ref
-        obj = None  # type: Optional[CommentedMap]
-        resolved_obj = None  # type: ResolveType
+        obj: Optional[CommentedMap] = None
+        resolved_obj: ResolveType = None
         imp = False
         inc = False
-        mixin = None  # type: Optional[MutableMapping[str, str]]
+        mixin: Optional[MutableMapping[str, str]] = None
 
         if not base_url:
             base_url = file_uri(os.getcwd()) + "/"
@@ -611,7 +611,7 @@ class Loader:
                     ls = CommentedSeq()
                     for k in sorted(idmapFieldValue.keys()):
                         val = idmapFieldValue[k]
-                        v = None  # type: Optional[CommentedMap]
+                        v: Optional[CommentedMap] = None
                         if not isinstance(val, CommentedMap):
                             if idmapField in loader.mapPredicate:
                                 v = CommentedMap(
@@ -871,11 +871,9 @@ class Loader:
                 )
         elif isinstance(document, CommentedSeq):
             pass
-        elif isinstance(document, (list, dict)):
+        elif isinstance(document, (list, dict)):  # type: ignore[unreachable]
             raise ValidationException(
-                "Expected CommentedMap or CommentedSeq, got {}: `{}`".format(
-                    type(document), document
-                )
+                f"Expected CommentedMap or CommentedSeq, got {type(document)}: {document!r}"
             )
         else:
             return (document, metadata)
@@ -1003,7 +1001,7 @@ class Loader:
                 ) from v
 
         if checklinks:
-            all_doc_ids = {}  # type: Dict[str, str]
+            all_doc_ids: Dict[str, str] = {}
             loader.validate_links(
                 document,
                 "",
@@ -1023,11 +1021,7 @@ class Loader:
             return self.idx[url]
         try:
             text = self.fetch_text(url, content_types=content_types)
-            if isinstance(text, bytes):
-                textIO = StringIO(text.decode("utf-8"))
-
-            else:
-                textIO = StringIO(text)
+            textIO = StringIO(text)
             textIO.name = str(url)
             yaml = yaml_no_ts()
             attachments = yaml.load_all(textIO)
@@ -1086,6 +1080,8 @@ class Loader:
         self,
         field: str,
         link: Union[str, CommentedSeq, CommentedMap],
+        # link also can be None, but that results in
+        # mypyc "error: Local variable "link" has inferred type None; add an annotation"
         docid: str,
         all_doc_ids: Dict[str, str],
     ) -> Union[str, CommentedSeq, CommentedMap]:
@@ -1126,13 +1122,11 @@ class Loader:
                 raise ValidationException("", None, errors)
         elif isinstance(link, CommentedMap):
             self.validate_links(link, docid, all_doc_ids)
-        elif link is None:
-            return link
+        elif link is None:  # type: ignore[unreachable]
+            return None
         else:
             raise ValidationException(
-                "`{}` field is {}, expected string, list, or a dict.".format(
-                    field, type(link).__name__
-                )
+                f"{field!r} field is {type(link).__name__}, expected string, list, or a dict."
             )
         return link
 
@@ -1154,8 +1148,8 @@ class Loader:
     ) -> None:
         docid = self.getid(document) or base_url
 
-        errors = []  # type: List[SchemaSaladException]
-        iterator = None  # type: Any
+        errors: List[SchemaSaladException] = []
+        iterator: Any = None
         if isinstance(document, MutableSequence):
             iterator = enumerate(document)
         elif isinstance(document, MutableMapping):

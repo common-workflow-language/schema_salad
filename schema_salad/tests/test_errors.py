@@ -119,7 +119,7 @@ def test_error_message4() -> None:
     match = r"""
 ^.+test4\.cwl:5:1: checking field\s+`outputs`
 .+test4\.cwl:6:3:   checking object\s+`.+test4\.cwl#bar`
-\s+`type`\s+field\s+is\s+int,\s+expected\s+string,\s+list,\s+or\s+a\s+dict.$"""[
+\s+'type'\s+field\s+is\s+int,\s+expected\s+string,\s+list,\s+or\s+a\s+dict.$"""[
         1:
     ]
     with pytest.raises(ValidationException, match=match):
@@ -206,7 +206,7 @@ def test_error_message9() -> None:
     match = (
         r"""^.+test9\.cwl:7:1: checking field\s+`steps`
 .+test9\.cwl:8:3:   checking object\s+`.+test9\.cwl#step1`
-.+test9\.cwl:9:5:     `scatterMethod`\s+field\s+is\s+"""
+.+test9\.cwl:9:5:     'scatterMethod'\s+field\s+is\s+"""
         + r"""int,\s+expected\s+string,\s+list,\s+or a\s+dict.$"""
     )
     with pytest.raises(ValidationException, match=match):
