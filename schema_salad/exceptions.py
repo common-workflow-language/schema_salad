@@ -99,7 +99,7 @@ class SchemaSaladException(Exception):
         return f"{self.prefix()}{spaces}{bullet}{self.message}"
 
     def __str__(self) -> str:
-        """Convert to a string using :py:`pretty_str`."""
+        """Convert to a string using :py:meth:`pretty_str`."""
         return str(self.pretty_str())
 
     def pretty_str(self, level: int = 0) -> str:
