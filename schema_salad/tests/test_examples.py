@@ -4,6 +4,7 @@ import os
 from io import StringIO
 from typing import Any, Dict, cast
 
+import pytest
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 import schema_salad.main
@@ -37,6 +38,51 @@ def test_schemas() -> None:
         "$namespaces": {"edam": "http://edamontology.org/"},
         "http://edamontology.org/has_format": "http://edamontology.org/format_1915",
     } == ra
+
+
+def test_bad_schemas(caplog: pytest.LogCaptureFixture) -> None:
+    """Test that bad $schemas refs don't stop parsing."""
+    schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    document_path = get_data("tests/revtool_bad_schema.cwl")
+    assert schema_path and document_path
+    assert 0 == schema_salad.main.main(
+        argsl=["--print-rdf", schema_path, document_path],
+    )
+    assert (
+        "Could not load extension schema https://bad.example.com/missing.ttl: "
+        "Error fetching https://bad.example.com/missing.ttl"
+    ) in caplog.text
+    assert (
+        "https://schema.org/!DOCTYPE html does not look like a valid URI, "
+        "trying to serialize this will break"
+    ) in caplog.text
+    assert (
+        "Could not load extension schema https://schema.org/docs/schema_org_rdfa.html: "
+        "No plugin registered for (rdfa, <class 'rdflib.parser.Parser'>)"
+    ) in caplog.text
+
+
+def test_skip_bad_schemas(caplog: pytest.LogCaptureFixture) -> None:
+    """Test that (bad) $schemas refs are properly skipped."""
+    schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    document_path = get_data("tests/revtool_bad_schema.cwl")
+    assert schema_path and document_path
+    assert 0 == schema_salad.main.main(
+        argsl=["--print-rdf", "--skip-schemas", schema_path, document_path],
+    )
+    assert (
+        "Could not load extension schema https://bad.example.com/missing.ttl: "
+        "Error fetching https://bad.example.com/missing.ttl"
+    ) not in caplog.text
+    assert (
+        "https://schema.org/!DOCTYPE html does not look like a valid URI, "
+        "trying to serialize this will break"
+    ) not in caplog.text
+    assert (
+        "Could not load extension schema https://schema.org/docs/schema_org_rdfa.html: "
+        "No plugin registered for (rdfa, <class 'rdflib.parser.Parser'>)"
+    ) not in caplog.text
+    assert "rdflib.plugin.PluginException: No plugin registered" not in caplog.text
 
 
 def test_self_validate() -> None:

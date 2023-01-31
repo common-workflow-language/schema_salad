@@ -23,8 +23,10 @@ from typing import (
 import requests
 from cachecontrol.caches import FileCache
 from cachecontrol.wrapper import CacheControl
+from rdflib.exceptions import ParserError
 from rdflib.graph import Graph
 from rdflib.namespace import OWL, RDF, RDFS
+from rdflib.plugin import PluginException
 from rdflib.plugins.parsers.notation3 import BadSyntax
 from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
 from ruamel.yaml.error import MarkedYAMLError
@@ -308,7 +310,13 @@ class Loader:
                         self.cache[fetchurl] = newGraph
                         self.graph += newGraph
                         break
-                    except (xml.sax.SAXParseException, TypeError, BadSyntax) as e:
+                    except (
+                        xml.sax.SAXParseException,
+                        TypeError,
+                        BadSyntax,
+                        ParserError,
+                        PluginException,
+                    ) as e:
                         err_msg = str(e)
                 else:
                     _logger.warning(
