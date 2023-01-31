@@ -206,10 +206,10 @@ class Names:
         """
         Add a new schema object to the name set.
 
-          @arg name_attr: name value read in schema
-          @arg space_attr: namespace value read in schema.
+        :param name_attr: name value read in schema
+        :param space_attr: namespace value read in schema.
 
-          @return: the Name that was just added.
+        :returns: the Name that was just added.
         """
         to_add = Name(name_attr, space_attr, self.default_namespace)
 

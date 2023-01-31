@@ -1,7 +1,7 @@
 """
-Test schema-salad-doc.
+Test ``schema-salad-doc``.
 
-(also known as schema-salad-tool --print-doc)
+(also known as ``schema-salad-tool --print-doc``)
 
 For convenience, tests are checking exact strings. In the event of changes in
 the "mistune" package, makedoc.py, or other changes, feel free to modify the test

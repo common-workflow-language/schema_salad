@@ -115,7 +115,7 @@ def strip_duplicated_lineno(text: str) -> str:
     """
     Strip duplicated line numbers.
 
-    Same as :py:`strip_dup_lineno` but without reflow.
+    Same as :py:meth:`strip_dup_lineno` but without reflow.
     """
     pre = None  # type: Optional[str]
     msg = []
