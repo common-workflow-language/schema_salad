@@ -28,6 +28,7 @@ from rdflib.graph import Graph
 from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.plugin import PluginException
 from rdflib.plugins.parsers.notation3 import BadSyntax
+from rdflib.util import guess_format
 from ruamel.yaml.comments import CommentedMap, CommentedSeq, LineCol
 from ruamel.yaml.error import MarkedYAMLError
 
@@ -304,7 +305,13 @@ class Loader:
                     continue
                 newGraph = Graph()
                 err_msg = "unknown error"
-                for fmt in ["xml", "turtle", "rdfa"]:
+                for fmt in [
+                    guess_format(sch),
+                    "xml",
+                    "turtle",
+                    None,
+                    guess_format(sch),
+                ]:
                     try:
                         newGraph.parse(data=content, format=fmt, publicID=str(fetchurl))
                         self.cache[fetchurl] = newGraph
