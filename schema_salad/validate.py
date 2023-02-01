@@ -168,9 +168,7 @@ def validate_ex(
         if isinstance(datum, int) or isinstance(datum, float):
             return True
         if raise_ex:
-            raise ValidationException(
-                f"the value `{vpformat(datum)}` is not float or double"
-            )
+            raise ValidationException(f"the value `{vpformat(datum)}` is not float or double")
         return False
     elif isinstance(expected_schema, avro.schema.EnumSchema):
         if expected_schema.name in ("org.w3id.cwl.salad.Any", "Any"):
@@ -229,9 +227,7 @@ def validate_ex(
                 except ValidationException as v:
                     if raise_ex:
                         source = v if debug else None
-                        raise ValidationException(
-                            "item is invalid because", sl, [v]
-                        ) from source
+                        raise ValidationException("item is invalid because", sl, [v]) from source
                     return False
             return True
         else:
@@ -263,13 +259,9 @@ def validate_ex(
         errors: List[SchemaSaladException] = []
         checked = []
         for s in expected_schema.schemas:
-            if isinstance(datum, MutableSequence) and not isinstance(
-                s, avro.schema.ArraySchema
-            ):
+            if isinstance(datum, MutableSequence) and not isinstance(s, avro.schema.ArraySchema):
                 continue
-            elif isinstance(datum, MutableMapping) and not isinstance(
-                s, avro.schema.RecordSchema
-            ):
+            elif isinstance(datum, MutableMapping) and not isinstance(s, avro.schema.RecordSchema):
                 continue
             elif isinstance(datum, (bool, int, float, str)) and isinstance(
                 s, (avro.schema.ArraySchema, avro.schema.RecordSchema)
@@ -308,9 +300,7 @@ def validate_ex(
             )
         else:
             raise ValidationException(
-                "value is a {}, expected {}".format(
-                    type(datum).__name__, friendly(expected_schema)
-                )
+                "value is a {}, expected {}".format(type(datum).__name__, friendly(expected_schema))
             )
 
     elif isinstance(expected_schema, avro.schema.RecordSchema):
@@ -335,9 +325,7 @@ def validate_ex(
                 if expected_schema.name != d and expected_schema.name != avroname:
                     if raise_ex:
                         raise ValidationException(
-                            "Expected class '{}' but this is '{}'".format(
-                                expected_schema.name, d
-                            )
+                            "Expected class '{}' but this is '{}'".format(expected_schema.name, d)
                         )
                     else:
                         return False
@@ -374,9 +362,7 @@ def validate_ex(
                     return False
             except ValidationException as v:
                 if f.name not in datum:
-                    errors.append(
-                        ValidationException(f"missing required field `{f.name}`")
-                    )
+                    errors.append(ValidationException(f"missing required field `{f.name}`"))
                 else:
                     errors.append(
                         ValidationException(
@@ -400,11 +386,7 @@ def validate_ex(
                     else:
                         logger.warning(err.as_warning())
                     continue
-                if (
-                    d not in identifiers
-                    and d not in foreign_properties
-                    and d[0] not in ("@", "$")
-                ):
+                if d not in identifiers and d not in foreign_properties and d[0] not in ("@", "$"):
                     if (
                         (d not in identifiers and strict)
                         and (
@@ -440,9 +422,7 @@ def validate_ex(
                         err = ValidationException(
                             "invalid field `{}`, expected one of: {}".format(
                                 d,
-                                ", ".join(
-                                    f"{fn.name!r}" for fn in expected_schema.fields
-                                ),
+                                ", ".join(f"{fn.name!r}" for fn in expected_schema.fields),
                             ),
                             sl,
                         )

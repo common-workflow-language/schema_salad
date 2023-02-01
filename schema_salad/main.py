@@ -76,9 +76,7 @@ def arg_parser() -> argparse.ArgumentParser:
         "--print-pre", action="store_true", help="Print document after preprocessing"
     )
     exgroup.add_argument("--print-index", action="store_true", help="Print node index")
-    exgroup.add_argument(
-        "--print-metadata", action="store_true", help="Print document metadata"
-    )
+    exgroup.add_argument("--print-metadata", action="store_true", help="Print document metadata")
     exgroup.add_argument(
         "--print-inheritance-dot",
         action="store_true",
@@ -102,8 +100,7 @@ def arg_parser() -> argparse.ArgumentParser:
         "--codegen-target",
         type=str,
         default=None,
-        help="Defaults to sys.stdout for Python/C++/Dlang and ./ for "
-        "Java/TypeScript/.Net",
+        help="Defaults to sys.stdout for Python/C++/Dlang and ./ for " "Java/TypeScript/.Net",
     )
 
     parser.add_argument(
@@ -166,15 +163,11 @@ def arg_parser() -> argparse.ArgumentParser:
     )
 
     exgroup_volume = parser.add_mutually_exclusive_group()
-    exgroup_volume.add_argument(
-        "--verbose", action="store_true", help="Default logging"
-    )
+    exgroup_volume.add_argument("--verbose", action="store_true", help="Default logging")
     exgroup_volume.add_argument(
         "--quiet", action="store_true", help="Only print warnings and errors."
     )
-    exgroup_volume.add_argument(
-        "--debug", action="store_true", help="Print even more logging"
-    )
+    exgroup_volume.add_argument("--debug", action="store_true", help="Print even more logging")
 
     parser.add_argument(
         "--only",
@@ -186,9 +179,7 @@ def arg_parser() -> argparse.ArgumentParser:
         action="append",
         help="Use with --print-doc, override default link for type",
     )
-    parser.add_argument(
-        "--brand", help="Use with --print-doc, set the 'brand' text in nav bar"
-    )
+    parser.add_argument("--brand", help="Use with --print-doc, set the 'brand' text in nav bar")
     parser.add_argument(
         "--brandlink",
         help="Use with --print-doc, set the link for 'brand' in nav bar",
@@ -211,9 +202,7 @@ def arg_parser() -> argparse.ArgumentParser:
 
     parser.add_argument("schema", type=str, nargs="?", default=None)
     parser.add_argument("document", type=str, nargs="?", default=None)
-    parser.add_argument(
-        "--version", "-v", action="store_true", help="Print version", default=None
-    )
+    parser.add_argument("--version", "-v", action="store_true", help="Print version", default=None)
     return parser
 
 
@@ -246,16 +235,12 @@ def main(argsl: Optional[List[str]] = None) -> int:
     # Load schema document and resolve refs
 
     schema_uri = args.schema
-    if not (
-        urlparse(schema_uri)[0] and urlparse(schema_uri)[0] in ["http", "https", "file"]
-    ):
+    if not (urlparse(schema_uri)[0] and urlparse(schema_uri)[0] in ["http", "https", "file"]):
         schema_uri = file_uri(os.path.abspath(schema_uri))
     schema_raw_doc = metaschema_loader.fetch(schema_uri)
 
     try:
-        schema_doc, schema_metadata = metaschema_loader.resolve_all(
-            schema_raw_doc, schema_uri
-        )
+        schema_doc, schema_metadata = metaschema_loader.resolve_all(schema_raw_doc, schema_uri)
     except ValidationException as e:
         _logger.error(
             "Schema `%s` failed link checking:\n%s",
@@ -295,16 +280,12 @@ def main(argsl: Optional[List[str]] = None) -> int:
         return 0
 
     if not args.document and args.print_index:
-        json_dump(
-            list(metaschema_loader.idx.keys()), fp=sys.stdout, indent=4, default=str
-        )
+        json_dump(list(metaschema_loader.idx.keys()), fp=sys.stdout, indent=4, default=str)
         return 0
 
     # Validate the schema document against the metaschema
     try:
-        schema.validate_doc(
-            metaschema_names, schema_doc, metaschema_loader, args.strict
-        )
+        schema.validate_doc(metaschema_names, schema_doc, metaschema_loader, args.strict)
     except ValidationException as e:
         _logger.error("While validating schema `%s`:\n%s", args.schema, str(e))
         return 1
@@ -316,9 +297,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
     if isinstance(schema_doc, CommentedSeq):
         (schema_ctx, rdfs) = jsonld_context.salad_to_jsonld_context(schema_doc, metactx)
     else:
-        raise ValidationException(
-            f"Expected a CommentedSeq, got {type(schema_doc)}: {schema_doc}."
-        )
+        raise ValidationException(f"Expected a CommentedSeq, got {type(schema_doc)}: {schema_doc}.")
 
     # Create the loader that will be used to load the target document.
     document_loader = Loader(schema_ctx, skip_schemas=args.skip_schemas)
@@ -412,9 +391,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         return 0
 
     if args.print_index:
-        json_dump(
-            list(document_loader.idx.keys()), fp=sys.stdout, indent=4, default=str
-        )
+        json_dump(list(document_loader.idx.keys()), fp=sys.stdout, indent=4, default=str)
         return 0
 
     # Validate the user document against the schema

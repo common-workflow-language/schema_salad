@@ -28,4 +28,4 @@ build-verbosity = "1"
 
 [tool.black]
 line-length = 100
-target-version = "py3.6"
+target-version = [ "py36" ]

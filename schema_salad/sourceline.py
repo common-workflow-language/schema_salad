@@ -77,17 +77,13 @@ def reflow(text: str, maxline: int, shift: Optional[str] = "") -> str:
             if sp == -1:
                 sp = len(text)
         if sp < len(text):
-            return "{}\n{}{}".format(
-                text[0:sp], shift, reflow(text[sp + 1 :], maxline, shift)
-            )
+            return "{}\n{}{}".format(text[0:sp], shift, reflow(text[sp + 1 :], maxline, shift))
     return text
 
 
 def indent(v: str, nolead: bool = False, shift: str = "  ", bullet: str = "  ") -> str:
     if nolead:
-        return v.splitlines()[0] + "\n".join(
-            [shift + line for line in v.splitlines()[1:]]
-        )
+        return v.splitlines()[0] + "\n".join([shift + line for line in v.splitlines()[1:]])
     else:
 
         def lineno(i: int, line: str) -> str:
@@ -267,11 +263,7 @@ class SourceLine:
     def start(self) -> Optional[Tuple[int, int]]:
         if self.file() is None:
             return None
-        elif (
-            self.key is None
-            or self.item.lc.data is None
-            or self.key not in self.item.lc.data
-        ):
+        elif self.key is None or self.item.lc.data is None or self.key not in self.item.lc.data:
             return ((self.item.lc.line or 0) + 1, (self.item.lc.col or 0) + 1)
         else:
             return (

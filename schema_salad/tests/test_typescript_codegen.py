@@ -9,9 +9,7 @@ from .util import get_data
 
 
 def test_cwl_gen(tmp_path: Path) -> None:
-    topmed_example_path = get_data(
-        "tests/test_real_cwl/topmed/topmed_variant_calling_pipeline.cwl"
-    )
+    topmed_example_path = get_data("tests/test_real_cwl/topmed/topmed_variant_calling_pipeline.cwl")
     assert topmed_example_path
     target_dir = tmp_path / "target"
     examples_dir = tmp_path / "examples"
@@ -85,16 +83,10 @@ cwl_file_uri = get_data_uri("tests/test_schema/CommonWorkflowLanguage.yml")
 metaschema_file_uri = get_data_uri("metaschema/metaschema.yml")
 
 
-def typescript_codegen(
-    file_uri: str, target: Path, examples: Optional[Path] = None
-) -> None:
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        file_uri
-    )
+def typescript_codegen(file_uri: str, target: Path, examples: Optional[Path] = None) -> None:
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(file_uri)
     schema_raw_doc = metaschema_loader.fetch(file_uri)
-    schema_doc, schema_metadata = metaschema_loader.resolve_all(
-        schema_raw_doc, file_uri
-    )
+    schema_doc, schema_metadata = metaschema_loader.resolve_all(schema_raw_doc, file_uri)
     codegen.codegen(
         "typescript",
         cast(List[Dict[str, Any]], schema_doc),

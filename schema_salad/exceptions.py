@@ -28,9 +28,7 @@ class SchemaSaladException(Exception):
         def simplify(exc: "SchemaSaladException") -> List["SchemaSaladException"]:
             return [exc] if len(exc.message) else exc.children
 
-        def with_bullet(
-            exc: "SchemaSaladException", bullet: str
-        ) -> "SchemaSaladException":
+        def with_bullet(exc: "SchemaSaladException", bullet: str) -> "SchemaSaladException":
             if exc.bullet == "":
                 exc.bullet = bullet
             return exc
@@ -107,9 +105,7 @@ class SchemaSaladException(Exception):
         my_summary = [self.summary(level, True)] if messages else []
         next_level = level + 1 if messages else level
 
-        ret = "\n".join(
-            e for e in my_summary + [c.pretty_str(next_level) for c in self.children]
-        )
+        ret = "\n".join(e for e in my_summary + [c.pretty_str(next_level) for c in self.children])
         if level == 0:
             return strip_duplicated_lineno(reflow_all(ret))
         else:

@@ -175,11 +175,7 @@ class PythonCodeGen(CodeGenBase):
 
         safe_inits: List[str] = ["        self,"]
         safe_inits.extend(
-            [
-                f"        {self.safe_name(f)}: Any,"
-                for f in required_field_names
-                if f != "class"
-            ]
+            [f"        {self.safe_name(f)}: Any," for f in required_field_names if f != "class"]
         )
         safe_inits.extend(
             [
@@ -369,9 +365,7 @@ if _errors__:
 
         safe_inits = [f + "=" + f for f in safe_init_fields]
 
-        safe_inits.extend(
-            ["extension_fields=extension_fields", "loadingOptions=loadingOptions"]
-        )
+        safe_inits.extend(["extension_fields=extension_fields", "loadingOptions=loadingOptions"])
 
         self.out.write(
             "        _constructed = cls(\n            "
@@ -390,9 +384,7 @@ if _errors__:
 
         self.out.write("\n\n")
 
-    def type_loader(
-        self, type_declaration: Union[List[Any], Dict[str, Any], str]
-    ) -> TypeDef:
+    def type_loader(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
             sub_names: List[str] = list(
@@ -410,9 +402,7 @@ if _errors__:
                 "https://w3id.org/cwl/salad#array",
             ):
                 i = self.type_loader(type_declaration["items"])
-                return self.declare_type(
-                    TypeDef(f"array_of_{i.name}", f"_ArrayLoader({i.name})")
-                )
+                return self.declare_type(TypeDef(f"array_of_{i.name}", f"_ArrayLoader({i.name})"))
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
                 for sym in type_declaration["symbols"]:
                     self.add_vocab(shortname(sym), sym)
@@ -421,8 +411,7 @@ if _errors__:
                         self.safe_name(type_declaration["name"]) + "Loader",
                         '_EnumLoader(("{}",), "{}")'.format(
                             '", "'.join(
-                                schema.avro_field_name(sym)
-                                for sym in type_declaration["symbols"]
+                                schema.avro_field_name(sym) for sym in type_declaration["symbols"]
                             ),
                             self.safe_name(type_declaration["name"]),
                         ),
@@ -507,9 +496,7 @@ if _errors__:
             return
 
         if optional:
-            self.out.write(
-                f"""        if "{shortname(name)}" in _doc:\n"""  # noqa: B907
-            )
+            self.out.write(f"""        if "{shortname(name)}" in _doc:\n""")  # noqa: B907
             spc = "    "
         else:
             spc = ""
@@ -609,9 +596,7 @@ if self.{safename} is not None:
         return self.declare_type(
             TypeDef(
                 f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}",
-                "_URILoader({}, {}, {}, {})".format(
-                    inner.name, scoped_id, vocab_term, ref_scope
-                ),
+                "_URILoader({}, {}, {}, {})".format(inner.name, scoped_id, vocab_term, ref_scope),
                 is_uri=True,
                 scoped_id=scoped_id,
                 ref_scope=ref_scope,
@@ -625,9 +610,7 @@ if self.{safename} is not None:
         return self.declare_type(
             TypeDef(
                 f"idmap_{self.safe_name(field)}_{inner.name}",
-                "_IdMapLoader({}, '{}', '{}')".format(
-                    inner.name, map_subject, map_predicate
-                ),
+                "_IdMapLoader({}, '{}', '{}')".format(inner.name, map_subject, map_predicate),
             )
         )
 
@@ -663,9 +646,7 @@ if self.{safename} is not None:
 
         for _, collected_type in self.collected_types.items():
             if not collected_type.abstract:
-                self.out.write(
-                    fmt(f"{collected_type.name} = {collected_type.init}\n", 0)
-                )
+                self.out.write(fmt(f"{collected_type.name} = {collected_type.init}\n", 0))
         self.out.write("\n")
 
         self.out.write(

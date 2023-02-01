@@ -135,10 +135,7 @@ unittest
         if not lines[-1]:
             lines = lines[0:-1]
 
-        lines = [
-            line.replace("`(`", "`$(LPAREN)`").replace("`)`", "`$(RPAREN)`")
-            for line in lines
-        ]
+        lines = [line.replace("`(`", "`$(LPAREN)`").replace("`)`", "`$(RPAREN)`") for line in lines]
 
         doc_lines = "\n".join(f" * {line}" for line in lines)
 
@@ -164,9 +161,7 @@ unittest
                 subject = jsonld_pred["mapSubject"]
                 if "mapPredicate" in jsonld_pred:
                     predicate = jsonld_pred["mapPredicate"]
-                    annotations.append(
-                        f'@idMap("{subject}", "{predicate}")'  # noqa: B907
-                    )
+                    annotations.append(f'@idMap("{subject}", "{predicate}")')  # noqa: B907
                 else:
                     annotations.append(f'@idMap("{subject}")')  # noqa: B907
             if jsonld_pred.get("_type", "") == "@id":
@@ -200,9 +195,7 @@ unittest
             return annotate_str, "'not yet implemented'"
         return annotate_str, type_str
 
-    def parse_record_field(
-        self, field: Dict[str, Any], parent_name: Optional[str] = None
-    ) -> str:
+    def parse_record_field(self, field: Dict[str, Any], parent_name: Optional[str] = None) -> str:
         """Return a declaration string for a given record field."""
         fname = shortname(field["name"]) + "_"
         jsonld_pred = field.get("jsonldPredicate", None)

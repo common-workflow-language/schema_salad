@@ -104,9 +104,7 @@ def test_error_message3() -> None:
         1:
     ]
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(
-            document_loader, avsc_names, str(get_data("tests/" + t)), True
-        )
+        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
 
 
 def test_error_message4() -> None:
@@ -123,9 +121,7 @@ def test_error_message4() -> None:
         1:
     ]
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(
-            document_loader, avsc_names, str(get_data("tests/" + t)), True
-        )
+        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
 
 
 def test_error_message5() -> None:
@@ -145,9 +141,7 @@ def test_error_message5() -> None:
         1:
     ]
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(
-            document_loader, avsc_names, str(get_data("tests/" + t)), True
-        )
+        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
 
 
 def test_error_message7() -> None:
@@ -169,9 +163,7 @@ def test_error_message7() -> None:
         + r"""'label',\s+'doc',\s+'run',\s+'scatter',\s+'scatterMethod'$"""
     )
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(
-            document_loader, avsc_names, str(get_data("tests/" + t)), True
-        )
+        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
 
 
 def test_error_message8() -> None:
@@ -191,9 +183,7 @@ def test_error_message8() -> None:
         ]
     )
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(
-            document_loader, avsc_names, str(get_data("tests/" + t)), True
-        )
+        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
 
 
 def test_error_message9() -> None:
@@ -210,9 +200,7 @@ def test_error_message9() -> None:
         + r"""int,\s+expected\s+string,\s+list,\s+or a\s+dict.$"""
     )
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(
-            document_loader, avsc_names, str(get_data("tests/" + t)), True
-        )
+        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
 
 
 def test_error_message10() -> None:
@@ -234,9 +222,7 @@ def test_error_message10() -> None:
         1:
     ]
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(
-            document_loader, avsc_names, str(get_data("tests/" + t)), True
-        )
+        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
 
 
 def test_error_message11() -> None:
@@ -256,9 +242,7 @@ def test_error_message11() -> None:
         ]
     )
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(
-            document_loader, avsc_names, str(get_data("tests/" + t)), True
-        )
+        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
 
 
 def test_error_message15() -> None:
@@ -283,9 +267,7 @@ def test_error_message15() -> None:
         + r"""\s+'separate',\s+'itemSeparator',\s+'valueFrom',\s+'shellQuote'$"""
     )
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(
-            document_loader, avsc_names, str(get_data("tests/" + t)), True
-        )
+        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
 
 
 @pytest.mark.skip(

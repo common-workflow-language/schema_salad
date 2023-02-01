@@ -78,9 +78,7 @@ def pred(
     if name in context:
         if context[name] != ret:
             raise SchemaException(
-                "Predicate collision on {}, '{}' != '{}'".format(
-                    name, context[name], ret
-                )
+                "Predicate collision on {}, '{}' != '{}'".format(name, context[name], ret)
             )
     else:
         _logger.debug("Adding to context '%s' %s (%s)", name, ret, type(ret))
@@ -128,9 +126,7 @@ def process_type(
         if not recordname:
             raise SchemaException(f"Unable to find/derive recordname for {t}")
 
-        _logger.debug(
-            "Adding to context '%s' %s (%s)", recordname, predicate, type(predicate)
-        )
+        _logger.debug("Adding to context '%s' %s (%s)", recordname, predicate, type(predicate))
         context[recordname] = predicate
 
     if t["type"] == "record":
@@ -181,9 +177,7 @@ def process_type(
                 # TODO generate range from datatype.
 
             if isinstance(i["type"], MutableMapping):
-                process_type(
-                    i["type"], g, context, defaultBase, namespaces, defaultPrefix
-                )
+                process_type(i["type"], g, context, defaultBase, namespaces, defaultPrefix)
 
         if "extends" in t:
             for e in aslist(t["extends"]):
@@ -222,9 +216,7 @@ def salad_to_jsonld_context(
     return (context, g)
 
 
-def fix_jsonld_ids(
-    obj: Union[CommentedMap, float, str, CommentedSeq], ids: List[str]
-) -> None:
+def fix_jsonld_ids(obj: Union[CommentedMap, float, str, CommentedSeq], ids: List[str]) -> None:
     if isinstance(obj, MutableMapping):
         for i in ids:
             if i in obj:
@@ -270,9 +262,7 @@ def makerdf(
             )
     elif isinstance(wf, MutableMapping):
         wf["@context"] = ctx
-        g.parse(
-            data=json_dumps(wf, default=str), format="json-ld", publicID=str(workflow)
-        )
+        g.parse(data=json_dumps(wf, default=str), format="json-ld", publicID=str(workflow))
     else:
         raise SchemaException(f"{wf} is not a workflow")
 

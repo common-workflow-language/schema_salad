@@ -13,12 +13,8 @@ def test_extend_and_specialize_enums(tmp_path: Path) -> None:
     schema_raw_doc = metaschema_loader.fetch(cwl_file_uri)
     schema_doc, _ = metaschema_loader.resolve_all(schema_raw_doc, cwl_file_uri)
 
-    j = schema.extend_and_specialize(
-        cast(List[Dict[str, Any]], schema_doc), document_loader
-    )
-    CWLType = next(
-        (x for x in j if x["name"] == "https://w3id.org/cwl/cwl#CWLType"), None
-    )
+    j = schema.extend_and_specialize(cast(List[Dict[str, Any]], schema_doc), document_loader)
+    CWLType = next((x for x in j if x["name"] == "https://w3id.org/cwl/cwl#CWLType"), None)
     assert CWLType is not None
     symbols = [
         "https://w3id.org/cwl/salad#null",

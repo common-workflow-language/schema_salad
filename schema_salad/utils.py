@@ -103,7 +103,7 @@ def json_dump(obj: Any, fp: IO[str], **kwargs: Any) -> None:
 
 def json_dumps(
     obj,  # type: Any
-    **kwargs  # type: Any
+    **kwargs,  # type: Any
 ):  # type: (...) -> str
     """Force use of unicode."""
     return json.dumps(convert_to_dict(obj), **kwargs)
