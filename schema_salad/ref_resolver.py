@@ -747,7 +747,7 @@ class Loader:
                     base_url = document[identifier]
                 else:
                     raise ValidationException(
-                        f"identifier field '{document[identifier]}' must be a string"
+                        f"identifier field {document[identifier]!r} must be a string"
                     )
         return base_url
 

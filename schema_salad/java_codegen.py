@@ -531,9 +531,7 @@ public enum {clazz} {{
             for i, sym in enumerate(symbols):
                 suffix = "," if i < (len(symbols) - 1) else ";"
                 const = self.safe_name(sym).replace("-", "_").replace(".", "_").upper()
-                f.write(
-                    f"""  {const}("{sym}"){suffix}\n"""
-                )
+                f.write(f"""  {const}("{sym}"){suffix}\n""")  # noqa: B907
             f.write(
                 """
   private static String[] symbols = {symbols_decl};

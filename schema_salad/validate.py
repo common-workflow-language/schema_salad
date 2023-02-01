@@ -325,7 +325,7 @@ def validate_ex(
                 if expected_schema.name != d and expected_schema.name != avroname:
                     if raise_ex:
                         raise ValidationException(
-                            f"Expected class '{expected_schema.name}' but this is '{d}'"
+                            f"Expected class {expected_schema.name!r} but this is {d!r}"
                         )
                     else:
                         return False

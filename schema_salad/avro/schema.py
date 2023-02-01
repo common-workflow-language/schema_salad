@@ -363,9 +363,7 @@ class EnumSchema(NamedSchema):
     ) -> None:
         # Ensure valid ctor args
         if not isinstance(symbols, list):
-            raise AvroException(
-                "Enum Schema requires a JSON array for the symbols property."
-            )
+            raise AvroException("Enum Schema requires a JSON array for the symbols property.")
         elif False in [isinstance(s, str) for s in symbols]:
             raise AvroException("Enum Schema requires all symbols to be JSON strings.")
         elif len(set(symbols)) < len(symbols):
@@ -515,9 +513,7 @@ class RecordSchema(NamedSchema):
     ) -> None:
         # Ensure valid ctor args
         if not isinstance(fields, list):
-            raise SchemaParseException(
-                "Fields property must be a list of Avro schemas."
-            )
+            raise SchemaParseException("Fields property must be a list of Avro schemas.")
 
         # Call parent ctor (adds own name to namespace, too)
         NamedSchema.__init__(self, schema_type, name, namespace, names, other_props)

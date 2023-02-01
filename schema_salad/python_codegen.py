@@ -610,7 +610,7 @@ if self.{safename} is not None:
         return self.declare_type(
             TypeDef(
                 f"idmap_{self.safe_name(field)}_{inner.name}",
-                f"_IdMapLoader({inner.name}, '{map_subject}', '{map_predicate}')",
+                f"_IdMapLoader({inner.name}, '{map_subject}', '{map_predicate}')",  # noqa: B907
             )
         )
 

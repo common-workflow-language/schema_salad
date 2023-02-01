@@ -524,7 +524,7 @@ export enum {enum_name} {{
         if fieldname == "class":
             if fieldtype.instance_type == "string":
                 self.current_constructor_signature.write(
-                    f", {safename} = '{self.current_class}'"
+                    f", {safename} = '{self.current_class}'"  # noqa: B907
                 )
             else:
                 self.current_constructor_signature.write(
@@ -697,7 +697,7 @@ export enum {enum_name} {{
         return self.declare_type(
             TypeDef(
                 f"idmap{self.safe_name(field)}{inner.name}",
-                f"new _IdMapLoader({inner.name}, '{map_subject}', '{map_predicate}')",
+                f"new _IdMapLoader({inner.name}, '{map_subject}', '{map_predicate}')",  # noqa: B907
                 instance_type=instance_type,
             )
         )
