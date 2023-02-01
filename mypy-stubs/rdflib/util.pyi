@@ -1,0 +1,3 @@
+from typing import Optional
+
+def guess_format(fpath: str, fmap: dict[str, str] | None = ...) -> Optional[str]: ...

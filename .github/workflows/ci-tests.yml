@@ -137,3 +137,12 @@ jobs:
         env:
           RELEASE_SKIP: head
         run: ./release-test.sh
+
+  build_test_container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: record schema-salad version
+        run: pip install setuptools_scm[toml] && python -m setuptools_scm
+      - name: build & test schema_salad container
+        run: ./build-schema_salad-docker.sh
