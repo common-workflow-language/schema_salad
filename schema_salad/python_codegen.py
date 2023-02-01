@@ -596,7 +596,7 @@ if self.{safename} is not None:
         return self.declare_type(
             TypeDef(
                 f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}",
-                "_URILoader({}, {}, {}, {})".format(inner.name, scoped_id, vocab_term, ref_scope),
+                f"_URILoader({inner.name}, {scoped_id}, {vocab_term}, {ref_scope})",
                 is_uri=True,
                 scoped_id=scoped_id,
                 ref_scope=ref_scope,
@@ -610,7 +610,7 @@ if self.{safename} is not None:
         return self.declare_type(
             TypeDef(
                 f"idmap_{self.safe_name(field)}_{inner.name}",
-                "_IdMapLoader({}, '{}', '{}')".format(inner.name, map_subject, map_predicate),
+                f"_IdMapLoader({inner.name}, '{map_subject}', '{map_predicate}')",
             )
         )
 

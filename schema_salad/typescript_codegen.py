@@ -524,7 +524,7 @@ export enum {enum_name} {{
         if fieldname == "class":
             if fieldtype.instance_type == "string":
                 self.current_constructor_signature.write(
-                    ", {safename} = '{val}'".format(safename=safename, val=self.current_class)
+                    f", {safename} = '{self.current_class}'"
                 )
             else:
                 self.current_constructor_signature.write(
@@ -631,7 +631,7 @@ export enum {enum_name} {{
         """Output the code to handle the given ID field."""
         self.declare_field(name, fieldtype, doc, True, "")
         if optional:
-            opt = """{safename} = "_" + uuidv4()""".format(safename=self.safe_name(name))
+            opt = f"""{self.safe_name(name)} = "_" + uuidv4()"""
         else:
             opt = """throw new ValidationException("Missing {fieldname}")""".format(
                 fieldname=shortname(name)
@@ -697,7 +697,7 @@ export enum {enum_name} {{
         return self.declare_type(
             TypeDef(
                 f"idmap{self.safe_name(field)}{inner.name}",
-                "new _IdMapLoader({}, '{}', '{}')".format(inner.name, map_subject, map_predicate),
+                f"new _IdMapLoader({inner.name}, '{map_subject}', '{map_predicate}')",
                 instance_type=instance_type,
             )
         )

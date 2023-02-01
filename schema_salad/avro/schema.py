@@ -584,7 +584,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
                 raise SchemaParseException(f'"name" for type {atype} must be a string: {json_data}')
             if not (namespace is None or isinstance(namespace, str)):
                 raise SchemaParseException(
-                    '"namespace" for type {} must be a string or None: {}'.format(atype, json_data)
+                    f'"namespace" for type {atype} must be a string or None: {json_data}'
                 )
             if not (doc is None or isinstance(doc, str) or isinstance(doc, list)):
                 raise SchemaParseException(
@@ -595,7 +595,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
                 symbols = json_data.get("symbols")
                 if not isinstance(symbols, list):
                     raise SchemaParseException(
-                        '"symbols" for type enum must be a list of strings: {}'.format(json_data)
+                        f'"symbols" for type enum must be a list of strings: {json_data}'
                     )
                 else:
                     symbols = cast(List[str], symbols)

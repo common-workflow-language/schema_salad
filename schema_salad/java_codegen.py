@@ -411,7 +411,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                     fqclass = f"{self.package}.{single_type.instance_type}"
                     return self.declare_type(
                         TypeDef(
-                            instance_type="{}.utils.OneOrListOf<{}>".format(self.package, fqclass),
+                            instance_type=f"{self.package}.utils.OneOrListOf<{fqclass}>",
                             init="new OneOrListOfLoader<{}>({}, {})".format(
                                 fqclass, single_type.name, array_type.name
                             ),
@@ -449,7 +449,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                         instance_type=instance_type,
                         name=f"array_of_{i.name}",
                         init=f"new ArrayLoader({i.name})",
-                        loader_type="Loader<java.util.List<{}>>".format(i.instance_type),
+                        loader_type=f"Loader<java.util.List<{i.instance_type}>>",
                     )
                 )
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
@@ -532,7 +532,7 @@ public enum {clazz} {{
                 suffix = "," if i < (len(symbols) - 1) else ";"
                 const = self.safe_name(sym).replace("-", "_").replace(".", "_").upper()
                 f.write(
-                    """  {const}("{val}"){suffix}\n""".format(const=const, val=sym, suffix=suffix)
+                    f"""  {const}("{sym}"){suffix}\n"""
                 )
             f.write(
                 """
@@ -721,7 +721,7 @@ public enum {clazz} {{
         return self.declare_type(
             TypeDef(
                 instance_type=instance_type,  # ?
-                name="uri_{}_{}_{}_{}".format(inner.name, scoped_id, vocab_term, ref_scope),
+                name=f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}",
                 init="new UriLoader({}, {}, {}, {})".format(
                     inner.name,
                     self.to_java(scoped_id),

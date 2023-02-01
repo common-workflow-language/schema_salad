@@ -486,7 +486,7 @@ class Loader:
                         return resolved_obj, metadata
                 else:
                     raise ValidationException(
-                        "Expected CommentedMap, got {}: `{}`".format(type(metadata), metadata)
+                        f"Expected CommentedMap, got {type(metadata)}: `{metadata}`"
                     )
             elif isinstance(resolved_obj, MutableSequence):
                 metadata = self.idx.get(urllib.parse.urldefrag(url)[0], CommentedMap())
@@ -747,7 +747,7 @@ class Loader:
                     base_url = document[identifier]
                 else:
                     raise ValidationException(
-                        "identifier field '{}' must be a string".format(document[identifier])
+                        f"identifier field '{document[identifier]}' must be a string"
                     )
         return base_url
 
@@ -916,7 +916,7 @@ class Loader:
             except ValidationException as v:
                 _logger.warning("loader is %s", id(loader), exc_info=True)
                 raise ValidationException(
-                    "({}) ({}) Validation error in field {}:".format(id(loader), file_base, key),
+                    f"({id(loader)}) ({file_base}) Validation error in field {key}:",
                     None,
                     [v],
                 ) from v
@@ -957,7 +957,7 @@ class Loader:
             except ValidationException as v:
                 _logger.warning("failed", exc_info=True)
                 raise ValidationException(
-                    "({}) ({}) Validation error in position {}:".format(id(loader), file_base, i),
+                    f"({id(loader)}) ({file_base}) Validation error in position {i}:",
                     None,
                     [v],
                 ) from v
@@ -1054,14 +1054,14 @@ class Loader:
                         return self.validate_scoped(field, link, docid)
                     elif not self.check_exists(link):
                         raise ValidationException(
-                            "Field `{}` contains undefined reference to `{}`".format(field, link)
+                            f"Field `{field}` contains undefined reference to `{link}`"
                         )
             elif link not in self.idx and link not in self.rvocab:
                 if field in self.scoped_ref_fields:
                     return self.validate_scoped(field, link, docid)
                 elif not self.check_exists(link):
                     raise ValidationException(
-                        "Field `{}` contains undefined reference to `{}`".format(field, link)
+                        f"Field `{field}` contains undefined reference to `{link}`"
                     )
         elif isinstance(link, CommentedSeq):
             errors = []

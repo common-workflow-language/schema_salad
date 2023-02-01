@@ -78,7 +78,7 @@ def pred(
     if name in context:
         if context[name] != ret:
             raise SchemaException(
-                "Predicate collision on {}, '{}' != '{}'".format(name, context[name], ret)
+                f"Predicate collision on {name}, '{context[name]}' != '{ret}'"
             )
     else:
         _logger.debug("Adding to context '%s' %s (%s)", name, ret, type(ret))

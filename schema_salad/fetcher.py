@@ -136,7 +136,7 @@ class DefaultFetcher(MemoryCachingFetcher):
         split = urllib.parse.urlsplit(url)
         if basesplit.scheme and basesplit.scheme != "file" and split.scheme == "file":
             raise ValidationException(
-                "Not resolving potential remote exploit {} from base {}".format(url, base_url)
+                f"Not resolving potential remote exploit {url} from base {base_url}"
             )
 
         if sys.platform == "win32":
@@ -182,7 +182,7 @@ class DefaultFetcher(MemoryCachingFetcher):
                         # https://tools.ietf.org/html/rfc8089#appendix-E.2.1
                         # e.g. urljoin("file:///D:/bar/a.txt", "/foo/b.txt")
                         #          == file:///D:/foo/b.txt
-                        path_with_drive = "/{}:{}".format(base_drive.group(1), split.path)
+                        path_with_drive = f"/{base_drive.group(1)}:{split.path}"
                         return urllib.parse.urlunsplit(
                             (
                                 "file",
@@ -199,7 +199,7 @@ class DefaultFetcher(MemoryCachingFetcher):
                 # would wrongly resolve as an absolute path that could later be used
                 # to access local files
                 raise ValidationException(
-                    "Not resolving potential remote exploit {} from base {}".format(url, base_url)
+                    f"Not resolving potential remote exploit {url} from base {base_url}"
                 )
 
         return urllib.parse.urljoin(base_url, url)

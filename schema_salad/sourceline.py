@@ -77,7 +77,7 @@ def reflow(text: str, maxline: int, shift: Optional[str] = "") -> str:
             if sp == -1:
                 sp = len(text)
         if sp < len(text):
-            return "{}\n{}{}".format(text[0:sp], shift, reflow(text[sp + 1 :], maxline, shift))
+            return f"{text[0:sp]}\n{shift}{reflow(text[sp + 1 :], maxline, shift)}"
     return text
 
 

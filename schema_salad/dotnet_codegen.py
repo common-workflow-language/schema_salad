@@ -747,7 +747,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
             return
         self.declare_field(name, fieldtype, doc, True, "")
         if optional:
-            opt = """{safename} = "_" + Guid.NewGuid();""".format(safename=self.safe_name(name))
+            opt = f"""{self.safe_name(name)} = "_" + Guid.NewGuid();"""
         else:
             opt = """throw new ValidationException("Missing {fieldname}");""".format(
                 fieldname=shortname(name)

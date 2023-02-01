@@ -300,7 +300,7 @@ def validate_ex(
             )
         else:
             raise ValidationException(
-                "value is a {}, expected {}".format(type(datum).__name__, friendly(expected_schema))
+                f"value is a {type(datum).__name__}, expected {friendly(expected_schema)}"
             )
 
     elif isinstance(expected_schema, avro.schema.RecordSchema):
@@ -325,7 +325,7 @@ def validate_ex(
                 if expected_schema.name != d and expected_schema.name != avroname:
                     if raise_ex:
                         raise ValidationException(
-                            "Expected class '{}' but this is '{}'".format(expected_schema.name, d)
+                            f"Expected class '{expected_schema.name}' but this is '{d}'"
                         )
                     else:
                         return False

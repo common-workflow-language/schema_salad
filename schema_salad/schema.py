@@ -401,7 +401,7 @@ def validate_doc(
             objerr = "Invalid"
             for ident in loader.identifiers:
                 if ident in item:
-                    objerr = "Object `{}` is not valid because".format(relname(item[ident]))
+                    objerr = f"Object `{relname(item[ident])}` is not valid because"
                     break
             anyerrors.append(ValidationException(objerr, sourceline, errors, "-"))
     if anyerrors:
@@ -426,7 +426,7 @@ def get_anon_name(rec: MutableMapping[str, Union[str, Dict[str, str], List[str]]
                 anon_name += field["name"]
             else:
                 raise ValidationException(
-                    "Expected entries in 'fields' to also be maps, was {}.".format(field)
+                    f"Expected entries in 'fields' to also be maps, was {field}."
                 )
         return "record_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()  # nosec
     if rec["type"] in ("array", saladp + "array"):

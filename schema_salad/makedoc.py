@@ -302,7 +302,7 @@ class ToC:
             if self.start_numbering
             else ""
         )
-        self.toc += """<li><a href="#{}">{} {}</a><ol>\n""".format(to_id(title), num, title)
+        self.toc += f"""<li><a href="#{to_id(title)}">{num} {title}</a><ol>\n"""
         return num
 
     def contents(self, idn: str) -> str:
