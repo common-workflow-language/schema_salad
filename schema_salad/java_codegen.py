@@ -374,6 +374,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
             )
 
     def type_loader(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> TypeDef:
+        """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
             sub = [self.type_loader(i) for i in type_declaration]
             if len(sub) < 2:

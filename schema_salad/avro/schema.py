@@ -193,6 +193,7 @@ class Names:
         return test in self.names
 
     def get_name(self, name_attr: str, space_attr: Optional[str]) -> Optional["NamedSchema"]:
+        """Fetch the stored schema for the given namespace."""
         test = Name(name_attr, space_attr, self.default_namespace).fullname
         if test not in self.names:
             return None

@@ -147,6 +147,7 @@ class FieldDefinition:
         self.optional = optional
 
     def writeDefinition(self, target: IO[Any], fullInd: str, ind: str, namespace: str) -> None:
+        """Write a C++ definition for the class field."""
         name = safename(self.name)
         typeStr = self.typeStr.replace(namespace + "::", "")
         target.write(f"{fullInd}heap_object<{typeStr}> {name};\n")

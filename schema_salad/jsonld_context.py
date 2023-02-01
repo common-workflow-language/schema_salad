@@ -215,6 +215,7 @@ def salad_to_jsonld_context(
 
 
 def fix_jsonld_ids(obj: Union[CommentedMap, float, str, CommentedSeq], ids: List[str]) -> None:
+    """Add missing identity entries."""
     if isinstance(obj, MutableMapping):
         for i in ids:
             if i in obj:

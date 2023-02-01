@@ -395,6 +395,7 @@ public class {cls} : {current_interface}, ISaveable
             )
 
     def type_loader(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> TypeDef:
+        """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
             sub_types = [self.type_loader(i) for i in type_declaration]
             sub_names: List[str] = list(dict.fromkeys([i.name for i in sub_types]))
