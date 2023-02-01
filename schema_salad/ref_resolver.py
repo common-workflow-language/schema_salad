@@ -112,17 +112,20 @@ class NormDict(Dict[str, Union[CommentedMap, CommentedSeq, str, None]]):
     def __eq__(self, other: Any) -> bool:
         return super().__eq__(other)
 
-    def __getitem__(self, key):  # type: (Any) -> Any
+    def __getitem__(self, key: Any) -> Any:
         return super().__getitem__(self.normalize(key))
 
-    def __setitem__(self, key, value):  # type: (Any, Any) -> Any
+    def __setitem__(self, key: Any, value: Any) -> Any:
         return super().__setitem__(self.normalize(key), value)
 
-    def __delitem__(self, key):  # type: (Any) -> Any
+    def __delitem__(self, key: Any) -> Any:
         return super().__delitem__(self.normalize(key))
 
     def __contains__(self, key: Any) -> bool:
         return super().__contains__(self.normalize(key))
+
+    def __del__(self) -> None:
+        del self.normalize
 
 
 def SubLoader(loader: "Loader") -> "Loader":
@@ -155,11 +158,11 @@ class Loader:
         allow_attachments: Optional[AttachmentsType] = None,
         doc_cache: Union[str, bool] = True,
     ) -> None:
-        self.idx = (
+        self.idx: IdxType = (
             NormDict(lambda url: urllib.parse.urlsplit(url).geturl()) if idx is None else idx
-        )  # type: IdxType
+        )
 
-        self.ctx = {}  # type: ContextType
+        self.ctx: ContextType = {}
         self.graph = schemagraph if schemagraph is not None else Graph()
         self.foreign_properties = (
             set(foreign_properties) if foreign_properties is not None else set()
@@ -187,20 +190,20 @@ class Loader:
         self.fetcher = self.fetcher_constructor(self.cache, self.session)
         self.fetch_text = self.fetcher.fetch_text
         self.check_exists = self.fetcher.check_exists
-        self.url_fields = set() if url_fields is None else set(url_fields)  # type: Set[str]
-        self.scoped_ref_fields = {}  # type: Dict[str, int]
-        self.vocab_fields = set()  # type: Set[str]
-        self.identifiers = []  # type: List[str]
-        self.identity_links = set()  # type: Set[str]
+        self.url_fields: Set[str] = set() if url_fields is None else set(url_fields)
+        self.scoped_ref_fields: Dict[str, int] = {}
+        self.vocab_fields: Set[str] = set()
+        self.identifiers: List[str] = []
+        self.identity_links: Set[str] = set()
         self.standalone: Optional[Set[str]] = None
-        self.nolinkcheck = set()  # type: Set[str]
-        self.vocab = {}  # type: Dict[str, str]
-        self.rvocab = {}  # type: Dict[str, str]
-        self.idmap = {}  # type: Dict[str, str]
-        self.mapPredicate = {}  # type: Dict[str, str]
-        self.type_dsl_fields = set()  # type: Set[str]
-        self.subscopes = {}  # type:  Dict[str, str]
-        self.secondaryFile_dsl_fields = set()  # type: Set[str]
+        self.nolinkcheck: Set[str] = set()
+        self.vocab: Dict[str, str] = {}
+        self.rvocab: Dict[str, str] = {}
+        self.idmap: Dict[str, str] = {}
+        self.mapPredicate: Dict[str, str] = {}
+        self.type_dsl_fields: Set[str] = set()
+        self.subscopes: Dict[str, str] = {}
+        self.secondaryFile_dsl_fields: Set[str] = set()
         self.allow_attachments = allow_attachments
 
         self.add_context(ctx)
@@ -475,9 +478,9 @@ class Loader:
         if url in self.idx and (not mixin):
             resolved_obj = self.idx[url]
             if isinstance(resolved_obj, MutableMapping):
-                metadata = self.idx.get(
+                metadata: Union[CommentedMap, CommentedSeq, str, None] = self.idx.get(
                     urllib.parse.urldefrag(url)[0], CommentedMap()
-                )  # type: Union[CommentedMap, CommentedSeq, str, None]
+                )
                 if isinstance(metadata, MutableMapping):
                     if "$graph" in resolved_obj:
                         metadata = _copy_dict_without_key(resolved_obj, "$graph")
@@ -658,7 +661,7 @@ class Loader:
         if not isinstance(t, str):
             return t
         pat = t[0:-1] if t.endswith("?") else t
-        req = False if t.endswith("?") else None  # type: Optional[bool]
+        req: Optional[bool] = False if t.endswith("?") else None
 
         second = CommentedMap((("pattern", pat), ("required", req)))
         second.lc.add_kv_line_col("pattern", lc)
@@ -714,7 +717,7 @@ class Loader:
                             datum2.append(self._apply_dsl(t, d, loader, LineCol(), ""))
                 if isinstance(datum2, CommentedSeq):
                     datum3 = CommentedSeq()
-                    seen = []  # type: List[str]
+                    seen: List[str] = []
                     for i, item in enumerate(datum2):
                         if isinstance(item, CommentedSeq):
                             for j, v in enumerate(item):
@@ -907,7 +910,7 @@ class Loader:
 
             try:
                 for key, val in document.items():
-                    subscope = ""  # type: str
+                    subscope: str = ""
                     if key in loader.subscopes:
                         subscope = "/" + loader.subscopes[key]
                     document[key], _ = loader.resolve_all(
