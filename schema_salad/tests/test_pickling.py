@@ -15,7 +15,7 @@ from .util import get_data_uri
 
 def test_recordschema_pickle() -> None:
     """Targeted test of pickling a RecordSchema."""
-    s = RecordSchema(str("one"), None, [], Names())
+    s = RecordSchema("one", None, [], Names())
     print(s)
     d = pickle.dumps(s)
     print(pickle.loads(d))

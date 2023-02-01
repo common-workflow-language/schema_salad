@@ -79,9 +79,7 @@ outputs: []
 def test_fetcher() -> None:
     loader = Loader({}, fetcher_constructor=testFetcher)
     assert {"hello": "foo"} == loader.resolve_ref("foo.txt")[0]
-    assert {"hello": "keepfoo"} == loader.resolve_ref(
-        "foo.txt", base_url="keep:abc+123"
-    )[0]
+    assert {"hello": "keepfoo"} == loader.resolve_ref("foo.txt", base_url="keep:abc+123")[0]
     assert loader.check_exists("foo.txt")
 
     with pytest.raises(RuntimeError):

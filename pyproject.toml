@@ -25,3 +25,7 @@ skip = "pp* cp36-*"
 #      ^ skip building wheels on PyPy (any version)
 #           ^ skip building wheels on Python 3.6 (we now need mypy 0.990+ which doesn't support Python 3.6)
 build-verbosity = "1"
+
+[tool.black]
+line-length = 100
+target-version = [ "py36" ]

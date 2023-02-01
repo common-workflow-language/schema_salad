@@ -75,9 +75,7 @@ def uri_file_path(url: str) -> str:
     split = urllib.parse.urlsplit(url)
     if split.scheme == "file":
         return urllib.request.url2pathname(str(split.path)) + (
-            "#" + urllib.parse.unquote(str(split.fragment))
-            if bool(split.fragment)
-            else ""
+            "#" + urllib.parse.unquote(str(split.fragment)) if bool(split.fragment) else ""
         )
     raise ValidationException(f"Not a file URI: {url}")
 
@@ -158,9 +156,7 @@ class Loader:
         doc_cache: Union[str, bool] = True,
     ) -> None:
         self.idx = (
-            NormDict(lambda url: urllib.parse.urlsplit(url).geturl())
-            if idx is None
-            else idx
+            NormDict(lambda url: urllib.parse.urlsplit(url).geturl()) if idx is None else idx
         )  # type: IdxType
 
         self.ctx = {}  # type: ContextType
@@ -181,9 +177,7 @@ class Loader:
                     cache=FileCache(root / ".cache" / "salad"),
                 )
             elif isinstance(doc_cache, str):
-                self.session = CacheControl(
-                    requests.Session(), cache=FileCache(doc_cache)
-                )
+                self.session = CacheControl(requests.Session(), cache=FileCache(doc_cache))
         else:
             self.session = session
 
@@ -193,9 +187,7 @@ class Loader:
         self.fetcher = self.fetcher_constructor(self.cache, self.session)
         self.fetch_text = self.fetcher.fetch_text
         self.check_exists = self.fetcher.check_exists
-        self.url_fields = (
-            set() if url_fields is None else set(url_fields)
-        )  # type: Set[str]
+        self.url_fields = set() if url_fields is None else set(url_fields)  # type: Set[str]
         self.scoped_ref_fields = {}  # type: Dict[str, int]
         self.vocab_fields = set()  # type: Set[str]
         self.identifiers = []  # type: List[str]
@@ -258,11 +250,7 @@ class Loader:
             pass
         elif scoped_id and not bool(split.fragment):
             splitbase = urllib.parse.urlsplit(base_url)
-            frg = (
-                splitbase.fragment + "/" + split.path
-                if bool(splitbase.fragment)
-                else split.path
-            )
+            frg = splitbase.fragment + "/" + split.path if bool(splitbase.fragment) else split.path
             pt = splitbase.path if splitbase.path != "" else "/"
             url = urllib.parse.urlunsplit(
                 (splitbase.scheme, splitbase.netloc, pt, splitbase.query, frg)
@@ -299,9 +287,7 @@ class Loader:
                 try:
                     content = self.fetch_text(fetchurl)
                 except Exception as e:
-                    _logger.warning(
-                        "Could not load extension schema %s: %s", fetchurl, str(e)
-                    )
+                    _logger.warning("Could not load extension schema %s: %s", fetchurl, str(e))
                     continue
                 newGraph = Graph()
                 err_msg = "unknown error"
@@ -326,9 +312,7 @@ class Loader:
                     ) as e:
                         err_msg = str(e)
                 else:
-                    _logger.warning(
-                        "Could not load extension schema %s: %s", fetchurl, err_msg
-                    )
+                    _logger.warning("Could not load extension schema %s: %s", fetchurl, err_msg)
 
         for s, _, _ in self.graph.triples((None, RDF.type, RDF.Property)):
             self._add_properties(s)
@@ -502,9 +486,7 @@ class Loader:
                         return resolved_obj, metadata
                 else:
                     raise ValidationException(
-                        "Expected CommentedMap, got {}: `{}`".format(
-                            type(metadata), metadata
-                        )
+                        f"Expected CommentedMap, got {type(metadata)}: `{metadata}`"
                     )
             elif isinstance(resolved_obj, MutableSequence):
                 metadata = self.idx.get(urllib.parse.urldefrag(url)[0], CommentedMap())
@@ -543,9 +525,7 @@ class Loader:
                     f"Reference `#{frg}` not found in file `{doc_url}`.",
                     SourceLine(self.idx[doc_url]),
                 )
-            doc = self.fetch(
-                doc_url, inject_ids=(not mixin), content_types=content_types
-            )
+            doc = self.fetch(doc_url, inject_ids=(not mixin), content_types=content_types)
 
         if imp:
             # Make a note in the index that this was an imported fragment
@@ -614,9 +594,7 @@ class Loader:
                         v: Optional[CommentedMap] = None
                         if not isinstance(val, CommentedMap):
                             if idmapField in loader.mapPredicate:
-                                v = CommentedMap(
-                                    ((loader.mapPredicate[idmapField], val),)
-                                )
+                                v = CommentedMap(((loader.mapPredicate[idmapField], val),))
                                 v.lc.add_kv_line_col(
                                     loader.mapPredicate[idmapField],
                                     document[idmapField].lc.data[k],
@@ -741,26 +719,20 @@ class Loader:
                         if isinstance(item, CommentedSeq):
                             for j, v in enumerate(item):
                                 if v not in seen:
-                                    datum3.lc.add_kv_line_col(
-                                        len(datum3), item.lc.data[j]
-                                    )
+                                    datum3.lc.add_kv_line_col(len(datum3), item.lc.data[j])
                                     datum3.append(v)
                                     seen.append(v)
                         else:
                             if item not in seen:
                                 if datum2.lc and datum2.lc.data:
-                                    datum3.lc.add_kv_line_col(
-                                        len(datum3), datum2.lc.data[i]
-                                    )
+                                    datum3.lc.add_kv_line_col(len(datum3), datum2.lc.data[i])
                                 datum3.append(item)
                                 seen.append(item)
                     document[d] = datum3
                 else:
                     document[d] = datum2
 
-    def _resolve_identifier(
-        self, document: CommentedMap, loader: "Loader", base_url: str
-    ) -> str:
+    def _resolve_identifier(self, document: CommentedMap, loader: "Loader", base_url: str) -> str:
         # Expand identifier field (usually 'id') to resolve scope
         for identifier in loader.identifiers:
             if identifier in document:
@@ -775,9 +747,7 @@ class Loader:
                     base_url = document[identifier]
                 else:
                     raise ValidationException(
-                        "identifier field '{}' must be a string".format(
-                            document[identifier]
-                        )
+                        f"identifier field {document[identifier]!r} must be a string"
                     )
         return base_url
 
@@ -790,9 +760,7 @@ class Loader:
         # Resolve scope for identity fields (fields where the value is the
         # identity of a standalone node, such as enum symbols)
         for identifier in loader.identity_links:
-            if identifier in document and isinstance(
-                document[identifier], MutableSequence
-            ):
+            if identifier in document and isinstance(document[identifier], MutableSequence):
                 for n, v in enumerate(document[identifier]):
                     if isinstance(v, str):
                         document[identifier][n] = loader.expand_url(  # type: ignore
@@ -948,9 +916,7 @@ class Loader:
             except ValidationException as v:
                 _logger.warning("loader is %s", id(loader), exc_info=True)
                 raise ValidationException(
-                    "({}) ({}) Validation error in field {}:".format(
-                        id(loader), file_base, key
-                    ),
+                    f"({id(loader)}) ({file_base}) Validation error in field {key}:",
                     None,
                     [v],
                 ) from v
@@ -960,9 +926,7 @@ class Loader:
             try:
                 while i < len(document):
                     val = document[i]
-                    if isinstance(val, CommentedMap) and (
-                        "$import" in val or "$mixin" in val
-                    ):
+                    if isinstance(val, CommentedMap) and ("$import" in val or "$mixin" in val):
                         l, import_metadata = loader.resolve_ref(
                             val, base_url=file_base, checklinks=False
                         )
@@ -993,9 +957,7 @@ class Loader:
             except ValidationException as v:
                 _logger.warning("failed", exc_info=True)
                 raise ValidationException(
-                    "({}) ({}) Validation error in position {}:".format(
-                        id(loader), file_base, i
-                    ),
+                    f"({id(loader)}) ({file_base}) Validation error in position {i}:",
                     None,
                     [v],
                 ) from v
@@ -1040,9 +1002,7 @@ class Loader:
             for identifier in self.identifiers:
                 if identifier in result:
                     missing_identifier = False
-                    self.idx[
-                        self.expand_url(result[identifier], url, scoped_id=True)
-                    ] = result
+                    self.idx[self.expand_url(result[identifier], url, scoped_id=True)] = result
             if missing_identifier:
                 result[self.identifiers[0]] = url
         self.idx[url] = result
@@ -1089,27 +1049,19 @@ class Loader:
             return link
         if isinstance(link, str):
             if field in self.vocab_fields:
-                if (
-                    link not in self.vocab
-                    and link not in self.idx
-                    and link not in self.rvocab
-                ):
+                if link not in self.vocab and link not in self.idx and link not in self.rvocab:
                     if field in self.scoped_ref_fields:
                         return self.validate_scoped(field, link, docid)
                     elif not self.check_exists(link):
                         raise ValidationException(
-                            "Field `{}` contains undefined reference to `{}`".format(
-                                field, link
-                            )
+                            f"Field `{field}` contains undefined reference to `{link}`"
                         )
             elif link not in self.idx and link not in self.rvocab:
                 if field in self.scoped_ref_fields:
                     return self.validate_scoped(field, link, docid)
                 elif not self.check_exists(link):
                     raise ValidationException(
-                        "Field `{}` contains undefined reference to `{}`".format(
-                            field, link
-                        )
+                        f"Field `{field}` contains undefined reference to `{link}`"
                     )
         elif isinstance(link, CommentedSeq):
             errors = []
@@ -1156,9 +1108,7 @@ class Loader:
             for d in self.url_fields:
                 try:
                     if d in document and d not in self.identity_links:
-                        document[d] = self.validate_link(
-                            d, document[d], docid, all_doc_ids
-                        )
+                        document[d] = self.validate_link(d, document[d], docid, all_doc_ids)
                 except SchemaSaladException as v:
                     v = v.with_sourceline(SourceLine(document, d, str))
                     if d == "$schemas" or (
@@ -1173,9 +1123,7 @@ class Loader:
             # In the future, it should raise
             # ValidationException instead of _logger.warn
             try:
-                for (
-                    identifier
-                ) in self.identifiers:  # validate that each id is defined uniquely
+                for identifier in self.identifiers:  # validate that each id is defined uniquely
                     if identifier in document:
                         sl = SourceLine(document, identifier, str)
                         if (
@@ -1214,15 +1162,11 @@ class Loader:
                     docid2 = self.getid(val)
                     if docid2 is not None:
                         errors.append(
-                            ValidationException(
-                                f"checking object `{relname(docid2)}`", sl, [v]
-                            )
+                            ValidationException(f"checking object `{relname(docid2)}`", sl, [v])
                         )
                     else:
                         if isinstance(key, str):
-                            errors.append(
-                                ValidationException(f"checking field `{key}`", sl, [v])
-                            )
+                            errors.append(ValidationException(f"checking field `{key}`", sl, [v]))
                         else:
                             errors.append(ValidationException("checking item", sl, [v]))
         if bool(errors):

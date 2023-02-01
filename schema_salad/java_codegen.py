@@ -145,9 +145,7 @@ class JavaCodeGen(CodeGenBase):
         self.rel_package_dir = Path(rel_package_dir)
         self.main_src_dir = self.target_dir / "src" / "main" / "java" / rel_package_dir
         self.test_src_dir = self.target_dir / "src" / "test" / "java" / rel_package_dir
-        self.test_resources_dir = (
-            self.target_dir / "src" / "test" / "resources" / rel_package_dir
-        )
+        self.test_resources_dir = self.target_dir / "src" / "test" / "resources" / rel_package_dir
 
     def prologue(self) -> None:
         for src_dir in [self.main_src_dir, self.test_src_dir]:
@@ -195,19 +193,13 @@ class JavaCodeGen(CodeGenBase):
             implemented_by = "This interface is implemented by {{@link {}Impl}}<BR>"
             interface_doc_str += implemented_by.format(cls)
         interface_doc_str += doc_to_doc_string(doc)
-        class_doc_str = (
-            f"* Auto-generated class implementation for <I>{classname}</I><BR>"
-        )
+        class_doc_str = f"* Auto-generated class implementation for <I>{classname}</I><BR>"
         class_doc_str += doc_to_doc_string(doc)
         target = self.main_src_dir / f"{cls}.java"
         with open(target, "w") as f:
             _logger.info("Writing file: %s", target)
             if extends:
-                ext = (
-                    "extends "
-                    + ", ".join(self.interface_name(e) for e in extends)
-                    + ", Saveable"
-                )
+                ext = "extends " + ", ".join(self.interface_name(e) for e in extends) + ", Saveable"
             else:
                 ext = "extends Saveable"
             f.write(
@@ -381,9 +373,8 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
 """
             )
 
-    def type_loader(
-        self, type_declaration: Union[List[Any], Dict[str, Any], str]
-    ) -> TypeDef:
+    def type_loader(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> TypeDef:
+        """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
             sub = [self.type_loader(i) for i in type_declaration]
             if len(sub) < 2:
@@ -421,9 +412,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                     fqclass = f"{self.package}.{single_type.instance_type}"
                     return self.declare_type(
                         TypeDef(
-                            instance_type="{}.utils.OneOrListOf<{}>".format(
-                                self.package, fqclass
-                            ),
+                            instance_type=f"{self.package}.utils.OneOrListOf<{fqclass}>",
                             init="new OneOrListOfLoader<{}>({}, {})".format(
                                 fqclass, single_type.name, array_type.name
                             ),
@@ -461,9 +450,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                         instance_type=instance_type,
                         name=f"array_of_{i.name}",
                         init=f"new ArrayLoader({i.name})",
-                        loader_type="Loader<java.util.List<{}>>".format(
-                            i.instance_type
-                        ),
+                        loader_type=f"Loader<java.util.List<{i.instance_type}>>",
                     )
                 )
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
@@ -473,9 +460,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                 "https://w3id.org/cwl/salad#record",
             ):
                 is_abstract = type_declaration.get("abstract", False)
-                fqclass = "{}.{}".format(
-                    self.package, self.safe_name(type_declaration["name"])
-                )
+                fqclass = "{}.{}".format(self.package, self.safe_name(type_declaration["name"]))
                 return self.declare_type(
                     TypeDef(
                         instance_type=self.safe_name(type_declaration["name"]),
@@ -506,9 +491,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
         for sym in symbols:
             self.add_vocab(shortname(sym), sym)
         clazz = self.safe_name(type_declaration["name"])
-        symbols_decl = 'new String[] {{"{}"}}'.format(
-            '", "'.join(sym for sym in symbols)
-        )
+        symbols_decl = 'new String[] {{"{}"}}'.format('", "'.join(sym for sym in symbols))
         enum_path = self.main_src_dir / f"{clazz}.java"
         with open(enum_path, "w") as f:
             _logger.info("Writing file: %s", enum_path)
@@ -549,11 +532,7 @@ public enum {clazz} {{
             for i, sym in enumerate(symbols):
                 suffix = "," if i < (len(symbols) - 1) else ";"
                 const = self.safe_name(sym).replace("-", "_").replace(".", "_").upper()
-                f.write(
-                    """  {const}("{val}"){suffix}\n""".format(
-                        const=const, val=sym, suffix=suffix
-                    )
-                )
+                f.write(f"""  {const}("{sym}"){suffix}\n""")  # noqa: B907
             f.write(
                 """
   private static String[] symbols = {symbols_decl};
@@ -741,9 +720,7 @@ public enum {clazz} {{
         return self.declare_type(
             TypeDef(
                 instance_type=instance_type,  # ?
-                name="uri_{}_{}_{}_{}".format(
-                    inner.name, scoped_id, vocab_term, ref_scope
-                ),
+                name=f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}",
                 init="new UriLoader({}, {}, {}, {})".format(
                     inner.name,
                     self.to_java(scoped_id),
@@ -812,9 +789,9 @@ public enum {clazz} {{
         )
 
         def template_from_resource(resource: str) -> string.Template:
-            template_str = pkg_resources.resource_string(
-                __name__, f"java/{resource}"
-            ).decode("utf-8")
+            template_str = pkg_resources.resource_string(__name__, f"java/{resource}").decode(
+                "utf-8"
+            )
             template = string.Template(template_str)
             return template
 

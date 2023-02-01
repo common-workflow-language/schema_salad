@@ -72,10 +72,8 @@ class MyRenderer(HTMLRenderer):
 
     def heading(self, text: str, level: int) -> str:
         """Override HTML heading creation with text IDs."""
-        return (
-            """<h{} id="{}" class="section">{} <a href="#{}">&sect;</a></h{}>""".format(
-                level, to_id(text), text, to_id(text), level
-            )
+        return """<h{} id="{}" class="section">{} <a href="#{}">&sect;</a></h{}>""".format(
+            level, to_id(text), text, to_id(text), level
         )
 
     def text(self, text: str) -> str:
@@ -184,16 +182,12 @@ def markdown_list_hook(
             intend_list, _ = markdown_list_hook(markdown, intend_list, state)
             # remove final newline from other if/else branch
             intend_list = intend_list.rstrip()
-            intend_list = "\n".join(
-                [indent_prefix + line for line in intend_list.split("\n")]
-            )
+            intend_list = "\n".join([indent_prefix + line for line in intend_list.split("\n")])
             result += intend_list + "\n"
         # process a plain list
         # pad extra spaces to multi-lines items contents after bullet
         else:
-            item = (
-                match.group("indent") + match.group("bullet") + match.group("spacing")
-            )
+            item = match.group("indent") + match.group("bullet") + match.group("spacing")
             result += item + match.group("first_line")
             indent = (
                 "\n"
@@ -255,9 +249,7 @@ def patch_fenced_code(original_markdown_text: str, modified_markdown_text: str) 
     matches_original = list(re.finditer(fenced_code_pattern, original_markdown_text))
     matches_modified = list(re.finditer(fenced_code_pattern, modified_markdown_text))
     if len(matches_original) != len(matches_modified):
-        raise ValueError(
-            "Cannot patch fenced code definitions with inconsistent matches."
-        )
+        raise ValueError("Cannot patch fenced code definitions with inconsistent matches.")
     result = ""
     begin = 0
     for original, modified in zip(matches_original, matches_modified):
@@ -306,15 +298,11 @@ class ToC:
             self.numbering.append(1)
 
         num = (
-            "{}.{}".format(
-                self.numbering[0], ".".join([str(n) for n in self.numbering[1:]])
-            )
+            "{}.{}".format(self.numbering[0], ".".join([str(n) for n in self.numbering[1:]]))
             if self.start_numbering
             else ""
         )
-        self.toc += """<li><a href="#{}">{} {}</a><ol>\n""".format(
-            to_id(title), num, title
-        )
+        self.toc += f"""<li><a href="#{to_id(title)}">{num} {title}</a><ol>\n"""
         return num
 
     def contents(self, idn: str) -> str:
@@ -374,10 +362,7 @@ def number_headings(toc: ToC, maindoc: str) -> str:
 def fix_doc(doc: Union[List[str], str]) -> str:
     docstr = "".join(doc) if isinstance(doc, MutableSequence) else doc
     return "\n".join(
-        [
-            re.sub(r"<([^>@]+@[^>]+)>", r"[\1](mailto:\1)", d)
-            for d in docstr.splitlines()
-        ]
+        [re.sub(r"<([^>@]+@[^>]+)>", r"[\1](mailto:\1)", d) for d in docstr.splitlines()]
     )
 
 
@@ -440,10 +425,7 @@ class RenderType:
                                 _, frg1 = urldefrag(t["name"])
                                 _, frg2 = urldefrag(f["name"])
                                 self.uses[tp].append((frg1, frg2))
-                            if (
-                                tp not in basicTypes
-                                and tp not in self.record_refs[entry["name"]]
-                            ):
+                            if tp not in basicTypes and tp not in self.record_refs[entry["name"]]:
                                 self.record_refs[entry["name"]].append(tp)
             except KeyError:
                 _logger.error("Did not find 'type' in %s", t)
@@ -469,26 +451,15 @@ class RenderType:
         if isinstance(tp, MutableSequence):
             if nbsp and len(tp) <= 3:
                 return "&nbsp;|&nbsp;".join(
-                    [
-                        self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate)
-                        for n in tp
-                    ]
+                    [self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp]
                 )
             return " | ".join(
-                [
-                    self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate)
-                    for n in tp
-                ]
+                [self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp]
             )
         if isinstance(tp, MutableMapping):
             if tp["type"] == "https://w3id.org/cwl/salad#array":
-                ar = "array&lt;{}&gt;".format(
-                    self.typefmt(tp["items"], redirects, nbsp=True)
-                )
-                if (
-                    isinstance(jsonldPredicate, dict)
-                    and "mapSubject" in jsonldPredicate
-                ):
+                ar = "array&lt;{}&gt;".format(self.typefmt(tp["items"], redirects, nbsp=True))
+                if isinstance(jsonldPredicate, dict) and "mapSubject" in jsonldPredicate:
                     if "mapPredicate" in jsonldPredicate:
                         ar += " | "
                         if len(ar) > 40:
@@ -520,10 +491,7 @@ class RenderType:
                     return """<a href="{}">{}</a>""".format(redirects[tp["name"]], frg)
                 if tp["name"] in self.typemap:
                     return f"""<a href="#{to_id(frg)}">{frg}</a>"""
-                if (
-                    tp["type"] == "https://w3id.org/cwl/salad#enum"
-                    and len(tp["symbols"]) == 1
-                ):
+                if tp["type"] == "https://w3id.org/cwl/salad#enum" and len(tp["symbols"]) == 1:
                     return "constant value <code>{}</code>".format(
                         avro_field_name(tp["symbols"][0])
                     )
@@ -532,9 +500,7 @@ class RenderType:
                 return self.typefmt(tp["type"], redirects)
         else:
             if str(tp) in redirects:
-                return (
-                    f"""<a href="{redirects[tp]}">{redirects[tp]}</a>"""  # noqa: B907
-                )
+                return f"""<a href="{redirects[tp]}">{redirects[tp]}</a>"""  # noqa: B907
             if str(tp) in basicTypes:
                 return """<a href="{}">{}</a>""".format(
                     self.primitiveType, vocab_type_name(str(tp))
@@ -579,11 +545,7 @@ class RenderType:
                     idx = i.find(":")
                     if idx > -1:
                         enumDesc[i[:idx]] = i[idx + 1 :]
-                e["doc"] = [
-                    i
-                    for i in e["doc"]
-                    if i.find(":") == -1 or i.find(" ") < i.find(":")
-                ]
+                e["doc"] = [i for i in e["doc"] if i.find(":") == -1 or i.find(" ") < i.find(":")]
 
         f["doc"] = fix_doc(f["doc"])
 
@@ -648,10 +610,7 @@ class RenderType:
             optional = []
             for i in f.get("fields", []):
                 tp = i["type"]
-                if (
-                    isinstance(tp, MutableSequence)
-                    and tp[0] == "https://w3id.org/cwl/salad#null"
-                ):
+                if isinstance(tp, MutableSequence) and tp[0] == "https://w3id.org/cwl/salad#null":
                     opt = False
                     tp = tp[1:]
                 else:
@@ -669,9 +628,7 @@ class RenderType:
 </div>""".format(
                     rfrg,
                     "required" if opt else "optional",
-                    self.typefmt(
-                        tp, self.redirects, jsonldPredicate=i.get("jsonldPredicate")
-                    ),
+                    self.typefmt(tp, self.redirects, jsonldPredicate=i.get("jsonldPredicate")),
                     markdown2html(desc),
                 )
                 if opt:
@@ -727,20 +684,14 @@ def avrold_doc(
     content = rt.typedoc.getvalue()
 
     if brandstyle is None:
-        bootstrap_url = (
-            "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
-        )
+        bootstrap_url = "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
         bootstrap_integrity = (
             "sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
         )
-        brandstyle_template = (
-            '<link rel="stylesheet" href={} integrity={} crossorigin="anonymous">'
-        )
+        brandstyle_template = '<link rel="stylesheet" href={} integrity={} crossorigin="anonymous">'
         brandstyle = brandstyle_template.format(bootstrap_url, bootstrap_integrity)
 
-    picturefill_url = (
-        "https://cdn.rawgit.com/scottjehl/picturefill/3.0.2/dist/picturefill.min.js"
-    )
+    picturefill_url = "https://cdn.rawgit.com/scottjehl/picturefill/3.0.2/dist/picturefill.min.js"
     picturefill_integrity = (
         "sha384-ZJsVW8YHHxQHJ+SJDncpN90d0EfAhPP+yA94n+EhSRzhcxfo84yMnNk+v37RGlWR"
     )

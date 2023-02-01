@@ -163,9 +163,7 @@ def test_idmap2() -> None:
 def test_load_pt() -> None:
     path = get_data("tests/pt.yml")
     assert path
-    doc = cg_metaschema.load_document(
-        file_uri(path), "", cg_metaschema.LoadingOptions()
-    )
+    doc = cg_metaschema.load_document(file_uri(path), "", cg_metaschema.LoadingOptions())
     assert [
         "https://w3id.org/cwl/salad#null",
         "http://www.w3.org/2001/XMLSchema#boolean",

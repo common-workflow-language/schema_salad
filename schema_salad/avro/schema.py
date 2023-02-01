@@ -192,9 +192,8 @@ class Names:
         test = Name(name_attr, space_attr, self.default_namespace).fullname
         return test in self.names
 
-    def get_name(
-        self, name_attr: str, space_attr: Optional[str]
-    ) -> Optional["NamedSchema"]:
+    def get_name(self, name_attr: str, space_attr: Optional[str]) -> Optional["NamedSchema"]:
+        """Fetch the stored schema for the given namespace."""
         test = Name(name_attr, space_attr, self.default_namespace).fullname
         if test not in self.names:
             return None
@@ -365,9 +364,7 @@ class EnumSchema(NamedSchema):
     ) -> None:
         # Ensure valid ctor args
         if not isinstance(symbols, list):
-            raise AvroException(
-                "Enum Schema requires a JSON array for the symbols property."
-            )
+            raise AvroException("Enum Schema requires a JSON array for the symbols property.")
         elif False in [isinstance(s, str) for s in symbols]:
             raise AvroException("Enum Schema requires all symbols to be JSON strings.")
         elif len(set(symbols)) < len(symbols):
@@ -494,15 +491,11 @@ class RecordSchema(NamedSchema):
                     raise SchemaParseException('"order" must be a string or None')
                 doc = field.get("doc")
                 if not (doc is None or isinstance(doc, str) or isinstance(doc, list)):
-                    raise SchemaParseException(
-                        '"doc" must be a string, list of strings, or None'
-                    )
+                    raise SchemaParseException('"doc" must be a string, list of strings, or None')
                 else:
                     doc = cast(Union[str, List[str], None], doc)
                 other_props = get_other_props(field, FIELD_RESERVED_PROPS)
-                new_field = Field(
-                    atype, name, has_default, default, order, names, doc, other_props
-                )
+                new_field = Field(atype, name, has_default, default, order, names, doc, other_props)
                 parsed_fields[new_field.name] = field
             else:
                 raise SchemaParseException(f"Not a valid field: {field}")
@@ -521,18 +514,14 @@ class RecordSchema(NamedSchema):
     ) -> None:
         # Ensure valid ctor args
         if not isinstance(fields, list):
-            raise SchemaParseException(
-                "Fields property must be a list of Avro schemas."
-            )
+            raise SchemaParseException("Fields property must be a list of Avro schemas.")
 
         # Call parent ctor (adds own name to namespace, too)
         NamedSchema.__init__(self, schema_type, name, namespace, names, other_props)
 
         if schema_type == "record":
             old_default = names.default_namespace
-            names.default_namespace = Name(
-                name, namespace, names.default_namespace
-            ).get_space()
+            names.default_namespace = Name(name, namespace, names.default_namespace).get_space()
 
         # Add class members
         field_objects = RecordSchema.make_field_objects(fields, names)
@@ -552,9 +541,7 @@ class RecordSchema(NamedSchema):
 #
 # Module Methods
 #
-def get_other_props(
-    all_props: PropsType, reserved_props: Tuple[str, ...]
-) -> Optional[PropsType]:
+def get_other_props(all_props: PropsType, reserved_props: Tuple[str, ...]) -> Optional[PropsType]:
     """
     Retrieve the non-reserved properties from a dictionary of properties.
 
@@ -574,10 +561,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
     if names is None:
         names = Names()
 
-    if (
-        isinstance(json_data, Dict)
-        and json_data.get("name") == "org.w3id.cwl.salad.Any"
-    ):
+    if isinstance(json_data, Dict) and json_data.get("name") == "org.w3id.cwl.salad.Any":
         del names.names["org.w3id.cwl.salad.Any"]
     elif not names.has_name("org.w3id.cwl.salad.Any", None):
         EnumSchema("org.w3id.cwl.salad.Any", None, ["Any"], names=names)
@@ -594,14 +578,10 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
             namespace = json_data.get("namespace", names.default_namespace)
             doc = json_data.get("doc")
             if not isinstance(name, str):
-                raise SchemaParseException(
-                    f'"name" for type {atype} must be a string: {json_data}'
-                )
+                raise SchemaParseException(f'"name" for type {atype} must be a string: {json_data}')
             if not (namespace is None or isinstance(namespace, str)):
                 raise SchemaParseException(
-                    '"namespace" for type {} must be a string or None: {}'.format(
-                        atype, json_data
-                    )
+                    f'"namespace" for type {atype} must be a string or None: {json_data}'
                 )
             if not (doc is None or isinstance(doc, str) or isinstance(doc, list)):
                 raise SchemaParseException(
@@ -612,9 +592,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
                 symbols = json_data.get("symbols")
                 if not isinstance(symbols, list):
                     raise SchemaParseException(
-                        '"symbols" for type enum must be a list of strings: {}'.format(
-                            json_data
-                        )
+                        f'"symbols" for type enum must be a list of strings: {json_data}'
                     )
                 else:
                     symbols = cast(List[str], symbols)
@@ -629,9 +607,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
                     )
                 else:
                     fields = cast(List[PropsType], fields)
-                return RecordSchema(
-                    name, namespace, fields, names, atype, doc, other_props
-                )
+                return RecordSchema(name, namespace, fields, names, atype, doc, other_props)
             raise SchemaParseException(f"Unknown Named Type: {atype}")
         if atype in VALID_TYPES:
             if atype == "array":
@@ -702,9 +678,7 @@ def is_subtype(existing: PropType, new: PropType) -> bool:
     if isinstance(existing, list) and isinstance(new, list):
         missing = False
         for _type in new:
-            if _type not in existing and (
-                not is_subtype(existing, cast(PropType, _type))
-            ):
+            if _type not in existing and (not is_subtype(existing, cast(PropType, _type))):
                 missing = True
         return not missing
     return False

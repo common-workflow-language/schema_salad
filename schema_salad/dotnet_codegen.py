@@ -165,9 +165,7 @@ class DotNetCodeGen(CodeGenBase):
         self.current_class = cls
         self.current_class_is_abstract = abstract
         interface_module_name = self.current_interface
-        self.current_interface_target_file = (
-            self.main_src_dir / f"{interface_module_name}.cs"
-        )
+        self.current_interface_target_file = self.main_src_dir / f"{interface_module_name}.cs"
         class_module_name = self.current_class
         self.current_class_target_file = self.main_src_dir / f"{class_module_name}.cs"
         self.current_constructor_signature = StringIO()
@@ -396,23 +394,18 @@ public class {cls} : {current_interface}, ISaveable
 """
             )
 
-    def type_loader(
-        self, type_declaration: Union[List[Any], Dict[str, Any], str]
-    ) -> TypeDef:
+    def type_loader(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> TypeDef:
+        """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
             sub_types = [self.type_loader(i) for i in type_declaration]
             sub_names: List[str] = list(dict.fromkeys([i.name for i in sub_types]))
             sub_instance_types: List[str] = list(
-                dict.fromkeys(
-                    [i.instance_type for i in sub_types if i.instance_type is not None]
-                )
+                dict.fromkeys([i.instance_type for i in sub_types if i.instance_type is not None])
             )
             return self.declare_type(
                 TypeDef(
                     name="union_of_{}".format("_or_".join(sub_names)),
-                    init="new UnionLoader(new List<ILoader> {{ {} }})".format(
-                        ", ".join(sub_names)
-                    ),
+                    init="new UnionLoader(new List<ILoader> {{ {} }})".format(", ".join(sub_names)),
                     instance_type="OneOf<" + ", ".join(sub_instance_types) + ">",
                     loader_type="ILoader<object>",
                 )
@@ -444,9 +437,7 @@ public class {cls} : {current_interface}, ISaveable
                         init="new RecordLoader<{}>()".format(
                             self.safe_name(type_declaration["name"]),
                         ),
-                        loader_type="ILoader<{}>".format(
-                            self.safe_name(type_declaration["name"])
-                        ),
+                        loader_type="ILoader<{}>".format(self.safe_name(type_declaration["name"])),
                         abstract=type_declaration.get("abstract", False),
                     )
                 )
@@ -578,9 +569,8 @@ public class {enum_name} : IEnumClass<{enum_name}>
 
         if optional:
             self.optional_field_names.append(safename)
-            if (
-                fieldtype.instance_type is not None
-                and not fieldtype.instance_type.startswith("OneOf<None")
+            if fieldtype.instance_type is not None and not fieldtype.instance_type.startswith(
+                "OneOf<None"
             ):
                 optionalstring = "?"
             else:
@@ -629,9 +619,8 @@ public class {enum_name} : IEnumClass<{enum_name}>
                     )
                 )
             else:
-                if (
-                    fieldtype.instance_type is not None
-                    and fieldtype.instance_type.startswith("OneOf<None")
+                if fieldtype.instance_type is not None and fieldtype.instance_type.startswith(
+                    "OneOf<None"
                 ):
                     self.current_constructor_signature_optionals.write(
                         "{type} {safename} = default, ".format(
@@ -759,9 +748,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
             return
         self.declare_field(name, fieldtype, doc, True, "")
         if optional:
-            opt = """{safename} = "_" + Guid.NewGuid();""".format(
-                safename=self.safe_name(name)
-            )
+            opt = f"""{self.safe_name(name)} = "_" + Guid.NewGuid();"""
         else:
             opt = """throw new ValidationException("Missing {fieldname}");""".format(
                 fieldname=shortname(name)
@@ -849,9 +836,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
                 instance_type=instance_type,
                 name=f"typedsl{self.safe_name(inner.name)}{ref_scope}",
                 loader_type="ILoader<object>",
-                init=(
-                    f"new TypeDSLLoader" f"({self.safe_name(inner.name)}, {ref_scope})"
-                ),
+                init=(f"new TypeDSLLoader" f"({self.safe_name(inner.name)}, {ref_scope})"),
             )
         )
 
@@ -871,9 +856,9 @@ public class {enum_name} : IEnumClass<{enum_name}>
         )
 
         def template_from_resource(resource: str) -> string.Template:
-            template_str = pkg_resources.resource_string(
-                __name__, f"dotnet/{resource}"
-            ).decode("utf-8")
+            template_str = pkg_resources.resource_string(__name__, f"dotnet/{resource}").decode(
+                "utf-8"
+            )
             template = string.Template(template_str)
             return template
 
@@ -904,12 +889,10 @@ public class {enum_name} : IEnumClass<{enum_name}>
             self.target_dir / self.package / "Properties" / "AssemblyInfo.cs",
         )
         vocab = ",\n        ".join(
-            f"""["{k}"] = "{self.vocab[k]}\""""  # noqa: B907
-            for k in sorted(self.vocab.keys())
+            f"""["{k}"] = "{self.vocab[k]}\"""" for k in sorted(self.vocab.keys())  # noqa: B907
         )
         rvocab = ",\n        ".join(
-            f"""["{self.vocab[k]}"] = "{k}\""""  # noqa: B907
-            for k in sorted(self.vocab.keys())
+            f"""["{self.vocab[k]}"] = "{k}\"""" for k in sorted(self.vocab.keys())  # noqa: B907
         )
 
         loader_instances = ""
@@ -964,9 +947,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
             for util in pkg_resources.resource_listdir(__name__, f"dotnet/{util_src}"):
                 template_path = os.path.join(util_src, util)
                 if pkg_resources.resource_isdir(__name__, f"dotnet/{template_path}"):
-                    copy_utils_recursive(
-                        os.path.join(util_src, util), util_target / util
-                    )
+                    copy_utils_recursive(os.path.join(util_src, util), util_target / util)
                     continue
                 src_path = util_target / util
                 src_template = template_from_resource(template_path)

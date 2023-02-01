@@ -61,9 +61,7 @@ def test_secondaryFiles(cwl_v1_2_schema: SchemaType) -> None:
 
 def test_outputBinding(cwl_v1_2_schema: SchemaType) -> None:
     """secondaryFiles"""
-    res = load_cwl(
-        cwl_v1_2_schema, src="test_real_cwl/bio-cwl-tools/bamtools_stats.cwl"
-    )
+    res = load_cwl(cwl_v1_2_schema, src="test_real_cwl/bio-cwl-tools/bamtools_stats.cwl")
     print(f"the res:{res}")
 
 
