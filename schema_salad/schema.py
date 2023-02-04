@@ -103,6 +103,7 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
             "Enum_symbol": saladp + "EnumSchema/type/Enum_symbol",
             "JsonldPredicate": saladp + "JsonldPredicate",
             "MapSchema": saladp + "MapSchema",
+            "Map_symbol": saladp + "MapSchema/type/Map_symbol",
             "NamedType": saladp + "NamedType",
             "PrimitiveType": saladp + "PrimitiveType",
             "RecordField": saladp + "RecordField",
@@ -114,6 +115,7 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
             "SchemaDefinedType": saladp + "SchemaDefinedType",
             "SpecializeDef": saladp + "SpecializeDef",
             "UnionSchema": saladp + "UnionSchema",
+            "Union_symbol": saladp + "UnionSchema/type/Union_symbol",
             "_container": saladp + "JsonldPredicate/_container",
             "_id": {"@id": saladp + "_id", "@type": "@id", "identity": True},
             "_type": saladp + "JsonldPredicate/_type",
@@ -143,9 +145,11 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
             "items": {"@id": saladp + "items", "@type": "@vocab", "refScope": 2},
             "jsonldPredicate": "sld:jsonldPredicate",
             "long": "http://www.w3.org/2001/XMLSchema#long",
+            "map": saladp + "map",
             "mapPredicate": saladp + "JsonldPredicate/mapPredicate",
             "mapSubject": saladp + "JsonldPredicate/mapSubject",
             "name": "@id",
+            "names": {"@id": saladp + "names", "@type": "@vocab", "refScope": 2},
             "noLinkCheck": saladp + "JsonldPredicate/noLinkCheck",
             "null": saladp + "null",
             "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
@@ -178,6 +182,8 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
                 "typeDSL": True,
             },
             "typeDSL": saladp + "JsonldPredicate/typeDSL",
+            "union": saladp + "union",
+            "values": {"@id": saladp + "values", "@type": "@vocab", "refScope": 2},
             "xsd": "http://www.w3.org/2001/XMLSchema#",
         },
         salad_version="v1.3",
@@ -541,15 +547,17 @@ def make_valid_avro(
         if "type" in avro and avro["type"] in (
             saladp + "record",
             saladp + "enum",
+            saladp + "union",
             "record",
             "enum",
+            "union",
         ):
             if (hasattr(avro, "get") and avro.get("abstract")) or ("abstract" in avro):
                 return avro
             if avro["name"] in found:
                 return cast(str, avro["name"])
             found.add(avro["name"])
-        for field in ("type", "items", "values", "fields"):
+        for field in ("type", "items", "names", "values", "fields"):
             if field in avro:
                 avro[field] = make_valid_avro(
                     avro[field],

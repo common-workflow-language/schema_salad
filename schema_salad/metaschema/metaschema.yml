@@ -356,6 +356,15 @@ $graph:
         Indicates that this enum inherits symbols from a base enum.
 
 
+- name: SaladUnionSchema
+  docParent: "#Schema"
+  type: record
+  extends: [NamedType, UnionSchema, SchemaDefinedType]
+  documentRoot: true
+  doc: |
+    Define a union type.
+
+
 - name: Documentation
   type: record
   docParent: "#Schema"

@@ -598,6 +598,24 @@
         ]
     },
     {
+      "name": "https://w3id.org/cwl/cwl#CWLObjectType",
+      "type": "union",
+      "names": [
+        "null",
+        "https://w3id.org/cwl/cwl#File",
+        "https://w3id.org/cwl/cwl#Directory",
+        {
+          "items": "https://w3id.org/cwl/cwl#CWLObjectType",
+          "type": "array"
+        },
+        {
+          "type": "map",
+          "values": "https://w3id.org/cwl/cwl#CWLObjectType"
+        },
+        "Any"
+      ]
+    },
+    {
         "name": "https://w3id.org/cwl/cwl#SchemaBase",
         "type": "record",
         "abstract": true,
@@ -973,10 +991,7 @@
             },
             {
                 "name": "https://w3id.org/cwl/cwl#InputParameter/default",
-                "type": [
-                    "null",
-                    "Any"
-                ],
+                "type": "https://w3id.org/cwl/cwl#CWLObjectType",
                 "jsonldPredicate": "cwl:default",
                 "doc": "The default value for this parameter if not provided in the input\nobject.\n"
             },
@@ -2242,10 +2257,7 @@
             },
             {
                 "name": "https://w3id.org/cwl/cwl#WorkflowStepInput/default",
-                "type": [
-                    "null",
-                    "Any"
-                ],
+                "type": "https://w3id.org/cwl/cwl#CWLObjectType",
                 "doc": "The default value for this parameter if there is no `source`\nfield.\n",
                 "jsonldPredicate": "cwl:default"
             },

@@ -52,7 +52,9 @@ SCHEMA_RESERVED_PROPS = (
     "namespace",
     "fields",  # Record
     "items",  # Array
+    "names",  # Union
     "symbols",  # Enum
+    "values",  # Map
     "doc",
 )
 
@@ -71,6 +73,7 @@ PropsType = Dict[str, PropType]
 FIELD_RESERVED_PROPS = ("default", "name", "doc", "order", "type")
 
 VALID_FIELD_SORT_ORDERS = ("ascending", "descending", "ignore")
+
 
 #
 # Exceptions
@@ -141,6 +144,7 @@ class Name:
         @arg space_attr: namespace value read in schema or None.
         @ard default_space: the current default space or None.
         """
+
         # Ensure valid ctor args
 
         def validate(val: Optional[str], name: str) -> None:
@@ -451,13 +455,15 @@ class UnionSchema(Schema):
         self,
         schemas: List[JsonDataType],
         names: Names,
-    ) -> None:
-        """
-        Initialize a new UnionSchema.
-
-        :param names: a dictionary of schema objects
-        """
+        name: Optional[str] = None,
+        namespace: Optional[str] = None,
+        doc: Optional[Union[str, List[str]]] = None,
+    ):
         # Ensure valid ctor args
+        if name is not None and not isinstance(name, str):
+            raise SchemaParseException("The name property must be a string.")
+        elif namespace is not None and not isinstance(namespace, str):
+            raise SchemaParseException("The namespace property must be a string.")
         if names is None:
             raise SchemaParseException("Must provide Names.")
         if not isinstance(schemas, list):
@@ -465,6 +471,14 @@ class UnionSchema(Schema):
 
         # Call parent ctor
         Schema.__init__(self, "union")
+
+        # Store name and namespace as they were read in origin schema
+        if name is not None:
+            # Add class members
+            new_name = names.add_name(name, namespace, cast(NamedSchema, self))
+            self.set_prop("name", name)
+            if namespace is not None:
+                self.set_prop("namespace", new_name.get_space())
 
         # Add class members
         schema_objects: List[Schema] = []
@@ -485,10 +499,12 @@ class UnionSchema(Schema):
                 and new_schema.type in [schema.type for schema in schema_objects]
             ):
                 raise SchemaParseException(f"{new_schema.type} type already in Union")
-            if new_schema.type == "union":
+            elif new_schema.type == "union" and new_schema.get_prop("name") is None:
                 raise SchemaParseException("Unions cannot contain other unions.")
             schema_objects.append(new_schema)
         self._schemas = schema_objects
+        if doc is not None:
+            self.set_prop("doc", doc)
 
     # read-only properties
     @property
@@ -638,6 +654,24 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
             elif atype == "map":
                 values = json_data.get("values")
                 return MapSchema(values, names, other_props)
+            elif atype == "union":
+                name = json_data.get("name")
+                namespace = json_data.get("namespace", names.default_namespace)
+                doc = json_data.get("doc")
+                if not (name is None or isinstance(name, str)):
+                    raise SchemaParseException(
+                        f'"name" for type {atype} must be a string: {json_data}'
+                    )
+                if not (namespace is None or isinstance(namespace, str)):
+                    raise SchemaParseException(
+                        f'"namespace" for type {atype} must be a string or None: {json_data}'
+                    )
+                schemas = json_data.get("names")
+                if not isinstance(schemas, list):
+                    raise SchemaParseException(
+                        f'"names" for type union must be a list of schemas: {json_data}'
+                    )
+                return UnionSchema(schemas, names, name, namespace, doc)
         if atype is None:
             raise SchemaParseException(f'No "type" property: {json_data}')
         raise SchemaParseException(f"Undefined type: {atype}")
@@ -668,11 +702,17 @@ def is_subtype(types: Dict[str, Any], existing: PropType, new: PropType) -> bool
         return is_subtype(types, types[existing], new)
     if isinstance(new, str) and new in types:
         return is_subtype(types, existing, types[new])
+    if isinstance(existing, dict) and existing.get("type") == "union":
+        return is_subtype(types, existing["names"], new)
+    if isinstance(new, dict) and new.get("type") == "union":
+        return is_subtype(types, existing, new["names"])
     if isinstance(existing, dict) and isinstance(new, dict):
         if "extends" in new and new["extends"] == existing.get("name"):
             return True
         if existing.get("type") == "array" and new.get("type") == "array":
             return is_subtype(types, existing["items"], new["items"])
+        if existing.get("type") == "map" and new.get("type") == "map":
+            return is_subtype(existing["values"], new["values"])
         if existing.get("type") == "enum" and new.get("type") == "enum":
             return is_subtype(types, existing["symbols"], new["symbols"])
         if existing.get("type") == "record" and new.get("type") == "record":

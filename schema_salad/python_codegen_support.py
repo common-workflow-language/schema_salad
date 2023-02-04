@@ -8,6 +8,7 @@ import uuid as _uuid__  # pylint: disable=unused-import # noqa: F401
 import xml.sax  # nosec
 from abc import ABC, abstractmethod
 from io import StringIO
+from itertools import chain
 from typing import (
     Any,
     Dict,
@@ -487,6 +488,31 @@ class _ArrayLoader(_Loader):
         return f"array<{self.items}>"
 
 
+class _MapLoader(_Loader):
+    def __init__(self, values):
+        # type: (_Loader) -> None
+        self.values = values
+
+    def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
+        if not isinstance(doc, MutableMapping):
+            raise ValidationException(f"Expected a map, was {type(doc)}")
+        r = {}  # type: Dict[str, Any]
+        errors = []  # type: List[SchemaSaladException]
+        for k, v in doc.items():
+            try:
+                lf = load_field(v, self.values, baseuri, loadingOptions)
+                r[k] = lf
+            except ValidationException as e:
+                errors.append(e.with_sourceline(SourceLine(doc, k, str)))
+        if errors:
+            raise ValidationException("", None, errors)
+        return r
+
+    def __repr__(self):  # type: () -> str
+        return f"map<string, {self.values}>"
+
+
 class _EnumLoader(_Loader):
     def __init__(self, symbols: Sequence[str], name: str) -> None:
         self.symbols = symbols
@@ -602,8 +628,12 @@ class _ExpressionLoader(_Loader):
 
 
 class _UnionLoader(_Loader):
-    def __init__(self, alternates: Sequence[_Loader]) -> None:
+    def __init__(self, alternates: Sequence[_Loader], name: Optional[str] = None) -> None:
         self.alternates = alternates
+        self.name = name
+
+    def add_loaders(self, loaders: Sequence[_Loader]) -> None:
+        self.alternates = tuple(loader for loader in chain(self.alternates, loaders))
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
@@ -678,7 +708,7 @@ class _UnionLoader(_Loader):
         raise ValidationException("", None, errors, "*")
 
     def __repr__(self):  # type: () -> str
-        return " | ".join(str(a) for a in self.alternates)
+        return self.name if self.name is not None else " | ".join(str(a) for a in self.alternates)
 
 
 class _URILoader(_Loader):

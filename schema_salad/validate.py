@@ -61,6 +61,8 @@ primitives = {
     saladp + "enum": "enum",
     saladp + "array": "array",
     saladp + "record": "record",
+    saladp + "map": "map",
+    saladp + "union": "union",
 }
 
 

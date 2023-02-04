@@ -15,6 +15,14 @@ public class UnionLoader implements Loader<Object> {
     this(Arrays.asList(alternates));
   }
 
+  public void addLoaders(List<Loader> loaders) {
+    this.alternates.addAll(loaders);
+  }
+
+   public void addLoaders(Loader[] loaders) {
+    this.addLoaders(Arrays.asList(loaders));
+  }
+
   public Object load(
       final Object doc,
       final String baseUri,

@@ -256,7 +256,7 @@ $graph:
       jsonldPredicate: "@id"
       doc: "A unique identifier for this workflow input parameter."
     - name: default
-      type: ["null", Any]
+      type: CWLObjectType
       doc: |
         The default value for this parameter if there is no `source`
         field.

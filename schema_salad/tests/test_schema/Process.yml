@@ -304,6 +304,18 @@ $graph:
       jsonldPredicate:
         _id: "cwl:listing"
 
+- name: CWLObjectType
+  type: union
+  names:
+    - "null"
+    - File
+    - Directory
+    - type: array
+      items: CWLObjectType
+    - type: map
+      values: CWLObjectType
+    - Any
+
 - name: SchemaBase
   type: record
   abstract: true
@@ -569,7 +581,7 @@ $graph:
         into a concrete form for execution, such as command line parameters.
 
     - name: default
-      type: Any?
+      type: CWLObjectType
       jsonldPredicate: "cwl:default"
       doc: |
         The default value for this parameter if not provided in the input

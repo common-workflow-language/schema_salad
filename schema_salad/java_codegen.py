@@ -19,7 +19,7 @@ from typing import (
 from importlib_resources import files
 
 from . import _logger, schema
-from .codegen_base import CodeGenBase, TypeDef
+from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
 
@@ -453,6 +453,26 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                         loader_type=f"Loader<java.util.List<{i.instance_type}>>",
                     )
                 )
+            if type_declaration["type"] in (
+                "map",
+                "https://w3id.org/cwl/salad#map",
+            ):
+                i = self.type_loader(type_declaration["values"])
+                instance_type = (
+                    "java.util.Map<String, String>"
+                    if i.instance_type == "String"
+                    else "java.util.Map<String, Object>"
+                )
+                return self.declare_type(
+                    TypeDef(
+                        # special doesn't work out with subclassing, gotta be more clever
+                        # instance_type="Map<String, {}>".format(i.instance_type),
+                        instance_type=instance_type,
+                        name=f"map_of_{i.name}",
+                        init=f"new MapLoader({i.name})",
+                        loader_type=f"Loader<java.util.Map<String, {i.instance_type}>>",
+                    )
+                )
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
                 return self.type_loader_enum(type_declaration)
             if type_declaration["type"] in (
@@ -472,6 +492,74 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                         loader_type=f"Loader<{fqclass}>",
                     )
                 )
+            if type_declaration["type"] in (
+                "union",
+                "https://w3id.org/cwl/salad#union",
+            ):
+                # Declare the named loader to handle recursive union definitions
+                loader_name = self.safe_name(type_declaration["name"])
+                loader_type = TypeDef(
+                    instance_type="Object",
+                    init="new UnionLoader(new Loader[] {})",
+                    name=self.safe_name(type_declaration["name"]),
+                    loader_type="Loader<Object>",
+                )
+                self.declare_type(loader_type)
+                # Parse inner types
+                sub = [self.type_loader(i) for i in type_declaration["names"]]
+
+                if len(sub) == 2:
+                    type_1 = sub[0]
+                    type_2 = sub[1]
+                    type_1_name = type_1.name
+                    type_2_name = type_2.name
+                    if type_1_name == "NullInstance" or type_2_name == "NullInstance":
+                        non_null_type = type_1 if type_1.name != "NullInstance" else type_2
+                        sub = [
+                            TypeDef(
+                                instance_type="java.util.Optional<{}>".format(
+                                    non_null_type.instance_type
+                                ),
+                                init=f"new OptionalLoader({non_null_type.name})",
+                                name=f"optional_{non_null_type.name}",
+                                loader_type="Loader<java.util.Optional<{}>>".format(
+                                    non_null_type.instance_type
+                                ),
+                            )
+                        ]
+                    elif (
+                        type_1_name == f"array_of_{type_2_name}"
+                        or type_2_name == f"array_of_{type_1_name}"
+                    ) and USE_ONE_OR_LIST_OF_TYPES:
+                        if type_1_name == f"array_of_{type_2_name}":
+                            single_type = type_2
+                            array_type = type_1
+                        else:
+                            single_type = type_1
+                            array_type = type_2
+                        fqclass = f"{self.package}.{single_type.instance_type}"
+                        sub = [
+                            TypeDef(
+                                instance_type=f"{self.package}.utils.OneOrListOf<{fqclass}>",
+                                init="new OneOrListOfLoader<{}>({}, {})".format(
+                                    fqclass, single_type.name, array_type.name
+                                ),
+                                name=f"one_or_array_of_{single_type.name}",
+                                loader_type="Loader<{}.utils.OneOrListOf<{}>>".format(
+                                    self.package, fqclass
+                                ),
+                            )
+                        ]
+                # Register lazy initialization for the loader
+                self.add_lazy_init(
+                    LazyInitDef(
+                        loader_name,
+                        "((UnionLoader) {}).addLoaders(new Loader[] {{ {} }});".format(
+                            loader_name, ", ".join(s.name for s in sub)
+                        ),
+                    )
+                )
+                return loader_type
             raise SchemaException("wft {}".format(type_declaration["type"]))
         if type_declaration in prims:
             return prims[type_declaration]
@@ -824,6 +912,12 @@ public enum {clazz} {{
             loader_instances += "  public static {} {} = {};\n".format(
                 collected_type.loader_type, collected_type.name, collected_type.init
             )
+
+        if self.lazy_inits:
+            loader_instances += "\n  static {\n"
+            for lazy_init in self.lazy_inits.values():
+                loader_instances += f"    {lazy_init.init}\n"
+            loader_instances += "  }\n"
 
         example_tests = ""
         if self.examples:
