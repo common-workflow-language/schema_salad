@@ -406,14 +406,24 @@ if _errors__:
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
                 for sym in type_declaration["symbols"]:
                     self.add_vocab(shortname(sym), sym)
+                if "doc" in type_declaration:
+                    doc = type_declaration["doc"]
+                    if isinstance(doc, MutableSequence):
+                        formated_doc = "\n".join(doc)
+                    else:
+                        formated_doc = doc.strip()
+                    docstring = f'\n"""\n{formated_doc}\n"""'
+                else:
+                    docstring = ""
                 return self.declare_type(
                     TypeDef(
                         self.safe_name(type_declaration["name"]) + "Loader",
-                        '_EnumLoader(("{}",), "{}")'.format(
+                        '_EnumLoader(("{}",), "{}"){}'.format(
                             '", "'.join(
                                 schema.avro_field_name(sym) for sym in type_declaration["symbols"]
                             ),
                             self.safe_name(type_declaration["name"]),
+                            docstring,
                         ),
                     )
                 )
