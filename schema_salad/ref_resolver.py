@@ -842,7 +842,7 @@ class Loader:
                 )
         elif isinstance(document, CommentedSeq):
             pass
-        elif isinstance(document, (list, dict)):  # type: ignore[unreachable]
+        elif isinstance(document, (list, dict)):
             raise ValidationException(
                 f"Expected CommentedMap or CommentedSeq, got {type(document)}: {document!r}"
             )
