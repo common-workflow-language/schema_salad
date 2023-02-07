@@ -547,16 +547,19 @@ def make_valid_avro(
         if "type" in avro and avro["type"] in (
             saladp + "record",
             saladp + "enum",
+            saladp + "map",
             saladp + "union",
             "record",
             "enum",
+            "map",
             "union",
         ):
             if (hasattr(avro, "get") and avro.get("abstract")) or ("abstract" in avro):
                 return avro
-            if avro["name"] in found:
-                return cast(str, avro["name"])
-            found.add(avro["name"])
+            if "name" in avro:
+                if avro["name"] in found:
+                    return cast(str, avro["name"])
+                found.add(avro["name"])
         for field in ("type", "items", "names", "values", "fields"):
             if field in avro:
                 avro[field] = make_valid_avro(

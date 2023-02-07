@@ -759,6 +759,18 @@
         ]
     },
     {
+      "name": "https://w3id.org/cwl/salad#SaladMapSchema",
+      "docParent": "https://w3id.org/cwl/salad#Schema",
+      "type": "record",
+      "extends": [
+        "https://w3id.org/cwl/salad#NamedType",
+        "https://w3id.org/cwl/salad#MapSchema",
+        "https://w3id.org/cwl/salad#SchemaDefinedType"
+      ],
+      "documentRoot": true,
+      "doc": "Define a map type.\n"
+    },
+    {
         "name": "https://w3id.org/cwl/salad#SaladUnionSchema",
         "docParent": "https://w3id.org/cwl/salad#Schema",
         "type": "record",

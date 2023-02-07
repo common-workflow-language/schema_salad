@@ -489,9 +489,9 @@ class _ArrayLoader(_Loader):
 
 
 class _MapLoader(_Loader):
-    def __init__(self, values):
-        # type: (_Loader) -> None
+    def __init__(self, values: _Loader, name: Optional[str] = None) -> None:
         self.values = values
+        self.name = name
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any
@@ -510,7 +510,7 @@ class _MapLoader(_Loader):
         return r
 
     def __repr__(self):  # type: () -> str
-        return f"map<string, {self.values}>"
+        return self.name if self.name is not None else f"map<string, {self.values}>"
 
 
 class _EnumLoader(_Loader):

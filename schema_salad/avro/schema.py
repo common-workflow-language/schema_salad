@@ -423,10 +423,32 @@ class ArraySchema(Schema):
 
 class MapSchema(Schema):
     def __init__(
-        self, values: JsonDataType, names: Names, other_props: Optional[PropsType] = None
+        self,
+        values: JsonDataType,
+        names: Names,
+        name: Optional[str] = None,
+        namespace: Optional[str] = None,
+        doc: Optional[Union[str, List[str]]] = None,
+        other_props: Optional[PropsType] = None,
     ) -> None:
+        # Ensure valid ctor args
+        if name is not None and not isinstance(name, str):
+            raise SchemaParseException("The name property must be a string.")
+        elif namespace is not None and not isinstance(namespace, str):
+            raise SchemaParseException("The namespace property must be a string.")
+        if names is None:
+            raise SchemaParseException("Must provide Names.")
+
         # Call parent ctor
         Schema.__init__(self, "map", other_props)
+
+        # Store name and namespace as they were read in origin schema
+        if name is not None:
+            # Add class members
+            new_name = names.add_name(name, namespace, cast(NamedSchema, self))
+            self.set_prop("name", name)
+            if namespace is not None:
+                self.set_prop("namespace", new_name.get_space())
 
         # Add class members
         if isinstance(values, str) and names.has_name(values, None):
@@ -443,6 +465,8 @@ class MapSchema(Schema):
                 ) from err
 
         self.set_prop("values", values_schema)
+        if doc is not None:
+            self.set_prop("doc", doc)
 
     # read-only properties
     @property
@@ -652,20 +676,15 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
                 items = json_data.get("items")
                 return ArraySchema(items, names, other_props)
             elif atype == "map":
+                name = json_data.get("name")
+                namespace = json_data.get("namespace", names.default_namespace)
+                doc = json_data.get("doc")
                 values = json_data.get("values")
-                return MapSchema(values, names, other_props)
+                return MapSchema(values, names, name, namespace, doc, other_props)
             elif atype == "union":
                 name = json_data.get("name")
                 namespace = json_data.get("namespace", names.default_namespace)
                 doc = json_data.get("doc")
-                if not (name is None or isinstance(name, str)):
-                    raise SchemaParseException(
-                        f'"name" for type {atype} must be a string: {json_data}'
-                    )
-                if not (namespace is None or isinstance(namespace, str)):
-                    raise SchemaParseException(
-                        f'"namespace" for type {atype} must be a string or None: {json_data}'
-                    )
                 schemas = json_data.get("names")
                 if not isinstance(schemas, list):
                     raise SchemaParseException(

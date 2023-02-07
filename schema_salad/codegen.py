@@ -114,7 +114,7 @@ def codegen(
     document_roots = []
 
     for rec in j:
-        if rec["type"] in ("enum", "record", "union"):
+        if rec["type"] in ("enum", "map", "record", "union"):
             gen.type_loader(rec)
             gen.add_vocab(shortname(rec["name"]), rec["name"])
 

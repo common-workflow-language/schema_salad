@@ -403,7 +403,13 @@ if _errors__:
                 "https://w3id.org/cwl/salad#map",
             ):
                 i = self.type_loader(type_declaration["values"])
-                return self.declare_type(TypeDef(f"map_of_{i.name}", f"_MapLoader({i.name})"))
+                anon_type = self.declare_type(TypeDef(f"map_of_{i.name}", f"_MapLoader({i.name})"))
+                if "name" in type_declaration:
+                    return self.declare_type(
+                        TypeDef(self.safe_name(type_declaration["name"]) + "Loader", anon_type.name)
+                    )
+                else:
+                    return anon_type
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
                 for sym in type_declaration["symbols"]:
                     self.add_vocab(shortname(sym), sym)
