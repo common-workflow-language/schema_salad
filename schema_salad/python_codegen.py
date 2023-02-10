@@ -701,7 +701,7 @@ if self.{safename} is not None:
         return self.declare_type(
             TypeDef(
                 f"secondaryfilesdsl_{inner.name}",
-                f"_SecondaryDSLLoader({inner.name})",
+                f"_UnionLoader((_SecondaryDSLLoader({inner.name}), {inner.name},))",
             )
         )
 
