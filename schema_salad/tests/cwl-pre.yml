@@ -594,12 +594,6 @@
     "doc": "Generic type representing a valid CWL object. It is used to represent\n`default` values passed to CWL `InputParameter` and `WorkflowStepInput`\nrecord fields.\n"
   },
   {
-    "name": "https://w3id.org/cwl/cwl#CWLInputFile",
-    "type": "map",
-    "values": "https://w3id.org/cwl/cwl#CWLObjectType",
-    "doc": "Type representing a valid CWL input file as a `map<string, CWLObjectType>`.\n"
-  },
-  {
     "name": "https://w3id.org/cwl/cwl#BaseTypesDoc",
     "type": "documentation",
     "doc": "## Base types\n",
@@ -2547,6 +2541,18 @@
           "_type": "@vocab"
         }
       }
+    ]
+  },
+  {
+    "type": "map",
+    "name": "https://w3id.org/cwl/cwl#CWLInputFile",
+    "doc": "Type representing a valid CWL input file as a `map<string, union<array<ProcessRequirement>, CWLObjectType>>`.",
+    "values": [
+      {
+        "items": "https://w3id.org/cwl/cwl#ProcessRequirement",
+        "type": "array"
+      },
+      "https://w3id.org/cwl/cwl#CWLObjectType"
     ]
   }
 ]

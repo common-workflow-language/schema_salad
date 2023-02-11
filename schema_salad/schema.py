@@ -455,7 +455,7 @@ def replace_type(
     """Go through and replace types in the 'spec' mapping."""
     if isinstance(items, MutableMapping):
         # recursively check these fields for types to replace
-        if items.get("type") in ("record", "enum") and items.get("name"):
+        if items.get("type") in ("record", "enum", "map", "union") and items.get("name"):
             if items["name"] in found:
                 return items["name"]
             found.add(items["name"])
@@ -466,7 +466,7 @@ def replace_type(
         items = copy.copy(items)
         if not items.get("name"):
             items["name"] = get_anon_name(items)
-        for name in ("type", "items", "fields"):
+        for name in ("type", "items", "fields", "values"):
             if name in items:
                 items[name] = replace_type(
                     items[name],
@@ -719,6 +719,8 @@ def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[D
     for result in results:
         if "fields" in result:
             result["fields"] = replace_type(result["fields"], extended_by, loader, set())
+        elif "values" in result:
+            result["values"] = replace_type(result["values"], extended_by, loader, set())
 
     return results
 

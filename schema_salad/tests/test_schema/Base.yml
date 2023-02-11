@@ -292,10 +292,3 @@ $graph:
     Generic type representing a valid CWL object. It is used to represent
     `default` values passed to CWL `InputParameter` and `WorkflowStepInput`
     record fields.
-
-
-- name: CWLInputFile
-  type: map
-  values: CWLObjectType
-  doc: |
-    Type representing a valid CWL input file as a `map<string, CWLObjectType>`.

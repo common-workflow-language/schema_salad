@@ -581,3 +581,12 @@ $graph:
       jsonldPredicate:
         "_id": "@type"
         "_type": "@vocab"
+
+- name: CWLInputFile
+  type: map
+  values:
+   - type: array
+     items: ProcessRequirement
+   - CWLObjectType
+  doc: |
+    Type representing a valid CWL input file as a `map<string, union<array<ProcessRequirement>, CWLObjectType>>`.
