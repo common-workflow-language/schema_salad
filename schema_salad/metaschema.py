@@ -141,10 +141,10 @@ class LoadingOptions:
         self.vocab = _vocab
         self.rvocab = _rvocab
 
-        if namespaces is not None:
+        if self.namespaces is not None:
             self.vocab = self.vocab.copy()
             self.rvocab = self.rvocab.copy()
-            for k, v in namespaces.items():
+            for k, v in self.namespaces.items():
                 self.vocab[k] = v
                 self.rvocab[v] = k
 
