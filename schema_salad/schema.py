@@ -232,7 +232,7 @@ def add_namespaces(metadata: Mapping[str, Any], namespaces: MutableMapping[str, 
 
 def collect_namespaces(metadata: Mapping[str, Any]) -> Dict[str, str]:
     """Walk through the metadata object, collecting namespace declarations."""
-    namespaces = {}  # type: Dict[str, str]
+    namespaces: Dict[str, str] = {}
     if "$import_metadata" in metadata:
         for value in metadata["$import_metadata"].values():
             add_namespaces(collect_namespaces(value), namespaces)
@@ -607,19 +607,19 @@ def deepcopy_strip(item: Any) -> Any:
 def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[Dict[str, Any]]:
     """Apply 'extend' and 'specialize' to fully materialize derived record types."""
     items2 = deepcopy_strip(items)
-    types = {i["name"]: i for i in items2}  # type: Dict[str, Any]
+    types: Dict[str, Any] = {i["name"]: i for i in items2}
     types.update({k[len(saladp) :]: v for k, v in types.items() if k.startswith(saladp)})
     results = []
 
     for stype in items2:
         if "extends" in stype:
-            specs = {}  # type: Dict[str, str]
+            specs: Dict[str, str] = {}
             if "specialize" in stype:
                 for spec in aslist(stype["specialize"]):
                     specs[spec["specializeFrom"]] = spec["specializeTo"]
 
-            exfields = []  # type: List[Any]
-            exsym = []  # type: List[str]
+            exfields: List[Any] = []
+            exsym: List[str] = []
             for ex in aslist(stype["extends"]):
                 if ex not in types:
                     raise ValidationException(
@@ -683,7 +683,7 @@ def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[D
 
                 stype["fields"] = combined_fields
 
-                fieldnames = set()  # type: Set[str]
+                fieldnames: Set[str] = set()
                 for field in stype["fields"]:
                     if field["name"] in fieldnames:
                         raise ValidationException(
@@ -703,7 +703,7 @@ def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[D
     for result in results:
         ex_types[result["name"]] = result
 
-    extended_by = {}  # type: Dict[str, str]
+    extended_by: Dict[str, str] = {}
     for result in results:
         if "extends" in result:
             for ex in aslist(result["extends"]):
@@ -733,7 +733,7 @@ def make_avro(
 ) -> List[Any]:
     j = extend_and_specialize(i, loader)
 
-    name_dict = {}  # type: Dict[str, Dict[str, Any]]
+    name_dict: Dict[str, Dict[str, Any]] = {}
     for entry in j:
         name_dict[entry["name"]] = entry
 
@@ -819,7 +819,7 @@ def print_fieldrefs(doc: List[Dict[str, Any]], loader: Loader, stream: IO[Any]) 
         if entry["type"] == "record":
             label = shortname(entry["name"])
             for field in entry.get("fields", []):
-                found = set()  # type: Set[str]
+                found: Set[str] = set()
                 field_name = shortname(field["name"])
                 replace_type(field["type"], {}, loader, found, find_embeds=False)
                 for each_type in found:

@@ -416,17 +416,21 @@ class RenderType:
                     fields: Union[str, List[Dict[str, str]]] = entry.get("fields", [])
                     if isinstance(fields, str):
                         raise KeyError("record fields must be a list of mappings")
-                    for f in fields:  # type: Dict[str, str]
-                        p = has_types(f)
-                        for tp in p:
-                            if tp not in self.uses:
-                                self.uses[tp] = []
-                            if (entry["name"], f["name"]) not in self.uses[tp]:
-                                _, frg1 = urldefrag(t["name"])
-                                _, frg2 = urldefrag(f["name"])
-                                self.uses[tp].append((frg1, frg2))
-                            if tp not in basicTypes and tp not in self.record_refs[entry["name"]]:
-                                self.record_refs[entry["name"]].append(tp)
+                    else:
+                        for f in fields:
+                            p = has_types(f)
+                            for tp in p:
+                                if tp not in self.uses:
+                                    self.uses[tp] = []
+                                if (entry["name"], f["name"]) not in self.uses[tp]:
+                                    _, frg1 = urldefrag(t["name"])
+                                    _, frg2 = urldefrag(f["name"])
+                                    self.uses[tp].append((frg1, frg2))
+                                if (
+                                    tp not in basicTypes
+                                    and tp not in self.record_refs[entry["name"]]
+                                ):
+                                    self.record_refs[entry["name"]].append(tp)
             except KeyError:
                 _logger.error("Did not find 'type' in %s", t)
                 _logger.error("record refs is %s", self.record_refs)

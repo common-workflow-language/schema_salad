@@ -355,9 +355,7 @@ if _errors__:
             )
         )
 
-        safe_init_fields = [
-            self.safe_name(f) for f in field_names if f != "class"
-        ]  # type: List[str]
+        safe_init_fields: List[str] = [self.safe_name(f) for f in field_names if f != "class"]
 
         safe_inits = [f + "=" + f for f in safe_init_fields]
 

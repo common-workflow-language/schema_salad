@@ -394,12 +394,12 @@ def test_secondaryFile_dsl_ref() -> None:
 
 def test_scoped_id() -> None:
     ldr = Loader({})
-    ctx = {
+    ctx: ContextType = {
         "id": "@id",
         "location": {"@id": "@id", "@type": "@id"},
         "bar": "http://example.com/bar",
         "ex": "http://example.com/",
-    }  # type: ContextType
+    }
     ldr.add_context(ctx)
 
     ra, _ = ldr.resolve_all(cmap({"id": "foo", "bar": {"id": "baz"}}), "http://example.com")
@@ -499,10 +499,10 @@ def test_yaml_datetime() -> None:
 
 def test_subscoped_id() -> None:
     ldr = Loader({})
-    ctx = {
+    ctx: ContextType = {
         "id": "@id",
         "bar": {"subscope": "bar"},
-    }  # type: ContextType
+    }
     ldr.add_context(ctx)
 
     ra, _ = ldr.resolve_all(cmap({"id": "foo", "bar": {"id": "baz"}}), "http://example.com")
@@ -586,7 +586,7 @@ def test_blank_node_id() -> None:
     # was not given.
 
     ldr = Loader({})
-    ctx = {"id": "@id"}  # type: ContextType
+    ctx: ContextType = {"id": "@id"}
     ldr.add_context(ctx)
 
     ra, _ = ldr.resolve_all(cmap({"id": "_:foo"}), "http://example.com")
@@ -607,7 +607,7 @@ def test_can_use_Any() -> None:
 
 def test_nullable_links() -> None:
     ldr = schema_salad.ref_resolver.Loader({})
-    ctx = {"link": {"@type": "@id"}}  # type: ContextType
+    ctx: ContextType = {"link": {"@type": "@id"}}
     ldr.add_context(ctx)
 
     ra, _ = ldr.resolve_all(cmap({"link": None}), "http://example.com", checklinks=True)
