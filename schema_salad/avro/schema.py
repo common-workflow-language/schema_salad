@@ -434,29 +434,45 @@ class MapSchema(Schema):
         self,
         values: JsonDataType,
         names: Names,
-        name: Optional[str] = None,
+        other_props: Optional[PropsType] = None,
+    ) -> None:
+        # Call parent ctor
+        Schema.__init__(self, "map", other_props)
+
+        # Add class members
+        if isinstance(values, str) and names.has_name(values, None):
+            values_schema = cast(Schema, names.get_name(values, None))
+        else:
+            try:
+                values_schema = make_avsc_object(values, names)
+            except SchemaParseException:
+                raise
+            except Exception as err:
+                raise SchemaParseException(
+                    f"Values schema ({values}) not a valid Avro schema: {err}. "
+                    f"Known names: {list(names.names.keys())})."
+                ) from err
+
+        self.set_prop("values", values_schema)
+
+    # read-only properties
+    @property
+    def values(self) -> Schema:
+        return cast(Schema, self.get_prop("values"))
+
+
+class NamedMapSchema(NamedSchema):
+    def __init__(
+        self,
+        values: JsonDataType,
+        names: Names,
+        name: str,
         namespace: Optional[str] = None,
         doc: Optional[Union[str, List[str]]] = None,
         other_props: Optional[PropsType] = None,
     ) -> None:
-        # Ensure valid ctor args
-        if name is not None and not isinstance(name, str):
-            raise SchemaParseException("The name property must be a string.")
-        elif namespace is not None and not isinstance(namespace, str):
-            raise SchemaParseException("The namespace property must be a string.")
-        if names is None:
-            raise SchemaParseException("Must provide Names.")
-
         # Call parent ctor
-        Schema.__init__(self, "map", other_props)
-
-        # Store name and namespace as they were read in origin schema
-        if name is not None:
-            # Add class members
-            new_name = names.add_name(name, namespace, cast(NamedSchema, self))
-            self.set_prop("name", name)
-            if namespace is not None:
-                self.set_prop("namespace", new_name.get_space())
+        NamedSchema.__init__(self, "map", name, namespace, names, other_props)
 
         # Add class members
         if isinstance(values, str) and names.has_name(values, None):
@@ -482,20 +498,43 @@ class MapSchema(Schema):
         return cast(Schema, self.get_prop("values"))
 
 
+def _build_schema_objects(schemas: List[JsonDataType], names: Names) -> List[Schema]:
+    schema_objects: List[Schema] = []
+    for schema in schemas:
+        if isinstance(schema, str) and names.has_name(schema, None):
+            new_schema = cast(Schema, names.get_name(schema, None))
+        else:
+            try:
+                new_schema = make_avsc_object(schema, names)
+            except Exception as err:
+                raise SchemaParseException(
+                    f"Union item must be a valid Avro schema: {err}; {schema},"
+                ) from err
+        # check the new schema
+        if (
+            new_schema.type in VALID_TYPES
+            and new_schema.type not in NAMED_TYPES
+            and new_schema.type in [schema.type for schema in schema_objects]
+        ):
+            raise SchemaParseException(f"{new_schema.type} type already in Union")
+        elif new_schema.type == "union" and new_schema.get_prop("name") is None:
+            raise SchemaParseException("Unions cannot contain other unions.")
+        else:
+            schema_objects.append(new_schema)
+    return schema_objects
+
+
 class UnionSchema(Schema):
     def __init__(
         self,
         schemas: List[JsonDataType],
         names: Names,
-        name: Optional[str] = None,
-        namespace: Optional[str] = None,
-        doc: Optional[Union[str, List[str]]] = None,
-    ):
+    ) -> None:
+        """
+        Initialize a new UnionSchema.
+        :param names: a dictionary of schema objects
+        """
         # Ensure valid ctor args
-        if name is not None and not isinstance(name, str):
-            raise SchemaParseException("The name property must be a string.")
-        elif namespace is not None and not isinstance(namespace, str):
-            raise SchemaParseException("The namespace property must be a string.")
         if names is None:
             raise SchemaParseException("Must provide Names.")
         if not isinstance(schemas, list):
@@ -504,37 +543,39 @@ class UnionSchema(Schema):
         # Call parent ctor
         Schema.__init__(self, "union")
 
-        # Store name and namespace as they were read in origin schema
-        if name is not None:
-            # Add class members
-            new_name = names.add_name(name, namespace, cast(NamedSchema, self))
-            self.set_prop("name", name)
-            if namespace is not None:
-                self.set_prop("namespace", new_name.get_space())
+        # Add class members
+        self._schemas = _build_schema_objects(schemas, names)
+
+    # read-only properties
+    @property
+    def schemas(self) -> List[Schema]:
+        return self._schemas
+
+
+class NamedUnionSchema(NamedSchema):
+    def __init__(
+        self,
+        schemas: List[JsonDataType],
+        names: Names,
+        name: str,
+        namespace: Optional[str] = None,
+        doc: Optional[Union[str, List[str]]] = None,
+    ):
+        """
+        Initialize a new NamedUnionSchema.
+        :param names: a dictionary of schema objects
+        """
+        # Ensure valid ctor args
+        if names is None:
+            raise SchemaParseException("Must provide Names.")
+        if not isinstance(schemas, list):
+            raise SchemaParseException("Union schema requires a list of schemas.")
+
+        # Call parent ctor
+        NamedSchema.__init__(self, "union", name, namespace, names)
 
         # Add class members
-        schema_objects: List[Schema] = []
-        for schema in schemas:
-            if isinstance(schema, str) and names.has_name(schema, None):
-                new_schema = cast(Schema, names.get_name(schema, None))
-            else:
-                try:
-                    new_schema = make_avsc_object(schema, names)
-                except Exception as err:
-                    raise SchemaParseException(
-                        f"Union item must be a valid Avro schema: {err}; {schema},"
-                    ) from err
-            # check the new schema
-            if (
-                new_schema.type in VALID_TYPES
-                and new_schema.type not in NAMED_TYPES
-                and new_schema.type in [schema.type for schema in schema_objects]
-            ):
-                raise SchemaParseException(f"{new_schema.type} type already in Union")
-            elif new_schema.type == "union" and new_schema.get_prop("name") is None:
-                raise SchemaParseException("Unions cannot contain other unions.")
-            schema_objects.append(new_schema)
-        self._schemas = schema_objects
+        self._schemas = _build_schema_objects(schemas, names)
         if doc is not None:
             self.set_prop("doc", doc)
 
@@ -685,21 +726,27 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
                 flatten = json_data.get("flatten")
                 return ArraySchema(items, names, flatten, other_props)
             elif atype == "map":
-                name = json_data.get("name")
-                namespace = json_data.get("namespace", names.default_namespace)
-                doc = json_data.get("doc")
                 values = json_data.get("values")
-                return MapSchema(values, names, name, namespace, doc, other_props)
+                if "name" in json_data:
+                    name = json_data["name"]
+                    namespace = json_data.get("namespace", names.default_namespace)
+                    doc = json_data.get("doc")
+                    return NamedMapSchema(values, names, name, namespace, doc, other_props)
+                else:
+                    return MapSchema(values, names, other_props)
             elif atype == "union":
-                name = json_data.get("name")
-                namespace = json_data.get("namespace", names.default_namespace)
-                doc = json_data.get("doc")
                 schemas = json_data.get("names")
                 if not isinstance(schemas, list):
                     raise SchemaParseException(
                         f'"names" for type union must be a list of schemas: {json_data}'
                     )
-                return UnionSchema(schemas, names, name, namespace, doc)
+                if "name" in json_data:
+                    name = json_data["name"]
+                    namespace = json_data.get("namespace", names.default_namespace)
+                    doc = json_data.get("doc")
+                    return NamedUnionSchema(schemas, names, name, namespace, doc)
+                else:
+                    return UnionSchema(schemas, names)
         if atype is None:
             raise SchemaParseException(f'No "type" property: {json_data}')
         raise SchemaParseException(f"Undefined type: {atype}")
