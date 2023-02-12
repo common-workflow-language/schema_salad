@@ -394,7 +394,11 @@ class EnumSchema(NamedSchema):
 
 class ArraySchema(Schema):
     def __init__(
-        self, items: JsonDataType, names: Names, other_props: Optional[PropsType] = None
+        self,
+        items: JsonDataType,
+        names: Names,
+        flatten: Optional[bool] = True,
+        other_props: Optional[PropsType] = None,
     ) -> None:
         # Call parent ctor
         Schema.__init__(self, "array", other_props)
@@ -414,11 +418,15 @@ class ArraySchema(Schema):
                 ) from err
 
         self.set_prop("items", items_schema)
+        self.set_prop("flatten", flatten)
 
     # read-only properties
     @property
     def items(self) -> Schema:
         return cast(Schema, self.get_prop("items"))
+
+    def flatten(self) -> bool:
+        return cast(bool, self.get_prop("flatten"))
 
 
 class MapSchema(Schema):
@@ -674,7 +682,8 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
         if atype in VALID_TYPES:
             if atype == "array":
                 items = json_data.get("items")
-                return ArraySchema(items, names, other_props)
+                flatten = json_data.get("flatten")
+                return ArraySchema(items, names, flatten, other_props)
             elif atype == "map":
                 name = json_data.get("name")
                 namespace = json_data.get("namespace", names.default_namespace)

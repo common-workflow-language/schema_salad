@@ -437,9 +437,9 @@ class _PrimitiveLoader(_Loader):
 
 
 class _ArrayLoader(_Loader):
-    def __init__(self, items):
-        # type: (_Loader) -> None
+    def __init__(self, items: _Loader, flatten: bool = True) -> None:
         self.items = items
+        self.flatten = flatten
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
@@ -457,7 +457,7 @@ class _ArrayLoader(_Loader):
                 lf = load_field(
                     doc[i], _UnionLoader(([self, self.items])), baseuri, loadingOptions, lc=lc
                 )
-                if isinstance(lf, MutableSequence):
+                if self.flatten and isinstance(lf, MutableSequence):
                     r.extend(lf)
                 else:
                     r.append(lf)

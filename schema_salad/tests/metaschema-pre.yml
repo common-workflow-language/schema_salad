@@ -259,6 +259,19 @@
         "fields": [
             {
                 "type": [
+                    "null",
+                    "boolean"
+                ],
+                "jsonldPredicate": {
+                    "_id": "https://w3id.org/cwl/salad#flatten",
+                    "_type": "@vocab",
+                    "refScope": 2
+                },
+                "doc": "Flatten inner array objects into a single sequence (default: true).",
+                "name": "https://w3id.org/cwl/salad#ArraySchema/flatten"
+            },
+            {
+                "type": [
                     "PrimitiveType",
                     "RecordSchema",
                     "EnumSchema",

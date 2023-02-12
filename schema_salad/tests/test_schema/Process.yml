@@ -305,7 +305,7 @@ $graph:
         into a concrete form for execution, such as command line parameters.
 
     - name: default
-      type: CWLObjectType
+      type: CWLObjectType?
       jsonldPredicate: "cwl:default"
       doc: |
         The default value for this parameter if not provided in the input

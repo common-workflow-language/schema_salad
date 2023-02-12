@@ -11,6 +11,7 @@ import uuid as _uuid__  # pylint: disable=unused-import # noqa: F401
 import xml.sax  # nosec
 from abc import ABC, abstractmethod
 from io import StringIO
+from itertools import chain
 from typing import (
     Any,
     Dict,
@@ -439,9 +440,9 @@ class _PrimitiveLoader(_Loader):
 
 
 class _ArrayLoader(_Loader):
-    def __init__(self, items):
-        # type: (_Loader) -> None
+    def __init__(self, items: _Loader, flatten: bool = True) -> None:
         self.items = items
+        self.flatten = flatten
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
@@ -459,7 +460,7 @@ class _ArrayLoader(_Loader):
                 lf = load_field(
                     doc[i], _UnionLoader(([self, self.items])), baseuri, loadingOptions, lc=lc
                 )
-                if isinstance(lf, MutableSequence):
+                if self.flatten and isinstance(lf, MutableSequence):
                     r.extend(lf)
                 else:
                     r.append(lf)
@@ -488,6 +489,31 @@ class _ArrayLoader(_Loader):
 
     def __repr__(self):  # type: () -> str
         return f"array<{self.items}>"
+
+
+class _MapLoader(_Loader):
+    def __init__(self, values: _Loader, name: Optional[str] = None) -> None:
+        self.values = values
+        self.name = name
+
+    def load(self, doc, baseuri, loadingOptions, docRoot=None):
+        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
+        if not isinstance(doc, MutableMapping):
+            raise ValidationException(f"Expected a map, was {type(doc)}")
+        r = {}  # type: Dict[str, Any]
+        errors = []  # type: List[SchemaSaladException]
+        for k, v in doc.items():
+            try:
+                lf = load_field(v, self.values, baseuri, loadingOptions)
+                r[k] = lf
+            except ValidationException as e:
+                errors.append(e.with_sourceline(SourceLine(doc, k, str)))
+        if errors:
+            raise ValidationException("", None, errors)
+        return r
+
+    def __repr__(self):  # type: () -> str
+        return self.name if self.name is not None else f"map<string, {self.values}>"
 
 
 class _EnumLoader(_Loader):
@@ -605,8 +631,12 @@ class _ExpressionLoader(_Loader):
 
 
 class _UnionLoader(_Loader):
-    def __init__(self, alternates: Sequence[_Loader]) -> None:
+    def __init__(self, alternates: Sequence[_Loader], name: Optional[str] = None) -> None:
         self.alternates = alternates
+        self.name = name
+
+    def add_loaders(self, loaders: Sequence[_Loader]) -> None:
+        self.alternates = tuple(loader for loader in chain(self.alternates, loaders))
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
@@ -681,7 +711,7 @@ class _UnionLoader(_Loader):
         raise ValidationException("", None, errors, "*")
 
     def __repr__(self):  # type: () -> str
-        return " | ".join(str(a) for a in self.alternates)
+        return self.name if self.name is not None else " | ".join(str(a) for a in self.alternates)
 
 
 class _URILoader(_Loader):
@@ -1736,6 +1766,7 @@ class ArraySchema(Saveable):
         self,
         items: Any,
         type_: Any,
+        flatten: Optional[Any] = None,
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
@@ -1747,16 +1778,21 @@ class ArraySchema(Saveable):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
+        self.flatten = flatten
         self.items = items
         self.type_ = type_
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, ArraySchema):
-            return bool(self.items == other.items and self.type_ == other.type_)
+            return bool(
+                self.flatten == other.flatten
+                and self.items == other.items
+                and self.type_ == other.type_
+            )
         return False
 
     def __hash__(self) -> int:
-        return hash((self.items, self.type_))
+        return hash((self.flatten, self.items, self.type_))
 
     @classmethod
     def fromDoc(
@@ -1772,6 +1808,51 @@ class ArraySchema(Saveable):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         _errors__ = []
+        if "flatten" in _doc:
+            try:
+                if _doc.get("flatten") is None:
+                    raise ValidationException("missing required field `flatten`", None, [])
+
+                flatten = load_field(
+                    _doc.get("flatten"),
+                    uri_union_of_None_type_or_booltype_False_True_2_None,
+                    baseuri,
+                    loadingOptions,
+                    lc=_doc.get("flatten")
+                )
+
+            except ValidationException as e:
+                error_message, to_print, verb_tensage = parse_errors(str(e))
+
+                if str(e) == "missing required field `flatten`":
+                    _errors__.append(
+                        ValidationException(
+                            str(e),
+                            None
+                        )
+                    )
+                else:
+                    if error_message != str(e):
+                        val_type = convert_typing(extract_type(type(_doc.get("flatten"))))
+                        _errors__.append(
+                            ValidationException(
+                                "the `flatten` field is not valid because:",
+                                SourceLine(_doc, "flatten", str),
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
+                            )
+                        )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `flatten` field is not valid because:",
+                                SourceLine(_doc, "flatten", str),
+                                [e],
+                            )
+                        )
+        else:
+            flatten = None
         try:
             if _doc.get("items") is None:
                 raise ValidationException("missing required field `items`", None, [])
@@ -1871,7 +1952,7 @@ class ArraySchema(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `items`, `type`".format(
+                            "invalid field `{}`, expected one of: `flatten`, `items`, `type`".format(
                                 k
                             ),
                             SourceLine(_doc, k, str),
@@ -1881,6 +1962,7 @@ class ArraySchema(Saveable):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
+            flatten=flatten,
             items=items,
             type_=type_,
             extension_fields=extension_fields,
@@ -1899,6 +1981,9 @@ class ArraySchema(Saveable):
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
+        if self.flatten is not None:
+            u = save_relative_uri(self.flatten, base_url, False, 2, relative_uris)
+            r["flatten"] = u
         if self.items is not None:
             u = save_relative_uri(self.items, base_url, False, 2, relative_uris)
             r["items"] = u
@@ -1915,7 +2000,7 @@ class ArraySchema(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["items", "type"])
+    attrs = frozenset(["flatten", "items", "type"])
 
 
 class MapSchema(Saveable):
@@ -5223,7 +5308,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
 
                 name = load_field(
                     _doc.get("name"),
-                    uri_strtype_True_False_None,
+                    uri_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("name")
@@ -5363,7 +5448,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
 
             values = load_field(
                 _doc.get("values"),
-                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2,
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("values")
@@ -5451,7 +5536,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
 
                 docParent = load_field(
                     _doc.get("docParent"),
-                    uri_union_of_None_type_or_strtype_False_False_None,
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docParent")
@@ -5496,7 +5581,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
 
                 docChild = load_field(
                     _doc.get("docChild"),
-                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None,
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docChild")
@@ -5541,7 +5626,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
 
                 docAfter = load_field(
                     _doc.get("docAfter"),
-                    uri_union_of_None_type_or_strtype_False_False_None,
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docAfter")
@@ -5880,7 +5965,7 @@ class SaladUnionSchema(NamedType, UnionSchema, SchemaDefinedType):
 
                 name = load_field(
                     _doc.get("name"),
-                    uri_strtype_True_False_None,
+                    uri_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("name")
@@ -5978,7 +6063,7 @@ class SaladUnionSchema(NamedType, UnionSchema, SchemaDefinedType):
 
             names = load_field(
                 _doc.get("names"),
-                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2,
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("names")
@@ -6108,7 +6193,7 @@ class SaladUnionSchema(NamedType, UnionSchema, SchemaDefinedType):
 
                 docParent = load_field(
                     _doc.get("docParent"),
-                    uri_union_of_None_type_or_strtype_False_False_None,
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docParent")
@@ -6153,7 +6238,7 @@ class SaladUnionSchema(NamedType, UnionSchema, SchemaDefinedType):
 
                 docChild = load_field(
                     _doc.get("docChild"),
-                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None,
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docChild")
@@ -6198,7 +6283,7 @@ class SaladUnionSchema(NamedType, UnionSchema, SchemaDefinedType):
 
                 docAfter = load_field(
                     _doc.get("docAfter"),
-                    uri_union_of_None_type_or_strtype_False_False_None,
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docAfter")
@@ -7048,7 +7133,7 @@ SaladEnumSchemaLoader = _RecordLoader(SaladEnumSchema)
 SaladMapSchemaLoader = _RecordLoader(SaladMapSchema)
 SaladUnionSchemaLoader = _RecordLoader(SaladUnionSchema)
 DocumentationLoader = _RecordLoader(Documentation)
-array_of_strtype = _ArrayLoader(strtype)
+array_of_strtype = _ArrayLoader(strtype, True)
 union_of_None_type_or_strtype_or_array_of_strtype = _UnionLoader(
     (
         None_type,
@@ -7069,7 +7154,8 @@ union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArrayS
     )
 )
 array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _ArrayLoader(
-    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
+    True,
 )
 union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
     (
@@ -7088,7 +7174,7 @@ typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_o
     2,
     "v1.1",
 )
-array_of_RecordFieldLoader = _ArrayLoader(RecordFieldLoader)
+array_of_RecordFieldLoader = _ArrayLoader(RecordFieldLoader, True)
 union_of_None_type_or_array_of_RecordFieldLoader = _UnionLoader(
     (
         None_type,
@@ -7114,6 +7200,15 @@ uri_array_of_strtype_True_False_None_None = _URILoader(
 )
 Enum_nameLoader = _EnumLoader(("enum",), "Enum_name")
 typedsl_Enum_nameLoader_2 = _TypeDSLLoader(Enum_nameLoader, 2, "v1.1")
+union_of_None_type_or_booltype = _UnionLoader(
+    (
+        None_type,
+        booltype,
+    )
+)
+uri_union_of_None_type_or_booltype_False_True_2_None = _URILoader(
+    union_of_None_type_or_booltype, False, True, 2, None
+)
 uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None = _URILoader(
     union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
     False,
@@ -7127,12 +7222,6 @@ Map_nameLoader = _EnumLoader(("map",), "Map_name")
 typedsl_Map_nameLoader_2 = _TypeDSLLoader(Map_nameLoader, 2, "v1.1")
 Union_nameLoader = _EnumLoader(("union",), "Union_name")
 typedsl_Union_nameLoader_2 = _TypeDSLLoader(Union_nameLoader, 2, "v1.1")
-union_of_None_type_or_booltype = _UnionLoader(
-    (
-        None_type,
-        booltype,
-    )
-)
 union_of_None_type_or_inttype = _UnionLoader(
     (
         None_type,
@@ -7161,7 +7250,7 @@ union_of_None_type_or_Any_type = _UnionLoader(
         Any_type,
     )
 )
-array_of_SaladRecordFieldLoader = _ArrayLoader(SaladRecordFieldLoader)
+array_of_SaladRecordFieldLoader = _ArrayLoader(SaladRecordFieldLoader, True)
 union_of_None_type_or_array_of_SaladRecordFieldLoader = _UnionLoader(
     (
         None_type,
@@ -7174,7 +7263,7 @@ idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader = _IdMapLoade
 uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None = _URILoader(
     union_of_None_type_or_strtype_or_array_of_strtype, False, False, 1, None
 )
-array_of_SpecializeDefLoader = _ArrayLoader(SpecializeDefLoader)
+array_of_SpecializeDefLoader = _ArrayLoader(SpecializeDefLoader, True)
 union_of_None_type_or_array_of_SpecializeDefLoader = _UnionLoader(
     (
         None_type,
@@ -7196,7 +7285,8 @@ union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoade
     )
 )
 array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader = _ArrayLoader(
-    union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader
+    union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader,
+    True,
 )
 union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader = _UnionLoader(
     (

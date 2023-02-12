@@ -138,6 +138,7 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
                 "mapPredicate": "type",
                 "mapSubject": "name",
             },
+            "flatten": saladp + "flatten",
             "float": "http://www.w3.org/2001/XMLSchema#float",
             "identity": saladp + "JsonldPredicate/identity",
             "inVocab": saladp + "NamedType/inVocab",

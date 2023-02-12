@@ -573,7 +573,6 @@
     "name": "https://w3id.org/cwl/cwl#CWLObjectType",
     "type": "union",
     "names": [
-      "null",
       "boolean",
       "int",
       "long",
@@ -583,12 +582,19 @@
       "https://w3id.org/cwl/cwl#File",
       "https://w3id.org/cwl/cwl#Directory",
       {
-        "items": "https://w3id.org/cwl/cwl#CWLObjectType",
+        "flatten": false,
+        "items": [
+          "null",
+          "https://w3id.org/cwl/cwl#CWLObjectType"
+        ],
         "type": "array"
       },
       {
         "type": "map",
-        "values": "https://w3id.org/cwl/cwl#CWLObjectType"
+        "values": [
+          "null",
+          "https://w3id.org/cwl/cwl#CWLObjectType"
+        ]
       }
     ],
     "doc": "Generic type representing a valid CWL object. It is used to represent\n`default` values passed to CWL `InputParameter` and `WorkflowStepInput`\nrecord fields.\n"
@@ -997,7 +1003,10 @@
       },
       {
         "name": "https://w3id.org/cwl/cwl#InputParameter/default",
-        "type": "https://w3id.org/cwl/cwl#CWLObjectType",
+        "type": [
+          "null",
+          "https://w3id.org/cwl/cwl#CWLObjectType"
+        ],
         "jsonldPredicate": "cwl:default",
         "doc": "The default value for this parameter if not provided in the input\nobject.\n"
       },
@@ -2263,7 +2272,10 @@
       },
       {
         "name": "https://w3id.org/cwl/cwl#WorkflowStepInput/default",
-        "type": "https://w3id.org/cwl/cwl#CWLObjectType",
+        "type": [
+          "null",
+          "https://w3id.org/cwl/cwl#CWLObjectType"
+        ],
         "doc": "The default value for this parameter if there is no `source`\nfield.\n",
         "jsonldPredicate": "cwl:default"
       },
@@ -2548,6 +2560,7 @@
     "name": "https://w3id.org/cwl/cwl#CWLInputFile",
     "doc": "Type representing a valid CWL input file as a `map<string, union<array<ProcessRequirement>, CWLObjectType>>`.",
     "values": [
+      "null",
       {
         "items": "https://w3id.org/cwl/cwl#ProcessRequirement",
         "type": "array"

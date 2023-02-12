@@ -397,7 +397,12 @@ if _errors__:
                 "https://w3id.org/cwl/salad#array",
             ):
                 i = self.type_loader(type_declaration["items"])
-                return self.declare_type(TypeDef(f"array_of_{i.name}", f"_ArrayLoader({i.name})"))
+                return self.declare_type(
+                    TypeDef(
+                        f"array_of_{i.name}",
+                        f"_ArrayLoader({i.name}, {type_declaration.get('flatten', True)})",
+                    )
+                )
             if type_declaration["type"] in (
                 "map",
                 "https://w3id.org/cwl/salad#map",

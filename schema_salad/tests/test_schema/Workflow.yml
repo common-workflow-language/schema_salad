@@ -256,7 +256,7 @@ $graph:
       jsonldPredicate: "@id"
       doc: "A unique identifier for this workflow input parameter."
     - name: default
-      type: CWLObjectType
+      type: CWLObjectType?
       doc: |
         The default value for this parameter if there is no `source`
         field.
@@ -585,8 +585,9 @@ $graph:
 - name: CWLInputFile
   type: map
   values:
-   - type: array
-     items: ProcessRequirement
-   - CWLObjectType
+    - "null"
+    - type: array
+      items: ProcessRequirement
+    - CWLObjectType
   doc: |
     Type representing a valid CWL input file as a `map<string, union<array<ProcessRequirement>, CWLObjectType>>`.
