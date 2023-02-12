@@ -40,7 +40,7 @@ if USE_MYPYC and any(
     mypyc_targets = [
         # "schema_salad/codegen_base.py",  # interpreted classes cannot inherit from compiled
         # "schema_salad/codegen.py",
-        "schema_salad/exceptions.py",
+        # "schema_salad/exceptions.py", # leads to memory leaks
         "schema_salad/__init__.py",
         # "schema_salad/java_codegen.py",  # due to use of __name__
         "schema_salad/jsonld_context.py",

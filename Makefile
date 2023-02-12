@@ -185,7 +185,7 @@ mypyc: $(PYSOURCES)
 	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python setup.py test --addopts "${PYTEST_EXTRA}"
 
 mypyi:
-	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python setup.py install
+	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 pip install .${EXTRAS}
 
 check-metaschema-diff:
 	docker run \
