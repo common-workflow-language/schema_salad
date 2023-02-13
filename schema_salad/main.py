@@ -201,7 +201,7 @@ def arg_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument("schema", type=str, nargs="?", default=None)
-    parser.add_argument("document", type=str, nargs="?", default=None)
+    parser.add_argument("document", type=str, nargs="*", default=None)
     parser.add_argument("--version", "-v", action="store_true", help="Print version", default=None)
     return parser
 
@@ -370,58 +370,58 @@ def main(argsl: Optional[List[str]] = None) -> int:
         return 0
 
     # Load target document and resolve refs
-    try:
-        uri = args.document
-        document, doc_metadata = document_loader.resolve_ref(
-            uri, strict_foreign_properties=args.strict_foreign_properties
-        )
-    except ValidationException as e:
-        msg = to_one_line_messages(e) if args.print_oneline else str(e)
-        _logger.error(
-            "Document `%s` failed validation:\n%s",
-            args.document,
-            msg,
-            exc_info=args.debug,
-        )
-        return 1
-
-    # Optionally print the document after ref resolution
-    if args.print_pre:
-        json_dump(document, fp=sys.stdout, indent=4, default=str)
-        return 0
-
-    if args.print_index:
-        json_dump(list(document_loader.idx.keys()), fp=sys.stdout, indent=4, default=str)
-        return 0
-
-    # Validate the user document against the schema
-    try:
-        schema.validate_doc(
-            avsc_names,
-            document,
-            document_loader,
-            args.strict,
-            strict_foreign_properties=args.strict_foreign_properties,
-        )
-    except ValidationException as e:
-        msg2 = to_one_line_messages(e) if args.print_oneline else str(e)
-        _logger.error(f"While validating document `{args.document}`:\n{msg2}")
-        return 1
-
-    # Optionally convert the document to RDF
-    if args.print_rdf:
-        if isinstance(document, (Mapping, MutableSequence)):
-            printrdf(args.document, document, schema_ctx, args.rdf_serializer)
-            return 0
-        else:
-            print("Document must be a dictionary or list.")
+    for uri in args.document:
+        try:
+            document, doc_metadata = document_loader.resolve_ref(
+                uri, strict_foreign_properties=args.strict_foreign_properties
+            )
+        except ValidationException as e:
+            msg = to_one_line_messages(e) if args.print_oneline else str(e)
+            _logger.error(
+                "Document `%s` failed validation:\n%s",
+                args.document,
+                msg,
+                exc_info=args.debug,
+            )
             return 1
 
-    if args.print_metadata:
-        json_dump(doc_metadata, fp=sys.stdout, indent=4, default=str)
-        return 0
+        # Optionally print the document after ref resolution
+        if args.print_pre:
+            json_dump(document, fp=sys.stdout, indent=4, default=str)
+            return 0
 
-    _logger.info(f"Document `{args.document}` is valid")
+        if args.print_index:
+            json_dump(list(document_loader.idx.keys()), fp=sys.stdout, indent=4, default=str)
+            return 0
+
+        # Validate the user document against the schema
+        try:
+            schema.validate_doc(
+                avsc_names,
+                document,
+                document_loader,
+                args.strict,
+                strict_foreign_properties=args.strict_foreign_properties,
+            )
+        except ValidationException as e:
+            msg2 = to_one_line_messages(e) if args.print_oneline else str(e)
+            _logger.error(f"While validating document {uri!r}:\n{msg2}")
+            return 1
+
+        # Optionally convert the document to RDF
+        if args.print_rdf:
+            if isinstance(document, (Mapping, MutableSequence)):
+                printrdf(uri, document, schema_ctx, args.rdf_serializer)
+                return 0
+            else:
+                print("Document must be a dictionary or list.")
+                return 1
+
+        if args.print_metadata:
+            json_dump(doc_metadata, fp=sys.stdout, indent=4, default=str)
+            return 0
+
+        _logger.info(f"Document {uri!r} is valid")
 
     return 0
 
