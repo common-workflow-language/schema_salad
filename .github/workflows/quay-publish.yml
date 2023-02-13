@@ -12,7 +12,7 @@ jobs:
       - name: Get image tags
         id: image_tags
         run: |
-          echo -n ::set-output name=IMAGE_TAGS::${GITHUB_REF#refs/*/}
+          echo -n ::set-output "name=IMAGE_TAGS::${GITHUB_REF#refs/*/}"
       - name: record schema-salad version
         run: pip install setuptools_scm[toml] && python -m setuptools_scm
       - name: Set up Docker Buildx
