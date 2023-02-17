@@ -39,8 +39,9 @@ $graph:
     - "xsd:string"
   doc:
     - |
-      Salad data types are based on Avro schema declarations.  Refer to the
-      [Avro schema declaration documentation](https://avro.apache.org/docs/current/spec.html#schemas) for
+      Names of salad data types (based on Avro schema declarations).
+
+      Refer to the [Avro schema declaration documentation](https://avro.apache.org/docs/current/spec.html#schemas) for
       detailed information.
     - "null: no value"
     - "boolean: a binary value"
@@ -76,7 +77,6 @@ $graph:
         - RecordSchema
         - EnumSchema
         - ArraySchema
-        - MapSchema
         - UnionSchema
         - string
         - type: array
@@ -85,7 +85,6 @@ $graph:
             - RecordSchema
             - EnumSchema
             - ArraySchema
-            - MapSchema
             - UnionSchema
             - string
       jsonldPredicate:
@@ -171,7 +170,6 @@ $graph:
         - RecordSchema
         - EnumSchema
         - ArraySchema
-        - MapSchema
         - UnionSchema
         - string
         - type: array
@@ -180,7 +178,6 @@ $graph:
             - RecordSchema
             - EnumSchema
             - ArraySchema
-            - MapSchema
             - UnionSchema
             - string
       jsonldPredicate:
@@ -188,6 +185,13 @@ $graph:
         _type: "@vocab"
         refScope: 2
       doc: "Defines the type of the array elements."
+    flatten:
+      type: boolean?
+      jsonldPredicate:
+        _id: "sld:flatten"
+        _type: "@vocab"
+        refScope: 2
+      doc: "Flatten inner array objects into a single sequence (default: true)."
 
 
 - name: MapSchema

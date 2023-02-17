@@ -43,7 +43,7 @@
       "http://www.w3.org/2001/XMLSchema#string"
     ],
     "doc": [
-      "Salad data types are based on Avro schema declarations.  Refer to the\n[Avro schema declaration documentation](https://avro.apache.org/docs/current/spec.html#schemas) for\ndetailed information.\n",
+      "Names of salad data types (based on Avro schema declarations).\n\nRefer to the [Avro schema declaration documentation](https://avro.apache.org/docs/current/spec.html#schemas) for\ndetailed information.\n",
       "null: no value",
       "boolean: a binary value",
       "int: 32-bit signed integer",
@@ -81,7 +81,6 @@
           "RecordSchema",
           "EnumSchema",
           "ArraySchema",
-          "MapSchema",
           "UnionSchema",
           "string",
           {
@@ -91,7 +90,6 @@
               "RecordSchema",
               "EnumSchema",
               "ArraySchema",
-              "MapSchema",
               "UnionSchema",
               "string"
             ]
@@ -196,12 +194,24 @@
     "type": "record",
     "fields": [
       {
+        "doc": "Flatten inner array objects into a single sequence (default: true).",
+        "jsonldPredicate": {
+          "_id": "https://w3id.org/cwl/salad#flatten",
+          "_type": "@vocab",
+          "refScope": 2
+        },
+        "name": "https://w3id.org/cwl/salad#ArraySchema/flatten",
+        "type": [
+          "null",
+          "boolean"
+        ]
+      },
+      {
         "type": [
           "PrimitiveType",
           "RecordSchema",
           "EnumSchema",
           "ArraySchema",
-          "MapSchema",
           "UnionSchema",
           "string",
           {
@@ -211,7 +221,6 @@
               "RecordSchema",
               "EnumSchema",
               "ArraySchema",
-              "MapSchema",
               "UnionSchema",
               "string"
             ]

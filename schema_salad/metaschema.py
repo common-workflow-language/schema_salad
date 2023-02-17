@@ -208,8 +208,13 @@ class Saveable(ABC):
         """Convert this object to a JSON/YAML friendly dictionary."""
 
 
-def load_field(val, fieldtype, baseuri, loadingOptions, lc=None):
-    # type: (Union[str, Dict[str, str]], _Loader, str, LoadingOptions, Optional[List[Any]]) -> Any
+def load_field(
+    val: Union[str, Dict[str, str]],
+    fieldtype: "_Loader",
+    baseuri: str,
+    loadingOptions: LoadingOptions,
+    lc: Optional[List[Any]],
+) -> Any:
     """Load field."""
     if isinstance(val, MutableMapping):
         if "$import" in val:
@@ -341,14 +346,13 @@ def save_with_metadata(
 
 
 def expand_url(
-    url,  # type: str
-    base_url,  # type: str
-    loadingOptions,  # type: LoadingOptions
-    scoped_id=False,  # type: bool
-    vocab_term=False,  # type: bool
-    scoped_ref=None,  # type: Optional[int]
-):
-    # type: (...) -> str
+    url: str,
+    base_url: str,
+    loadingOptions: LoadingOptions,
+    scoped_id: bool = False,
+    vocab_term: bool = False,
+    scoped_ref: Optional[int] = None,
+) -> str:
     if url in ("@id", "@type"):
         return url
 
@@ -409,33 +413,50 @@ def expand_url(
 
 
 class _Loader:
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         pass
 
 
 class _AnyLoader(_Loader):
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if doc is not None:
             return doc
         raise ValidationException("Expected non-null")
 
 
 class _PrimitiveLoader(_Loader):
-    def __init__(self, tp):
-        # type: (Union[type, Tuple[Type[str], Type[str]]]) -> None
+    def __init__(self, tp: Union[type, Tuple[Type[str], Type[str]]]) -> None:
         self.tp = tp
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if not isinstance(doc, self.tp):
             raise ValidationException(
                 "Expected a {} but got {}".format(self.tp, doc.__class__.__name__)
             )
         return doc
 
-    def __repr__(self):  # type: () -> str
+    def __repr__(self) -> str:
         return str(self.tp)
 
 
@@ -444,17 +465,22 @@ class _ArrayLoader(_Loader):
         self.items = items
         self.flatten = flatten
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if not isinstance(doc, MutableSequence):
             raise ValidationException(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
                 f"but valid type for this field is an array."
             )
-        r = []  # type: List[Any]
-        errors = []  # type: List[SchemaSaladException]
-        fields = []  # type: List[str]
-
+        r: List[Any] = []
+        errors: List[SchemaSaladException] = []
+        fields: List[str] = []
         for i in range(0, len(doc)):
             try:
                 lf = load_field(
@@ -487,7 +513,7 @@ class _ArrayLoader(_Loader):
             raise ValidationException("", None, errors)
         return r
 
-    def __repr__(self):  # type: () -> str
+    def __repr__(self) -> str:
         return f"array<{self.items}>"
 
 
@@ -496,12 +522,13 @@ class _MapLoader(_Loader):
         self.values = values
         self.name = name
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str]) -> Any
+    def load(
+        self, doc: Any, baseuri: str, loadingOptions: LoadingOptions, docRoot: Optional[str] = None
+    ) -> Any:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(f"Expected a map, was {type(doc)}")
-        r = {}  # type: Dict[str, Any]
-        errors = []  # type: List[SchemaSaladException]
+        r: Dict[str, Any] = {}
+        errors: List[SchemaSaladException] = []
         for k, v in doc.items():
             try:
                 lf = load_field(v, self.values, baseuri, loadingOptions)
@@ -512,7 +539,7 @@ class _MapLoader(_Loader):
             raise ValidationException("", None, errors)
         return r
 
-    def __repr__(self):  # type: () -> str
+    def __repr__(self) -> str:
         return self.name if self.name is not None else f"map<string, {self.values}>"
 
 
@@ -521,23 +548,34 @@ class _EnumLoader(_Loader):
         self.symbols = symbols
         self.name = name
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if doc in self.symbols:
             return doc
         raise ValidationException(f"Expected one of {self.symbols}")
 
-    def __repr__(self):  # type: () -> str
+    def __repr__(self) -> str:
         return self.name
 
 
 class _SecondaryDSLLoader(_Loader):
-    def __init__(self, inner):
-        # type: (_Loader) -> None
+    def __init__(self, inner: _Loader) -> None:
         self.inner = inner
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         r: List[Dict[str, Any]] = []
         if isinstance(doc, MutableSequence):
             for d in doc:
@@ -599,12 +637,17 @@ class _SecondaryDSLLoader(_Loader):
 
 
 class _RecordLoader(_Loader):
-    def __init__(self, classtype):
-        # type: (Type[Saveable]) -> None
+    def __init__(self, classtype: Type[Saveable]) -> None:
         self.classtype = classtype
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
@@ -612,7 +655,7 @@ class _RecordLoader(_Loader):
             )
         return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
-    def __repr__(self):  # type: () -> str
+    def __repr__(self) -> str:
         return str(self.classtype.__name__)
 
 
@@ -620,8 +663,14 @@ class _ExpressionLoader(_Loader):
     def __init__(self, items: Type[str]) -> None:
         self.items = items
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if not isinstance(doc, str):
             raise ValidationException(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
@@ -638,8 +687,14 @@ class _UnionLoader(_Loader):
     def add_loaders(self, loaders: Sequence[_Loader]) -> None:
         self.alternates = tuple(loader for loader in chain(self.alternates, loaders))
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         errors = []
 
         if lc is None:
@@ -710,21 +765,27 @@ class _UnionLoader(_Loader):
                 )
         raise ValidationException("", None, errors, "*")
 
-    def __repr__(self):  # type: () -> str
+    def __repr__(self) -> str:
         return self.name if self.name is not None else " | ".join(str(a) for a in self.alternates)
 
 
 class _URILoader(_Loader):
-    def __init__(self, inner, scoped_id, vocab_term, scoped_ref, no_link_check):
-        # type: (_Loader, bool, bool, Union[int, None], Union[bool, None]) -> None
+    def __init__(
+        self, inner: _Loader, scoped_id: bool, vocab_term: bool, scoped_ref: Optional[int], no_link_check: Optional[bool]
+    ) -> None:
         self.inner = inner
         self.scoped_id = scoped_id
         self.vocab_term = vocab_term
         self.scoped_ref = scoped_ref
         self.no_link_check = no_link_check
-
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if self.no_link_check is not None:
             loadingOptions = LoadingOptions(
                 copyfrom=loadingOptions, no_link_check=self.no_link_check
@@ -771,19 +832,17 @@ class _URILoader(_Loader):
 
 
 class _TypeDSLLoader(_Loader):
-    def __init__(self, inner, refScope, salad_version):
-        # type: (_Loader, Union[int, None], str) -> None
+    def __init__(self, inner: _Loader, refScope: Optional[int], salad_version: str) -> None:
         self.inner = inner
         self.refScope = refScope
         self.salad_version = salad_version
 
     def resolve(
         self,
-        doc,  # type: str
-        baseuri,  # type: str
-        loadingOptions,  # type: LoadingOptions
-    ):
-        # type: (...) -> Union[List[Union[Dict[str, Any], str]], Dict[str, Any], str]
+        doc: str,  # type: str
+        baseuri: str,  # type: str
+        loadingOptions: LoadingOptions,  # type: LoadingOptions
+    ) -> Union[List[Union[Dict[str, Any], str]], Dict[str, Any], str]:
         doc_ = doc
         optional = False
         if doc_.endswith("?"):
@@ -792,7 +851,7 @@ class _TypeDSLLoader(_Loader):
 
         if doc_.endswith("[]"):
             salad_versions = [int(v) for v in self.salad_version[1:].split(".")]
-            items = ""  # type: Union[List[Union[Dict[str, Any], str]], Dict[str, Any], str]
+            items: Union[List[Union[Dict[str, Any], str]], Dict[str, Any], str] = ""
             rest = doc_[0:-2]
             if salad_versions < [1, 3]:
                 if rest.endswith("[]"):
@@ -804,7 +863,7 @@ class _TypeDSLLoader(_Loader):
                 items = self.resolve(rest, baseuri, loadingOptions)
                 if isinstance(items, str):
                     items = expand_url(items, baseuri, loadingOptions, False, True, self.refScope)
-            expanded = {"type": "array", "items": items}  # type: Union[Dict[str, Any], str]
+            expanded: Union[Dict[str, Any], str] = {"type": "array", "items": items}
         else:
             expanded = expand_url(doc_, baseuri, loadingOptions, False, True, self.refScope)
 
@@ -813,10 +872,16 @@ class _TypeDSLLoader(_Loader):
         else:
             return expanded
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if isinstance(doc, MutableSequence):
-            r = []  # type: List[Any]
+            r: List[Any] = []
             for d in doc:
                 if isinstance(d, str):
                     resolved = self.resolve(d, baseuri, loadingOptions)
@@ -837,16 +902,21 @@ class _TypeDSLLoader(_Loader):
 
 
 class _IdMapLoader(_Loader):
-    def __init__(self, inner, mapSubject, mapPredicate):
-        # type: (_Loader, str, Union[str, None]) -> None
+    def __init__(self, inner: _Loader, mapSubject: str, mapPredicate: Optional[str]) -> None:
         self.inner = inner
         self.mapSubject = mapSubject
         self.mapPredicate = mapPredicate
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if isinstance(doc, MutableMapping):
-            r = []  # type: List[Any]
+            r: List[Any] = []
             for k in sorted(doc.keys()):
                 val = doc[k]
                 if isinstance(val, CommentedMap):
@@ -971,7 +1041,7 @@ def _document_load_by_url(
     return loadingOptions.idx[url]
 
 
-def file_uri(path, split_frag=False):  # type: (str, bool) -> str
+def file_uri(path: str, split_frag: bool = False) -> str:
     if path.startswith("file://"):
         return path
     if split_frag:
@@ -1209,7 +1279,7 @@ class RecordField(Documented):
 
             type_ = load_field(
                 _doc.get("type"),
-                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2,
+                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -1859,7 +1929,7 @@ class ArraySchema(Saveable):
 
             items = load_field(
                 _doc.get("items"),
-                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("items")
@@ -3471,7 +3541,7 @@ class SaladRecordField(RecordField):
 
             type_ = load_field(
                 _doc.get("type"),
-                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2,
+                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -7142,35 +7212,33 @@ union_of_None_type_or_strtype_or_array_of_strtype = _UnionLoader(
     )
 )
 uri_strtype_True_False_None_None = _URILoader(strtype, True, False, None, None)
-union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
+union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
     (
         PrimitiveTypeLoader,
         RecordSchemaLoader,
         EnumSchemaLoader,
         ArraySchemaLoader,
-        MapSchemaLoader,
         UnionSchemaLoader,
         strtype,
     )
 )
-array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _ArrayLoader(
-    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
+array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype = _ArrayLoader(
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype,
     True,
 )
-union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
+union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
     (
         PrimitiveTypeLoader,
         RecordSchemaLoader,
         EnumSchemaLoader,
         ArraySchemaLoader,
-        MapSchemaLoader,
         UnionSchemaLoader,
         strtype,
-        array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
+        array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype,
     )
 )
-typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2 = _TypeDSLLoader(
-    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
+typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_2 = _TypeDSLLoader(
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype,
     2,
     "v1.1",
 )
@@ -7209,8 +7277,8 @@ union_of_None_type_or_booltype = _UnionLoader(
 uri_union_of_None_type_or_booltype_False_True_2_None = _URILoader(
     union_of_None_type_or_booltype, False, True, 2, None
 )
-uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None = _URILoader(
-    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
+uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None = _URILoader(
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype,
     False,
     True,
     2,
@@ -7220,6 +7288,40 @@ Array_nameLoader = _EnumLoader(("array",), "Array_name")
 typedsl_Array_nameLoader_2 = _TypeDSLLoader(Array_nameLoader, 2, "v1.1")
 Map_nameLoader = _EnumLoader(("map",), "Map_name")
 typedsl_Map_nameLoader_2 = _TypeDSLLoader(Map_nameLoader, 2, "v1.1")
+union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
+    (
+        PrimitiveTypeLoader,
+        RecordSchemaLoader,
+        EnumSchemaLoader,
+        ArraySchemaLoader,
+        MapSchemaLoader,
+        UnionSchemaLoader,
+        strtype,
+    )
+)
+array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _ArrayLoader(
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
+    True,
+)
+union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
+    (
+        PrimitiveTypeLoader,
+        RecordSchemaLoader,
+        EnumSchemaLoader,
+        ArraySchemaLoader,
+        MapSchemaLoader,
+        UnionSchemaLoader,
+        strtype,
+        array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
+    )
+)
+uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None = _URILoader(
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
+    False,
+    True,
+    2,
+    None,
+)
 Union_nameLoader = _EnumLoader(("union",), "Union_name")
 typedsl_Union_nameLoader_2 = _TypeDSLLoader(Union_nameLoader, 2, "v1.1")
 union_of_None_type_or_inttype = _UnionLoader(
