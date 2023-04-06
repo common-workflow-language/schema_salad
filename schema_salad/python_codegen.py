@@ -259,12 +259,14 @@ class PythonCodeGen(CodeGenBase):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
-        keys: Optional[List[str]] = []
+        keys: Optional[List[str]] = None,
+        docRoot: Optional[str] = None
     ) -> "{classname}":
         _doc = copy.copy(doc)
 
-        global_doc = line_numbers
+        if keys is None:
+            keys = []
+        global_doc = copy.copy(line_numbers)
 
         for key in keys:
             global_doc = global_doc[key]
@@ -329,14 +331,19 @@ extension_fields: Dict[str, Any] = {{}}
 for k in _doc.keys():
     if k not in cls.attrs:
         if ":" in k:
-            ex = expand_url(
-                k, "", loadingOptions, scoped_id=False, vocab_term=False
-            )
-            extension_fields[ex] = _doc[k]
+            if not k:
+                _errors__.append(
+                    ValidationException("mapping with implicit null key")
+                )
+            elif ":" in k:
+                ex = expand_url(
+                    k, "", loadingOptions, scoped_id=False, vocab_term=False
+                )
+                extension_fields[ex] = _doc[k]
         else:
             _errors__.append(
                 ValidationException(
-                    "invalid field `{{}}`, expected one of: {attrstr}".format(
+                    "* invalid field `{{}}`, expected one of: {attrstr}".format(
                         k
                     ),
                     SourceLine(_doc, k, str),
@@ -344,7 +351,7 @@ for k in _doc.keys():
             )
 
 if _errors__:
-    raise ValidationException(\"tried '{class_}'\", None, _errors__)
+    raise ValidationException(\"tried '{class_}' but\", None, _errors__)
 """.format(
                     attrstr=", ".join([f"`{f}`" for f in field_names]),
                     class_=self.safe_name(classname),
@@ -495,7 +502,7 @@ if _errors__:
         if not __original_{safename}_is_none:
             baseuri = {safename}
 
-        
+
 """.format(
                 safename=self.safe_name(name), opt=opt
             )
@@ -503,8 +510,8 @@ if _errors__:
 
         if self.safe_name(name) == "id":
             self.out.write(
-"""
-        if _doc.get("id") is not None:
+                """
+        if _doc.get("id") in global_doc:
             keys.append(_doc.get("id"))
 
 """
@@ -558,22 +565,25 @@ if _errors__:
 {spc}            )
     """.format(
                 safename=self.safe_name(name),
-                    fieldname=shortname(name),
-                    fieldtype=fieldtype.name,
-                    baseurivar=baseurivar,
-                    spc=spc,)
-    )
+                fieldname=shortname(name),
+                fieldtype=fieldtype.name,
+                baseurivar=baseurivar,
+                spc=spc,
+            )
+        )
 
         if shortname(name) == "run":
             self.out.write(
-"""
+                """
 {spc}            if isinstance(_doc, CommentedMap):
 {spc}               if not os.path.isfile(_doc.get("run")):
 {spc}                   raise ValidationException(f'contains undefined reference to {{run}}', None, [])
-    """.format(spc=spc,)
+    """.format(
+                    spc=spc,
+                )
             )
         self.out.write(
-"""
+            """
 {spc}        except ValidationException as e:
 {spc}               error_message = parse_errors(str(e))
 {spc}
@@ -596,7 +606,6 @@ if _errors__:
 {spc}                           )
 {spc}                       )
 """.format(
-
                 fieldname=shortname(name),
                 spc=spc,
             )

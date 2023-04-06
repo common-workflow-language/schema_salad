@@ -23,11 +23,11 @@ from typing import (
     cast,
 )
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
-from urllib.request import pathname2url
+from urllib.request import pathname2url, url2pathname
 
 from rdflib import Graph
 from rdflib.plugins.parsers.notation3 import BadSyntax
-from ruamel.yaml.comments import CommentedMap
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from schema_salad.exceptions import SchemaSaladException, ValidationException
 from schema_salad.fetcher import DefaultFetcher, Fetcher, MemoryCachingFetcher
@@ -43,6 +43,7 @@ _logger = logging.getLogger("salad")
 IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
 
 line_numbers = CommentedMap()
+
 
 class LoadingOptions:
 
@@ -134,6 +135,30 @@ class LoadingOptions:
                 self.vocab[k] = v
                 self.rvocab[v] = k
 
+    def check_exists(self, url: str) -> bool:
+        """Check if a url exists and is valid."""
+        if url in self.cache:
+            return True
+
+        split = urlsplit(url)
+        scheme, path = split.scheme, split.path
+
+        if scheme in ["http", "https"]:
+            if self.session is None:
+                raise ValidationException(f"Can't check {scheme} URL, session is None")
+            try:
+                resp = self.session.head(url, allow_redirects=True)
+                resp.raise_for_status()
+            except Exception:
+                return False
+            self.cache[url] = True
+            return True
+        if scheme == "file":
+            return os.path.exists(url2pathname(str(path)))
+        if scheme == "mailto":
+            return True
+        raise ValidationException(f"Unsupported scheme '{scheme}' in url: {url}")
+
     @property
     def graph(self) -> Graph:
         """Generate a merged rdflib.Graph from all entries in self.schemas."""
@@ -181,8 +206,8 @@ class Saveable(ABC):
         _doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
+        keys: Optional[List[str]] = None,
         docRoot: Optional[str] = None,
-        keys: Optional[List[str]] = [],
     ) -> "Saveable":
         """Construct this object from the result of yaml.load()."""
 
@@ -193,7 +218,8 @@ class Saveable(ABC):
         """Convert this object to a JSON/YAML friendly dictionary."""
 
 
-def load_field(val, fieldtype, baseuri, loadingOptions, keys=[]):
+def load_field(val, fieldtype, baseuri, loadingOptions, keys=None):
+    """Load field."""
     # type: (Union[str, Dict[str, str]], _Loader, str, LoadingOptions,Optional[List[str]]) -> Any
     if isinstance(val, MutableMapping):
         if "$import" in val:
@@ -211,14 +237,16 @@ def load_field(val, fieldtype, baseuri, loadingOptions, keys=[]):
             val = loadingOptions.fetcher.fetch_text(
                 loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
             )
-    return fieldtype.load(val, baseuri, loadingOptions,keys=keys)
+    return fieldtype.load(val, baseuri, loadingOptions, keys=keys)
 
 
 save_type = Optional[
     Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]
 ]
 
+
 def parse_errors(error_message: str) -> str:
+    """Parse error messages from several loaders into one error message."""
     types = set()
     if not error_message.startswith("Expected"):
         return error_message
@@ -232,13 +260,17 @@ def parse_errors(error_message: str) -> str:
         if individual_vals[0] == "one":
             individual_vals = val.split("(")[1].split(",")
             for t in individual_vals:
-                types.add(t.strip(" ").strip(")\n").strip("'"))
+                types.add(t.strip(" ").strip(")\n"))
         else:
             if individual_vals[1] == "<class":
-                types.add(individual_vals[2].strip(">").strip("'"))
+                types.add(individual_vals[2].strip(">").replace("'", ""))
             else:
-                types.add(individual_vals[1])
-    return str(types).replace("{", "(").replace("}", ")")
+                types.add(individual_vals[1].replace(",", ""))
+    types = set(val for val in types if val != "NoneType")
+    if "str" in types:
+        types = set(val for val in types if "'" not in val)
+    return str(types).replace("{", "(").replace("}", ")").replace("'", "")
+
 
 def save(
     val: Any,
@@ -362,13 +394,13 @@ def expand_url(
 
 
 class _Loader:
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, keys=[]):
+    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
         pass
 
 
 class _AnyLoader(_Loader):
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, keys=[]):
+    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
         if doc is not None:
             return doc
@@ -380,13 +412,11 @@ class _PrimitiveLoader(_Loader):
         # type: (Union[type, Tuple[Type[str], Type[str]]]) -> None
         self.tp = tp
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, keys=[]):
+    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
         if not isinstance(doc, self.tp):
             raise ValidationException(
-                "Expected a {} but got {}".format(
-                    self.tp, doc.__class__.__name__
-                )
+                "Expected a {} but got {}".format(self.tp, doc.__class__.__name__)
             )
         return doc
 
@@ -399,32 +429,41 @@ class _ArrayLoader(_Loader):
         # type: (_Loader) -> None
         self.items = items
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, keys=[]):
+    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
         if not isinstance(doc, MutableSequence):
             raise ValidationException(f"Expected a list, was {type(doc)}")
         r = []  # type: List[Any]
         errors = []  # type: List[SchemaSaladException]
-        fields = [] # type: List[str]
+        fields = []  # type: List[str]
 
-        append_index = False # boolean
-        global_doc = line_numbers # 
-     
-        for key in keys:
-            global_doc = global_doc[key]
-        
-        if global_doc == doc:
+        append_index = False  # type: bool
+        global_doc = copy.copy(line_numbers)  # type: CommentedMap
+
+        if keys is not None:
+            for key in keys:
+                global_doc = global_doc[key]
+
+        if isinstance(global_doc, (list, CommentedSeq)):
             append_index = True
 
         for i in range(0, len(doc)):
             try:
-                if append_index:  
+                if append_index:
                     lf = load_field(
-                        doc[i], _UnionLoader((self, self.items)), baseuri, loadingOptions, keys = keys + [i]
+                        doc[i],
+                        _UnionLoader((self, self.items)),
+                        baseuri,
+                        loadingOptions,
+                        keys=keys + [i],
                     )
                 else:
                     lf = load_field(
-                        doc[i], _UnionLoader((self, self.items)), baseuri, loadingOptions, keys = keys
+                        doc[i],
+                        _UnionLoader((self, self.items)),
+                        baseuri,
+                        loadingOptions,
+                        keys=keys,
                     )
                 if isinstance(lf, MutableSequence):
                     r.extend(lf)
@@ -434,7 +473,13 @@ class _ArrayLoader(_Loader):
                 if isinstance(doc[i], CommentedMap):
                     if doc[i].get("id") is not None:
                         if doc[i].get("id") in fields:
-                            errors.append(ValidationException(f"Duplicate field '{doc[i].get('id')}'", SourceLine(doc[i], "id", str), []))
+                            errors.append(
+                                ValidationException(
+                                    f"Duplicate field '{doc[i].get('id')}'",
+                                    SourceLine(doc[i], "id", str),
+                                    [],
+                                )
+                            )
                         else:
                             fields.append(doc[i].get("id"))
 
@@ -454,7 +499,7 @@ class _EnumLoader(_Loader):
         self.symbols = symbols
         self.name = name
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None,keys=[]):
+    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[str]]) -> Any
         if doc in self.symbols:
             return doc
@@ -470,7 +515,7 @@ class _SecondaryDSLLoader(_Loader):
         # type: (_Loader) -> None
         self.inner = inner
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None,keys=[]):
+    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[str]]) -> Any
         r: List[Dict[str, Any]] = []
         if isinstance(doc, MutableSequence):
@@ -545,11 +590,13 @@ class _RecordLoader(_Loader):
         # type: (Type[Saveable]) -> None
         self.classtype = classtype
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, keys=[]):
+    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
         if not isinstance(doc, MutableMapping):
             raise ValidationException(f"Expected a dict, was {type(doc)}")
-        return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot,keys=keys)
+        return self.classtype.fromDoc(
+            doc, baseuri, loadingOptions, docRoot=docRoot, keys=keys
+        )
 
     def __repr__(self):  # type: () -> str
         return str(self.classtype.__name__)
@@ -559,7 +606,7 @@ class _ExpressionLoader(_Loader):
     def __init__(self, items: Type[str]) -> None:
         self.items = items
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None,keys=[]):
+    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str],Optional[List]) -> Any
         if not isinstance(doc, str):
             raise ValidationException(f"Expected a str, was {type(doc)}")
@@ -571,38 +618,70 @@ class _UnionLoader(_Loader):
         # type: (Sequence[_Loader]) -> None
         self.alternates = alternates
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, keys=[]):
+    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
         errors = []
+        temp_doc = copy.copy(line_numbers)
         for t in self.alternates:
-
             try:
-                return t.load(doc, baseuri, loadingOptions, docRoot=docRoot,keys=keys)
+                return t.load(
+                    doc, baseuri, loadingOptions, docRoot=docRoot, keys=copy.copy(keys)
+                )
             except ValidationException as e:
                 if isinstance(doc, (CommentedMap, dict)):
                     if "class" in doc:
                         if doc.get("class") == str(t):
-                            errors.append(ValidationException(f"Object '{baseuri.split('/')[-1]}' is not valid because", SourceLine(doc, next(iter(doc)), str), [e]))
+                            errors.append(
+                                ValidationException(
+                                    f"Object '{baseuri.split('/')[-1]}' is not valid because",
+                                    SourceLine(doc, next(iter(doc)), str),
+                                    [e],
+                                )
+                            )
                     else:
                         if "array" in str(t):
-                            errors.append(ValidationException(f"tried {t} but", None, [e]))
+                            continue
                         else:
-                                       
-                            temp_doc = line_numbers
-                            for key in keys:
-                                temp_doc = temp_doc[key]
+                            id_doc = temp_doc
+                            if keys is not None:
+                                for key in keys:
+                                    id_doc = id_doc[key]
                             if "id" in doc:
-                                id = baseuri.split("/")[-1] + "#" + doc.get("id")        
-                                errors.append(ValidationException(f"checking object {id}", SourceLine(temp_doc, doc.get("id"), str), [e]))
+                                id = baseuri.split("/")[-1] + "#" + doc.get("id")
+                                errors.append(
+                                    ValidationException(
+                                        f"checking object {id}",
+                                        SourceLine(temp_doc, doc.get("id"), str),
+                                        [e],
+                                    )
+                                )
                             else:
-                                errors.append(ValidationException(f"tried {t} but", None, [e]))
+                                if not isinstance(
+                                    t, (_PrimitiveLoader)
+                                ):  # avoids 'tried <class "NoneType"> was {x}' errors
+                                    errors.append(
+                                        ValidationException(f"tried {t} but", None, [e])
+                                    )
                 else:
-                    errors.append(ValidationException(f"tried {t} but", None, [e]))
+                    if isinstance(
+                        t, (_EnumLoader, _PrimitiveLoader)
+                    ):  # avoids "tried <class "CWLType"> but x" and instead returns the values for parsing
+                        errors.append(ValidationException("", None, [e]))
+                    else:
+                        errors.append(ValidationException(f"tried {t} but", None, [e]))
 
-        if isinstance(doc, (CommentedMap, dict)) and 'class' in doc:
+        if isinstance(doc, (CommentedMap, dict)) and "class" in doc:
             if doc.get("class") not in str(self.alternates):
-                errors.append(ValidationException("Field `class` contains undefined reference to " + baseuri + "/" + doc.get("class"), SourceLine(doc, "class", str), []))
-        
+                errors.append(
+                    ValidationException(
+                        "Field `class` contains undefined reference to "
+                        + baseuri
+                        + "/"
+                        + doc.get("class"),
+                        SourceLine(doc, "class", str),
+                        [],
+                    )
+                )
         raise ValidationException("", None, errors, "-")
 
     def __repr__(self):  # type: () -> str
@@ -617,7 +696,7 @@ class _URILoader(_Loader):
         self.vocab_term = vocab_term
         self.scoped_ref = scoped_ref
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, keys=[]):
+    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
         if isinstance(doc, MutableSequence):
             newdoc = []
@@ -645,7 +724,19 @@ class _URILoader(_Loader):
                 self.vocab_term,
                 self.scoped_ref,
             )
-        return self.inner.load(doc, baseuri, loadingOptions,keys=keys)
+        if isinstance(doc, str):
+            errors = []
+            try:
+                if not loadingOptions.check_exists(doc):
+                    errors.append(
+                        ValidationException(f"contains undefined reference to {doc}")
+                    )
+            except ValidationException as e:
+                print(e)
+                pass
+            if len(errors) > 0:
+                raise ValidationException("", None, errors)
+        return self.inner.load(doc, baseuri, loadingOptions, keys=keys)
 
 
 class _TypeDSLLoader(_Loader):
@@ -687,7 +778,7 @@ class _TypeDSLLoader(_Loader):
             return third or second or first
         return doc
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None,keys=[]):
+    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str],Optional[List[str]]) -> Any
         if isinstance(doc, MutableSequence):
             r = []  # type: List[Any]
@@ -717,7 +808,7 @@ class _IdMapLoader(_Loader):
         self.mapSubject = mapSubject
         self.mapPredicate = mapPredicate
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None,keys=[]):
+    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str],Optional[List]) -> Any
         if isinstance(doc, MutableMapping):
             r = []  # type: List[Any]
@@ -741,7 +832,7 @@ class _IdMapLoader(_Loader):
                     else:
                         raise ValidationException("No mapPredicate")
             doc = r
-        return self.inner.load(doc, baseuri, loadingOptions,keys=keys)
+        return self.inner.load(doc, baseuri, loadingOptions, keys=keys)
 
 
 def _document_load(
