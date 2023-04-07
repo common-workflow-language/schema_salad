@@ -269,8 +269,17 @@ class PythonCodeGen(CodeGenBase):
         global_doc = copy.copy(line_numbers)
 
         for key in keys:
-            global_doc = global_doc[key]
 
+            if isinstance(global_doc, CommentedMap):
+                global_doc = global_doc.get(key)
+            elif isinstance(global_doc, (CommentedSeq, list)) and isinstance(key, int):
+                if key < len(global_doc):
+                    global_doc = global_doc[key]
+                else:
+                    global_doc = None
+            else:
+                global_doc = None
+                break
         keys = copy.copy(keys)
 
         if hasattr(doc, "lc"):
@@ -330,16 +339,15 @@ class PythonCodeGen(CodeGenBase):
 extension_fields: Dict[str, Any] = {{}}
 for k in _doc.keys():
     if k not in cls.attrs:
-        if ":" in k:
-            if not k:
-                _errors__.append(
-                    ValidationException("mapping with implicit null key")
-                )
-            elif ":" in k:
-                ex = expand_url(
-                    k, "", loadingOptions, scoped_id=False, vocab_term=False
-                )
-                extension_fields[ex] = _doc[k]
+        if not k:
+            _errors__.append(
+                ValidationException("mapping with implicit null key")
+            )
+        elif ":" in k:  
+            ex = expand_url(
+                k, "", loadingOptions, scoped_id=False, vocab_term=False
+            )
+            extension_fields[ex] = _doc[k]
         else:
             _errors__.append(
                 ValidationException(
@@ -511,8 +519,9 @@ if _errors__:
         if self.safe_name(name) == "id":
             self.out.write(
                 """
-        if _doc.get("id") in global_doc:
-            keys.append(_doc.get("id"))
+        if global_doc:
+            if _doc.get("id") in global_doc:
+                keys.append(_doc.get("id"))
 
 """
             )

@@ -441,8 +441,19 @@ class _ArrayLoader(_Loader):
         global_doc = copy.copy(line_numbers)  # type: CommentedMap
 
         if keys is not None:
+            
             for key in keys:
-                global_doc = global_doc[key]
+
+                if isinstance(global_doc, CommentedMap):
+                    global_doc = global_doc.get(key)
+                elif isinstance(global_doc, (CommentedSeq, list)) and isinstance(key, int):
+                    if key < len(global_doc):
+                        global_doc = global_doc[key]
+                    else:
+                        global_doc = None
+                else:
+                    global_doc = None
+                    break
 
         if isinstance(global_doc, (list, CommentedSeq)):
             append_index = True
@@ -645,16 +656,35 @@ class _UnionLoader(_Loader):
                             id_doc = temp_doc
                             if keys is not None:
                                 for key in keys:
-                                    id_doc = id_doc[key]
+                                    if isinstance(id_doc, CommentedMap):
+                                        id_doc = id_doc.get(key)
+                                    elif isinstance(id_doc, (CommentedSeq, list)) and isinstance(key, int):
+                                        if key < len(id_doc):
+                                            id_doc = id_doc[key]
+                                        else:
+                                            id_doc = None
+                                    else:
+                                        id_doc = None
+                                        break
                             if "id" in doc:
                                 id = baseuri.split("/")[-1] + "#" + doc.get("id")
-                                errors.append(
+                                if "id" in temp_doc:
+                                    errors.append(
                                     ValidationException(
                                         f"checking object {id}",
-                                        SourceLine(temp_doc, doc.get("id"), str),
+                                        SourceLine(id_doc,"id", str),
                                         [e],
                                     )
                                 )
+                                else:
+
+                                    errors.append(
+                                        ValidationException(
+                                            f"checking object {id}",
+                                            SourceLine(id_doc, doc.get("id"), str),
+                                            [e],
+                                        )
+                                    )
                             else:
                                 if not isinstance(
                                     t, (_PrimitiveLoader)
@@ -732,7 +762,6 @@ class _URILoader(_Loader):
                         ValidationException(f"contains undefined reference to {doc}")
                     )
             except ValidationException as e:
-                print(e)
                 pass
             if len(errors) > 0:
                 raise ValidationException("", None, errors)
