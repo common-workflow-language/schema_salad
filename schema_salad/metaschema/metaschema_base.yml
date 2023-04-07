@@ -39,8 +39,9 @@ $graph:
     - "xsd:string"
   doc:
     - |
-      Salad data types are based on Avro schema declarations.  Refer to the
-      [Avro schema declaration documentation](https://avro.apache.org/docs/current/spec.html#schemas) for
+      Names of salad data types (based on Avro schema declarations).
+
+      Refer to the [Avro schema declaration documentation](https://avro.apache.org/docs/current/spec.html#schemas) for
       detailed information.
     - "null: no value"
     - "boolean: a binary value"

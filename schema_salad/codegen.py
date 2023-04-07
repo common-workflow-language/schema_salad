@@ -41,10 +41,9 @@ def codegen(
     parser_info: Optional[str] = None,
 ) -> None:
     """Generate classes with loaders for the given Schema Salad description."""
-
     j = schema.extend_and_specialize(i, loader)
 
-    gen = None  # type: Optional[CodeGenBase]
+    gen: Optional[CodeGenBase] = None
     base = schema_metadata.get("$base", schema_metadata.get("id"))
     # ``urlsplit`` decides whether to return an encoded result based
     # on the object type. To ensure the code behaves the same for Py
@@ -55,16 +54,12 @@ def codegen(
     pkg = (
         package
         if package
-        else ".".join(
-            list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/")
-        )
+        else ".".join(list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/"))
     )
     info = parser_info or pkg
     if lang == "python" or lang == "cpp" or lang == "dlang":
         if target:
-            dest: Union[TextIOWrapper, TextIO] = open(
-                target, mode="w", encoding="utf-8"
-            )
+            dest: Union[TextIOWrapper, TextIO] = open(target, mode="w", encoding="utf-8")
         else:
             dest = sys.stdout
         if lang == "cpp":
@@ -104,7 +99,7 @@ def codegen(
     elif lang == "dotnet":
         gen = DotNetCodeGen(base, target=target, package=pkg, examples=examples)
     else:
-        raise SchemaSaladException(f"Unsupported code generation language '{lang}'")
+        raise SchemaSaladException(f"Unsupported code generation language {lang!r}")
 
     gen.prologue()
 
@@ -130,10 +125,7 @@ def codegen(
                 field_name = shortname(field["name"])
                 field_names.append(field_name)
                 tp = field["type"]
-                if (
-                    isinstance(tp, MutableSequence)
-                    and tp[0] == "https://w3id.org/cwl/salad#null"
-                ):
+                if isinstance(tp, MutableSequence) and tp[0] == "https://w3id.org/cwl/salad#null":
                     optional_fields.add(field_name)
 
             idfield = ""
@@ -164,9 +156,7 @@ def codegen(
                     subscope = field.get("subscope")
                     fieldpred = field["name"]
                     optional = bool("https://w3id.org/cwl/salad#null" in field["type"])
-                    uri_loader = gen.uri_loader(
-                        gen.type_loader(field["type"]), True, False, None
-                    )
+                    uri_loader = gen.uri_loader(gen.type_loader(field["type"]), True, False, None)
                     gen.declare_id_field(
                         fieldpred,
                         uri_loader,
@@ -194,9 +184,7 @@ def codegen(
                             type_loader, jld.get("identity", False), False, ref_scope
                         )
                     elif jld.get("_type") == "@vocab":
-                        type_loader = gen.uri_loader(
-                            type_loader, False, True, ref_scope
-                        )
+                        type_loader = gen.uri_loader(type_loader, False, True, ref_scope)
 
                     map_subject = jld.get("mapSubject")
                     if map_subject:
@@ -213,9 +201,7 @@ def codegen(
                 if jld == "@id":
                     continue
 
-                gen.declare_field(
-                    fieldpred, type_loader, field.get("doc"), optional, subscope
-                )
+                gen.declare_field(fieldpred, type_loader, field.get("doc"), optional, subscope)
 
             gen.end_class(rec["name"], field_names)
 

@@ -27,14 +27,13 @@ EXTRAS=[pycodegen]
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py ${MODULE}/avro/*.py ${MODULE}/tests/*.py) setup.py
-DEVPKGS=diff_cover black pylint pep257 pydocstyle flake8 tox tox-pyenv \
-	isort wheel autoflake flake8-bugbear pyupgrade bandit build\
-	-rtest-requirements.txt -rmypy-requirements.txt
+DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt
 COVBASE=coverage run --append
+PYTEST_EXTRA ?= -rs
 
 # Updating the Major & Minor version below?
 # Don't forget to update setup.py as well
-VERSION=8.3.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
+VERSION=8.4.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
 
 ## all                    : default task (install schema-salad in dev mode)
@@ -52,7 +51,6 @@ install-dep: install-dependencies
 
 install-dependencies: FORCE
 	pip install --upgrade $(DEVPKGS)
-	pip install -r requirements.txt -r mypy-requirements.txt
 
 ## install                : install the schema-salad package and scripts
 install: FORCE
@@ -60,6 +58,7 @@ install: FORCE
 
 ## dev                    : install the schema-salad package in dev mode
 dev: install-dep
+	pip install -U pip setuptools wheel
 	pip install -e .$(EXTRAS)
 
 ## dist                   : create a module package for distribution
@@ -106,10 +105,10 @@ codespell:
 
 ## format                 : check/fix all code indentation and formatting (runs black)
 format:
-	black --exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
+	black --force-exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
 
 format-check:
-	black --diff --check --exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
+	black --diff --check --force-exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
 
 ## pylint                 : run static code analysis on Python code
 pylint: $(PYSOURCES)
@@ -183,7 +182,24 @@ mypy_3.6: $(filter-out setup.py,$(PYSOURCES))
 	MYPYPATH=$$MYPYPATH:mypy-stubs mypy --python-version 3.6 $^
 
 mypyc: $(PYSOURCES)
-	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python setup.py test
+	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python setup.py test --addopts "${PYTEST_EXTRA}"
+
+mypyi:
+	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 pip install .${EXTRAS}
+
+check-metaschema-diff:
+	docker run \
+		-v "$(realpath ${MODULE}/metaschema/):/tmp/:ro" \
+		"quay.io/commonwl/cwltool_module:latest" \
+		schema-salad-doc /tmp/metaschema.yml \
+		> /tmp/metaschema.orig.html
+	schema-salad-doc \
+		"$(realpath ${MODULE}/metaschema/metaschema.yml)" \
+		> /tmp/metaschema.new.html
+	diff -a --color /tmp/metaschema.orig.html /tmp/metaschema.new.html || true
+
+compute-metaschema-hash:
+	@python -c 'import hashlib; from schema_salad.tests.test_makedoc import generate_doc; hasher = hashlib.sha256(); hasher.update(generate_doc().encode("utf-8")); print(hasher.hexdigest());'
 
 shellcheck: FORCE
 	shellcheck build-schema_salad-docker.sh release-test.sh
@@ -205,8 +221,11 @@ release:
 		twine upload testenv2/src/${PACKAGE}/dist/* && \
 		git tag ${VERSION} && git push --tags
 
-flake8: $(PYSOURCES)
-	flake8 $^
+flake8: FORCE
+	flake8 $(PYSOURCES)
+
+schema_salad/metaschema.py: schema_salad/codegen_base.py schema_salad/python_codegen_support.py schema_salad/python_codegen.py schema_salad/metaschema/*.yml
+	schema-salad-tool --codegen python schema_salad/metaschema/metaschema.yml > $@
 
 FORCE:
 

@@ -5,7 +5,7 @@ run individually as py.test -k tests/test_schemas_directive.py
 """
 
 import os
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 from schema_salad.avro.schema import Names, SchemaParseException
 from schema_salad.ref_resolver import Loader
@@ -19,10 +19,10 @@ test_dir_name = "tests/"
 class TestSchemasDirective:
     """Ensure codegen-produced parsers accept $schemas directives"""
 
-    document_loader = None  # type: Loader
-    avsc_names = None  # type: Union[Names, SchemaParseException]
-    schema_metadata = None  # type: Dict[str, Any]
-    metaschema_loader = None  # type: Loader
+    document_loader: Loader
+    avsc_names: Union[Names, SchemaParseException, None] = None
+    schema_metadata: Optional[Dict[str, Any]] = None
+    metaschema_loader: Optional[Loader] = None
 
     @classmethod
     def setup_class(cls) -> None:

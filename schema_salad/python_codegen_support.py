@@ -46,7 +46,6 @@ line_numbers = CommentedMap()
 
 
 class LoadingOptions:
-
     idx: IdxType
     fileuri: Optional[str]
     baseuri: str
@@ -58,6 +57,8 @@ class LoadingOptions:
     vocab: Dict[str, str]
     rvocab: Dict[str, str]
     cache: CacheType
+    imports: List[str]
+    includes: List[str]
 
     def __init__(
         self,
@@ -70,9 +71,10 @@ class LoadingOptions:
         addl_metadata: Optional[Dict[str, str]] = None,
         baseuri: Optional[str] = None,
         idx: Optional[IdxType] = None,
+        imports: Optional[List[str]] = None,
+        includes: Optional[List[str]] = None,
     ) -> None:
         """Create a LoadingOptions object."""
-
         self.original_doc = original_doc
 
         if idx is not None:
@@ -105,6 +107,16 @@ class LoadingOptions:
         else:
             self.addl_metadata = copyfrom.addl_metadata if copyfrom is not None else {}
 
+        if imports is not None:
+            self.imports = imports
+        else:
+            self.imports = copyfrom.imports if copyfrom is not None else []
+
+        if includes is not None:
+            self.includes = includes
+        else:
+            self.includes = copyfrom.includes if copyfrom is not None else []
+
         if fetcher is not None:
             self.fetcher = fetcher
         elif copyfrom is not None:
@@ -121,9 +133,7 @@ class LoadingOptions:
             )
             self.fetcher: Fetcher = DefaultFetcher({}, session)
 
-        self.cache = (
-            self.fetcher.cache if isinstance(self.fetcher, MemoryCachingFetcher) else {}
-        )
+        self.cache = self.fetcher.cache if isinstance(self.fetcher, MemoryCachingFetcher) else {}
 
         self.vocab = _vocab
         self.rvocab = _rvocab
@@ -174,24 +184,25 @@ class LoadingOptions:
                 if self.fileuri is not None
                 else pathlib.Path(schema).resolve().as_uri()
             )
-            try:
-                if fetchurl not in self.cache or self.cache[fetchurl] is True:
-                    _logger.debug("Getting external schema %s", fetchurl)
+            if fetchurl not in self.cache or self.cache[fetchurl] is True:
+                _logger.debug("Getting external schema %s", fetchurl)
+                try:
                     content = self.fetcher.fetch_text(fetchurl)
-                    self.cache[fetchurl] = newGraph = Graph()
-                    for fmt in ["xml", "turtle"]:
-                        try:
-                            newGraph.parse(
-                                data=content, format=fmt, publicID=str(fetchurl)
-                            )
-                            break
-                        except (xml.sax.SAXParseException, TypeError, BadSyntax):
-                            pass
-                graph += self.cache[fetchurl]
-            except Exception as e:
-                _logger.warning(
-                    "Could not load extension schema %s: %s", fetchurl, str(e)
-                )
+                except Exception as e:
+                    _logger.warning("Could not load extension schema %s: %s", fetchurl, str(e))
+                    continue
+                newGraph = Graph()
+                err_msg = "unknown error"
+                for fmt in ["xml", "turtle"]:
+                    try:
+                        newGraph.parse(data=content, format=fmt, publicID=str(fetchurl))
+                        self.cache[fetchurl] = newGraph
+                        graph += newGraph
+                        break
+                    except (xml.sax.SAXParseException, TypeError, BadSyntax) as e:
+                        err_msg = str(e)
+                else:
+                    _logger.warning("Could not load extension schema %s: %s", fetchurl, err_msg)
         self.cache[key] = graph
         return graph
 
@@ -225,24 +236,24 @@ def load_field(val, fieldtype, baseuri, loadingOptions, keys=None):
         if "$import" in val:
             if loadingOptions.fileuri is None:
                 raise SchemaSaladException("Cannot load $import without fileuri")
+            url = loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$import"])
             result, metadata = _document_load_by_url(
                 fieldtype,
-                loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$import"]),
+                url,
                 loadingOptions,
             )
+            loadingOptions.imports.append(url)
             return result
         elif "$include" in val:
             if loadingOptions.fileuri is None:
                 raise SchemaSaladException("Cannot load $import without fileuri")
-            val = loadingOptions.fetcher.fetch_text(
-                loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
-            )
+            url = loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
+            val = loadingOptions.fetcher.fetch_text(url)
+            loadingOptions.includes.append(url)
     return fieldtype.load(val, baseuri, loadingOptions, keys=keys)
 
 
-save_type = Optional[
-    Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]
-]
+save_type = Optional[Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]]
 
 
 def parse_errors(error_message: str) -> str:
@@ -281,16 +292,11 @@ def save(
     if isinstance(val, Saveable):
         return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
     if isinstance(val, MutableSequence):
-        return [
-            save(v, top=False, base_url=base_url, relative_uris=relative_uris)
-            for v in val
-        ]
+        return [save(v, top=False, base_url=base_url, relative_uris=relative_uris) for v in val]
     if isinstance(val, MutableMapping):
         newdict = {}
         for key in val:
-            newdict[key] = save(
-                val[key], top=False, base_url=base_url, relative_uris=relative_uris
-            )
+            newdict[key] = save(val[key], top=False, base_url=base_url, relative_uris=relative_uris)
         return newdict
     if val is None or isinstance(val, (int, float, bool, str)):
         return val
@@ -348,7 +354,7 @@ def expand_url(
     split = urlsplit(url)
 
     if (
-        (bool(split.scheme) and split.scheme in ["http", "https", "file"])
+        (bool(split.scheme) and split.scheme in loadingOptions.fetcher.supported_schemes())
         or url.startswith("$(")
         or url.startswith("${")
     ):
@@ -388,7 +394,7 @@ def expand_url(
             if url in loadingOptions.rvocab:
                 return loadingOptions.rvocab[url]
         else:
-            raise ValidationException(f"Term '{url}' not in vocabulary")
+            raise ValidationException(f"Term {url!r} not in vocabulary")
 
     return url
 
@@ -505,8 +511,7 @@ class _ArrayLoader(_Loader):
 
 
 class _EnumLoader(_Loader):
-    def __init__(self, symbols, name):
-        # type: (Sequence[str], str) -> None
+    def __init__(self, symbols: Sequence[str], name: str) -> None:
         self.symbols = symbols
         self.name = name
 
@@ -543,9 +548,7 @@ class _SecondaryDSLLoader(_Loader):
                         new_dict["pattern"] = dict_copy.pop("pattern")
                     else:
                         raise ValidationException(
-                            "Missing pattern in secondaryFiles specification entry: {}".format(
-                                d
-                            )
+                            f"Missing pattern in secondaryFiles specification entry: {d}"
                         )
                     new_dict["required"] = (
                         dict_copy.pop("required") if "required" in dict_copy else None
@@ -570,19 +573,13 @@ class _SecondaryDSLLoader(_Loader):
                 new_dict["pattern"] = doc_copy.pop("pattern")
             else:
                 raise ValidationException(
-                    "Missing pattern in secondaryFiles specification entry: {}".format(
-                        doc
-                    )
+                    f"Missing pattern in secondaryFiles specification entry: {doc}"
                 )
-            new_dict["required"] = (
-                doc_copy.pop("required") if "required" in doc_copy else None
-            )
+            new_dict["required"] = doc_copy.pop("required") if "required" in doc_copy else None
 
             if len(doc_copy):
                 raise ValidationException(
-                    "Unallowed values in secondaryFiles specification entry: {}".format(
-                        doc_copy
-                    )
+                    f"Unallowed values in secondaryFiles specification entry: {doc_copy}"
                 )
             r.append(new_dict)
 
@@ -625,8 +622,7 @@ class _ExpressionLoader(_Loader):
 
 
 class _UnionLoader(_Loader):
-    def __init__(self, alternates):
-        # type: (Sequence[_Loader]) -> None
+    def __init__(self, alternates: Sequence[_Loader]) -> None:
         self.alternates = alternates
 
     def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
@@ -787,9 +783,7 @@ class _TypeDSLLoader(_Loader):
         if m:
             group1 = m.group(1)
             assert group1 is not None  # nosec
-            first = expand_url(
-                group1, baseuri, loadingOptions, False, True, self.refScope
-            )
+            first = expand_url(group1, baseuri, loadingOptions, False, True, self.refScope)
             second = third = None
             if bool(m.group(2)):
                 second = {"type": "array", "items": first}
@@ -898,12 +892,6 @@ def _document_load(
             addl_metadata=addl_metadata,
         )
 
-        # doc = {
-        #     k: v
-        #     for k, v in doc.items()
-        #     if k not in ("$namespaces", "$schemas", "$base")
-        # }
-
         if type(doc) == CommentedMap:
             global line_numbers
             line_numbers = doc
@@ -948,10 +936,7 @@ def _document_load_by_url(
     doc_url, frg = urldefrag(url)
 
     text = loadingOptions.fetcher.fetch_text(doc_url)
-    if isinstance(text, bytes):
-        textIO = StringIO(text.decode("utf-8"))
-    else:
-        textIO = StringIO(text)
+    textIO = StringIO(text)
     textIO.name = str(doc_url)
     yaml = yaml_no_ts()
     result = yaml.load(textIO)
@@ -1003,10 +988,7 @@ def save_relative_uri(
 ) -> Any:
     """Convert any URI to a relative one, obeying the scoping rules."""
     if isinstance(uri, MutableSequence):
-        return [
-            save_relative_uri(u, base_url, scoped_id, ref_scope, relative_uris)
-            for u in uri
-        ]
+        return [save_relative_uri(u, base_url, scoped_id, ref_scope, relative_uris) for u in uri]
     elif isinstance(uri, str):
         if not relative_uris or uri == base_url:
             return uri

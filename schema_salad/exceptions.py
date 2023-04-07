@@ -1,3 +1,4 @@
+"""Shared Exception classes."""
 from typing import List, Optional, Sequence, Tuple, Union
 
 from .sourceline import SourceLine, reflow_all, strip_duplicated_lineno
@@ -15,27 +16,25 @@ class SchemaSaladException(Exception):
     ) -> None:
         super().__init__(msg)
         self.message = self.args[0]
-        self.file = None  # type: Optional[str]
-        self.start = None  # type: Optional[Tuple[int, int]]
-        self.end = None  # type: Optional[Tuple[int, int]]
+        self.file: Optional[str] = None
+        self.start: Optional[Tuple[int, int]] = None
+        self.end: Optional[Tuple[int, int]] = None
 
-        self.is_warning = False  # type: bool
+        self.is_warning: bool = False
 
         # It will be set by its parent
-        self.bullet = ""  # type: str
+        self.bullet: str = ""
 
         def simplify(exc: "SchemaSaladException") -> List["SchemaSaladException"]:
             return [exc] if len(exc.message) else exc.children
 
-        def with_bullet(
-            exc: "SchemaSaladException", bullet: str
-        ) -> "SchemaSaladException":
+        def with_bullet(exc: "SchemaSaladException", bullet: str) -> "SchemaSaladException":
             if exc.bullet == "":
                 exc.bullet = bullet
             return exc
 
         if children is None:
-            self.children = []  # type: List["SchemaSaladException"]
+            self.children: List["SchemaSaladException"] = []
         elif len(children) <= 1:
             self.children = sum((simplify(c) for c in children), [])
         else:
@@ -81,10 +80,10 @@ class SchemaSaladException(Exception):
         return []
 
     def prefix(self) -> str:
-        pre = ""  # type:str
+        pre: str = ""
         if self.file:
-            linecol0 = ""  # type: Union[int, str]
-            linecol1 = ""  # type: Union[int, str]
+            linecol0: Union[int, str] = ""
+            linecol1: Union[int, str] = ""
             if self.start:
                 linecol0, linecol1 = self.start
             pre = f"{self.file}:{linecol0}:{linecol1}: "
@@ -98,6 +97,7 @@ class SchemaSaladException(Exception):
         return f"{self.prefix()}{spaces}{bullet}{self.message}"
 
     def __str__(self) -> str:
+        """Convert to a string using :py:meth:`pretty_str`."""
         return str(self.pretty_str())
 
     def pretty_str(self, level: int = 0) -> str:
@@ -105,9 +105,7 @@ class SchemaSaladException(Exception):
         my_summary = [self.summary(level, True)] if messages else []
         next_level = level + 1 if messages else level
 
-        ret = "\n".join(
-            e for e in my_summary + [c.pretty_str(next_level) for c in self.children]
-        )
+        ret = "\n".join(e for e in my_summary + [c.pretty_str(next_level) for c in self.children])
         if level == 0:
             return strip_duplicated_lineno(reflow_all(ret))
         else:

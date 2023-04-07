@@ -84,9 +84,7 @@ class CodeGenBase:
         """Signal that we are done with this class."""
         raise NotImplementedError()
 
-    def type_loader(
-        self, type_declaration: Union[List[Any], Dict[str, Any]]
-    ) -> TypeDef:
+    def type_loader(self, type_declaration: Union[List[Any], Dict[str, Any]]) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         raise NotImplementedError()
 

@@ -21,11 +21,17 @@ jobs:
       matrix:
         py-ver-major: [3]
         py-ver-minor: [6, 7, 8, 9, 10, 11]
-        step: [lint, bandit, unit, mypy]
+        step: [lint, bandit, unit, mypy, memleak]
         exclude:
           - py-ver-major: 3
             py-ver-minor: 6
             step: mypy
+          - py-ver-major: 3
+            py-ver-minor: 6
+            step: memleak
+          - py-ver-major: 3
+            py-ver-minor: 6
+            step: lint
 
     env:
       py-semver: ${{ format('{0}.{1}', matrix.py-ver-major, matrix.py-ver-minor) }}
@@ -46,7 +52,7 @@ jobs:
       - name: Upgrade setuptools and install tox
         run: |
           pip install -U pip setuptools wheel
-          pip install tox tox-gh-actions
+          pip install 'tox<4' tox-gh-actions
 
       - name: MyPy cache
         if: ${{ matrix.step == 'mypy' }}
@@ -63,6 +69,7 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   tox-style:
     name: CI linters via Tox
@@ -75,7 +82,7 @@ jobs:
 
     env:
       py-semver: "3.11"
-      TOXENV: ${{ format('py310-{0}', matrix.step) }}
+      TOXENV: ${{ format('py311-{0}', matrix.step) }}
 
     steps:
       - uses: actions/checkout@v3
@@ -96,7 +103,7 @@ jobs:
       - name: Upgrade setuptools and install tox
         run: |
           pip install -U pip setuptools wheel
-          pip install tox tox-gh-actions
+          pip install 'tox<4' tox-gh-actions
 
       - if: ${{ matrix.step == 'pydocstyle' && github.event_name == 'pull_request'}}
         name: Create local branch for diff-quality for PRs
@@ -116,7 +123,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"  # quoted, otherwise that turns into the number 3.1
+          python-version: "3.11"
 
       - name: Cache for pip
         uses: actions/cache@v3
@@ -133,3 +140,12 @@ jobs:
         env:
           RELEASE_SKIP: head
         run: ./release-test.sh
+
+  build_test_container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: record schema-salad version
+        run: pip install setuptools_scm[toml] && python -m setuptools_scm
+      - name: build & test schema_salad container
+        run: ./build-schema_salad-docker.sh

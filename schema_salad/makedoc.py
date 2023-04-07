@@ -1,5 +1,6 @@
 import argparse
 import copy
+import html
 import logging
 import os
 import re
@@ -7,6 +8,7 @@ import sys
 from io import StringIO, TextIOWrapper
 from typing import (
     IO,
+    TYPE_CHECKING,
     Any,
     Dict,
     List,
@@ -19,12 +21,20 @@ from typing import (
 )
 from urllib.parse import urldefrag
 
-import mistune
+from mistune import create_markdown
+from mistune.renderers import HTMLRenderer
+from mistune.util import escape_html
 
 from .exceptions import SchemaSaladException, ValidationException
 from .schema import avro_field_name, extend_and_specialize, get_metaschema
 from .utils import add_dictlist, aslist
 from .validate import avro_type_name
+
+if TYPE_CHECKING:
+    # avoid import error since typing stubs do not exist in actual package
+    from mistune import State
+    from mistune.markdown import Markdown
+    from mistune.plugins import PluginName
 
 _logger = logging.getLogger("salad")
 
@@ -35,7 +45,7 @@ def vocab_type_name(url: str) -> str:
 
 
 def has_types(items: Any) -> List[str]:
-    r = []  # type: List[str]
+    r: List[str] = []
     if isinstance(items, MutableMapping):
         if items["type"] == "https://w3id.org/cwl/salad#record":
             return [items["name"]]
@@ -57,23 +67,199 @@ def linkto(item: str) -> str:
     return f"[{frg}](#{to_id(frg)})"
 
 
-class MyRenderer(mistune.Renderer):
-    def __init__(self) -> None:
-        super().__init__()
-        self.options = {}
+class MyRenderer(HTMLRenderer):
+    """Custom renderer with different representations of selected HTML tags."""
 
-    def header(self, text: str, level: int, raw: Optional[Any] = None) -> str:
-        return (
-            """<h{} id="{}" class="section">{} <a href="#{}">&sect;</a></h{}>""".format(
-                level, to_id(text), text, to_id(text), level
-            )
+    def heading(self, text: str, level: int) -> str:
+        """Override HTML heading creation with text IDs."""
+        return """<h{} id="{}" class="section">{} <a href="#{}">&sect;</a></h{}>""".format(
+            level, to_id(text), text, to_id(text), level
         )
 
-    def table(self, header: str, body: str) -> str:
-        return (
-            '<table class="table table-striped">\n<thead>{}</thead>\n'
-            "<tbody>\n{}</tbody>\n</table>\n"
-        ).format(header, body)
+    def text(self, text: str) -> str:
+        """Don't escape quotation marks."""
+        # avoid convert of & if already escaped
+        text = html.unescape(text)
+        # html.escape does both single/double quotes ('/")
+        # mistune.util.escape does only double quotes
+        return html.escape(text, quote=self._escape)
+
+    def inline_html(self, html: str) -> str:
+        """Don't escape characters in predefined HTML within paragraph tags."""
+        return html + "\n"
+
+    def block_html(self, html: str) -> str:
+        """Don't escape characters nor wrap predefined HTML within paragraph tags."""
+        return html + "\n"
+
+    def block_code(self, code: str, info: Optional[str] = None) -> str:
+        """Don't escape quotation marks."""
+        text = "<pre><code"
+        if info is not None:
+            info = info.strip()
+        if info:
+            lang = info.split(None, 1)[0]
+            lang = escape_html(lang)
+            text += ' class="language-' + lang + '"'
+        return text + ">" + html.escape(code, quote=self._escape) + "</code></pre>\n"
+
+
+def markdown_list_hook(
+    markdown: "Markdown[str, Any]", text: str, state: "State"
+) -> Tuple[str, "State"]:
+    """Patches problematic Markdown lists for later HTML generation.
+
+    When a Markdown list with paragraphs not indented with the list
+    markers (no spaces before following lines), ``mistune`` v2 does
+    not handle them correctly. This is however permitted as per
+    https://daringfireball.net/projects/markdown/syntax#list
+
+    For example:
+
+    ```markdown
+    * some list
+    * item with
+    paragraph
+    * other item
+    ```
+
+    Similarly, lists that are completely indented or that contains nested lists
+    produce incorrect HTML ``<p>``/``<li>`` tag combinations.
+
+    Because list parsing is deeply nested within ``mistune.block_parser.BlockParser``
+    and that there is no easy way to override utility functions it employs to adjust
+    patterns of list items without reimplementing it or a lot of monkey patching,
+    instead catch the problem cases before rendering and adjust them with a hook.
+
+    See https://github.com/lepture/mistune/issues/296
+    and https://github.com/common-workflow-language/schema_salad/pull/619
+    """
+    pattern = re.compile(
+        r"^"
+        r"(?P<before>\n*)"  # detect newline to start capture on bullet line
+        r"(?P<indent>\s*)"
+        r"(?P<bullet>[0-9]+[.)]?|[*-])"
+        r"(?P<spacing>\s+)"
+        r"(?P<first_line>.*)"
+        # if more than one empty line is found, end search (paragraph after list)
+        r"(?!\n\s*\n\s*)"
+        # otherwise, find all lines part of the same bullet item
+        # if this bullet item is indented (nested list), match indents to collect
+        # use negative lookahead to avoid over capturing following bullets
+        r"(?P<other_lines>(?:\n\s*(?![0-9]+[.)]+|[*-])(?P=indent).*"
+        r"(?!\n\s*\n\s*)"  # avoid match past list on last indented line
+        r")+)*"  # end 'other_lines'
+        # because of negative lookahead logic, there is sometimes a remaining
+        # trailing character to capture on the last list item line
+        r"(?P<remain>.*)",
+        re.MULTILINE,
+    )
+    matches = list(re.finditer(pattern, text))
+    if not matches:
+        return text, state
+    result = ""
+    begin = 0
+    for match in matches:
+        start, end = match.start(), match.end()
+        start += len(match.group("before"))
+        result += text[begin:start]  # add text in between matched lists
+
+        # process and indented list (de-indent, apply fixes, and re-indent)
+        indent_prefix = match.group("indent")
+        if indent_prefix:
+            intend_list = text[start:end]
+            intend_list = "\n".join(
+                [
+                    line.strip()
+                    for line in intend_list.split("\n")
+                    # mistune is having trouble understanding list items
+                    # if they are separated by an additional line in between
+                    # ignore empty lines to group items together,
+                    # avoiding split into distinct list after injecting <p> tags
+                    if line.strip()
+                ]
+            )
+            intend_list, _ = markdown_list_hook(markdown, intend_list, state)
+            # remove final newline from other if/else branch
+            intend_list = intend_list.rstrip()
+            intend_list = "\n".join([indent_prefix + line for line in intend_list.split("\n")])
+            result += intend_list + "\n"
+        # process a plain list
+        # pad extra spaces to multi-lines items contents after bullet
+        else:
+            item = match.group("indent") + match.group("bullet") + match.group("spacing")
+            result += item + match.group("first_line")
+            indent = (
+                "\n"
+                + match.group("indent").split("\n")[-1]
+                + (" " * len(match.group("bullet")))
+                + match.group("spacing")
+            )
+            other = match.group("other_lines")
+            if other:
+                other = indent.join(
+                    [
+                        line.strip()
+                        for line in other.split("\n")
+                        # mistune is having trouble understanding list items
+                        # if they are separated by an additional line in between
+                        # ignore empty lines to group items together,
+                        # avoiding split into distinct list after injecting <p> tags
+                        if line.strip()
+                    ]
+                )
+                # Add a single space to ensure words remain separated.
+                # If we use newline/indent like in other lines above, mistune
+                # splits the items into 2 lists. Although technically the Markdown
+                # will have an extra space, spacing will be patched when generating
+                # the HTML whether newline or space was used.
+                if (
+                    # only apply the extra space if items are actually
+                    # 2 words to avoid incorrect split of compound words
+                    # (e.g.: "key-value", not "key- value").
+                    re.match(r".*[^-]$", result[-2:], re.I)
+                    and re.match(r"^[^-].*", other[:2], re.I)
+                ):
+                    result += " "
+                result += other
+            result += match.group("remain") + "\n"
+
+        begin = end + 1
+    result += text[begin:]
+    # Because lists regexes are designed to detect line-by-line bullets/paragraphs,
+    # we cannot directly (or easily / with certainty) detect "list-like" encase in
+    # fenced code definitions that could be much above/below the "list-like" items.
+    # Instead, simply revert them after the fact with document-level matches of fenced codes.
+    _logger.debug("Original Markdown:\n\n%s\n\n", text)
+    _logger.debug("Modified Markdown:\n\n%s\n\n", result)
+    result = patch_fenced_code(text, result)
+    _logger.debug("Patched Markdown:\n\n%s\n\n", result)
+    return result, state
+
+
+def patch_fenced_code(original_markdown_text: str, modified_markdown_text: str) -> str:
+    """Reverts fenced code fragments found in the modified contents back to their original definition."""
+    # Pattern inspired from 'mistune.block_parser.BlockParser.FENCED_CODE'.
+    # However, instead of the initial ' {0,3}' part to match any indented fenced-code,
+    # use any quantity of spaces, as long as they match at the end as well (using '\1').
+    # Because of nested fenced-code in lists, it can be more indented than "normal".
+    fenced_code_pattern = re.compile(
+        r"( *)(`{3,}|~{3,})([^`\n]*)\n(?:|([\s\S]*?)\n)(?:\1\2[~`]* *\n+|$)"
+    )
+    matches_original = list(re.finditer(fenced_code_pattern, original_markdown_text))
+    matches_modified = list(re.finditer(fenced_code_pattern, modified_markdown_text))
+    if len(matches_original) != len(matches_modified):
+        raise ValueError("Cannot patch fenced code definitions with inconsistent matches.")
+    result = ""
+    begin = 0
+    for original, modified in zip(matches_original, matches_modified):
+        ori_s, ori_e = original.start(), original.end()
+        mod_s, mod_e = modified.start(), modified.end()
+        result += modified_markdown_text[begin:mod_s]  # add text in between matches
+        result += original_markdown_text[ori_s:ori_e]  # revert the fenced code
+        begin = mod_e  # skip over the modified fenced code for next match
+    result += modified_markdown_text[begin:]  # left over text after last match
+    return result
 
 
 def to_id(text: str) -> str:
@@ -93,7 +279,8 @@ class ToC:
         self.toc = ""
         self.start_numbering = True
 
-    def add_entry(self, thisdepth, title):  # type: (int, str) -> str
+    def add_entry(self, thisdepth: int, title: str) -> str:
+        """Add an entry to the table of contents."""
         depth = len(self.numbering)
         if thisdepth < depth:
             self.toc += "</ol>"
@@ -111,15 +298,11 @@ class ToC:
             self.numbering.append(1)
 
         num = (
-            "{}.{}".format(
-                self.numbering[0], ".".join([str(n) for n in self.numbering[1:]])
-            )
+            "{}.{}".format(self.numbering[0], ".".join([str(n) for n in self.numbering[1:]]))
             if self.start_numbering
             else ""
         )
-        self.toc += """<li><a href="#{}">{} {}</a><ol>\n""".format(
-            to_id(title), num, title
-        )
+        self.toc += f"""<li><a href="#{to_id(title)}">{num} {title}</a><ol>\n"""
         return num
 
     def contents(self, idn: str) -> str:
@@ -179,10 +362,7 @@ def number_headings(toc: ToC, maindoc: str) -> str:
 def fix_doc(doc: Union[List[str], str]) -> str:
     docstr = "".join(doc) if isinstance(doc, MutableSequence) else doc
     return "\n".join(
-        [
-            re.sub(r"<([^>@]+@[^>]+)>", r"[\1](mailto:\1)", d)
-            for d in docstr.splitlines()
-        ]
+        [re.sub(r"<([^>@]+@[^>]+)>", r"[\1](mailto:\1)", d) for d in docstr.splitlines()]
     )
 
 
@@ -197,12 +377,12 @@ class RenderType:
     ) -> None:
         self.typedoc = StringIO()
         self.toc = toc
-        self.subs = {}  # type: Dict[str, str]
-        self.docParent = {}  # type: Dict[str, List[str]]
-        self.docAfter = {}  # type: Dict[str, List[str]]
-        self.rendered = set()  # type: Set[str]
+        self.subs: Dict[str, str] = {}
+        self.docParent: Dict[str, List[str]] = {}
+        self.docAfter: Dict[str, List[str]] = {}
+        self.rendered: Set[str] = set()
         self.redirects = redirects
-        self.title = None  # type: Optional[str]
+        self.title: Optional[str] = None
         self.primitiveType = primitiveType
 
         for t in j:
@@ -225,17 +405,15 @@ class RenderType:
         metaschema_loader = get_metaschema()[2]
         alltypes = extend_and_specialize(j, metaschema_loader)
 
-        self.typemap = {}  # type: Dict[str, Dict[str, str]]
-        self.uses = {}  # type: Dict[str, List[Tuple[str, str]]]
-        self.record_refs = {}  # type: Dict[str, List[str]]
+        self.typemap: Dict[str, Dict[str, str]] = {}
+        self.uses: Dict[str, List[Tuple[str, str]]] = {}
+        self.record_refs: Dict[str, List[str]] = {}
         for entry in alltypes:
             self.typemap[entry["name"]] = entry
             try:
                 if entry["type"] == "record":
                     self.record_refs[entry["name"]] = []
-                    fields = entry.get(
-                        "fields", []
-                    )  # type: Union[str, List[Dict[str, str]]]
+                    fields: Union[str, List[Dict[str, str]]] = entry.get("fields", [])
                     if isinstance(fields, str):
                         raise KeyError("record fields must be a list of mappings")
                     for f in fields:  # type: Dict[str, str]
@@ -247,10 +425,7 @@ class RenderType:
                                 _, frg1 = urldefrag(t["name"])
                                 _, frg2 = urldefrag(f["name"])
                                 self.uses[tp].append((frg1, frg2))
-                            if (
-                                tp not in basicTypes
-                                and tp not in self.record_refs[entry["name"]]
-                            ):
+                            if tp not in basicTypes and tp not in self.record_refs[entry["name"]]:
                                 self.record_refs[entry["name"]].append(tp)
             except KeyError:
                 _logger.error("Did not find 'type' in %s", t)
@@ -276,26 +451,15 @@ class RenderType:
         if isinstance(tp, MutableSequence):
             if nbsp and len(tp) <= 3:
                 return "&nbsp;|&nbsp;".join(
-                    [
-                        self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate)
-                        for n in tp
-                    ]
+                    [self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp]
                 )
             return " | ".join(
-                [
-                    self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate)
-                    for n in tp
-                ]
+                [self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp]
             )
         if isinstance(tp, MutableMapping):
             if tp["type"] == "https://w3id.org/cwl/salad#array":
-                ar = "array&lt;{}&gt;".format(
-                    self.typefmt(tp["items"], redirects, nbsp=True)
-                )
-                if (
-                    isinstance(jsonldPredicate, dict)
-                    and "mapSubject" in jsonldPredicate
-                ):
+                ar = "array&lt;{}&gt;".format(self.typefmt(tp["items"], redirects, nbsp=True))
+                if isinstance(jsonldPredicate, dict) and "mapSubject" in jsonldPredicate:
                     if "mapPredicate" in jsonldPredicate:
                         ar += " | "
                         if len(ar) > 40:
@@ -327,10 +491,7 @@ class RenderType:
                     return """<a href="{}">{}</a>""".format(redirects[tp["name"]], frg)
                 if tp["name"] in self.typemap:
                     return f"""<a href="#{to_id(frg)}">{frg}</a>"""
-                if (
-                    tp["type"] == "https://w3id.org/cwl/salad#enum"
-                    and len(tp["symbols"]) == 1
-                ):
+                if tp["type"] == "https://w3id.org/cwl/salad#enum" and len(tp["symbols"]) == 1:
                     return "constant value <code>{}</code>".format(
                         avro_field_name(tp["symbols"][0])
                     )
@@ -339,7 +500,7 @@ class RenderType:
                 return self.typefmt(tp["type"], redirects)
         else:
             if str(tp) in redirects:
-                return f"""<a href="{redirects[tp]}">{redirects[tp]}</a>"""
+                return f"""<a href="{redirects[tp]}">{redirects[tp]}</a>"""  # noqa: B907
             if str(tp) in basicTypes:
                 return """<a href="{}">{}</a>""".format(
                     self.primitiveType, vocab_type_name(str(tp))
@@ -384,11 +545,7 @@ class RenderType:
                     idx = i.find(":")
                     if idx > -1:
                         enumDesc[i[:idx]] = i[idx + 1 :]
-                e["doc"] = [
-                    i
-                    for i in e["doc"]
-                    if i.find(":") == -1 or i.find(" ") < i.find(":")
-                ]
+                e["doc"] = [i for i in e["doc"] if i.find(":") == -1 or i.find(" ") < i.find(":")]
 
         f["doc"] = fix_doc(f["doc"])
 
@@ -422,8 +579,22 @@ class RenderType:
             f["doc"] = number_headings(self.toc, f["doc"])
 
         doc = doc + "\n\n" + f["doc"]
-
-        doc = mistune.markdown(doc, renderer=MyRenderer())
+        plugins: List["PluginName"] = [
+            "strikethrough",
+            "footnotes",
+            "table",
+            "url",
+        ]
+        # if escape active, wraps literal HTML into '<p> {HTML} </p>'
+        # we must pass it to both since 'MyRenderer' is predefined
+        escape = False
+        markdown2html: "Markdown[str, Any]" = create_markdown(
+            renderer=MyRenderer(escape=escape),
+            plugins=plugins,
+            escape=escape,
+        )
+        markdown2html.before_parse_hooks.append(markdown_list_hook)
+        doc = markdown2html(doc)
 
         if f["type"] == "record":
             doc += "<h3>Fields</h3>"
@@ -439,10 +610,7 @@ class RenderType:
             optional = []
             for i in f.get("fields", []):
                 tp = i["type"]
-                if (
-                    isinstance(tp, MutableSequence)
-                    and tp[0] == "https://w3id.org/cwl/salad#null"
-                ):
+                if isinstance(tp, MutableSequence) and tp[0] == "https://w3id.org/cwl/salad#null":
                     opt = False
                     tp = tp[1:]
                 else:
@@ -460,10 +628,8 @@ class RenderType:
 </div>""".format(
                     rfrg,
                     "required" if opt else "optional",
-                    self.typefmt(
-                        tp, self.redirects, jsonldPredicate=i.get("jsonldPredicate")
-                    ),
-                    mistune.markdown(desc),
+                    self.typefmt(tp, self.redirects, jsonldPredicate=i.get("jsonldPredicate")),
+                    markdown2html(desc),
                 )
                 if opt:
                     required.append(tr)
@@ -518,20 +684,14 @@ def avrold_doc(
     content = rt.typedoc.getvalue()
 
     if brandstyle is None:
-        bootstrap_url = (
-            "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
-        )
+        bootstrap_url = "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
         bootstrap_integrity = (
             "sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
         )
-        brandstyle_template = (
-            '<link rel="stylesheet" href={} integrity={} crossorigin="anonymous">'
-        )
+        brandstyle_template = '<link rel="stylesheet" href={} integrity={} crossorigin="anonymous">'
         brandstyle = brandstyle_template.format(bootstrap_url, bootstrap_integrity)
 
-    picturefill_url = (
-        "https://cdn.rawgit.com/scottjehl/picturefill/3.0.2/dist/picturefill.min.js"
-    )
+    picturefill_url = "https://cdn.rawgit.com/scottjehl/picturefill/3.0.2/dist/picturefill.min.js"
     picturefill_integrity = (
         "sha384-ZJsVW8YHHxQHJ+SJDncpN90d0EfAhPP+yA94n+EhSRzhcxfo84yMnNk+v37RGlWR"
     )

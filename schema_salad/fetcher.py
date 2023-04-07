@@ -83,7 +83,7 @@ class DefaultFetcher(MemoryCachingFetcher):
                 if content_type not in content_types:
                     _logger.warning(
                         f"While fetching {url}, got content-type of "
-                        f"'{content_type}'. Expected one of {content_types}."
+                        f"{content_type!r}. Expected one of {content_types}."
                     )
             return resp.text
         if scheme == "file":
@@ -95,9 +95,7 @@ class DefaultFetcher(MemoryCachingFetcher):
                     path[1:]
                 ):  # checking if pathis valid after removing front / or not
                     path = path[1:]
-                with open(
-                    urllib.request.url2pathname(str(path)), encoding="utf-8"
-                ) as fp:
+                with open(urllib.request.url2pathname(str(path)), encoding="utf-8") as fp:
                     return str(fp.read())
 
             except OSError as err:
@@ -128,7 +126,7 @@ class DefaultFetcher(MemoryCachingFetcher):
             return os.path.exists(urllib.request.url2pathname(str(path)))
         if scheme == "mailto":
             return True
-        raise ValidationException(f"Unsupported scheme '{scheme}' in url: {url}")
+        raise ValidationException(f"Unsupported scheme {scheme!r} in url: {url}")
 
     def urljoin(self, base_url: str, url: str) -> str:
         if url.startswith("_:"):
@@ -138,9 +136,7 @@ class DefaultFetcher(MemoryCachingFetcher):
         split = urllib.parse.urlsplit(url)
         if basesplit.scheme and basesplit.scheme != "file" and split.scheme == "file":
             raise ValidationException(
-                "Not resolving potential remote exploit {} from base {}".format(
-                    url, base_url
-                )
+                f"Not resolving potential remote exploit {url} from base {base_url}"
             )
 
         if sys.platform == "win32":
@@ -177,12 +173,7 @@ class DefaultFetcher(MemoryCachingFetcher):
                     return urllib.parse.urlunsplit(
                         ("file", netloc, path_with_drive, split.query, split.fragment)
                     )
-                if (
-                    not split.scheme
-                    and not netloc
-                    and split.path
-                    and split.path.startswith("/")
-                ):
+                if not split.scheme and not netloc and split.path and split.path.startswith("/"):
                     # Relative - but does it have a drive?
                     base_drive = _re_drive.match(basesplit.path)
                     drive = _re_drive.match(split.path)
@@ -191,9 +182,7 @@ class DefaultFetcher(MemoryCachingFetcher):
                         # https://tools.ietf.org/html/rfc8089#appendix-E.2.1
                         # e.g. urljoin("file:///D:/bar/a.txt", "/foo/b.txt")
                         #          == file:///D:/foo/b.txt
-                        path_with_drive = "/{}:{}".format(
-                            base_drive.group(1), split.path
-                        )
+                        path_with_drive = f"/{base_drive.group(1)}:{split.path}"
                         return urllib.parse.urlunsplit(
                             (
                                 "file",
@@ -210,9 +199,7 @@ class DefaultFetcher(MemoryCachingFetcher):
                 # would wrongly resolve as an absolute path that could later be used
                 # to access local files
                 raise ValidationException(
-                    "Not resolving potential remote exploit {} from base {}".format(
-                        url, base_url
-                    )
+                    f"Not resolving potential remote exploit {url} from base {base_url}"
                 )
 
         return urllib.parse.urljoin(base_url, url)

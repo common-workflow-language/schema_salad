@@ -46,24 +46,21 @@ def add_dictlist(di, key, val):  # type: (Dict[Any, Any], Any, Any) -> None
     di[key].append(val)
 
 
-def aslist(thing):  # type: (Any) -> MutableSequence[Any]
+def aslist(thing: Any) -> MutableSequence[Any]:
     """
-    Convenience function to wrap single items and lists.
+    Wrap single items and lists.
 
     Return lists unchanged.
     """
-
     if isinstance(thing, MutableSequence):
         return thing
     else:
         return [thing]
 
 
-# http://rightfootin.blogspot.com/2006/09/more-on-python-flatten.html
-
-
 def flatten(thing, ltypes=(list, tuple)):
     # type: (Any, Any) -> Any
+    # http://rightfootin.blogspot.com/2006/09/more-on-python-flatten.html
     if thing is None:
         return []
     if not isinstance(thing, ltypes):
@@ -99,18 +96,14 @@ def convert_to_dict(j4):  # type: (Any) -> Any
         return j4
 
 
-def json_dump(
-    obj,  # type: Any
-    fp,  # type: IO[str]
-    **kwargs  # type: Any
-):  # type: (...) -> None
+def json_dump(obj: Any, fp: IO[str], **kwargs: Any) -> None:
     """Force use of unicode."""
     json.dump(convert_to_dict(obj), fp, **kwargs)
 
 
 def json_dumps(
     obj,  # type: Any
-    **kwargs  # type: Any
+    **kwargs,  # type: Any
 ):  # type: (...) -> str
     """Force use of unicode."""
     return json.dumps(convert_to_dict(obj), **kwargs)

@@ -1,12 +1,12 @@
 import os
-from typing import Optional, Text
+from typing import Optional
 
 from pkg_resources import Requirement, ResolutionError, resource_filename
 
 from schema_salad import ref_resolver
 
 
-def get_data(filename):  # type: (Text) -> Optional[Text]
+def get_data(filename: str) -> Optional[str]:
     """Get the file path for a given schema file name.
 
     It is able to find file names in the ``schema_salad`` namespace, but

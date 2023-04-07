@@ -1,4 +1,4 @@
-"""Salad is a schema language for describing JSON or YAML structured linked data documents"""
+"""A schema language for describing JSON or YAML structured linked data documents."""
 
 import logging
 import sys

@@ -103,9 +103,7 @@ def test_DefaultFetcher_urljoin_win32(tmp_dir_fixture: str) -> None:
     assert url == "file:///d:/foo/soup.cwl"
 
     # resolving absolute non-drive URIs still works
-    url = fetcher.urljoin(
-        "file:///C:/Users/fred/foo.cwl", "http://example.com/bar/soup.cwl"
-    )
+    url = fetcher.urljoin("file:///C:/Users/fred/foo.cwl", "http://example.com/bar/soup.cwl")
     assert url == "http://example.com/bar/soup.cwl"
     # and of course relative paths from http://
     url = fetcher.urljoin("http://example.com/fred/foo.cwl", "soup.cwl")
@@ -117,9 +115,7 @@ def test_DefaultFetcher_urljoin_win32(tmp_dir_fixture: str) -> None:
 
     # Security concern - can't resolve file: from http:
     with pytest.raises(ValidationException):
-        url = fetcher.urljoin(
-            "http://example.com/fred/foo.cwl", "file:///c:/bar/soup.cwl"
-        )
+        url = fetcher.urljoin("http://example.com/fred/foo.cwl", "file:///c:/bar/soup.cwl")
     # Drive-relative -- should NOT return "absolute" URI c:/bar/soup.cwl"
     # as that is a potential remote exploit
     with pytest.raises(ValidationException):
@@ -144,9 +140,7 @@ def test_DefaultFetcher_urljoin_linux(tmp_dir_fixture: str) -> None:
         url = fetcher.urljoin("file:///home/fred/foo.cwl", "/baz/soup.cwl")
         assert url == "file:///baz/soup.cwl"
 
-        url = fetcher.urljoin(
-            "file:///home/fred/foo.cwl", "http://example.com/bar/soup.cwl"
-        )
+        url = fetcher.urljoin("file:///home/fred/foo.cwl", "http://example.com/bar/soup.cwl")
         assert url == "http://example.com/bar/soup.cwl"
 
         url = fetcher.urljoin("http://example.com/fred/foo.cwl", "soup.cwl")
@@ -158,9 +152,7 @@ def test_DefaultFetcher_urljoin_linux(tmp_dir_fixture: str) -> None:
 
         # Security concern - can't resolve file: from http:
         with pytest.raises(ValidationException):
-            url = fetcher.urljoin(
-                "http://example.com/fred/foo.cwl", "file:///bar/soup.cwl"
-            )
+            url = fetcher.urljoin("http://example.com/fred/foo.cwl", "file:///bar/soup.cwl")
 
         # But this one is not "dangerous" on Linux
         fetcher.urljoin("http://example.com/fred/foo.cwl", "c:/bar/soup.cwl")
@@ -179,9 +171,13 @@ def test_import_list() -> None:
 
     assert {"foo": ["bar", "baz"]} == ra
 
+    importfile = "import:%slist.json" % basedir
+
+    assert importfile in loader.idx
+
 
 def test_fetch_inject_id() -> None:
-    path = get_data("schema_salad/tests/inject-id1.yml")
+    path = get_data("tests/inject-id1.yml")
     assert path
     if is_fs_case_sensitive(os.path.dirname(path)):
 
@@ -197,12 +193,10 @@ def test_fetch_inject_id() -> None:
     furi1 = file_uri(path)
     r1, _ = l1.resolve_ref(furi1)
     assert {"id": furi1 + "#foo", "bar": "baz"} == r1
-    assert [lower(furi1), lower(furi1 + "#foo")] == sorted(
-        list(lower(k) for k in l1.idx.keys())
-    )
+    assert [lower(furi1), lower(furi1 + "#foo")] == sorted(list(lower(k) for k in l1.idx.keys()))
 
     l2 = Loader({"id": "@id"})
-    path2 = get_data("schema_salad/tests/inject-id2.yml")
+    path2 = get_data("tests/inject-id2.yml")
     assert path2
     furi2 = file_uri(path2)
     r2, _ = l2.resolve_ref(furi2)
@@ -210,18 +204,16 @@ def test_fetch_inject_id() -> None:
     assert [lower(furi2)] == sorted(list(lower(k) for k in l2.idx.keys()))
 
     l3 = Loader({"id": "@id"})
-    path3 = get_data("schema_salad/tests/inject-id3.yml")
+    path3 = get_data("tests/inject-id3.yml")
     assert path3
     furi3 = file_uri(path3)
     r3, _ = l3.resolve_ref(furi3)
     assert {"id": "http://example.com", "bar": "baz"} == r3
-    assert [lower(furi3), "http://example.com"] == sorted(
-        list(lower(k) for k in l3.idx.keys())
-    )
+    assert [lower(furi3), "http://example.com"] == sorted(list(lower(k) for k in l3.idx.keys()))
 
 
 def test_attachments() -> None:
-    path = get_data("schema_salad/tests/multidoc.yml")
+    path = get_data("tests/multidoc.yml")
     assert path
     furi = file_uri(path)
 
@@ -270,7 +262,5 @@ def test_resolve_missing_step_id(caplog: Any) -> None:
     document_path = get_data("tests/missing_step_name.cwl")
     if not schema_path or not document_path:
         pytest.fail("Could not get data for the test")
-    assert 1 == schema_salad.main.main(
-        argsl=["--print-rdf", schema_path, document_path]
-    )
+    assert 1 == schema_salad.main.main(argsl=["--print-rdf", schema_path, document_path])
     assert "missing_step_name.cwl:13:1" in "\n".join(caplog.messages)

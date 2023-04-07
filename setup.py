@@ -40,7 +40,7 @@ if USE_MYPYC and any(
     mypyc_targets = [
         # "schema_salad/codegen_base.py",  # interpreted classes cannot inherit from compiled
         # "schema_salad/codegen.py",
-        "schema_salad/exceptions.py",
+        # "schema_salad/exceptions.py", # leads to memory leaks
         "schema_salad/__init__.py",
         # "schema_salad/java_codegen.py",  # due to use of __name__
         "schema_salad/jsonld_context.py",
@@ -75,9 +75,7 @@ if USE_MYPYC and any(
     from mypyc.build import mypycify
 
     opt_level = os.getenv("MYPYC_OPT_LEVEL", "3")
-    ext_modules = mypycify(
-        mypyc_targets, opt_level=opt_level, debug_level="0", verbose=True
-    )
+    ext_modules = mypycify(mypyc_targets, opt_level=opt_level, debug_level="0", verbose=True)
 else:
     ext_modules = []
 
@@ -87,8 +85,9 @@ install_requires = [
     "ruamel.yaml >= 0.16.12, < 0.17.22",
     "rdflib >= 4.2.2, < 7.0.0",
     "rdflib-jsonld>=0.4.0, <= 0.6.1;python_version<='3.6'",
-    "mistune >= 0.8.1, < 0.9",
+    "mistune>=2.0.3,<2.1",
     "CacheControl[filecache] >= 0.11.7, < 0.13",
+    "mypy_extensions",
 ]
 
 extras_require = {
@@ -106,7 +105,7 @@ extras_require = {
 
 setup(
     name="schema-salad",
-    version="8.3",  # update the VERSION prefix in the Makefile as well 🙂
+    version="8.4",  # update the VERSION prefix in the Makefile as well 🙂
     description="Schema Annotations for Linked Avro Data (SALAD)",
     long_description=open(README).read(),
     long_description_content_type="text/x-rst",

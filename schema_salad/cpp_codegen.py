@@ -7,22 +7,19 @@ YAML into C++ objects.
 The generated code requires the libyaml-cpp library & headers
 
 To see an example of usage, look at schema_salad/tests/codegen/cwl.cpp
-which can be combined with the CWL V1.0 schema as shown below:
+which can be combined with the CWL V1.0 schema as shown below::
 
-```
-schema-salad-tool --codegen cpp schema_salad/tests/test_schema/CommonWorkflowLanguage.yml \
-        > cwl_v1_0.h
+  schema-salad-tool --codegen cpp \
+          schema_salad/tests/test_schema/CommonWorkflowLanguage.yml \
+          > cwl_v1_0.h
 
-g++ --std=c++20 -I. -lyaml-cpp schema_salad/tests/codegen/cwl.cpp -o cwl-v1_0-test
-./cwl-v1_0-test
+  g++ --std=c++20 -I. -lyaml-cpp schema_salad/tests/codegen/cwl.cpp -o cwl-v1_0-test
+  ./cwl-v1_0-test
 
-# g++ versions older than version 10 may need "--std=c++2a" instead of "--std=c++20"
-```
+  # g++ versions older than version 10 may need "--std=c++2a" instead of "--std=c++20"
 """
 import re
 from typing import IO, Any, Dict, List, Optional, Tuple, Union, cast
-
-from schema_salad.utils import aslist
 
 from . import _logger
 from .codegen_base import CodeGenBase, TypeDef
@@ -66,9 +63,7 @@ def safename2(name: Dict[str, str]) -> str:
 def split_name(s: str) -> Tuple[str, str]:
     t = s.split("#")
     if len(t) != 2:
-        raise ValueError(
-            "Expected field to be formatted as 'https://xyz.xyz/blub#cwl/class'."
-        )
+        raise ValueError("Expected field to be formatted as 'https://xyz.xyz/blub#cwl/class'.")
     return (t[0], t[1])
 
 
@@ -77,9 +72,7 @@ def split_field(s: str) -> Tuple[str, str, str]:
     (namespace, field) = split_name(s)
     t = field.split("/")
     if len(t) != 2:
-        raise ValueError(
-            "Expected field to be formatted as 'https://xyz.xyz/blub#cwl/class'."
-        )
+        raise ValueError("Expected field to be formatted as 'https://xyz.xyz/blub#cwl/class'.")
     return (namespace, t[0], t[1])
 
 
@@ -95,9 +88,7 @@ class ClassDefinition:
         self.classname = safename(self.classname)
 
     def writeFwdDeclaration(self, target: IO[str], fullInd: str, ind: str) -> None:
-        target.write(
-            f"{fullInd}namespace {self.namespace} {{ struct {self.classname}; }}\n"
-        )
+        target.write(f"{fullInd}namespace {self.namespace} {{ struct {self.classname}; }}\n")
 
     def writeDefinition(self, target: IO[Any], fullInd: str, ind: str) -> None:
         target.write(f"{fullInd}namespace {self.namespace} {{\n")
@@ -117,9 +108,7 @@ class ClassDefinition:
 
         if self.abstract:
             target.write(f"{fullInd}{ind}virtual ~{self.classname}() = 0;\n")
-        target.write(
-            f"{fullInd}{ind}{virtual}auto toYaml() const -> YAML::Node{override};\n"
-        )
+        target.write(f"{fullInd}{ind}{virtual}auto toYaml() const -> YAML::Node{override};\n")
         target.write(f"{fullInd}}};\n")
         target.write(f"{fullInd}}}\n\n")
 
@@ -143,7 +132,7 @@ class ClassDefinition:
         for field in self.fields:
             fieldname = safename(field.name)
             target.write(
-                f'{fullInd}{ind}addYamlField(n, "{field.name}", toYaml(*{fieldname}));\n'
+                f'{fullInd}{ind}addYamlField(n, "{field.name}", toYaml(*{fieldname}));\n'  # noqa: B907
             )
             # target.write(f"{fullInd}{ind}addYamlIfNotEmpty(n, \"{field.name}\", toYaml(*{fieldname}));\n")
 
@@ -157,11 +146,9 @@ class FieldDefinition:
         self.typeStr = typeStr
         self.optional = optional
 
-    def writeDefinition(
-        self, target: IO[Any], fullInd: str, ind: str, namespace: str
-    ) -> None:
+    def writeDefinition(self, target: IO[Any], fullInd: str, ind: str, namespace: str) -> None:
+        """Write a C++ definition for the class field."""
         name = safename(self.name)
-        # target.write(f"{fullInd}std::unique_ptr<{self.typeStr}> {name} = std::make_unique<{self.typeStr}>();\n")
         typeStr = self.typeStr.replace(namespace + "::", "")
         target.write(f"{fullInd}heap_object<{typeStr}> {name};\n")
 
@@ -200,11 +187,9 @@ class EnumDefinition:
             target.write("}\n")
 
         target.write(f"inline void to_enum(std::string_view v, {name}& out) {{\n")
-        target.write(
-            f"{ind}static auto m = std::map<std::string, {name}, std::less<>> {{\n"
-        )
+        target.write(f"{ind}static auto m = std::map<std::string, {name}, std::less<>> {{\n")
         for v in self.values:
-            target.write(f'{ind}{ind}{{"{v}", {name}::{safename(v)}}},\n')
+            target.write(f'{ind}{ind}{{"{v}", {name}::{safename(v)}}},\n')  # noqa: B907
         target.write(f"{ind}}};\n{ind}out = m.find(v)->second;\n}}\n")
 
         target.write(f"inline auto toYaml({name} v) {{\n")
@@ -297,9 +282,7 @@ class CppCodeGen(CodeGenBase):
         self.classDefinitions: Dict[str, ClassDefinition] = {}
         self.enumDefinitions: Dict[str, EnumDefinition] = {}
 
-    def convertTypeToCpp(
-        self, type_declaration: Union[List[Any], Dict[str, Any], str]
-    ) -> str:
+    def convertTypeToCpp(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> str:
         """Convert a Schema Salad type to a C++ type."""
         if not isinstance(type_declaration, list):
             return self.convertTypeToCpp([type_declaration])
@@ -340,9 +323,7 @@ class CppCodeGen(CodeGenBase):
                 "PrimitiveType",
                 "https://w3id.org/cwl/salad#PrimitiveType",
             ):
-                return (
-                    "std::variant<bool, int32_t, int64_t, float, double, std::string>"
-                )
+                return "std::variant<bool, int32_t, int64_t, float, double, std::string>"
             elif isinstance(type_declaration[0], dict):
                 if "type" in type_declaration[0] and type_declaration[0]["type"] in (
                     "enum",
@@ -599,8 +580,6 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node {
         return name
 
     def parse(self, items: List[Dict[str, Any]]) -> None:
-        types = {i["name"]: i for i in items}  # type: Dict[str, Any]
-
         for stype in items:
             if "type" in stype and stype["type"] == "documentation":
                 continue
