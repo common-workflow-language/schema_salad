@@ -97,7 +97,7 @@ def test_error_message3() -> None:
 
     t = "test_schema/test3.cwl"
     match = r"""
-^.+test3\.cwl:5:1: checking field\s+`outputs`
+^.+test3\.cwl:6:1: checking field\s+`outputs`
 .+test3\.cwl:7:3:   checking object\s+`.+test3\.cwl#bar`
 \s+Field `type`\s+references\s+unknown\s+identifier\s+`xstring`,\s+tried
 \s+file://.+/tests/test_schema/test3\.cwl#xstring$"""[
@@ -115,7 +115,7 @@ def test_error_message4() -> None:
 
     t = "test_schema/test4.cwl"
     match = r"""
-^.+test4\.cwl:5:1: checking field\s+`outputs`
+^.+test4\.cwl:6:1: checking field\s+`outputs`
 .+test4\.cwl:7:3:   checking object\s+`.+test4\.cwl#bar`
 \s+'type'\s+field\s+is\s+int,\s+expected\s+string,\s+list,\s+or\s+a\s+dict.$"""[
         1:
@@ -152,13 +152,13 @@ def test_error_message7() -> None:
 
     t = "test_schema/test7.cwl"
     match = (
-        r"""^.+test7\.cwl:2:1: Object\s+`.+test7\.cwl`\s+is\s+not valid because
+        r"""^.+test7\.cwl:2:1:\s+Object\s+`.+test7\.cwl`\s+is\s+not valid because
 \s+tried `Workflow`\s+but
-.+test7\.cwl:8:1:     the `steps`\s+field\s+is\s+not\s+valid\s+because
+.+test7\.cwl:8:1:\s+the `steps`\s+field\s+is\s+not\s+valid\s+because
 \s+tried array\s+of\s+<WorkflowStep>\s+but
-.+test7\.cwl:9:3:         item is\s+invalid\s+because
+.+test7\.cwl:9:3:\s+item is\s+invalid\s+because
 \s+\* missing\s+required\s+field\s+`run`
-.+test7\.cwl:10:5:           \* invalid\s+field\s+`scatter_method`,\s+expected\s+one """
+.+test7\.cwl:10:5:\s+\* invalid\s+field\s+`scatter_method`,\s+expected\s+one """
         + r"""of:\s+'id',\s+'in', 'out',\s+'requirements',\s+'hints',\s+"""
         + r"""'label',\s+'doc',\s+'run',\s+'scatter',\s+'scatterMethod'$"""
     )
@@ -175,9 +175,9 @@ def test_error_message8() -> None:
     t = "test_schema/test8.cwl"
     match = (
         r"""
-^.+test8\.cwl:8:1: checking field\s+`steps`
-.+test8\.cwl:9:3:   checking object\s+`.+test8\.cwl#step1`
-.+test8\.cwl:10:5:     """
+^.+test8\.cwl:8:1:\s+checking field\s+`steps`
+.+test8\.cwl:9:3:\s+checking object\s+`.+test8\.cwl#step1`
+.+test8\.cwl:10:5:\s+"""
         r"""Field\s+`scatterMethod`\s+contains\s+undefined\s+reference\s+to\s+`file:///.+/tests/test_schema/abc`$"""[
             1:
         ]
@@ -194,9 +194,9 @@ def test_error_message9() -> None:
 
     t = "test_schema/test9.cwl"
     match = (
-        r"""^.+test9\.cwl:8:1: checking field\s+`steps`
-.+test9\.cwl:9:3:   checking object\s+`.+test9\.cwl#step1`
-.+test9\.cwl:10:5:     'scatterMethod'\s+field\s+is\s+"""
+        r"""^.+test9\.cwl:8:1:\s+checking field\s+`steps`
+.+test9\.cwl:9:3:\s+checking object\s+`.+test9\.cwl#step1`
+.+test9\.cwl:10:5:\s+'scatterMethod'\s+field\s+is\s+"""
         + r"""int,\s+expected\s+string,\s+list,\s+or a\s+dict.$"""
     )
     with pytest.raises(ValidationException, match=match):
@@ -211,20 +211,21 @@ def test_error_message10() -> None:
 
     t = "test_schema/test10.cwl"
     match = r"""
-^.+test10\.cwl:2:1: Object\s+`.+test10\.cwl`\s+is\s+not\s+valid\s+because
+^.+test10\.cwl:2:1:\s+Object\s+`.+test10\.cwl`\s+is\s+not\s+valid\s+because
 \s+tried `Workflow`\s+but
-.+test10\.cwl:8:1:     the `steps`\s+field\s+is\s+not\s+valid\s+because
+.+test10\.cwl:8:1:\s+the `steps`\s+field\s+is\s+not\s+valid\s+because
 \s+tried array\s+of\s+<WorkflowStep>\s+but
-.+test10\.cwl:9:3:         item is\s+invalid\s+because
+.+test10\.cwl:9:3:\s+item is\s+invalid\s+because
 \s+\* missing\s+required\s+field\s+`run`
-.+test10\.cwl:10:5:           \* the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because
+.+test10\.cwl:10:5:\s+\* the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because
 \s+value\s+is\s+a\s+CommentedSeq,\s+expected\s+null\s+or\s+ScatterMethod$"""[
         1:
     ]
     with pytest.raises(ValidationException, match=match):
         load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
 
-
+"     "
+"     "
 def test_error_message11() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     assert path
@@ -234,9 +235,9 @@ def test_error_message11() -> None:
     t = "test_schema/test11.cwl"
     match = (
         r"""
-^.+test11\.cwl:8:1: checking field\s+`steps`
-.+test11\.cwl:9:3:   checking object\s+`.+test11\.cwl#step1`
-.+test11\.cwl:10:5:     """
+^.+test11\.cwl:8:1:\s+checking field\s+`steps`
+.+test11\.cwl:9:3:\s+checking object\s+`.+test11\.cwl#step1`
+.+test11\.cwl:10:5:\s+"""
         r"""Field `run`\s+contains\s+undefined\s+reference\s+to\s+`file://.+/tests/test_schema/blub\.cwl`$"""[
             1:
         ]

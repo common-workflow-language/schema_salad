@@ -157,11 +157,10 @@ class LoadingOptions:
         scheme, path = split.scheme, split.path
 
         if scheme in ["http", "https"]:
-            if self.session is None:
-                raise ValidationException(f"Can't check {scheme} URL, session is None")
+            if self.fetcher is None:
+                raise ValidationException(f"Can't check {self.fetcher} URL, fetcher is None")
             try:
-                resp = self.session.head(url, allow_redirects=True)
-                resp.raise_for_status()
+                self.fetcher.fetch_text(url)
             except Exception:
                 return False
             self.cache[url] = True

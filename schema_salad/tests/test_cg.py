@@ -21,10 +21,10 @@ def test_load() -> None:
     rs = cg_metaschema.RecordSchema.fromDoc(
         doc, "http://example.com/", cg_metaschema.LoadingOptions()
     )
-    assert "record" == rs.type
+    assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
     assert "Hello test case" == rs.fields[0].doc
-    assert "string" == rs.fields[0].type
+    assert "string" == rs.fields[0].type_
     assert {
         "type": "record",
         "fields": [
@@ -44,7 +44,7 @@ def test_err() -> None:
 
 
 def test_include() -> None:
-    doc = {"name": "hello", "doc": [{"$include": "hello.txt"}], "type_": "documentation"}
+    doc = {"name": "hello", "doc": [{"$include": "hello.txt"}], "type": "documentation"}
     path = get_data("tests/_")
     assert path
     rf = cg_metaschema.Documentation.fromDoc(
@@ -54,7 +54,7 @@ def test_include() -> None:
     )
     assert "http://example.com/#hello" == rf.name
     assert ["hello world!\n"] == rf.doc
-    assert "documentation" == rf.type
+    assert "documentation" == rf.type_
     assert {
         "name": "http://example.com/#hello",
         "doc": ["hello world!\n"],
@@ -63,17 +63,17 @@ def test_include() -> None:
 
 
 def test_import() -> None:
-    doc = {"type_": "record", "fields": [{"$import": "hellofield.yml"}]}
+    doc = {"type": "record", "fields": [{"$import": "hellofield.yml"}]}
     tests_path = get_data("tests")
     assert tests_path
     lead = file_uri(os.path.normpath(tests_path))
     rs = cg_metaschema.RecordSchema.fromDoc(
         doc, "http://example.com/", cg_metaschema.LoadingOptions(fileuri=lead + "/_")
     )
-    assert "record" == rs.type
+    assert "record" == rs.type_
     assert rs.fields and lead + "/hellofield.yml#hello" == rs.fields[0].name
     assert "hello world!\n" == rs.fields[0].doc
-    assert "string" == rs.fields[0].type
+    assert "string" == rs.fields[0].type_
     assert {
         "type": "record",
         "fields": [
@@ -123,16 +123,16 @@ def test_err2() -> None:
 
 def test_idmap() -> None:
     doc = {
-        "typ_": "record",
+        "type": "record",
         "fields": {"hello": {"doc": "Hello test case", "type": "string"}},
     }
     rs = cg_metaschema.RecordSchema.fromDoc(
         doc, "http://example.com/", cg_metaschema.LoadingOptions()
     )
-    assert "record" == rs.type
+    assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
     assert "Hello test case" == rs.fields[0].doc
-    assert "string" == rs.fields[0].type
+    assert "string" == rs.fields[0].type_
     assert {
         "type": "record",
         "fields": [
@@ -146,17 +146,17 @@ def test_idmap() -> None:
 
 
 def test_idmap2() -> None:
-    doc = {"type_": "record", "fields": {"hello": "string"}}
+    doc = {"type": "record", "fields": {"hello": "string"}}
     rs = cg_metaschema.RecordSchema.fromDoc(
         doc, "http://example.com/", cg_metaschema.LoadingOptions()
     )
-    assert "record" == rs.type
+    assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
     assert rs.fields[0].doc is None
-    assert "string" == rs.fields[0].type
+    assert "string" == rs.fields[0].type_
     assert {
-        "type_": "record",
-        "fields": [{"name": "http://example.com/#hello", "type_": "string"}],
+        "type": "record",
+        "fields": [{"name": "http://example.com/#hello", "type": "string"}],
     } == rs.save()
 
 
