@@ -19,7 +19,7 @@ from schema_salad.schema import load_schema
 from .util import basket_file_uri, cwl_file_uri, get_data, metaschema_file_uri
 
 
-def test_safe_identifiers() -> None:
+def test_safe_identifiers() -> None:, get_data, metaschema_file_uri
     """Affirm correct construction of identifiers safe for Python."""
     assert PythonCodeGen.safe_name("5.8s_pattern") == "_5_8s_pattern"
 
