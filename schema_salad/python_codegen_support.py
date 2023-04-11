@@ -446,9 +446,7 @@ class _ArrayLoader(_Loader):
         global_doc = copy.copy(line_numbers)  # type: CommentedMap
 
         if keys is not None:
-            
             for key in keys:
-
                 if isinstance(global_doc, CommentedMap):
                     global_doc = global_doc.get(key)
                 elif isinstance(global_doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -665,12 +663,12 @@ class _UnionLoader(_Loader):
                                 id = baseuri.split("/")[-1] + "#" + doc.get("id")
                                 if "id" in temp_doc:
                                     errors.append(
-                                    ValidationException(
-                                        f"checking object {id}",
-                                        SourceLine(id_doc,"id", str),
-                                        [e],
+                                        ValidationException(
+                                            f"checking object {id}",
+                                            SourceLine(id_doc, "id", str),
+                                            [e],
+                                        )
                                     )
-                                )
                                 else:
 
                                     errors.append(
@@ -756,7 +754,7 @@ class _URILoader(_Loader):
                     errors.append(
                         ValidationException(f"contains undefined reference to {doc}")
                     )
-            except ValidationException as e:
+            except ValidationException:
                 pass
             if len(errors) > 0:
                 raise ValidationException("", None, errors)
@@ -894,6 +892,14 @@ def _document_load(
         if type(doc) == CommentedMap:
             global line_numbers
             line_numbers = doc
+
+        doc = copy.copy(doc)
+        if "$namespaces" in doc:
+            doc.pop("$namespaces")
+        if "$schemas" in doc:
+            doc.pop("$schemas")
+        if "$base" in doc:
+            doc.pop("$base")
 
         if "$graph" in doc:
             loadingOptions.idx[baseuri] = (

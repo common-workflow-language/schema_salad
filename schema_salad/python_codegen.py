@@ -339,7 +339,7 @@ for k in _doc.keys():
             _errors__.append(
                 ValidationException("mapping with implicit null key")
             )
-        elif ":" in k:  
+        elif ":" in k:
             ex = expand_url(
                 k, "", loadingOptions, scoped_id=False, vocab_term=False
             )
@@ -511,8 +511,6 @@ if _errors__:
                 {opt}
         if not __original_{safename}_is_none:
             baseuri = {safename}
-
-
 """.format(
                 safename=self.safe_name(name), opt=opt
             )
@@ -561,19 +559,18 @@ if _errors__:
             baseurivar = "baseuri"
 
         self.out.write(
-            """
-{spc}        try:
+            """{spc}        try:
 {spc}            if _doc.get("{fieldname}") is None:
-{spc}               raise ValidationException("* missing required field '{fieldname}'", None, [])
-{spc}
+{spc}                raise ValidationException("* missing required field '{fieldname}'", None, [])
+
 {spc}            {safename} = load_field(
 {spc}                _doc.get("{fieldname}"),
 {spc}                {fieldtype},
 {spc}                {baseurivar},
 {spc}                loadingOptions,
-{spc}                keys = keys + ['{fieldname}']
+{spc}                keys=keys + ['{fieldname}']
 {spc}            )
-    """.format(
+""".format(
                 safename=self.safe_name(name),
                 fieldname=shortname(name),
                 fieldtype=fieldtype.name,
@@ -595,26 +592,27 @@ if _errors__:
         self.out.write(
             """
 {spc}        except ValidationException as e:
-{spc}               error_message = parse_errors(str(e))
-{spc}
-{spc}               if str(e) == "* missing required field '{fieldname}'":
-{spc}                   _errors__.append(
-{spc}                          ValidationException(
-{spc}                            "",
-{spc}                            None,
-{spc}                            [e]
-{spc}                          )
-{spc}                      )
-{spc}               else:
-{spc}                   if error_message != str(e):
-{spc}                       e = ValidationException(f"Expected one of {{error_message}} was {{type(_doc.get('{fieldname}'))}}")
-{spc}                   _errors__.append(
-{spc}                          ValidationException(
-{spc}                              \"the `{fieldname}` field is not valid because:\",
-{spc}                                SourceLine(_doc, "{fieldname}", str),
-{spc}                               [e],
-{spc}                           )
-{spc}                       )
+{spc}            error_message = parse_errors(str(e))
+
+{spc}            if str(e) == "* missing required field '{fieldname}'":
+{spc}                _errors__.append(
+{spc}                    ValidationException(
+{spc}                        "",
+{spc}                        None,
+{spc}                        [e]
+{spc}                    )
+{spc}                )
+{spc}            else:
+{spc}                if error_message != str(e):
+{spc}                    val_type = type(_doc.get("{fieldname}"))
+{spc}                    e = ValidationException(f"Expected one of {{error_message}} was {{val_type}}")
+{spc}                _errors__.append(
+{spc}                    ValidationException(
+{spc}                        \"the `{fieldname}` field is not valid because:\",
+{spc}                        SourceLine(_doc, "{fieldname}", str),
+{spc}                        [e],
+{spc}                    )
+{spc}                )
 """.format(
                 fieldname=shortname(name),
                 spc=spc,
