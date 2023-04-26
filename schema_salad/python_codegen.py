@@ -534,7 +534,7 @@ if _errors__:
 {spc}        except ValidationException as e:
 {spc}            _errors__.append(
 {spc}                ValidationException(
-{spc}                    \"the `{fieldname}` field is not valid because:\",
+{spc}                    \"the {fieldname!r} field is not valid because:\",
 {spc}                    SourceLine(_doc, "{fieldname}", str),
 {spc}                    [e],
 {spc}                )

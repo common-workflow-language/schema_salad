@@ -57,7 +57,7 @@ def codegen(
         else ".".join(list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/"))
     )
     info = parser_info or pkg
-    if lang == "python" or lang == "cpp" or lang == "dlang":
+    if lang in set(["python", "cpp", "dlang"]):
         if target:
             dest: Union[TextIOWrapper, TextIO] = open(target, mode="w", encoding="utf-8")
         else:
@@ -72,7 +72,7 @@ def codegen(
             )
             gen.parse(j)
             return
-        elif lang == "dlang":
+        if lang == "dlang":
             gen = DlangCodeGen(
                 base,
                 dest,
@@ -83,8 +83,7 @@ def codegen(
             )
             gen.parse(j)
             return
-        else:
-            gen = PythonCodeGen(dest, copyright=copyright, parser_info=info)
+        gen = PythonCodeGen(dest, copyright=copyright, parser_info=info)
 
     elif lang == "java":
         gen = JavaCodeGen(

@@ -68,8 +68,7 @@ def reflow_all(text: str, maxline: Optional[int] = None) -> str:
 
 
 def reflow(text: str, maxline: int, shift: Optional[str] = "") -> str:
-    if maxline < 20:
-        maxline = 20
+    maxline = max(maxline, 20)
     if len(text) > maxline:
         sp = text.rfind(" ", 0, maxline)
         if sp < 1:
@@ -84,27 +83,24 @@ def reflow(text: str, maxline: int, shift: Optional[str] = "") -> str:
 def indent(v: str, nolead: bool = False, shift: str = "  ", bullet: str = "  ") -> str:
     if nolead:
         return v.splitlines()[0] + "\n".join([shift + line for line in v.splitlines()[1:]])
-    else:
 
-        def lineno(i: int, line: str) -> str:
-            r = lineno_re.match(line)
-            if r is not None:
-                group1 = r.group(1)
-                group2 = r.group(2)
-                assert group1 is not None  # nosec
-                assert group2 is not None  # nosec
-                return group1 + (bullet if i == 0 else shift) + group2
-            else:
-                return (bullet if i == 0 else shift) + line
+    def lineno(i: int, line: str) -> str:
+        r = lineno_re.match(line)
+        if r is not None:
+            group1 = r.group(1)
+            group2 = r.group(2)
+            assert group1 is not None  # nosec
+            assert group2 is not None  # nosec
+            return group1 + (bullet if i == 0 else shift) + group2
+        return (bullet if i == 0 else shift) + line
 
-        return "\n".join([lineno(i, line) for i, line in enumerate(v.splitlines())])
+    return "\n".join([lineno(i, line) for i, line in enumerate(v.splitlines())])
 
 
 def bullets(textlist: List[str], bul: str) -> str:
     if len(textlist) == 1:
         return textlist[0]
-    else:
-        return "\n".join(indent(t, bullet=bul) for t in textlist)
+    return "\n".join(indent(t, bullet=bul) for t in textlist)
 
 
 def strip_duplicated_lineno(text: str) -> str:
@@ -120,7 +116,7 @@ def strip_duplicated_lineno(text: str) -> str:
         if not g:
             msg.append(line)
             continue
-        elif g.group(1) != pre:
+        if g.group(1) != pre:
             msg.append(line)
             pre = g.group(1)
         else:
@@ -224,8 +220,7 @@ def cmap(
             cs.lc.add_kv_line_col(k3, uselc)
             cs.lc.filename = fn
         return cs
-    else:
-        return d
+    return d
 
 
 class SourceLine:
@@ -257,19 +252,17 @@ class SourceLine:
     def file(self) -> Optional[str]:
         if hasattr(self.item, "lc") and hasattr(self.item.lc, "filename"):
             return str(self.item.lc.filename)
-        else:
-            return None
+        return None
 
     def start(self) -> Optional[Tuple[int, int]]:
         if self.file() is None:
             return None
-        elif self.key is None or self.item.lc.data is None or self.key not in self.item.lc.data:
+        if self.key is None or self.item.lc.data is None or self.key not in self.item.lc.data:
             return ((self.item.lc.line or 0) + 1, (self.item.lc.col or 0) + 1)
-        else:
-            return (
-                (self.item.lc.data[self.key][0] or 0) + 1,
-                (self.item.lc.data[self.key][1] or 0) + 1,
-            )
+        return (
+            (self.item.lc.data[self.key][0] or 0) + 1,
+            (self.item.lc.data[self.key][1] or 0) + 1,
+        )
 
     def end(self) -> Optional[Tuple[int, int]]:
         return None
@@ -279,8 +272,7 @@ class SourceLine:
             lcol = self.start()
             line, col = lcol if lcol else ("", "")
             return f"{self.file()}:{line}:{col}:"
-        else:
-            return ""
+        return ""
 
     def makeError(self, msg: str) -> Any:
         if not isinstance(self.item, ruamel.yaml.comments.CommentedBase):

@@ -23,12 +23,10 @@ class Fetcher(ABC):
     @abstractmethod
     def fetch_text(self, url: str, content_types: Optional[List[str]] = None) -> str:
         """Retrieve the given resource as a string."""
-        ...
 
     @abstractmethod
     def check_exists(self, url: str) -> bool:
         """Check if the given resource exists."""
-        ...
 
     @abstractmethod
     def urljoin(self, base_url: str, url: str) -> str:
@@ -82,8 +80,10 @@ class DefaultFetcher(MemoryCachingFetcher):
                 content_type = resp.headers["content-type"].split(";")[:1][0]
                 if content_type not in content_types:
                     _logger.warning(
-                        f"While fetching {url}, got content-type of "
-                        f"{content_type!r}. Expected one of {content_types}."
+                        "While fetching %s, got content-type of %r. Expected one of %s.",
+                        url,
+                        content_type,
+                        content_types,
                     )
             return resp.text
         if scheme == "file":
@@ -101,8 +101,7 @@ class DefaultFetcher(MemoryCachingFetcher):
             except OSError as err:
                 if err.filename == path:
                     raise ValidationException(str(err)) from err
-                else:
-                    raise ValidationException(f"Error reading {url}: {err}") from err
+                raise ValidationException(f"Error reading {url}: {err}") from err
         raise ValidationException(f"Unsupported scheme in url: {url}")
 
     def check_exists(self, url: str) -> bool:

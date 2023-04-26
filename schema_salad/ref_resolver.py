@@ -458,15 +458,13 @@ class Loader:
                         break
                 if not lref:
                     raise ValidationException(
-                        "Object `{}` does not have identifier field in {}".format(
-                            obj, self.identifiers
-                        ),
+                        f"Object {obj!r} does not have identifier field in {self.identifiers}",
                         SourceLine(obj),
                     )
 
         if not isinstance(lref, str):
             raise ValidationException(
-                f"Expected CommentedMap or string, got {type(lref)}: `{lref}`"
+                f"Expected CommentedMap or string, got {type(lref)}: {lref!r}"
             )
 
         if isinstance(lref, str) and os.sep == "\\":
@@ -489,7 +487,7 @@ class Loader:
                         return resolved_obj, metadata
                 else:
                     raise ValidationException(
-                        f"Expected CommentedMap, got {type(metadata)}: `{metadata}`"
+                        f"Expected CommentedMap, got {type(metadata)}: {metadata!r}"
                     )
             elif isinstance(resolved_obj, MutableSequence):
                 metadata = self.idx.get(urllib.parse.urldefrag(url)[0], CommentedMap())
@@ -501,9 +499,8 @@ class Loader:
                 return resolved_obj, CommentedMap()
             else:
                 raise ValidationException(
-                    "Expected MutableMapping or MutableSequence, got {}: `{}`".format(
-                        type(resolved_obj), resolved_obj
-                    )
+                    f"Expected MutableMapping or MutableSequence, got "
+                    f"{type(resolved_obj)}: {resolved_obj!r}"
                 )
 
         # "$include" directive means load raw text
@@ -524,9 +521,8 @@ class Loader:
                 # If the base document is in the index, it was already loaded,
                 # so if we didn't find the reference earlier then it must not
                 # exist.
-                raise ValidationException(
-                    f"Reference `#{frg}` not found in file `{doc_url}`.",
-                    SourceLine(self.idx[doc_url]),
+                raise SourceLine(self.idx, doc_url, ValidationException).makeError(
+                    f"Reference '#{frg}' not found in file {doc_url!r}.",
                 )
             doc = self.fetch(doc_url, inject_ids=(not mixin), content_types=content_types)
 
@@ -562,9 +558,7 @@ class Loader:
                 resolved_obj = self.idx[url]
             else:
                 raise ValidationException(
-                    "Reference `{}` is not in the index. Index contains: {}".format(
-                        url, ", ".join(self.idx)
-                    )
+                    f"Reference {url!r} is not in the index. Index contains: {' '.join(self.idx)}"
                 )
 
         if isinstance(resolved_obj, CommentedMap):
@@ -605,8 +599,8 @@ class Loader:
                                 v.lc.filename = document.lc.filename
                             else:
                                 raise ValidationException(
-                                    "mapSubject '{}' value '{}' is not a dict "
-                                    "and does not have a mapPredicate.".format(k, v),
+                                    f"mapSubject {k!r} value {v!r} is not a dict "
+                                    "and does not have a mapPredicate.",
                                     SourceLine(document, idmapField),
                                 )
                         else:
@@ -679,10 +673,9 @@ class Loader:
     ) -> Union[str, CommentedMap, CommentedSeq]:
         if d in loader.type_dsl_fields:
             return self._type_dsl(datum, lc, filename)
-        elif d in loader.secondaryFile_dsl_fields:
+        if d in loader.secondaryFile_dsl_fields:
             return self._secondaryFile_dsl(datum, lc, filename)
-        else:
-            return datum
+        return datum
 
     def _resolve_dsl(
         self,
@@ -833,7 +826,7 @@ class Loader:
                     checklinks=checklinks,
                     strict_foreign_properties=strict_foreign_properties,
                 )
-            elif "$mixin" in document:
+            if "$mixin" in document:
                 return self.resolve_ref(
                     document,
                     base_url=base_url,
@@ -1034,9 +1027,7 @@ class Loader:
         if onWindows() and link.startswith("file:"):
             link = link.lower()
         raise ValidationException(
-            "Field `{}` references unknown identifier `{}`, tried {}".format(
-                field, link, ", ".join(tried)
-            )
+            f"Field {field!r} references unknown identifier {link!r}, tried {' '.join(tried)}"
         )
 
     def validate_link(
@@ -1057,14 +1048,14 @@ class Loader:
                         return self.validate_scoped(field, link, docid)
                     elif not self.check_exists(link):
                         raise ValidationException(
-                            f"Field `{field}` contains undefined reference to `{link}`"
+                            f"Field {field!r} contains undefined reference to {link!r}"
                         )
             elif link not in self.idx and link not in self.rvocab:
                 if field in self.scoped_ref_fields:
                     return self.validate_scoped(field, link, docid)
                 elif not self.check_exists(link):
                     raise ValidationException(
-                        f"Field `{field}` contains undefined reference to `{link}`"
+                        f"Field {field!r} contains undefined reference to {link!r}"
                     )
         elif isinstance(link, CommentedSeq):
             errors = []
@@ -1134,7 +1125,7 @@ class Loader:
                             and sl.makeLead() != all_doc_ids[document[identifier]]
                         ):
                             _logger.warning(
-                                "%s object %s `%s` previously defined",
+                                "%s object %s %r previously defined",
                                 all_doc_ids[document[identifier]],
                                 identifier,
                                 relname(document[identifier]),
@@ -1165,18 +1156,17 @@ class Loader:
                     docid2 = self.getid(val)
                     if docid2 is not None:
                         errors.append(
-                            ValidationException(f"checking object `{relname(docid2)}`", sl, [v])
+                            ValidationException(f"checking object {relname(docid2)!r}", sl, [v])
                         )
                     else:
                         if isinstance(key, str):
-                            errors.append(ValidationException(f"checking field `{key}`", sl, [v]))
+                            errors.append(ValidationException(f"checking field {key!r}", sl, [v]))
                         else:
                             errors.append(ValidationException("checking item", sl, [v]))
         if bool(errors):
             if len(errors) > 1:
                 raise ValidationException("", None, errors)
-            else:
-                raise errors[0]
+            raise errors[0]
         return
 
 

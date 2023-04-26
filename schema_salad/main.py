@@ -20,7 +20,7 @@ from .makedoc import makedoc
 from .ref_resolver import Loader, file_uri
 from .utils import json_dump, stdout
 
-if int(rdflib_version.split(".")[0]) < 6:
+if int(rdflib_version.split(".", maxsplit=1)[0]) < 6:
     register("json-ld", Parser, "rdflib_jsonld.parser", "JsonLDParser")
 _logger = logging.getLogger("salad")
 
@@ -226,8 +226,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         if args.version:
             print(f"{sys.argv[0]} Current version: {pkg[0].version}")
             return 0
-        else:
-            _logger.info("%s Current version: %s", sys.argv[0], pkg[0].version)
+        _logger.info("%s Current version: %s", sys.argv[0], pkg[0].version)
 
     # Get the metaschema to validate the schema
     metaschema_names, metaschema_doc, metaschema_loader = schema.get_metaschema()
@@ -243,20 +242,20 @@ def main(argsl: Optional[List[str]] = None) -> int:
         schema_doc, schema_metadata = metaschema_loader.resolve_all(schema_raw_doc, schema_uri)
     except ValidationException as e:
         _logger.error(
-            "Schema `%s` failed link checking:\n%s",
+            "Schema %r failed link checking:\n%s",
             args.schema,
             str(e),
-            exc_info=(True if args.debug else False),
+            exc_info=bool(args.debug),
         )
         _logger.debug("Index is %s", list(metaschema_loader.idx.keys()))
         _logger.debug("Vocabulary is %s", list(metaschema_loader.vocab.keys()))
         return 1
     except RuntimeError as e:
         _logger.error(
-            "Schema `%s` read error:\n%s",
+            "Schema %r read error:\n%s",
             args.schema,
             str(e),
-            exc_info=(True if args.debug else False),
+            exc_info=bool(args.debug),
         )
         return 1
 
@@ -287,7 +286,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
     try:
         schema.validate_doc(metaschema_names, schema_doc, metaschema_loader, args.strict)
     except ValidationException as e:
-        _logger.error("While validating schema `%s`:\n%s", args.schema, str(e))
+        _logger.error("While validating schema %r:\n%s", args.schema, str(e))
         return 1
 
     # Get the json-ld context and RDFS representation from the schema
@@ -324,7 +323,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
             avsc_names = schema.make_avro_schema_from_avro(avsc_obj)
         except SchemaParseException as err:
             _logger.error(
-                "Schema `%s` error:\n%s",
+                "Schema %r error:\n%s",
                 args.schema,
                 str(err),
                 exc_info=((type(err), err, None) if args.debug else None),
@@ -333,7 +332,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
                 json_dump(avsc_obj, fp=sys.stdout, indent=4, default=str)
             return 1
     else:
-        _logger.error("Schema `%s` must be a list.", args.schema)  # type: ignore[unreachable]
+        _logger.error("Schema %r must be a list.", args.schema)  # type: ignore[unreachable]
         return 1
 
     # Optionally print Avro-compatible schema from schema
@@ -366,7 +365,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
 
     # If no document specified, all done.
     if not args.document:
-        print(f"Schema `{args.schema}` is valid")
+        print(f"Schema {args.schema!r} is valid")
         return 0
 
     # Load target document and resolve refs
@@ -378,7 +377,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         except ValidationException as e:
             msg = to_one_line_messages(e) if args.print_oneline else str(e)
             _logger.error(
-                "Document `%s` failed validation:\n%s",
+                "Document %r failed validation:\n%s",
                 args.document,
                 msg,
                 exc_info=args.debug,
@@ -405,7 +404,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
             )
         except ValidationException as e:
             msg2 = to_one_line_messages(e) if args.print_oneline else str(e)
-            _logger.error(f"While validating document {uri!r}:\n{msg2}")
+            _logger.error("While validating document %r:\n%s", uri, msg2)
             return 1
 
         # Optionally convert the document to RDF
@@ -413,15 +412,14 @@ def main(argsl: Optional[List[str]] = None) -> int:
             if isinstance(document, (Mapping, MutableSequence)):
                 printrdf(uri, document, schema_ctx, args.rdf_serializer)
                 return 0
-            else:
-                print("Document must be a dictionary or list.")
-                return 1
+            print("Document must be a dictionary or list.")
+            return 1
 
         if args.print_metadata:
             json_dump(doc_metadata, fp=sys.stdout, indent=4, default=str)
             return 0
 
-        _logger.info(f"Document {uri!r} is valid")
+        _logger.info("Document %r is valid", uri)
 
     return 0
 
