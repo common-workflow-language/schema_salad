@@ -216,7 +216,7 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
             )
             loadingOptions.imports.append(url)
             return result
-        elif "$include" in val:
+        if "$include" in val:
             if loadingOptions.fileuri is None:
                 raise SchemaSaladException("Cannot load $import without fileuri")
             url = loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
@@ -414,8 +414,7 @@ class _EnumLoader(_Loader):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if doc in self.symbols:
             return doc
-        else:
-            raise ValidationException(f"Expected one of {self.symbols}")
+        raise ValidationException(f"Expected one of {self.symbols}")
 
     def __repr__(self):  # type: () -> str
         return self.name
@@ -772,8 +771,7 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         frag = ""
     if urlpath.startswith("//"):
         return f"file:{urlpath}{frag}"
-    else:
-        return f"file://{urlpath}{frag}"
+    return f"file://{urlpath}{frag}"
 
 
 def prefix_url(url: str, namespaces: Dict[str, str]) -> str:
@@ -817,8 +815,7 @@ def save_relative_uri(
 
             if urisplit.fragment.startswith(basefrag):
                 return urisplit.fragment[len(basefrag) :]
-            else:
-                return urisplit.fragment
+            return urisplit.fragment
         return uri
     else:
         return save(uri, top=False, base_url=base_url, relative_uris=relative_uris)

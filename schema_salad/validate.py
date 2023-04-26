@@ -91,12 +91,11 @@ def friendly(v):  # type: (Any) -> Any
         return avro_shortname(v.name)
     if isinstance(v, avro.schema.ArraySchema):
         return f"array of <{friendly(v.items)}>"
-    elif isinstance(v, avro.schema.PrimitiveSchema):
+    if isinstance(v, avro.schema.PrimitiveSchema):
         return v.type
-    elif isinstance(v, avro.schema.UnionSchema):
+    if isinstance(v, avro.schema.UnionSchema):
         return " or ".join([friendly(s) for s in v.schemas])
-    else:
-        return avro_shortname(v)
+    return avro_shortname(v)
 
 
 def vpformat(datum):  # type: (Any) -> str
@@ -138,13 +137,13 @@ def validate_ex(
         if raise_ex:
             raise ValidationException("the value is not null")
         return False
-    elif schema_type == "boolean":
+    if schema_type == "boolean":
         if isinstance(datum, bool):
             return True
         if raise_ex:
             raise ValidationException("the value is not boolean")
         return False
-    elif schema_type == "string":
+    if schema_type == "string":
         if isinstance(datum, str):
             return True
         if isinstance(datum, bytes):
@@ -152,25 +151,25 @@ def validate_ex(
         if raise_ex:
             raise ValidationException("the value is not string")
         return False
-    elif schema_type == "int":
+    if schema_type == "int":
         if isinstance(datum, int) and INT_MIN_VALUE <= datum <= INT_MAX_VALUE:
             return True
         if raise_ex:
-            raise ValidationException(f"`{vpformat(datum)}` is not int")
+            raise ValidationException(f"{vpformat(datum)!r} is not int")
         return False
-    elif schema_type == "long":
+    if schema_type == "long":
         if (isinstance(datum, int)) and LONG_MIN_VALUE <= datum <= LONG_MAX_VALUE:
             return True
         if raise_ex:
-            raise ValidationException(f"the value `{vpformat(datum)}` is not long")
+            raise ValidationException(f"the value {vpformat(datum)!r} is not long")
         return False
-    elif schema_type in ["float", "double"]:
-        if isinstance(datum, int) or isinstance(datum, float):
+    if schema_type in ["float", "double"]:
+        if isinstance(datum, (int, float)):
             return True
         if raise_ex:
-            raise ValidationException(f"the value `{vpformat(datum)}` is not float or double")
+            raise ValidationException(f"the value {vpformat(datum)!r} is not float or double")
         return False
-    elif isinstance(expected_schema, avro.schema.EnumSchema):
+    if isinstance(expected_schema, avro.schema.EnumSchema):
         if expected_schema.name in ("org.w3id.cwl.salad.Any", "Any"):
             if datum is not None:
                 return True
@@ -188,25 +187,22 @@ def validate_ex(
                 return True
             if raise_ex:
                 raise ValidationException(
-                    "value `{}` does not contain an expression in the form $() or ${{}}".format(
-                        datum
-                    )
+                    f"value {datum!r} does not contain an expression in the form $() or ${{}}"
                 )
             return False
         if datum in expected_schema.symbols:
             return True
-        else:
-            if raise_ex:
-                raise ValidationException(
-                    "the value {} is not a valid {}, expected {}{}".format(
-                        vpformat(datum),
-                        expected_schema.name,
-                        "one of " if len(expected_schema.symbols) > 1 else "",
-                        "'" + "', '".join(expected_schema.symbols) + "'",
-                    )
+        if raise_ex:
+            raise ValidationException(
+                "the value {} is not a valid {}, expected {}{}".format(
+                    vpformat(datum),
+                    expected_schema.name,
+                    "one of " if len(expected_schema.symbols) > 1 else "",
+                    "'" + "', '".join(expected_schema.symbols) + "'",
                 )
-            return False
-    elif isinstance(expected_schema, avro.schema.ArraySchema):
+            )
+        return False
+    if isinstance(expected_schema, avro.schema.ArraySchema):
         if isinstance(datum, MutableSequence):
             for i, d in enumerate(datum):
                 try:
@@ -230,15 +226,13 @@ def validate_ex(
                         raise ValidationException("item is invalid because", sl, [v]) from source
                     return False
             return True
-        else:
-            if raise_ex:
-                raise ValidationException(
-                    "the value {} is not a list, expected list of {}".format(
-                        vpformat(datum), friendly(expected_schema.items)
-                    )
-                )
-            return False
-    elif isinstance(expected_schema, avro.schema.UnionSchema):
+        if raise_ex:
+            raise ValidationException(
+                f"the value {vpformat(datum)} is not a list, "
+                f"expected list of {friendly(expected_schema.items)}"
+            )
+        return False
+    if isinstance(expected_schema, avro.schema.UnionSchema):
         for s in expected_schema.schemas:
             if validate_ex(
                 s,
@@ -261,13 +255,13 @@ def validate_ex(
         for s in expected_schema.schemas:
             if isinstance(datum, MutableSequence) and not isinstance(s, avro.schema.ArraySchema):
                 continue
-            elif isinstance(datum, MutableMapping) and not isinstance(s, avro.schema.RecordSchema):
+            if isinstance(datum, MutableMapping) and not isinstance(s, avro.schema.RecordSchema):
                 continue
-            elif isinstance(datum, (bool, int, float, str)) and isinstance(
+            if isinstance(datum, (bool, int, float, str)) and isinstance(
                 s, (avro.schema.ArraySchema, avro.schema.RecordSchema)
             ):
                 continue
-            elif datum is not None and s.type == "null":
+            if datum is not None and s.type == "null":
                 continue
 
             checked.append(s)
@@ -298,17 +292,15 @@ def validate_ex(
                 ],
                 "-",
             )
-        else:
-            raise ValidationException(
-                f"value is a {type(datum).__name__}, expected {friendly(expected_schema)}"
-            )
+        raise ValidationException(
+            f"value is a {type(datum).__name__}, expected {friendly(expected_schema)}"
+        )
 
-    elif isinstance(expected_schema, avro.schema.RecordSchema):
+    if isinstance(expected_schema, avro.schema.RecordSchema):
         if not isinstance(datum, MutableMapping):
             if raise_ex:
                 raise ValidationException("is not a dict")
-            else:
-                return False
+            return False
 
         classmatch = None
         for f in expected_schema.fields:
@@ -317,18 +309,16 @@ def validate_ex(
                 if not d:
                     if raise_ex:
                         raise ValidationException(f"Missing {f.name!r} field")
-                    else:
-                        return False
+                    return False
                 avroname = None
                 if d in vocab:
                     avroname = avro_type_name(vocab[d])
-                if expected_schema.name != d and expected_schema.name != avroname:
+                if expected_schema.name not in (d, avroname):
                     if raise_ex:
                         raise ValidationException(
                             f"Expected class {expected_schema.name!r} but this is {d!r}"
                         )
-                    else:
-                        return False
+                    return False
                 classmatch = d
                 break
 
@@ -362,11 +352,11 @@ def validate_ex(
                     return False
             except ValidationException as v:
                 if f.name not in datum:
-                    errors.append(ValidationException(f"missing required field `{f.name}`"))
+                    errors.append(ValidationException(f"missing required field {f.name!r}"))
                 else:
                     errors.append(
                         ValidationException(
-                            f"the `{f.name}` field is not valid because",
+                            f"the {f.name!r} field is not valid because",
                             sl,
                             [v],
                         )
@@ -401,7 +391,7 @@ def validate_ex(
                     if split.scheme:
                         if not skip_foreign_properties:
                             err = ValidationException(
-                                "unrecognized extension field `{}`{}.{}".format(
+                                "unrecognized extension field {!r}{}.{}".format(
                                     d,
                                     " and strict_foreign_properties checking is enabled"
                                     if strict_foreign_properties
@@ -420,7 +410,7 @@ def validate_ex(
                                 logger.warning(err.as_warning())
                     else:
                         err = ValidationException(
-                            "invalid field `{}`, expected one of: {}".format(
+                            "invalid field {!r}, expected one of: {}".format(
                                 d,
                                 ", ".join(f"{fn.name!r}" for fn in expected_schema.fields),
                             ),
@@ -435,13 +425,9 @@ def validate_ex(
             if raise_ex:
                 if classmatch:
                     raise ClassValidationException("", None, errors, "*")
-                else:
-                    raise ValidationException("", None, errors, "*")
-            else:
-                return False
-        else:
-            return True
+                raise ValidationException("", None, errors, "*")
+            return False
+        return True
     if raise_ex:
         raise ValidationException(f"Unrecognized schema_type {schema_type}")
-    else:
-        return False
+    return False

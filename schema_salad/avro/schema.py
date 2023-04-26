@@ -100,7 +100,7 @@ class Schema:
             raise SchemaParseException(
                 f"Schema type {atype!r} must be a string, was {type(atype)!r}."
             )
-        elif atype not in VALID_TYPES:
+        if atype not in VALID_TYPES:
             fail_msg = f"{atype} is not a valid type."
             raise SchemaParseException(fail_msg)
 
@@ -177,8 +177,7 @@ class Name:
 
         if self._full.find(".") > 0:
             return self._full.rsplit(".", 1)[0]
-        else:
-            return None
+        return None
 
 
 class Names:
@@ -215,10 +214,10 @@ class Names:
         if to_add.fullname in VALID_TYPES:
             fail_msg = f"{to_add.fullname} is a reserved type name."
             raise SchemaParseException(fail_msg)
-        elif to_add.fullname in self.names:
+        if to_add.fullname in self.names:
             fail_msg = f"The name {to_add.fullname!r} is already in use."
             raise SchemaParseException(fail_msg)
-        elif to_add.fullname is None:
+        if to_add.fullname is None:
             fail_msg = f"{to_add.fullname} is missing, but this is impossible."
             raise SchemaParseException(fail_msg)
 
@@ -240,9 +239,9 @@ class NamedSchema(Schema):
         # Ensure valid ctor args
         if not name:
             raise SchemaParseException("Named Schemas must have a non-empty name.")
-        elif not isinstance(name, str):
+        if not isinstance(name, str):
             raise SchemaParseException("The name property must be a string.")
-        elif namespace is not None and not isinstance(namespace, str):
+        if namespace is not None and not isinstance(namespace, str):
             raise SchemaParseException("The namespace property must be a string.")
         if names is None:
             raise SchemaParseException("Must provide Names.")
@@ -284,10 +283,10 @@ class Field:
         if not name:
             fail_msg = "Fields must have a non-empty name."
             raise SchemaParseException(fail_msg)
-        elif not isinstance(name, str):
+        if not isinstance(name, str):
             fail_msg = "The name property must be a string."  # type: ignore[unreachable]
             raise SchemaParseException(fail_msg)
-        elif order is not None and order not in VALID_FIELD_SORT_ORDERS:
+        if order is not None and order not in VALID_FIELD_SORT_ORDERS:
             fail_msg = f"The order property {order} is not valid."
             raise SchemaParseException(fail_msg)
 
@@ -365,9 +364,9 @@ class EnumSchema(NamedSchema):
         # Ensure valid ctor args
         if not isinstance(symbols, list):
             raise AvroException("Enum Schema requires a JSON array for the symbols property.")
-        elif False in [isinstance(s, str) for s in symbols]:
+        if False in [isinstance(s, str) for s in symbols]:
             raise AvroException("Enum Schema requires all symbols to be JSON strings.")
-        elif len(set(symbols)) < len(symbols):
+        if len(set(symbols)) < len(symbols):
             raise AvroException(f"Duplicate symbol: {symbols}")
 
         # Call parent ctor
@@ -457,10 +456,9 @@ class UnionSchema(Schema):
                 and new_schema.type in [schema.type for schema in schema_objects]
             ):
                 raise SchemaParseException(f"{new_schema.type} type already in Union")
-            elif new_schema.type == "union":
+            if new_schema.type == "union":
                 raise SchemaParseException("Unions cannot contain other unions.")
-            else:
-                schema_objects.append(new_schema)
+            schema_objects.append(new_schema)
         self._schemas = schema_objects
 
     # read-only properties
@@ -490,10 +488,9 @@ class RecordSchema(NamedSchema):
                 if not (order is None or isinstance(order, str)):
                     raise SchemaParseException('"order" must be a string or None')
                 doc = field.get("doc")
-                if not (doc is None or isinstance(doc, str) or isinstance(doc, list)):
+                if not (doc is None or isinstance(doc, (list, str))):
                     raise SchemaParseException('"doc" must be a string, list of strings, or None')
-                else:
-                    doc = cast(Union[str, List[str], None], doc)
+                doc = cast(Union[str, List[str], None], doc)
                 other_props = get_other_props(field, FIELD_RESERVED_PROPS)
                 new_field = Field(atype, name, has_default, default, order, names, doc, other_props)
                 parsed_fields[new_field.name] = field
@@ -583,7 +580,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
                 raise SchemaParseException(
                     f'"namespace" for type {atype} must be a string or None: {json_data}'
                 )
-            if not (doc is None or isinstance(doc, str) or isinstance(doc, list)):
+            if not (doc is None or isinstance(doc, (str, list))):
                 raise SchemaParseException(
                     f'"doc" for type {atype} must be a string, '
                     f"a list of strings, or None: {json_data}"
@@ -594,19 +591,15 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
                     raise SchemaParseException(
                         f'"symbols" for type enum must be a list of strings: {json_data}'
                     )
-                else:
-                    symbols = cast(List[str], symbols)
+                symbols = cast(List[str], symbols)
                 return EnumSchema(name, namespace, symbols, names, doc, other_props)
             if atype in ["record", "error"]:
                 fields = json_data.get("fields", [])
                 if not isinstance(fields, list):
                     raise SchemaParseException(
-                        '"fields" for type {} must be a list of mappings: {}'.format(
-                            atype, json_data
-                        )
+                        f'"fields" for type {atype} must be a list of mappings: {json_data}'
                     )
-                else:
-                    fields = cast(List[PropsType], fields)
+                fields = cast(List[PropsType], fields)
                 return RecordSchema(name, namespace, fields, names, atype, doc, other_props)
             raise SchemaParseException(f"Unknown Named Type: {atype}")
         if atype in VALID_TYPES:
