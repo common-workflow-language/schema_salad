@@ -121,6 +121,8 @@ _RoundTripNoTimeStampConstructor.add_constructor(
     _RoundTripNoTimeStampConstructor.construct_yaml_timestamp,
 )
 
+# mypy: no-warn-unused-ignores
+
 
 def yaml_no_ts() -> YAML:
     """
