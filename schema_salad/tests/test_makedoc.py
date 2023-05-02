@@ -63,12 +63,12 @@ def fixture_metaschema_doc() -> str:
 
 def test_doc_fenced_code_contents_preserved() -> None:
     """
-    Validates that fenced code contents are not interpreted as Markdown definitions and converted into erroneous HTML.
+    Fenced code contents are not interpreted as Markdown definitions and converted into erroneous HTML.
 
-    An example of problem case is when a definition looks like a Markdown list (e.g.: a YAML array).
-    It must not be converted into HTML contents with list tags.
-    However, special characters (e.g.: ``<``, ``>``) must still be escaped, otherwise they will not be correctly
-    rendered within an HTML ``<pre><code>`` block.
+    An example of problem case is when a definition looks like a Markdown list
+    (e.g.: a YAML array). It must not be converted into HTML contents with list tags.
+    However, special characters (e.g.: ``<``, ``>``) must still be escaped,
+    otherwise they will not be correctly rendered within an HTML ``<pre><code>`` block.
     """
     data = inspect.cleandoc(
         """

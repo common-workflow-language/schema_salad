@@ -43,7 +43,7 @@ def codegen(
     """Generate classes with loaders for the given Schema Salad description."""
     j = schema.extend_and_specialize(i, loader)
 
-    gen = None  # type: Optional[CodeGenBase]
+    gen: Optional[CodeGenBase] = None
     base = schema_metadata.get("$base", schema_metadata.get("id"))
     # ``urlsplit`` decides whether to return an encoded result based
     # on the object type. To ensure the code behaves the same for Py

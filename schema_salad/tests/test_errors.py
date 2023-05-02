@@ -76,11 +76,13 @@ def test_error_message2() -> None:
     assert isinstance(avsc_names, Names)
 
     t = "test_schema/test2.cwl"
-    match = r"""
-^.+test2\.cwl:2:1: Field `class`\s+contains\s+undefined\s+reference\s+to
-\s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$"""[
-        1:
-    ]
+    match = (
+        r"""
+^.+test2\.cwl:2:1: Field """
+        r"""`class`\s+contains\s+undefined\s+reference\s+to\s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$"""[
+            1:
+        ]
+    )
     path2 = get_data("tests/" + t)
     assert path2
     with pytest.raises(ValidationException, match=match):
@@ -179,13 +181,15 @@ def test_error_message8() -> None:
     assert isinstance(avsc_names, Names)
 
     t = "test_schema/test8.cwl"
-    match = r"""
+    match = (
+        r"""
 ^.+test8\.cwl:7:1: checking field\s+`steps`
 .+test8\.cwl:8:3:   checking object\s+`.+test8\.cwl#step1`
-.+test8\.cwl:9:5:     Field\s+`scatterMethod`\s+contains\s+undefined\s+reference\s+to
-\s+`file:///.+/tests/test_schema/abc`$"""[
-        1:
-    ]
+.+test8\.cwl:9:5:     """
+        r"""Field\s+`scatterMethod`\s+contains\s+undefined\s+reference\s+to\s+`file:///.+/tests/test_schema/abc`$"""[
+            1:
+        ]
+    )
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
             document_loader, avsc_names, str(get_data("tests/" + t)), True
@@ -242,13 +246,15 @@ def test_error_message11() -> None:
     assert isinstance(avsc_names, Names)
 
     t = "test_schema/test11.cwl"
-    match = r"""
+    match = (
+        r"""
 ^.+test11\.cwl:7:1: checking field\s+`steps`
 .+test11\.cwl:8:3:   checking object\s+`.+test11\.cwl#step1`
-.+test11\.cwl:9:5:     Field `run`\s+contains\s+undefined\s+reference\s+to
-\s+`file://.+/tests/test_schema/blub\.cwl`$"""[
-        1:
-    ]
+.+test11\.cwl:9:5:     """
+        r"""Field `run`\s+contains\s+undefined\s+reference\s+to\s+`file://.+/tests/test_schema/blub\.cwl`$"""[
+            1:
+        ]
+    )
     with pytest.raises(ValidationException, match=match):
         load_and_validate(
             document_loader, avsc_names, str(get_data("tests/" + t)), True
@@ -346,6 +352,99 @@ def test_namespaces_type() -> None:
                 }
             )
         )
+
+
+def test_namespaces_undeclared(caplog: pytest.LogCaptureFixture) -> None:
+    """Confirm warning message a namespace is used but not declared."""
+
+    ldr, _, _, _ = schema_salad.schema.load_schema(
+        cmap(
+            {
+                "$base": "Y",
+                "name": "X",
+                "$graph": [
+                    {
+                        "name": "namesp:ExampleType",
+                        "type": "enum",
+                        "symbols": ["asym", "bsym"],
+                    }
+                ],
+            }
+        )
+    )
+
+    match = (
+        r""".*URI prefix 'namesp' of 'namesp:ExampleType' not recognized, """
+        r"""are you missing a \$namespaces section?.*"""
+    )
+
+    assert re.match(match, caplog.text)
+
+
+def test_not_a_namespace1(caplog: pytest.LogCaptureFixture) -> None:
+    """Confirm no warning when relative id contains a colon but prefix doesn't look like a namespace."""
+
+    ldr, _, _, _ = schema_salad.schema.load_schema(
+        cmap(
+            {
+                "$base": "Y",
+                "name": "X",
+                "$graph": [
+                    {
+                        "name": "foo/colon:ExampleType",
+                        "type": "enum",
+                        "symbols": ["asym", "bsym"],
+                    }
+                ],
+            }
+        )
+    )
+
+    assert caplog.text == ""
+
+
+def test_not_a_namespace2(caplog: pytest.LogCaptureFixture) -> None:
+    """Confirm no warning when relative id contains a colon but prefix doesn't look like a namespace."""
+
+    ldr, _, _, _ = schema_salad.schema.load_schema(
+        cmap(
+            {
+                "$base": "Y",
+                "name": "X",
+                "$graph": [
+                    {
+                        "name": "foo#colon:ExampleType",
+                        "type": "enum",
+                        "symbols": ["asym", "bsym"],
+                    }
+                ],
+            }
+        )
+    )
+
+    assert caplog.text == ""
+
+
+def test_not_a_namespace3(caplog: pytest.LogCaptureFixture) -> None:
+    """Confirm no warning when relative id starts with a colon."""
+
+    ldr, _, _, _ = schema_salad.schema.load_schema(
+        cmap(
+            {
+                "$base": "Y",
+                "name": "X",
+                "$graph": [
+                    {
+                        "name": ":ExampleType",
+                        "type": "enum",
+                        "symbols": ["asym", "bsym"],
+                    }
+                ],
+            }
+        )
+    )
+
+    assert caplog.text == ""
 
 
 def test_schemas_type() -> None:

@@ -59,6 +59,8 @@ class LoadingOptions:
     vocab: Dict[str, str]
     rvocab: Dict[str, str]
     cache: CacheType
+    imports: List[str]
+    includes: List[str]
 
     def __init__(
         self,
@@ -71,6 +73,8 @@ class LoadingOptions:
         addl_metadata: Optional[Dict[str, str]] = None,
         baseuri: Optional[str] = None,
         idx: Optional[IdxType] = None,
+        imports: Optional[List[str]] = None,
+        includes: Optional[List[str]] = None,
     ) -> None:
         """Create a LoadingOptions object."""
         self.original_doc = original_doc
@@ -104,6 +108,16 @@ class LoadingOptions:
             self.addl_metadata = addl_metadata
         else:
             self.addl_metadata = copyfrom.addl_metadata if copyfrom is not None else {}
+
+        if imports is not None:
+            self.imports = imports
+        else:
+            self.imports = copyfrom.imports if copyfrom is not None else []
+
+        if includes is not None:
+            self.includes = includes
+        else:
+            self.includes = copyfrom.includes if copyfrom is not None else []
 
         if fetcher is not None:
             self.fetcher = fetcher
@@ -208,18 +222,22 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
         if "$import" in val:
             if loadingOptions.fileuri is None:
                 raise SchemaSaladException("Cannot load $import without fileuri")
+            url = loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$import"])
             result, metadata = _document_load_by_url(
                 fieldtype,
-                loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$import"]),
+                url,
                 loadingOptions,
             )
+            loadingOptions.imports.append(url)
             return result
         elif "$include" in val:
             if loadingOptions.fileuri is None:
                 raise SchemaSaladException("Cannot load $import without fileuri")
-            val = loadingOptions.fetcher.fetch_text(
-                loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
+            url = loadingOptions.fetcher.urljoin(
+                loadingOptions.fileuri, val["$include"]
             )
+            val = loadingOptions.fetcher.fetch_text(url)
+            loadingOptions.includes.append(url)
     return fieldtype.load(val, baseuri, loadingOptions)
 
 
@@ -450,7 +468,10 @@ def expand_url(
     split = urlsplit(url)
 
     if (
-        (bool(split.scheme) and split.scheme in ["http", "https", "file"])
+        (
+            bool(split.scheme)
+            and split.scheme in loadingOptions.fetcher.supported_schemes()
+        )
         or url.startswith("$(")
         or url.startswith("${")
     ):
@@ -559,8 +580,7 @@ class _ArrayLoader(_Loader):
 
 
 class _EnumLoader(_Loader):
-    def __init__(self, symbols, name):
-        # type: (Sequence[str], str) -> None
+    def __init__(self, symbols: Sequence[str], name: str) -> None:
         self.symbols = symbols
         self.name = name
 
@@ -677,8 +697,7 @@ class _ExpressionLoader(_Loader):
 
 
 class _UnionLoader(_Loader):
-    def __init__(self, alternates):
-        # type: (Sequence[_Loader]) -> None
+    def __init__(self, alternates: Sequence[_Loader]) -> None:
         self.alternates = alternates
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):

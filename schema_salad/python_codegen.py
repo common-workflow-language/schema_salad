@@ -561,7 +561,8 @@ if _errors__:
         )
         if self.idfield:
             self.out.write(
-                f"        loadingOptions.idx[{self.safe_name(self.idfield)}] = (_constructed, loadingOptions)\n"
+                f"        loadingOptions.idx[{self.safe_name(self.idfield)}] "
+                "= (_constructed, loadingOptions)\n"
             )
 
         self.out.write("        return _constructed\n")

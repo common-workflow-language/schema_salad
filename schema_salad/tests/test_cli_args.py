@@ -20,7 +20,7 @@ def captured_output() -> Iterator[Tuple[StringIO, StringIO]]:
 
 
 def test_version() -> None:
-    args = [["--version"], ["-v"]]  # type: List[List[str]]
+    args: List[List[str]] = [["--version"], ["-v"]]
     for arg in args:
         with captured_output() as (out, err):
             cli_parser.main(arg)
@@ -31,7 +31,7 @@ def test_version() -> None:
 
 def test_empty_input() -> None:
     # running schema_salad tool without any args
-    args = []  # type: List[str]
+    args: List[str] = []
     with captured_output() as (out, err):
         cli_parser.main(args)
 

@@ -45,7 +45,7 @@ def vocab_type_name(url: str) -> str:
 
 
 def has_types(items: Any) -> List[str]:
-    r = []  # type: List[str]
+    r: List[str] = []
     if isinstance(items, MutableMapping):
         if items["type"] == "https://w3id.org/cwl/salad#record":
             return [items["name"]]
@@ -106,8 +106,9 @@ class MyRenderer(HTMLRenderer):
         return text + ">" + html.escape(code, quote=self._escape) + "</code></pre>\n"
 
 
-def markdown_list_hook(markdown, text, state):
-    # type: (Markdown[str, Any], str, State) -> Tuple[str, State]
+def markdown_list_hook(
+    markdown: "Markdown[str, Any]", text: str, state: "State"
+) -> Tuple[str, "State"]:
     """Patches problematic Markdown lists for later HTML generation.
 
     When a Markdown list with paragraphs not indented with the list
@@ -286,7 +287,8 @@ class ToC:
         self.toc = ""
         self.start_numbering = True
 
-    def add_entry(self, thisdepth, title):  # type: (int, str) -> str
+    def add_entry(self, thisdepth: int, title: str) -> str:
+        """Add an entry to the table of contents."""
         depth = len(self.numbering)
         if thisdepth < depth:
             self.toc += "</ol>"
@@ -390,12 +392,12 @@ class RenderType:
     ) -> None:
         self.typedoc = StringIO()
         self.toc = toc
-        self.subs = {}  # type: Dict[str, str]
-        self.docParent = {}  # type: Dict[str, List[str]]
-        self.docAfter = {}  # type: Dict[str, List[str]]
-        self.rendered = set()  # type: Set[str]
+        self.subs: Dict[str, str] = {}
+        self.docParent: Dict[str, List[str]] = {}
+        self.docAfter: Dict[str, List[str]] = {}
+        self.rendered: Set[str] = set()
         self.redirects = redirects
-        self.title = None  # type: Optional[str]
+        self.title: Optional[str] = None
         self.primitiveType = primitiveType
 
         for t in j:
@@ -418,17 +420,15 @@ class RenderType:
         metaschema_loader = get_metaschema()[2]
         alltypes = extend_and_specialize(j, metaschema_loader)
 
-        self.typemap = {}  # type: Dict[str, Dict[str, str]]
-        self.uses = {}  # type: Dict[str, List[Tuple[str, str]]]
-        self.record_refs = {}  # type: Dict[str, List[str]]
+        self.typemap: Dict[str, Dict[str, str]] = {}
+        self.uses: Dict[str, List[Tuple[str, str]]] = {}
+        self.record_refs: Dict[str, List[str]] = {}
         for entry in alltypes:
             self.typemap[entry["name"]] = entry
             try:
                 if entry["type"] == "record":
                     self.record_refs[entry["name"]] = []
-                    fields = entry.get(
-                        "fields", []
-                    )  # type: Union[str, List[Dict[str, str]]]
+                    fields: Union[str, List[Dict[str, str]]] = entry.get("fields", [])
                     if isinstance(fields, str):
                         raise KeyError("record fields must be a list of mappings")
                     for f in fields:  # type: Dict[str, str]
@@ -615,20 +615,20 @@ class RenderType:
             f["doc"] = number_headings(self.toc, f["doc"])
 
         doc = doc + "\n\n" + f["doc"]
-        plugins = [
+        plugins: List["PluginName"] = [
             "strikethrough",
             "footnotes",
             "table",
             "url",
-        ]  # type: List[PluginName]  # fix error Generic str != explicit Literals
+        ]
         # if escape active, wraps literal HTML into '<p> {HTML} </p>'
         # we must pass it to both since 'MyRenderer' is predefined
         escape = False
-        markdown2html = create_markdown(
+        markdown2html: "Markdown[str, Any]" = create_markdown(
             renderer=MyRenderer(escape=escape),
             plugins=plugins,
             escape=escape,
-        )  # type: Markdown[str, Any]
+        )
         markdown2html.before_parse_hooks.append(markdown_list_hook)
         doc = markdown2html(doc)
 

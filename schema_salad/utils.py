@@ -96,11 +96,7 @@ def convert_to_dict(j4):  # type: (Any) -> Any
         return j4
 
 
-def json_dump(
-    obj,  # type: Any
-    fp,  # type: IO[str]
-    **kwargs  # type: Any
-):  # type: (...) -> None
+def json_dump(obj: Any, fp: IO[str], **kwargs: Any) -> None:
     """Force use of unicode."""
     json.dump(convert_to_dict(obj), fp, **kwargs)
 
