@@ -246,7 +246,7 @@ def load_field(val, fieldtype, baseuri, loadingOptions, keys=None):
             )
             loadingOptions.imports.append(url)
             return result
-        elif "$include" in val:
+        if "$include" in val:
             if loadingOptions.fileuri is None:
                 raise SchemaSaladException("Cannot load $import without fileuri")
             url = loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
@@ -519,8 +519,7 @@ class _EnumLoader(_Loader):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[str]]) -> Any
         if doc in self.symbols:
             return doc
-        else:
-            raise ValidationException(f"Expected one of {self.symbols}")
+        raise ValidationException(f"Expected one of {self.symbols}")
 
     def __repr__(self):  # type: () -> str
         return self.name
@@ -640,7 +639,7 @@ class _UnionLoader(_Loader):
                         if doc.get("class") == str(t):
                             errors.append(
                                 ValidationException(
-                                    f"Object '{baseuri.split('/')[-1]}' is not valid because",
+                                    f"Object `{baseuri.split('/')[-1]}` is not valid because",
                                     SourceLine(doc, next(iter(doc)), str),
                                     [e],
                                 )
@@ -686,7 +685,7 @@ class _UnionLoader(_Loader):
                                     t, (_PrimitiveLoader)
                                 ):  # avoids 'tried <class "NoneType"> was {x}' errors
                                     errors.append(
-                                        ValidationException(f"tried {t} but", None, [e])
+                                        ValidationException(f"tried `{t}` but", None, [e])
                                     )
                 else:
                     if isinstance(
@@ -694,16 +693,18 @@ class _UnionLoader(_Loader):
                     ):  # avoids "tried <class "CWLType"> but x" and instead returns the values for parsing
                         errors.append(ValidationException("", None, [e]))
                     else:
-                        errors.append(ValidationException(f"tried {t} but", None, [e]))
+                        errors.append(ValidationException(f"tried `{t}` but", None, [e]))
 
         if isinstance(doc, (CommentedMap, dict)) and "class" in doc:
             if doc.get("class") not in str(self.alternates):
                 errors.append(
                     ValidationException(
                         "Field `class` contains undefined reference to "
+                        + "`"
                         + baseuri
                         + "/"
-                        + doc.get("class"),
+                        + doc.get("class")
+                        + "`",
                         SourceLine(doc, "class", str),
                         [],
                     )
@@ -755,7 +756,7 @@ class _URILoader(_Loader):
             try:
                 if not loadingOptions.check_exists(doc):
                     errors.append(
-                        ValidationException(f"contains undefined reference to {doc}")
+                        ValidationException(f"contains undefined reference to `{doc}`")
                     )
             except ValidationException:
                 pass
@@ -975,8 +976,7 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         frag = ""
     if urlpath.startswith("//"):
         return f"file:{urlpath}{frag}"
-    else:
-        return f"file://{urlpath}{frag}"
+    return f"file://{urlpath}{frag}"
 
 
 def prefix_url(url: str, namespaces: Dict[str, str]) -> str:
@@ -1020,8 +1020,7 @@ def save_relative_uri(
 
             if urisplit.fragment.startswith(basefrag):
                 return urisplit.fragment[len(basefrag) :]
-            else:
-                return urisplit.fragment
+            return urisplit.fragment
         return uri
     else:
         return save(uri, top=False, base_url=base_url, relative_uris=relative_uris)
@@ -1121,7 +1120,7 @@ class RecordField(Documented):
         if "name" in _doc:
             try:
                 if _doc.get("name") is None:
-                    raise ValidationException("* missing required field 'name'", None, [])
+                    raise ValidationException("* missing required field `name`", None, [])
 
                 name = load_field(
                     _doc.get("name"),
@@ -1134,7 +1133,7 @@ class RecordField(Documented):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'name'":
+                if str(e) == "* missing required field `name`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -1167,7 +1166,7 @@ class RecordField(Documented):
         if "doc" in _doc:
             try:
                 if _doc.get("doc") is None:
-                    raise ValidationException("* missing required field 'doc'", None, [])
+                    raise ValidationException("* missing required field `doc`", None, [])
 
                 doc = load_field(
                     _doc.get("doc"),
@@ -1180,7 +1179,7 @@ class RecordField(Documented):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'doc'":
+                if str(e) == "* missing required field `doc`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -1203,7 +1202,7 @@ class RecordField(Documented):
             doc = None
         try:
             if _doc.get("type") is None:
-                raise ValidationException("* missing required field 'type'", None, [])
+                raise ValidationException("* missing required field `type`", None, [])
 
             type_ = load_field(
                 _doc.get("type"),
@@ -1216,7 +1215,7 @@ class RecordField(Documented):
         except ValidationException as e:
             error_message = parse_errors(str(e))
 
-            if str(e) == "* missing required field 'type'":
+            if str(e) == "* missing required field `type`":
                 _errors__.append(
                     ValidationException(
                         "",
@@ -1258,7 +1257,7 @@ class RecordField(Documented):
                     )
 
         if _errors__:
-            raise ValidationException("tried 'RecordField' but", None, _errors__)
+            raise ValidationException("tried `RecordField` but", None, _errors__)
         _constructed = cls(
             doc=doc,
             name=name,
@@ -1367,7 +1366,7 @@ class RecordSchema(Saveable):
         if "fields" in _doc:
             try:
                 if _doc.get("fields") is None:
-                    raise ValidationException("* missing required field 'fields'", None, [])
+                    raise ValidationException("* missing required field `fields`", None, [])
 
                 fields = load_field(
                     _doc.get("fields"),
@@ -1380,7 +1379,7 @@ class RecordSchema(Saveable):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'fields'":
+                if str(e) == "* missing required field `fields`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -1403,7 +1402,7 @@ class RecordSchema(Saveable):
             fields = None
         try:
             if _doc.get("type") is None:
-                raise ValidationException("* missing required field 'type'", None, [])
+                raise ValidationException("* missing required field `type`", None, [])
 
             type_ = load_field(
                 _doc.get("type"),
@@ -1416,7 +1415,7 @@ class RecordSchema(Saveable):
         except ValidationException as e:
             error_message = parse_errors(str(e))
 
-            if str(e) == "* missing required field 'type'":
+            if str(e) == "* missing required field `type`":
                 _errors__.append(
                     ValidationException(
                         "",
@@ -1458,7 +1457,7 @@ class RecordSchema(Saveable):
                     )
 
         if _errors__:
-            raise ValidationException("tried 'RecordSchema' but", None, _errors__)
+            raise ValidationException("tried `RecordSchema` but", None, _errors__)
         _constructed = cls(
             fields=fields,
             type_=type_,
@@ -1573,7 +1572,7 @@ class EnumSchema(Saveable):
         if "name" in _doc:
             try:
                 if _doc.get("name") is None:
-                    raise ValidationException("* missing required field 'name'", None, [])
+                    raise ValidationException("* missing required field `name`", None, [])
 
                 name = load_field(
                     _doc.get("name"),
@@ -1586,7 +1585,7 @@ class EnumSchema(Saveable):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'name'":
+                if str(e) == "* missing required field `name`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -1618,7 +1617,7 @@ class EnumSchema(Saveable):
             baseuri = name
         try:
             if _doc.get("symbols") is None:
-                raise ValidationException("* missing required field 'symbols'", None, [])
+                raise ValidationException("* missing required field `symbols`", None, [])
 
             symbols = load_field(
                 _doc.get("symbols"),
@@ -1631,7 +1630,7 @@ class EnumSchema(Saveable):
         except ValidationException as e:
             error_message = parse_errors(str(e))
 
-            if str(e) == "* missing required field 'symbols'":
+            if str(e) == "* missing required field `symbols`":
                 _errors__.append(
                     ValidationException(
                         "",
@@ -1652,7 +1651,7 @@ class EnumSchema(Saveable):
                 )
         try:
             if _doc.get("type") is None:
-                raise ValidationException("* missing required field 'type'", None, [])
+                raise ValidationException("* missing required field `type`", None, [])
 
             type_ = load_field(
                 _doc.get("type"),
@@ -1665,7 +1664,7 @@ class EnumSchema(Saveable):
         except ValidationException as e:
             error_message = parse_errors(str(e))
 
-            if str(e) == "* missing required field 'type'":
+            if str(e) == "* missing required field `type`":
                 _errors__.append(
                     ValidationException(
                         "",
@@ -1707,7 +1706,7 @@ class EnumSchema(Saveable):
                     )
 
         if _errors__:
-            raise ValidationException("tried 'EnumSchema' but", None, _errors__)
+            raise ValidationException("tried `EnumSchema` but", None, _errors__)
         _constructed = cls(
             name=name,
             symbols=symbols,
@@ -1814,7 +1813,7 @@ class ArraySchema(Saveable):
         _errors__ = []
         try:
             if _doc.get("items") is None:
-                raise ValidationException("* missing required field 'items'", None, [])
+                raise ValidationException("* missing required field `items`", None, [])
 
             items = load_field(
                 _doc.get("items"),
@@ -1827,7 +1826,7 @@ class ArraySchema(Saveable):
         except ValidationException as e:
             error_message = parse_errors(str(e))
 
-            if str(e) == "* missing required field 'items'":
+            if str(e) == "* missing required field `items`":
                 _errors__.append(
                     ValidationException(
                         "",
@@ -1848,7 +1847,7 @@ class ArraySchema(Saveable):
                 )
         try:
             if _doc.get("type") is None:
-                raise ValidationException("* missing required field 'type'", None, [])
+                raise ValidationException("* missing required field `type`", None, [])
 
             type_ = load_field(
                 _doc.get("type"),
@@ -1861,7 +1860,7 @@ class ArraySchema(Saveable):
         except ValidationException as e:
             error_message = parse_errors(str(e))
 
-            if str(e) == "* missing required field 'type'":
+            if str(e) == "* missing required field `type`":
                 _errors__.append(
                     ValidationException(
                         "",
@@ -1903,7 +1902,7 @@ class ArraySchema(Saveable):
                     )
 
         if _errors__:
-            raise ValidationException("tried 'ArraySchema' but", None, _errors__)
+            raise ValidationException("tried `ArraySchema` but", None, _errors__)
         _constructed = cls(
             items=items,
             type_=type_,
@@ -2056,7 +2055,7 @@ class JsonldPredicate(Saveable):
         if "_id" in _doc:
             try:
                 if _doc.get("_id") is None:
-                    raise ValidationException("* missing required field '_id'", None, [])
+                    raise ValidationException("* missing required field `_id`", None, [])
 
                 _id = load_field(
                     _doc.get("_id"),
@@ -2069,7 +2068,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field '_id'":
+                if str(e) == "* missing required field `_id`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -2093,7 +2092,7 @@ class JsonldPredicate(Saveable):
         if "_type" in _doc:
             try:
                 if _doc.get("_type") is None:
-                    raise ValidationException("* missing required field '_type'", None, [])
+                    raise ValidationException("* missing required field `_type`", None, [])
 
                 _type = load_field(
                     _doc.get("_type"),
@@ -2106,7 +2105,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field '_type'":
+                if str(e) == "* missing required field `_type`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -2130,7 +2129,7 @@ class JsonldPredicate(Saveable):
         if "_container" in _doc:
             try:
                 if _doc.get("_container") is None:
-                    raise ValidationException("* missing required field '_container'", None, [])
+                    raise ValidationException("* missing required field `_container`", None, [])
 
                 _container = load_field(
                     _doc.get("_container"),
@@ -2143,7 +2142,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field '_container'":
+                if str(e) == "* missing required field `_container`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -2167,7 +2166,7 @@ class JsonldPredicate(Saveable):
         if "identity" in _doc:
             try:
                 if _doc.get("identity") is None:
-                    raise ValidationException("* missing required field 'identity'", None, [])
+                    raise ValidationException("* missing required field `identity`", None, [])
 
                 identity = load_field(
                     _doc.get("identity"),
@@ -2180,7 +2179,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'identity'":
+                if str(e) == "* missing required field `identity`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -2204,7 +2203,7 @@ class JsonldPredicate(Saveable):
         if "noLinkCheck" in _doc:
             try:
                 if _doc.get("noLinkCheck") is None:
-                    raise ValidationException("* missing required field 'noLinkCheck'", None, [])
+                    raise ValidationException("* missing required field `noLinkCheck`", None, [])
 
                 noLinkCheck = load_field(
                     _doc.get("noLinkCheck"),
@@ -2217,7 +2216,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'noLinkCheck'":
+                if str(e) == "* missing required field `noLinkCheck`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -2241,7 +2240,7 @@ class JsonldPredicate(Saveable):
         if "mapSubject" in _doc:
             try:
                 if _doc.get("mapSubject") is None:
-                    raise ValidationException("* missing required field 'mapSubject'", None, [])
+                    raise ValidationException("* missing required field `mapSubject`", None, [])
 
                 mapSubject = load_field(
                     _doc.get("mapSubject"),
@@ -2254,7 +2253,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'mapSubject'":
+                if str(e) == "* missing required field `mapSubject`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -2278,7 +2277,7 @@ class JsonldPredicate(Saveable):
         if "mapPredicate" in _doc:
             try:
                 if _doc.get("mapPredicate") is None:
-                    raise ValidationException("* missing required field 'mapPredicate'", None, [])
+                    raise ValidationException("* missing required field `mapPredicate`", None, [])
 
                 mapPredicate = load_field(
                     _doc.get("mapPredicate"),
@@ -2291,7 +2290,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'mapPredicate'":
+                if str(e) == "* missing required field `mapPredicate`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -2315,7 +2314,7 @@ class JsonldPredicate(Saveable):
         if "refScope" in _doc:
             try:
                 if _doc.get("refScope") is None:
-                    raise ValidationException("* missing required field 'refScope'", None, [])
+                    raise ValidationException("* missing required field `refScope`", None, [])
 
                 refScope = load_field(
                     _doc.get("refScope"),
@@ -2328,7 +2327,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'refScope'":
+                if str(e) == "* missing required field `refScope`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -2352,7 +2351,7 @@ class JsonldPredicate(Saveable):
         if "typeDSL" in _doc:
             try:
                 if _doc.get("typeDSL") is None:
-                    raise ValidationException("* missing required field 'typeDSL'", None, [])
+                    raise ValidationException("* missing required field `typeDSL`", None, [])
 
                 typeDSL = load_field(
                     _doc.get("typeDSL"),
@@ -2365,7 +2364,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'typeDSL'":
+                if str(e) == "* missing required field `typeDSL`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -2389,7 +2388,7 @@ class JsonldPredicate(Saveable):
         if "secondaryFilesDSL" in _doc:
             try:
                 if _doc.get("secondaryFilesDSL") is None:
-                    raise ValidationException("* missing required field 'secondaryFilesDSL'", None, [])
+                    raise ValidationException("* missing required field `secondaryFilesDSL`", None, [])
 
                 secondaryFilesDSL = load_field(
                     _doc.get("secondaryFilesDSL"),
@@ -2402,7 +2401,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'secondaryFilesDSL'":
+                if str(e) == "* missing required field `secondaryFilesDSL`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -2426,7 +2425,7 @@ class JsonldPredicate(Saveable):
         if "subscope" in _doc:
             try:
                 if _doc.get("subscope") is None:
-                    raise ValidationException("* missing required field 'subscope'", None, [])
+                    raise ValidationException("* missing required field `subscope`", None, [])
 
                 subscope = load_field(
                     _doc.get("subscope"),
@@ -2439,7 +2438,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'subscope'":
+                if str(e) == "* missing required field `subscope`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -2483,7 +2482,7 @@ class JsonldPredicate(Saveable):
                     )
 
         if _errors__:
-            raise ValidationException("tried 'JsonldPredicate' but", None, _errors__)
+            raise ValidationException("tried `JsonldPredicate` but", None, _errors__)
         _constructed = cls(
             _id=_id,
             _type=_type,
@@ -2662,7 +2661,7 @@ class SpecializeDef(Saveable):
         _errors__ = []
         try:
             if _doc.get("specializeFrom") is None:
-                raise ValidationException("* missing required field 'specializeFrom'", None, [])
+                raise ValidationException("* missing required field `specializeFrom`", None, [])
 
             specializeFrom = load_field(
                 _doc.get("specializeFrom"),
@@ -2675,7 +2674,7 @@ class SpecializeDef(Saveable):
         except ValidationException as e:
             error_message = parse_errors(str(e))
 
-            if str(e) == "* missing required field 'specializeFrom'":
+            if str(e) == "* missing required field `specializeFrom`":
                 _errors__.append(
                     ValidationException(
                         "",
@@ -2696,7 +2695,7 @@ class SpecializeDef(Saveable):
                 )
         try:
             if _doc.get("specializeTo") is None:
-                raise ValidationException("* missing required field 'specializeTo'", None, [])
+                raise ValidationException("* missing required field `specializeTo`", None, [])
 
             specializeTo = load_field(
                 _doc.get("specializeTo"),
@@ -2709,7 +2708,7 @@ class SpecializeDef(Saveable):
         except ValidationException as e:
             error_message = parse_errors(str(e))
 
-            if str(e) == "* missing required field 'specializeTo'":
+            if str(e) == "* missing required field `specializeTo`":
                 _errors__.append(
                     ValidationException(
                         "",
@@ -2751,7 +2750,7 @@ class SpecializeDef(Saveable):
                     )
 
         if _errors__:
-            raise ValidationException("tried 'SpecializeDef' but", None, _errors__)
+            raise ValidationException("tried `SpecializeDef` but", None, _errors__)
         _constructed = cls(
             specializeFrom=specializeFrom,
             specializeTo=specializeTo,
@@ -2890,7 +2889,7 @@ class SaladRecordField(RecordField):
         if "name" in _doc:
             try:
                 if _doc.get("name") is None:
-                    raise ValidationException("* missing required field 'name'", None, [])
+                    raise ValidationException("* missing required field `name`", None, [])
 
                 name = load_field(
                     _doc.get("name"),
@@ -2903,7 +2902,7 @@ class SaladRecordField(RecordField):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'name'":
+                if str(e) == "* missing required field `name`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -2936,7 +2935,7 @@ class SaladRecordField(RecordField):
         if "doc" in _doc:
             try:
                 if _doc.get("doc") is None:
-                    raise ValidationException("* missing required field 'doc'", None, [])
+                    raise ValidationException("* missing required field `doc`", None, [])
 
                 doc = load_field(
                     _doc.get("doc"),
@@ -2949,7 +2948,7 @@ class SaladRecordField(RecordField):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'doc'":
+                if str(e) == "* missing required field `doc`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -2972,7 +2971,7 @@ class SaladRecordField(RecordField):
             doc = None
         try:
             if _doc.get("type") is None:
-                raise ValidationException("* missing required field 'type'", None, [])
+                raise ValidationException("* missing required field `type`", None, [])
 
             type_ = load_field(
                 _doc.get("type"),
@@ -2985,7 +2984,7 @@ class SaladRecordField(RecordField):
         except ValidationException as e:
             error_message = parse_errors(str(e))
 
-            if str(e) == "* missing required field 'type'":
+            if str(e) == "* missing required field `type`":
                 _errors__.append(
                     ValidationException(
                         "",
@@ -3007,7 +3006,7 @@ class SaladRecordField(RecordField):
         if "jsonldPredicate" in _doc:
             try:
                 if _doc.get("jsonldPredicate") is None:
-                    raise ValidationException("* missing required field 'jsonldPredicate'", None, [])
+                    raise ValidationException("* missing required field `jsonldPredicate`", None, [])
 
                 jsonldPredicate = load_field(
                     _doc.get("jsonldPredicate"),
@@ -3020,7 +3019,7 @@ class SaladRecordField(RecordField):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'jsonldPredicate'":
+                if str(e) == "* missing required field `jsonldPredicate`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -3044,7 +3043,7 @@ class SaladRecordField(RecordField):
         if "default" in _doc:
             try:
                 if _doc.get("default") is None:
-                    raise ValidationException("* missing required field 'default'", None, [])
+                    raise ValidationException("* missing required field `default`", None, [])
 
                 default = load_field(
                     _doc.get("default"),
@@ -3057,7 +3056,7 @@ class SaladRecordField(RecordField):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'default'":
+                if str(e) == "* missing required field `default`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -3101,7 +3100,7 @@ class SaladRecordField(RecordField):
                     )
 
         if _errors__:
-            raise ValidationException("tried 'SaladRecordField' but", None, _errors__)
+            raise ValidationException("tried `SaladRecordField` but", None, _errors__)
         _constructed = cls(
             doc=doc,
             name=name,
@@ -3275,7 +3274,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         if "name" in _doc:
             try:
                 if _doc.get("name") is None:
-                    raise ValidationException("* missing required field 'name'", None, [])
+                    raise ValidationException("* missing required field `name`", None, [])
 
                 name = load_field(
                     _doc.get("name"),
@@ -3288,7 +3287,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'name'":
+                if str(e) == "* missing required field `name`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -3321,7 +3320,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         if "inVocab" in _doc:
             try:
                 if _doc.get("inVocab") is None:
-                    raise ValidationException("* missing required field 'inVocab'", None, [])
+                    raise ValidationException("* missing required field `inVocab`", None, [])
 
                 inVocab = load_field(
                     _doc.get("inVocab"),
@@ -3334,7 +3333,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'inVocab'":
+                if str(e) == "* missing required field `inVocab`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -3358,7 +3357,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         if "fields" in _doc:
             try:
                 if _doc.get("fields") is None:
-                    raise ValidationException("* missing required field 'fields'", None, [])
+                    raise ValidationException("* missing required field `fields`", None, [])
 
                 fields = load_field(
                     _doc.get("fields"),
@@ -3371,7 +3370,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'fields'":
+                if str(e) == "* missing required field `fields`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -3394,7 +3393,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             fields = None
         try:
             if _doc.get("type") is None:
-                raise ValidationException("* missing required field 'type'", None, [])
+                raise ValidationException("* missing required field `type`", None, [])
 
             type_ = load_field(
                 _doc.get("type"),
@@ -3407,7 +3406,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         except ValidationException as e:
             error_message = parse_errors(str(e))
 
-            if str(e) == "* missing required field 'type'":
+            if str(e) == "* missing required field `type`":
                 _errors__.append(
                     ValidationException(
                         "",
@@ -3429,7 +3428,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         if "doc" in _doc:
             try:
                 if _doc.get("doc") is None:
-                    raise ValidationException("* missing required field 'doc'", None, [])
+                    raise ValidationException("* missing required field `doc`", None, [])
 
                 doc = load_field(
                     _doc.get("doc"),
@@ -3442,7 +3441,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'doc'":
+                if str(e) == "* missing required field `doc`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -3466,7 +3465,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         if "docParent" in _doc:
             try:
                 if _doc.get("docParent") is None:
-                    raise ValidationException("* missing required field 'docParent'", None, [])
+                    raise ValidationException("* missing required field `docParent`", None, [])
 
                 docParent = load_field(
                     _doc.get("docParent"),
@@ -3479,7 +3478,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'docParent'":
+                if str(e) == "* missing required field `docParent`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -3503,7 +3502,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         if "docChild" in _doc:
             try:
                 if _doc.get("docChild") is None:
-                    raise ValidationException("* missing required field 'docChild'", None, [])
+                    raise ValidationException("* missing required field `docChild`", None, [])
 
                 docChild = load_field(
                     _doc.get("docChild"),
@@ -3516,7 +3515,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'docChild'":
+                if str(e) == "* missing required field `docChild`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -3540,7 +3539,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         if "docAfter" in _doc:
             try:
                 if _doc.get("docAfter") is None:
-                    raise ValidationException("* missing required field 'docAfter'", None, [])
+                    raise ValidationException("* missing required field `docAfter`", None, [])
 
                 docAfter = load_field(
                     _doc.get("docAfter"),
@@ -3553,7 +3552,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'docAfter'":
+                if str(e) == "* missing required field `docAfter`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -3577,7 +3576,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         if "jsonldPredicate" in _doc:
             try:
                 if _doc.get("jsonldPredicate") is None:
-                    raise ValidationException("* missing required field 'jsonldPredicate'", None, [])
+                    raise ValidationException("* missing required field `jsonldPredicate`", None, [])
 
                 jsonldPredicate = load_field(
                     _doc.get("jsonldPredicate"),
@@ -3590,7 +3589,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'jsonldPredicate'":
+                if str(e) == "* missing required field `jsonldPredicate`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -3614,7 +3613,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         if "documentRoot" in _doc:
             try:
                 if _doc.get("documentRoot") is None:
-                    raise ValidationException("* missing required field 'documentRoot'", None, [])
+                    raise ValidationException("* missing required field `documentRoot`", None, [])
 
                 documentRoot = load_field(
                     _doc.get("documentRoot"),
@@ -3627,7 +3626,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'documentRoot'":
+                if str(e) == "* missing required field `documentRoot`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -3651,7 +3650,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         if "abstract" in _doc:
             try:
                 if _doc.get("abstract") is None:
-                    raise ValidationException("* missing required field 'abstract'", None, [])
+                    raise ValidationException("* missing required field `abstract`", None, [])
 
                 abstract = load_field(
                     _doc.get("abstract"),
@@ -3664,7 +3663,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'abstract'":
+                if str(e) == "* missing required field `abstract`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -3688,7 +3687,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         if "extends" in _doc:
             try:
                 if _doc.get("extends") is None:
-                    raise ValidationException("* missing required field 'extends'", None, [])
+                    raise ValidationException("* missing required field `extends`", None, [])
 
                 extends = load_field(
                     _doc.get("extends"),
@@ -3701,7 +3700,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'extends'":
+                if str(e) == "* missing required field `extends`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -3725,7 +3724,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         if "specialize" in _doc:
             try:
                 if _doc.get("specialize") is None:
-                    raise ValidationException("* missing required field 'specialize'", None, [])
+                    raise ValidationException("* missing required field `specialize`", None, [])
 
                 specialize = load_field(
                     _doc.get("specialize"),
@@ -3738,7 +3737,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'specialize'":
+                if str(e) == "* missing required field `specialize`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -3782,7 +3781,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     )
 
         if _errors__:
-            raise ValidationException("tried 'SaladRecordSchema' but", None, _errors__)
+            raise ValidationException("tried `SaladRecordSchema` but", None, _errors__)
         _constructed = cls(
             name=name,
             inVocab=inVocab,
@@ -4014,7 +4013,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         if "name" in _doc:
             try:
                 if _doc.get("name") is None:
-                    raise ValidationException("* missing required field 'name'", None, [])
+                    raise ValidationException("* missing required field `name`", None, [])
 
                 name = load_field(
                     _doc.get("name"),
@@ -4027,7 +4026,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'name'":
+                if str(e) == "* missing required field `name`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -4060,7 +4059,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         if "inVocab" in _doc:
             try:
                 if _doc.get("inVocab") is None:
-                    raise ValidationException("* missing required field 'inVocab'", None, [])
+                    raise ValidationException("* missing required field `inVocab`", None, [])
 
                 inVocab = load_field(
                     _doc.get("inVocab"),
@@ -4073,7 +4072,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'inVocab'":
+                if str(e) == "* missing required field `inVocab`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -4096,7 +4095,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             inVocab = None
         try:
             if _doc.get("symbols") is None:
-                raise ValidationException("* missing required field 'symbols'", None, [])
+                raise ValidationException("* missing required field `symbols`", None, [])
 
             symbols = load_field(
                 _doc.get("symbols"),
@@ -4109,7 +4108,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         except ValidationException as e:
             error_message = parse_errors(str(e))
 
-            if str(e) == "* missing required field 'symbols'":
+            if str(e) == "* missing required field `symbols`":
                 _errors__.append(
                     ValidationException(
                         "",
@@ -4130,7 +4129,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 )
         try:
             if _doc.get("type") is None:
-                raise ValidationException("* missing required field 'type'", None, [])
+                raise ValidationException("* missing required field `type`", None, [])
 
             type_ = load_field(
                 _doc.get("type"),
@@ -4143,7 +4142,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         except ValidationException as e:
             error_message = parse_errors(str(e))
 
-            if str(e) == "* missing required field 'type'":
+            if str(e) == "* missing required field `type`":
                 _errors__.append(
                     ValidationException(
                         "",
@@ -4165,7 +4164,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         if "doc" in _doc:
             try:
                 if _doc.get("doc") is None:
-                    raise ValidationException("* missing required field 'doc'", None, [])
+                    raise ValidationException("* missing required field `doc`", None, [])
 
                 doc = load_field(
                     _doc.get("doc"),
@@ -4178,7 +4177,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'doc'":
+                if str(e) == "* missing required field `doc`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -4202,7 +4201,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         if "docParent" in _doc:
             try:
                 if _doc.get("docParent") is None:
-                    raise ValidationException("* missing required field 'docParent'", None, [])
+                    raise ValidationException("* missing required field `docParent`", None, [])
 
                 docParent = load_field(
                     _doc.get("docParent"),
@@ -4215,7 +4214,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'docParent'":
+                if str(e) == "* missing required field `docParent`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -4239,7 +4238,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         if "docChild" in _doc:
             try:
                 if _doc.get("docChild") is None:
-                    raise ValidationException("* missing required field 'docChild'", None, [])
+                    raise ValidationException("* missing required field `docChild`", None, [])
 
                 docChild = load_field(
                     _doc.get("docChild"),
@@ -4252,7 +4251,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'docChild'":
+                if str(e) == "* missing required field `docChild`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -4276,7 +4275,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         if "docAfter" in _doc:
             try:
                 if _doc.get("docAfter") is None:
-                    raise ValidationException("* missing required field 'docAfter'", None, [])
+                    raise ValidationException("* missing required field `docAfter`", None, [])
 
                 docAfter = load_field(
                     _doc.get("docAfter"),
@@ -4289,7 +4288,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'docAfter'":
+                if str(e) == "* missing required field `docAfter`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -4313,7 +4312,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         if "jsonldPredicate" in _doc:
             try:
                 if _doc.get("jsonldPredicate") is None:
-                    raise ValidationException("* missing required field 'jsonldPredicate'", None, [])
+                    raise ValidationException("* missing required field `jsonldPredicate`", None, [])
 
                 jsonldPredicate = load_field(
                     _doc.get("jsonldPredicate"),
@@ -4326,7 +4325,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'jsonldPredicate'":
+                if str(e) == "* missing required field `jsonldPredicate`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -4350,7 +4349,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         if "documentRoot" in _doc:
             try:
                 if _doc.get("documentRoot") is None:
-                    raise ValidationException("* missing required field 'documentRoot'", None, [])
+                    raise ValidationException("* missing required field `documentRoot`", None, [])
 
                 documentRoot = load_field(
                     _doc.get("documentRoot"),
@@ -4363,7 +4362,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'documentRoot'":
+                if str(e) == "* missing required field `documentRoot`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -4387,7 +4386,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         if "extends" in _doc:
             try:
                 if _doc.get("extends") is None:
-                    raise ValidationException("* missing required field 'extends'", None, [])
+                    raise ValidationException("* missing required field `extends`", None, [])
 
                 extends = load_field(
                     _doc.get("extends"),
@@ -4400,7 +4399,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'extends'":
+                if str(e) == "* missing required field `extends`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -4444,7 +4443,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     )
 
         if _errors__:
-            raise ValidationException("tried 'SaladEnumSchema' but", None, _errors__)
+            raise ValidationException("tried `SaladEnumSchema` but", None, _errors__)
         _constructed = cls(
             name=name,
             inVocab=inVocab,
@@ -4642,7 +4641,7 @@ class Documentation(NamedType, DocType):
         if "name" in _doc:
             try:
                 if _doc.get("name") is None:
-                    raise ValidationException("* missing required field 'name'", None, [])
+                    raise ValidationException("* missing required field `name`", None, [])
 
                 name = load_field(
                     _doc.get("name"),
@@ -4655,7 +4654,7 @@ class Documentation(NamedType, DocType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'name'":
+                if str(e) == "* missing required field `name`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -4688,7 +4687,7 @@ class Documentation(NamedType, DocType):
         if "inVocab" in _doc:
             try:
                 if _doc.get("inVocab") is None:
-                    raise ValidationException("* missing required field 'inVocab'", None, [])
+                    raise ValidationException("* missing required field `inVocab`", None, [])
 
                 inVocab = load_field(
                     _doc.get("inVocab"),
@@ -4701,7 +4700,7 @@ class Documentation(NamedType, DocType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'inVocab'":
+                if str(e) == "* missing required field `inVocab`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -4725,7 +4724,7 @@ class Documentation(NamedType, DocType):
         if "doc" in _doc:
             try:
                 if _doc.get("doc") is None:
-                    raise ValidationException("* missing required field 'doc'", None, [])
+                    raise ValidationException("* missing required field `doc`", None, [])
 
                 doc = load_field(
                     _doc.get("doc"),
@@ -4738,7 +4737,7 @@ class Documentation(NamedType, DocType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'doc'":
+                if str(e) == "* missing required field `doc`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -4762,7 +4761,7 @@ class Documentation(NamedType, DocType):
         if "docParent" in _doc:
             try:
                 if _doc.get("docParent") is None:
-                    raise ValidationException("* missing required field 'docParent'", None, [])
+                    raise ValidationException("* missing required field `docParent`", None, [])
 
                 docParent = load_field(
                     _doc.get("docParent"),
@@ -4775,7 +4774,7 @@ class Documentation(NamedType, DocType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'docParent'":
+                if str(e) == "* missing required field `docParent`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -4799,7 +4798,7 @@ class Documentation(NamedType, DocType):
         if "docChild" in _doc:
             try:
                 if _doc.get("docChild") is None:
-                    raise ValidationException("* missing required field 'docChild'", None, [])
+                    raise ValidationException("* missing required field `docChild`", None, [])
 
                 docChild = load_field(
                     _doc.get("docChild"),
@@ -4812,7 +4811,7 @@ class Documentation(NamedType, DocType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'docChild'":
+                if str(e) == "* missing required field `docChild`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -4836,7 +4835,7 @@ class Documentation(NamedType, DocType):
         if "docAfter" in _doc:
             try:
                 if _doc.get("docAfter") is None:
-                    raise ValidationException("* missing required field 'docAfter'", None, [])
+                    raise ValidationException("* missing required field `docAfter`", None, [])
 
                 docAfter = load_field(
                     _doc.get("docAfter"),
@@ -4849,7 +4848,7 @@ class Documentation(NamedType, DocType):
             except ValidationException as e:
                 error_message = parse_errors(str(e))
 
-                if str(e) == "* missing required field 'docAfter'":
+                if str(e) == "* missing required field `docAfter`":
                     _errors__.append(
                         ValidationException(
                             "",
@@ -4872,7 +4871,7 @@ class Documentation(NamedType, DocType):
             docAfter = None
         try:
             if _doc.get("type") is None:
-                raise ValidationException("* missing required field 'type'", None, [])
+                raise ValidationException("* missing required field `type`", None, [])
 
             type_ = load_field(
                 _doc.get("type"),
@@ -4885,7 +4884,7 @@ class Documentation(NamedType, DocType):
         except ValidationException as e:
             error_message = parse_errors(str(e))
 
-            if str(e) == "* missing required field 'type'":
+            if str(e) == "* missing required field `type`":
                 _errors__.append(
                     ValidationException(
                         "",
@@ -4927,7 +4926,7 @@ class Documentation(NamedType, DocType):
                     )
 
         if _errors__:
-            raise ValidationException("tried 'Documentation' but", None, _errors__)
+            raise ValidationException("tried `Documentation` but", None, _errors__)
         _constructed = cls(
             name=name,
             inVocab=inVocab,

@@ -195,8 +195,7 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
     if not isinstance(j2, list):
         _logger.error("%s", j2)
         raise SchemaParseException(f"Not a list: {j2}")
-    else:
-        sch_obj = make_avro(j2, loader, loader.vocab)
+    sch_obj = make_avro(j2, loader, loader.vocab)
     try:
         sch_names = make_avro_schema_from_avro(sch_obj)
     except SchemaParseException:
@@ -214,8 +213,8 @@ def add_namespaces(metadata: Mapping[str, Any], namespaces: MutableMapping[str, 
             namespaces[key] = value
         elif namespaces[key] != value:
             raise ValidationException(
-                "Namespace prefix '{}' has conflicting definitions '{}'"
-                " and '{}'.".format(key, namespaces[key], value)
+                f"Namespace prefix {key!r} has conflicting definitions {namespaces[key]!r}"
+                " and {value!r}."
             )
 
 
@@ -387,21 +386,21 @@ def validate_doc(
                 except ClassValidationException as exc1:
                     errors = [
                         ClassValidationException(
-                            f"tried `{validate.friendly(name)}` but", sourceline, [exc1]
+                            f"tried {validate.friendly(name)!r} but", sourceline, [exc1]
                         )
                     ]
                     break
                 except ValidationException as exc2:
                     errors.append(
                         ValidationException(
-                            f"tried `{validate.friendly(name)}` but", sourceline, [exc2]
+                            f"tried {validate.friendly(name)!r} but", sourceline, [exc2]
                         )
                     )
 
             objerr = "Invalid"
             for ident in loader.identifiers:
                 if ident in item:
-                    objerr = f"Object `{relname(item[ident])}` is not valid because"
+                    objerr = f"Object {relname(item[ident])!r} is not valid because"
                     break
             anyerrors.append(ValidationException(objerr, sourceline, errors, "-"))
     if anyerrors:
@@ -431,7 +430,7 @@ def get_anon_name(rec: MutableMapping[str, Union[str, Dict[str, str], List[str]]
         return "record_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()  # nosec
     if rec["type"] in ("array", saladp + "array"):
         return ""
-    raise ValidationException("Expected enum or record, was {}".format(rec["type"]))
+    raise ValidationException("Expected enum or record, was {rec['type'])}")
 
 
 def replace_type(
@@ -570,10 +569,8 @@ def make_valid_avro(
             return make_valid_avro(alltypes[items], alltypes, found, union=union, vocab=vocab)
         if items in vocab:
             return validate.avro_type_name(vocab[items])
-        else:
-            return validate.avro_type_name(items)
-    else:
-        return items
+        return validate.avro_type_name(items)
+    return items
 
 
 def deepcopy_strip(item: Any) -> Any:
@@ -608,9 +605,7 @@ def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[D
             for ex in aslist(stype["extends"]):
                 if ex not in types:
                     raise ValidationException(
-                        "Extends {} in {} refers to invalid base type.".format(
-                            stype["extends"], stype["name"]
-                        )
+                        f"Extends {stype['extends']} in {stype['name']} refers to invalid base type."
                     )
 
                 basetype = copy.copy(types[ex])
@@ -674,10 +669,9 @@ def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[D
                 for field in stype["fields"]:
                     if field["name"] in fieldnames:
                         raise ValidationException(
-                            "Field name {} appears twice in {}".format(field["name"], stype["name"])
+                            f"Field name {field['name']} appears twice in {stype['name']}"
                         )
-                    else:
-                        fieldnames.add(field["name"])
+                    fieldnames.add(field["name"])
             elif stype["type"] == "enum":
                 stype = copy.copy(stype)
                 exsym.extend(stype.get("symbols", []))
@@ -702,7 +696,7 @@ def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[D
     for result in results:
         if result.get("abstract") and result["name"] not in extended_by:
             raise ValidationException(
-                "{} is abstract but missing a concrete subtype".format(result["name"])
+                f"{result['name']} is abstract but missing a concrete subtype"
             )
 
     for result in results:
@@ -811,8 +805,6 @@ def print_fieldrefs(doc: List[Dict[str, Any]], loader: Loader, stream: IO[Any]) 
                 for each_type in found:
                     if each_type not in primitives:
                         stream.write(
-                            '"{}" -> "{}" [label="{}"];\n'.format(
-                                label, shortname(each_type), field_name
-                            )
+                            f"{label!r} -> {shortname(each_type)!r} [label={field_name!r}];\n"
                         )
     stream.write("}\n")

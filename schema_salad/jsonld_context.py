@@ -116,9 +116,8 @@ def process_type(
 
         if context.get(recordname, predicate) != predicate:
             raise SchemaException(
-                "Predicate collision on '{}', '{}' != '{}'".format(
-                    recordname, context[recordname], predicate
-                )
+                f"Predicate collision on {recordname!r}, "
+                f"{context[recordname]!r} != {predicate!r}"
             )
 
         if not recordname:
