@@ -254,16 +254,16 @@ def test_error_message15() -> None:
 
     t = "test_schema/test15.cwl"
     match = (
-        r"""^.+test15\.cwl:3:1:\s+Object\s+`.+test15\.cwl`\s+is not valid because
-\s+tried\s+`CommandLineTool`\s+but
-.+test15\.cwl:6:1:\s+the `inputs`\s+field\s+is\s+not valid\s+because
-.+test15\.cwl:7:3:\s+item is\s+invalid\s+because
-.+test15\.cwl:9:5:\s+the\s+`inputBinding`\s+field\s+is\s+not\s+valid\s+because
+        r"""^.+test15\.cwl:3:1:\s+Object\s+'.+test15\.cwl'\s+is not valid because
+\s+tried\s+'CommandLineTool'\s+but
+.+test15\.cwl:6:1:\s+the\s+'inputs'\s+field\s+is\s+not valid\s+because
+.+test15\.cwl:7:3:\s+item\s+is\s+invalid\s+because
+.+test15\.cwl:9:5:\s+the\s+'inputBinding'\s+field\s+is\s+not\s+valid\s+because
 .+tried\s+CommandLineBinding\s+but
-.+test15\.cwl:11:7:             \*\s+invalid\s+field\s+`invalid_field`,\s+expected\s+"""
+.+test15\.cwl:11:7:\s+\*\s+invalid\s+field\s+'invalid_field',\s+expected\s+"""
         + r"""one\s+of:\s+'loadContents',\s+'position',\s+'prefix',\s+'separate',"""
         + r"""\s+'itemSeparator',\s+'valueFrom',\s+'shellQuote'
-.+test15\.cwl:12:7:             \*\s+invalid\s+field\s+`another_invalid_field`,"""
+.+test15\.cwl:12:7:\s+\*\s+invalid\s+field\s+'another_invalid_field',"""
         + r"""\s+expected one\s+of:\s+'loadContents',\s+'position',\s+'prefix',"""
         + r"""\s+'separate',\s+'itemSeparator',\s+'valueFrom',\s+'shellQuote'$"""
     )

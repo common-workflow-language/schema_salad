@@ -309,7 +309,7 @@ class PythonCodeGen(CodeGenBase):
         if "class" not in _doc:
             raise ValidationException("Missing 'class' field")
         if _doc.get("class") != "{class_}":
-            raise ValidationException("tried {class_} but")
+            raise ValidationException("tried `{class_}` but")
 
 """.format(
                     class_=classname
@@ -355,7 +355,7 @@ for k in _doc.keys():
             )
 
 if _errors__:
-    raise ValidationException(\"tried '{class_}' but\", None, _errors__)
+    raise ValidationException(\"tried `{class_}` but\", None, _errors__)
 """.format(
                     attrstr=", ".join([f"`{f}`" for f in field_names]),
                     class_=self.safe_name(classname),
@@ -561,7 +561,7 @@ if _errors__:
         self.out.write(
             """{spc}        try:
 {spc}            if _doc.get("{fieldname}") is None:
-{spc}                raise ValidationException("* missing required field '{fieldname}'", None, [])
+{spc}                raise ValidationException("* missing required field `{fieldname}`", None, [])
 
 {spc}            {safename} = load_field(
 {spc}                _doc.get("{fieldname}"),
@@ -578,23 +578,12 @@ if _errors__:
                 spc=spc,
             )
         )
-
-        if shortname(name) == "run":
-            self.out.write(
-                """
-{spc}            if isinstance(_doc, CommentedMap):
-{spc}               if not os.path.isfile(_doc.get("run")):
-{spc}                   raise ValidationException(f'contains undefined reference to {{run}}', None, [])
-    """.format(
-                    spc=spc,
-                )
-            )
         self.out.write(
             """
 {spc}        except ValidationException as e:
 {spc}            error_message = parse_errors(str(e))
 
-{spc}            if str(e) == "* missing required field '{fieldname}'":
+{spc}            if str(e) == "* missing required field `{fieldname}`":
 {spc}                _errors__.append(
 {spc}                    ValidationException(
 {spc}                        "",

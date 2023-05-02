@@ -637,7 +637,7 @@ class _UnionLoader(_Loader):
                         if doc.get("class") == str(t):
                             errors.append(
                                 ValidationException(
-                                    f"Object '{baseuri.split('/')[-1]}' is not valid because",
+                                    f"Object `{baseuri.split('/')[-1]}` is not valid because",
                                     SourceLine(doc, next(iter(doc)), str),
                                     [e],
                                 )
@@ -683,7 +683,7 @@ class _UnionLoader(_Loader):
                                     t, (_PrimitiveLoader)
                                 ):  # avoids 'tried <class "NoneType"> was {x}' errors
                                     errors.append(
-                                        ValidationException(f"tried {t} but", None, [e])
+                                        ValidationException(f"tried `{t}` but", None, [e])
                                     )
                 else:
                     if isinstance(
@@ -691,16 +691,18 @@ class _UnionLoader(_Loader):
                     ):  # avoids "tried <class "CWLType"> but x" and instead returns the values for parsing
                         errors.append(ValidationException("", None, [e]))
                     else:
-                        errors.append(ValidationException(f"tried {t} but", None, [e]))
+                        errors.append(ValidationException(f"tried `{t}` but", None, [e]))
 
         if isinstance(doc, (CommentedMap, dict)) and "class" in doc:
             if doc.get("class") not in str(self.alternates):
                 errors.append(
                     ValidationException(
                         "Field `class` contains undefined reference to "
+                        + "`"
                         + baseuri
                         + "/"
-                        + doc.get("class"),
+                        + doc.get("class")
+                        + "`",
                         SourceLine(doc, "class", str),
                         [],
                     )
@@ -752,7 +754,7 @@ class _URILoader(_Loader):
             try:
                 if not loadingOptions.check_exists(doc):
                     errors.append(
-                        ValidationException(f"contains undefined reference to {doc}")
+                        ValidationException(f"contains undefined reference to `{doc}`")
                     )
             except ValidationException:
                 pass
