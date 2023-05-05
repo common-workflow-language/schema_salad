@@ -245,33 +245,54 @@ save_type = Optional[
     Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]
 ]
 
-
 def add_kv(
     old_doc: CommentedMap,
     new_doc: CommentedMap,
     line_numbers: Dict[Any, Dict[str, int]],
     key: str,
     val: Any,
+    max_len: int,
     cols: Dict[int, int],
-    min_col: int = 0
+    min_col: int = 0,
 ) -> int:
     """Add key value pair into Commented Map.
 
     Function to add key value pair into new CommentedMap given old CommentedMap, line_numbers for each key/val pair in the old CommentedMap,
     key/val pair to insert, max_line of the old CommentedMap, and max col value taken for each line.
     """
+    # print("-----------")
+    # print(key)
+    # print(val)
+    # print(max_len)
+    # print(line_numbers)
+    # print(old_doc)
+    # print("-----------")
     if len(inserted_line_info.keys()) >= 1:
         max_line = max(inserted_line_info.keys()) + 1
     else:
         max_line = 0
-    if key in line_numbers:  # If the key to insert is in the original CommentedMap as a key
+    if (
+        key in line_numbers
+    ):  # If the key to insert is in the original CommentedMap as a key
         line_info = old_doc.lc.data[key]
         if line_info[0] not in inserted_line_info:
             new_doc.lc.add_kv_line_col(key, old_doc.lc.data[key])
             inserted_line_info[old_doc.lc.data[key][0]] = old_doc.lc.data[key][1]
         else:
-            new_doc.lc.add_kv_line_col(key, [max_line, old_doc.lc.data[key][1], max_line + (max_line - old_doc.lc.data[key][2]), old_doc.lc.data[key][3]])
-    elif isinstance(val, (int, float, str)) and not isinstance(val, bool):  # If the value is hashable
+            new_doc.lc.add_kv_line_col(
+                key,
+                [
+                    max_line,
+                    old_doc.lc.data[key][1],
+                    max_line + (max_line - old_doc.lc.data[key][2]),
+                    old_doc.lc.data[key][3],
+                ],
+            )
+            inserted_line_info[max_line] = old_doc.lc.data[key][1]
+        return max_len
+    elif isinstance(val, (int, float, str)) and not isinstance(
+        val, bool
+    ):  # If the value is hashable
         if val in line_numbers:  # If the value is in the original CommentedMap
             line = line_numbers[val]["line"]
             if line in inserted_line_info:
@@ -282,32 +303,48 @@ def add_kv(
                 col = line_numbers[val]["col"]
             new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
             inserted_line_info[line] = col + len(key) + 2
-            cols[line] = col + len(key) + 2
+            cols[line] = col + len("id") + 2
+            return max_len
         elif val + "?" in line_numbers:
-                line = line_numbers[val + "?"]["line"]
-                if line in inserted_line_info:
-                    line = max_line
-                if line in cols:
-                    col = max(line_numbers[val + "?"]["col"], cols[line])
+            line = line_numbers[val + "?"]["line"]
+            if line in inserted_line_info:
+                line = max_line
+            if line in cols:
+                col = max(line_numbers[val + "?"]["col"], cols[line])
+            else:
+                col = line_numbers[val + "?"]["col"]
+            new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
+            inserted_line_info[line] = col + len(key) + 2
+            cols[line] = col + len("id") + 2
+            return max_len
+        elif old_doc:
+            if val in old_doc:
+                index = old_doc.index(val)
+                line_info = old_doc.lc.data[index]
+                if line_info[0] not in inserted_line_info:
+                    new_doc.lc.add_kv_line_col(key, old_doc.lc.data[index])
+                    inserted_line_info[old_doc.lc.data[index][0]] = old_doc.lc.data[
+                        index
+                    ][1]
                 else:
-                    col = line_numbers[val + "?"]["col"]
-                new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
-                inserted_line_info[line] = col + len(key) + 2
-                cols[line] = col + len(key) + 2
-        # elif old_doc:
-        #     if val in old_doc:
-        #         index = old_doc.index(val)
-        #         line_info = old_doc.lc.data[index]
-        #         if line_info[0] not in inserted_line_info:
-        #             new_doc.lc.add_kv_line_col(key, old_doc.lc.data[index])
-        #             inserted_line_info[old_doc.lc.data[index][0]] = old_doc.lc.data[index][1]
-        #         else:
-        #             new_doc.lc.add_kv_line_col(key, [max_line, old_doc.lc.data[index][1], max_line + (max_line - old_doc.lc.data[index][2]), old_doc.lc.data[index][3]])
-        #             inserted_line_info[max_line] = old_doc.lc.data[index][1]
+                    new_doc.lc.add_kv_line_col(
+                        key,
+                        [
+                            max_line,
+                            old_doc.lc.data[index][1],
+                            max_line + (max_line - old_doc.lc.data[index][2]),
+                            old_doc.lc.data[index][3],
+                        ],
+                    )
+                    inserted_line_info[max_line] = old_doc.lc.data[index][1]
     # If neither the key or value is in the original CommentedMap (or value is not hashable)
-    new_doc.lc.add_kv_line_col(key, [max_line, min_col, max_line, min_col + len(key) + 2])
+    new_doc.lc.add_kv_line_col(
+        key, [max_line, min_col, max_line, min_col + len(key) + 2]
+    )
     inserted_line_info[max_line] = min_col + len(key) + 2
-    cols[max_line] = col + len(key) + 2
+
+    return max_len + 1
+
 
 def get_line_numbers(doc: CommentedMap) -> Dict[Any, Dict[str, int]]:
     """Get line numbers for kv pairs in CommentedMap.
@@ -316,7 +353,7 @@ def get_line_numbers(doc: CommentedMap) -> Dict[Any, Dict[str, int]]:
     only save value info if value is hashable.
     """
     line_numbers: Dict[Any, Dict[str, int]] = {}
-    if isinstance(doc, dict) or doc is None:
+    if doc is None:
         return {}
     for key, value in doc.lc.data.items():
         line_numbers[key] = {}
@@ -329,12 +366,31 @@ def get_line_numbers(doc: CommentedMap) -> Dict[Any, Dict[str, int]]:
             line_numbers[value]["col"] = doc.lc.data[key][3]
     return line_numbers
 
+
 def get_min_col(line_numbers: Dict[Any, Dict[str, int]]) -> str:
     min_col = 0
     for line in line_numbers:
-        if line_numbers[line]['col'] > min_col:
-            min_col = line_numbers[line]['col']
+        if line_numbers[line]["col"] > min_col:
+            min_col = line_numbers[line]["col"]
     return min_col
+
+
+def get_max_line_num(doc: CommentedMap) -> int:
+    """Get the max line number for a CommentedMap.
+
+    Iterate through the the key with the highest line number until you reach a non-CommentedMap value or empty CommentedMap.
+    """
+    max_line = 0
+    max_key = ""
+    cur = doc
+    while isinstance(cur, CommentedMap) and len(cur) > 0:
+        for key in cur.lc.data.keys():
+            # print(cur.lc.data[key][2])
+            if cur.lc.data[key][2] >= max_line:
+                max_line = cur.lc.data[key][2]
+            max_key = key
+        cur = cur[max_key]
+    return max_line + 1
 
 def save(
     val: Any,

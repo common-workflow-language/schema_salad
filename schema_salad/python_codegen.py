@@ -295,8 +295,10 @@ class PythonCodeGen(CodeGenBase):
         if doc is not None:
             r._yaml_set_line_col(doc.lc.line, doc.lc.col)
         line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
         min_col = get_min_col(line_numbers)
         cols: Dict[int, int] = {}
+        skipped = set()
         if relative_uris:
             for ef in self.extension_fields:
                 r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
@@ -305,6 +307,7 @@ class PythonCodeGen(CodeGenBase):
                 r[ef] = self.extension_fields[ef]
 """
         )
+
 
         if "class" in field_names:
             self.out.write(
@@ -315,8 +318,19 @@ class PythonCodeGen(CodeGenBase):
 """.format(
                     class_=classname
                 )
+           
             )
 
+            self.serializer.write(
+                """
+        r["class"] = "{class_}"
+        add_kv(old_doc=doc, new_doc=r, line_numbers=line_numbers, key="class", val=r.get("class"), cols=cols, min_col=min_col,max_len=max_len)
+        skipped.add("class")
+""".format(
+                    class_=classname
+                )
+            )
+        if "id" in field_names:
             self.serializer.write(
                 """
         if self.id is not None:
@@ -330,6 +344,7 @@ class PythonCodeGen(CodeGenBase):
                 val=r.get("id"),
                 cols=cols,
                 min_col=min_col,
+                max_len=max_len
             )
             if doc:
                 if u in doc:
@@ -338,157 +353,76 @@ class PythonCodeGen(CodeGenBase):
                         doc = doc.get(u)
                         line_numbers = get_line_numbers(doc)    
                         min_col = get_min_col(line_numbers)
-        
-        for key in set(doc.lc.data.keys()) - set(['id']):
-        
-            if key == 'class': 
-                r["class"] = "class_"
-                add_kv(old_doc=doc, new_doc=r, line_numbers=line_numbers, key="class", val=r.get("class"), cols=cols, min_col=min_col,)
-            elif getattr(self, key) is not None:
-                                
-                saved_val = save(
-                    getattr(self, key),
-                    top=False,
-                    base_url=self.id,
-                    relative_uris=relative_uris,
-                    keys=keys + [key],
-                )
-
-                if type(saved_val) == list:
-                    if (
-                        len(saved_val) == 1
-                    ):  # If the returned value is a list of size 1, just save the value in the list
-                        saved_val = saved_val[0]
-
-                r[key] = saved_val
-
-                add_kv(
-                    old_doc=doc,
-                    new_doc=r,
-                    line_numbers=line_numbers,
-                    key=key,
-                    val=r.get(key),
-                    cols=cols,
-                    min_col=min_col,
-                )
-        
-        for key in set(self.attrs) - set(doc.lc.data.keys()) - set(['id']):
-            if key == 'class':
-                r["class"] = "{class_}"
-                add_kv(old_doc=doc, new_doc=r, line_numbers=line_numbers, key="class", val=r.get("class"), cols=cols, min_col=min_col,)
-            elif getattr(self, key) is not None: 
-                saved_val = save(
-                    getattr(self, key),
-                    top=False,
-                    base_url=self.id,
-                    relative_uris=relative_uris,
-                    keys=keys + [key],
-                )
-
-                if type(saved_val) == list:
-                    if (
-                        len(saved_val) == 1
-                    ):  # If the returned value is a list of size 1, just save the value in the list
-                        saved_val = saved_val[0]
-                r[key] = saved_val
-
-                add_kv(
-                    old_doc=doc,
-                    new_doc=r,
-                    line_numbers=line_numbers,
-                    key=key,
-                    val=r.get(key),
-                    cols=cols,
-                    min_col=min_col,
-                )
-
-""".format(
-                    class_=classname
-                )
-            )
-        else:
-                        self.serializer.write(
-                """
-        if self.id is not None:
-            u = save_relative_uri(self.id, base_url, True, None, relative_uris)
-            r["id"] = u
-            add_kv(
-                old_doc=doc,
-                new_doc=r,
-                line_numbers=line_numbers,
-                key="id",
-                val=r.get("id"),
-                cols=cols,
-                min_col=min_col,
-            )
-            if doc:
-                if u in doc:
-                    keys.append(u)
-                    if isinstance(doc.get(u), (CommentedMap, CommentedSeq)):
-                        doc = doc.get(u)
-                        line_numbers = get_line_numbers(doc)    
-                        min_col = get_min_col(line_numbers)
-        
-        for key in set(doc.lc.data.keys()) - set(['id']):
-        
-            if getattr(self, key) is not None:
-                                
-                saved_val = save(
-                    getattr(self, key),
-                    top=False,
-                    base_url=self.id,
-                    relative_uris=relative_uris,
-                    keys=keys + [key],
-                )
-
-                if type(saved_val) == list:
-                    if (
-                        len(saved_val) == 1
-                    ):  # If the returned value is a list of size 1, just save the value in the list
-                        saved_val = saved_val[0]
-
-                r[key] = saved_val
-
-                add_kv(
-                    old_doc=doc,
-                    new_doc=r,
-                    line_numbers=line_numbers,
-                    key=key,
-                    val=r.get(key),
-                    cols=cols,
-                    min_col=min_col,
-                )
-        
-        for key in set(self.attrs) - set(doc.lc.data.keys()) - set(['id']):
-        
-            if getattr(self, key) is not None: 
-                saved_val = save(
-                    getattr(self, key),
-                    top=False,
-                    base_url=self.id,
-                    relative_uris=relative_uris,
-                    keys=keys + [key],
-                )
-
-                if type(saved_val) == list:
-                    if (
-                        len(saved_val) == 1
-                    ):  # If the returned value is a list of size 1, just save the value in the list
-                        saved_val = saved_val[0]
-                r[key] = saved_val
-
-                add_kv(
-                    old_doc=doc,
-                    new_doc=r,
-                    line_numbers=line_numbers,
-                    key=key,
-                    val=r.get(key),
-                    cols=cols,
-                    min_col=min_col,
-                )
-
+            skipped.add("id")
 """
             )
+            self.serializer.write(
+                """
+        for key in set(self.attrs) - skipped:
+            if isinstance(key, str):
+                if getattr(self, key) is not None: 
+                    saved_val = save(
+                        getattr(self, key),
+                        top=False,
+                        base_url=self.id,
+                        relative_uris=relative_uris,
+                        keys=keys + [key],
+                    )
+
+                    if type(saved_val) == list:
+                        if (
+                            len(saved_val) == 1
+                        ):  # If the returned value is a list of size 1, just save the value in the list
+                            saved_val = saved_val[0]
+                    r[key] = saved_val
+
+                    add_kv(
+                        old_doc=doc,
+                        new_doc=r,
+                        line_numbers=line_numbers,
+                        key=key,
+                        val=r.get(key),
+                        cols=cols,
+                        min_col=min_col,
+                        max_len=max_len
+                    )
+
+"""
+        )
+        else: 
+            self.serializer.write(
+            """
+        for key in set(self.attrs) - skipped:
+            if isinstance(key, str):
+                if getattr(self, key) is not None: 
+                    saved_val = save(
+                        getattr(self, key),
+                        top=False,
+                        base_url=base_url,
+                        relative_uris=relative_uris,
+                        keys=keys + [key],
+                    )
+
+                    if type(saved_val) == list:
+                        if (
+                            len(saved_val) == 1
+                        ):  # If the returned value is a list of size 1, just save the value in the list
+                            saved_val = saved_val[0]
+                    r[key] = saved_val
+
+                    add_kv(
+                        old_doc=doc,
+                        new_doc=r,
+                        line_numbers=line_numbers,
+                        key=key,
+                        val=r.get(key),
+                        cols=cols,
+                        min_col=min_col,
+                        max_len=max_len
+                    )
+"""
+    )
+  
 
     def end_class(self, classname: str, field_names: List[str]) -> None:
         """Signal that we are done with this class."""
