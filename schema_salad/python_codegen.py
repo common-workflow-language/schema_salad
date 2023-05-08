@@ -274,7 +274,11 @@ class PythonCodeGen(CodeGenBase):
         self.serializer.write(
             """
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -308,7 +312,6 @@ class PythonCodeGen(CodeGenBase):
 """
         )
 
-
         if "class" in field_names:
             self.out.write(
                 """
@@ -318,14 +321,11 @@ class PythonCodeGen(CodeGenBase):
 """.format(
                     class_=classname
                 )
-           
             )
 
             self.serializer.write(
                 """
         r["class"] = "{class_}"
-        add_kv(old_doc=doc, new_doc=r, line_numbers=line_numbers, key="class", val=r.get("class"), cols=cols, min_col=min_col,max_len=max_len)
-        skipped.add("class")
 """.format(
                     class_=classname
                 )
@@ -333,96 +333,99 @@ class PythonCodeGen(CodeGenBase):
         if "id" in field_names:
             self.serializer.write(
                 """
-        if self.id is not None:
-            u = save_relative_uri(self.id, base_url, True, None, relative_uris)
-            r["id"] = u
-            add_kv(
-                old_doc=doc,
-                new_doc=r,
-                line_numbers=line_numbers,
-                key="id",
-                val=r.get("id"),
-                cols=cols,
-                min_col=min_col,
-                max_len=max_len
-            )
-            if doc:
-                if u in doc:
-                    keys.append(u)
-                    if isinstance(doc.get(u), (CommentedMap, CommentedSeq)):
-                        doc = doc.get(u)
-                        line_numbers = get_line_numbers(doc)    
-                        min_col = get_min_col(line_numbers)
-            skipped.add("id")
-"""
-            )
-            self.serializer.write(
-                """
-        for key in set(self.attrs) - skipped:
+        for key in doc.lc.data.keys():
             if isinstance(key, str):
-                if getattr(self, key) is not None: 
-                    saved_val = save(
-                        getattr(self, key),
-                        top=False,
-                        base_url=self.id,
-                        relative_uris=relative_uris,
-                        keys=keys + [key],
-                    )
+                if hasattr(self, key):
+                    if getattr(self, key) is not None:
+                        if key != 'class':
+                            saved_val = save(
+                                getattr(self, key),
+                                top=False,
+                                base_url=self.id,
+                                relative_uris=relative_uris,
+                                keys=keys + [key],
+                            )
 
-                    if type(saved_val) == list:
-                        if (
-                            len(saved_val) == 1
-                        ):  # If the returned value is a list of size 1, just save the value in the list
-                            saved_val = saved_val[0]
-                    r[key] = saved_val
+                            if type(saved_val) == list:
+                                if (
+                                    len(saved_val) == 1
+                                ):  # If the returned value is a list of size 1, just save the value in the list
+                                    saved_val = saved_val[0]
+                                    
+                            r[key] = saved_val
 
-                    add_kv(
-                        old_doc=doc,
-                        new_doc=r,
-                        line_numbers=line_numbers,
-                        key=key,
-                        val=r.get(key),
-                        cols=cols,
-                        min_col=min_col,
-                        max_len=max_len
-                    )
+                        max_len = add_kv(
+                            old_doc=doc,
+                            new_doc=r,
+                            line_numbers=line_numbers,
+                            key=key,
+                            val=r.get(key),
+                            cols=cols,
+                            min_col=min_col,
+                            max_len=max_len
+                        )
+
+
 
 """
-        )
-        else: 
-            self.serializer.write(
-            """
-        for key in set(self.attrs) - skipped:
-            if isinstance(key, str):
-                if getattr(self, key) is not None: 
-                    saved_val = save(
-                        getattr(self, key),
-                        top=False,
-                        base_url=base_url,
-                        relative_uris=relative_uris,
-                        keys=keys + [key],
-                    )
+            )
+#             self.serializer.write(
+#                     """
+#             if self.id is not None and "id" not in r:
+#                 u = save_relative_uri(self.id, base_url, True, None, relative_uris)
+#                 r["id"] = u
+#                 add_kv(
+#                     old_doc=doc,
+#                     new_doc=r,
+#                     line_numbers=line_numbers,
+#                     key="id",
+#                     val=r.get("id"),
+#                     cols=cols,
+#                     min_col=min_col,
+#                     max_len=max_len
+#                 )
+#                 if doc:
+#                     if u in doc:
+#                         keys.append(u)
+#                         if isinstance(doc.get(u), (CommentedMap, CommentedSeq)):
+#                             doc = doc.get(u)
+#                             line_numbers = get_line_numbers(doc)
+#                             min_col = get_min_col(line_numbers)
+# """
+#                 )
+#         else:
+#             self.serializer.write(
+#                 """
+#         for key in self.ordered_attrs.keys():
+#             if isinstance(key, str) and key not in r:
+#                 if getattr(self, key) is not None:
+#                     saved_val = save(
+#                         getattr(self, key),
+#                         top=False,
+#                         base_url=base_url,
+#                         relative_uris=relative_uris,
+#                         keys=keys + [key],
+#                     )
 
-                    if type(saved_val) == list:
-                        if (
-                            len(saved_val) == 1
-                        ):  # If the returned value is a list of size 1, just save the value in the list
-                            saved_val = saved_val[0]
-                    r[key] = saved_val
+#                     if type(saved_val) == list:
+#                         if (
+#                             len(saved_val) == 1
+#                         ):  # If the returned value is a list of size 1, just save the value in the list
+#                             saved_val = saved_val[0]
+#                     r[key] = saved_val
 
-                    add_kv(
-                        old_doc=doc,
-                        new_doc=r,
-                        line_numbers=line_numbers,
-                        key=key,
-                        val=r.get(key),
-                        cols=cols,
-                        min_col=min_col,
-                        max_len=max_len
-                    )
-"""
-    )
-  
+#                     add_kv(
+#                         old_doc=doc,
+#                         new_doc=r,
+#                         line_numbers=line_numbers,
+#                         key=key,
+#                         val=r.get(key),
+#                         cols=cols,
+#                         min_col=min_col,
+#                         max_len=max_len
+#                     )
+# """
+#             )
 
     def end_class(self, classname: str, field_names: List[str]) -> None:
         """Signal that we are done with this class."""
@@ -477,6 +480,14 @@ if _errors__:
         self.serializer.write(
             fmt(f"""attrs = frozenset(["{'", "'.join(field_names)}"])\n""", 4)
         )
+
+        # names = []
+        # for name in field_names:
+        #     names.append("('%s', 0)"%name)
+
+        # self.serializer.write(
+        #    fmt(f"""ordered_attrs = CommentedMap(["{', '.join(names)}])\n""", 4)
+        # )
 
         safe_init_fields = [
             self.safe_name(f) for f in field_names if f != "class"
@@ -670,7 +681,6 @@ if _errors__:
             {safename} = None
 """.format(
                     safename=self.safe_name(name)
-
                 )
             )
 
@@ -683,9 +693,19 @@ if _errors__:
             self.serializer.write(
                 fmt(
                     """
-if self.{safename} is not None:
+if self.{safename} is not None and "{fieldname}" not in r:
     u = save_relative_uri(self.{safename}, {baseurl}, {scoped_id}, {ref_scope}, relative_uris)
     r["{fieldname}"] = u
+    max_len = add_kv(
+            old_doc=doc,
+            new_doc=r,
+            line_numbers=line_numbers,
+            key="{fieldname}",
+            val=r.get("{fieldname}"),
+            cols=cols,
+            min_col=min_col,
+            max_len=max_len
+        )
 """.format(
                         safename=self.safe_name(name),
                         fieldname=shortname(name).strip(),
@@ -700,9 +720,19 @@ if self.{safename} is not None:
             self.serializer.write(
                 fmt(
                     """
-if self.{safename} is not None:
+if self.{safename} is not None and "{fieldname}" not in r:
     r["{fieldname}"] = save(
         self.{safename}, top=False, base_url={baseurl}, relative_uris=relative_uris
+    )
+    max_len = add_kv(
+        old_doc=doc,
+        new_doc=r,
+        line_numbers=line_numbers,
+        key="{fieldname}",
+        val=r.get("{fieldname}"),
+        cols=cols,
+        min_col=min_col,
+        max_len=max_len
     )
 """.format(
                         safename=self.safe_name(name),
@@ -712,8 +742,6 @@ if self.{safename} is not None:
                     8,
                 )
             )
-
-
 
     def uri_loader(
         self,

@@ -44,7 +44,7 @@ IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
 
 
 doc_line_info = CommentedMap()
-inserted_line_info: Dict[int,int] = {}
+inserted_line_info: Dict[int, int] = {}
 
 
 class LoadingOptions:
@@ -245,6 +245,7 @@ save_type = Optional[
     Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]
 ]
 
+
 def add_kv(
     old_doc: CommentedMap,
     new_doc: CommentedMap,
@@ -257,16 +258,10 @@ def add_kv(
 ) -> int:
     """Add key value pair into Commented Map.
 
-    Function to add key value pair into new CommentedMap given old CommentedMap, line_numbers for each key/val pair in the old CommentedMap,
-    key/val pair to insert, max_line of the old CommentedMap, and max col value taken for each line.
+    Function to add key value pair into new CommentedMap given old CommentedMap, line_numbers
+    for each key/val pair in the old CommentedMap,key/val pair to insert, max_line of the old CommentedMap,
+    and max col value taken for each line.
     """
-    # print("-----------")
-    # print(key)
-    # print(val)
-    # print(max_len)
-    # print(line_numbers)
-    # print(old_doc)
-    # print("-----------")
     if len(inserted_line_info.keys()) >= 1:
         max_line = max(inserted_line_info.keys()) + 1
     else:
@@ -305,18 +300,19 @@ def add_kv(
             inserted_line_info[line] = col + len(key) + 2
             cols[line] = col + len("id") + 2
             return max_len
-        elif val + "?" in line_numbers:
-            line = line_numbers[val + "?"]["line"]
-            if line in inserted_line_info:
-                line = max_line
-            if line in cols:
-                col = max(line_numbers[val + "?"]["col"], cols[line])
-            else:
-                col = line_numbers[val + "?"]["col"]
-            new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
-            inserted_line_info[line] = col + len(key) + 2
-            cols[line] = col + len("id") + 2
-            return max_len
+        elif isinstance(val, str):
+            if val + "?" in line_numbers:
+                line = line_numbers[val + "?"]["line"]
+                if line in inserted_line_info:
+                    line = max_line
+                if line in cols:
+                    col = max(line_numbers[val + "?"]["col"], cols[line])
+                else:
+                    col = line_numbers[val + "?"]["col"]
+                new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
+                inserted_line_info[line] = col + len(key) + 2
+                cols[line] = col + len("id") + 2
+                return max_len
         elif old_doc:
             if val in old_doc:
                 index = old_doc.index(val)
@@ -355,6 +351,8 @@ def get_line_numbers(doc: CommentedMap) -> Dict[Any, Dict[str, int]]:
     line_numbers: Dict[Any, Dict[str, int]] = {}
     if doc is None:
         return {}
+    if doc.lc.data is None:
+        return {}
     for key, value in doc.lc.data.items():
         line_numbers[key] = {}
 
@@ -378,7 +376,8 @@ def get_min_col(line_numbers: Dict[Any, Dict[str, int]]) -> str:
 def get_max_line_num(doc: CommentedMap) -> int:
     """Get the max line number for a CommentedMap.
 
-    Iterate through the the key with the highest line number until you reach a non-CommentedMap value or empty CommentedMap.
+    Iterate through the the key with the highest line number until you reach a non-CommentedMap value
+    or empty CommentedMap.
     """
     max_line = 0
     max_key = ""
@@ -392,6 +391,7 @@ def get_max_line_num(doc: CommentedMap) -> int:
         cur = cur[max_key]
     return max_line + 1
 
+
 def save(
     val: Any,
     top: bool = True,
@@ -401,7 +401,8 @@ def save(
 ) -> save_type:
     """Save a val of any type.
 
-    Recursively calls save method from class if val is of type Saveable. Otherwise, saves val to CommentedMap or CommentedSeq
+    Recursively calls save method from class if val is of type Saveable.
+    Otherwise, saves val to CommentedMap or CommentedSeq.
     """
     if keys is None:
         keys = []
@@ -428,7 +429,7 @@ def save(
         for i in range(0, len(val)):
             new_keys = keys
             if doc:
-                if i in doc:
+                if str(i) in doc:
                     r.lc.data[i] = doc.lc.data[i]
                     new_keys.append(i)
             r.append(
