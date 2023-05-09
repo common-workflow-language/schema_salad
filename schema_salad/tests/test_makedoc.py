@@ -239,5 +239,5 @@ def test_detect_changes_in_html(metaschema_doc: str, tmp_path: Path) -> None:
     with open(result, "w") as h:
         h.write(metaschema_doc)
     assert (
-        hasher.hexdigest() == "5fd520208b242c0fbf50235c83c88bc462f2b8d67b3dfbb9ffb399d7851fdab2"
+        hasher.hexdigest() == "4e67cb0a28829f9e14ecce93183fcf89fedb2446ae6cd717ccb2966609fe76a2"
     ), result
