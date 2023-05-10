@@ -87,6 +87,7 @@ install_requires = [
     "rdflib-jsonld>=0.4.0, <= 0.6.1;python_version<='3.6'",
     "mistune>=2.0.3,<2.1",
     "CacheControl[filecache] >= 0.11.7, < 0.13",
+    "urllib3<2",  # until CacheControl fixes their incompatability
     "mypy_extensions",
 ]
 
