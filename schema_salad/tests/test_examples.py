@@ -52,6 +52,14 @@ def test_bad_schemas(caplog: pytest.LogCaptureFixture) -> None:
         "Could not load extension schema https://bad.example.com/missing.ttl: "
         "Error fetching https://bad.example.com/missing.ttl"
     ) in caplog.text
+    assert (
+        "https://schema.org/!DOCTYPE html does not look like a valid URI, "
+        "trying to serialize this will break"
+    ) in caplog.text
+    assert (
+        "Could not load extension schema https://schema.org/docs/schema_org_rdfa.html: "
+        "No plugin registered for (rdfa, <class 'rdflib.parser.Parser'>)"
+    ) in caplog.text
 
 
 def test_skip_bad_schemas(caplog: pytest.LogCaptureFixture) -> None:
