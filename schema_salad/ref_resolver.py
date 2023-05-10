@@ -4,6 +4,7 @@ import os
 import pathlib
 import re
 import tempfile
+import traceback
 import urllib
 import xml.sax  # nosec
 from io import StringIO
@@ -290,7 +291,9 @@ class Loader:
                 try:
                     content = self.fetch_text(fetchurl)
                 except Exception as e:
+                    tb = traceback.format_exception(type(e), e, e.__traceback__)
                     _logger.warning("Could not load extension schema %s: %s", fetchurl, str(e))
+                    _logger.debug(tb)
                     continue
                 newGraph = Graph()
                 err_msg = "unknown error"
