@@ -1,83 +1,141 @@
 # from parser import load_document_by_uri, save
-import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import MutableSequence, Optional, cast, Any
+from urllib.parse import unquote_plus, urlparse
 
-from ruamel.yaml.comments import CommentedMap, CommentedSeq
-
-from schema_salad import codegen
-from schema_salad.avro.schema import Names
-from schema_salad.schema import load_schema
+import schema_salad.tests.cwl_v1_2 as cwl_v1_2
 from schema_salad.utils import yaml_no_ts
+from ruamel.yaml.comments import CommentedMap
+
+from .util import get_data
 
 
-# def load_yaml(file_name: str) -> CommentedMap:
-#     assert os.path.isfile(file_name)
-#     with open(file_name) as f:
-#         yaml = yaml_no_ts()
-#         doc = yaml.load(f.read())
-#     return doc
+def test_secondary_files_dsl() -> None:
+    """
+    Checks object is properly saving when dsl is used
+    """
+    t = "test_schema/test_secondary_files_dsl.cwl"
+    path = get_data("tests/" + t)
+    obj = load_document_by_uri(str(path))
+    saved_obj = obj.save()
+    assert isinstance(saved_obj, CommentedMap)
+    assert saved_obj.lc.data == {'cwlVersion': [1, 0, 1, 12],
+                                 'baseCommand': [2, 0, 2, 13],
+                                 'inputs': [4, 0, 5, 2],
+                                 'outputs': [10, 0, 11, 2],
+                                 'stdout': [19, 0, 21, 8],
+                                 'id': [20, 0, 20, 4]
+                                 }
+    assert saved_obj['inputs'][0].lc.data == {'type': [6, 3, 6, 9],
+                                              'default': [7, 3, 7, 12],
+                                              'id': [5, 2, 5, 6]
+                                              }
+    assert saved_obj['inputs'][0]['type'] == 'File'
+    assert saved_obj['inputs'][1].lc.data == {'id': [8, 2, 8, 6], 'type': [9, 2, 9, 8]}
+    assert saved_obj['outputs'][0].lc.data == {'type': [12, 4, 12, 10],
+                                               'secondaryFiles': [16, 4, 19, 20],
+                                               'outputBinding': [18, 4, 21, 6],
+                                               'id': [11, 2, 11, 6]
+                                               }
+    assert saved_obj["outputs"][0]['secondaryFiles'][0].lc.data == {'pattern': [13, 35, 13, 44]}
+    assert saved_obj["outputs"][0]['secondaryFiles'][1].lc.data == {'pattern': [14, 35, 14, 44],
+                                                                    'required': [15, 35, 15, 45]
+                                                                    }
+
+    cwl_v1_2.inserted_line_info = {}
 
 
-# def test_line_number_comparision() -> None:
-    # v0_doc = load_yaml(count_lines["v0"])
-    # v1_doc = load_yaml(count_lines["v1"])
-    # v2_doc = load_yaml(count_lines["v2"])
+def test_outputs_before_inputs() -> None:
+    """
+    Tests when output comes in cwl file before inputs
+    """
+    t = "test_schema/test_outputs_before_inputs.cwl"
+    path = get_data("tests/" + t)
+    obj = load_document_by_uri(str(path))
+    saved_obj = obj.save()
+    assert isinstance(saved_obj, CommentedMap)
+    assert saved_obj.lc.data == {'cwlVersion': [1, 0, 1, 12],
+                                 'baseCommand': [2, 0, 2, 13],
+                                 'outputs': [4, 0, 5, 2],
+                                 'inputs': [10, 0, 11, 2],
+                                 'stdout': [16, 0, 16, 8],
+                                 'id': [17, 0, 17, 4]
+                                 }
+    assert saved_obj['inputs'][0].lc.data == {'type': [12, 3, 12, 9],
+                                              'default': [13, 3, 13, 12],
+                                              'id': [11, 2, 11, 6]
+                                              }
+    assert saved_obj['inputs'][0]['type'] == 'File'
+    assert saved_obj['inputs'][1].lc.data == {'id': [14, 2, 14, 6], 'type': [15, 2, 15, 8]}
+    assert saved_obj['outputs'][0].lc.data == {'type': [6, 4, 6, 10],
+                                               'outputBinding': [7, 4, 8, 6],
+                                               'id': [5, 2, 5, 6]
+                                               }
+    cwl_v1_2.inserted_line_info = {}
 
 
-def compare_line_numbers(original_doc: CommentedMap, codegen_doc: CommentedMap) -> None:
-    assert type(original_doc) == CommentedMap
-    assert type(codegen_doc) == CommentedMap
+def test_type_dsl() -> None:
+    """
+    Checks object is properly saving when type DSL is used.
+    In this example, type for the input is File? which should expand to
+    null, File.
+    """
+    t = "test_schema/test_type_dsl.cwl"
+    path = get_data("tests/" + t)
+    obj = load_document_by_uri(str(path))
+    saved_obj = obj.save()
+    assert isinstance(saved_obj, CommentedMap)
+    assert saved_obj.lc.data == {'cwlVersion': [1, 0, 1, 12],
+                                 'baseCommand': [2, 0, 2, 13],
+                                 'inputs': [4, 0, 5, 2],
+                                 'outputs': [10, 0, 11, 2],
+                                 'stdout': [16, 0, 16, 8],
+                                 'id': [17, 0, 17, 4]
+                                 }
+    assert saved_obj['inputs'][0].lc.data == {'type': [6, 3, 6, 9],
+                                              'default': [7, 3, 7, 12],
+                                              'id': [5, 2, 5, 6]
+                                              }
+    assert saved_obj['inputs'][0]['type'] == ['null', 'File']
+    assert saved_obj['inputs'][1].lc.data == {'id': [8, 2, 8, 6],
+                                              'type': [9, 2, 9, 8]
+                                              }
+    assert saved_obj['outputs'][0].lc.data == {'type': [12, 4, 12, 10],
+                                               'outputBinding': [13, 4, 14, 6],
+                                               'id': [11, 2, 11, 6]
+                                               }
+    assert saved_obj["outputs"][0]['outputBinding'].lc.data == {'glob': [14, 6, 14, 12]}
 
-    assert original_doc.lc.line == codegen_doc.lc.line
-    assert original_doc.lc.col == codegen_doc.lc.col
 
-    for key, lc_info in original_doc.lc.data.items():
-        assert key in codegen_doc.lc.data
-        assert lc_info == codegen_doc.lc.data[key]
+def load_document_by_uri(path: str) -> Any:
+    """
+    Takes in a path and loads it via the python codegen.
+    """
+    if isinstance(path, str):
+        uri = urlparse(path)
+        if not uri.scheme or uri.scheme == "file":
+            real_path = Path(unquote_plus(uri.path)).resolve().as_uri()
+        else:
+            real_path = path
+    else:
+        real_path = path.resolve().as_uri()
 
-    max_line = get_max_line_number(original_doc)
+    baseuri = str(real_path)
 
-    for key, lc_info in codegen_doc.lc.data.items():
-        if key in original_doc:
-            continue
-        assert lc_info == [max_line, 0, max_line, len(key) + 2]
-        max_line += 1
+    loadingOptions = cwl_v1_2.LoadingOptions(fileuri=baseuri)
 
+    doc = loadingOptions.fetcher.fetch_text(real_path)
 
-def get_max_line_number(original_doc: CommentedMap) -> int:
-    max_key = ""
-    max_line = 0
-    temp_doc = original_doc
-    while (type(temp_doc) == CommentedMap) and len(temp_doc) > 0:
-        for key, lc_info in temp_doc.lc.data.items():
-            if lc_info[0] >= max_line:
-                max_line = lc_info[0]
-                max_key = key
-        temp_doc = temp_doc[max_key]
-    return max_line + 1
+    yaml = yaml_no_ts()
+    doc = yaml.load(doc)
 
-
-def python_codegen(
-    file_uri: str,
-    target: Path,
-    parser_info: Optional[str] = None,
-    package: Optional[str] = None,
-) -> None:
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        file_uri
+    result = cwl_v1_2.load_document_by_yaml(
+        doc, baseuri, cast(Optional[cwl_v1_2.LoadingOptions], loadingOptions)
     )
-    assert isinstance(avsc_names, Names)
-    schema_raw_doc = metaschema_loader.fetch(file_uri)
-    schema_doc, schema_metadata = metaschema_loader.resolve_all(
-        schema_raw_doc, file_uri
-    )
-    codegen.codegen(
-        "python",
-        cast(List[Dict[str, Any]], schema_doc),
-        schema_metadata,
-        document_loader,
-        target=str(target),
-        parser_info=parser_info,
-        package=package,
-    )
+
+    if isinstance(result, MutableSequence):
+        lst = []
+        for r in result:
+            lst.append(r)
+        return lst
+    return result

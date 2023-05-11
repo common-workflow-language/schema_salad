@@ -270,9 +270,9 @@ class PythonCodeGen(CodeGenBase):
         )
 
         self.idfield = idfield
-
-        self.serializer.write(
-            """
+        if "id" in field_names:
+            self.serializer.write(
+                """
     def save(
         self,
         top: bool = False,
@@ -283,9 +283,10 @@ class PythonCodeGen(CodeGenBase):
         if keys is None:
             keys = []
         r = CommentedMap()
-        doc = doc_line_info
-        for key in keys:
+        doc = copy.copy(doc_line_info)
+        keys = copy.copy(keys)
 
+        for key in keys:
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -296,13 +297,30 @@ class PythonCodeGen(CodeGenBase):
             else:
                 doc = None
                 break
+
+        if doc:
+            if self.id:
+                temp_id = self.id
+                if len(temp_id.split('#')) > 1:
+                    temp_id = self.id.split("#")[1]
+                if temp_id in doc:
+                    keys.append(temp_id)
+                    temp_doc = doc.get(temp_id)
+                    if isinstance(temp_doc, CommentedMap):
+                        temp_doc['id'] = temp_id
+                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1],
+                                                           doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1] + 4])
+                        doc = temp_doc
+
         if doc is not None:
             r._yaml_set_line_col(doc.lc.line, doc.lc.col)
         line_numbers = get_line_numbers(doc)
         max_len = get_max_line_num(doc)
         min_col = get_min_col(line_numbers)
         cols: Dict[int, int] = {}
-        skipped = set()
+
         if relative_uris:
             for ef in self.extension_fields:
                 r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
@@ -310,7 +328,50 @@ class PythonCodeGen(CodeGenBase):
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
 """
-        )
+            )
+        else:
+            self.serializer.write(
+                """
+    def save(
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None
+    ) -> CommentedMap:
+        if keys is None:
+            keys = []
+        r = CommentedMap()
+        doc = copy.copy(doc_line_info)
+        keys = copy.copy(keys)
+
+        for key in keys:
+            if isinstance(doc, CommentedMap):
+                doc = doc.get(key)
+            elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+                if key < len(doc):
+                    doc = doc[key]
+                else:
+                    doc = None
+            else:
+                doc = None
+                break
+
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
+        cols: Dict[int, int] = {}
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
+"""
+            )
 
         if "class" in field_names:
             self.out.write(
@@ -333,40 +394,80 @@ class PythonCodeGen(CodeGenBase):
         if "id" in field_names:
             self.serializer.write(
                 """
-        for key in doc.lc.data.keys():
-            if isinstance(key, str):
-                if hasattr(self, key):
-                    if getattr(self, key) is not None:
-                        if key != 'class':
-                            saved_val = save(
-                                getattr(self, key),
-                                top=False,
-                                base_url=self.id,
-                                relative_uris=relative_uris,
-                                keys=keys + [key],
+        if doc:
+            base_url_to_save = base_url
+            if self.id:
+                base_url_to_save = self.id
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url_to_save,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len
                             )
+"""
+            )
+        else:
+            self.serializer.write(
+                """
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                )
 
-                            if type(saved_val) == list:
-                                if (
-                                    len(saved_val) == 1
-                                ):  # If the returned value is a list of size 1, just save the value in the list
-                                    saved_val = saved_val[0]
-                                    
-                            r[key] = saved_val
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
 
-                        max_len = add_kv(
-                            old_doc=doc,
-                            new_doc=r,
-                            line_numbers=line_numbers,
-                            key=key,
-                            val=r.get(key),
-                            cols=cols,
-                            min_col=min_col,
-                            max_len=max_len
-                        )
+                                r[key] = saved_val
 
-
-
+                            max_len = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len
+                            )
 """
             )
 #             self.serializer.write(
@@ -687,7 +788,7 @@ if _errors__:
         if name == self.idfield or not self.idfield:
             baseurl = "base_url"
         else:
-            baseurl = f"self.{self.safe_name(self.idfield)}"
+            baseurl = f"str(self.{self.safe_name(self.idfield)})"
 
         if fieldtype.is_uri:
             self.serializer.write(

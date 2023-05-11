@@ -47,6 +47,7 @@ IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
 
 
 doc_line_info = CommentedMap()
+inserted_line_info: Dict[int, int] = {}
 
 
 class LoadingOptions:
@@ -256,30 +257,94 @@ def add_kv(
     val: Any,
     max_len: int,
     cols: Dict[int, int],
+    min_col: int = 0,
 ) -> int:
     """Add key value pair into Commented Map.
 
-    Function to add key value pair into new CommentedMap given old CommentedMap, line_numbers for each key/val pair in the old CommentedMap,
-    key/val pair to insert, max_line of the old CommentedMap, and max col value taken for each line.
+    Function to add key value pair into new CommentedMap given old CommentedMap, line_numbers
+    for each key/val pair in the old CommentedMap,key/val pair to insert, max_line of the old CommentedMap,
+    and max col value taken for each line.
     """
-    if key in line_numbers:  # If the key to insert is in the original CommentedMap
-        new_doc.lc.add_kv_line_col(key, old_doc.lc.data[key])
-    elif isinstance(val, (int, float, bool, str)):  # If the value is hashable
+    if len(inserted_line_info.keys()) >= 1:
+        max_line = max(inserted_line_info.keys()) + 1
+    else:
+        max_line = 0
+    if (
+        key in line_numbers
+    ):  # If the key to insert is in the original CommentedMap as a key
+        line_info = old_doc.lc.data[key]
+        if line_info[0] not in inserted_line_info:
+            new_doc.lc.add_kv_line_col(key, old_doc.lc.data[key])
+            inserted_line_info[old_doc.lc.data[key][0]] = old_doc.lc.data[key][1]
+        else:
+            line = line_info[0]
+            while line in inserted_line_info.keys():
+                line += 1
+            new_doc.lc.add_kv_line_col(
+                key,
+                [
+                    line,
+                    old_doc.lc.data[key][1],
+                    line + (line - old_doc.lc.data[key][2]),
+                    old_doc.lc.data[key][3],
+                ],
+            )
+            inserted_line_info[line] = old_doc.lc.data[key][1]
+        return max_len
+    elif isinstance(val, (int, float, str)) and not isinstance(
+        val, bool
+    ):  # If the value is hashable
         if val in line_numbers:  # If the value is in the original CommentedMap
             line = line_numbers[val]["line"]
+            if line in inserted_line_info:
+                line = max_line
             if line in cols:
                 col = max(line_numbers[val]["col"], cols[line])
             else:
                 col = line_numbers[val]["col"]
             new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
+            inserted_line_info[line] = col + len(key) + 2
             cols[line] = col + len("id") + 2
-        else:  # If neither the key or value is in the original CommentedMap (or value is not hashable)
-            new_doc.lc.add_kv_line_col(key, [max_len, 0, max_len, len(key) + 2])
-            max_len += 1
-    else:  # If neither the key or value is in the original CommentedMap (or value is not hashable)
-        new_doc.lc.add_kv_line_col(key, [max_len, 0, max_len, len(key) + 2])
-        max_len += 1
-    return max_len
+            return max_len
+        elif isinstance(val, str):
+            if val + "?" in line_numbers:
+                line = line_numbers[val + "?"]["line"]
+                if line in inserted_line_info:
+                    line = max_line
+                if line in cols:
+                    col = max(line_numbers[val + "?"]["col"], cols[line])
+                else:
+                    col = line_numbers[val + "?"]["col"]
+                new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
+                inserted_line_info[line] = col + len(key) + 2
+                cols[line] = col + len("id") + 2
+                return max_len
+        elif old_doc:
+            if val in old_doc:
+                index = old_doc.lc.data.index(val)
+                line_info = old_doc.lc.data[index]
+                if line_info[0] not in inserted_line_info:
+                    new_doc.lc.add_kv_line_col(key, old_doc.lc.data[index])
+                    inserted_line_info[old_doc.lc.data[index][0]] = old_doc.lc.data[
+                        index
+                    ][1]
+                else:
+                    new_doc.lc.add_kv_line_col(
+                        key,
+                        [
+                            max_line,
+                            old_doc.lc.data[index][1],
+                            max_line + (max_line - old_doc.lc.data[index][2]),
+                            old_doc.lc.data[index][3],
+                        ],
+                    )
+                    inserted_line_info[max_line] = old_doc.lc.data[index][1]
+    # If neither the key or value is in the original CommentedMap (or value is not hashable)
+    new_doc.lc.add_kv_line_col(
+        key, [max_line, min_col, max_line, min_col + len(key) + 2]
+    )
+    inserted_line_info[max_line] = min_col + len(key) + 2
+    return max_len + 1
 
 
 def get_line_numbers(doc: CommentedMap) -> Dict[Any, Dict[str, int]]:
@@ -289,7 +354,9 @@ def get_line_numbers(doc: CommentedMap) -> Dict[Any, Dict[str, int]]:
     only save value info if value is hashable.
     """
     line_numbers: Dict[Any, Dict[str, int]] = {}
-    if isinstance(doc, dict) or doc is None:
+    if doc is None:
+        return {}
+    if doc.lc.data is None:
         return {}
     for key, value in doc.lc.data.items():
         line_numbers[key] = {}
@@ -303,10 +370,19 @@ def get_line_numbers(doc: CommentedMap) -> Dict[Any, Dict[str, int]]:
     return line_numbers
 
 
+def get_min_col(line_numbers: Dict[Any, Dict[str, int]]) -> int:
+    min_col = 0
+    for line in line_numbers:
+        if line_numbers[line]["col"] > min_col:
+            min_col = line_numbers[line]["col"]
+    return min_col
+
+
 def get_max_line_num(doc: CommentedMap) -> int:
     """Get the max line number for a CommentedMap.
 
-    Iterate through the the key with the highest line number until you reach a non-CommentedMap value or empty CommentedMap.
+    Iterate through the the key with the highest line number until you reach a non-CommentedMap value
+    or empty CommentedMap.
     """
     max_line = 0
     max_key = ""
@@ -329,7 +405,8 @@ def save(
 ) -> save_type:
     """Save a val of any type.
 
-    Recursively calls save method from class if val is of type Saveable. Otherwise, saves val to CommentedMap or CommentedSeq
+    Recursively calls save method from class if val is of type Saveable.
+    Otherwise, saves val to CommentedMap or CommentedSeq.
     """
     if keys is None:
         keys = []
@@ -356,7 +433,7 @@ def save(
         for i in range(0, len(val)):
             new_keys = keys
             if doc:
-                if i in doc:
+                if str(i) in doc:
                     r.lc.data[i] = doc.lc.data[i]
                     new_keys.append(i)
             r.append(
@@ -1175,14 +1252,19 @@ class RecordField(Documented):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
-        doc = doc_line_info
-        for key in keys:
+        doc = copy.copy(doc_line_info)
+        keys = copy.copy(keys)
 
+        for key in keys:
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -1193,18 +1275,55 @@ class RecordField(Documented):
             else:
                 doc = None
                 break
+
         if doc is not None:
             r._yaml_set_line_col(doc.lc.line, doc.lc.col)
         line_numbers = get_line_numbers(doc)
         max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
         cols: Dict[int, int] = {}
+
         if relative_uris:
             for ef in self.extension_fields:
                 r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.name is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len
+                            )
+        if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
             max_len = add_kv(
@@ -1213,58 +1332,43 @@ class RecordField(Documented):
                 line_numbers=line_numbers,
                 key="name",
                 val=r.get("name"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.doc is not None:
-            saved_val = save(
+        if self.doc is not None and "doc" not in r:
+            r["doc"] = save(
                 self.doc,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["doc"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["doc"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="doc",
                 val=r.get("doc"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.type is not None:
-            saved_val = save(
+        if self.type is not None and "type" not in r:
+            r["type"] = save(
                 self.type,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["type"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["type"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="type",
                 val=r.get("type"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
 
         # top refers to the directory level
@@ -1382,14 +1486,19 @@ class RecordSchema(Saveable):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
-        doc = doc_line_info
-        for key in keys:
+        doc = copy.copy(doc_line_info)
+        keys = copy.copy(keys)
 
+        for key in keys:
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -1400,66 +1509,81 @@ class RecordSchema(Saveable):
             else:
                 doc = None
                 break
+
         if doc is not None:
             r._yaml_set_line_col(doc.lc.line, doc.lc.col)
         line_numbers = get_line_numbers(doc)
         max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
         cols: Dict[int, int] = {}
+
         if relative_uris:
             for ef in self.extension_fields:
                 r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.fields is not None:
-            saved_val = save(
-                self.fields,
-                top=False,
-                base_url=base_url,
-                relative_uris=relative_uris,
-                keys=keys + ["fields"],
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len
+                            )
+        if self.fields is not None and "fields" not in r:
+            r["fields"] = save(
+                self.fields, top=False, base_url=base_url, relative_uris=relative_uris
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["fields"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="fields",
                 val=r.get("fields"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.type is not None:
-            saved_val = save(
-                self.type,
-                top=False,
-                base_url=base_url,
-                relative_uris=relative_uris,
-                keys=keys + ["type"],
+        if self.type is not None and "type" not in r:
+            r["type"] = save(
+                self.type, top=False, base_url=base_url, relative_uris=relative_uris
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["type"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="type",
                 val=r.get("type"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
 
         # top refers to the directory level
@@ -1614,14 +1738,19 @@ class EnumSchema(Saveable):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
-        doc = doc_line_info
-        for key in keys:
+        doc = copy.copy(doc_line_info)
+        keys = copy.copy(keys)
 
+        for key in keys:
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -1632,18 +1761,55 @@ class EnumSchema(Saveable):
             else:
                 doc = None
                 break
+
         if doc is not None:
             r._yaml_set_line_col(doc.lc.line, doc.lc.col)
         line_numbers = get_line_numbers(doc)
         max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
         cols: Dict[int, int] = {}
+
         if relative_uris:
             for ef in self.extension_fields:
                 r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.name is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len
+                            )
+        if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
             max_len = add_kv(
@@ -1652,11 +1818,14 @@ class EnumSchema(Saveable):
                 line_numbers=line_numbers,
                 key="name",
                 val=r.get("name"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.symbols is not None:
-            u = save_relative_uri(self.symbols, self.name, True, None, relative_uris)
+        if self.symbols is not None and "symbols" not in r:
+            u = save_relative_uri(
+                self.symbols, str(self.name), True, None, relative_uris
+            )
             r["symbols"] = u
             max_len = add_kv(
                 old_doc=doc,
@@ -1664,33 +1833,26 @@ class EnumSchema(Saveable):
                 line_numbers=line_numbers,
                 key="symbols",
                 val=r.get("symbols"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.type is not None:
-            saved_val = save(
+        if self.type is not None and "type" not in r:
+            r["type"] = save(
                 self.type,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["type"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["type"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="type",
                 val=r.get("type"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
 
         # top refers to the directory level
@@ -1805,14 +1967,19 @@ class ArraySchema(Saveable):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
-        doc = doc_line_info
-        for key in keys:
+        doc = copy.copy(doc_line_info)
+        keys = copy.copy(keys)
 
+        for key in keys:
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -1823,18 +1990,55 @@ class ArraySchema(Saveable):
             else:
                 doc = None
                 break
+
         if doc is not None:
             r._yaml_set_line_col(doc.lc.line, doc.lc.col)
         line_numbers = get_line_numbers(doc)
         max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
         cols: Dict[int, int] = {}
+
         if relative_uris:
             for ef in self.extension_fields:
                 r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.items is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len
+                            )
+        if self.items is not None and "items" not in r:
             u = save_relative_uri(self.items, base_url, False, 2, relative_uris)
             r["items"] = u
             max_len = add_kv(
@@ -1843,33 +2047,23 @@ class ArraySchema(Saveable):
                 line_numbers=line_numbers,
                 key="items",
                 val=r.get("items"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.type is not None:
-            saved_val = save(
-                self.type,
-                top=False,
-                base_url=base_url,
-                relative_uris=relative_uris,
-                keys=keys + ["type"],
+        if self.type is not None and "type" not in r:
+            r["type"] = save(
+                self.type, top=False, base_url=base_url, relative_uris=relative_uris
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["type"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="type",
                 val=r.get("type"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
 
         # top refers to the directory level
@@ -2211,14 +2405,19 @@ class JsonldPredicate(Saveable):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
-        doc = doc_line_info
-        for key in keys:
+        doc = copy.copy(doc_line_info)
+        keys = copy.copy(keys)
 
+        for key in keys:
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -2229,18 +2428,55 @@ class JsonldPredicate(Saveable):
             else:
                 doc = None
                 break
+
         if doc is not None:
             r._yaml_set_line_col(doc.lc.line, doc.lc.col)
         line_numbers = get_line_numbers(doc)
         max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
         cols: Dict[int, int] = {}
+
         if relative_uris:
             for ef in self.extension_fields:
                 r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self._id is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len
+                            )
+        if self._id is not None and "_id" not in r:
             u = save_relative_uri(self._id, base_url, True, None, relative_uris)
             r["_id"] = u
             max_len = add_kv(
@@ -2249,258 +2485,164 @@ class JsonldPredicate(Saveable):
                 line_numbers=line_numbers,
                 key="_id",
                 val=r.get("_id"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self._type is not None:
-            saved_val = save(
-                self._type,
-                top=False,
-                base_url=base_url,
-                relative_uris=relative_uris,
-                keys=keys + ["_type"],
+        if self._type is not None and "_type" not in r:
+            r["_type"] = save(
+                self._type, top=False, base_url=base_url, relative_uris=relative_uris
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["_type"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="_type",
                 val=r.get("_type"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self._container is not None:
-            saved_val = save(
+        if self._container is not None and "_container" not in r:
+            r["_container"] = save(
                 self._container,
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                keys=keys + ["_container"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["_container"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="_container",
                 val=r.get("_container"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.identity is not None:
-            saved_val = save(
-                self.identity,
-                top=False,
-                base_url=base_url,
-                relative_uris=relative_uris,
-                keys=keys + ["identity"],
+        if self.identity is not None and "identity" not in r:
+            r["identity"] = save(
+                self.identity, top=False, base_url=base_url, relative_uris=relative_uris
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["identity"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="identity",
                 val=r.get("identity"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.noLinkCheck is not None:
-            saved_val = save(
+        if self.noLinkCheck is not None and "noLinkCheck" not in r:
+            r["noLinkCheck"] = save(
                 self.noLinkCheck,
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                keys=keys + ["noLinkCheck"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["noLinkCheck"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="noLinkCheck",
                 val=r.get("noLinkCheck"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.mapSubject is not None:
-            saved_val = save(
+        if self.mapSubject is not None and "mapSubject" not in r:
+            r["mapSubject"] = save(
                 self.mapSubject,
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                keys=keys + ["mapSubject"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["mapSubject"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="mapSubject",
                 val=r.get("mapSubject"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.mapPredicate is not None:
-            saved_val = save(
+        if self.mapPredicate is not None and "mapPredicate" not in r:
+            r["mapPredicate"] = save(
                 self.mapPredicate,
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                keys=keys + ["mapPredicate"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["mapPredicate"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="mapPredicate",
                 val=r.get("mapPredicate"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.refScope is not None:
-            saved_val = save(
-                self.refScope,
-                top=False,
-                base_url=base_url,
-                relative_uris=relative_uris,
-                keys=keys + ["refScope"],
+        if self.refScope is not None and "refScope" not in r:
+            r["refScope"] = save(
+                self.refScope, top=False, base_url=base_url, relative_uris=relative_uris
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["refScope"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="refScope",
                 val=r.get("refScope"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.typeDSL is not None:
-            saved_val = save(
-                self.typeDSL,
-                top=False,
-                base_url=base_url,
-                relative_uris=relative_uris,
-                keys=keys + ["typeDSL"],
+        if self.typeDSL is not None and "typeDSL" not in r:
+            r["typeDSL"] = save(
+                self.typeDSL, top=False, base_url=base_url, relative_uris=relative_uris
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["typeDSL"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="typeDSL",
                 val=r.get("typeDSL"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.secondaryFilesDSL is not None:
-            saved_val = save(
+        if self.secondaryFilesDSL is not None and "secondaryFilesDSL" not in r:
+            r["secondaryFilesDSL"] = save(
                 self.secondaryFilesDSL,
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
-                keys=keys + ["secondaryFilesDSL"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["secondaryFilesDSL"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="secondaryFilesDSL",
                 val=r.get("secondaryFilesDSL"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.subscope is not None:
-            saved_val = save(
-                self.subscope,
-                top=False,
-                base_url=base_url,
-                relative_uris=relative_uris,
-                keys=keys + ["subscope"],
+        if self.subscope is not None and "subscope" not in r:
+            r["subscope"] = save(
+                self.subscope, top=False, base_url=base_url, relative_uris=relative_uris
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["subscope"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="subscope",
                 val=r.get("subscope"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
 
         # top refers to the directory level
@@ -2632,14 +2774,19 @@ class SpecializeDef(Saveable):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
-        doc = doc_line_info
-        for key in keys:
+        doc = copy.copy(doc_line_info)
+        keys = copy.copy(keys)
 
+        for key in keys:
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -2650,18 +2797,55 @@ class SpecializeDef(Saveable):
             else:
                 doc = None
                 break
+
         if doc is not None:
             r._yaml_set_line_col(doc.lc.line, doc.lc.col)
         line_numbers = get_line_numbers(doc)
         max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
         cols: Dict[int, int] = {}
+
         if relative_uris:
             for ef in self.extension_fields:
                 r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.specializeFrom is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len
+                            )
+        if self.specializeFrom is not None and "specializeFrom" not in r:
             u = save_relative_uri(
                 self.specializeFrom, base_url, False, 1, relative_uris
             )
@@ -2672,10 +2856,11 @@ class SpecializeDef(Saveable):
                 line_numbers=line_numbers,
                 key="specializeFrom",
                 val=r.get("specializeFrom"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.specializeTo is not None:
+        if self.specializeTo is not None and "specializeTo" not in r:
             u = save_relative_uri(self.specializeTo, base_url, False, 1, relative_uris)
             r["specializeTo"] = u
             max_len = add_kv(
@@ -2684,8 +2869,9 @@ class SpecializeDef(Saveable):
                 line_numbers=line_numbers,
                 key="specializeTo",
                 val=r.get("specializeTo"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
 
         # top refers to the directory level
@@ -2905,14 +3091,19 @@ class SaladRecordField(RecordField):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
-        doc = doc_line_info
-        for key in keys:
+        doc = copy.copy(doc_line_info)
+        keys = copy.copy(keys)
 
+        for key in keys:
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -2923,18 +3114,55 @@ class SaladRecordField(RecordField):
             else:
                 doc = None
                 break
+
         if doc is not None:
             r._yaml_set_line_col(doc.lc.line, doc.lc.col)
         line_numbers = get_line_numbers(doc)
         max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
         cols: Dict[int, int] = {}
+
         if relative_uris:
             for ef in self.extension_fields:
                 r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.name is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len
+                            )
+        if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
             max_len = add_kv(
@@ -2943,108 +3171,77 @@ class SaladRecordField(RecordField):
                 line_numbers=line_numbers,
                 key="name",
                 val=r.get("name"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.doc is not None:
-            saved_val = save(
+        if self.doc is not None and "doc" not in r:
+            r["doc"] = save(
                 self.doc,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["doc"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["doc"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="doc",
                 val=r.get("doc"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.type is not None:
-            saved_val = save(
+        if self.type is not None and "type" not in r:
+            r["type"] = save(
                 self.type,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["type"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["type"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="type",
                 val=r.get("type"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.jsonldPredicate is not None:
-            saved_val = save(
+        if self.jsonldPredicate is not None and "jsonldPredicate" not in r:
+            r["jsonldPredicate"] = save(
                 self.jsonldPredicate,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["jsonldPredicate"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["jsonldPredicate"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="jsonldPredicate",
                 val=r.get("jsonldPredicate"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.default is not None:
-            saved_val = save(
+        if self.default is not None and "default" not in r:
+            r["default"] = save(
                 self.default,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["default"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["default"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="default",
                 val=r.get("default"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
 
         # top refers to the directory level
@@ -3433,14 +3630,19 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
-        doc = doc_line_info
-        for key in keys:
+        doc = copy.copy(doc_line_info)
+        keys = copy.copy(keys)
 
+        for key in keys:
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -3451,18 +3653,55 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             else:
                 doc = None
                 break
+
         if doc is not None:
             r._yaml_set_line_col(doc.lc.line, doc.lc.col)
         line_numbers = get_line_numbers(doc)
         max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
         cols: Dict[int, int] = {}
+
         if relative_uris:
             for ef in self.extension_fields:
                 r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.name is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len
+                            )
+        if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
             max_len = add_kv(
@@ -3471,111 +3710,82 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 line_numbers=line_numbers,
                 key="name",
                 val=r.get("name"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.inVocab is not None:
-            saved_val = save(
+        if self.inVocab is not None and "inVocab" not in r:
+            r["inVocab"] = save(
                 self.inVocab,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["inVocab"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["inVocab"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="inVocab",
                 val=r.get("inVocab"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.fields is not None:
-            saved_val = save(
+        if self.fields is not None and "fields" not in r:
+            r["fields"] = save(
                 self.fields,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["fields"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["fields"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="fields",
                 val=r.get("fields"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.type is not None:
-            saved_val = save(
+        if self.type is not None and "type" not in r:
+            r["type"] = save(
                 self.type,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["type"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["type"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="type",
                 val=r.get("type"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.doc is not None:
-            saved_val = save(
+        if self.doc is not None and "doc" not in r:
+            r["doc"] = save(
                 self.doc,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["doc"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["doc"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="doc",
                 val=r.get("doc"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.docParent is not None:
-            u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
+        if self.docParent is not None and "docParent" not in r:
+            u = save_relative_uri(
+                self.docParent, str(self.name), False, None, relative_uris
+            )
             r["docParent"] = u
             max_len = add_kv(
                 old_doc=doc,
@@ -3583,11 +3793,14 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 line_numbers=line_numbers,
                 key="docParent",
                 val=r.get("docParent"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.docChild is not None:
-            u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
+        if self.docChild is not None and "docChild" not in r:
+            u = save_relative_uri(
+                self.docChild, str(self.name), False, None, relative_uris
+            )
             r["docChild"] = u
             max_len = add_kv(
                 old_doc=doc,
@@ -3595,11 +3808,14 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 line_numbers=line_numbers,
                 key="docChild",
                 val=r.get("docChild"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.docAfter is not None:
-            u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
+        if self.docAfter is not None and "docAfter" not in r:
+            u = save_relative_uri(
+                self.docAfter, str(self.name), False, None, relative_uris
+            )
             r["docAfter"] = u
             max_len = add_kv(
                 old_doc=doc,
@@ -3607,86 +3823,63 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 line_numbers=line_numbers,
                 key="docAfter",
                 val=r.get("docAfter"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.jsonldPredicate is not None:
-            saved_val = save(
+        if self.jsonldPredicate is not None and "jsonldPredicate" not in r:
+            r["jsonldPredicate"] = save(
                 self.jsonldPredicate,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["jsonldPredicate"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["jsonldPredicate"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="jsonldPredicate",
                 val=r.get("jsonldPredicate"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.documentRoot is not None:
-            saved_val = save(
+        if self.documentRoot is not None and "documentRoot" not in r:
+            r["documentRoot"] = save(
                 self.documentRoot,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["documentRoot"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["documentRoot"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="documentRoot",
                 val=r.get("documentRoot"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.abstract is not None:
-            saved_val = save(
+        if self.abstract is not None and "abstract" not in r:
+            r["abstract"] = save(
                 self.abstract,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["abstract"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["abstract"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="abstract",
                 val=r.get("abstract"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.extends is not None:
-            u = save_relative_uri(self.extends, self.name, False, 1, relative_uris)
+        if self.extends is not None and "extends" not in r:
+            u = save_relative_uri(self.extends, str(self.name), False, 1, relative_uris)
             r["extends"] = u
             max_len = add_kv(
                 old_doc=doc,
@@ -3694,33 +3887,26 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 line_numbers=line_numbers,
                 key="extends",
                 val=r.get("extends"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.specialize is not None:
-            saved_val = save(
+        if self.specialize is not None and "specialize" not in r:
+            r["specialize"] = save(
                 self.specialize,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["specialize"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["specialize"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="specialize",
                 val=r.get("specialize"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
 
         # top refers to the directory level
@@ -4081,14 +4267,19 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
-        doc = doc_line_info
-        for key in keys:
+        doc = copy.copy(doc_line_info)
+        keys = copy.copy(keys)
 
+        for key in keys:
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -4099,18 +4290,55 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             else:
                 doc = None
                 break
+
         if doc is not None:
             r._yaml_set_line_col(doc.lc.line, doc.lc.col)
         line_numbers = get_line_numbers(doc)
         max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
         cols: Dict[int, int] = {}
+
         if relative_uris:
             for ef in self.extension_fields:
                 r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.name is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len
+                            )
+        if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
             max_len = add_kv(
@@ -4119,36 +4347,31 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 line_numbers=line_numbers,
                 key="name",
                 val=r.get("name"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.inVocab is not None:
-            saved_val = save(
+        if self.inVocab is not None and "inVocab" not in r:
+            r["inVocab"] = save(
                 self.inVocab,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["inVocab"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["inVocab"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="inVocab",
                 val=r.get("inVocab"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.symbols is not None:
-            u = save_relative_uri(self.symbols, self.name, True, None, relative_uris)
+        if self.symbols is not None and "symbols" not in r:
+            u = save_relative_uri(
+                self.symbols, str(self.name), True, None, relative_uris
+            )
             r["symbols"] = u
             max_len = add_kv(
                 old_doc=doc,
@@ -4156,61 +4379,48 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 line_numbers=line_numbers,
                 key="symbols",
                 val=r.get("symbols"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.type is not None:
-            saved_val = save(
+        if self.type is not None and "type" not in r:
+            r["type"] = save(
                 self.type,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["type"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["type"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="type",
                 val=r.get("type"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.doc is not None:
-            saved_val = save(
+        if self.doc is not None and "doc" not in r:
+            r["doc"] = save(
                 self.doc,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["doc"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["doc"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="doc",
                 val=r.get("doc"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.docParent is not None:
-            u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
+        if self.docParent is not None and "docParent" not in r:
+            u = save_relative_uri(
+                self.docParent, str(self.name), False, None, relative_uris
+            )
             r["docParent"] = u
             max_len = add_kv(
                 old_doc=doc,
@@ -4218,11 +4428,14 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 line_numbers=line_numbers,
                 key="docParent",
                 val=r.get("docParent"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.docChild is not None:
-            u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
+        if self.docChild is not None and "docChild" not in r:
+            u = save_relative_uri(
+                self.docChild, str(self.name), False, None, relative_uris
+            )
             r["docChild"] = u
             max_len = add_kv(
                 old_doc=doc,
@@ -4230,11 +4443,14 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 line_numbers=line_numbers,
                 key="docChild",
                 val=r.get("docChild"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.docAfter is not None:
-            u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
+        if self.docAfter is not None and "docAfter" not in r:
+            u = save_relative_uri(
+                self.docAfter, str(self.name), False, None, relative_uris
+            )
             r["docAfter"] = u
             max_len = add_kv(
                 old_doc=doc,
@@ -4242,61 +4458,46 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 line_numbers=line_numbers,
                 key="docAfter",
                 val=r.get("docAfter"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.jsonldPredicate is not None:
-            saved_val = save(
+        if self.jsonldPredicate is not None and "jsonldPredicate" not in r:
+            r["jsonldPredicate"] = save(
                 self.jsonldPredicate,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["jsonldPredicate"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["jsonldPredicate"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="jsonldPredicate",
                 val=r.get("jsonldPredicate"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.documentRoot is not None:
-            saved_val = save(
+        if self.documentRoot is not None and "documentRoot" not in r:
+            r["documentRoot"] = save(
                 self.documentRoot,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["documentRoot"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["documentRoot"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="documentRoot",
                 val=r.get("documentRoot"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.extends is not None:
-            u = save_relative_uri(self.extends, self.name, False, 1, relative_uris)
+        if self.extends is not None and "extends" not in r:
+            u = save_relative_uri(self.extends, str(self.name), False, 1, relative_uris)
             r["extends"] = u
             max_len = add_kv(
                 old_doc=doc,
@@ -4304,8 +4505,9 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 line_numbers=line_numbers,
                 key="extends",
                 val=r.get("extends"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
 
         # top refers to the directory level
@@ -4576,14 +4778,19 @@ class Documentation(NamedType, DocType):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True, keys: Optional[List[Any]] = None
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
-        doc = doc_line_info
-        for key in keys:
+        doc = copy.copy(doc_line_info)
+        keys = copy.copy(keys)
 
+        for key in keys:
             if isinstance(doc, CommentedMap):
                 doc = doc.get(key)
             elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
@@ -4594,18 +4801,55 @@ class Documentation(NamedType, DocType):
             else:
                 doc = None
                 break
+
         if doc is not None:
             r._yaml_set_line_col(doc.lc.line, doc.lc.col)
         line_numbers = get_line_numbers(doc)
         max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
         cols: Dict[int, int] = {}
+
         if relative_uris:
             for ef in self.extension_fields:
                 r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.name is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len
+                            )
+        if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
             max_len = add_kv(
@@ -4614,61 +4858,48 @@ class Documentation(NamedType, DocType):
                 line_numbers=line_numbers,
                 key="name",
                 val=r.get("name"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.inVocab is not None:
-            saved_val = save(
+        if self.inVocab is not None and "inVocab" not in r:
+            r["inVocab"] = save(
                 self.inVocab,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["inVocab"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["inVocab"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="inVocab",
                 val=r.get("inVocab"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.doc is not None:
-            saved_val = save(
+        if self.doc is not None and "doc" not in r:
+            r["doc"] = save(
                 self.doc,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["doc"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["doc"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="doc",
                 val=r.get("doc"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.docParent is not None:
-            u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
+        if self.docParent is not None and "docParent" not in r:
+            u = save_relative_uri(
+                self.docParent, str(self.name), False, None, relative_uris
+            )
             r["docParent"] = u
             max_len = add_kv(
                 old_doc=doc,
@@ -4676,11 +4907,14 @@ class Documentation(NamedType, DocType):
                 line_numbers=line_numbers,
                 key="docParent",
                 val=r.get("docParent"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.docChild is not None:
-            u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
+        if self.docChild is not None and "docChild" not in r:
+            u = save_relative_uri(
+                self.docChild, str(self.name), False, None, relative_uris
+            )
             r["docChild"] = u
             max_len = add_kv(
                 old_doc=doc,
@@ -4688,11 +4922,14 @@ class Documentation(NamedType, DocType):
                 line_numbers=line_numbers,
                 key="docChild",
                 val=r.get("docChild"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.docAfter is not None:
-            u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
+        if self.docAfter is not None and "docAfter" not in r:
+            u = save_relative_uri(
+                self.docAfter, str(self.name), False, None, relative_uris
+            )
             r["docAfter"] = u
             max_len = add_kv(
                 old_doc=doc,
@@ -4700,33 +4937,26 @@ class Documentation(NamedType, DocType):
                 line_numbers=line_numbers,
                 key="docAfter",
                 val=r.get("docAfter"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
-        if self.type is not None:
-            saved_val = save(
+        if self.type is not None and "type" not in r:
+            r["type"] = save(
                 self.type,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
-                keys=keys + ["type"],
             )
-
-            if type(saved_val) == list:
-                if (
-                    len(saved_val) == 1
-                ):  # If the returned value is a list of size 1, just save the value in the list
-                    saved_val = saved_val[0]
-            r["type"] = saved_val
-
             max_len = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
                 key="type",
                 val=r.get("type"),
-                max_len=max_len,
                 cols=cols,
+                min_col=min_col,
+                max_len=max_len,
             )
 
         # top refers to the directory level

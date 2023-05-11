@@ -274,16 +274,19 @@ def add_kv(
             new_doc.lc.add_kv_line_col(key, old_doc.lc.data[key])
             inserted_line_info[old_doc.lc.data[key][0]] = old_doc.lc.data[key][1]
         else:
+            line = line_info[0]
+            while line in inserted_line_info.keys():
+                line += 1
             new_doc.lc.add_kv_line_col(
                 key,
                 [
-                    max_line,
+                    line,
                     old_doc.lc.data[key][1],
-                    max_line + (max_line - old_doc.lc.data[key][2]),
+                    line + (line - old_doc.lc.data[key][2]),
                     old_doc.lc.data[key][3],
                 ],
             )
-            inserted_line_info[max_line] = old_doc.lc.data[key][1]
+            inserted_line_info[line] = old_doc.lc.data[key][1]
         return max_len
     elif isinstance(val, (int, float, str)) and not isinstance(
         val, bool
@@ -315,7 +318,7 @@ def add_kv(
                 return max_len
         elif old_doc:
             if val in old_doc:
-                index = old_doc.index(val)
+                index = old_doc.lc.data.index(val)
                 line_info = old_doc.lc.data[index]
                 if line_info[0] not in inserted_line_info:
                     new_doc.lc.add_kv_line_col(key, old_doc.lc.data[index])
@@ -338,7 +341,6 @@ def add_kv(
         key, [max_line, min_col, max_line, min_col + len(key) + 2]
     )
     inserted_line_info[max_line] = min_col + len(key) + 2
-
     return max_len + 1
 
 
@@ -365,7 +367,7 @@ def get_line_numbers(doc: CommentedMap) -> Dict[Any, Dict[str, int]]:
     return line_numbers
 
 
-def get_min_col(line_numbers: Dict[Any, Dict[str, int]]) -> str:
+def get_min_col(line_numbers: Dict[Any, Dict[str, int]]) -> int:
     min_col = 0
     for line in line_numbers:
         if line_numbers[line]["col"] > min_col:
@@ -384,7 +386,6 @@ def get_max_line_num(doc: CommentedMap) -> int:
     cur = doc
     while isinstance(cur, CommentedMap) and len(cur) > 0:
         for key in cur.lc.data.keys():
-            # print(cur.lc.data[key][2])
             if cur.lc.data[key][2] >= max_line:
                 max_line = cur.lc.data[key][2]
             max_key = key
