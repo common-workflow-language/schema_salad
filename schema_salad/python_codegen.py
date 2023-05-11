@@ -470,63 +470,64 @@ class PythonCodeGen(CodeGenBase):
                             )
 """
             )
-#             self.serializer.write(
-#                     """
-#             if self.id is not None and "id" not in r:
-#                 u = save_relative_uri(self.id, base_url, True, None, relative_uris)
-#                 r["id"] = u
-#                 add_kv(
-#                     old_doc=doc,
-#                     new_doc=r,
-#                     line_numbers=line_numbers,
-#                     key="id",
-#                     val=r.get("id"),
-#                     cols=cols,
-#                     min_col=min_col,
-#                     max_len=max_len
-#                 )
-#                 if doc:
-#                     if u in doc:
-#                         keys.append(u)
-#                         if isinstance(doc.get(u), (CommentedMap, CommentedSeq)):
-#                             doc = doc.get(u)
-#                             line_numbers = get_line_numbers(doc)
-#                             min_col = get_min_col(line_numbers)
-# """
-#                 )
-#         else:
-#             self.serializer.write(
-#                 """
-#         for key in self.ordered_attrs.keys():
-#             if isinstance(key, str) and key not in r:
-#                 if getattr(self, key) is not None:
-#                     saved_val = save(
-#                         getattr(self, key),
-#                         top=False,
-#                         base_url=base_url,
-#                         relative_uris=relative_uris,
-#                         keys=keys + [key],
-#                     )
 
-#                     if type(saved_val) == list:
-#                         if (
-#                             len(saved_val) == 1
-#                         ):  # If the returned value is a list of size 1, just save the value in the list
-#                             saved_val = saved_val[0]
-#                     r[key] = saved_val
+    #             self.serializer.write(
+    #                     """
+    #             if self.id is not None and "id" not in r:
+    #                 u = save_relative_uri(self.id, base_url, True, None, relative_uris)
+    #                 r["id"] = u
+    #                 add_kv(
+    #                     old_doc=doc,
+    #                     new_doc=r,
+    #                     line_numbers=line_numbers,
+    #                     key="id",
+    #                     val=r.get("id"),
+    #                     cols=cols,
+    #                     min_col=min_col,
+    #                     max_len=max_len
+    #                 )
+    #                 if doc:
+    #                     if u in doc:
+    #                         keys.append(u)
+    #                         if isinstance(doc.get(u), (CommentedMap, CommentedSeq)):
+    #                             doc = doc.get(u)
+    #                             line_numbers = get_line_numbers(doc)
+    #                             min_col = get_min_col(line_numbers)
+    # """
+    #                 )
+    #         else:
+    #             self.serializer.write(
+    #                 """
+    #         for key in self.ordered_attrs.keys():
+    #             if isinstance(key, str) and key not in r:
+    #                 if getattr(self, key) is not None:
+    #                     saved_val = save(
+    #                         getattr(self, key),
+    #                         top=False,
+    #                         base_url=base_url,
+    #                         relative_uris=relative_uris,
+    #                         keys=keys + [key],
+    #                     )
 
-#                     add_kv(
-#                         old_doc=doc,
-#                         new_doc=r,
-#                         line_numbers=line_numbers,
-#                         key=key,
-#                         val=r.get(key),
-#                         cols=cols,
-#                         min_col=min_col,
-#                         max_len=max_len
-#                     )
-# """
-#             )
+    #                     if type(saved_val) == list:
+    #                         if (
+    #                             len(saved_val) == 1
+    #                         ):  # If the returned value is a list of size 1, just save the value in the list
+    #                             saved_val = saved_val[0]
+    #                     r[key] = saved_val
+
+    #                     add_kv(
+    #                         old_doc=doc,
+    #                         new_doc=r,
+    #                         line_numbers=line_numbers,
+    #                         key=key,
+    #                         val=r.get(key),
+    #                         cols=cols,
+    #                         min_col=min_col,
+    #                         max_len=max_len
+    #                     )
+    # """
+    #             )
 
     def end_class(self, classname: str, field_names: List[str]) -> None:
         """Signal that we are done with this class."""

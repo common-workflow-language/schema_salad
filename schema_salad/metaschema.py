@@ -1256,7 +1256,7 @@ class RecordField(Documented):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1295,7 +1295,7 @@ class RecordField(Documented):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -1306,9 +1306,7 @@ class RecordField(Documented):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -1321,7 +1319,7 @@ class RecordField(Documented):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -1490,7 +1488,7 @@ class RecordSchema(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1529,7 +1527,7 @@ class RecordSchema(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -1540,9 +1538,7 @@ class RecordSchema(Saveable):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -1555,7 +1551,7 @@ class RecordSchema(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.fields is not None and "fields" not in r:
             r["fields"] = save(
@@ -1742,7 +1738,7 @@ class EnumSchema(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1781,7 +1777,7 @@ class EnumSchema(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -1792,9 +1788,7 @@ class EnumSchema(Saveable):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -1807,7 +1801,7 @@ class EnumSchema(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -1971,7 +1965,7 @@ class ArraySchema(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -2010,7 +2004,7 @@ class ArraySchema(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -2021,9 +2015,7 @@ class ArraySchema(Saveable):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -2036,7 +2028,7 @@ class ArraySchema(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.items is not None and "items" not in r:
             u = save_relative_uri(self.items, base_url, False, 2, relative_uris)
@@ -2409,7 +2401,7 @@ class JsonldPredicate(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -2448,7 +2440,7 @@ class JsonldPredicate(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -2459,9 +2451,7 @@ class JsonldPredicate(Saveable):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -2474,7 +2464,7 @@ class JsonldPredicate(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self._id is not None and "_id" not in r:
             u = save_relative_uri(self._id, base_url, True, None, relative_uris)
@@ -2778,7 +2768,7 @@ class SpecializeDef(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -2817,7 +2807,7 @@ class SpecializeDef(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -2828,9 +2818,7 @@ class SpecializeDef(Saveable):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -2843,7 +2831,7 @@ class SpecializeDef(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.specializeFrom is not None and "specializeFrom" not in r:
             u = save_relative_uri(
@@ -3095,7 +3083,7 @@ class SaladRecordField(RecordField):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -3134,7 +3122,7 @@ class SaladRecordField(RecordField):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -3145,9 +3133,7 @@ class SaladRecordField(RecordField):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -3160,7 +3146,7 @@ class SaladRecordField(RecordField):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -3634,7 +3620,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -3673,7 +3659,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -3684,9 +3670,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -3699,7 +3683,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -4271,7 +4255,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -4310,7 +4294,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -4321,9 +4305,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -4336,7 +4318,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -4782,7 +4764,7 @@ class Documentation(NamedType, DocType):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -4821,7 +4803,7 @@ class Documentation(NamedType, DocType):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -4832,9 +4814,7 @@ class Documentation(NamedType, DocType):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -4847,7 +4827,7 @@ class Documentation(NamedType, DocType):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)

@@ -1252,7 +1252,7 @@ class RecordField(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1291,7 +1291,7 @@ class RecordField(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -1302,9 +1302,7 @@ class RecordField(Saveable):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -1317,7 +1315,7 @@ class RecordField(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -1486,7 +1484,7 @@ class RecordSchema(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1525,7 +1523,7 @@ class RecordSchema(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -1536,9 +1534,7 @@ class RecordSchema(Saveable):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -1551,7 +1547,7 @@ class RecordSchema(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.fields is not None and "fields" not in r:
             r["fields"] = save(
@@ -1703,7 +1699,7 @@ class EnumSchema(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1742,7 +1738,7 @@ class EnumSchema(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -1753,9 +1749,7 @@ class EnumSchema(Saveable):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -1768,7 +1762,7 @@ class EnumSchema(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.symbols is not None and "symbols" not in r:
             u = save_relative_uri(self.symbols, base_url, True, None, relative_uris)
@@ -1914,7 +1908,7 @@ class ArraySchema(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1953,7 +1947,7 @@ class ArraySchema(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -1964,9 +1958,7 @@ class ArraySchema(Saveable):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -1979,7 +1971,7 @@ class ArraySchema(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.items is not None and "items" not in r:
             r["items"] = save(
@@ -2424,7 +2416,7 @@ class File(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -2465,7 +2457,7 @@ class File(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -2476,9 +2468,7 @@ class File(Saveable):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -2491,7 +2481,7 @@ class File(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.location is not None and "location" not in r:
             u = save_relative_uri(self.location, base_url, False, None, relative_uris)
@@ -2887,7 +2877,7 @@ class Directory(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -2928,7 +2918,7 @@ class Directory(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -2939,9 +2929,7 @@ class Directory(Saveable):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -2954,7 +2942,7 @@ class Directory(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.location is not None and "location" not in r:
             u = save_relative_uri(self.location, base_url, False, None, relative_uris)
@@ -3238,7 +3226,7 @@ class InputRecordField(RecordField):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -3277,7 +3265,7 @@ class InputRecordField(RecordField):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -3288,9 +3276,7 @@ class InputRecordField(RecordField):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -3303,7 +3289,7 @@ class InputRecordField(RecordField):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -3563,7 +3549,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -3602,7 +3588,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -3613,9 +3599,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -3628,7 +3612,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -3890,7 +3874,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -3929,7 +3913,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -3940,9 +3924,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -3955,7 +3937,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -4200,7 +4182,7 @@ class InputArraySchema(ArraySchema, InputSchema):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -4239,7 +4221,7 @@ class InputArraySchema(ArraySchema, InputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -4250,9 +4232,7 @@ class InputArraySchema(ArraySchema, InputSchema):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -4265,7 +4245,7 @@ class InputArraySchema(ArraySchema, InputSchema):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.items is not None and "items" not in r:
             r["items"] = save(
@@ -4503,7 +4483,7 @@ class OutputRecordField(RecordField):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -4542,7 +4522,7 @@ class OutputRecordField(RecordField):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -4553,9 +4533,7 @@ class OutputRecordField(RecordField):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -4568,7 +4546,7 @@ class OutputRecordField(RecordField):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -4779,7 +4757,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -4818,7 +4796,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -4829,9 +4807,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -4844,7 +4820,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.fields is not None and "fields" not in r:
             r["fields"] = save(
@@ -5052,7 +5028,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -5091,7 +5067,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -5102,9 +5078,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -5117,7 +5091,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.symbols is not None and "symbols" not in r:
             u = save_relative_uri(self.symbols, base_url, True, None, relative_uris)
@@ -5341,7 +5315,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -5380,7 +5354,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -5391,9 +5365,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -5406,7 +5378,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.items is not None and "items" not in r:
             r["items"] = save(
@@ -5769,7 +5741,7 @@ class InputParameter(Parameter):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -5792,17 +5764,22 @@ class InputParameter(Parameter):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split('#')) > 1:
+                if len(temp_id.split("#")) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc['id'] = temp_id
-                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1],
-                                                           doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1] + 4])
+                        temp_doc["id"] = temp_id
+                        temp_doc.lc.add_kv_line_col(
+                            "id",
+                            [
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1],
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1] + 4,
+                            ],
+                        )
                         doc = temp_doc
 
         if doc is not None:
@@ -5827,7 +5804,7 @@ class InputParameter(Parameter):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -5838,9 +5815,7 @@ class InputParameter(Parameter):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -5853,7 +5828,7 @@ class InputParameter(Parameter):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -6262,7 +6237,7 @@ class OutputParameter(Parameter):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -6285,17 +6260,22 @@ class OutputParameter(Parameter):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split('#')) > 1:
+                if len(temp_id.split("#")) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc['id'] = temp_id
-                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1],
-                                                           doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1] + 4])
+                        temp_doc["id"] = temp_id
+                        temp_doc.lc.add_kv_line_col(
+                            "id",
+                            [
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1],
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1] + 4,
+                            ],
+                        )
                         doc = temp_doc
 
         if doc is not None:
@@ -6320,7 +6300,7 @@ class OutputParameter(Parameter):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -6331,9 +6311,7 @@ class OutputParameter(Parameter):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -6346,7 +6324,7 @@ class OutputParameter(Parameter):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -6611,7 +6589,7 @@ class InlineJavascriptRequirement(ProcessRequirement):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -6652,7 +6630,7 @@ class InlineJavascriptRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -6663,9 +6641,7 @@ class InlineJavascriptRequirement(ProcessRequirement):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -6678,7 +6654,7 @@ class InlineJavascriptRequirement(ProcessRequirement):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.expressionLib is not None and "expressionLib" not in r:
             r["expressionLib"] = save(
@@ -6812,7 +6788,7 @@ class SchemaDefRequirement(ProcessRequirement):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -6853,7 +6829,7 @@ class SchemaDefRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -6864,9 +6840,7 @@ class SchemaDefRequirement(ProcessRequirement):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -6879,7 +6853,7 @@ class SchemaDefRequirement(ProcessRequirement):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.types is not None and "types" not in r:
             r["types"] = save(
@@ -7021,7 +6995,7 @@ class EnvironmentDef(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -7060,7 +7034,7 @@ class EnvironmentDef(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -7071,9 +7045,7 @@ class EnvironmentDef(Saveable):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -7086,7 +7058,7 @@ class EnvironmentDef(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.envName is not None and "envName" not in r:
             r["envName"] = save(
@@ -7401,7 +7373,7 @@ class CommandLineBinding(InputBinding):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -7440,7 +7412,7 @@ class CommandLineBinding(InputBinding):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -7451,9 +7423,7 @@ class CommandLineBinding(InputBinding):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -7466,7 +7436,7 @@ class CommandLineBinding(InputBinding):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.loadContents is not None and "loadContents" not in r:
             r["loadContents"] = save(
@@ -7750,7 +7720,7 @@ class CommandOutputBinding(OutputBinding):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -7789,7 +7759,7 @@ class CommandOutputBinding(OutputBinding):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -7800,9 +7770,7 @@ class CommandOutputBinding(OutputBinding):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -7815,7 +7783,7 @@ class CommandOutputBinding(OutputBinding):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.glob is not None and "glob" not in r:
             r["glob"] = save(
@@ -8066,7 +8034,7 @@ class CommandInputRecordField(InputRecordField):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -8105,7 +8073,7 @@ class CommandInputRecordField(InputRecordField):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -8116,9 +8084,7 @@ class CommandInputRecordField(InputRecordField):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -8131,7 +8097,7 @@ class CommandInputRecordField(InputRecordField):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -8393,7 +8359,7 @@ class CommandInputRecordSchema(InputRecordSchema):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -8432,7 +8398,7 @@ class CommandInputRecordSchema(InputRecordSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -8443,9 +8409,7 @@ class CommandInputRecordSchema(InputRecordSchema):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -8458,7 +8422,7 @@ class CommandInputRecordSchema(InputRecordSchema):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -8722,7 +8686,7 @@ class CommandInputEnumSchema(InputEnumSchema):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -8761,7 +8725,7 @@ class CommandInputEnumSchema(InputEnumSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -8772,9 +8736,7 @@ class CommandInputEnumSchema(InputEnumSchema):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -8787,7 +8749,7 @@ class CommandInputEnumSchema(InputEnumSchema):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -9034,7 +8996,7 @@ class CommandInputArraySchema(InputArraySchema):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -9073,7 +9035,7 @@ class CommandInputArraySchema(InputArraySchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -9084,9 +9046,7 @@ class CommandInputArraySchema(InputArraySchema):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -9099,7 +9059,7 @@ class CommandInputArraySchema(InputArraySchema):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.items is not None and "items" not in r:
             r["items"] = save(
@@ -9339,7 +9299,7 @@ class CommandOutputRecordField(OutputRecordField):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -9378,7 +9338,7 @@ class CommandOutputRecordField(OutputRecordField):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -9389,9 +9349,7 @@ class CommandOutputRecordField(OutputRecordField):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -9404,7 +9362,7 @@ class CommandOutputRecordField(OutputRecordField):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -9649,7 +9607,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -9688,7 +9646,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -9699,9 +9657,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -9714,7 +9670,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -9946,7 +9902,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -9985,7 +9941,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -9996,9 +9952,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -10011,7 +9965,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.symbols is not None and "symbols" not in r:
             u = save_relative_uri(self.symbols, base_url, True, None, relative_uris)
@@ -10237,7 +10191,7 @@ class CommandOutputArraySchema(OutputArraySchema):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -10276,7 +10230,7 @@ class CommandOutputArraySchema(OutputArraySchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -10287,9 +10241,7 @@ class CommandOutputArraySchema(OutputArraySchema):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -10302,7 +10254,7 @@ class CommandOutputArraySchema(OutputArraySchema):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.items is not None and "items" not in r:
             r["items"] = save(
@@ -10669,7 +10621,7 @@ class CommandInputParameter(InputParameter):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -10692,17 +10644,22 @@ class CommandInputParameter(InputParameter):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split('#')) > 1:
+                if len(temp_id.split("#")) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc['id'] = temp_id
-                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1],
-                                                           doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1] + 4])
+                        temp_doc["id"] = temp_id
+                        temp_doc.lc.add_kv_line_col(
+                            "id",
+                            [
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1],
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1] + 4,
+                            ],
+                        )
                         doc = temp_doc
 
         if doc is not None:
@@ -10727,7 +10684,7 @@ class CommandInputParameter(InputParameter):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -10738,9 +10695,7 @@ class CommandInputParameter(InputParameter):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -10753,7 +10708,7 @@ class CommandInputParameter(InputParameter):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -11191,7 +11146,7 @@ class CommandOutputParameter(OutputParameter):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -11214,17 +11169,22 @@ class CommandOutputParameter(OutputParameter):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split('#')) > 1:
+                if len(temp_id.split("#")) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc['id'] = temp_id
-                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1],
-                                                           doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1] + 4])
+                        temp_doc["id"] = temp_id
+                        temp_doc.lc.add_kv_line_col(
+                            "id",
+                            [
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1],
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1] + 4,
+                            ],
+                        )
                         doc = temp_doc
 
         if doc is not None:
@@ -11249,7 +11209,7 @@ class CommandOutputParameter(OutputParameter):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -11260,9 +11220,7 @@ class CommandOutputParameter(OutputParameter):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -11275,7 +11233,7 @@ class CommandOutputParameter(OutputParameter):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -11879,7 +11837,7 @@ class CommandLineTool(Process):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -11902,17 +11860,22 @@ class CommandLineTool(Process):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split('#')) > 1:
+                if len(temp_id.split("#")) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc['id'] = temp_id
-                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1],
-                                                           doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1] + 4])
+                        temp_doc["id"] = temp_id
+                        temp_doc.lc.add_kv_line_col(
+                            "id",
+                            [
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1],
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1] + 4,
+                            ],
+                        )
                         doc = temp_doc
 
         if doc is not None:
@@ -11939,7 +11902,7 @@ class CommandLineTool(Process):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -11950,9 +11913,7 @@ class CommandLineTool(Process):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -11965,7 +11926,7 @@ class CommandLineTool(Process):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -12517,7 +12478,7 @@ class DockerRequirement(ProcessRequirement):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -12558,7 +12519,7 @@ class DockerRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -12569,9 +12530,7 @@ class DockerRequirement(ProcessRequirement):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -12584,7 +12543,7 @@ class DockerRequirement(ProcessRequirement):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.dockerPull is not None and "dockerPull" not in r:
             r["dockerPull"] = save(
@@ -12808,7 +12767,7 @@ class SoftwareRequirement(ProcessRequirement):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -12849,7 +12808,7 @@ class SoftwareRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -12860,9 +12819,7 @@ class SoftwareRequirement(ProcessRequirement):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -12875,7 +12832,7 @@ class SoftwareRequirement(ProcessRequirement):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.packages is not None and "packages" not in r:
             r["packages"] = save(
@@ -13036,7 +12993,7 @@ class SoftwarePackage(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -13075,7 +13032,7 @@ class SoftwarePackage(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -13086,9 +13043,7 @@ class SoftwarePackage(Saveable):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -13101,7 +13056,7 @@ class SoftwarePackage(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.package is not None and "package" not in r:
             r["package"] = save(
@@ -13297,7 +13252,7 @@ class Dirent(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -13336,7 +13291,7 @@ class Dirent(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -13347,9 +13302,7 @@ class Dirent(Saveable):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -13362,7 +13315,7 @@ class Dirent(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.entryname is not None and "entryname" not in r:
             r["entryname"] = save(
@@ -13519,7 +13472,7 @@ class InitialWorkDirRequirement(ProcessRequirement):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -13560,7 +13513,7 @@ class InitialWorkDirRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -13571,9 +13524,7 @@ class InitialWorkDirRequirement(ProcessRequirement):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -13586,7 +13537,7 @@ class InitialWorkDirRequirement(ProcessRequirement):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.listing is not None and "listing" not in r:
             r["listing"] = save(
@@ -13712,7 +13663,7 @@ class EnvVarRequirement(ProcessRequirement):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -13753,7 +13704,7 @@ class EnvVarRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -13764,9 +13715,7 @@ class EnvVarRequirement(ProcessRequirement):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -13779,7 +13728,7 @@ class EnvVarRequirement(ProcessRequirement):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.envDef is not None and "envDef" not in r:
             r["envDef"] = save(
@@ -13892,7 +13841,7 @@ class ShellCommandRequirement(ProcessRequirement):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -13933,7 +13882,7 @@ class ShellCommandRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -13944,9 +13893,7 @@ class ShellCommandRequirement(ProcessRequirement):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -13959,7 +13906,7 @@ class ShellCommandRequirement(ProcessRequirement):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
 
         # top refers to the directory level
@@ -14261,7 +14208,7 @@ class ResourceRequirement(ProcessRequirement):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -14302,7 +14249,7 @@ class ResourceRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -14313,9 +14260,7 @@ class ResourceRequirement(ProcessRequirement):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -14328,7 +14273,7 @@ class ResourceRequirement(ProcessRequirement):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.coresMin is not None and "coresMin" not in r:
             r["coresMin"] = save(
@@ -14747,7 +14692,7 @@ class ExpressionToolOutputParameter(OutputParameter):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -14770,17 +14715,22 @@ class ExpressionToolOutputParameter(OutputParameter):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split('#')) > 1:
+                if len(temp_id.split("#")) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc['id'] = temp_id
-                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1],
-                                                           doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1] + 4])
+                        temp_doc["id"] = temp_id
+                        temp_doc.lc.add_kv_line_col(
+                            "id",
+                            [
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1],
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1] + 4,
+                            ],
+                        )
                         doc = temp_doc
 
         if doc is not None:
@@ -14805,7 +14755,7 @@ class ExpressionToolOutputParameter(OutputParameter):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -14816,9 +14766,7 @@ class ExpressionToolOutputParameter(OutputParameter):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -14831,7 +14779,7 @@ class ExpressionToolOutputParameter(OutputParameter):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -15271,7 +15219,7 @@ class ExpressionTool(Process):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -15294,17 +15242,22 @@ class ExpressionTool(Process):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split('#')) > 1:
+                if len(temp_id.split("#")) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc['id'] = temp_id
-                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1],
-                                                           doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1] + 4])
+                        temp_doc["id"] = temp_id
+                        temp_doc.lc.add_kv_line_col(
+                            "id",
+                            [
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1],
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1] + 4,
+                            ],
+                        )
                         doc = temp_doc
 
         if doc is not None:
@@ -15331,7 +15284,7 @@ class ExpressionTool(Process):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -15342,9 +15295,7 @@ class ExpressionTool(Process):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -15357,7 +15308,7 @@ class ExpressionTool(Process):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -15850,7 +15801,7 @@ class WorkflowOutputParameter(OutputParameter):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -15873,17 +15824,22 @@ class WorkflowOutputParameter(OutputParameter):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split('#')) > 1:
+                if len(temp_id.split("#")) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc['id'] = temp_id
-                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1],
-                                                           doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1] + 4])
+                        temp_doc["id"] = temp_id
+                        temp_doc.lc.add_kv_line_col(
+                            "id",
+                            [
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1],
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1] + 4,
+                            ],
+                        )
                         doc = temp_doc
 
         if doc is not None:
@@ -15908,7 +15864,7 @@ class WorkflowOutputParameter(OutputParameter):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -15919,9 +15875,7 @@ class WorkflowOutputParameter(OutputParameter):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -15934,7 +15888,7 @@ class WorkflowOutputParameter(OutputParameter):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -16354,7 +16308,7 @@ class WorkflowStepInput(Sink):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -16377,17 +16331,22 @@ class WorkflowStepInput(Sink):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split('#')) > 1:
+                if len(temp_id.split("#")) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc['id'] = temp_id
-                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1],
-                                                           doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1] + 4])
+                        temp_doc["id"] = temp_id
+                        temp_doc.lc.add_kv_line_col(
+                            "id",
+                            [
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1],
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1] + 4,
+                            ],
+                        )
                         doc = temp_doc
 
         if doc is not None:
@@ -16412,7 +16371,7 @@ class WorkflowStepInput(Sink):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -16423,9 +16382,7 @@ class WorkflowStepInput(Sink):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -16438,7 +16395,7 @@ class WorkflowStepInput(Sink):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -16635,7 +16592,7 @@ class WorkflowStepOutput(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -16658,17 +16615,22 @@ class WorkflowStepOutput(Saveable):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split('#')) > 1:
+                if len(temp_id.split("#")) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc['id'] = temp_id
-                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1],
-                                                           doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1] + 4])
+                        temp_doc["id"] = temp_id
+                        temp_doc.lc.add_kv_line_col(
+                            "id",
+                            [
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1],
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1] + 4,
+                            ],
+                        )
                         doc = temp_doc
 
         if doc is not None:
@@ -16693,7 +16655,7 @@ class WorkflowStepOutput(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -16704,9 +16666,7 @@ class WorkflowStepOutput(Saveable):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -16719,7 +16679,7 @@ class WorkflowStepOutput(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -17109,7 +17069,7 @@ class WorkflowStep(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -17132,17 +17092,22 @@ class WorkflowStep(Saveable):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split('#')) > 1:
+                if len(temp_id.split("#")) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc['id'] = temp_id
-                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1],
-                                                           doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1] + 4])
+                        temp_doc["id"] = temp_id
+                        temp_doc.lc.add_kv_line_col(
+                            "id",
+                            [
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1],
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1] + 4,
+                            ],
+                        )
                         doc = temp_doc
 
         if doc is not None:
@@ -17167,7 +17132,7 @@ class WorkflowStep(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -17178,9 +17143,7 @@ class WorkflowStep(Saveable):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -17193,7 +17156,7 @@ class WorkflowStep(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -17703,7 +17666,7 @@ class Workflow(Process):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -17726,17 +17689,22 @@ class Workflow(Process):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split('#')) > 1:
+                if len(temp_id.split("#")) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc['id'] = temp_id
-                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1],
-                                                           doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1] + 4])
+                        temp_doc["id"] = temp_id
+                        temp_doc.lc.add_kv_line_col(
+                            "id",
+                            [
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1],
+                                doc.lc.data[temp_id][0],
+                                doc.lc.data[temp_id][1] + 4,
+                            ],
+                        )
                         doc = temp_doc
 
         if doc is not None:
@@ -17763,7 +17731,7 @@ class Workflow(Process):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -17774,9 +17742,7 @@ class Workflow(Process):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -17789,7 +17755,7 @@ class Workflow(Process):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -18040,7 +18006,7 @@ class SubworkflowFeatureRequirement(ProcessRequirement):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -18081,7 +18047,7 @@ class SubworkflowFeatureRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -18092,9 +18058,7 @@ class SubworkflowFeatureRequirement(ProcessRequirement):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -18107,7 +18071,7 @@ class SubworkflowFeatureRequirement(ProcessRequirement):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
 
         # top refers to the directory level
@@ -18201,7 +18165,7 @@ class ScatterFeatureRequirement(ProcessRequirement):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -18242,7 +18206,7 @@ class ScatterFeatureRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -18253,9 +18217,7 @@ class ScatterFeatureRequirement(ProcessRequirement):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -18268,7 +18230,7 @@ class ScatterFeatureRequirement(ProcessRequirement):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
 
         # top refers to the directory level
@@ -18362,7 +18324,7 @@ class MultipleInputFeatureRequirement(ProcessRequirement):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -18403,7 +18365,7 @@ class MultipleInputFeatureRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -18414,9 +18376,7 @@ class MultipleInputFeatureRequirement(ProcessRequirement):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -18429,7 +18389,7 @@ class MultipleInputFeatureRequirement(ProcessRequirement):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
 
         # top refers to the directory level
@@ -18523,7 +18483,7 @@ class StepInputExpressionRequirement(ProcessRequirement):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -18564,7 +18524,7 @@ class StepInputExpressionRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != 'class':
+                            if key != "class":
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -18575,9 +18535,7 @@ class StepInputExpressionRequirement(ProcessRequirement):
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if (
-                                        len(saved_val) == 1
-                                    ):
+                                    if len(saved_val) == 1:
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -18590,7 +18548,7 @@ class StepInputExpressionRequirement(ProcessRequirement):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
                             )
 
         # top refers to the directory level
