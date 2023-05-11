@@ -182,9 +182,7 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
 
     for salad in SALAD_FILES:
         with resource_stream("schema_salad", "metaschema/" + salad) as stream:
-            loader.cache["https://w3id.org/cwl/" + salad] = stream.read().decode(
-                "UTF-8"
-            )
+            loader.cache["https://w3id.org/cwl/" + salad] = stream.read().decode("UTF-8")
 
     with resource_stream("schema_salad", "metaschema/metaschema.yml") as stream:
         loader.cache["https://w3id.org/cwl/salad"] = stream.read().decode("UTF-8")
@@ -197,8 +195,7 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
     if not isinstance(j2, list):
         _logger.error("%s", j2)
         raise SchemaParseException(f"Not a list: {j2}")
-    else:
-        sch_obj = make_avro(j2, loader, loader.vocab)
+    sch_obj = make_avro(j2, loader, loader.vocab)
     try:
         sch_names = make_avro_schema_from_avro(sch_obj)
     except SchemaParseException:
@@ -209,17 +206,15 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
     return cached_metaschema
 
 
-def add_namespaces(
-    metadata: Mapping[str, Any], namespaces: MutableMapping[str, str]
-) -> None:
+def add_namespaces(metadata: Mapping[str, Any], namespaces: MutableMapping[str, str]) -> None:
     """Collect the provided namespaces, checking for conflicts."""
     for key, value in metadata.items():
         if key not in namespaces:
             namespaces[key] = value
         elif namespaces[key] != value:
             raise ValidationException(
-                "Namespace prefix '{}' has conflicting definitions '{}'"
-                " and '{}'.".format(key, namespaces[key], value)
+                f"Namespace prefix {key!r} has conflicting definitions {namespaces[key]!r}"
+                " and {value!r}."
             )
 
 
@@ -391,32 +386,28 @@ def validate_doc(
                 except ClassValidationException as exc1:
                     errors = [
                         ClassValidationException(
-                            f"tried `{validate.friendly(name)}` but", sourceline, [exc1]
+                            f"tried {validate.friendly(name)!r} but", sourceline, [exc1]
                         )
                     ]
                     break
                 except ValidationException as exc2:
                     errors.append(
                         ValidationException(
-                            f"tried `{validate.friendly(name)}` but", sourceline, [exc2]
+                            f"tried {validate.friendly(name)!r} but", sourceline, [exc2]
                         )
                     )
 
             objerr = "Invalid"
             for ident in loader.identifiers:
                 if ident in item:
-                    objerr = "Object `{}` is not valid because".format(
-                        relname(item[ident])
-                    )
+                    objerr = f"Object {relname(item[ident])!r} is not valid because"
                     break
             anyerrors.append(ValidationException(objerr, sourceline, errors, "-"))
     if anyerrors:
         raise ValidationException("", None, anyerrors, "*")
 
 
-def get_anon_name(
-    rec: MutableMapping[str, Union[str, Dict[str, str], List[str]]]
-) -> str:
+def get_anon_name(rec: MutableMapping[str, Union[str, Dict[str, str], List[str]]]) -> str:
     """Calculate a reproducible name for anonymous types."""
     if "name" in rec:
         name = rec["name"]
@@ -427,23 +418,19 @@ def get_anon_name(
     if rec["type"] in ("enum", saladp + "enum"):
         for sym in rec["symbols"]:
             anon_name += sym
-        return (
-            "anon.enum_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()  # nosec
-        )
+        return "anon.enum_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()  # nosec
     if rec["type"] in ("record", saladp + "record"):
         for field in rec["fields"]:
             if isinstance(field, Mapping):
                 anon_name += field["name"]
             else:
                 raise ValidationException(
-                    "Expected entries in 'fields' to also be maps, was {}.".format(
-                        field
-                    )
+                    f"Expected entries in 'fields' to also be maps, was {field}."
                 )
         return "record_" + hashlib.sha1(anon_name.encode("UTF-8")).hexdigest()  # nosec
     if rec["type"] in ("array", saladp + "array"):
         return ""
-    raise ValidationException("Expected enum or record, was {}".format(rec["type"]))
+    raise ValidationException("Expected enum or record, was {rec['type'])}")
 
 
 def replace_type(
@@ -501,9 +488,7 @@ def replace_type(
             replace_with = spec[items]
 
         if replace_with:
-            return replace_type(
-                replace_with, spec, loader, found, find_embeds=find_embeds
-            )
+            return replace_type(replace_with, spec, loader, found, find_embeds=find_embeds)
         found.add(items)
     return items
 
@@ -533,9 +518,7 @@ def make_valid_avro(
     union: bool = False,
     fielddef: bool = False,
     vocab: Optional[Dict[str, str]] = None,
-) -> Union[
-    Avro, MutableMapping[str, str], str, List[Union[Any, MutableMapping[str, str], str]]
-]:
+) -> Union[Avro, MutableMapping[str, str], str, List[Union[Any, MutableMapping[str, str], str]]]:
     """Convert our schema to be more avro like."""
     if vocab is None:
         _, _, metaschema_loader = get_metaschema()
@@ -578,22 +561,16 @@ def make_valid_avro(
         ret = []
         for i in items:
             ret.append(
-                make_valid_avro(
-                    i, alltypes, found, union=union, fielddef=fielddef, vocab=vocab
-                )
+                make_valid_avro(i, alltypes, found, union=union, fielddef=fielddef, vocab=vocab)
             )
         return ret
     if union and isinstance(items, str):
         if items in alltypes and validate.avro_type_name(items) not in found:
-            return make_valid_avro(
-                alltypes[items], alltypes, found, union=union, vocab=vocab
-            )
+            return make_valid_avro(alltypes[items], alltypes, found, union=union, vocab=vocab)
         if items in vocab:
             return validate.avro_type_name(vocab[items])
-        else:
-            return validate.avro_type_name(items)
-    else:
-        return items
+        return validate.avro_type_name(items)
+    return items
 
 
 def deepcopy_strip(item: Any) -> Any:
@@ -610,9 +587,7 @@ def deepcopy_strip(item: Any) -> Any:
     return item
 
 
-def extend_and_specialize(
-    items: List[Dict[str, Any]], loader: Loader
-) -> List[Dict[str, Any]]:
+def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[Dict[str, Any]]:
     """Apply 'extend' and 'specialize' to fully materialize derived record types."""
     items2 = deepcopy_strip(items)
     types = {i["name"]: i for i in items2}  # type: Dict[str, Any]
@@ -630,9 +605,7 @@ def extend_and_specialize(
             for ex in aslist(stype["extends"]):
                 if ex not in types:
                     raise ValidationException(
-                        "Extends {} in {} refers to invalid base type.".format(
-                            stype["extends"], stype["name"]
-                        )
+                        f"Extends {stype['extends']} in {stype['name']} refers to invalid base type."
                     )
 
                 basetype = copy.copy(types[ex])
@@ -660,9 +633,7 @@ def extend_and_specialize(
                 # the same field twice (previously we had just
                 # ``exfields.extends(stype.fields)``).
                 sns_fields = {shortname(field["name"]): field for field in fields}
-                sns_exfields = {
-                    shortname(exfield["name"]): exfield for exfield in exfields
-                }
+                sns_exfields = {shortname(exfield["name"]): exfield for exfield in exfields}
 
                 # N.B.: This could be simpler. We could have a single loop
                 #       to create the list of fields. The reason for this more
@@ -698,12 +669,9 @@ def extend_and_specialize(
                 for field in stype["fields"]:
                     if field["name"] in fieldnames:
                         raise ValidationException(
-                            "Field name {} appears twice in {}".format(
-                                field["name"], stype["name"]
-                            )
+                            f"Field name {field['name']} appears twice in {stype['name']}"
                         )
-                    else:
-                        fieldnames.add(field["name"])
+                    fieldnames.add(field["name"])
             elif stype["type"] == "enum":
                 stype = copy.copy(stype)
                 exsym.extend(stype.get("symbols", []))
@@ -728,14 +696,12 @@ def extend_and_specialize(
     for result in results:
         if result.get("abstract") and result["name"] not in extended_by:
             raise ValidationException(
-                "{} is abstract but missing a concrete subtype".format(result["name"])
+                f"{result['name']} is abstract but missing a concrete subtype"
             )
 
     for result in results:
         if "fields" in result:
-            result["fields"] = replace_type(
-                result["fields"], extended_by, loader, set()
-            )
+            result["fields"] = replace_type(result["fields"], extended_by, loader, set())
 
     return results
 
@@ -803,10 +769,10 @@ def print_inheritance(doc: List[Dict[str, Any]], stream: IO[Any]) -> None:
                     "\\l* ".join(shortname(field["name"]) for field in fields)
                 )
             shape = "ellipse" if entry.get("abstract") else "box"
-            stream.write(f'"{name}" [shape={shape} label="{label}"];\n')
+            stream.write(f'"{name}" [shape={shape} label="{label}"];\n')  # noqa: B907
             if "extends" in entry:
                 for target in aslist(entry["extends"]):
-                    stream.write(f'"{shortname(target)}" -> "{name}";\n')
+                    stream.write(f'"{shortname(target)}" -> "{name}";\n')  # noqa: B907
     stream.write("}\n")
 
 
@@ -839,8 +805,6 @@ def print_fieldrefs(doc: List[Dict[str, Any]], loader: Loader, stream: IO[Any]) 
                 for each_type in found:
                     if each_type not in primitives:
                         stream.write(
-                            '"{}" -> "{}" [label="{}"];\n'.format(
-                                label, shortname(each_type), field_name
-                            )
+                            f"{label!r} -> {shortname(each_type)!r} [label={field_name!r}];\n"
                         )
     stream.write("}\n")

@@ -20,7 +20,7 @@ from .makedoc import makedoc
 from .ref_resolver import Loader, file_uri
 from .utils import json_dump, stdout
 
-if int(rdflib_version.split(".")[0]) < 6:
+if int(rdflib_version.split(".", maxsplit=1)[0]) < 6:
     register("json-ld", Parser, "rdflib_jsonld.parser", "JsonLDParser")
 _logger = logging.getLogger("salad")
 
@@ -76,9 +76,7 @@ def arg_parser() -> argparse.ArgumentParser:
         "--print-pre", action="store_true", help="Print document after preprocessing"
     )
     exgroup.add_argument("--print-index", action="store_true", help="Print node index")
-    exgroup.add_argument(
-        "--print-metadata", action="store_true", help="Print document metadata"
-    )
+    exgroup.add_argument("--print-metadata", action="store_true", help="Print document metadata")
     exgroup.add_argument(
         "--print-inheritance-dot",
         action="store_true",
@@ -102,8 +100,7 @@ def arg_parser() -> argparse.ArgumentParser:
         "--codegen-target",
         type=str,
         default=None,
-        help="Defaults to sys.stdout for Python/C++/Dlang and ./ for "
-        "Java/TypeScript/.Net",
+        help="Defaults to sys.stdout for Python/C++/Dlang and ./ for " "Java/TypeScript/.Net",
     )
 
     parser.add_argument(
@@ -166,15 +163,11 @@ def arg_parser() -> argparse.ArgumentParser:
     )
 
     exgroup_volume = parser.add_mutually_exclusive_group()
-    exgroup_volume.add_argument(
-        "--verbose", action="store_true", help="Default logging"
-    )
+    exgroup_volume.add_argument("--verbose", action="store_true", help="Default logging")
     exgroup_volume.add_argument(
         "--quiet", action="store_true", help="Only print warnings and errors."
     )
-    exgroup_volume.add_argument(
-        "--debug", action="store_true", help="Print even more logging"
-    )
+    exgroup_volume.add_argument("--debug", action="store_true", help="Print even more logging")
 
     parser.add_argument(
         "--only",
@@ -186,9 +179,7 @@ def arg_parser() -> argparse.ArgumentParser:
         action="append",
         help="Use with --print-doc, override default link for type",
     )
-    parser.add_argument(
-        "--brand", help="Use with --print-doc, set the 'brand' text in nav bar"
-    )
+    parser.add_argument("--brand", help="Use with --print-doc, set the 'brand' text in nav bar")
     parser.add_argument(
         "--brandlink",
         help="Use with --print-doc, set the link for 'brand' in nav bar",
@@ -210,10 +201,8 @@ def arg_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument("schema", type=str, nargs="?", default=None)
-    parser.add_argument("document", type=str, nargs="?", default=None)
-    parser.add_argument(
-        "--version", "-v", action="store_true", help="Print version", default=None
-    )
+    parser.add_argument("document", type=str, nargs="*", default=None)
+    parser.add_argument("--version", "-v", action="store_true", help="Print version", default=None)
     return parser
 
 
@@ -237,8 +226,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
         if args.version:
             print(f"{sys.argv[0]} Current version: {pkg[0].version}")
             return 0
-        else:
-            _logger.info("%s Current version: %s", sys.argv[0], pkg[0].version)
+        _logger.info("%s Current version: %s", sys.argv[0], pkg[0].version)
 
     # Get the metaschema to validate the schema
     metaschema_names, metaschema_doc, metaschema_loader = schema.get_metaschema()
@@ -246,32 +234,28 @@ def main(argsl: Optional[List[str]] = None) -> int:
     # Load schema document and resolve refs
 
     schema_uri = args.schema
-    if not (
-        urlparse(schema_uri)[0] and urlparse(schema_uri)[0] in ["http", "https", "file"]
-    ):
+    if not (urlparse(schema_uri)[0] and urlparse(schema_uri)[0] in ["http", "https", "file"]):
         schema_uri = file_uri(os.path.abspath(schema_uri))
     schema_raw_doc = metaschema_loader.fetch(schema_uri)
 
     try:
-        schema_doc, schema_metadata = metaschema_loader.resolve_all(
-            schema_raw_doc, schema_uri
-        )
+        schema_doc, schema_metadata = metaschema_loader.resolve_all(schema_raw_doc, schema_uri)
     except ValidationException as e:
         _logger.error(
-            "Schema `%s` failed link checking:\n%s",
+            "Schema %r failed link checking:\n%s",
             args.schema,
             str(e),
-            exc_info=(True if args.debug else False),
+            exc_info=bool(args.debug),
         )
         _logger.debug("Index is %s", list(metaschema_loader.idx.keys()))
         _logger.debug("Vocabulary is %s", list(metaschema_loader.vocab.keys()))
         return 1
     except RuntimeError as e:
         _logger.error(
-            "Schema `%s` read error:\n%s",
+            "Schema %r read error:\n%s",
             args.schema,
             str(e),
-            exc_info=(True if args.debug else False),
+            exc_info=bool(args.debug),
         )
         return 1
 
@@ -295,18 +279,14 @@ def main(argsl: Optional[List[str]] = None) -> int:
         return 0
 
     if not args.document and args.print_index:
-        json_dump(
-            list(metaschema_loader.idx.keys()), fp=sys.stdout, indent=4, default=str
-        )
+        json_dump(list(metaschema_loader.idx.keys()), fp=sys.stdout, indent=4, default=str)
         return 0
 
     # Validate the schema document against the metaschema
     try:
-        schema.validate_doc(
-            metaschema_names, schema_doc, metaschema_loader, args.strict
-        )
+        schema.validate_doc(metaschema_names, schema_doc, metaschema_loader, args.strict)
     except ValidationException as e:
-        _logger.error("While validating schema `%s`:\n%s", args.schema, str(e))
+        _logger.error("While validating schema %r:\n%s", args.schema, str(e))
         return 1
 
     # Get the json-ld context and RDFS representation from the schema
@@ -316,9 +296,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
     if isinstance(schema_doc, CommentedSeq):
         (schema_ctx, rdfs) = jsonld_context.salad_to_jsonld_context(schema_doc, metactx)
     else:
-        raise ValidationException(
-            f"Expected a CommentedSeq, got {type(schema_doc)}: {schema_doc}."
-        )
+        raise ValidationException(f"Expected a CommentedSeq, got {type(schema_doc)}: {schema_doc}.")
 
     # Create the loader that will be used to load the target document.
     document_loader = Loader(schema_ctx, skip_schemas=args.skip_schemas)
@@ -345,7 +323,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
             avsc_names = schema.make_avro_schema_from_avro(avsc_obj)
         except SchemaParseException as err:
             _logger.error(
-                "Schema `%s` error:\n%s",
+                "Schema %r error:\n%s",
                 args.schema,
                 str(err),
                 exc_info=((type(err), err, None) if args.debug else None),
@@ -354,7 +332,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
                 json_dump(avsc_obj, fp=sys.stdout, indent=4, default=str)
             return 1
     else:
-        _logger.error("Schema `%s` must be a list.", args.schema)
+        _logger.error("Schema %r must be a list.", args.schema)  # type: ignore[unreachable]
         return 1
 
     # Optionally print Avro-compatible schema from schema
@@ -387,64 +365,61 @@ def main(argsl: Optional[List[str]] = None) -> int:
 
     # If no document specified, all done.
     if not args.document:
-        print(f"Schema `{args.schema}` is valid")
+        print(f"Schema {args.schema!r} is valid")
         return 0
 
     # Load target document and resolve refs
-    try:
-        uri = args.document
-        document, doc_metadata = document_loader.resolve_ref(
-            uri, strict_foreign_properties=args.strict_foreign_properties
-        )
-    except ValidationException as e:
-        msg = to_one_line_messages(e) if args.print_oneline else str(e)
-        _logger.error(
-            "Document `%s` failed validation:\n%s",
-            args.document,
-            msg,
-            exc_info=args.debug,
-        )
-        return 1
+    for uri in args.document:
+        try:
+            document, doc_metadata = document_loader.resolve_ref(
+                uri, strict_foreign_properties=args.strict_foreign_properties
+            )
+        except ValidationException as e:
+            msg = to_one_line_messages(e) if args.print_oneline else str(e)
+            _logger.error(
+                "Document %r failed validation:\n%s",
+                args.document,
+                msg,
+                exc_info=args.debug,
+            )
+            return 1
 
-    # Optionally print the document after ref resolution
-    if args.print_pre:
-        json_dump(document, fp=sys.stdout, indent=4, default=str)
-        return 0
-
-    if args.print_index:
-        json_dump(
-            list(document_loader.idx.keys()), fp=sys.stdout, indent=4, default=str
-        )
-        return 0
-
-    # Validate the user document against the schema
-    try:
-        schema.validate_doc(
-            avsc_names,
-            document,
-            document_loader,
-            args.strict,
-            strict_foreign_properties=args.strict_foreign_properties,
-        )
-    except ValidationException as e:
-        msg2 = to_one_line_messages(e) if args.print_oneline else str(e)
-        _logger.error(f"While validating document `{args.document}`:\n{msg2}")
-        return 1
-
-    # Optionally convert the document to RDF
-    if args.print_rdf:
-        if isinstance(document, (Mapping, MutableSequence)):
-            printrdf(args.document, document, schema_ctx, args.rdf_serializer)
+        # Optionally print the document after ref resolution
+        if args.print_pre:
+            json_dump(document, fp=sys.stdout, indent=4, default=str)
             return 0
-        else:
+
+        if args.print_index:
+            json_dump(list(document_loader.idx.keys()), fp=sys.stdout, indent=4, default=str)
+            return 0
+
+        # Validate the user document against the schema
+        try:
+            schema.validate_doc(
+                avsc_names,
+                document,
+                document_loader,
+                args.strict,
+                strict_foreign_properties=args.strict_foreign_properties,
+            )
+        except ValidationException as e:
+            msg2 = to_one_line_messages(e) if args.print_oneline else str(e)
+            _logger.error("While validating document %r:\n%s", uri, msg2)
+            return 1
+
+        # Optionally convert the document to RDF
+        if args.print_rdf:
+            if isinstance(document, (Mapping, MutableSequence)):
+                printrdf(uri, document, schema_ctx, args.rdf_serializer)
+                return 0
             print("Document must be a dictionary or list.")
             return 1
 
-    if args.print_metadata:
-        json_dump(doc_metadata, fp=sys.stdout, indent=4, default=str)
-        return 0
+        if args.print_metadata:
+            json_dump(doc_metadata, fp=sys.stdout, indent=4, default=str)
+            return 0
 
-    _logger.info(f"Document `{args.document}` is valid")
+        _logger.info("Document %r is valid", uri)
 
     return 0
 

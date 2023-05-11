@@ -54,8 +54,7 @@ def aslist(thing: Any) -> MutableSequence[Any]:
     """
     if isinstance(thing, MutableSequence):
         return thing
-    else:
-        return [thing]
+    return [thing]
 
 
 def flatten(thing, ltypes=(list, tuple)):
@@ -75,8 +74,7 @@ def flatten(thing, ltypes=(list, tuple)):
                 lst.pop(i)
                 i -= 1
                 break
-            else:
-                lst[i : i + 1] = lst[i]
+            lst[i : i + 1] = lst[i]
         i += 1
     return ltype(lst)
 
@@ -90,10 +88,9 @@ def onWindows():
 def convert_to_dict(j4):  # type: (Any) -> Any
     if isinstance(j4, Mapping):
         return {k: convert_to_dict(v) for k, v in j4.items()}
-    elif isinstance(j4, MutableSequence):
+    if isinstance(j4, MutableSequence):
         return [convert_to_dict(v) for v in j4]
-    else:
-        return j4
+    return j4
 
 
 def json_dump(obj: Any, fp: IO[str], **kwargs: Any) -> None:
@@ -103,7 +100,7 @@ def json_dump(obj: Any, fp: IO[str], **kwargs: Any) -> None:
 
 def json_dumps(
     obj,  # type: Any
-    **kwargs  # type: Any
+    **kwargs,  # type: Any
 ):  # type: (...) -> str
     """Force use of unicode."""
     return json.dumps(convert_to_dict(obj), **kwargs)
@@ -123,6 +120,8 @@ _RoundTripNoTimeStampConstructor.add_constructor(
     "tag:yaml.org,2002:timestamp",
     _RoundTripNoTimeStampConstructor.construct_yaml_timestamp,
 )
+
+# mypy: no-warn-unused-ignores
 
 
 def yaml_no_ts() -> YAML:

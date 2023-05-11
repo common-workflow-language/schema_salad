@@ -73,7 +73,7 @@ documentation.
 
 ## Introduction to v1.1
 
-This is the third version of of the Schema Salad specification.  It is
+This is the third version of the Schema Salad specification.  It is
 developed concurrently with v1.1 of the Common Workflow Language for use in
 specifying the Common Workflow Language, however Schema Salad is intended to be
 useful to a broader audience.  Compared to the v1.0 schema salad
@@ -121,7 +121,7 @@ the behavior of conforming implementations.
 
 The terminology used to describe Salad documents is defined in the Concepts
 section of the specification. The terms defined in the following list are
-used in building those definitions and in describing the actions of an
+used in building those definitions and in describing the actions of a
 Salad implementation:
 
 **may**: Conforming Salad documents and Salad implementations are permitted but
@@ -268,14 +268,14 @@ rules:
 
 ## Document traversal
 
-To perform document document preprocessing, link validation and schema
+To perform document preprocessing, link validation and schema
 validation, the document must be traversed starting from the fields or
 array items of the root object or array and recursively visiting each child
 item which contains an object or arrays.
 
 ## Short names
 
-The "short name" of an fully qualified identifier is the portion of
+The "short name" of a fully qualified identifier is the portion of
 the identifier following the final slash `/` of either the fragment
 identifier following `#` or the path portion, if there is no fragment.
 Some examples:

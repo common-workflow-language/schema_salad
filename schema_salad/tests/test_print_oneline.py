@@ -32,12 +32,12 @@ def test_print_oneline() -> None:
             msgs = to_one_line_messages(e).splitlines()
             assert len(msgs) == 2
             assert msgs[0].endswith(
-                src + ":11:7: invalid field `invalid_field`, expected one of: "
+                src + ":11:7: invalid field 'invalid_field', expected one of: "
                 "'loadContents', 'position', 'prefix', 'separate', "
                 "'itemSeparator', 'valueFrom', 'shellQuote'"
             )
             assert msgs[1].endswith(
-                src + ":12:7: invalid field `another_invalid_field`, expected one of: "
+                src + ":12:7: invalid field 'another_invalid_field', expected one of: "
                 "'loadContents', 'position', 'prefix', 'separate', 'itemSeparator', "
                 "'valueFrom', 'shellQuote'"
             )
@@ -91,9 +91,9 @@ def test_print_oneline_for_errors_in_the_same_line() -> None:
         except ValidationException as e:
             msgs = to_one_line_messages(e).splitlines()
             assert len(msgs) == 2, msgs
-            assert msgs[0].endswith(src + ":14:5: missing required field `id`")
+            assert msgs[0].endswith(src + ":14:5: missing required field 'id'")
             assert msgs[1].endswith(
-                src + ":14:5: invalid field `aa`, expected one of: 'label', "
+                src + ":14:5: invalid field 'aa', expected one of: 'label', "
                 "'secondaryFiles', 'format', 'streamable', 'doc', 'id', "
                 "'outputBinding', 'type'"
             )
@@ -122,8 +122,8 @@ def test_print_oneline_for_errors_in_resolve_ref() -> None:
                 fullpath = "/" + fullpath.lower().replace("\\", "/")
             print("\n", e)
             assert msg.endswith(
-                src + ":14:5: Field `type` references unknown identifier "
-                "`Filea`, tried file://{}#Filea".format(fullpath)
+                src + ":14:5: Field 'type' references unknown identifier "
+                "'Filea', tried file://{}#Filea".format(fullpath)
             )
             raise
 
@@ -150,9 +150,7 @@ def test_for_invalid_yaml1() -> None:
             msg = str(e)
             print("\n", e)
             assert re.search(src + r":10:7: while scanning a\s+simple\s+key", msg, re.M)
-            assert re.search(
-                src + r":11:1:   could not\s+find\s+expected ':'$", msg, re.M
-            )
+            assert re.search(src + r":11:1:   could not\s+find\s+expected ':'$", msg, re.M)
             raise
 
 

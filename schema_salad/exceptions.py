@@ -28,9 +28,7 @@ class SchemaSaladException(Exception):
         def simplify(exc: "SchemaSaladException") -> List["SchemaSaladException"]:
             return [exc] if len(exc.message) else exc.children
 
-        def with_bullet(
-            exc: "SchemaSaladException", bullet: str
-        ) -> "SchemaSaladException":
+        def with_bullet(exc: "SchemaSaladException", bullet: str) -> "SchemaSaladException":
             if exc.bullet == "":
                 exc.bullet = bullet
             return exc
@@ -75,7 +73,7 @@ class SchemaSaladException(Exception):
         return self
 
     def leaves(self) -> List["SchemaSaladException"]:
-        if len(self.children):
+        if len(self.children) > 0:
             return sum((c.leaves() for c in self.children), [])
         if len(self.message):
             return [self]
@@ -95,11 +93,11 @@ class SchemaSaladException(Exception):
     def summary(self, level: int = 0, with_bullet: bool = False) -> str:
         indent_per_level = 2
         spaces = (level * indent_per_level) * " "
-        bullet = self.bullet + " " if len(self.bullet) and with_bullet else ""
+        bullet = self.bullet + " " if len(self.bullet) > 0 and with_bullet else ""
         return f"{self.prefix()}{spaces}{bullet}{self.message}"
 
     def __str__(self) -> str:
-        """Convert to a string using :py:`pretty_str`."""
+        """Convert to a string using :py:meth:`pretty_str`."""
         return str(self.pretty_str())
 
     def pretty_str(self, level: int = 0) -> str:
@@ -107,13 +105,10 @@ class SchemaSaladException(Exception):
         my_summary = [self.summary(level, True)] if messages else []
         next_level = level + 1 if messages else level
 
-        ret = "\n".join(
-            e for e in my_summary + [c.pretty_str(next_level) for c in self.children]
-        )
+        ret = "\n".join(e for e in my_summary + [c.pretty_str(next_level) for c in self.children])
         if level == 0:
             return strip_duplicated_lineno(reflow_all(ret))
-        else:
-            return ret
+        return ret
 
 
 class SchemaException(SchemaSaladException):
