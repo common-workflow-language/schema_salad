@@ -5,6 +5,6 @@ rdflib>= 4.2.2, < 6.0.0;python_version<='3.6'
 rdflib-jsonld>=0.4.0, <= 0.6.1;python_version<='3.6'
 mistune>=2.0.3,<2.1
 CacheControl[filecache]==0.12.11
-urllib3<2  # until there is a new CacheControl release containing a fix
+urllib3<3  # until there is a new CacheControl release containing a fix
 black<23.4
 mypy_extensions
