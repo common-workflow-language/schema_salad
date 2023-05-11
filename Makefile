@@ -27,6 +27,7 @@ EXTRAS=[pycodegen]
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py ${MODULE}/avro/*.py ${MODULE}/tests/*.py) setup.py
+EXCLUDE_FILES := schema_salad/metaschema.py schema_salad/tests/cwl_v1_0.py schema_salad/tests/cwl_v1_1.py schema_salad/tests/cwl_v1_2.py
 DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt
 COVBASE=coverage run --append
 
@@ -80,18 +81,18 @@ clean: FORCE
 
 # Linting and code style related targets
 ## sort_import            : sorting imports using isort: https://github.com/timothycrosley/isort
-sort_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES)) mypy-stubs
+sort_imports: $(filter-out $(EXCLUDE_FILES),$(PYSOURCES)) mypy-stubs
 	isort $^
 
-remove_unused_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
+remove_unused_imports: $(filter-out $(EXCLUDE_FILES),$(PYSOURCES))
 	autoflake --in-place --remove-all-unused-imports $^
 
 pep257: pydocstyle
 ## pydocstyle             : check Python docstring style
-pydocstyle: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
+pydocstyle: $(filter-out  $(EXCLUDE_FILES),$(PYSOURCES))
 	pydocstyle --add-ignore=D100,D101,D102,D103 $^ || true
 
-pydocstyle_report.txt: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
+pydocstyle_report.txt: $(filter-out $(EXCLUDE_FILES),$(PYSOURCES))
 	pydocstyle setup.py $^ > $@ 2>&1 || true
 
 ## diff_pydocstyle_report : check Python docstring style for changed files only
@@ -104,10 +105,10 @@ codespell:
 
 ## format                 : check/fix all code indentation and formatting (runs black)
 format:
-	black --exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
+	black --exclude metaschema.py --exclude _version.py --exclude tests/cwl_v1_0.py --exclude tests/cwl_v1_1.py --exclude tests/cwl_v1_2.py schema_salad setup.py mypy-stubs
 
 format-check:
-	black --diff --check --exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
+	black --diff --check --exclude metaschema.py --exclude _version.py --exclude tests/cwl_v1_0.py --exclude tests/cwl_v1_1.py --exclude tests/cwl_v1_2.py  schema_salad setup.py mypy-stubs
 
 ## pylint                 : run static code analysis on Python code
 pylint: $(PYSOURCES)
@@ -203,7 +204,7 @@ compute-metaschema-hash:
 shellcheck: FORCE
 	shellcheck build-schema_salad-docker.sh release-test.sh
 
-pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
+pyupgrade: $(filter-out $(EXCLUDE_FILES),$(PYSOURCES))
 	pyupgrade --exit-zero-even-if-changed --py36-plus $^
 
 release-test: FORCE

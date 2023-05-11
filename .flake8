@@ -8,3 +8,4 @@ extend-select = B9
 per-file-ignores =
   schema_salad/metaschema.py:B950
   schema_salad/tests/*.py:B011
+  schema_salad/tests/cwl*.py:B950
