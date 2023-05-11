@@ -25,14 +25,10 @@ def cpp_codegen(
     target: Path,
 ) -> None:
     """Help using the C++ code generation function."""
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-        file_uri
-    )
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(file_uri)
     assert isinstance(avsc_names, Names)
     schema_raw_doc = metaschema_loader.fetch(file_uri)
-    schema_doc, schema_metadata = metaschema_loader.resolve_all(
-        schema_raw_doc, file_uri
-    )
+    schema_doc, schema_metadata = metaschema_loader.resolve_all(schema_raw_doc, file_uri)
     codegen.codegen(
         "cpp",
         cast(List[Dict[str, Any]], schema_doc),

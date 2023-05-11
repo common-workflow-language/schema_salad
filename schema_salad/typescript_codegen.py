@@ -145,9 +145,7 @@ class TypeScriptCodeGen(CodeGenBase):
         self.current_class = cls
         self.current_class_is_abstract = abstract
         interface_module_name = self.current_interface
-        self.current_interface_target_file = (
-            self.main_src_dir / f"{interface_module_name}.ts"
-        )
+        self.current_interface_target_file = self.main_src_dir / f"{interface_module_name}.ts"
         class_module_name = self.current_class
         self.current_class_target_file = self.main_src_dir / f"{class_module_name}.ts"
         self.current_constructor_signature = StringIO()
@@ -321,9 +319,7 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
             )
         )
         self.current_loader.write(
-            ",\n      ".join(
-                self.safe_name(f) + ": " + self.safe_name(f) for f in field_names
-            )
+            ",\n      ".join(self.safe_name(f) + ": " + self.safe_name(f) for f in field_names)
             + "\n    })"
         )
         self.current_loader.write(
@@ -366,17 +362,13 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
 """
             )
 
-    def type_loader(
-        self, type_declaration: Union[List[Any], Dict[str, Any], str]
-    ) -> TypeDef:
+    def type_loader(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
             sub_types = [self.type_loader(i) for i in type_declaration]
             sub_names: List[str] = list(dict.fromkeys([i.name for i in sub_types]))
             sub_instance_types: List[str] = list(
-                dict.fromkeys(
-                    [i.instance_type for i in sub_types if i.instance_type is not None]
-                )
+                dict.fromkeys([i.instance_type for i in sub_types if i.instance_type is not None])
             )
             return self.declare_type(
                 TypeDef(
@@ -411,8 +403,7 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                         "new _RecordLoader({}.fromDoc)".format(
                             self.safe_name(type_declaration["name"]),
                         ),
-                        instance_type="Internal."
-                        + self.safe_name(type_declaration["name"]),
+                        instance_type="Internal." + self.safe_name(type_declaration["name"]),
                         abstract=type_declaration.get("abstract", False),
                     )
                 )
@@ -451,7 +442,7 @@ export enum {enum_name} {{
             for sym in type_declaration["symbols"]:
                 val = self.safe_name(sym)
                 const = self.safe_name(sym).replace("-", "_").replace(".", "_").upper()
-                f.write(f"""  {const}='{val}',\n""")
+                f.write(f"""  {const}='{val}',\n""")  # noqa: B907
             f.write(
                 """}
 """
@@ -477,10 +468,7 @@ export enum {enum_name} {{
         safename = self.safe_name(name)
         fieldname = shortname(name)
         self.current_fieldtypes[safename] = fieldtype
-        if (
-            fieldtype.instance_type is not None
-            and "undefined" in fieldtype.instance_type
-        ):
+        if fieldtype.instance_type is not None and "undefined" in fieldtype.instance_type:
             optionalstring = "?"
         else:
             optionalstring = ""
@@ -536,18 +524,14 @@ export enum {enum_name} {{
         if fieldname == "class":
             if fieldtype.instance_type == "string":
                 self.current_constructor_signature.write(
-                    ", {safename} = '{val}'".format(
-                        safename=safename, val=self.current_class
-                    )
+                    f", {safename} = '{self.current_class}'"  # noqa: B907
                 )
             else:
                 self.current_constructor_signature.write(
                     ", {safename} = {type}.{val}".format(
                         safename=safename,
                         type=fieldtype.instance_type,
-                        val=self.current_class.replace("-", "_")
-                        .replace(".", "_")
-                        .upper(),
+                        val=self.current_class.replace("-", "_").replace(".", "_").upper(),
                     )
                 )
         else:
@@ -647,9 +631,7 @@ export enum {enum_name} {{
         """Output the code to handle the given ID field."""
         self.declare_field(name, fieldtype, doc, True, "")
         if optional:
-            opt = """{safename} = "_" + uuidv4()""".format(
-                safename=self.safe_name(name)
-            )
+            opt = f"""{self.safe_name(name)} = "_" + uuidv4()"""
         else:
             opt = """throw new ValidationException("Missing {fieldname}")""".format(
                 fieldname=shortname(name)
@@ -715,9 +697,7 @@ export enum {enum_name} {{
         return self.declare_type(
             TypeDef(
                 f"idmap{self.safe_name(field)}{inner.name}",
-                "new _IdMapLoader({}, '{}', '{}')".format(
-                    inner.name, map_subject, map_predicate
-                ),
+                f"new _IdMapLoader({inner.name}, '{map_subject}', '{map_predicate}')",  # noqa: B907
                 instance_type=instance_type,
             )
         )
@@ -752,9 +732,9 @@ export enum {enum_name} {{
         )
 
         def template_from_resource(resource: str) -> string.Template:
-            template_str = pkg_resources.resource_string(
-                __name__, f"typescript/{resource}"
-            ).decode("utf-8")
+            template_str = pkg_resources.resource_string(__name__, f"typescript/{resource}").decode(
+                "utf-8"
+            )
             template = string.Template(template_str)
             return template
 
@@ -770,10 +750,10 @@ export enum {enum_name} {{
         expand_resource_template_to("index.ts", self.main_src_dir / "index.ts")
 
         vocab = ",\n  ".join(
-            f"""'{k}': '{self.vocab[k]}'""" for k in sorted(self.vocab.keys())
+            f"""'{k}': '{self.vocab[k]}'""" for k in sorted(self.vocab.keys())  # noqa: B907
         )
         rvocab = ",\n  ".join(
-            f"""'{self.vocab[k]}': '{k}'""" for k in sorted(self.vocab.keys())
+            f"""'{self.vocab[k]}': '{k}'""" for k in sorted(self.vocab.keys())  # noqa: B907
         )
 
         loader_instances = ""
@@ -784,9 +764,7 @@ export enum {enum_name} {{
                 )
 
         sorted_modules = sorted(self.modules)
-        internal_module_exports = "\n".join(
-            f"export * from '../{f}'" for f in sorted_modules
-        )
+        internal_module_exports = "\n".join(f"export * from '../{f}'" for f in sorted_modules)
 
         example_tests = ""
         if self.examples:
@@ -828,16 +806,10 @@ export enum {enum_name} {{
         }
 
         def copy_utils_recursive(util_src: str, util_target: Path) -> None:
-            for util in pkg_resources.resource_listdir(
-                __name__, f"typescript/{util_src}"
-            ):
+            for util in pkg_resources.resource_listdir(__name__, f"typescript/{util_src}"):
                 template_path = os.path.join(util_src, util)
-                if pkg_resources.resource_isdir(
-                    __name__, f"typescript/{template_path}"
-                ):
-                    copy_utils_recursive(
-                        os.path.join(util_src, util), util_target / util
-                    )
+                if pkg_resources.resource_isdir(__name__, f"typescript/{template_path}"):
+                    copy_utils_recursive(os.path.join(util_src, util), util_target / util)
                     continue
                 src_path = util_target / util
                 src_template = template_from_resource(template_path)

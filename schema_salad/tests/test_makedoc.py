@@ -1,7 +1,7 @@
 """
-Test schema-salad-doc.
+Test ``schema-salad-doc``.
 
-(also known as schema-salad-tool --print-doc)
+(also known as ``schema-salad-tool --print-doc``)
 
 For convenience, tests are checking exact strings. In the event of changes in
 the "mistune" package, makedoc.py, or other changes, feel free to modify the test
@@ -41,9 +41,7 @@ def generate_doc(schema_data: Optional[str] = None) -> str:
     """Avoid error when calling fixture directly."""
     stdout = StringIO()
     if schema_data:
-        with tempfile.NamedTemporaryFile(
-            mode="w", encoding="utf-8", suffix=".yml"
-        ) as tmp_file:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".yml") as tmp_file:
             tmp_file.write(schema_data)
             tmp_file.flush()
             tmp_file.seek(0)
@@ -183,10 +181,7 @@ def test_multiline_list_entries_word_spacing(metaschema_doc: str) -> None:
     assert "as itis poorly documented" not in metaschema_doc
     assert "base URI for the document used toresolve relative" not in metaschema_doc
     assert "The keys ofthe object are namespace prefixes" not in metaschema_doc
-    assert (
-        "This field may list URIreferences to documents in RDF-XML"
-        not in metaschema_doc
-    )
+    assert "This field may list URIreferences to documents in RDF-XML" not in metaschema_doc
     assert "defines valid fields thatmake up a record type" not in metaschema_doc
     assert "set of symbols that arevalid value" not in metaschema_doc
 
@@ -244,6 +239,5 @@ def test_detect_changes_in_html(metaschema_doc: str, tmp_path: Path) -> None:
     with open(result, "w") as h:
         h.write(metaschema_doc)
     assert (
-        hasher.hexdigest()
-        == "0dec6861574d2a80f5f5cd177103747e893fe6b23d1ec9b2b37850408d9ca1d1"
+        hasher.hexdigest() == "4e67cb0a28829f9e14ecce93183fcf89fedb2446ae6cd717ccb2966609fe76a2"
     ), result

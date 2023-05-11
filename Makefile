@@ -30,10 +30,11 @@ PYSOURCES=$(wildcard ${MODULE}/**.py ${MODULE}/avro/*.py ${MODULE}/tests/*.py) s
 EXCLUDE_FILES := schema_salad/metaschema.py schema_salad/tests/cwl_v1_0.py schema_salad/tests/cwl_v1_1.py schema_salad/tests/cwl_v1_2.py
 DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt
 COVBASE=coverage run --append
+PYTEST_EXTRA ?= -rs
 
 # Updating the Major & Minor version below?
 # Don't forget to update setup.py as well
-VERSION=8.3.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
+VERSION=8.4.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
 
 ## all                    : default task (install schema-salad in dev mode)
@@ -182,10 +183,10 @@ mypy_3.6: $(filter-out setup.py,$(PYSOURCES))
 	MYPYPATH=$$MYPYPATH:mypy-stubs mypy --python-version 3.6 $^
 
 mypyc: $(PYSOURCES)
-	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python setup.py test
+	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python setup.py test --addopts "${PYTEST_EXTRA}"
 
 mypyi:
-	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python setup.py install
+	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 pip install .${EXTRAS}
 
 check-metaschema-diff:
 	docker run \
@@ -224,7 +225,7 @@ release:
 flake8: FORCE
 	flake8 $(PYSOURCES)
 
-schema_salad/metaschema.py: schema_salad/codegen_base.py schema_salad/python_codegen_support.py schema_salad/python_codegen.py schema_salad/metaschema
+schema_salad/metaschema.py: schema_salad/codegen_base.py schema_salad/python_codegen_support.py schema_salad/python_codegen.py schema_salad/metaschema/*.yml
 	schema-salad-tool --codegen python schema_salad/metaschema/metaschema.yml > $@
 
 FORCE:

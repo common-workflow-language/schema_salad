@@ -134,7 +134,7 @@ class PythonCodeGen(CodeGenBase):
     return "{self.parser_info}"
 
 
-"""
+"""  # noqa: B907
         )
 
         for primitive in prims.values():
@@ -175,11 +175,7 @@ class PythonCodeGen(CodeGenBase):
 
         safe_inits: List[str] = ["        self,"]
         safe_inits.extend(
-            [
-                f"        {self.safe_name(f)}: Any,"
-                for f in required_field_names
-                if f != "class"
-            ]
+            [f"        {self.safe_name(f)}: Any," for f in required_field_names if f != "class"]
         )
         safe_inits.extend(
             [
@@ -266,7 +262,7 @@ class PythonCodeGen(CodeGenBase):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         _errors__ = []
-"""
+"""  # noqa: B907
         )
 
         self.idfield = idfield
@@ -580,7 +576,10 @@ if _errors__:
         self.serializer.write("        return r\n\n")
 
         self.serializer.write(
-            fmt(f"""attrs = frozenset(["{'", "'.join(field_names)}"])\n""", 4)
+            fmt(
+                f"""attrs = frozenset(["{'", "'.join(field_names)}"])\n""",  # noqa: B907
+                4,
+            )
         )
 
         # names = []
@@ -597,9 +596,7 @@ if _errors__:
 
         safe_inits = [f + "=" + f for f in safe_init_fields]
 
-        safe_inits.extend(
-            ["extension_fields=extension_fields", "loadingOptions=loadingOptions"]
-        )
+        safe_inits.extend(["extension_fields=extension_fields", "loadingOptions=loadingOptions"])
 
         self.out.write(
             "        _constructed = cls(\n            "
@@ -618,9 +615,7 @@ if _errors__:
 
         self.out.write("\n\n")
 
-    def type_loader(
-        self, type_declaration: Union[List[Any], Dict[str, Any], str]
-    ) -> TypeDef:
+    def type_loader(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
             sub_names: List[str] = list(
@@ -639,21 +634,28 @@ if _errors__:
                 "https://w3id.org/cwl/salad#array",
             ):
                 i = self.type_loader(type_declaration["items"])
-                return self.declare_type(
-                    TypeDef(f"array_of_{i.name}", f"_ArrayLoader({i.name})")
-                )
+                return self.declare_type(TypeDef(f"array_of_{i.name}", f"_ArrayLoader({i.name})"))
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
                 for sym in type_declaration["symbols"]:
                     self.add_vocab(shortname(sym), sym)
+                if "doc" in type_declaration:
+                    doc = type_declaration["doc"]
+                    if isinstance(doc, MutableSequence):
+                        formated_doc = "\n".join(doc)
+                    else:
+                        formated_doc = doc.strip()
+                    docstring = f'\n"""\n{formated_doc}\n"""'
+                else:
+                    docstring = ""
                 return self.declare_type(
                     TypeDef(
                         self.safe_name(type_declaration["name"]) + "Loader",
-                        '_EnumLoader(("{}",), "{}")'.format(
+                        '_EnumLoader(("{}",), "{}"){}'.format(
                             '", "'.join(
-                                schema.avro_field_name(sym)
-                                for sym in type_declaration["symbols"]
+                                schema.avro_field_name(sym) for sym in type_declaration["symbols"]
                             ),
                             self.safe_name(type_declaration["name"]),
+                            docstring,
                         ),
                     )
                 )
@@ -736,7 +738,7 @@ if _errors__:
             return
 
         if optional:
-            self.out.write(f"""        if "{shortname(name)}" in _doc:\n""")
+            self.out.write(f"""        if "{shortname(name)}" in _doc:\n""")  # noqa: B907
             spc = "    "
         else:
             spc = ""
@@ -764,7 +766,7 @@ if _errors__:
 {spc}        except ValidationException as e:
 {spc}            _errors__.append(
 {spc}                ValidationException(
-{spc}                    \"the `{fieldname}` field is not valid because:\",
+{spc}                    \"the {fieldname!r} field is not valid because:\",
 {spc}                    SourceLine(_doc, "{fieldname}", str),
 {spc}                    [e],
 {spc}                )
@@ -856,9 +858,7 @@ if self.{safename} is not None and "{fieldname}" not in r:
         return self.declare_type(
             TypeDef(
                 f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}",
-                "_URILoader({}, {}, {}, {})".format(
-                    inner.name, scoped_id, vocab_term, ref_scope
-                ),
+                f"_URILoader({inner.name}, {scoped_id}, {vocab_term}, {ref_scope})",
                 is_uri=True,
                 scoped_id=scoped_id,
                 ref_scope=ref_scope,
@@ -872,9 +872,7 @@ if self.{safename} is not None and "{fieldname}" not in r:
         return self.declare_type(
             TypeDef(
                 f"idmap_{self.safe_name(field)}_{inner.name}",
-                "_IdMapLoader({}, '{}', '{}')".format(
-                    inner.name, map_subject, map_predicate
-                ),
+                f"_IdMapLoader({inner.name}, '{map_subject}', '{map_predicate}')",  # noqa: B907
             )
         )
 
@@ -900,19 +898,17 @@ if self.{safename} is not None and "{fieldname}" not in r:
         """Trigger to generate the epilouge code."""
         self.out.write("_vocab = {\n")
         for k in sorted(self.vocab.keys()):
-            self.out.write(f'    "{k}": "{self.vocab[k]}",\n')
+            self.out.write(f'    "{k}": "{self.vocab[k]}",\n')  # noqa: B907
         self.out.write("}\n")
 
         self.out.write("_rvocab = {\n")
         for k in sorted(self.vocab.keys()):
-            self.out.write(f'    "{self.vocab[k]}": "{k}",\n')
+            self.out.write(f'    "{self.vocab[k]}": "{k}",\n')  # noqa: B907
         self.out.write("}\n\n")
 
         for _, collected_type in self.collected_types.items():
             if not collected_type.abstract:
-                self.out.write(
-                    fmt(f"{collected_type.name} = {collected_type.init}\n", 0)
-                )
+                self.out.write(fmt(f"{collected_type.name} = {collected_type.init}\n", 0))
         self.out.write("\n")
 
         self.out.write(

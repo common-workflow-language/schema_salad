@@ -138,9 +138,7 @@ class LoadingOptions:
             )
             self.fetcher: Fetcher = DefaultFetcher({}, session)
 
-        self.cache = (
-            self.fetcher.cache if isinstance(self.fetcher, MemoryCachingFetcher) else {}
-        )
+        self.cache = self.fetcher.cache if isinstance(self.fetcher, MemoryCachingFetcher) else {}
 
         self.vocab = _vocab
         self.rvocab = _rvocab
@@ -172,9 +170,7 @@ class LoadingOptions:
                 try:
                     content = self.fetcher.fetch_text(fetchurl)
                 except Exception as e:
-                    _logger.warning(
-                        "Could not load extension schema %s: %s", fetchurl, str(e)
-                    )
+                    _logger.warning("Could not load extension schema %s: %s", fetchurl, str(e))
                     continue
                 newGraph = Graph()
                 err_msg = "unknown error"
@@ -187,9 +183,7 @@ class LoadingOptions:
                     except (xml.sax.SAXParseException, TypeError, BadSyntax) as e:
                         err_msg = str(e)
                 else:
-                    _logger.warning(
-                        "Could not load extension schema %s: %s", fetchurl, err_msg
-                    )
+                    _logger.warning("Could not load extension schema %s: %s", fetchurl, err_msg)
         self.cache[key] = graph
         return graph
 
@@ -233,20 +227,16 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
             )
             loadingOptions.imports.append(url)
             return result
-        elif "$include" in val:
+        if "$include" in val:
             if loadingOptions.fileuri is None:
                 raise SchemaSaladException("Cannot load $import without fileuri")
-            url = loadingOptions.fetcher.urljoin(
-                loadingOptions.fileuri, val["$include"]
-            )
+            url = loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
             val = loadingOptions.fetcher.fetch_text(url)
             loadingOptions.includes.append(url)
     return fieldtype.load(val, baseuri, loadingOptions)
 
 
-save_type = Optional[
-    Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]
-]
+save_type = Optional[Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]]
 
 
 def add_kv(
@@ -446,10 +436,7 @@ def save(
                 )
             )
         return r
-        # return [
-        #     save(v, top=False, base_url=base_url, relative_uris=relative_uris)
-        #     for v in val
-        # ]
+
     if isinstance(val, MutableMapping):
         newdict = CommentedMap()
         new_keys = keys
@@ -529,10 +516,7 @@ def expand_url(
     split = urlsplit(url)
 
     if (
-        (
-            bool(split.scheme)
-            and split.scheme in loadingOptions.fetcher.supported_schemes()
-        )
+        (bool(split.scheme) and split.scheme in loadingOptions.fetcher.supported_schemes())
         or url.startswith("$(")
         or url.startswith("${")
     ):
@@ -572,7 +556,7 @@ def expand_url(
             if url in loadingOptions.rvocab:
                 return loadingOptions.rvocab[url]
         else:
-            raise ValidationException(f"Term '{url}' not in vocabulary")
+            raise ValidationException(f"Term {url!r} not in vocabulary")
 
     return url
 
@@ -623,9 +607,7 @@ class _ArrayLoader(_Loader):
         errors = []  # type: List[SchemaSaladException]
         for i in range(0, len(doc)):
             try:
-                lf = load_field(
-                    doc[i], _UnionLoader((self, self.items)), baseuri, loadingOptions
-                )
+                lf = load_field(doc[i], _UnionLoader((self, self.items)), baseuri, loadingOptions)
                 if isinstance(lf, MutableSequence):
                     r.extend(lf)
                 else:
@@ -649,8 +631,7 @@ class _EnumLoader(_Loader):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if doc in self.symbols:
             return doc
-        else:
-            raise ValidationException(f"Expected one of {self.symbols}")
+        raise ValidationException(f"Expected one of {self.symbols}")
 
     def __repr__(self):  # type: () -> str
         return self.name
@@ -678,9 +659,7 @@ class _SecondaryDSLLoader(_Loader):
                         new_dict["pattern"] = dict_copy.pop("pattern")
                     else:
                         raise ValidationException(
-                            "Missing pattern in secondaryFiles specification entry: {}".format(
-                                d
-                            )
+                            f"Missing pattern in secondaryFiles specification entry: {d}"
                         )
                     new_dict["required"] = (
                         dict_copy.pop("required") if "required" in dict_copy else None
@@ -705,19 +684,13 @@ class _SecondaryDSLLoader(_Loader):
                 new_dict["pattern"] = doc_copy.pop("pattern")
             else:
                 raise ValidationException(
-                    "Missing pattern in secondaryFiles specification entry: {}".format(
-                        doc
-                    )
+                    f"Missing pattern in secondaryFiles specification entry: {doc}"
                 )
-            new_dict["required"] = (
-                doc_copy.pop("required") if "required" in doc_copy else None
-            )
+            new_dict["required"] = doc_copy.pop("required") if "required" in doc_copy else None
 
             if len(doc_copy):
                 raise ValidationException(
-                    "Unallowed values in secondaryFiles specification entry: {}".format(
-                        doc_copy
-                    )
+                    f"Unallowed values in secondaryFiles specification entry: {doc_copy}"
                 )
             r.append(new_dict)
 
@@ -833,9 +806,7 @@ class _TypeDSLLoader(_Loader):
         if m:
             group1 = m.group(1)
             assert group1 is not None  # nosec
-            first = expand_url(
-                group1, baseuri, loadingOptions, False, True, self.refScope
-            )
+            first = expand_url(group1, baseuri, loadingOptions, False, True, self.refScope)
             second = third = None
             if bool(m.group(2)):
                 second = {"type": "array", "items": first}
@@ -944,11 +915,7 @@ def _document_load(
             addl_metadata=addl_metadata,
         )
 
-        # doc = {
-        #     k: v
-        #     for k, v in doc.items()
-        #     if k not in ("$namespaces", "$schemas", "$base")
-        # }
+
         doc = copy.copy(doc)
         if "$namespaces" in doc:
             doc.pop("$namespaces")
@@ -1000,10 +967,7 @@ def _document_load_by_url(
     doc_url, frg = urldefrag(url)
 
     text = loadingOptions.fetcher.fetch_text(doc_url)
-    if isinstance(text, bytes):
-        textIO = StringIO(text.decode("utf-8"))
-    else:
-        textIO = StringIO(text)
+    textIO = StringIO(text)
     textIO.name = str(doc_url)
     yaml = yaml_no_ts()
     result = yaml.load(textIO)
@@ -1034,8 +998,7 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         frag = ""
     if urlpath.startswith("//"):
         return f"file:{urlpath}{frag}"
-    else:
-        return f"file://{urlpath}{frag}"
+    return f"file://{urlpath}{frag}"
 
 
 def prefix_url(url: str, namespaces: Dict[str, str]) -> str:
@@ -1055,10 +1018,7 @@ def save_relative_uri(
 ) -> Any:
     """Convert any URI to a relative one, obeying the scoping rules."""
     if isinstance(uri, MutableSequence):
-        return [
-            save_relative_uri(u, base_url, scoped_id, ref_scope, relative_uris)
-            for u in uri
-        ]
+        return [save_relative_uri(u, base_url, scoped_id, ref_scope, relative_uris) for u in uri]
     elif isinstance(uri, str):
         if not relative_uris or uri == base_url:
             return uri
@@ -1082,8 +1042,7 @@ def save_relative_uri(
 
             if urisplit.fragment.startswith(basefrag):
                 return urisplit.fragment[len(basefrag) :]
-            else:
-                return urisplit.fragment
+            return urisplit.fragment
         return uri
     else:
         return save(uri, top=False, base_url=base_url, relative_uris=relative_uris)
@@ -1171,7 +1130,7 @@ class RecordField(Documented):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -1198,7 +1157,7 @@ class RecordField(Documented):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -1215,7 +1174,7 @@ class RecordField(Documented):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -1432,7 +1391,7 @@ class RecordSchema(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `fields` field is not valid because:",
+                        "the 'fields' field is not valid because:",
                         SourceLine(_doc, "fields", str),
                         [e],
                     )
@@ -1449,7 +1408,7 @@ class RecordSchema(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -1656,7 +1615,7 @@ class EnumSchema(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -1682,7 +1641,7 @@ class EnumSchema(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `symbols` field is not valid because:",
+                    "the 'symbols' field is not valid because:",
                     SourceLine(_doc, "symbols", str),
                     [e],
                 )
@@ -1697,7 +1656,7 @@ class EnumSchema(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -1911,7 +1870,7 @@ class ArraySchema(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `items` field is not valid because:",
+                    "the 'items' field is not valid because:",
                     SourceLine(_doc, "items", str),
                     [e],
                 )
@@ -1926,7 +1885,7 @@ class ArraySchema(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -2171,7 +2130,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `_id` field is not valid because:",
+                        "the '_id' field is not valid because:",
                         SourceLine(_doc, "_id", str),
                         [e],
                     )
@@ -2189,7 +2148,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `_type` field is not valid because:",
+                        "the '_type' field is not valid because:",
                         SourceLine(_doc, "_type", str),
                         [e],
                     )
@@ -2207,7 +2166,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `_container` field is not valid because:",
+                        "the '_container' field is not valid because:",
                         SourceLine(_doc, "_container", str),
                         [e],
                     )
@@ -2225,7 +2184,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `identity` field is not valid because:",
+                        "the 'identity' field is not valid because:",
                         SourceLine(_doc, "identity", str),
                         [e],
                     )
@@ -2243,7 +2202,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `noLinkCheck` field is not valid because:",
+                        "the 'noLinkCheck' field is not valid because:",
                         SourceLine(_doc, "noLinkCheck", str),
                         [e],
                     )
@@ -2261,7 +2220,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `mapSubject` field is not valid because:",
+                        "the 'mapSubject' field is not valid because:",
                         SourceLine(_doc, "mapSubject", str),
                         [e],
                     )
@@ -2279,7 +2238,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `mapPredicate` field is not valid because:",
+                        "the 'mapPredicate' field is not valid because:",
                         SourceLine(_doc, "mapPredicate", str),
                         [e],
                     )
@@ -2297,7 +2256,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `refScope` field is not valid because:",
+                        "the 'refScope' field is not valid because:",
                         SourceLine(_doc, "refScope", str),
                         [e],
                     )
@@ -2315,7 +2274,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `typeDSL` field is not valid because:",
+                        "the 'typeDSL' field is not valid because:",
                         SourceLine(_doc, "typeDSL", str),
                         [e],
                     )
@@ -2333,7 +2292,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `secondaryFilesDSL` field is not valid because:",
+                        "the 'secondaryFilesDSL' field is not valid because:",
                         SourceLine(_doc, "secondaryFilesDSL", str),
                         [e],
                     )
@@ -2351,7 +2310,7 @@ class JsonldPredicate(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `subscope` field is not valid because:",
+                        "the 'subscope' field is not valid because:",
                         SourceLine(_doc, "subscope", str),
                         [e],
                     )
@@ -2714,7 +2673,7 @@ class SpecializeDef(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `specializeFrom` field is not valid because:",
+                    "the 'specializeFrom' field is not valid because:",
                     SourceLine(_doc, "specializeFrom", str),
                     [e],
                 )
@@ -2729,7 +2688,7 @@ class SpecializeDef(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `specializeTo` field is not valid because:",
+                    "the 'specializeTo' field is not valid because:",
                     SourceLine(_doc, "specializeTo", str),
                     [e],
                 )
@@ -2960,7 +2919,7 @@ class SaladRecordField(RecordField):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -2987,7 +2946,7 @@ class SaladRecordField(RecordField):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -3004,7 +2963,7 @@ class SaladRecordField(RecordField):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -3020,7 +2979,7 @@ class SaladRecordField(RecordField):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `jsonldPredicate` field is not valid because:",
+                        "the 'jsonldPredicate' field is not valid because:",
                         SourceLine(_doc, "jsonldPredicate", str),
                         [e],
                     )
@@ -3038,7 +2997,7 @@ class SaladRecordField(RecordField):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `default` field is not valid because:",
+                        "the 'default' field is not valid because:",
                         SourceLine(_doc, "default", str),
                         [e],
                     )
@@ -3345,7 +3304,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -3372,7 +3331,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `inVocab` field is not valid because:",
+                        "the 'inVocab' field is not valid because:",
                         SourceLine(_doc, "inVocab", str),
                         [e],
                     )
@@ -3390,7 +3349,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `fields` field is not valid because:",
+                        "the 'fields' field is not valid because:",
                         SourceLine(_doc, "fields", str),
                         [e],
                     )
@@ -3407,7 +3366,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -3423,7 +3382,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -3441,7 +3400,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `docParent` field is not valid because:",
+                        "the 'docParent' field is not valid because:",
                         SourceLine(_doc, "docParent", str),
                         [e],
                     )
@@ -3459,7 +3418,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `docChild` field is not valid because:",
+                        "the 'docChild' field is not valid because:",
                         SourceLine(_doc, "docChild", str),
                         [e],
                     )
@@ -3477,7 +3436,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `docAfter` field is not valid because:",
+                        "the 'docAfter' field is not valid because:",
                         SourceLine(_doc, "docAfter", str),
                         [e],
                     )
@@ -3495,7 +3454,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `jsonldPredicate` field is not valid because:",
+                        "the 'jsonldPredicate' field is not valid because:",
                         SourceLine(_doc, "jsonldPredicate", str),
                         [e],
                     )
@@ -3513,7 +3472,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `documentRoot` field is not valid because:",
+                        "the 'documentRoot' field is not valid because:",
                         SourceLine(_doc, "documentRoot", str),
                         [e],
                     )
@@ -3531,7 +3490,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `abstract` field is not valid because:",
+                        "the 'abstract' field is not valid because:",
                         SourceLine(_doc, "abstract", str),
                         [e],
                     )
@@ -3549,7 +3508,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `extends` field is not valid because:",
+                        "the 'extends' field is not valid because:",
                         SourceLine(_doc, "extends", str),
                         [e],
                     )
@@ -3567,7 +3526,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `specialize` field is not valid because:",
+                        "the 'specialize' field is not valid because:",
                         SourceLine(_doc, "specialize", str),
                         [e],
                     )
@@ -4021,7 +3980,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -4048,7 +4007,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `inVocab` field is not valid because:",
+                        "the 'inVocab' field is not valid because:",
                         SourceLine(_doc, "inVocab", str),
                         [e],
                     )
@@ -4065,7 +4024,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `symbols` field is not valid because:",
+                    "the 'symbols' field is not valid because:",
                     SourceLine(_doc, "symbols", str),
                     [e],
                 )
@@ -4080,7 +4039,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -4096,7 +4055,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -4114,7 +4073,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `docParent` field is not valid because:",
+                        "the 'docParent' field is not valid because:",
                         SourceLine(_doc, "docParent", str),
                         [e],
                     )
@@ -4132,7 +4091,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `docChild` field is not valid because:",
+                        "the 'docChild' field is not valid because:",
                         SourceLine(_doc, "docChild", str),
                         [e],
                     )
@@ -4150,7 +4109,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `docAfter` field is not valid because:",
+                        "the 'docAfter' field is not valid because:",
                         SourceLine(_doc, "docAfter", str),
                         [e],
                     )
@@ -4168,7 +4127,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `jsonldPredicate` field is not valid because:",
+                        "the 'jsonldPredicate' field is not valid because:",
                         SourceLine(_doc, "jsonldPredicate", str),
                         [e],
                     )
@@ -4186,7 +4145,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `documentRoot` field is not valid because:",
+                        "the 'documentRoot' field is not valid because:",
                         SourceLine(_doc, "documentRoot", str),
                         [e],
                     )
@@ -4204,7 +4163,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `extends` field is not valid because:",
+                        "the 'extends' field is not valid because:",
                         SourceLine(_doc, "extends", str),
                         [e],
                     )
@@ -4603,7 +4562,7 @@ class Documentation(NamedType, DocType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -4630,7 +4589,7 @@ class Documentation(NamedType, DocType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `inVocab` field is not valid because:",
+                        "the 'inVocab' field is not valid because:",
                         SourceLine(_doc, "inVocab", str),
                         [e],
                     )
@@ -4648,7 +4607,7 @@ class Documentation(NamedType, DocType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -4666,7 +4625,7 @@ class Documentation(NamedType, DocType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `docParent` field is not valid because:",
+                        "the 'docParent' field is not valid because:",
                         SourceLine(_doc, "docParent", str),
                         [e],
                     )
@@ -4684,7 +4643,7 @@ class Documentation(NamedType, DocType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `docChild` field is not valid because:",
+                        "the 'docChild' field is not valid because:",
                         SourceLine(_doc, "docChild", str),
                         [e],
                     )
@@ -4702,7 +4661,7 @@ class Documentation(NamedType, DocType):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `docAfter` field is not valid because:",
+                        "the 'docAfter' field is not valid because:",
                         SourceLine(_doc, "docAfter", str),
                         [e],
                     )
@@ -4719,7 +4678,7 @@ class Documentation(NamedType, DocType):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -5029,7 +4988,24 @@ PrimitiveTypeLoader = _EnumLoader(
     ),
     "PrimitiveType",
 )
+"""
+Names of salad data types (based on Avro schema declarations).
+
+Refer to the [Avro schema declaration documentation](https://avro.apache.org/docs/current/spec.html#schemas) for
+detailed information.
+
+null: no value
+boolean: a binary value
+int: 32-bit signed integer
+long: 64-bit signed integer
+float: single precision (32-bit) IEEE 754 floating-point number
+double: double precision (64-bit) IEEE 754 floating-point number
+string: Unicode character sequence
+"""
 AnyLoader = _EnumLoader(("Any",), "Any")
+"""
+The **Any** type validates for any non-null value.
+"""
 RecordFieldLoader = _RecordLoader(RecordField)
 RecordSchemaLoader = _RecordLoader(RecordSchema)
 EnumSchemaLoader = _RecordLoader(EnumSchema)

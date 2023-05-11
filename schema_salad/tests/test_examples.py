@@ -4,6 +4,7 @@ import os
 from io import StringIO
 from typing import Any, Dict, cast
 
+import pytest
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 import schema_salad.main
@@ -39,6 +40,51 @@ def test_schemas() -> None:
     } == ra
 
 
+def test_bad_schemas(caplog: pytest.LogCaptureFixture) -> None:
+    """Test that bad $schemas refs don't stop parsing."""
+    schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    document_path = get_data("tests/revtool_bad_schema.cwl")
+    assert schema_path and document_path
+    assert 0 == schema_salad.main.main(
+        argsl=["--print-rdf", schema_path, document_path],
+    )
+    assert (
+        "Could not load extension schema https://bad.example.com/missing.ttl: "
+        "Error fetching https://bad.example.com/missing.ttl"
+    ) in caplog.text
+    assert (
+        "https://schema.org/!DOCTYPE html does not look like a valid URI, "
+        "trying to serialize this will break"
+    ) in caplog.text
+    assert (
+        "Could not load extension schema https://schema.org/docs/schema_org_rdfa.html: "
+        "No plugin registered for (rdfa, <class 'rdflib.parser.Parser'>)"
+    ) in caplog.text
+
+
+def test_skip_bad_schemas(caplog: pytest.LogCaptureFixture) -> None:
+    """Test that (bad) $schemas refs are properly skipped."""
+    schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    document_path = get_data("tests/revtool_bad_schema.cwl")
+    assert schema_path and document_path
+    assert 0 == schema_salad.main.main(
+        argsl=["--print-rdf", "--skip-schemas", schema_path, document_path],
+    )
+    assert (
+        "Could not load extension schema https://bad.example.com/missing.ttl: "
+        "Error fetching https://bad.example.com/missing.ttl"
+    ) not in caplog.text
+    assert (
+        "https://schema.org/!DOCTYPE html does not look like a valid URI, "
+        "trying to serialize this will break"
+    ) not in caplog.text
+    assert (
+        "Could not load extension schema https://schema.org/docs/schema_org_rdfa.html: "
+        "No plugin registered for (rdfa, <class 'rdflib.parser.Parser'>)"
+    ) not in caplog.text
+    assert "rdflib.plugin.PluginException: No plugin registered" not in caplog.text
+
+
 def test_self_validate() -> None:
     path = get_data("metaschema/metaschema.yml")
     assert path
@@ -51,9 +97,7 @@ def test_print_rdf() -> None:
     schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     document_path = get_data("tests/test_real_cwl/bio-cwl-tools/bamtools_stats.cwl")
     assert schema_path and document_path
-    assert 0 == schema_salad.main.main(
-        argsl=["--print-rdf", schema_path, document_path]
-    )
+    assert 0 == schema_salad.main.main(argsl=["--print-rdf", schema_path, document_path])
 
 
 def test_print_rdf_invalid_external_ref() -> None:
@@ -63,9 +107,7 @@ def test_print_rdf_invalid_external_ref() -> None:
         "tests/test_real_cwl/bio-cwl-tools/bamtools_stats_invalid_schema_ref.cwl"
     )
     assert schema_path and document_path
-    assert 0 == schema_salad.main.main(
-        argsl=["--print-rdf", schema_path, document_path]
-    )
+    assert 0 == schema_salad.main.main(argsl=["--print-rdf", schema_path, document_path])
 
 
 def test_print_pre_schema() -> None:
@@ -80,9 +122,7 @@ def test_print_pre() -> None:
     schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     document_path = get_data("tests/test_real_cwl/bio-cwl-tools/bamtools_stats.cwl")
     assert schema_path and document_path
-    assert 0 == schema_salad.main.main(
-        argsl=["--print-pre", schema_path, document_path]
-    )
+    assert 0 == schema_salad.main.main(argsl=["--print-pre", schema_path, document_path])
 
 
 def test_print_schema_index() -> None:
@@ -97,9 +137,7 @@ def test_print_index() -> None:
     schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     document_path = get_data("tests/test_real_cwl/bio-cwl-tools/bamtools_stats.cwl")
     assert schema_path and document_path
-    assert 0 == schema_salad.main.main(
-        argsl=["--print-index", schema_path, document_path]
-    )
+    assert 0 == schema_salad.main.main(argsl=["--print-index", schema_path, document_path])
 
 
 def test_print_schema_metadata() -> None:
@@ -114,9 +152,7 @@ def test_print_metadata() -> None:
     schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     document_path = get_data("tests/test_real_cwl/bio-cwl-tools/bamtools_stats.cwl")
     assert schema_path and document_path
-    assert 0 == schema_salad.main.main(
-        argsl=["--print-metadata", schema_path, document_path]
-    )
+    assert 0 == schema_salad.main.main(argsl=["--print-metadata", schema_path, document_path])
 
 
 def test_schema_salad_doc_oneline_doc() -> None:
@@ -141,9 +177,7 @@ def test_jsonld_ctx() -> None:
                 "$base": "Y",
                 "name": "X",
                 "$namespaces": {"foo": "http://example.com/foo#"},
-                "$graph": [
-                    {"name": "ExampleType", "type": "enum", "symbols": ["asym", "bsym"]}
-                ],
+                "$graph": [{"name": "ExampleType", "type": "enum", "symbols": ["asym", "bsym"]}],
             }
         )
     )
@@ -349,9 +383,7 @@ def test_scoped_id() -> None:
     }  # type: ContextType
     ldr.add_context(ctx)
 
-    ra, _ = ldr.resolve_all(
-        cmap({"id": "foo", "bar": {"id": "baz"}}), "http://example.com"
-    )
+    ra, _ = ldr.resolve_all(cmap({"id": "foo", "bar": {"id": "baz"}}), "http://example.com")
     assert {
         "id": "http://example.com/#foo",
         "bar": {"id": "http://example.com/#foo/baz"},
@@ -454,9 +486,7 @@ def test_subscoped_id() -> None:
     }  # type: ContextType
     ldr.add_context(ctx)
 
-    ra, _ = ldr.resolve_all(
-        cmap({"id": "foo", "bar": {"id": "baz"}}), "http://example.com"
-    )
+    ra, _ = ldr.resolve_all(cmap({"id": "foo", "bar": {"id": "baz"}}), "http://example.com")
     assert {
         "id": "http://example.com/#foo",
         "bar": {"id": "http://example.com/#foo/bar/baz"},
@@ -495,12 +525,8 @@ def test_file_uri() -> None:
     # Note: this test probably won't pass on Windows.  Someone with a
     # windows box should add an alternate test.
     assert "file:///foo/bar%20baz/quux" == file_uri("/foo/bar baz/quux")
-    assert os.path.normpath("/foo/bar baz/quux") == uri_file_path(
-        "file:///foo/bar%20baz/quux"
-    )
-    assert "file:///foo/bar%20baz/quux%23zing%20zong" == file_uri(
-        "/foo/bar baz/quux#zing zong"
-    )
+    assert os.path.normpath("/foo/bar baz/quux") == uri_file_path("file:///foo/bar%20baz/quux")
+    assert "file:///foo/bar%20baz/quux%23zing%20zong" == file_uri("/foo/bar baz/quux#zing zong")
     assert "file:///foo/bar%20baz/quux#zing%20zong" == file_uri(
         "/foo/bar baz/quux#zing zong", split_frag=True
     )

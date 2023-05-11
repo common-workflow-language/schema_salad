@@ -105,6 +105,4 @@ def test_avro_loading_subtype_bad() -> None:
         r"Any vs \['string', 'int'\]\."
     )
     with pytest.raises(SchemaParseException, match=target_error):
-        document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
-            path
-        )
+        document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
