@@ -274,13 +274,15 @@ class PythonCodeGen(CodeGenBase):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -333,13 +335,15 @@ class PythonCodeGen(CodeGenBase):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -405,6 +409,7 @@ class PythonCodeGen(CodeGenBase):
                                     base_url=base_url_to_save,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
@@ -416,7 +421,7 @@ class PythonCodeGen(CodeGenBase):
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -424,7 +429,8 @@ class PythonCodeGen(CodeGenBase):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
 """
             )
@@ -443,6 +449,7 @@ class PythonCodeGen(CodeGenBase):
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
@@ -454,7 +461,7 @@ class PythonCodeGen(CodeGenBase):
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -462,7 +469,8 @@ class PythonCodeGen(CodeGenBase):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
 """
             )
@@ -800,7 +808,7 @@ if _errors__:
 if self.{safename} is not None and "{fieldname}" not in r:
     u = save_relative_uri(self.{safename}, {baseurl}, {scoped_id}, {ref_scope}, relative_uris)
     r["{fieldname}"] = u
-    max_len = add_kv(
+    max_len, inserted_line_info = add_kv(
             old_doc=doc,
             new_doc=r,
             line_numbers=line_numbers,
@@ -808,7 +816,8 @@ if self.{safename} is not None and "{fieldname}" not in r:
             val=r.get("{fieldname}"),
             cols=cols,
             min_col=min_col,
-            max_len=max_len
+            max_len=max_len,
+            inserted_line_info=inserted_line_info
         )
 """.format(
                         safename=self.safe_name(name),
@@ -826,9 +835,9 @@ if self.{safename} is not None and "{fieldname}" not in r:
                     """
 if self.{safename} is not None and "{fieldname}" not in r:
     r["{fieldname}"] = save(
-        self.{safename}, top=False, base_url={baseurl}, relative_uris=relative_uris
+        self.{safename}, top=False, base_url={baseurl}, relative_uris=relative_uris,inserted_line_info=inserted_line_info
     )
-    max_len = add_kv(
+    max_len, inserted_line_info = add_kv(
         old_doc=doc,
         new_doc=r,
         line_numbers=line_numbers,
@@ -836,7 +845,8 @@ if self.{safename} is not None and "{fieldname}" not in r:
         val=r.get("{fieldname}"),
         cols=cols,
         min_col=min_col,
-        max_len=max_len
+        max_len=max_len,
+        inserted_line_info=inserted_line_info
     )
 """.format(
                         safename=self.safe_name(name),

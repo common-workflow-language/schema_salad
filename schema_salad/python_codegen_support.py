@@ -42,10 +42,7 @@ _logger = logging.getLogger("salad")
 
 IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
 
-
 doc_line_info = CommentedMap()
-inserted_line_info: Dict[int, int] = {}
-
 
 class LoadingOptions:
     idx: IdxType
@@ -245,6 +242,7 @@ def add_kv(
     max_len: int,
     cols: Dict[int, int],
     min_col: int = 0,
+    inserted_line_info: Dict[int, int] = {}
 ) -> int:
     """Add key value pair into Commented Map.
 
@@ -389,6 +387,7 @@ def save(
     base_url: str = "",
     relative_uris: bool = True,
     keys: Optional[List[Any]] = None,
+    inserted_line_info: Dict[int, int] = {}
 ) -> save_type:
     """Save a val of any type.
 
@@ -412,7 +411,7 @@ def save(
 
     if isinstance(val, Saveable):
         return val.save(
-            top=top, base_url=base_url, relative_uris=relative_uris, keys=keys
+            top=top, base_url=base_url, relative_uris=relative_uris, keys=keys, inserted_line_info=inserted_line_info
         )
     if isinstance(val, MutableSequence):
         r = CommentedSeq()
@@ -430,6 +429,7 @@ def save(
                     base_url=base_url,
                     relative_uris=relative_uris,
                     keys=new_keys,
+                    inserted_line_info=inserted_line_info
                 )
             )
         return r
@@ -450,6 +450,7 @@ def save(
                 base_url=base_url,
                 relative_uris=relative_uris,
                 keys=new_keys,
+                inserted_line_info=inserted_line_info,
             )
 
         return newdict
