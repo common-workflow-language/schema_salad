@@ -49,8 +49,6 @@ def test_secondary_files_dsl() -> None:
         "required": [15, 35, 15, 45],
     }
 
-    cwl_v1_2.inserted_line_info = {}
-
 
 def test_outputs_before_inputs() -> None:
     """
@@ -84,7 +82,6 @@ def test_outputs_before_inputs() -> None:
         "outputBinding": [7, 4, 8, 6],
         "id": [5, 2, 5, 6],
     }
-    cwl_v1_2.inserted_line_info = {}
 
 
 def test_type_dsl() -> None:

@@ -45,10 +45,7 @@ _logger = logging.getLogger("salad")
 
 IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
 
-
 doc_line_info = CommentedMap()
-inserted_line_info: Dict[int, int] = {}
-
 
 class LoadingOptions:
     idx: IdxType
@@ -248,6 +245,7 @@ def add_kv(
     max_len: int,
     cols: Dict[int, int],
     min_col: int = 0,
+    inserted_line_info: Dict[int, int] = {}
 ) -> int:
     """Add key value pair into Commented Map.
 
@@ -392,6 +390,7 @@ def save(
     base_url: str = "",
     relative_uris: bool = True,
     keys: Optional[List[Any]] = None,
+    inserted_line_info: Dict[int, int] = {}
 ) -> save_type:
     """Save a val of any type.
 
@@ -415,7 +414,7 @@ def save(
 
     if isinstance(val, Saveable):
         return val.save(
-            top=top, base_url=base_url, relative_uris=relative_uris, keys=keys
+            top=top, base_url=base_url, relative_uris=relative_uris, keys=keys, inserted_line_info=inserted_line_info
         )
     if isinstance(val, MutableSequence):
         r = CommentedSeq()
@@ -433,6 +432,7 @@ def save(
                     base_url=base_url,
                     relative_uris=relative_uris,
                     keys=new_keys,
+                    inserted_line_info=inserted_line_info
                 )
             )
         return r
@@ -453,6 +453,7 @@ def save(
                 base_url=base_url,
                 relative_uris=relative_uris,
                 keys=new_keys,
+                inserted_line_info=inserted_line_info,
             )
 
         return newdict
@@ -1210,7 +1211,8 @@ class RecordField(Documented):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1256,6 +1258,7 @@ class RecordField(Documented):
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
@@ -1275,7 +1278,8 @@ class RecordField(Documented):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -1444,7 +1448,8 @@ class RecordSchema(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1490,6 +1495,7 @@ class RecordSchema(Saveable):
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
@@ -1509,7 +1515,8 @@ class RecordSchema(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.fields is not None and "fields" not in r:
             r["fields"] = save(
@@ -1696,7 +1703,8 @@ class EnumSchema(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1742,6 +1750,7 @@ class EnumSchema(Saveable):
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
@@ -1761,7 +1770,8 @@ class EnumSchema(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -1925,7 +1935,8 @@ class ArraySchema(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1971,6 +1982,7 @@ class ArraySchema(Saveable):
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
@@ -1990,7 +2002,8 @@ class ArraySchema(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.items is not None and "items" not in r:
             u = save_relative_uri(self.items, base_url, False, 2, relative_uris)
@@ -2363,7 +2376,8 @@ class JsonldPredicate(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -2409,6 +2423,7 @@ class JsonldPredicate(Saveable):
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
@@ -2428,7 +2443,8 @@ class JsonldPredicate(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self._id is not None and "_id" not in r:
             u = save_relative_uri(self._id, base_url, True, None, relative_uris)
@@ -2732,7 +2748,8 @@ class SpecializeDef(Saveable):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -2778,6 +2795,7 @@ class SpecializeDef(Saveable):
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
@@ -2797,7 +2815,8 @@ class SpecializeDef(Saveable):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.specializeFrom is not None and "specializeFrom" not in r:
             u = save_relative_uri(
@@ -3049,7 +3068,8 @@ class SaladRecordField(RecordField):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -3095,6 +3115,7 @@ class SaladRecordField(RecordField):
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
@@ -3114,7 +3135,8 @@ class SaladRecordField(RecordField):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -3588,7 +3610,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -3634,6 +3657,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
@@ -3653,7 +3677,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -4225,7 +4250,8 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -4271,6 +4297,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
@@ -4290,7 +4317,8 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -4736,7 +4764,8 @@ class Documentation(NamedType, DocType):
         top: bool = False,
         base_url: str = "",
         relative_uris: bool = True,
-        keys: Optional[List[Any]] = None
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -4782,6 +4811,7 @@ class Documentation(NamedType, DocType):
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
@@ -4801,7 +4831,8 @@ class Documentation(NamedType, DocType):
                                 val=r.get(key),
                                 cols=cols,
                                 min_col=min_col,
-                                max_len=max_len
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)

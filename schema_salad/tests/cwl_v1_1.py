@@ -45,10 +45,7 @@ _logger = logging.getLogger("salad")
 
 IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
 
-
 doc_line_info = CommentedMap()
-inserted_line_info: Dict[int, int] = {}
-
 
 class LoadingOptions:
     idx: IdxType
@@ -138,9 +135,7 @@ class LoadingOptions:
             )
             self.fetcher: Fetcher = DefaultFetcher({}, session)
 
-        self.cache = (
-            self.fetcher.cache if isinstance(self.fetcher, MemoryCachingFetcher) else {}
-        )
+        self.cache = self.fetcher.cache if isinstance(self.fetcher, MemoryCachingFetcher) else {}
 
         self.vocab = _vocab
         self.rvocab = _rvocab
@@ -172,9 +167,7 @@ class LoadingOptions:
                 try:
                     content = self.fetcher.fetch_text(fetchurl)
                 except Exception as e:
-                    _logger.warning(
-                        "Could not load extension schema %s: %s", fetchurl, str(e)
-                    )
+                    _logger.warning("Could not load extension schema %s: %s", fetchurl, str(e))
                     continue
                 newGraph = Graph()
                 err_msg = "unknown error"
@@ -187,9 +180,7 @@ class LoadingOptions:
                     except (xml.sax.SAXParseException, TypeError, BadSyntax) as e:
                         err_msg = str(e)
                 else:
-                    _logger.warning(
-                        "Could not load extension schema %s: %s", fetchurl, err_msg
-                    )
+                    _logger.warning("Could not load extension schema %s: %s", fetchurl, err_msg)
         self.cache[key] = graph
         return graph
 
@@ -233,20 +224,16 @@ def load_field(val, fieldtype, baseuri, loadingOptions):
             )
             loadingOptions.imports.append(url)
             return result
-        elif "$include" in val:
+        if "$include" in val:
             if loadingOptions.fileuri is None:
                 raise SchemaSaladException("Cannot load $import without fileuri")
-            url = loadingOptions.fetcher.urljoin(
-                loadingOptions.fileuri, val["$include"]
-            )
+            url = loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
             val = loadingOptions.fetcher.fetch_text(url)
             loadingOptions.includes.append(url)
     return fieldtype.load(val, baseuri, loadingOptions)
 
 
-save_type = Optional[
-    Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]
-]
+save_type = Optional[Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]]
 
 
 def add_kv(
@@ -258,6 +245,7 @@ def add_kv(
     max_len: int,
     cols: Dict[int, int],
     min_col: int = 0,
+    inserted_line_info: Dict[int, int] = {}
 ) -> int:
     """Add key value pair into Commented Map.
 
@@ -402,6 +390,7 @@ def save(
     base_url: str = "",
     relative_uris: bool = True,
     keys: Optional[List[Any]] = None,
+    inserted_line_info: Dict[int, int] = {}
 ) -> save_type:
     """Save a val of any type.
 
@@ -425,7 +414,7 @@ def save(
 
     if isinstance(val, Saveable):
         return val.save(
-            top=top, base_url=base_url, relative_uris=relative_uris, keys=keys
+            top=top, base_url=base_url, relative_uris=relative_uris, keys=keys, inserted_line_info=inserted_line_info
         )
     if isinstance(val, MutableSequence):
         r = CommentedSeq()
@@ -443,17 +432,16 @@ def save(
                     base_url=base_url,
                     relative_uris=relative_uris,
                     keys=new_keys,
+                    inserted_line_info=inserted_line_info
                 )
             )
         return r
-        # return [
-        #     save(v, top=False, base_url=base_url, relative_uris=relative_uris)
-        #     for v in val
-        # ]
+
     if isinstance(val, MutableMapping):
         newdict = CommentedMap()
         new_keys = keys
         for key in val:
+
             if doc:
                 if key in doc:
                     newdict.lc.add_kv_line_col(key, doc.lc.data[key])
@@ -465,14 +453,10 @@ def save(
                 base_url=base_url,
                 relative_uris=relative_uris,
                 keys=new_keys,
+                inserted_line_info=inserted_line_info,
             )
+
         return newdict
-        # newdict = {}
-        # for key in val:
-        #     newdict[key] = save(
-        #         val[key], top=False, base_url=base_url, relative_uris=relative_uris
-        #     )
-        # return newdict
     if val is None or isinstance(val, (int, float, bool, str)):
         return val
     raise Exception("Not Saveable: %s" % type(val))
@@ -529,10 +513,7 @@ def expand_url(
     split = urlsplit(url)
 
     if (
-        (
-            bool(split.scheme)
-            and split.scheme in loadingOptions.fetcher.supported_schemes()
-        )
+        (bool(split.scheme) and split.scheme in loadingOptions.fetcher.supported_schemes())
         or url.startswith("$(")
         or url.startswith("${")
     ):
@@ -572,7 +553,7 @@ def expand_url(
             if url in loadingOptions.rvocab:
                 return loadingOptions.rvocab[url]
         else:
-            raise ValidationException(f"Term '{url}' not in vocabulary")
+            raise ValidationException(f"Term {url!r} not in vocabulary")
 
     return url
 
@@ -623,9 +604,7 @@ class _ArrayLoader(_Loader):
         errors = []  # type: List[SchemaSaladException]
         for i in range(0, len(doc)):
             try:
-                lf = load_field(
-                    doc[i], _UnionLoader((self, self.items)), baseuri, loadingOptions
-                )
+                lf = load_field(doc[i], _UnionLoader((self, self.items)), baseuri, loadingOptions)
                 if isinstance(lf, MutableSequence):
                     r.extend(lf)
                 else:
@@ -649,8 +628,7 @@ class _EnumLoader(_Loader):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any
         if doc in self.symbols:
             return doc
-        else:
-            raise ValidationException(f"Expected one of {self.symbols}")
+        raise ValidationException(f"Expected one of {self.symbols}")
 
     def __repr__(self):  # type: () -> str
         return self.name
@@ -678,9 +656,7 @@ class _SecondaryDSLLoader(_Loader):
                         new_dict["pattern"] = dict_copy.pop("pattern")
                     else:
                         raise ValidationException(
-                            "Missing pattern in secondaryFiles specification entry: {}".format(
-                                d
-                            )
+                            f"Missing pattern in secondaryFiles specification entry: {d}"
                         )
                     new_dict["required"] = (
                         dict_copy.pop("required") if "required" in dict_copy else None
@@ -705,19 +681,13 @@ class _SecondaryDSLLoader(_Loader):
                 new_dict["pattern"] = doc_copy.pop("pattern")
             else:
                 raise ValidationException(
-                    "Missing pattern in secondaryFiles specification entry: {}".format(
-                        doc
-                    )
+                    f"Missing pattern in secondaryFiles specification entry: {doc}"
                 )
-            new_dict["required"] = (
-                doc_copy.pop("required") if "required" in doc_copy else None
-            )
+            new_dict["required"] = doc_copy.pop("required") if "required" in doc_copy else None
 
             if len(doc_copy):
                 raise ValidationException(
-                    "Unallowed values in secondaryFiles specification entry: {}".format(
-                        doc_copy
-                    )
+                    f"Unallowed values in secondaryFiles specification entry: {doc_copy}"
                 )
             r.append(new_dict)
 
@@ -833,9 +803,7 @@ class _TypeDSLLoader(_Loader):
         if m:
             group1 = m.group(1)
             assert group1 is not None  # nosec
-            first = expand_url(
-                group1, baseuri, loadingOptions, False, True, self.refScope
-            )
+            first = expand_url(group1, baseuri, loadingOptions, False, True, self.refScope)
             second = third = None
             if bool(m.group(2)):
                 second = {"type": "array", "items": first}
@@ -944,11 +912,6 @@ def _document_load(
             addl_metadata=addl_metadata,
         )
 
-        # doc = {
-        #     k: v
-        #     for k, v in doc.items()
-        #     if k not in ("$namespaces", "$schemas", "$base")
-        # }
         doc = copy.copy(doc)
         if "$namespaces" in doc:
             doc.pop("$namespaces")
@@ -1000,10 +963,7 @@ def _document_load_by_url(
     doc_url, frg = urldefrag(url)
 
     text = loadingOptions.fetcher.fetch_text(doc_url)
-    if isinstance(text, bytes):
-        textIO = StringIO(text.decode("utf-8"))
-    else:
-        textIO = StringIO(text)
+    textIO = StringIO(text)
     textIO.name = str(doc_url)
     yaml = yaml_no_ts()
     result = yaml.load(textIO)
@@ -1034,8 +994,7 @@ def file_uri(path, split_frag=False):  # type: (str, bool) -> str
         frag = ""
     if urlpath.startswith("//"):
         return f"file:{urlpath}{frag}"
-    else:
-        return f"file://{urlpath}{frag}"
+    return f"file://{urlpath}{frag}"
 
 
 def prefix_url(url: str, namespaces: Dict[str, str]) -> str:
@@ -1055,10 +1014,7 @@ def save_relative_uri(
 ) -> Any:
     """Convert any URI to a relative one, obeying the scoping rules."""
     if isinstance(uri, MutableSequence):
-        return [
-            save_relative_uri(u, base_url, scoped_id, ref_scope, relative_uris)
-            for u in uri
-        ]
+        return [save_relative_uri(u, base_url, scoped_id, ref_scope, relative_uris) for u in uri]
     elif isinstance(uri, str):
         if not relative_uris or uri == base_url:
             return uri
@@ -1082,8 +1038,7 @@ def save_relative_uri(
 
             if urisplit.fragment.startswith(basefrag):
                 return urisplit.fragment[len(basefrag) :]
-            else:
-                return urisplit.fragment
+            return urisplit.fragment
         return uri
     else:
         return save(uri, top=False, base_url=base_url, relative_uris=relative_uris)
@@ -1171,7 +1126,7 @@ class RecordField(Documented):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -1198,7 +1153,7 @@ class RecordField(Documented):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -1215,7 +1170,7 @@ class RecordField(Documented):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -1257,12 +1212,14 @@ class RecordField(Documented):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -1295,23 +1252,26 @@ class RecordField(Documented):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -1320,11 +1280,12 @@ class RecordField(Documented):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -1333,6 +1294,7 @@ class RecordField(Documented):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -1340,8 +1302,9 @@ class RecordField(Documented):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -1350,6 +1313,7 @@ class RecordField(Documented):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -1357,8 +1321,9 @@ class RecordField(Documented):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -1367,6 +1332,7 @@ class RecordField(Documented):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -1432,7 +1398,7 @@ class RecordSchema(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `fields` field is not valid because:",
+                        "the 'fields' field is not valid because:",
                         SourceLine(_doc, "fields", str),
                         [e],
                     )
@@ -1449,7 +1415,7 @@ class RecordSchema(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -1489,12 +1455,14 @@ class RecordSchema(Saveable):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -1527,23 +1495,26 @@ class RecordSchema(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -1552,12 +1523,17 @@ class RecordSchema(Saveable):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.fields is not None and "fields" not in r:
             r["fields"] = save(
-                self.fields, top=False, base_url=base_url, relative_uris=relative_uris
+                self.fields,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -1566,12 +1542,17 @@ class RecordSchema(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
-                self.type, top=False, base_url=base_url, relative_uris=relative_uris
+                self.type,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -1580,6 +1561,7 @@ class RecordSchema(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -1649,7 +1631,7 @@ class EnumSchema(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `symbols` field is not valid because:",
+                    "the 'symbols' field is not valid because:",
                     SourceLine(_doc, "symbols", str),
                     [e],
                 )
@@ -1664,7 +1646,7 @@ class EnumSchema(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -1704,12 +1686,14 @@ class EnumSchema(Saveable):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -1742,23 +1726,26 @@ class EnumSchema(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -1767,11 +1754,12 @@ class EnumSchema(Saveable):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.symbols is not None and "symbols" not in r:
             u = save_relative_uri(self.symbols, base_url, True, None, relative_uris)
             r["symbols"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -1780,12 +1768,17 @@ class EnumSchema(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
-                self.type, top=False, base_url=base_url, relative_uris=relative_uris
+                self.type,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -1794,6 +1787,7 @@ class EnumSchema(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -1858,7 +1852,7 @@ class ArraySchema(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `items` field is not valid because:",
+                    "the 'items' field is not valid because:",
                     SourceLine(_doc, "items", str),
                     [e],
                 )
@@ -1873,7 +1867,7 @@ class ArraySchema(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -1913,12 +1907,14 @@ class ArraySchema(Saveable):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -1951,23 +1947,26 @@ class ArraySchema(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -1976,12 +1975,17 @@ class ArraySchema(Saveable):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.items is not None and "items" not in r:
             r["items"] = save(
-                self.items, top=False, base_url=base_url, relative_uris=relative_uris
+                self.items,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -1990,12 +1994,17 @@ class ArraySchema(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
-                self.type, top=False, base_url=base_url, relative_uris=relative_uris
+                self.type,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -2004,6 +2013,7 @@ class ArraySchema(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -2190,7 +2200,7 @@ class File(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `location` field is not valid because:",
+                        "the 'location' field is not valid because:",
                         SourceLine(_doc, "location", str),
                         [e],
                     )
@@ -2208,7 +2218,7 @@ class File(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `path` field is not valid because:",
+                        "the 'path' field is not valid because:",
                         SourceLine(_doc, "path", str),
                         [e],
                     )
@@ -2226,7 +2236,7 @@ class File(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `basename` field is not valid because:",
+                        "the 'basename' field is not valid because:",
                         SourceLine(_doc, "basename", str),
                         [e],
                     )
@@ -2244,7 +2254,7 @@ class File(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `dirname` field is not valid because:",
+                        "the 'dirname' field is not valid because:",
                         SourceLine(_doc, "dirname", str),
                         [e],
                     )
@@ -2262,7 +2272,7 @@ class File(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `nameroot` field is not valid because:",
+                        "the 'nameroot' field is not valid because:",
                         SourceLine(_doc, "nameroot", str),
                         [e],
                     )
@@ -2280,7 +2290,7 @@ class File(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `nameext` field is not valid because:",
+                        "the 'nameext' field is not valid because:",
                         SourceLine(_doc, "nameext", str),
                         [e],
                     )
@@ -2298,7 +2308,7 @@ class File(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `checksum` field is not valid because:",
+                        "the 'checksum' field is not valid because:",
                         SourceLine(_doc, "checksum", str),
                         [e],
                     )
@@ -2316,7 +2326,7 @@ class File(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `size` field is not valid because:",
+                        "the 'size' field is not valid because:",
                         SourceLine(_doc, "size", str),
                         [e],
                     )
@@ -2334,7 +2344,7 @@ class File(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `secondaryFiles` field is not valid because:",
+                        "the 'secondaryFiles' field is not valid because:",
                         SourceLine(_doc, "secondaryFiles", str),
                         [e],
                     )
@@ -2352,7 +2362,7 @@ class File(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `format` field is not valid because:",
+                        "the 'format' field is not valid because:",
                         SourceLine(_doc, "format", str),
                         [e],
                     )
@@ -2370,7 +2380,7 @@ class File(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `contents` field is not valid because:",
+                        "the 'contents' field is not valid because:",
                         SourceLine(_doc, "contents", str),
                         [e],
                     )
@@ -2421,12 +2431,14 @@ class File(Saveable):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -2461,23 +2473,26 @@ class File(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -2486,11 +2501,12 @@ class File(Saveable):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.location is not None and "location" not in r:
             u = save_relative_uri(self.location, base_url, False, None, relative_uris)
             r["location"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -2499,11 +2515,12 @@ class File(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.path is not None and "path" not in r:
             u = save_relative_uri(self.path, base_url, False, None, relative_uris)
             r["path"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -2512,12 +2529,17 @@ class File(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.basename is not None and "basename" not in r:
             r["basename"] = save(
-                self.basename, top=False, base_url=base_url, relative_uris=relative_uris
+                self.basename,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -2526,12 +2548,17 @@ class File(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.dirname is not None and "dirname" not in r:
             r["dirname"] = save(
-                self.dirname, top=False, base_url=base_url, relative_uris=relative_uris
+                self.dirname,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -2540,12 +2567,17 @@ class File(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.nameroot is not None and "nameroot" not in r:
             r["nameroot"] = save(
-                self.nameroot, top=False, base_url=base_url, relative_uris=relative_uris
+                self.nameroot,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -2554,12 +2586,17 @@ class File(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.nameext is not None and "nameext" not in r:
             r["nameext"] = save(
-                self.nameext, top=False, base_url=base_url, relative_uris=relative_uris
+                self.nameext,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -2568,12 +2605,17 @@ class File(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.checksum is not None and "checksum" not in r:
             r["checksum"] = save(
-                self.checksum, top=False, base_url=base_url, relative_uris=relative_uris
+                self.checksum,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -2582,12 +2624,17 @@ class File(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.size is not None and "size" not in r:
             r["size"] = save(
-                self.size, top=False, base_url=base_url, relative_uris=relative_uris
+                self.size,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -2596,6 +2643,7 @@ class File(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.secondaryFiles is not None and "secondaryFiles" not in r:
             r["secondaryFiles"] = save(
@@ -2603,8 +2651,9 @@ class File(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -2613,11 +2662,12 @@ class File(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.format is not None and "format" not in r:
             u = save_relative_uri(self.format, base_url, True, None, relative_uris)
             r["format"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -2626,12 +2676,17 @@ class File(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.contents is not None and "contents" not in r:
             r["contents"] = save(
-                self.contents, top=False, base_url=base_url, relative_uris=relative_uris
+                self.contents,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -2640,6 +2695,7 @@ class File(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -2784,7 +2840,7 @@ class Directory(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `location` field is not valid because:",
+                        "the 'location' field is not valid because:",
                         SourceLine(_doc, "location", str),
                         [e],
                     )
@@ -2802,7 +2858,7 @@ class Directory(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `path` field is not valid because:",
+                        "the 'path' field is not valid because:",
                         SourceLine(_doc, "path", str),
                         [e],
                     )
@@ -2820,7 +2876,7 @@ class Directory(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `basename` field is not valid because:",
+                        "the 'basename' field is not valid because:",
                         SourceLine(_doc, "basename", str),
                         [e],
                     )
@@ -2838,7 +2894,7 @@ class Directory(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `listing` field is not valid because:",
+                        "the 'listing' field is not valid because:",
                         SourceLine(_doc, "listing", str),
                         [e],
                     )
@@ -2882,12 +2938,14 @@ class Directory(Saveable):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -2922,23 +2980,26 @@ class Directory(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -2947,11 +3008,12 @@ class Directory(Saveable):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.location is not None and "location" not in r:
             u = save_relative_uri(self.location, base_url, False, None, relative_uris)
             r["location"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -2960,11 +3022,12 @@ class Directory(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.path is not None and "path" not in r:
             u = save_relative_uri(self.path, base_url, False, None, relative_uris)
             r["path"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -2973,12 +3036,17 @@ class Directory(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.basename is not None and "basename" not in r:
             r["basename"] = save(
-                self.basename, top=False, base_url=base_url, relative_uris=relative_uris
+                self.basename,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -2987,12 +3055,17 @@ class Directory(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.listing is not None and "listing" not in r:
             r["listing"] = save(
-                self.listing, top=False, base_url=base_url, relative_uris=relative_uris
+                self.listing,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -3001,6 +3074,7 @@ class Directory(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -3097,7 +3171,7 @@ class InputBinding(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `loadContents` field is not valid because:",
+                        "the 'loadContents' field is not valid because:",
                         SourceLine(_doc, "loadContents", str),
                         [e],
                     )
@@ -3138,12 +3212,14 @@ class InputBinding(Saveable):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -3176,23 +3252,26 @@ class InputBinding(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -3201,6 +3280,7 @@ class InputBinding(Saveable):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.loadContents is not None and "loadContents" not in r:
             r["loadContents"] = save(
@@ -3208,8 +3288,9 @@ class InputBinding(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -3218,6 +3299,7 @@ class InputBinding(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -3331,7 +3413,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -3358,7 +3440,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -3375,7 +3457,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -3391,7 +3473,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -3409,7 +3491,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `secondaryFiles` field is not valid because:",
+                        "the 'secondaryFiles' field is not valid because:",
                         SourceLine(_doc, "secondaryFiles", str),
                         [e],
                     )
@@ -3427,7 +3509,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `streamable` field is not valid because:",
+                        "the 'streamable' field is not valid because:",
                         SourceLine(_doc, "streamable", str),
                         [e],
                     )
@@ -3445,7 +3527,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `format` field is not valid because:",
+                        "the 'format' field is not valid because:",
                         SourceLine(_doc, "format", str),
                         [e],
                     )
@@ -3463,7 +3545,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `loadContents` field is not valid because:",
+                        "the 'loadContents' field is not valid because:",
                         SourceLine(_doc, "loadContents", str),
                         [e],
                     )
@@ -3481,7 +3563,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `loadListing` field is not valid because:",
+                        "the 'loadListing' field is not valid because:",
                         SourceLine(_doc, "loadListing", str),
                         [e],
                     )
@@ -3531,12 +3613,14 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -3569,23 +3653,26 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -3594,11 +3681,12 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -3607,6 +3695,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -3614,8 +3703,9 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -3624,6 +3714,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -3631,8 +3722,9 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -3641,6 +3733,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -3648,8 +3741,9 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -3658,6 +3752,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.secondaryFiles is not None and "secondaryFiles" not in r:
             r["secondaryFiles"] = save(
@@ -3665,8 +3760,9 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -3675,6 +3771,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.streamable is not None and "streamable" not in r:
             r["streamable"] = save(
@@ -3682,8 +3779,9 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -3692,13 +3790,14 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.format is not None and "format" not in r:
             u = save_relative_uri(
                 self.format, str(self.name), True, None, relative_uris
             )
             r["format"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -3707,6 +3806,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.loadContents is not None and "loadContents" not in r:
             r["loadContents"] = save(
@@ -3714,8 +3814,9 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -3724,6 +3825,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.loadListing is not None and "loadListing" not in r:
             r["loadListing"] = save(
@@ -3731,8 +3833,9 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -3741,6 +3844,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -3830,7 +3934,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -3857,7 +3961,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `fields` field is not valid because:",
+                        "the 'fields' field is not valid because:",
                         SourceLine(_doc, "fields", str),
                         [e],
                     )
@@ -3874,7 +3978,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -3890,7 +3994,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -3908,7 +4012,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -3954,12 +4058,14 @@ class InputRecordSchema(RecordSchema, InputSchema):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -3992,23 +4098,26 @@ class InputRecordSchema(RecordSchema, InputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -4017,11 +4126,12 @@ class InputRecordSchema(RecordSchema, InputSchema):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -4030,6 +4140,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.fields is not None and "fields" not in r:
             r["fields"] = save(
@@ -4037,8 +4148,9 @@ class InputRecordSchema(RecordSchema, InputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -4047,6 +4159,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -4054,8 +4167,9 @@ class InputRecordSchema(RecordSchema, InputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -4064,6 +4178,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -4071,8 +4186,9 @@ class InputRecordSchema(RecordSchema, InputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -4081,6 +4197,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -4088,8 +4205,9 @@ class InputRecordSchema(RecordSchema, InputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -4098,6 +4216,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -4175,7 +4294,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -4201,7 +4320,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `symbols` field is not valid because:",
+                    "the 'symbols' field is not valid because:",
                     SourceLine(_doc, "symbols", str),
                     [e],
                 )
@@ -4216,7 +4335,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -4232,7 +4351,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -4250,7 +4369,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -4296,12 +4415,14 @@ class InputEnumSchema(EnumSchema, InputSchema):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -4334,23 +4455,26 @@ class InputEnumSchema(EnumSchema, InputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -4359,11 +4483,12 @@ class InputEnumSchema(EnumSchema, InputSchema):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -4372,13 +4497,14 @@ class InputEnumSchema(EnumSchema, InputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.symbols is not None and "symbols" not in r:
             u = save_relative_uri(
                 self.symbols, str(self.name), True, None, relative_uris
             )
             r["symbols"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -4387,6 +4513,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -4394,8 +4521,9 @@ class InputEnumSchema(EnumSchema, InputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -4404,6 +4532,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -4411,8 +4540,9 @@ class InputEnumSchema(EnumSchema, InputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -4421,6 +4551,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -4428,8 +4559,9 @@ class InputEnumSchema(EnumSchema, InputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -4438,6 +4570,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -4515,7 +4648,7 @@ class InputArraySchema(ArraySchema, InputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -4541,7 +4674,7 @@ class InputArraySchema(ArraySchema, InputSchema):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `items` field is not valid because:",
+                    "the 'items' field is not valid because:",
                     SourceLine(_doc, "items", str),
                     [e],
                 )
@@ -4556,7 +4689,7 @@ class InputArraySchema(ArraySchema, InputSchema):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -4572,7 +4705,7 @@ class InputArraySchema(ArraySchema, InputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -4590,7 +4723,7 @@ class InputArraySchema(ArraySchema, InputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -4636,12 +4769,14 @@ class InputArraySchema(ArraySchema, InputSchema):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -4674,23 +4809,26 @@ class InputArraySchema(ArraySchema, InputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -4699,11 +4837,12 @@ class InputArraySchema(ArraySchema, InputSchema):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -4712,6 +4851,7 @@ class InputArraySchema(ArraySchema, InputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.items is not None and "items" not in r:
             r["items"] = save(
@@ -4719,8 +4859,9 @@ class InputArraySchema(ArraySchema, InputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -4729,6 +4870,7 @@ class InputArraySchema(ArraySchema, InputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -4736,8 +4878,9 @@ class InputArraySchema(ArraySchema, InputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -4746,6 +4889,7 @@ class InputArraySchema(ArraySchema, InputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -4753,8 +4897,9 @@ class InputArraySchema(ArraySchema, InputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -4763,6 +4908,7 @@ class InputArraySchema(ArraySchema, InputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -4770,8 +4916,9 @@ class InputArraySchema(ArraySchema, InputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -4780,6 +4927,7 @@ class InputArraySchema(ArraySchema, InputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -4873,7 +5021,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -4900,7 +5048,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -4917,7 +5065,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -4933,7 +5081,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -4951,7 +5099,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `secondaryFiles` field is not valid because:",
+                        "the 'secondaryFiles' field is not valid because:",
                         SourceLine(_doc, "secondaryFiles", str),
                         [e],
                     )
@@ -4969,7 +5117,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `streamable` field is not valid because:",
+                        "the 'streamable' field is not valid because:",
                         SourceLine(_doc, "streamable", str),
                         [e],
                     )
@@ -4987,7 +5135,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `format` field is not valid because:",
+                        "the 'format' field is not valid because:",
                         SourceLine(_doc, "format", str),
                         [e],
                     )
@@ -5035,12 +5183,14 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -5073,23 +5223,26 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -5098,11 +5251,12 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5111,6 +5265,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -5118,8 +5273,9 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5128,6 +5284,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -5135,8 +5292,9 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5145,6 +5303,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -5152,8 +5311,9 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5162,6 +5322,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.secondaryFiles is not None and "secondaryFiles" not in r:
             r["secondaryFiles"] = save(
@@ -5169,8 +5330,9 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5179,6 +5341,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.streamable is not None and "streamable" not in r:
             r["streamable"] = save(
@@ -5186,8 +5349,9 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5196,13 +5360,14 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.format is not None and "format" not in r:
             u = save_relative_uri(
                 self.format, str(self.name), True, None, relative_uris
             )
             r["format"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5211,6 +5376,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -5290,7 +5456,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -5317,7 +5483,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `fields` field is not valid because:",
+                        "the 'fields' field is not valid because:",
                         SourceLine(_doc, "fields", str),
                         [e],
                     )
@@ -5334,7 +5500,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -5350,7 +5516,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -5368,7 +5534,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -5414,12 +5580,14 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -5452,23 +5620,26 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -5477,11 +5648,12 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5490,6 +5662,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.fields is not None and "fields" not in r:
             r["fields"] = save(
@@ -5497,8 +5670,9 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5507,6 +5681,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -5514,8 +5689,9 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5524,6 +5700,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -5531,8 +5708,9 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5541,6 +5719,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -5548,8 +5727,9 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5558,6 +5738,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -5635,7 +5816,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -5661,7 +5842,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `symbols` field is not valid because:",
+                    "the 'symbols' field is not valid because:",
                     SourceLine(_doc, "symbols", str),
                     [e],
                 )
@@ -5676,7 +5857,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -5692,7 +5873,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -5710,7 +5891,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -5756,12 +5937,14 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -5794,23 +5977,26 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -5819,11 +6005,12 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5832,13 +6019,14 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.symbols is not None and "symbols" not in r:
             u = save_relative_uri(
                 self.symbols, str(self.name), True, None, relative_uris
             )
             r["symbols"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5847,6 +6035,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -5854,8 +6043,9 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5864,6 +6054,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -5871,8 +6062,9 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5881,6 +6073,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -5888,8 +6081,9 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -5898,6 +6092,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -5975,7 +6170,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -6001,7 +6196,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `items` field is not valid because:",
+                    "the 'items' field is not valid because:",
                     SourceLine(_doc, "items", str),
                     [e],
                 )
@@ -6016,7 +6211,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -6032,7 +6227,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -6050,7 +6245,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -6096,12 +6291,14 @@ class OutputArraySchema(ArraySchema, OutputSchema):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -6134,23 +6331,26 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -6159,11 +6359,12 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -6172,6 +6373,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.items is not None and "items" not in r:
             r["items"] = save(
@@ -6179,8 +6381,9 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -6189,6 +6392,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -6196,8 +6400,9 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -6206,6 +6411,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -6213,8 +6419,9 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -6223,6 +6430,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -6230,8 +6438,9 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -6240,6 +6449,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -6352,7 +6562,7 @@ class InlineJavascriptRequirement(ProcessRequirement):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `expressionLib` field is not valid because:",
+                        "the 'expressionLib' field is not valid because:",
                         SourceLine(_doc, "expressionLib", str),
                         [e],
                     )
@@ -6395,12 +6605,14 @@ class InlineJavascriptRequirement(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -6435,23 +6647,26 @@ class InlineJavascriptRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -6460,6 +6675,7 @@ class InlineJavascriptRequirement(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.expressionLib is not None and "expressionLib" not in r:
             r["expressionLib"] = save(
@@ -6467,8 +6683,9 @@ class InlineJavascriptRequirement(ProcessRequirement):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -6477,6 +6694,7 @@ class InlineJavascriptRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -6559,7 +6777,7 @@ class SchemaDefRequirement(ProcessRequirement):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `types` field is not valid because:",
+                    "the 'types' field is not valid because:",
                     SourceLine(_doc, "types", str),
                     [e],
                 )
@@ -6598,12 +6816,14 @@ class SchemaDefRequirement(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -6638,23 +6858,26 @@ class SchemaDefRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -6663,12 +6886,17 @@ class SchemaDefRequirement(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.types is not None and "types" not in r:
             r["types"] = save(
-                self.types, top=False, base_url=base_url, relative_uris=relative_uris
+                self.types,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -6677,6 +6905,7 @@ class SchemaDefRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -6743,7 +6972,7 @@ class SecondaryFileSchema(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `pattern` field is not valid because:",
+                    "the 'pattern' field is not valid because:",
                     SourceLine(_doc, "pattern", str),
                     [e],
                 )
@@ -6759,7 +6988,7 @@ class SecondaryFileSchema(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `required` field is not valid because:",
+                        "the 'required' field is not valid because:",
                         SourceLine(_doc, "required", str),
                         [e],
                     )
@@ -6801,12 +7030,14 @@ class SecondaryFileSchema(Saveable):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -6839,23 +7070,26 @@ class SecondaryFileSchema(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -6864,12 +7098,17 @@ class SecondaryFileSchema(Saveable):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.pattern is not None and "pattern" not in r:
             r["pattern"] = save(
-                self.pattern, top=False, base_url=base_url, relative_uris=relative_uris
+                self.pattern,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -6878,12 +7117,17 @@ class SecondaryFileSchema(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.required is not None and "required" not in r:
             r["required"] = save(
-                self.required, top=False, base_url=base_url, relative_uris=relative_uris
+                self.required,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -6892,6 +7136,7 @@ class SecondaryFileSchema(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -6968,7 +7213,7 @@ class LoadListingRequirement(ProcessRequirement):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `loadListing` field is not valid because:",
+                        "the 'loadListing' field is not valid because:",
                         SourceLine(_doc, "loadListing", str),
                         [e],
                     )
@@ -7011,12 +7256,14 @@ class LoadListingRequirement(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -7051,23 +7298,26 @@ class LoadListingRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -7076,6 +7326,7 @@ class LoadListingRequirement(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.loadListing is not None and "loadListing" not in r:
             r["loadListing"] = save(
@@ -7083,8 +7334,9 @@ class LoadListingRequirement(ProcessRequirement):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -7093,6 +7345,7 @@ class LoadListingRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -7166,7 +7419,7 @@ class EnvironmentDef(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `envName` field is not valid because:",
+                    "the 'envName' field is not valid because:",
                     SourceLine(_doc, "envName", str),
                     [e],
                 )
@@ -7181,7 +7434,7 @@ class EnvironmentDef(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `envValue` field is not valid because:",
+                    "the 'envValue' field is not valid because:",
                     SourceLine(_doc, "envValue", str),
                     [e],
                 )
@@ -7221,12 +7474,14 @@ class EnvironmentDef(Saveable):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -7259,23 +7514,26 @@ class EnvironmentDef(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -7284,12 +7542,17 @@ class EnvironmentDef(Saveable):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.envName is not None and "envName" not in r:
             r["envName"] = save(
-                self.envName, top=False, base_url=base_url, relative_uris=relative_uris
+                self.envName,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -7298,12 +7561,17 @@ class EnvironmentDef(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.envValue is not None and "envValue" not in r:
             r["envValue"] = save(
-                self.envValue, top=False, base_url=base_url, relative_uris=relative_uris
+                self.envValue,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -7312,6 +7580,7 @@ class EnvironmentDef(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -7444,7 +7713,7 @@ class CommandLineBinding(InputBinding):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `loadContents` field is not valid because:",
+                        "the 'loadContents' field is not valid because:",
                         SourceLine(_doc, "loadContents", str),
                         [e],
                     )
@@ -7462,7 +7731,7 @@ class CommandLineBinding(InputBinding):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `position` field is not valid because:",
+                        "the 'position' field is not valid because:",
                         SourceLine(_doc, "position", str),
                         [e],
                     )
@@ -7480,7 +7749,7 @@ class CommandLineBinding(InputBinding):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `prefix` field is not valid because:",
+                        "the 'prefix' field is not valid because:",
                         SourceLine(_doc, "prefix", str),
                         [e],
                     )
@@ -7498,7 +7767,7 @@ class CommandLineBinding(InputBinding):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `separate` field is not valid because:",
+                        "the 'separate' field is not valid because:",
                         SourceLine(_doc, "separate", str),
                         [e],
                     )
@@ -7516,7 +7785,7 @@ class CommandLineBinding(InputBinding):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `itemSeparator` field is not valid because:",
+                        "the 'itemSeparator' field is not valid because:",
                         SourceLine(_doc, "itemSeparator", str),
                         [e],
                     )
@@ -7534,7 +7803,7 @@ class CommandLineBinding(InputBinding):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `valueFrom` field is not valid because:",
+                        "the 'valueFrom' field is not valid because:",
                         SourceLine(_doc, "valueFrom", str),
                         [e],
                     )
@@ -7552,7 +7821,7 @@ class CommandLineBinding(InputBinding):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `shellQuote` field is not valid because:",
+                        "the 'shellQuote' field is not valid because:",
                         SourceLine(_doc, "shellQuote", str),
                         [e],
                     )
@@ -7599,12 +7868,14 @@ class CommandLineBinding(InputBinding):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -7637,23 +7908,26 @@ class CommandLineBinding(InputBinding):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -7662,6 +7936,7 @@ class CommandLineBinding(InputBinding):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.loadContents is not None and "loadContents" not in r:
             r["loadContents"] = save(
@@ -7669,8 +7944,9 @@ class CommandLineBinding(InputBinding):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -7679,12 +7955,17 @@ class CommandLineBinding(InputBinding):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.position is not None and "position" not in r:
             r["position"] = save(
-                self.position, top=False, base_url=base_url, relative_uris=relative_uris
+                self.position,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -7693,12 +7974,17 @@ class CommandLineBinding(InputBinding):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.prefix is not None and "prefix" not in r:
             r["prefix"] = save(
-                self.prefix, top=False, base_url=base_url, relative_uris=relative_uris
+                self.prefix,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -7707,12 +7993,17 @@ class CommandLineBinding(InputBinding):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.separate is not None and "separate" not in r:
             r["separate"] = save(
-                self.separate, top=False, base_url=base_url, relative_uris=relative_uris
+                self.separate,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -7721,6 +8012,7 @@ class CommandLineBinding(InputBinding):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.itemSeparator is not None and "itemSeparator" not in r:
             r["itemSeparator"] = save(
@@ -7728,8 +8020,9 @@ class CommandLineBinding(InputBinding):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -7738,6 +8031,7 @@ class CommandLineBinding(InputBinding):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.valueFrom is not None and "valueFrom" not in r:
             r["valueFrom"] = save(
@@ -7745,8 +8039,9 @@ class CommandLineBinding(InputBinding):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -7755,6 +8050,7 @@ class CommandLineBinding(InputBinding):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.shellQuote is not None and "shellQuote" not in r:
             r["shellQuote"] = save(
@@ -7762,8 +8058,9 @@ class CommandLineBinding(InputBinding):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -7772,6 +8069,7 @@ class CommandLineBinding(InputBinding):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -7870,7 +8168,7 @@ class CommandOutputBinding(LoadContents):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `loadContents` field is not valid because:",
+                        "the 'loadContents' field is not valid because:",
                         SourceLine(_doc, "loadContents", str),
                         [e],
                     )
@@ -7888,7 +8186,7 @@ class CommandOutputBinding(LoadContents):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `loadListing` field is not valid because:",
+                        "the 'loadListing' field is not valid because:",
                         SourceLine(_doc, "loadListing", str),
                         [e],
                     )
@@ -7906,7 +8204,7 @@ class CommandOutputBinding(LoadContents):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `glob` field is not valid because:",
+                        "the 'glob' field is not valid because:",
                         SourceLine(_doc, "glob", str),
                         [e],
                     )
@@ -7924,7 +8222,7 @@ class CommandOutputBinding(LoadContents):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `outputEval` field is not valid because:",
+                        "the 'outputEval' field is not valid because:",
                         SourceLine(_doc, "outputEval", str),
                         [e],
                     )
@@ -7968,12 +8266,14 @@ class CommandOutputBinding(LoadContents):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -8006,23 +8306,26 @@ class CommandOutputBinding(LoadContents):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -8031,6 +8334,7 @@ class CommandOutputBinding(LoadContents):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.loadContents is not None and "loadContents" not in r:
             r["loadContents"] = save(
@@ -8038,8 +8342,9 @@ class CommandOutputBinding(LoadContents):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -8048,6 +8353,7 @@ class CommandOutputBinding(LoadContents):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.loadListing is not None and "loadListing" not in r:
             r["loadListing"] = save(
@@ -8055,8 +8361,9 @@ class CommandOutputBinding(LoadContents):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -8065,12 +8372,17 @@ class CommandOutputBinding(LoadContents):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.glob is not None and "glob" not in r:
             r["glob"] = save(
-                self.glob, top=False, base_url=base_url, relative_uris=relative_uris
+                self.glob,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -8079,6 +8391,7 @@ class CommandOutputBinding(LoadContents):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.outputEval is not None and "outputEval" not in r:
             r["outputEval"] = save(
@@ -8086,8 +8399,9 @@ class CommandOutputBinding(LoadContents):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -8096,6 +8410,7 @@ class CommandOutputBinding(LoadContents):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -8159,7 +8474,7 @@ class CommandLineBindable(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `inputBinding` field is not valid because:",
+                        "the 'inputBinding' field is not valid because:",
                         SourceLine(_doc, "inputBinding", str),
                         [e],
                     )
@@ -8200,12 +8515,14 @@ class CommandLineBindable(Saveable):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -8238,23 +8555,26 @@ class CommandLineBindable(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -8263,6 +8583,7 @@ class CommandLineBindable(Saveable):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.inputBinding is not None and "inputBinding" not in r:
             r["inputBinding"] = save(
@@ -8270,8 +8591,9 @@ class CommandLineBindable(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -8280,6 +8602,7 @@ class CommandLineBindable(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -8385,7 +8708,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -8412,7 +8735,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -8429,7 +8752,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -8445,7 +8768,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -8463,7 +8786,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `secondaryFiles` field is not valid because:",
+                        "the 'secondaryFiles' field is not valid because:",
                         SourceLine(_doc, "secondaryFiles", str),
                         [e],
                     )
@@ -8481,7 +8804,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `streamable` field is not valid because:",
+                        "the 'streamable' field is not valid because:",
                         SourceLine(_doc, "streamable", str),
                         [e],
                     )
@@ -8499,7 +8822,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `format` field is not valid because:",
+                        "the 'format' field is not valid because:",
                         SourceLine(_doc, "format", str),
                         [e],
                     )
@@ -8517,7 +8840,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `loadContents` field is not valid because:",
+                        "the 'loadContents' field is not valid because:",
                         SourceLine(_doc, "loadContents", str),
                         [e],
                     )
@@ -8535,7 +8858,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `loadListing` field is not valid because:",
+                        "the 'loadListing' field is not valid because:",
                         SourceLine(_doc, "loadListing", str),
                         [e],
                     )
@@ -8553,7 +8876,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `inputBinding` field is not valid because:",
+                        "the 'inputBinding' field is not valid because:",
                         SourceLine(_doc, "inputBinding", str),
                         [e],
                     )
@@ -8606,12 +8929,14 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -8644,23 +8969,26 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -8669,11 +8997,12 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -8682,6 +9011,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -8689,8 +9019,9 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -8699,6 +9030,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -8706,8 +9038,9 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -8716,6 +9049,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -8723,8 +9057,9 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -8733,6 +9068,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.secondaryFiles is not None and "secondaryFiles" not in r:
             r["secondaryFiles"] = save(
@@ -8740,8 +9076,9 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -8750,6 +9087,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.streamable is not None and "streamable" not in r:
             r["streamable"] = save(
@@ -8757,8 +9095,9 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -8767,13 +9106,14 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.format is not None and "format" not in r:
             u = save_relative_uri(
                 self.format, str(self.name), True, None, relative_uris
             )
             r["format"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -8782,6 +9122,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.loadContents is not None and "loadContents" not in r:
             r["loadContents"] = save(
@@ -8789,8 +9130,9 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -8799,6 +9141,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.loadListing is not None and "loadListing" not in r:
             r["loadListing"] = save(
@@ -8806,8 +9149,9 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -8816,6 +9160,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.inputBinding is not None and "inputBinding" not in r:
             r["inputBinding"] = save(
@@ -8823,8 +9168,9 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -8833,6 +9179,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -8930,7 +9277,7 @@ class CommandInputRecordSchema(
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -8957,7 +9304,7 @@ class CommandInputRecordSchema(
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `fields` field is not valid because:",
+                        "the 'fields' field is not valid because:",
                         SourceLine(_doc, "fields", str),
                         [e],
                     )
@@ -8974,7 +9321,7 @@ class CommandInputRecordSchema(
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -8990,7 +9337,7 @@ class CommandInputRecordSchema(
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -9008,7 +9355,7 @@ class CommandInputRecordSchema(
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -9026,7 +9373,7 @@ class CommandInputRecordSchema(
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `inputBinding` field is not valid because:",
+                        "the 'inputBinding' field is not valid because:",
                         SourceLine(_doc, "inputBinding", str),
                         [e],
                     )
@@ -9075,12 +9422,14 @@ class CommandInputRecordSchema(
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -9113,23 +9462,26 @@ class CommandInputRecordSchema(
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -9138,11 +9490,12 @@ class CommandInputRecordSchema(
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9151,6 +9504,7 @@ class CommandInputRecordSchema(
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.fields is not None and "fields" not in r:
             r["fields"] = save(
@@ -9158,8 +9512,9 @@ class CommandInputRecordSchema(
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9168,6 +9523,7 @@ class CommandInputRecordSchema(
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -9175,8 +9531,9 @@ class CommandInputRecordSchema(
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9185,6 +9542,7 @@ class CommandInputRecordSchema(
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -9192,8 +9550,9 @@ class CommandInputRecordSchema(
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9202,6 +9561,7 @@ class CommandInputRecordSchema(
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -9209,8 +9569,9 @@ class CommandInputRecordSchema(
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9219,6 +9580,7 @@ class CommandInputRecordSchema(
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.inputBinding is not None and "inputBinding" not in r:
             r["inputBinding"] = save(
@@ -9226,8 +9588,9 @@ class CommandInputRecordSchema(
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9236,6 +9599,7 @@ class CommandInputRecordSchema(
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -9325,7 +9689,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -9351,7 +9715,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `symbols` field is not valid because:",
+                    "the 'symbols' field is not valid because:",
                     SourceLine(_doc, "symbols", str),
                     [e],
                 )
@@ -9366,7 +9730,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -9382,7 +9746,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -9400,7 +9764,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -9418,7 +9782,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `inputBinding` field is not valid because:",
+                        "the 'inputBinding' field is not valid because:",
                         SourceLine(_doc, "inputBinding", str),
                         [e],
                     )
@@ -9467,12 +9831,14 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -9505,23 +9871,26 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -9530,11 +9899,12 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9543,13 +9913,14 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.symbols is not None and "symbols" not in r:
             u = save_relative_uri(
                 self.symbols, str(self.name), True, None, relative_uris
             )
             r["symbols"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9558,6 +9929,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -9565,8 +9937,9 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9575,6 +9948,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -9582,8 +9956,9 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9592,6 +9967,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -9599,8 +9975,9 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9609,6 +9986,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.inputBinding is not None and "inputBinding" not in r:
             r["inputBinding"] = save(
@@ -9616,8 +9994,9 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9626,6 +10005,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -9710,7 +10090,7 @@ class CommandInputArraySchema(
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -9736,7 +10116,7 @@ class CommandInputArraySchema(
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `items` field is not valid because:",
+                    "the 'items' field is not valid because:",
                     SourceLine(_doc, "items", str),
                     [e],
                 )
@@ -9751,7 +10131,7 @@ class CommandInputArraySchema(
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -9767,7 +10147,7 @@ class CommandInputArraySchema(
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -9785,7 +10165,7 @@ class CommandInputArraySchema(
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -9803,7 +10183,7 @@ class CommandInputArraySchema(
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `inputBinding` field is not valid because:",
+                        "the 'inputBinding' field is not valid because:",
                         SourceLine(_doc, "inputBinding", str),
                         [e],
                     )
@@ -9852,12 +10232,14 @@ class CommandInputArraySchema(
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -9890,23 +10272,26 @@ class CommandInputArraySchema(
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -9915,11 +10300,12 @@ class CommandInputArraySchema(
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9928,6 +10314,7 @@ class CommandInputArraySchema(
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.items is not None and "items" not in r:
             r["items"] = save(
@@ -9935,8 +10322,9 @@ class CommandInputArraySchema(
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9945,6 +10333,7 @@ class CommandInputArraySchema(
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -9952,8 +10341,9 @@ class CommandInputArraySchema(
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9962,6 +10352,7 @@ class CommandInputArraySchema(
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -9969,8 +10360,9 @@ class CommandInputArraySchema(
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9979,6 +10371,7 @@ class CommandInputArraySchema(
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -9986,8 +10379,9 @@ class CommandInputArraySchema(
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -9996,6 +10390,7 @@ class CommandInputArraySchema(
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.inputBinding is not None and "inputBinding" not in r:
             r["inputBinding"] = save(
@@ -10003,8 +10398,9 @@ class CommandInputArraySchema(
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -10013,6 +10409,7 @@ class CommandInputArraySchema(
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -10110,7 +10507,7 @@ class CommandOutputRecordField(OutputRecordField):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -10137,7 +10534,7 @@ class CommandOutputRecordField(OutputRecordField):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -10154,7 +10551,7 @@ class CommandOutputRecordField(OutputRecordField):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -10170,7 +10567,7 @@ class CommandOutputRecordField(OutputRecordField):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -10188,7 +10585,7 @@ class CommandOutputRecordField(OutputRecordField):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `secondaryFiles` field is not valid because:",
+                        "the 'secondaryFiles' field is not valid because:",
                         SourceLine(_doc, "secondaryFiles", str),
                         [e],
                     )
@@ -10206,7 +10603,7 @@ class CommandOutputRecordField(OutputRecordField):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `streamable` field is not valid because:",
+                        "the 'streamable' field is not valid because:",
                         SourceLine(_doc, "streamable", str),
                         [e],
                     )
@@ -10224,7 +10621,7 @@ class CommandOutputRecordField(OutputRecordField):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `format` field is not valid because:",
+                        "the 'format' field is not valid because:",
                         SourceLine(_doc, "format", str),
                         [e],
                     )
@@ -10242,7 +10639,7 @@ class CommandOutputRecordField(OutputRecordField):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `outputBinding` field is not valid because:",
+                        "the 'outputBinding' field is not valid because:",
                         SourceLine(_doc, "outputBinding", str),
                         [e],
                     )
@@ -10293,12 +10690,14 @@ class CommandOutputRecordField(OutputRecordField):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -10331,23 +10730,26 @@ class CommandOutputRecordField(OutputRecordField):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -10356,11 +10758,12 @@ class CommandOutputRecordField(OutputRecordField):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -10369,6 +10772,7 @@ class CommandOutputRecordField(OutputRecordField):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -10376,8 +10780,9 @@ class CommandOutputRecordField(OutputRecordField):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -10386,6 +10791,7 @@ class CommandOutputRecordField(OutputRecordField):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -10393,8 +10799,9 @@ class CommandOutputRecordField(OutputRecordField):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -10403,6 +10810,7 @@ class CommandOutputRecordField(OutputRecordField):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -10410,8 +10818,9 @@ class CommandOutputRecordField(OutputRecordField):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -10420,6 +10829,7 @@ class CommandOutputRecordField(OutputRecordField):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.secondaryFiles is not None and "secondaryFiles" not in r:
             r["secondaryFiles"] = save(
@@ -10427,8 +10837,9 @@ class CommandOutputRecordField(OutputRecordField):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -10437,6 +10848,7 @@ class CommandOutputRecordField(OutputRecordField):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.streamable is not None and "streamable" not in r:
             r["streamable"] = save(
@@ -10444,8 +10856,9 @@ class CommandOutputRecordField(OutputRecordField):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -10454,13 +10867,14 @@ class CommandOutputRecordField(OutputRecordField):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.format is not None and "format" not in r:
             u = save_relative_uri(
                 self.format, str(self.name), True, None, relative_uris
             )
             r["format"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -10469,6 +10883,7 @@ class CommandOutputRecordField(OutputRecordField):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.outputBinding is not None and "outputBinding" not in r:
             r["outputBinding"] = save(
@@ -10476,8 +10891,9 @@ class CommandOutputRecordField(OutputRecordField):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -10486,6 +10902,7 @@ class CommandOutputRecordField(OutputRecordField):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -10574,7 +10991,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -10601,7 +11018,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `fields` field is not valid because:",
+                        "the 'fields' field is not valid because:",
                         SourceLine(_doc, "fields", str),
                         [e],
                     )
@@ -10618,7 +11035,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -10634,7 +11051,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -10652,7 +11069,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -10700,12 +11117,14 @@ class CommandOutputRecordSchema(OutputRecordSchema):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -10738,23 +11157,26 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -10763,11 +11185,12 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -10776,6 +11199,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.fields is not None and "fields" not in r:
             r["fields"] = save(
@@ -10783,8 +11207,9 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -10793,6 +11218,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -10800,8 +11226,9 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -10810,6 +11237,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -10817,8 +11245,9 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -10827,6 +11256,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -10834,8 +11264,9 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -10844,6 +11275,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -10921,7 +11353,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -10947,7 +11379,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `symbols` field is not valid because:",
+                    "the 'symbols' field is not valid because:",
                     SourceLine(_doc, "symbols", str),
                     [e],
                 )
@@ -10962,7 +11394,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -10978,7 +11410,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -10996,7 +11428,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -11044,12 +11476,14 @@ class CommandOutputEnumSchema(OutputEnumSchema):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -11082,23 +11516,26 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -11107,11 +11544,12 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -11120,13 +11558,14 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.symbols is not None and "symbols" not in r:
             u = save_relative_uri(
                 self.symbols, str(self.name), True, None, relative_uris
             )
             r["symbols"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -11135,6 +11574,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -11142,8 +11582,9 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -11152,6 +11593,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -11159,8 +11601,9 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -11169,6 +11612,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -11176,8 +11620,9 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -11186,6 +11631,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -11263,7 +11709,7 @@ class CommandOutputArraySchema(OutputArraySchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `name` field is not valid because:",
+                        "the 'name' field is not valid because:",
                         SourceLine(_doc, "name", str),
                         [e],
                     )
@@ -11289,7 +11735,7 @@ class CommandOutputArraySchema(OutputArraySchema):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `items` field is not valid because:",
+                    "the 'items' field is not valid because:",
                     SourceLine(_doc, "items", str),
                     [e],
                 )
@@ -11304,7 +11750,7 @@ class CommandOutputArraySchema(OutputArraySchema):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -11320,7 +11766,7 @@ class CommandOutputArraySchema(OutputArraySchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -11338,7 +11784,7 @@ class CommandOutputArraySchema(OutputArraySchema):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -11386,12 +11832,14 @@ class CommandOutputArraySchema(OutputArraySchema):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -11424,23 +11872,26 @@ class CommandOutputArraySchema(OutputArraySchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -11449,11 +11900,12 @@ class CommandOutputArraySchema(OutputArraySchema):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -11462,6 +11914,7 @@ class CommandOutputArraySchema(OutputArraySchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.items is not None and "items" not in r:
             r["items"] = save(
@@ -11469,8 +11922,9 @@ class CommandOutputArraySchema(OutputArraySchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -11479,6 +11933,7 @@ class CommandOutputArraySchema(OutputArraySchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
@@ -11486,8 +11941,9 @@ class CommandOutputArraySchema(OutputArraySchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -11496,6 +11952,7 @@ class CommandOutputArraySchema(OutputArraySchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -11503,8 +11960,9 @@ class CommandOutputArraySchema(OutputArraySchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -11513,6 +11971,7 @@ class CommandOutputArraySchema(OutputArraySchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
@@ -11520,8 +11979,9 @@ class CommandOutputArraySchema(OutputArraySchema):
                 top=False,
                 base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -11530,6 +11990,7 @@ class CommandOutputArraySchema(OutputArraySchema):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -11643,7 +12104,7 @@ class CommandInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `id` field is not valid because:",
+                        "the 'id' field is not valid because:",
                         SourceLine(_doc, "id", str),
                         [e],
                     )
@@ -11670,7 +12131,7 @@ class CommandInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -11688,7 +12149,7 @@ class CommandInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `secondaryFiles` field is not valid because:",
+                        "the 'secondaryFiles' field is not valid because:",
                         SourceLine(_doc, "secondaryFiles", str),
                         [e],
                     )
@@ -11706,7 +12167,7 @@ class CommandInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `streamable` field is not valid because:",
+                        "the 'streamable' field is not valid because:",
                         SourceLine(_doc, "streamable", str),
                         [e],
                     )
@@ -11724,7 +12185,7 @@ class CommandInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -11742,7 +12203,7 @@ class CommandInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `format` field is not valid because:",
+                        "the 'format' field is not valid because:",
                         SourceLine(_doc, "format", str),
                         [e],
                     )
@@ -11760,7 +12221,7 @@ class CommandInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `loadContents` field is not valid because:",
+                        "the 'loadContents' field is not valid because:",
                         SourceLine(_doc, "loadContents", str),
                         [e],
                     )
@@ -11778,7 +12239,7 @@ class CommandInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `loadListing` field is not valid because:",
+                        "the 'loadListing' field is not valid because:",
                         SourceLine(_doc, "loadListing", str),
                         [e],
                     )
@@ -11796,7 +12257,7 @@ class CommandInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `default` field is not valid because:",
+                        "the 'default' field is not valid because:",
                         SourceLine(_doc, "default", str),
                         [e],
                     )
@@ -11813,7 +12274,7 @@ class CommandInputParameter(InputParameter):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -11829,7 +12290,7 @@ class CommandInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `inputBinding` field is not valid because:",
+                        "the 'inputBinding' field is not valid because:",
                         SourceLine(_doc, "inputBinding", str),
                         [e],
                     )
@@ -11881,12 +12342,14 @@ class CommandInputParameter(InputParameter):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -11903,22 +12366,17 @@ class CommandInputParameter(InputParameter):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc["id"] = temp_id
-                        temp_doc.lc.add_kv_line_col(
-                            "id",
-                            [
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1],
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1] + 4,
-                            ],
-                        )
+                        temp_doc['id'] = temp_id
+                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1],
+                                                           doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1] + 4])
                         doc = temp_doc
 
         if doc is not None:
@@ -11943,23 +12401,26 @@ class CommandInputParameter(InputParameter):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url_to_save,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -11968,11 +12429,12 @@ class CommandInputParameter(InputParameter):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
             r["id"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -11981,6 +12443,7 @@ class CommandInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -11988,8 +12451,9 @@ class CommandInputParameter(InputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -11998,6 +12462,7 @@ class CommandInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.secondaryFiles is not None and "secondaryFiles" not in r:
             r["secondaryFiles"] = save(
@@ -12005,8 +12470,9 @@ class CommandInputParameter(InputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12015,6 +12481,7 @@ class CommandInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.streamable is not None and "streamable" not in r:
             r["streamable"] = save(
@@ -12022,8 +12489,9 @@ class CommandInputParameter(InputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12032,12 +12500,17 @@ class CommandInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
-                self.doc, top=False, base_url=str(self.id), relative_uris=relative_uris
+                self.doc,
+                top=False,
+                base_url=str(self.id),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12046,11 +12519,12 @@ class CommandInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.format is not None and "format" not in r:
             u = save_relative_uri(self.format, str(self.id), True, None, relative_uris)
             r["format"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12059,6 +12533,7 @@ class CommandInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.loadContents is not None and "loadContents" not in r:
             r["loadContents"] = save(
@@ -12066,8 +12541,9 @@ class CommandInputParameter(InputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12076,6 +12552,7 @@ class CommandInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.loadListing is not None and "loadListing" not in r:
             r["loadListing"] = save(
@@ -12083,8 +12560,9 @@ class CommandInputParameter(InputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12093,6 +12571,7 @@ class CommandInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.default is not None and "default" not in r:
             r["default"] = save(
@@ -12100,8 +12579,9 @@ class CommandInputParameter(InputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12110,12 +12590,17 @@ class CommandInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
-                self.type, top=False, base_url=str(self.id), relative_uris=relative_uris
+                self.type,
+                top=False,
+                base_url=str(self.id),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12124,6 +12609,7 @@ class CommandInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.inputBinding is not None and "inputBinding" not in r:
             r["inputBinding"] = save(
@@ -12131,8 +12617,9 @@ class CommandInputParameter(InputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12141,6 +12628,7 @@ class CommandInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -12256,7 +12744,7 @@ class CommandOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `id` field is not valid because:",
+                        "the 'id' field is not valid because:",
                         SourceLine(_doc, "id", str),
                         [e],
                     )
@@ -12283,7 +12771,7 @@ class CommandOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -12301,7 +12789,7 @@ class CommandOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `secondaryFiles` field is not valid because:",
+                        "the 'secondaryFiles' field is not valid because:",
                         SourceLine(_doc, "secondaryFiles", str),
                         [e],
                     )
@@ -12319,7 +12807,7 @@ class CommandOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `streamable` field is not valid because:",
+                        "the 'streamable' field is not valid because:",
                         SourceLine(_doc, "streamable", str),
                         [e],
                     )
@@ -12337,7 +12825,7 @@ class CommandOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -12355,7 +12843,7 @@ class CommandOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `format` field is not valid because:",
+                        "the 'format' field is not valid because:",
                         SourceLine(_doc, "format", str),
                         [e],
                     )
@@ -12372,7 +12860,7 @@ class CommandOutputParameter(OutputParameter):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -12388,7 +12876,7 @@ class CommandOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `outputBinding` field is not valid because:",
+                        "the 'outputBinding' field is not valid because:",
                         SourceLine(_doc, "outputBinding", str),
                         [e],
                     )
@@ -12439,12 +12927,14 @@ class CommandOutputParameter(OutputParameter):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -12461,22 +12951,17 @@ class CommandOutputParameter(OutputParameter):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc["id"] = temp_id
-                        temp_doc.lc.add_kv_line_col(
-                            "id",
-                            [
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1],
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1] + 4,
-                            ],
-                        )
+                        temp_doc['id'] = temp_id
+                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1],
+                                                           doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1] + 4])
                         doc = temp_doc
 
         if doc is not None:
@@ -12501,23 +12986,26 @@ class CommandOutputParameter(OutputParameter):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url_to_save,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -12526,11 +13014,12 @@ class CommandOutputParameter(OutputParameter):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
             r["id"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12539,6 +13028,7 @@ class CommandOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -12546,8 +13036,9 @@ class CommandOutputParameter(OutputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12556,6 +13047,7 @@ class CommandOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.secondaryFiles is not None and "secondaryFiles" not in r:
             r["secondaryFiles"] = save(
@@ -12563,8 +13055,9 @@ class CommandOutputParameter(OutputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12573,6 +13066,7 @@ class CommandOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.streamable is not None and "streamable" not in r:
             r["streamable"] = save(
@@ -12580,8 +13074,9 @@ class CommandOutputParameter(OutputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12590,12 +13085,17 @@ class CommandOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
-                self.doc, top=False, base_url=str(self.id), relative_uris=relative_uris
+                self.doc,
+                top=False,
+                base_url=str(self.id),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12604,11 +13104,12 @@ class CommandOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.format is not None and "format" not in r:
             u = save_relative_uri(self.format, str(self.id), True, None, relative_uris)
             r["format"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12617,12 +13118,17 @@ class CommandOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
-                self.type, top=False, base_url=str(self.id), relative_uris=relative_uris
+                self.type,
+                top=False,
+                base_url=str(self.id),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12631,6 +13137,7 @@ class CommandOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.outputBinding is not None and "outputBinding" not in r:
             r["outputBinding"] = save(
@@ -12638,8 +13145,9 @@ class CommandOutputParameter(OutputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -12648,6 +13156,7 @@ class CommandOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -12800,7 +13309,7 @@ class CommandLineTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `id` field is not valid because:",
+                        "the 'id' field is not valid because:",
                         SourceLine(_doc, "id", str),
                         [e],
                     )
@@ -12827,7 +13336,7 @@ class CommandLineTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -12845,7 +13354,7 @@ class CommandLineTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -12862,7 +13371,7 @@ class CommandLineTool(Process):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `inputs` field is not valid because:",
+                    "the 'inputs' field is not valid because:",
                     SourceLine(_doc, "inputs", str),
                     [e],
                 )
@@ -12877,7 +13386,7 @@ class CommandLineTool(Process):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `outputs` field is not valid because:",
+                    "the 'outputs' field is not valid because:",
                     SourceLine(_doc, "outputs", str),
                     [e],
                 )
@@ -12893,7 +13402,7 @@ class CommandLineTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `requirements` field is not valid because:",
+                        "the 'requirements' field is not valid because:",
                         SourceLine(_doc, "requirements", str),
                         [e],
                     )
@@ -12911,7 +13420,7 @@ class CommandLineTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `hints` field is not valid because:",
+                        "the 'hints' field is not valid because:",
                         SourceLine(_doc, "hints", str),
                         [e],
                     )
@@ -12929,7 +13438,7 @@ class CommandLineTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `cwlVersion` field is not valid because:",
+                        "the 'cwlVersion' field is not valid because:",
                         SourceLine(_doc, "cwlVersion", str),
                         [e],
                     )
@@ -12947,7 +13456,7 @@ class CommandLineTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `baseCommand` field is not valid because:",
+                        "the 'baseCommand' field is not valid because:",
                         SourceLine(_doc, "baseCommand", str),
                         [e],
                     )
@@ -12965,7 +13474,7 @@ class CommandLineTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `arguments` field is not valid because:",
+                        "the 'arguments' field is not valid because:",
                         SourceLine(_doc, "arguments", str),
                         [e],
                     )
@@ -12983,7 +13492,7 @@ class CommandLineTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `stdin` field is not valid because:",
+                        "the 'stdin' field is not valid because:",
                         SourceLine(_doc, "stdin", str),
                         [e],
                     )
@@ -13001,7 +13510,7 @@ class CommandLineTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `stderr` field is not valid because:",
+                        "the 'stderr' field is not valid because:",
                         SourceLine(_doc, "stderr", str),
                         [e],
                     )
@@ -13019,7 +13528,7 @@ class CommandLineTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `stdout` field is not valid because:",
+                        "the 'stdout' field is not valid because:",
                         SourceLine(_doc, "stdout", str),
                         [e],
                     )
@@ -13037,7 +13546,7 @@ class CommandLineTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `successCodes` field is not valid because:",
+                        "the 'successCodes' field is not valid because:",
                         SourceLine(_doc, "successCodes", str),
                         [e],
                     )
@@ -13055,7 +13564,7 @@ class CommandLineTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `temporaryFailCodes` field is not valid because:",
+                        "the 'temporaryFailCodes' field is not valid because:",
                         SourceLine(_doc, "temporaryFailCodes", str),
                         [e],
                     )
@@ -13073,7 +13582,7 @@ class CommandLineTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `permanentFailCodes` field is not valid because:",
+                        "the 'permanentFailCodes' field is not valid because:",
                         SourceLine(_doc, "permanentFailCodes", str),
                         [e],
                     )
@@ -13130,12 +13639,14 @@ class CommandLineTool(Process):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -13152,22 +13663,17 @@ class CommandLineTool(Process):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc["id"] = temp_id
-                        temp_doc.lc.add_kv_line_col(
-                            "id",
-                            [
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1],
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1] + 4,
-                            ],
-                        )
+                        temp_doc['id'] = temp_id
+                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1],
+                                                           doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1] + 4])
                         doc = temp_doc
 
         if doc is not None:
@@ -13194,23 +13700,26 @@ class CommandLineTool(Process):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url_to_save,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -13219,11 +13728,12 @@ class CommandLineTool(Process):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
             r["id"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13232,6 +13742,7 @@ class CommandLineTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -13239,8 +13750,9 @@ class CommandLineTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13249,12 +13761,17 @@ class CommandLineTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
-                self.doc, top=False, base_url=str(self.id), relative_uris=relative_uris
+                self.doc,
+                top=False,
+                base_url=str(self.id),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13263,6 +13780,7 @@ class CommandLineTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.inputs is not None and "inputs" not in r:
             r["inputs"] = save(
@@ -13270,8 +13788,9 @@ class CommandLineTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13280,6 +13799,7 @@ class CommandLineTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.outputs is not None and "outputs" not in r:
             r["outputs"] = save(
@@ -13287,8 +13807,9 @@ class CommandLineTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13297,6 +13818,7 @@ class CommandLineTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.requirements is not None and "requirements" not in r:
             r["requirements"] = save(
@@ -13304,8 +13826,9 @@ class CommandLineTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13314,6 +13837,7 @@ class CommandLineTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.hints is not None and "hints" not in r:
             r["hints"] = save(
@@ -13321,8 +13845,9 @@ class CommandLineTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13331,13 +13856,14 @@ class CommandLineTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.cwlVersion is not None and "cwlVersion" not in r:
             u = save_relative_uri(
                 self.cwlVersion, str(self.id), False, None, relative_uris
             )
             r["cwlVersion"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13346,6 +13872,7 @@ class CommandLineTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.baseCommand is not None and "baseCommand" not in r:
             r["baseCommand"] = save(
@@ -13353,8 +13880,9 @@ class CommandLineTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13363,6 +13891,7 @@ class CommandLineTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.arguments is not None and "arguments" not in r:
             r["arguments"] = save(
@@ -13370,8 +13899,9 @@ class CommandLineTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13380,6 +13910,7 @@ class CommandLineTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.stdin is not None and "stdin" not in r:
             r["stdin"] = save(
@@ -13387,8 +13918,9 @@ class CommandLineTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13397,6 +13929,7 @@ class CommandLineTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.stderr is not None and "stderr" not in r:
             r["stderr"] = save(
@@ -13404,8 +13937,9 @@ class CommandLineTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13414,6 +13948,7 @@ class CommandLineTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.stdout is not None and "stdout" not in r:
             r["stdout"] = save(
@@ -13421,8 +13956,9 @@ class CommandLineTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13431,6 +13967,7 @@ class CommandLineTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.successCodes is not None and "successCodes" not in r:
             r["successCodes"] = save(
@@ -13438,8 +13975,9 @@ class CommandLineTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13448,6 +13986,7 @@ class CommandLineTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.temporaryFailCodes is not None and "temporaryFailCodes" not in r:
             r["temporaryFailCodes"] = save(
@@ -13455,8 +13994,9 @@ class CommandLineTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13465,6 +14005,7 @@ class CommandLineTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.permanentFailCodes is not None and "permanentFailCodes" not in r:
             r["permanentFailCodes"] = save(
@@ -13472,8 +14013,9 @@ class CommandLineTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13482,6 +14024,7 @@ class CommandLineTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -13653,7 +14196,7 @@ class DockerRequirement(ProcessRequirement):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `dockerPull` field is not valid because:",
+                        "the 'dockerPull' field is not valid because:",
                         SourceLine(_doc, "dockerPull", str),
                         [e],
                     )
@@ -13671,7 +14214,7 @@ class DockerRequirement(ProcessRequirement):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `dockerLoad` field is not valid because:",
+                        "the 'dockerLoad' field is not valid because:",
                         SourceLine(_doc, "dockerLoad", str),
                         [e],
                     )
@@ -13689,7 +14232,7 @@ class DockerRequirement(ProcessRequirement):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `dockerFile` field is not valid because:",
+                        "the 'dockerFile' field is not valid because:",
                         SourceLine(_doc, "dockerFile", str),
                         [e],
                     )
@@ -13707,7 +14250,7 @@ class DockerRequirement(ProcessRequirement):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `dockerImport` field is not valid because:",
+                        "the 'dockerImport' field is not valid because:",
                         SourceLine(_doc, "dockerImport", str),
                         [e],
                     )
@@ -13725,7 +14268,7 @@ class DockerRequirement(ProcessRequirement):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `dockerImageId` field is not valid because:",
+                        "the 'dockerImageId' field is not valid because:",
                         SourceLine(_doc, "dockerImageId", str),
                         [e],
                     )
@@ -13743,7 +14286,7 @@ class DockerRequirement(ProcessRequirement):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `dockerOutputDirectory` field is not valid because:",
+                        "the 'dockerOutputDirectory' field is not valid because:",
                         SourceLine(_doc, "dockerOutputDirectory", str),
                         [e],
                     )
@@ -13789,12 +14332,14 @@ class DockerRequirement(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -13829,23 +14374,26 @@ class DockerRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -13854,6 +14402,7 @@ class DockerRequirement(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.dockerPull is not None and "dockerPull" not in r:
             r["dockerPull"] = save(
@@ -13861,8 +14410,9 @@ class DockerRequirement(ProcessRequirement):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13871,6 +14421,7 @@ class DockerRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.dockerLoad is not None and "dockerLoad" not in r:
             r["dockerLoad"] = save(
@@ -13878,8 +14429,9 @@ class DockerRequirement(ProcessRequirement):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13888,6 +14440,7 @@ class DockerRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.dockerFile is not None and "dockerFile" not in r:
             r["dockerFile"] = save(
@@ -13895,8 +14448,9 @@ class DockerRequirement(ProcessRequirement):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13905,6 +14459,7 @@ class DockerRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.dockerImport is not None and "dockerImport" not in r:
             r["dockerImport"] = save(
@@ -13912,8 +14467,9 @@ class DockerRequirement(ProcessRequirement):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13922,6 +14478,7 @@ class DockerRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.dockerImageId is not None and "dockerImageId" not in r:
             r["dockerImageId"] = save(
@@ -13929,8 +14486,9 @@ class DockerRequirement(ProcessRequirement):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13939,6 +14497,7 @@ class DockerRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.dockerOutputDirectory is not None and "dockerOutputDirectory" not in r:
             r["dockerOutputDirectory"] = save(
@@ -13946,8 +14505,9 @@ class DockerRequirement(ProcessRequirement):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -13956,6 +14516,7 @@ class DockerRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -14039,7 +14600,7 @@ class SoftwareRequirement(ProcessRequirement):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `packages` field is not valid because:",
+                    "the 'packages' field is not valid because:",
                     SourceLine(_doc, "packages", str),
                     [e],
                 )
@@ -14078,12 +14639,14 @@ class SoftwareRequirement(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -14118,23 +14681,26 @@ class SoftwareRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -14143,12 +14709,17 @@ class SoftwareRequirement(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.packages is not None and "packages" not in r:
             r["packages"] = save(
-                self.packages, top=False, base_url=base_url, relative_uris=relative_uris
+                self.packages,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -14157,6 +14728,7 @@ class SoftwareRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -14227,7 +14799,7 @@ class SoftwarePackage(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `package` field is not valid because:",
+                    "the 'package' field is not valid because:",
                     SourceLine(_doc, "package", str),
                     [e],
                 )
@@ -14243,7 +14815,7 @@ class SoftwarePackage(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `version` field is not valid because:",
+                        "the 'version' field is not valid because:",
                         SourceLine(_doc, "version", str),
                         [e],
                     )
@@ -14261,7 +14833,7 @@ class SoftwarePackage(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `specs` field is not valid because:",
+                        "the 'specs' field is not valid because:",
                         SourceLine(_doc, "specs", str),
                         [e],
                     )
@@ -14304,12 +14876,14 @@ class SoftwarePackage(Saveable):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -14342,23 +14916,26 @@ class SoftwarePackage(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -14367,12 +14944,17 @@ class SoftwarePackage(Saveable):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.package is not None and "package" not in r:
             r["package"] = save(
-                self.package, top=False, base_url=base_url, relative_uris=relative_uris
+                self.package,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -14381,12 +14963,17 @@ class SoftwarePackage(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.version is not None and "version" not in r:
             r["version"] = save(
-                self.version, top=False, base_url=base_url, relative_uris=relative_uris
+                self.version,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -14395,11 +14982,12 @@ class SoftwarePackage(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.specs is not None and "specs" not in r:
             u = save_relative_uri(self.specs, base_url, False, None, relative_uris)
             r["specs"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -14408,6 +14996,7 @@ class SoftwarePackage(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -14487,7 +15076,7 @@ class Dirent(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `entryname` field is not valid because:",
+                        "the 'entryname' field is not valid because:",
                         SourceLine(_doc, "entryname", str),
                         [e],
                     )
@@ -14504,7 +15093,7 @@ class Dirent(Saveable):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `entry` field is not valid because:",
+                    "the 'entry' field is not valid because:",
                     SourceLine(_doc, "entry", str),
                     [e],
                 )
@@ -14520,7 +15109,7 @@ class Dirent(Saveable):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `writable` field is not valid because:",
+                        "the 'writable' field is not valid because:",
                         SourceLine(_doc, "writable", str),
                         [e],
                     )
@@ -14563,12 +15152,14 @@ class Dirent(Saveable):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -14601,23 +15192,26 @@ class Dirent(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -14626,6 +15220,7 @@ class Dirent(Saveable):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.entryname is not None and "entryname" not in r:
             r["entryname"] = save(
@@ -14633,8 +15228,9 @@ class Dirent(Saveable):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -14643,12 +15239,17 @@ class Dirent(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.entry is not None and "entry" not in r:
             r["entry"] = save(
-                self.entry, top=False, base_url=base_url, relative_uris=relative_uris
+                self.entry,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -14657,12 +15258,17 @@ class Dirent(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.writable is not None and "writable" not in r:
             r["writable"] = save(
-                self.writable, top=False, base_url=base_url, relative_uris=relative_uris
+                self.writable,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -14671,6 +15277,7 @@ class Dirent(Saveable):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -14742,7 +15349,7 @@ class InitialWorkDirRequirement(ProcessRequirement):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `listing` field is not valid because:",
+                    "the 'listing' field is not valid because:",
                     SourceLine(_doc, "listing", str),
                     [e],
                 )
@@ -14783,12 +15390,14 @@ class InitialWorkDirRequirement(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -14823,23 +15432,26 @@ class InitialWorkDirRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -14848,12 +15460,17 @@ class InitialWorkDirRequirement(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.listing is not None and "listing" not in r:
             r["listing"] = save(
-                self.listing, top=False, base_url=base_url, relative_uris=relative_uris
+                self.listing,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -14862,6 +15479,7 @@ class InitialWorkDirRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -14935,7 +15553,7 @@ class EnvVarRequirement(ProcessRequirement):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `envDef` field is not valid because:",
+                    "the 'envDef' field is not valid because:",
                     SourceLine(_doc, "envDef", str),
                     [e],
                 )
@@ -14974,12 +15592,14 @@ class EnvVarRequirement(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -15014,23 +15634,26 @@ class EnvVarRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -15039,12 +15662,17 @@ class EnvVarRequirement(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.envDef is not None and "envDef" not in r:
             r["envDef"] = save(
-                self.envDef, top=False, base_url=base_url, relative_uris=relative_uris
+                self.envDef,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -15053,6 +15681,7 @@ class EnvVarRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -15152,12 +15781,14 @@ class ShellCommandRequirement(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -15192,23 +15823,26 @@ class ShellCommandRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -15217,6 +15851,7 @@ class ShellCommandRequirement(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
 
         # top refers to the directory level
@@ -15345,7 +15980,7 @@ class ResourceRequirement(ProcessRequirement):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `coresMin` field is not valid because:",
+                        "the 'coresMin' field is not valid because:",
                         SourceLine(_doc, "coresMin", str),
                         [e],
                     )
@@ -15363,7 +15998,7 @@ class ResourceRequirement(ProcessRequirement):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `coresMax` field is not valid because:",
+                        "the 'coresMax' field is not valid because:",
                         SourceLine(_doc, "coresMax", str),
                         [e],
                     )
@@ -15381,7 +16016,7 @@ class ResourceRequirement(ProcessRequirement):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `ramMin` field is not valid because:",
+                        "the 'ramMin' field is not valid because:",
                         SourceLine(_doc, "ramMin", str),
                         [e],
                     )
@@ -15399,7 +16034,7 @@ class ResourceRequirement(ProcessRequirement):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `ramMax` field is not valid because:",
+                        "the 'ramMax' field is not valid because:",
                         SourceLine(_doc, "ramMax", str),
                         [e],
                     )
@@ -15417,7 +16052,7 @@ class ResourceRequirement(ProcessRequirement):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `tmpdirMin` field is not valid because:",
+                        "the 'tmpdirMin' field is not valid because:",
                         SourceLine(_doc, "tmpdirMin", str),
                         [e],
                     )
@@ -15435,7 +16070,7 @@ class ResourceRequirement(ProcessRequirement):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `tmpdirMax` field is not valid because:",
+                        "the 'tmpdirMax' field is not valid because:",
                         SourceLine(_doc, "tmpdirMax", str),
                         [e],
                     )
@@ -15453,7 +16088,7 @@ class ResourceRequirement(ProcessRequirement):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `outdirMin` field is not valid because:",
+                        "the 'outdirMin' field is not valid because:",
                         SourceLine(_doc, "outdirMin", str),
                         [e],
                     )
@@ -15471,7 +16106,7 @@ class ResourceRequirement(ProcessRequirement):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `outdirMax` field is not valid because:",
+                        "the 'outdirMax' field is not valid because:",
                         SourceLine(_doc, "outdirMax", str),
                         [e],
                     )
@@ -15519,12 +16154,14 @@ class ResourceRequirement(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -15559,23 +16196,26 @@ class ResourceRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -15584,12 +16224,17 @@ class ResourceRequirement(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.coresMin is not None and "coresMin" not in r:
             r["coresMin"] = save(
-                self.coresMin, top=False, base_url=base_url, relative_uris=relative_uris
+                self.coresMin,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -15598,12 +16243,17 @@ class ResourceRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.coresMax is not None and "coresMax" not in r:
             r["coresMax"] = save(
-                self.coresMax, top=False, base_url=base_url, relative_uris=relative_uris
+                self.coresMax,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -15612,12 +16262,17 @@ class ResourceRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.ramMin is not None and "ramMin" not in r:
             r["ramMin"] = save(
-                self.ramMin, top=False, base_url=base_url, relative_uris=relative_uris
+                self.ramMin,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -15626,12 +16281,17 @@ class ResourceRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.ramMax is not None and "ramMax" not in r:
             r["ramMax"] = save(
-                self.ramMax, top=False, base_url=base_url, relative_uris=relative_uris
+                self.ramMax,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -15640,6 +16300,7 @@ class ResourceRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.tmpdirMin is not None and "tmpdirMin" not in r:
             r["tmpdirMin"] = save(
@@ -15647,8 +16308,9 @@ class ResourceRequirement(ProcessRequirement):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -15657,6 +16319,7 @@ class ResourceRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.tmpdirMax is not None and "tmpdirMax" not in r:
             r["tmpdirMax"] = save(
@@ -15664,8 +16327,9 @@ class ResourceRequirement(ProcessRequirement):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -15674,6 +16338,7 @@ class ResourceRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.outdirMin is not None and "outdirMin" not in r:
             r["outdirMin"] = save(
@@ -15681,8 +16346,9 @@ class ResourceRequirement(ProcessRequirement):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -15691,6 +16357,7 @@ class ResourceRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.outdirMax is not None and "outdirMax" not in r:
             r["outdirMax"] = save(
@@ -15698,8 +16365,9 @@ class ResourceRequirement(ProcessRequirement):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -15708,6 +16376,7 @@ class ResourceRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -15802,7 +16471,7 @@ class WorkReuse(ProcessRequirement):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `enableReuse` field is not valid because:",
+                    "the 'enableReuse' field is not valid because:",
                     SourceLine(_doc, "enableReuse", str),
                     [e],
                 )
@@ -15841,12 +16510,14 @@ class WorkReuse(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -15881,23 +16552,26 @@ class WorkReuse(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -15906,6 +16580,7 @@ class WorkReuse(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.enableReuse is not None and "enableReuse" not in r:
             r["enableReuse"] = save(
@@ -15913,8 +16588,9 @@ class WorkReuse(ProcessRequirement):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -15923,6 +16599,7 @@ class WorkReuse(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -16012,7 +16689,7 @@ class NetworkAccess(ProcessRequirement):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `networkAccess` field is not valid because:",
+                    "the 'networkAccess' field is not valid because:",
                     SourceLine(_doc, "networkAccess", str),
                     [e],
                 )
@@ -16051,12 +16728,14 @@ class NetworkAccess(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -16091,23 +16770,26 @@ class NetworkAccess(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -16116,6 +16798,7 @@ class NetworkAccess(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.networkAccess is not None and "networkAccess" not in r:
             r["networkAccess"] = save(
@@ -16123,8 +16806,9 @@ class NetworkAccess(ProcessRequirement):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -16133,6 +16817,7 @@ class NetworkAccess(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -16237,7 +16922,7 @@ class InplaceUpdateRequirement(ProcessRequirement):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `inplaceUpdate` field is not valid because:",
+                    "the 'inplaceUpdate' field is not valid because:",
                     SourceLine(_doc, "inplaceUpdate", str),
                     [e],
                 )
@@ -16278,12 +16963,14 @@ class InplaceUpdateRequirement(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -16318,23 +17005,26 @@ class InplaceUpdateRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -16343,6 +17033,7 @@ class InplaceUpdateRequirement(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.inplaceUpdate is not None and "inplaceUpdate" not in r:
             r["inplaceUpdate"] = save(
@@ -16350,8 +17041,9 @@ class InplaceUpdateRequirement(ProcessRequirement):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -16360,6 +17052,7 @@ class InplaceUpdateRequirement(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -16440,7 +17133,7 @@ class ToolTimeLimit(ProcessRequirement):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `timelimit` field is not valid because:",
+                    "the 'timelimit' field is not valid because:",
                     SourceLine(_doc, "timelimit", str),
                     [e],
                 )
@@ -16479,12 +17172,14 @@ class ToolTimeLimit(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -16519,23 +17214,26 @@ class ToolTimeLimit(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -16544,6 +17242,7 @@ class ToolTimeLimit(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.timelimit is not None and "timelimit" not in r:
             r["timelimit"] = save(
@@ -16551,8 +17250,9 @@ class ToolTimeLimit(ProcessRequirement):
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -16561,6 +17261,7 @@ class ToolTimeLimit(ProcessRequirement):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -16654,7 +17355,7 @@ class ExpressionToolOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `id` field is not valid because:",
+                        "the 'id' field is not valid because:",
                         SourceLine(_doc, "id", str),
                         [e],
                     )
@@ -16681,7 +17382,7 @@ class ExpressionToolOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -16699,7 +17400,7 @@ class ExpressionToolOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `secondaryFiles` field is not valid because:",
+                        "the 'secondaryFiles' field is not valid because:",
                         SourceLine(_doc, "secondaryFiles", str),
                         [e],
                     )
@@ -16717,7 +17418,7 @@ class ExpressionToolOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `streamable` field is not valid because:",
+                        "the 'streamable' field is not valid because:",
                         SourceLine(_doc, "streamable", str),
                         [e],
                     )
@@ -16735,7 +17436,7 @@ class ExpressionToolOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -16753,7 +17454,7 @@ class ExpressionToolOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `format` field is not valid because:",
+                        "the 'format' field is not valid because:",
                         SourceLine(_doc, "format", str),
                         [e],
                     )
@@ -16770,7 +17471,7 @@ class ExpressionToolOutputParameter(OutputParameter):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -16818,12 +17519,14 @@ class ExpressionToolOutputParameter(OutputParameter):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -16840,22 +17543,17 @@ class ExpressionToolOutputParameter(OutputParameter):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc["id"] = temp_id
-                        temp_doc.lc.add_kv_line_col(
-                            "id",
-                            [
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1],
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1] + 4,
-                            ],
-                        )
+                        temp_doc['id'] = temp_id
+                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1],
+                                                           doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1] + 4])
                         doc = temp_doc
 
         if doc is not None:
@@ -16880,23 +17578,26 @@ class ExpressionToolOutputParameter(OutputParameter):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url_to_save,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -16905,11 +17606,12 @@ class ExpressionToolOutputParameter(OutputParameter):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
             r["id"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -16918,6 +17620,7 @@ class ExpressionToolOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -16925,8 +17628,9 @@ class ExpressionToolOutputParameter(OutputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -16935,6 +17639,7 @@ class ExpressionToolOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.secondaryFiles is not None and "secondaryFiles" not in r:
             r["secondaryFiles"] = save(
@@ -16942,8 +17647,9 @@ class ExpressionToolOutputParameter(OutputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -16952,6 +17658,7 @@ class ExpressionToolOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.streamable is not None and "streamable" not in r:
             r["streamable"] = save(
@@ -16959,8 +17666,9 @@ class ExpressionToolOutputParameter(OutputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -16969,12 +17677,17 @@ class ExpressionToolOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
-                self.doc, top=False, base_url=str(self.id), relative_uris=relative_uris
+                self.doc,
+                top=False,
+                base_url=str(self.id),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -16983,11 +17696,12 @@ class ExpressionToolOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.format is not None and "format" not in r:
             u = save_relative_uri(self.format, str(self.id), True, None, relative_uris)
             r["format"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -16996,12 +17710,17 @@ class ExpressionToolOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
-                self.type, top=False, base_url=str(self.id), relative_uris=relative_uris
+                self.type,
+                top=False,
+                base_url=str(self.id),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -17010,6 +17729,7 @@ class ExpressionToolOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -17121,7 +17841,7 @@ class WorkflowInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `id` field is not valid because:",
+                        "the 'id' field is not valid because:",
                         SourceLine(_doc, "id", str),
                         [e],
                     )
@@ -17148,7 +17868,7 @@ class WorkflowInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -17166,7 +17886,7 @@ class WorkflowInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `secondaryFiles` field is not valid because:",
+                        "the 'secondaryFiles' field is not valid because:",
                         SourceLine(_doc, "secondaryFiles", str),
                         [e],
                     )
@@ -17184,7 +17904,7 @@ class WorkflowInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `streamable` field is not valid because:",
+                        "the 'streamable' field is not valid because:",
                         SourceLine(_doc, "streamable", str),
                         [e],
                     )
@@ -17202,7 +17922,7 @@ class WorkflowInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -17220,7 +17940,7 @@ class WorkflowInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `format` field is not valid because:",
+                        "the 'format' field is not valid because:",
                         SourceLine(_doc, "format", str),
                         [e],
                     )
@@ -17238,7 +17958,7 @@ class WorkflowInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `loadContents` field is not valid because:",
+                        "the 'loadContents' field is not valid because:",
                         SourceLine(_doc, "loadContents", str),
                         [e],
                     )
@@ -17256,7 +17976,7 @@ class WorkflowInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `loadListing` field is not valid because:",
+                        "the 'loadListing' field is not valid because:",
                         SourceLine(_doc, "loadListing", str),
                         [e],
                     )
@@ -17274,7 +17994,7 @@ class WorkflowInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `default` field is not valid because:",
+                        "the 'default' field is not valid because:",
                         SourceLine(_doc, "default", str),
                         [e],
                     )
@@ -17291,7 +18011,7 @@ class WorkflowInputParameter(InputParameter):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -17307,7 +18027,7 @@ class WorkflowInputParameter(InputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `inputBinding` field is not valid because:",
+                        "the 'inputBinding' field is not valid because:",
                         SourceLine(_doc, "inputBinding", str),
                         [e],
                     )
@@ -17361,12 +18081,14 @@ class WorkflowInputParameter(InputParameter):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -17383,22 +18105,17 @@ class WorkflowInputParameter(InputParameter):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc["id"] = temp_id
-                        temp_doc.lc.add_kv_line_col(
-                            "id",
-                            [
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1],
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1] + 4,
-                            ],
-                        )
+                        temp_doc['id'] = temp_id
+                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1],
+                                                           doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1] + 4])
                         doc = temp_doc
 
         if doc is not None:
@@ -17423,23 +18140,26 @@ class WorkflowInputParameter(InputParameter):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url_to_save,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -17448,11 +18168,12 @@ class WorkflowInputParameter(InputParameter):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
             r["id"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -17461,6 +18182,7 @@ class WorkflowInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -17468,8 +18190,9 @@ class WorkflowInputParameter(InputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -17478,6 +18201,7 @@ class WorkflowInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.secondaryFiles is not None and "secondaryFiles" not in r:
             r["secondaryFiles"] = save(
@@ -17485,8 +18209,9 @@ class WorkflowInputParameter(InputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -17495,6 +18220,7 @@ class WorkflowInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.streamable is not None and "streamable" not in r:
             r["streamable"] = save(
@@ -17502,8 +18228,9 @@ class WorkflowInputParameter(InputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -17512,12 +18239,17 @@ class WorkflowInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
-                self.doc, top=False, base_url=str(self.id), relative_uris=relative_uris
+                self.doc,
+                top=False,
+                base_url=str(self.id),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -17526,11 +18258,12 @@ class WorkflowInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.format is not None and "format" not in r:
             u = save_relative_uri(self.format, str(self.id), True, None, relative_uris)
             r["format"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -17539,6 +18272,7 @@ class WorkflowInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.loadContents is not None and "loadContents" not in r:
             r["loadContents"] = save(
@@ -17546,8 +18280,9 @@ class WorkflowInputParameter(InputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -17556,6 +18291,7 @@ class WorkflowInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.loadListing is not None and "loadListing" not in r:
             r["loadListing"] = save(
@@ -17563,8 +18299,9 @@ class WorkflowInputParameter(InputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -17573,6 +18310,7 @@ class WorkflowInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.default is not None and "default" not in r:
             r["default"] = save(
@@ -17580,8 +18318,9 @@ class WorkflowInputParameter(InputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -17590,12 +18329,17 @@ class WorkflowInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
-                self.type, top=False, base_url=str(self.id), relative_uris=relative_uris
+                self.type,
+                top=False,
+                base_url=str(self.id),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -17604,6 +18348,7 @@ class WorkflowInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.inputBinding is not None and "inputBinding" not in r:
             r["inputBinding"] = save(
@@ -17611,8 +18356,9 @@ class WorkflowInputParameter(InputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -17621,6 +18367,7 @@ class WorkflowInputParameter(InputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -17754,7 +18501,7 @@ class ExpressionTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `id` field is not valid because:",
+                        "the 'id' field is not valid because:",
                         SourceLine(_doc, "id", str),
                         [e],
                     )
@@ -17781,7 +18528,7 @@ class ExpressionTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -17799,7 +18546,7 @@ class ExpressionTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -17816,7 +18563,7 @@ class ExpressionTool(Process):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `inputs` field is not valid because:",
+                    "the 'inputs' field is not valid because:",
                     SourceLine(_doc, "inputs", str),
                     [e],
                 )
@@ -17831,7 +18578,7 @@ class ExpressionTool(Process):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `outputs` field is not valid because:",
+                    "the 'outputs' field is not valid because:",
                     SourceLine(_doc, "outputs", str),
                     [e],
                 )
@@ -17847,7 +18594,7 @@ class ExpressionTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `requirements` field is not valid because:",
+                        "the 'requirements' field is not valid because:",
                         SourceLine(_doc, "requirements", str),
                         [e],
                     )
@@ -17865,7 +18612,7 @@ class ExpressionTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `hints` field is not valid because:",
+                        "the 'hints' field is not valid because:",
                         SourceLine(_doc, "hints", str),
                         [e],
                     )
@@ -17883,7 +18630,7 @@ class ExpressionTool(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `cwlVersion` field is not valid because:",
+                        "the 'cwlVersion' field is not valid because:",
                         SourceLine(_doc, "cwlVersion", str),
                         [e],
                     )
@@ -17900,7 +18647,7 @@ class ExpressionTool(Process):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `expression` field is not valid because:",
+                    "the 'expression' field is not valid because:",
                     SourceLine(_doc, "expression", str),
                     [e],
                 )
@@ -17948,12 +18695,14 @@ class ExpressionTool(Process):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -17970,22 +18719,17 @@ class ExpressionTool(Process):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc["id"] = temp_id
-                        temp_doc.lc.add_kv_line_col(
-                            "id",
-                            [
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1],
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1] + 4,
-                            ],
-                        )
+                        temp_doc['id'] = temp_id
+                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1],
+                                                           doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1] + 4])
                         doc = temp_doc
 
         if doc is not None:
@@ -18012,23 +18756,26 @@ class ExpressionTool(Process):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url_to_save,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -18037,11 +18784,12 @@ class ExpressionTool(Process):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
             r["id"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18050,6 +18798,7 @@ class ExpressionTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -18057,8 +18806,9 @@ class ExpressionTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18067,12 +18817,17 @@ class ExpressionTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
-                self.doc, top=False, base_url=str(self.id), relative_uris=relative_uris
+                self.doc,
+                top=False,
+                base_url=str(self.id),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18081,6 +18836,7 @@ class ExpressionTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.inputs is not None and "inputs" not in r:
             r["inputs"] = save(
@@ -18088,8 +18844,9 @@ class ExpressionTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18098,6 +18855,7 @@ class ExpressionTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.outputs is not None and "outputs" not in r:
             r["outputs"] = save(
@@ -18105,8 +18863,9 @@ class ExpressionTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18115,6 +18874,7 @@ class ExpressionTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.requirements is not None and "requirements" not in r:
             r["requirements"] = save(
@@ -18122,8 +18882,9 @@ class ExpressionTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18132,6 +18893,7 @@ class ExpressionTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.hints is not None and "hints" not in r:
             r["hints"] = save(
@@ -18139,8 +18901,9 @@ class ExpressionTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18149,13 +18912,14 @@ class ExpressionTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.cwlVersion is not None and "cwlVersion" not in r:
             u = save_relative_uri(
                 self.cwlVersion, str(self.id), False, None, relative_uris
             )
             r["cwlVersion"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18164,6 +18928,7 @@ class ExpressionTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.expression is not None and "expression" not in r:
             r["expression"] = save(
@@ -18171,8 +18936,9 @@ class ExpressionTool(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18181,6 +18947,7 @@ class ExpressionTool(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -18303,7 +19070,7 @@ class WorkflowOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `id` field is not valid because:",
+                        "the 'id' field is not valid because:",
                         SourceLine(_doc, "id", str),
                         [e],
                     )
@@ -18330,7 +19097,7 @@ class WorkflowOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -18348,7 +19115,7 @@ class WorkflowOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `secondaryFiles` field is not valid because:",
+                        "the 'secondaryFiles' field is not valid because:",
                         SourceLine(_doc, "secondaryFiles", str),
                         [e],
                     )
@@ -18366,7 +19133,7 @@ class WorkflowOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `streamable` field is not valid because:",
+                        "the 'streamable' field is not valid because:",
                         SourceLine(_doc, "streamable", str),
                         [e],
                     )
@@ -18384,7 +19151,7 @@ class WorkflowOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -18402,7 +19169,7 @@ class WorkflowOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `format` field is not valid because:",
+                        "the 'format' field is not valid because:",
                         SourceLine(_doc, "format", str),
                         [e],
                     )
@@ -18420,7 +19187,7 @@ class WorkflowOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `outputSource` field is not valid because:",
+                        "the 'outputSource' field is not valid because:",
                         SourceLine(_doc, "outputSource", str),
                         [e],
                     )
@@ -18438,7 +19205,7 @@ class WorkflowOutputParameter(OutputParameter):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `linkMerge` field is not valid because:",
+                        "the 'linkMerge' field is not valid because:",
                         SourceLine(_doc, "linkMerge", str),
                         [e],
                     )
@@ -18455,7 +19222,7 @@ class WorkflowOutputParameter(OutputParameter):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `type` field is not valid because:",
+                    "the 'type' field is not valid because:",
                     SourceLine(_doc, "type", str),
                     [e],
                 )
@@ -18505,12 +19272,14 @@ class WorkflowOutputParameter(OutputParameter):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -18527,22 +19296,17 @@ class WorkflowOutputParameter(OutputParameter):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc["id"] = temp_id
-                        temp_doc.lc.add_kv_line_col(
-                            "id",
-                            [
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1],
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1] + 4,
-                            ],
-                        )
+                        temp_doc['id'] = temp_id
+                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1],
+                                                           doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1] + 4])
                         doc = temp_doc
 
         if doc is not None:
@@ -18567,23 +19331,26 @@ class WorkflowOutputParameter(OutputParameter):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url_to_save,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -18592,11 +19359,12 @@ class WorkflowOutputParameter(OutputParameter):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
             r["id"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18605,6 +19373,7 @@ class WorkflowOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -18612,8 +19381,9 @@ class WorkflowOutputParameter(OutputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18622,6 +19392,7 @@ class WorkflowOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.secondaryFiles is not None and "secondaryFiles" not in r:
             r["secondaryFiles"] = save(
@@ -18629,8 +19400,9 @@ class WorkflowOutputParameter(OutputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18639,6 +19411,7 @@ class WorkflowOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.streamable is not None and "streamable" not in r:
             r["streamable"] = save(
@@ -18646,8 +19419,9 @@ class WorkflowOutputParameter(OutputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18656,12 +19430,17 @@ class WorkflowOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
-                self.doc, top=False, base_url=str(self.id), relative_uris=relative_uris
+                self.doc,
+                top=False,
+                base_url=str(self.id),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18670,11 +19449,12 @@ class WorkflowOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.format is not None and "format" not in r:
             u = save_relative_uri(self.format, str(self.id), True, None, relative_uris)
             r["format"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18683,13 +19463,14 @@ class WorkflowOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.outputSource is not None and "outputSource" not in r:
             u = save_relative_uri(
                 self.outputSource, str(self.id), False, 1, relative_uris
             )
             r["outputSource"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18698,6 +19479,7 @@ class WorkflowOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.linkMerge is not None and "linkMerge" not in r:
             r["linkMerge"] = save(
@@ -18705,8 +19487,9 @@ class WorkflowOutputParameter(OutputParameter):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18715,12 +19498,17 @@ class WorkflowOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.type is not None and "type" not in r:
             r["type"] = save(
-                self.type, top=False, base_url=str(self.id), relative_uris=relative_uris
+                self.type,
+                top=False,
+                base_url=str(self.id),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -18729,6 +19517,7 @@ class WorkflowOutputParameter(OutputParameter):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -18889,7 +19678,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `id` field is not valid because:",
+                        "the 'id' field is not valid because:",
                         SourceLine(_doc, "id", str),
                         [e],
                     )
@@ -18916,7 +19705,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `source` field is not valid because:",
+                        "the 'source' field is not valid because:",
                         SourceLine(_doc, "source", str),
                         [e],
                     )
@@ -18934,7 +19723,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `linkMerge` field is not valid because:",
+                        "the 'linkMerge' field is not valid because:",
                         SourceLine(_doc, "linkMerge", str),
                         [e],
                     )
@@ -18952,7 +19741,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `loadContents` field is not valid because:",
+                        "the 'loadContents' field is not valid because:",
                         SourceLine(_doc, "loadContents", str),
                         [e],
                     )
@@ -18970,7 +19759,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `loadListing` field is not valid because:",
+                        "the 'loadListing' field is not valid because:",
                         SourceLine(_doc, "loadListing", str),
                         [e],
                     )
@@ -18988,7 +19777,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -19006,7 +19795,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `default` field is not valid because:",
+                        "the 'default' field is not valid because:",
                         SourceLine(_doc, "default", str),
                         [e],
                     )
@@ -19024,7 +19813,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `valueFrom` field is not valid because:",
+                        "the 'valueFrom' field is not valid because:",
                         SourceLine(_doc, "valueFrom", str),
                         [e],
                     )
@@ -19073,12 +19862,14 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -19095,22 +19886,17 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc["id"] = temp_id
-                        temp_doc.lc.add_kv_line_col(
-                            "id",
-                            [
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1],
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1] + 4,
-                            ],
-                        )
+                        temp_doc['id'] = temp_id
+                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1],
+                                                           doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1] + 4])
                         doc = temp_doc
 
         if doc is not None:
@@ -19135,23 +19921,26 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url_to_save,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -19160,11 +19949,12 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
             r["id"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -19173,11 +19963,12 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.source is not None and "source" not in r:
             u = save_relative_uri(self.source, str(self.id), False, 2, relative_uris)
             r["source"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -19186,6 +19977,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.linkMerge is not None and "linkMerge" not in r:
             r["linkMerge"] = save(
@@ -19193,8 +19985,9 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -19203,6 +19996,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.loadContents is not None and "loadContents" not in r:
             r["loadContents"] = save(
@@ -19210,8 +20004,9 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -19220,6 +20015,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.loadListing is not None and "loadListing" not in r:
             r["loadListing"] = save(
@@ -19227,8 +20023,9 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -19237,6 +20034,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -19244,8 +20042,9 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -19254,6 +20053,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.default is not None and "default" not in r:
             r["default"] = save(
@@ -19261,8 +20061,9 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -19271,6 +20072,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.valueFrom is not None and "valueFrom" not in r:
             r["valueFrom"] = save(
@@ -19278,8 +20080,9 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -19288,6 +20091,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -19374,7 +20178,7 @@ class WorkflowStepOutput(Identified):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `id` field is not valid because:",
+                        "the 'id' field is not valid because:",
                         SourceLine(_doc, "id", str),
                         [e],
                     )
@@ -19423,12 +20227,14 @@ class WorkflowStepOutput(Identified):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -19445,22 +20251,17 @@ class WorkflowStepOutput(Identified):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc["id"] = temp_id
-                        temp_doc.lc.add_kv_line_col(
-                            "id",
-                            [
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1],
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1] + 4,
-                            ],
-                        )
+                        temp_doc['id'] = temp_id
+                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1],
+                                                           doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1] + 4])
                         doc = temp_doc
 
         if doc is not None:
@@ -19485,23 +20286,26 @@ class WorkflowStepOutput(Identified):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url_to_save,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -19510,11 +20314,12 @@ class WorkflowStepOutput(Identified):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
             r["id"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -19523,6 +20328,7 @@ class WorkflowStepOutput(Identified):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -19687,7 +20493,7 @@ class WorkflowStep(Identified, Labeled, Documented):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `id` field is not valid because:",
+                        "the 'id' field is not valid because:",
                         SourceLine(_doc, "id", str),
                         [e],
                     )
@@ -19714,7 +20520,7 @@ class WorkflowStep(Identified, Labeled, Documented):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -19732,7 +20538,7 @@ class WorkflowStep(Identified, Labeled, Documented):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -19749,7 +20555,7 @@ class WorkflowStep(Identified, Labeled, Documented):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `in` field is not valid because:",
+                    "the 'in' field is not valid because:",
                     SourceLine(_doc, "in", str),
                     [e],
                 )
@@ -19764,7 +20570,7 @@ class WorkflowStep(Identified, Labeled, Documented):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `out` field is not valid because:",
+                    "the 'out' field is not valid because:",
                     SourceLine(_doc, "out", str),
                     [e],
                 )
@@ -19780,7 +20586,7 @@ class WorkflowStep(Identified, Labeled, Documented):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `requirements` field is not valid because:",
+                        "the 'requirements' field is not valid because:",
                         SourceLine(_doc, "requirements", str),
                         [e],
                     )
@@ -19798,7 +20604,7 @@ class WorkflowStep(Identified, Labeled, Documented):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `hints` field is not valid because:",
+                        "the 'hints' field is not valid because:",
                         SourceLine(_doc, "hints", str),
                         [e],
                     )
@@ -19806,7 +20612,7 @@ class WorkflowStep(Identified, Labeled, Documented):
         else:
             hints = None
 
-        subscope_baseuri = expand_url("run", baseuri, loadingOptions, True)
+        subscope_baseuri = expand_url('run', baseuri, loadingOptions, True)
         try:
             run = load_field(
                 _doc.get("run"),
@@ -19817,7 +20623,7 @@ class WorkflowStep(Identified, Labeled, Documented):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `run` field is not valid because:",
+                    "the 'run' field is not valid because:",
                     SourceLine(_doc, "run", str),
                     [e],
                 )
@@ -19833,7 +20639,7 @@ class WorkflowStep(Identified, Labeled, Documented):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `scatter` field is not valid because:",
+                        "the 'scatter' field is not valid because:",
                         SourceLine(_doc, "scatter", str),
                         [e],
                     )
@@ -19851,7 +20657,7 @@ class WorkflowStep(Identified, Labeled, Documented):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `scatterMethod` field is not valid because:",
+                        "the 'scatterMethod' field is not valid because:",
                         SourceLine(_doc, "scatterMethod", str),
                         [e],
                     )
@@ -19902,12 +20708,14 @@ class WorkflowStep(Identified, Labeled, Documented):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -19924,22 +20732,17 @@ class WorkflowStep(Identified, Labeled, Documented):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc["id"] = temp_id
-                        temp_doc.lc.add_kv_line_col(
-                            "id",
-                            [
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1],
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1] + 4,
-                            ],
-                        )
+                        temp_doc['id'] = temp_id
+                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1],
+                                                           doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1] + 4])
                         doc = temp_doc
 
         if doc is not None:
@@ -19964,23 +20767,26 @@ class WorkflowStep(Identified, Labeled, Documented):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url_to_save,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -19989,11 +20795,12 @@ class WorkflowStep(Identified, Labeled, Documented):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
             r["id"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20002,6 +20809,7 @@ class WorkflowStep(Identified, Labeled, Documented):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -20009,8 +20817,9 @@ class WorkflowStep(Identified, Labeled, Documented):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20019,12 +20828,17 @@ class WorkflowStep(Identified, Labeled, Documented):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
-                self.doc, top=False, base_url=str(self.id), relative_uris=relative_uris
+                self.doc,
+                top=False,
+                base_url=str(self.id),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20033,12 +20847,17 @@ class WorkflowStep(Identified, Labeled, Documented):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.in_ is not None and "in" not in r:
             r["in"] = save(
-                self.in_, top=False, base_url=str(self.id), relative_uris=relative_uris
+                self.in_,
+                top=False,
+                base_url=str(self.id),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20047,11 +20866,12 @@ class WorkflowStep(Identified, Labeled, Documented):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.out is not None and "out" not in r:
             u = save_relative_uri(self.out, str(self.id), True, None, relative_uris)
             r["out"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20060,6 +20880,7 @@ class WorkflowStep(Identified, Labeled, Documented):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.requirements is not None and "requirements" not in r:
             r["requirements"] = save(
@@ -20067,8 +20888,9 @@ class WorkflowStep(Identified, Labeled, Documented):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20077,6 +20899,7 @@ class WorkflowStep(Identified, Labeled, Documented):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.hints is not None and "hints" not in r:
             r["hints"] = save(
@@ -20084,8 +20907,9 @@ class WorkflowStep(Identified, Labeled, Documented):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20094,11 +20918,12 @@ class WorkflowStep(Identified, Labeled, Documented):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.run is not None and "run" not in r:
             u = save_relative_uri(self.run, str(self.id), False, None, relative_uris)
             r["run"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20107,11 +20932,12 @@ class WorkflowStep(Identified, Labeled, Documented):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.scatter is not None and "scatter" not in r:
             u = save_relative_uri(self.scatter, str(self.id), False, 0, relative_uris)
             r["scatter"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20120,13 +20946,14 @@ class WorkflowStep(Identified, Labeled, Documented):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.scatterMethod is not None and "scatterMethod" not in r:
             u = save_relative_uri(
                 self.scatterMethod, str(self.id), False, None, relative_uris
             )
             r["scatterMethod"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20135,6 +20962,7 @@ class WorkflowStep(Identified, Labeled, Documented):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -20305,7 +21133,7 @@ class Workflow(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `id` field is not valid because:",
+                        "the 'id' field is not valid because:",
                         SourceLine(_doc, "id", str),
                         [e],
                     )
@@ -20332,7 +21160,7 @@ class Workflow(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `label` field is not valid because:",
+                        "the 'label' field is not valid because:",
                         SourceLine(_doc, "label", str),
                         [e],
                     )
@@ -20350,7 +21178,7 @@ class Workflow(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `doc` field is not valid because:",
+                        "the 'doc' field is not valid because:",
                         SourceLine(_doc, "doc", str),
                         [e],
                     )
@@ -20367,7 +21195,7 @@ class Workflow(Process):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `inputs` field is not valid because:",
+                    "the 'inputs' field is not valid because:",
                     SourceLine(_doc, "inputs", str),
                     [e],
                 )
@@ -20382,7 +21210,7 @@ class Workflow(Process):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `outputs` field is not valid because:",
+                    "the 'outputs' field is not valid because:",
                     SourceLine(_doc, "outputs", str),
                     [e],
                 )
@@ -20398,7 +21226,7 @@ class Workflow(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `requirements` field is not valid because:",
+                        "the 'requirements' field is not valid because:",
                         SourceLine(_doc, "requirements", str),
                         [e],
                     )
@@ -20416,7 +21244,7 @@ class Workflow(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `hints` field is not valid because:",
+                        "the 'hints' field is not valid because:",
                         SourceLine(_doc, "hints", str),
                         [e],
                     )
@@ -20434,7 +21262,7 @@ class Workflow(Process):
             except ValidationException as e:
                 _errors__.append(
                     ValidationException(
-                        "the `cwlVersion` field is not valid because:",
+                        "the 'cwlVersion' field is not valid because:",
                         SourceLine(_doc, "cwlVersion", str),
                         [e],
                     )
@@ -20451,7 +21279,7 @@ class Workflow(Process):
         except ValidationException as e:
             _errors__.append(
                 ValidationException(
-                    "the `steps` field is not valid because:",
+                    "the 'steps' field is not valid because:",
                     SourceLine(_doc, "steps", str),
                     [e],
                 )
@@ -20499,12 +21327,14 @@ class Workflow(Process):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -20521,22 +21351,17 @@ class Workflow(Process):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc["id"] = temp_id
-                        temp_doc.lc.add_kv_line_col(
-                            "id",
-                            [
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1],
-                                doc.lc.data[temp_id][0],
-                                doc.lc.data[temp_id][1] + 4,
-                            ],
-                        )
+                        temp_doc['id'] = temp_id
+                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1],
+                                                           doc.lc.data[temp_id][0],
+                                                           doc.lc.data[temp_id][1] + 4])
                         doc = temp_doc
 
         if doc is not None:
@@ -20563,23 +21388,26 @@ class Workflow(Process):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url_to_save,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -20588,11 +21416,12 @@ class Workflow(Process):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
             r["id"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20601,6 +21430,7 @@ class Workflow(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.label is not None and "label" not in r:
             r["label"] = save(
@@ -20608,8 +21438,9 @@ class Workflow(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20618,12 +21449,17 @@ class Workflow(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.doc is not None and "doc" not in r:
             r["doc"] = save(
-                self.doc, top=False, base_url=str(self.id), relative_uris=relative_uris
+                self.doc,
+                top=False,
+                base_url=str(self.id),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20632,6 +21468,7 @@ class Workflow(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.inputs is not None and "inputs" not in r:
             r["inputs"] = save(
@@ -20639,8 +21476,9 @@ class Workflow(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20649,6 +21487,7 @@ class Workflow(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.outputs is not None and "outputs" not in r:
             r["outputs"] = save(
@@ -20656,8 +21495,9 @@ class Workflow(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20666,6 +21506,7 @@ class Workflow(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.requirements is not None and "requirements" not in r:
             r["requirements"] = save(
@@ -20673,8 +21514,9 @@ class Workflow(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20683,6 +21525,7 @@ class Workflow(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.hints is not None and "hints" not in r:
             r["hints"] = save(
@@ -20690,8 +21533,9 @@ class Workflow(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20700,13 +21544,14 @@ class Workflow(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.cwlVersion is not None and "cwlVersion" not in r:
             u = save_relative_uri(
                 self.cwlVersion, str(self.id), False, None, relative_uris
             )
             r["cwlVersion"] = u
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20715,6 +21560,7 @@ class Workflow(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
         if self.steps is not None and "steps" not in r:
             r["steps"] = save(
@@ -20722,8 +21568,9 @@ class Workflow(Process):
                 top=False,
                 base_url=str(self.id),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
             )
-            max_len = add_kv(
+            max_len, inserted_line_info = add_kv(
                 old_doc=doc,
                 new_doc=r,
                 line_numbers=line_numbers,
@@ -20732,6 +21579,7 @@ class Workflow(Process):
                 cols=cols,
                 min_col=min_col,
                 max_len=max_len,
+                inserted_line_info=inserted_line_info,
             )
 
         # top refers to the directory level
@@ -20839,12 +21687,14 @@ class SubworkflowFeatureRequirement(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -20879,23 +21729,26 @@ class SubworkflowFeatureRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -20904,6 +21757,7 @@ class SubworkflowFeatureRequirement(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
 
         # top refers to the directory level
@@ -20998,12 +21852,14 @@ class ScatterFeatureRequirement(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -21038,23 +21894,26 @@ class ScatterFeatureRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -21063,6 +21922,7 @@ class ScatterFeatureRequirement(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
 
         # top refers to the directory level
@@ -21157,12 +22017,14 @@ class MultipleInputFeatureRequirement(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -21197,23 +22059,26 @@ class MultipleInputFeatureRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -21222,6 +22087,7 @@ class MultipleInputFeatureRequirement(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
 
         # top refers to the directory level
@@ -21316,12 +22182,14 @@ class StepInputExpressionRequirement(ProcessRequirement):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Dict[int, int] = {}
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
         doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
+        inserted_line_info = copy.copy(inserted_line_info)
 
         for key in keys:
             if isinstance(doc, CommentedMap):
@@ -21356,23 +22224,26 @@ class StepInputExpressionRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
+                                    inserted_line_info=inserted_line_info
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
 
-                            max_len = add_kv(
+                            max_len, inserted_line_info = add_kv(
                                 old_doc=doc,
                                 new_doc=r,
                                 line_numbers=line_numbers,
@@ -21381,6 +22252,7 @@ class StepInputExpressionRequirement(ProcessRequirement):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
+                                inserted_line_info=inserted_line_info
                             )
 
         # top refers to the directory level
@@ -21655,7 +22527,23 @@ PrimitiveTypeLoader = _EnumLoader(
     ),
     "PrimitiveType",
 )
+"""
+Salad data types are based on Avro schema declarations.  Refer to the
+[Avro schema declaration documentation](https://avro.apache.org/docs/current/spec.html#schemas) for
+detailed information.
+
+null: no value
+boolean: a binary value
+int: 32-bit signed integer
+long: 64-bit signed integer
+float: single precision (32-bit) IEEE 754 floating-point number
+double: double precision (64-bit) IEEE 754 floating-point number
+string: Unicode character sequence
+"""
 AnyLoader = _EnumLoader(("Any",), "Any")
+"""
+The **Any** type validates for any non-null value.
+"""
 RecordFieldLoader = _RecordLoader(RecordField)
 RecordSchemaLoader = _RecordLoader(RecordSchema)
 EnumSchemaLoader = _RecordLoader(EnumSchema)
@@ -21679,6 +22567,9 @@ CWLVersionLoader = _EnumLoader(
     ),
     "CWLVersion",
 )
+"""
+Version symbols for published CWL document versions.
+"""
 CWLTypeLoader = _EnumLoader(
     (
         "null",
@@ -21693,6 +22584,11 @@ CWLTypeLoader = _EnumLoader(
     ),
     "CWLType",
 )
+"""
+Extends primitive types with the concept of a file and directory as a builtin type.
+File: A File object
+Directory: A Directory object
+"""
 FileLoader = _RecordLoader(File)
 DirectoryLoader = _RecordLoader(Directory)
 LoadListingEnumLoader = _EnumLoader(
@@ -21703,6 +22599,14 @@ LoadListingEnumLoader = _EnumLoader(
     ),
     "LoadListingEnum",
 )
+"""
+Specify the desired behavior for loading the `listing` field of
+a Directory object for use by expressions.
+
+no_listing: Do not load the directory listing.
+shallow_listing: Only load the top level listing, do not recurse into subdirectories.
+deep_listing: Load the directory listing and recursively load all subdirectories as well.
+"""
 ExpressionLoader = _ExpressionLoader(str)
 InputBindingLoader = _RecordLoader(InputBinding)
 InputRecordFieldLoader = _RecordLoader(InputRecordField)
@@ -21732,8 +22636,115 @@ CommandOutputArraySchemaLoader = _RecordLoader(CommandOutputArraySchema)
 CommandInputParameterLoader = _RecordLoader(CommandInputParameter)
 CommandOutputParameterLoader = _RecordLoader(CommandOutputParameter)
 stdinLoader = _EnumLoader(("stdin",), "stdin")
+"""
+Only valid as a `type` for a `CommandLineTool` input with no
+`inputBinding` set. `stdin` must not be specified at the `CommandLineTool`
+level.
+
+The following
+```
+inputs:
+   an_input_name:
+   type: stdin
+```
+is equivalent to
+```
+inputs:
+  an_input_name:
+    type: File
+    streamable: true
+
+stdin: ${inputs.an_input_name.path}
+```
+"""
 stdoutLoader = _EnumLoader(("stdout",), "stdout")
+"""
+Only valid as a `type` for a `CommandLineTool` output with no
+`outputBinding` set.
+
+The following
+```
+outputs:
+  an_output_name:
+    type: stdout
+
+stdout: a_stdout_file
+```
+is equivalent to
+```
+outputs:
+  an_output_name:
+    type: File
+    streamable: true
+    outputBinding:
+      glob: a_stdout_file
+
+stdout: a_stdout_file
+```
+
+If there is no `stdout` name provided, a random filename will be created.
+For example, the following
+```
+outputs:
+  an_output_name:
+    type: stdout
+```
+is equivalent to
+```
+outputs:
+  an_output_name:
+    type: File
+    streamable: true
+    outputBinding:
+      glob: random_stdout_filenameABCDEFG
+
+stdout: random_stdout_filenameABCDEFG
+```
+"""
 stderrLoader = _EnumLoader(("stderr",), "stderr")
+"""
+Only valid as a `type` for a `CommandLineTool` output with no
+`outputBinding` set.
+
+The following
+```
+outputs:
+  an_output_name:
+  type: stderr
+
+stderr: a_stderr_file
+```
+is equivalent to
+```
+outputs:
+  an_output_name:
+    type: File
+    streamable: true
+    outputBinding:
+      glob: a_stderr_file
+
+stderr: a_stderr_file
+```
+
+If there is no `stderr` name provided, a random filename will be created.
+For example, the following
+```
+outputs:
+  an_output_name:
+    type: stderr
+```
+is equivalent to
+```
+outputs:
+  an_output_name:
+    type: File
+    streamable: true
+    outputBinding:
+      glob: random_stderr_filenameABCDEFG
+
+stderr: random_stderr_filenameABCDEFG
+```
+"""
 CommandLineToolLoader = _RecordLoader(CommandLineTool)
 DockerRequirementLoader = _RecordLoader(DockerRequirement)
 SoftwareRequirementLoader = _RecordLoader(SoftwareRequirement)
@@ -21757,6 +22768,9 @@ LinkMergeMethodLoader = _EnumLoader(
     ),
     "LinkMergeMethod",
 )
+"""
+The input link merge method, described in [WorkflowStepInput](#WorkflowStepInput).
+"""
 WorkflowOutputParameterLoader = _RecordLoader(WorkflowOutputParameter)
 WorkflowStepInputLoader = _RecordLoader(WorkflowStepInput)
 WorkflowStepOutputLoader = _RecordLoader(WorkflowStepOutput)
@@ -21768,6 +22782,9 @@ ScatterMethodLoader = _EnumLoader(
     ),
     "ScatterMethod",
 )
+"""
+The scatter method, as described in [workflow step scatter](#WorkflowStep).
+"""
 WorkflowStepLoader = _RecordLoader(WorkflowStep)
 WorkflowLoader = _RecordLoader(Workflow)
 SubworkflowFeatureRequirementLoader = _RecordLoader(SubworkflowFeatureRequirement)
