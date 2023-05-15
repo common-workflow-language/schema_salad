@@ -15,7 +15,7 @@ def test_secondary_files_dsl() -> None:
     """
     Checks object is properly saving when dsl is used
     """
-    t = "test_schema/test_secondary_files_dsl.cwl"
+    t = "test_secondary_files_dsl.cwl"
     path = get_data("tests/" + t)
     obj = load_document_by_uri(str(path))
     saved_obj = obj.save()
@@ -56,7 +56,7 @@ def test_outputs_before_inputs() -> None:
     """
     Tests when output comes in cwl file before inputs
     """
-    t = "test_schema/test_outputs_before_inputs.cwl"
+    t = "test_outputs_before_inputs.cwl"
     path = get_data("tests/" + t)
     obj = load_document_by_uri(str(path))
     saved_obj = obj.save()
@@ -93,7 +93,7 @@ def test_type_dsl() -> None:
     In this example, type for the input is File? which should expand to
     null, File.
     """
-    t = "test_schema/test_type_dsl.cwl"
+    t = "test_type_dsl.cwl"
     path = get_data("tests/" + t)
     obj = load_document_by_uri(str(path))
     saved_obj = obj.save()

@@ -433,7 +433,7 @@ def save(
                 )
             )
         return r
-      
+
     if isinstance(val, MutableMapping):
         newdict = CommentedMap()
         new_keys = keys
@@ -907,7 +907,6 @@ def _document_load(
             baseuri=doc.get("$base", None),
             addl_metadata=addl_metadata,
         )
-
 
         doc = copy.copy(doc)
         if "$namespaces" in doc:
