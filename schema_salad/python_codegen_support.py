@@ -42,8 +42,6 @@ _logger = logging.getLogger("salad")
 
 IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
 
-line_numbers = CommentedMap()
-
 
 class LoadingOptions:
     idx: IdxType
@@ -216,7 +214,6 @@ class Saveable(ABC):
         _doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        keys: Optional[List[str]] = None,
         docRoot: Optional[str] = None,
     ) -> "Saveable":
         """Construct this object from the result of yaml.load()."""
@@ -228,9 +225,9 @@ class Saveable(ABC):
         """Convert this object to a JSON/YAML friendly dictionary."""
 
 
-def load_field(val, fieldtype, baseuri, loadingOptions, keys=None):
+def load_field(val, fieldtype, baseuri, loadingOptions, lc=None):
+    # type: (Union[str, Dict[str, str]], _Loader, str, LoadingOptions, List[Any]) -> Any
     """Load field."""
-    # type: (Union[str, Dict[str, str]], _Loader, str, LoadingOptions,Optional[List[str]]) -> Any
     if isinstance(val, MutableMapping):
         if "$import" in val:
             if loadingOptions.fileuri is None:
@@ -249,7 +246,7 @@ def load_field(val, fieldtype, baseuri, loadingOptions, keys=None):
             url = loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
             val = loadingOptions.fetcher.fetch_text(url)
             loadingOptions.includes.append(url)
-    return fieldtype.load(val, baseuri, loadingOptions, keys=keys)
+    return fieldtype.load(val, baseuri, loadingOptions, lc=lc)
 
 
 save_type = Optional[Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]]
@@ -399,14 +396,14 @@ def expand_url(
 
 
 class _Loader:
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         pass
 
 
 class _AnyLoader(_Loader):
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if doc is not None:
             return doc
         raise ValidationException("Expected non-null")
@@ -417,8 +414,8 @@ class _PrimitiveLoader(_Loader):
         # type: (Union[type, Tuple[Type[str], Type[str]]]) -> None
         self.tp = tp
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if not isinstance(doc, self.tp):
             raise ValidationException(
                 "Expected a {} but got {}".format(self.tp, doc.__class__.__name__)
@@ -434,8 +431,8 @@ class _ArrayLoader(_Loader):
         # type: (_Loader) -> None
         self.items = items
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if not isinstance(doc, MutableSequence):
             raise ValidationException(f"Expected a list, was {type(doc)}")
         r = []  # type: List[Any]
@@ -443,41 +440,19 @@ class _ArrayLoader(_Loader):
         fields = []  # type: List[str]
 
         append_index = False  # type: bool
-        global_doc = copy.copy(line_numbers)  # type: CommentedMap
 
-        if keys is not None:
-            for key in keys:
-                if isinstance(global_doc, CommentedMap):
-                    global_doc = global_doc.get(key)
-                elif isinstance(global_doc, (CommentedSeq, list)) and isinstance(key, int):
-                    if key < len(global_doc):
-                        global_doc = global_doc[key]
-                    else:
-                        global_doc = None
-                else:
-                    global_doc = None
-                    break
-
-        if isinstance(global_doc, (list, CommentedSeq)):
+        if isinstance(lc, (list, CommentedSeq)):
             append_index = True
 
         for i in range(0, len(doc)):
             try:
                 if append_index:
                     lf = load_field(
-                        doc[i],
-                        _UnionLoader((self, self.items)),
-                        baseuri,
-                        loadingOptions,
-                        keys=keys + [i],
+                        doc[i], _UnionLoader((self, self.items)), baseuri, loadingOptions, lc=lc[i]
                     )
                 else:
                     lf = load_field(
-                        doc[i],
-                        _UnionLoader((self, self.items)),
-                        baseuri,
-                        loadingOptions,
-                        keys=keys,
+                        doc[i], _UnionLoader((self, self.items)), baseuri, loadingOptions, lc=lc
                     )
                 if isinstance(lf, MutableSequence):
                     r.extend(lf)
@@ -512,8 +487,8 @@ class _EnumLoader(_Loader):
         self.symbols = symbols
         self.name = name
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[str]]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if doc in self.symbols:
             return doc
         raise ValidationException(f"Expected one of {self.symbols}")
@@ -527,8 +502,8 @@ class _SecondaryDSLLoader(_Loader):
         # type: (_Loader) -> None
         self.inner = inner
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[str]]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         r: List[Dict[str, Any]] = []
         if isinstance(doc, MutableSequence):
             for d in doc:
@@ -586,7 +561,7 @@ class _SecondaryDSLLoader(_Loader):
                 r.append({"pattern": doc})
         else:
             raise ValidationException("Expected str or sequence of str")
-        return self.inner.load(r, baseuri, loadingOptions, docRoot, keys=keys)
+        return self.inner.load(r, baseuri, loadingOptions, docRoot, lc=lc)
 
 
 class _RecordLoader(_Loader):
@@ -594,13 +569,11 @@ class _RecordLoader(_Loader):
         # type: (Type[Saveable]) -> None
         self.classtype = classtype
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if not isinstance(doc, MutableMapping):
             raise ValidationException(f"Expected a dict, was {type(doc)}")
-        return self.classtype.fromDoc(
-            doc, baseuri, loadingOptions, docRoot=docRoot, keys=keys
-        )
+        return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
     def __repr__(self):  # type: () -> str
         return str(self.classtype.__name__)
@@ -610,8 +583,8 @@ class _ExpressionLoader(_Loader):
     def __init__(self, items: Type[str]) -> None:
         self.items = items
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str],Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if not isinstance(doc, str):
             raise ValidationException(f"Expected a str, was {type(doc)}")
         return doc
@@ -621,15 +594,16 @@ class _UnionLoader(_Loader):
     def __init__(self, alternates: Sequence[_Loader]) -> None:
         self.alternates = alternates
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         errors = []
-        temp_doc = copy.copy(line_numbers)
+
+        if lc is None:
+            lc = []
+
         for t in self.alternates:
             try:
-                return t.load(
-                    doc, baseuri, loadingOptions, docRoot=docRoot, keys=copy.copy(keys)
-                )
+                return t.load(doc, baseuri, loadingOptions, docRoot=docRoot, lc=lc)
             except ValidationException as e:
                 if isinstance(doc, (CommentedMap, dict)):
                     if "class" in doc:
@@ -645,35 +619,21 @@ class _UnionLoader(_Loader):
                         if "array" in str(t):
                             continue
                         else:
-                            id_doc = temp_doc
-                            if keys is not None:
-                                for key in keys:
-                                    if isinstance(id_doc, CommentedMap):
-                                        id_doc = id_doc.get(key)
-                                    elif isinstance(id_doc, (CommentedSeq, list)) and isinstance(key, int):
-                                        if key < len(id_doc):
-                                            id_doc = id_doc[key]
-                                        else:
-                                            id_doc = None
-                                    else:
-                                        id_doc = None
-                                        break
                             if "id" in doc:
                                 id = baseuri.split("/")[-1] + "#" + doc.get("id")
-                                if "id" in temp_doc:
+                                if "id" in lc:
                                     errors.append(
                                         ValidationException(
-                                            f"checking object {id}",
-                                            SourceLine(id_doc, "id", str),
+                                            f"checking object `{id}`",
+                                            SourceLine(lc, "id", str),
                                             [e],
                                         )
                                     )
                                 else:
-
                                     errors.append(
                                         ValidationException(
-                                            f"checking object {id}",
-                                            SourceLine(id_doc, doc.get("id"), str),
+                                            f"checking object `{id}`",
+                                            SourceLine(lc, doc.get("id"), str),
                                             [e],
                                         )
                                     )
@@ -698,7 +658,7 @@ class _UnionLoader(_Loader):
                     ValidationException(
                         "Field `class` contains undefined reference to "
                         + "`"
-                        + baseuri
+                        + "/".join(baseuri.split("/")[0:-1])
                         + "/"
                         + doc.get("class")
                         + "`",
@@ -720,8 +680,8 @@ class _URILoader(_Loader):
         self.vocab_term = vocab_term
         self.scoped_ref = scoped_ref
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if isinstance(doc, MutableSequence):
             newdoc = []
             for i in doc:
@@ -752,14 +712,12 @@ class _URILoader(_Loader):
             errors = []
             try:
                 if not loadingOptions.check_exists(doc):
-                    errors.append(
-                        ValidationException(f"contains undefined reference to `{doc}`")
-                    )
+                    errors.append(ValidationException(f"contains undefined reference to `{doc}`"))
             except ValidationException:
                 pass
             if len(errors) > 0:
                 raise ValidationException("", None, errors)
-        return self.inner.load(doc, baseuri, loadingOptions, keys=keys)
+        return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
 class _TypeDSLLoader(_Loader):
@@ -799,8 +757,8 @@ class _TypeDSLLoader(_Loader):
             return third or second or first
         return doc
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str],Optional[List[str]]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if isinstance(doc, MutableSequence):
             r = []  # type: List[Any]
             for d in doc:
@@ -819,7 +777,7 @@ class _TypeDSLLoader(_Loader):
         elif isinstance(doc, str):
             doc = self.resolve(doc, baseuri, loadingOptions)
 
-        return self.inner.load(doc, baseuri, loadingOptions, keys=keys)
+        return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
 class _IdMapLoader(_Loader):
@@ -829,8 +787,8 @@ class _IdMapLoader(_Loader):
         self.mapSubject = mapSubject
         self.mapPredicate = mapPredicate
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str],Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if isinstance(doc, MutableMapping):
             r = []  # type: List[Any]
             for k in sorted(doc.keys()):
@@ -853,7 +811,7 @@ class _IdMapLoader(_Loader):
                     else:
                         raise ValidationException("No mapPredicate")
             doc = r
-        return self.inner.load(doc, baseuri, loadingOptions, keys=keys)
+        return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
 def _document_load(
@@ -889,10 +847,6 @@ def _document_load(
             baseuri=doc.get("$base", None),
             addl_metadata=addl_metadata,
         )
-
-        if type(doc) == CommentedMap:
-            global line_numbers
-            line_numbers = doc
 
         doc = copy.copy(doc)
         if "$namespaces" in doc:

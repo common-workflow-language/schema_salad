@@ -255,28 +255,9 @@ class PythonCodeGen(CodeGenBase):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        keys: Optional[List[str]] = None,
         docRoot: Optional[str] = None
     ) -> "{classname}":
         _doc = copy.copy(doc)
-
-        if keys is None:
-            keys = []
-        global_doc = copy.copy(line_numbers)
-
-        for key in keys:
-
-            if isinstance(global_doc, CommentedMap):
-                global_doc = global_doc.get(key)
-            elif isinstance(global_doc, (CommentedSeq, list)) and isinstance(key, int):
-                if key < len(global_doc):
-                    global_doc = global_doc[key]
-                else:
-                    global_doc = None
-            else:
-                global_doc = None
-                break
-        keys = copy.copy(keys)
 
         if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
@@ -516,16 +497,6 @@ if _errors__:
             )
         )
 
-        if self.safe_name(name) == "id":
-            self.out.write(
-                """
-        if global_doc:
-            if _doc.get("id") in global_doc:
-                keys.append(_doc.get("id"))
-
-"""
-            )
-
     def declare_field(
         self,
         name: str,
@@ -568,7 +539,7 @@ if _errors__:
 {spc}                {fieldtype},
 {spc}                {baseurivar},
 {spc}                loadingOptions,
-{spc}                keys=keys + ['{fieldname}']
+{spc}                lc=_doc.get("{fieldname}")
 {spc}            )
 """.format(
                 safename=self.safe_name(name),
@@ -594,14 +565,21 @@ if _errors__:
 {spc}            else:
 {spc}                if error_message != str(e):
 {spc}                    val_type = type(_doc.get("{fieldname}"))
-{spc}                    e = ValidationException(f"Expected one of {{error_message}} was {{val_type}}")
-{spc}                _errors__.append(
-{spc}                    ValidationException(
-{spc}                        \"the `{fieldname}` field is not valid because:\",
-{spc}                        SourceLine(_doc, "{fieldname}", str),
-{spc}                        [e],
+{spc}                    _errors__.append(
+{spc}                        ValidationException(
+{spc}                            \"the `{fieldname}` field is not valid because:\",
+{spc}                            SourceLine(_doc, "{fieldname}", str),
+{spc}                            [ValidationException(f"Expected one of {{error_message}} was {{val_type}}")],
+{spc}                        )
 {spc}                    )
-{spc}                )
+{spc}                else:
+{spc}                    _errors__.append(
+{spc}                        ValidationException(
+{spc}                            \"the `{fieldname}` field is not valid because:\",
+{spc}                            SourceLine(_doc, "{fieldname}", str),
+{spc}                            [e],
+{spc}                        )
+{spc}                    )
 """.format(
                 fieldname=shortname(name),
                 spc=spc,

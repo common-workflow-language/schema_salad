@@ -45,8 +45,6 @@ _logger = logging.getLogger("salad")
 
 IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
 
-line_numbers = CommentedMap()
-
 
 class LoadingOptions:
     idx: IdxType
@@ -219,7 +217,6 @@ class Saveable(ABC):
         _doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        keys: Optional[List[str]] = None,
         docRoot: Optional[str] = None,
     ) -> "Saveable":
         """Construct this object from the result of yaml.load()."""
@@ -231,9 +228,9 @@ class Saveable(ABC):
         """Convert this object to a JSON/YAML friendly dictionary."""
 
 
-def load_field(val, fieldtype, baseuri, loadingOptions, keys=None):
+def load_field(val, fieldtype, baseuri, loadingOptions, lc=None):
+    # type: (Union[str, Dict[str, str]], _Loader, str, LoadingOptions, List[Any]) -> Any
     """Load field."""
-    # type: (Union[str, Dict[str, str]], _Loader, str, LoadingOptions,Optional[List[str]]) -> Any
     if isinstance(val, MutableMapping):
         if "$import" in val:
             if loadingOptions.fileuri is None:
@@ -252,7 +249,7 @@ def load_field(val, fieldtype, baseuri, loadingOptions, keys=None):
             url = loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
             val = loadingOptions.fetcher.fetch_text(url)
             loadingOptions.includes.append(url)
-    return fieldtype.load(val, baseuri, loadingOptions, keys=keys)
+    return fieldtype.load(val, baseuri, loadingOptions, lc=lc)
 
 
 save_type = Optional[Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]]
@@ -402,14 +399,14 @@ def expand_url(
 
 
 class _Loader:
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         pass
 
 
 class _AnyLoader(_Loader):
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if doc is not None:
             return doc
         raise ValidationException("Expected non-null")
@@ -420,8 +417,8 @@ class _PrimitiveLoader(_Loader):
         # type: (Union[type, Tuple[Type[str], Type[str]]]) -> None
         self.tp = tp
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if not isinstance(doc, self.tp):
             raise ValidationException(
                 "Expected a {} but got {}".format(self.tp, doc.__class__.__name__)
@@ -437,8 +434,8 @@ class _ArrayLoader(_Loader):
         # type: (_Loader) -> None
         self.items = items
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if not isinstance(doc, MutableSequence):
             raise ValidationException(f"Expected a list, was {type(doc)}")
         r = []  # type: List[Any]
@@ -446,41 +443,19 @@ class _ArrayLoader(_Loader):
         fields = []  # type: List[str]
 
         append_index = False  # type: bool
-        global_doc = copy.copy(line_numbers)  # type: CommentedMap
 
-        if keys is not None:
-            for key in keys:
-                if isinstance(global_doc, CommentedMap):
-                    global_doc = global_doc.get(key)
-                elif isinstance(global_doc, (CommentedSeq, list)) and isinstance(key, int):
-                    if key < len(global_doc):
-                        global_doc = global_doc[key]
-                    else:
-                        global_doc = None
-                else:
-                    global_doc = None
-                    break
-
-        if isinstance(global_doc, (list, CommentedSeq)):
+        if isinstance(lc, (list, CommentedSeq)):
             append_index = True
 
         for i in range(0, len(doc)):
             try:
                 if append_index:
                     lf = load_field(
-                        doc[i],
-                        _UnionLoader((self, self.items)),
-                        baseuri,
-                        loadingOptions,
-                        keys=keys + [i],
+                        doc[i], _UnionLoader((self, self.items)), baseuri, loadingOptions, lc=lc[i]
                     )
                 else:
                     lf = load_field(
-                        doc[i],
-                        _UnionLoader((self, self.items)),
-                        baseuri,
-                        loadingOptions,
-                        keys=keys,
+                        doc[i], _UnionLoader((self, self.items)), baseuri, loadingOptions, lc=lc
                     )
                 if isinstance(lf, MutableSequence):
                     r.extend(lf)
@@ -515,8 +490,8 @@ class _EnumLoader(_Loader):
         self.symbols = symbols
         self.name = name
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[str]]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if doc in self.symbols:
             return doc
         raise ValidationException(f"Expected one of {self.symbols}")
@@ -530,8 +505,8 @@ class _SecondaryDSLLoader(_Loader):
         # type: (_Loader) -> None
         self.inner = inner
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[str]]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         r: List[Dict[str, Any]] = []
         if isinstance(doc, MutableSequence):
             for d in doc:
@@ -589,7 +564,7 @@ class _SecondaryDSLLoader(_Loader):
                 r.append({"pattern": doc})
         else:
             raise ValidationException("Expected str or sequence of str")
-        return self.inner.load(r, baseuri, loadingOptions, docRoot, keys=keys)
+        return self.inner.load(r, baseuri, loadingOptions, docRoot, lc=lc)
 
 
 class _RecordLoader(_Loader):
@@ -597,13 +572,11 @@ class _RecordLoader(_Loader):
         # type: (Type[Saveable]) -> None
         self.classtype = classtype
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if not isinstance(doc, MutableMapping):
             raise ValidationException(f"Expected a dict, was {type(doc)}")
-        return self.classtype.fromDoc(
-            doc, baseuri, loadingOptions, docRoot=docRoot, keys=keys
-        )
+        return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
     def __repr__(self):  # type: () -> str
         return str(self.classtype.__name__)
@@ -613,8 +586,8 @@ class _ExpressionLoader(_Loader):
     def __init__(self, items: Type[str]) -> None:
         self.items = items
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str],Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if not isinstance(doc, str):
             raise ValidationException(f"Expected a str, was {type(doc)}")
         return doc
@@ -624,15 +597,16 @@ class _UnionLoader(_Loader):
     def __init__(self, alternates: Sequence[_Loader]) -> None:
         self.alternates = alternates
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         errors = []
-        temp_doc = copy.copy(line_numbers)
+
+        if lc is None:
+            lc = []
+
         for t in self.alternates:
             try:
-                return t.load(
-                    doc, baseuri, loadingOptions, docRoot=docRoot, keys=copy.copy(keys)
-                )
+                return t.load(doc, baseuri, loadingOptions, docRoot=docRoot, lc=lc)
             except ValidationException as e:
                 if isinstance(doc, (CommentedMap, dict)):
                     if "class" in doc:
@@ -648,35 +622,21 @@ class _UnionLoader(_Loader):
                         if "array" in str(t):
                             continue
                         else:
-                            id_doc = temp_doc
-                            if keys is not None:
-                                for key in keys:
-                                    if isinstance(id_doc, CommentedMap):
-                                        id_doc = id_doc.get(key)
-                                    elif isinstance(id_doc, (CommentedSeq, list)) and isinstance(key, int):
-                                        if key < len(id_doc):
-                                            id_doc = id_doc[key]
-                                        else:
-                                            id_doc = None
-                                    else:
-                                        id_doc = None
-                                        break
                             if "id" in doc:
                                 id = baseuri.split("/")[-1] + "#" + doc.get("id")
-                                if "id" in temp_doc:
+                                if "id" in lc:
                                     errors.append(
                                         ValidationException(
-                                            f"checking object {id}",
-                                            SourceLine(id_doc, "id", str),
+                                            f"checking object `{id}`",
+                                            SourceLine(lc, "id", str),
                                             [e],
                                         )
                                     )
                                 else:
-
                                     errors.append(
                                         ValidationException(
-                                            f"checking object {id}",
-                                            SourceLine(id_doc, doc.get("id"), str),
+                                            f"checking object `{id}`",
+                                            SourceLine(lc, doc.get("id"), str),
                                             [e],
                                         )
                                     )
@@ -701,7 +661,7 @@ class _UnionLoader(_Loader):
                     ValidationException(
                         "Field `class` contains undefined reference to "
                         + "`"
-                        + baseuri
+                        + "/".join(baseuri.split("/")[0:-1])
                         + "/"
                         + doc.get("class")
                         + "`",
@@ -723,8 +683,8 @@ class _URILoader(_Loader):
         self.vocab_term = vocab_term
         self.scoped_ref = scoped_ref
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if isinstance(doc, MutableSequence):
             newdoc = []
             for i in doc:
@@ -755,14 +715,12 @@ class _URILoader(_Loader):
             errors = []
             try:
                 if not loadingOptions.check_exists(doc):
-                    errors.append(
-                        ValidationException(f"contains undefined reference to `{doc}`")
-                    )
+                    errors.append(ValidationException(f"contains undefined reference to `{doc}`"))
             except ValidationException:
                 pass
             if len(errors) > 0:
                 raise ValidationException("", None, errors)
-        return self.inner.load(doc, baseuri, loadingOptions, keys=keys)
+        return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
 class _TypeDSLLoader(_Loader):
@@ -802,8 +760,8 @@ class _TypeDSLLoader(_Loader):
             return third or second or first
         return doc
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str],Optional[List[str]]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if isinstance(doc, MutableSequence):
             r = []  # type: List[Any]
             for d in doc:
@@ -822,7 +780,7 @@ class _TypeDSLLoader(_Loader):
         elif isinstance(doc, str):
             doc = self.resolve(doc, baseuri, loadingOptions)
 
-        return self.inner.load(doc, baseuri, loadingOptions, keys=keys)
+        return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
 class _IdMapLoader(_Loader):
@@ -832,8 +790,8 @@ class _IdMapLoader(_Loader):
         self.mapSubject = mapSubject
         self.mapPredicate = mapPredicate
 
-    def load(self, doc, baseuri, loadingOptions, keys=None, docRoot=None):
-        # type: (Any, str, LoadingOptions, Optional[str],Optional[List]) -> Any
+    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
+        # type: (Any, str, LoadingOptions, Optional[str], List[Any]) -> Any
         if isinstance(doc, MutableMapping):
             r = []  # type: List[Any]
             for k in sorted(doc.keys()):
@@ -856,7 +814,7 @@ class _IdMapLoader(_Loader):
                     else:
                         raise ValidationException("No mapPredicate")
             doc = r
-        return self.inner.load(doc, baseuri, loadingOptions, keys=keys)
+        return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
 def _document_load(
@@ -892,10 +850,6 @@ def _document_load(
             baseuri=doc.get("$base", None),
             addl_metadata=addl_metadata,
         )
-
-        if type(doc) == CommentedMap:
-            global line_numbers
-            line_numbers = doc
 
         doc = copy.copy(doc)
         if "$namespaces" in doc:
@@ -1090,28 +1044,9 @@ class RecordField(Documented):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        keys: Optional[List[str]] = None,
         docRoot: Optional[str] = None
     ) -> "RecordField":
         _doc = copy.copy(doc)
-
-        if keys is None:
-            keys = []
-        global_doc = copy.copy(line_numbers)
-
-        for key in keys:
-
-            if isinstance(global_doc, CommentedMap):
-                global_doc = global_doc.get(key)
-            elif isinstance(global_doc, (CommentedSeq, list)) and isinstance(key, int):
-                if key < len(global_doc):
-                    global_doc = global_doc[key]
-                else:
-                    global_doc = None
-            else:
-                global_doc = None
-                break
-        keys = copy.copy(keys)
 
         if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
@@ -1127,7 +1062,7 @@ class RecordField(Documented):
                     uri_strtype_True_False_None,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['name']
+                    lc=_doc.get("name")
                 )
 
             except ValidationException as e:
@@ -1144,14 +1079,21 @@ class RecordField(Documented):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("name"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `name` field is not valid because:",
-                            SourceLine(_doc, "name", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `name` field is not valid because:",
+                                SourceLine(_doc, "name", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `name` field is not valid because:",
+                                SourceLine(_doc, "name", str),
+                                [e],
+                            )
+                        )
         else:
             name = None
 
@@ -1173,7 +1115,7 @@ class RecordField(Documented):
                     union_of_None_type_or_strtype_or_array_of_strtype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['doc']
+                    lc=_doc.get("doc")
                 )
 
             except ValidationException as e:
@@ -1190,14 +1132,21 @@ class RecordField(Documented):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("doc"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `doc` field is not valid because:",
-                            SourceLine(_doc, "doc", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `doc` field is not valid because:",
+                                SourceLine(_doc, "doc", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `doc` field is not valid because:",
+                                SourceLine(_doc, "doc", str),
+                                [e],
+                            )
+                        )
         else:
             doc = None
         try:
@@ -1209,7 +1158,7 @@ class RecordField(Documented):
                 typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2,
                 baseuri,
                 loadingOptions,
-                keys=keys + ['type']
+                lc=_doc.get("type")
             )
 
         except ValidationException as e:
@@ -1226,14 +1175,21 @@ class RecordField(Documented):
             else:
                 if error_message != str(e):
                     val_type = type(_doc.get("type"))
-                    e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                _errors__.append(
-                    ValidationException(
-                        "the `type` field is not valid because:",
-                        SourceLine(_doc, "type", str),
-                        [e],
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                        )
                     )
-                )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [e],
+                        )
+                    )
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -1336,28 +1292,9 @@ class RecordSchema(Saveable):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        keys: Optional[List[str]] = None,
         docRoot: Optional[str] = None
     ) -> "RecordSchema":
         _doc = copy.copy(doc)
-
-        if keys is None:
-            keys = []
-        global_doc = copy.copy(line_numbers)
-
-        for key in keys:
-
-            if isinstance(global_doc, CommentedMap):
-                global_doc = global_doc.get(key)
-            elif isinstance(global_doc, (CommentedSeq, list)) and isinstance(key, int):
-                if key < len(global_doc):
-                    global_doc = global_doc[key]
-                else:
-                    global_doc = None
-            else:
-                global_doc = None
-                break
-        keys = copy.copy(keys)
 
         if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
@@ -1373,7 +1310,7 @@ class RecordSchema(Saveable):
                     idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['fields']
+                    lc=_doc.get("fields")
                 )
 
             except ValidationException as e:
@@ -1390,14 +1327,21 @@ class RecordSchema(Saveable):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("fields"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `fields` field is not valid because:",
-                            SourceLine(_doc, "fields", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `fields` field is not valid because:",
+                                SourceLine(_doc, "fields", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `fields` field is not valid because:",
+                                SourceLine(_doc, "fields", str),
+                                [e],
+                            )
+                        )
         else:
             fields = None
         try:
@@ -1409,7 +1353,7 @@ class RecordSchema(Saveable):
                 typedsl_Record_nameLoader_2,
                 baseuri,
                 loadingOptions,
-                keys=keys + ['type']
+                lc=_doc.get("type")
             )
 
         except ValidationException as e:
@@ -1426,14 +1370,21 @@ class RecordSchema(Saveable):
             else:
                 if error_message != str(e):
                     val_type = type(_doc.get("type"))
-                    e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                _errors__.append(
-                    ValidationException(
-                        "the `type` field is not valid because:",
-                        SourceLine(_doc, "type", str),
-                        [e],
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                        )
                     )
-                )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [e],
+                        )
+                    )
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -1542,28 +1493,9 @@ class EnumSchema(Saveable):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        keys: Optional[List[str]] = None,
         docRoot: Optional[str] = None
     ) -> "EnumSchema":
         _doc = copy.copy(doc)
-
-        if keys is None:
-            keys = []
-        global_doc = copy.copy(line_numbers)
-
-        for key in keys:
-
-            if isinstance(global_doc, CommentedMap):
-                global_doc = global_doc.get(key)
-            elif isinstance(global_doc, (CommentedSeq, list)) and isinstance(key, int):
-                if key < len(global_doc):
-                    global_doc = global_doc[key]
-                else:
-                    global_doc = None
-            else:
-                global_doc = None
-                break
-        keys = copy.copy(keys)
 
         if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
@@ -1579,7 +1511,7 @@ class EnumSchema(Saveable):
                     uri_union_of_None_type_or_strtype_True_False_None,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['name']
+                    lc=_doc.get("name")
                 )
 
             except ValidationException as e:
@@ -1596,14 +1528,21 @@ class EnumSchema(Saveable):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("name"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `name` field is not valid because:",
-                            SourceLine(_doc, "name", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `name` field is not valid because:",
+                                SourceLine(_doc, "name", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `name` field is not valid because:",
+                                SourceLine(_doc, "name", str),
+                                [e],
+                            )
+                        )
         else:
             name = None
 
@@ -1624,7 +1563,7 @@ class EnumSchema(Saveable):
                 uri_array_of_strtype_True_False_None,
                 baseuri,
                 loadingOptions,
-                keys=keys + ['symbols']
+                lc=_doc.get("symbols")
             )
 
         except ValidationException as e:
@@ -1641,14 +1580,21 @@ class EnumSchema(Saveable):
             else:
                 if error_message != str(e):
                     val_type = type(_doc.get("symbols"))
-                    e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                _errors__.append(
-                    ValidationException(
-                        "the `symbols` field is not valid because:",
-                        SourceLine(_doc, "symbols", str),
-                        [e],
+                    _errors__.append(
+                        ValidationException(
+                            "the `symbols` field is not valid because:",
+                            SourceLine(_doc, "symbols", str),
+                            [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                        )
                     )
-                )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `symbols` field is not valid because:",
+                            SourceLine(_doc, "symbols", str),
+                            [e],
+                        )
+                    )
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -1658,7 +1604,7 @@ class EnumSchema(Saveable):
                 typedsl_Enum_nameLoader_2,
                 baseuri,
                 loadingOptions,
-                keys=keys + ['type']
+                lc=_doc.get("type")
             )
 
         except ValidationException as e:
@@ -1675,14 +1621,21 @@ class EnumSchema(Saveable):
             else:
                 if error_message != str(e):
                     val_type = type(_doc.get("type"))
-                    e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                _errors__.append(
-                    ValidationException(
-                        "the `type` field is not valid because:",
-                        SourceLine(_doc, "type", str),
-                        [e],
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                        )
                     )
-                )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [e],
+                        )
+                    )
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -1784,28 +1737,9 @@ class ArraySchema(Saveable):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        keys: Optional[List[str]] = None,
         docRoot: Optional[str] = None
     ) -> "ArraySchema":
         _doc = copy.copy(doc)
-
-        if keys is None:
-            keys = []
-        global_doc = copy.copy(line_numbers)
-
-        for key in keys:
-
-            if isinstance(global_doc, CommentedMap):
-                global_doc = global_doc.get(key)
-            elif isinstance(global_doc, (CommentedSeq, list)) and isinstance(key, int):
-                if key < len(global_doc):
-                    global_doc = global_doc[key]
-                else:
-                    global_doc = None
-            else:
-                global_doc = None
-                break
-        keys = copy.copy(keys)
 
         if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
@@ -1820,7 +1754,7 @@ class ArraySchema(Saveable):
                 uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2,
                 baseuri,
                 loadingOptions,
-                keys=keys + ['items']
+                lc=_doc.get("items")
             )
 
         except ValidationException as e:
@@ -1837,14 +1771,21 @@ class ArraySchema(Saveable):
             else:
                 if error_message != str(e):
                     val_type = type(_doc.get("items"))
-                    e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                _errors__.append(
-                    ValidationException(
-                        "the `items` field is not valid because:",
-                        SourceLine(_doc, "items", str),
-                        [e],
+                    _errors__.append(
+                        ValidationException(
+                            "the `items` field is not valid because:",
+                            SourceLine(_doc, "items", str),
+                            [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                        )
                     )
-                )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `items` field is not valid because:",
+                            SourceLine(_doc, "items", str),
+                            [e],
+                        )
+                    )
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -1854,7 +1795,7 @@ class ArraySchema(Saveable):
                 typedsl_Array_nameLoader_2,
                 baseuri,
                 loadingOptions,
-                keys=keys + ['type']
+                lc=_doc.get("type")
             )
 
         except ValidationException as e:
@@ -1871,14 +1812,21 @@ class ArraySchema(Saveable):
             else:
                 if error_message != str(e):
                     val_type = type(_doc.get("type"))
-                    e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                _errors__.append(
-                    ValidationException(
-                        "the `type` field is not valid because:",
-                        SourceLine(_doc, "type", str),
-                        [e],
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                        )
                     )
-                )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [e],
+                        )
+                    )
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -2025,28 +1973,9 @@ class JsonldPredicate(Saveable):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        keys: Optional[List[str]] = None,
         docRoot: Optional[str] = None
     ) -> "JsonldPredicate":
         _doc = copy.copy(doc)
-
-        if keys is None:
-            keys = []
-        global_doc = copy.copy(line_numbers)
-
-        for key in keys:
-
-            if isinstance(global_doc, CommentedMap):
-                global_doc = global_doc.get(key)
-            elif isinstance(global_doc, (CommentedSeq, list)) and isinstance(key, int):
-                if key < len(global_doc):
-                    global_doc = global_doc[key]
-                else:
-                    global_doc = None
-            else:
-                global_doc = None
-                break
-        keys = copy.copy(keys)
 
         if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
@@ -2062,7 +1991,7 @@ class JsonldPredicate(Saveable):
                     uri_union_of_None_type_or_strtype_True_False_None,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['_id']
+                    lc=_doc.get("_id")
                 )
 
             except ValidationException as e:
@@ -2079,14 +2008,21 @@ class JsonldPredicate(Saveable):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("_id"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `_id` field is not valid because:",
-                            SourceLine(_doc, "_id", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `_id` field is not valid because:",
+                                SourceLine(_doc, "_id", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `_id` field is not valid because:",
+                                SourceLine(_doc, "_id", str),
+                                [e],
+                            )
+                        )
         else:
             _id = None
         if "_type" in _doc:
@@ -2099,7 +2035,7 @@ class JsonldPredicate(Saveable):
                     union_of_None_type_or_strtype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['_type']
+                    lc=_doc.get("_type")
                 )
 
             except ValidationException as e:
@@ -2116,14 +2052,21 @@ class JsonldPredicate(Saveable):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("_type"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `_type` field is not valid because:",
-                            SourceLine(_doc, "_type", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `_type` field is not valid because:",
+                                SourceLine(_doc, "_type", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `_type` field is not valid because:",
+                                SourceLine(_doc, "_type", str),
+                                [e],
+                            )
+                        )
         else:
             _type = None
         if "_container" in _doc:
@@ -2136,7 +2079,7 @@ class JsonldPredicate(Saveable):
                     union_of_None_type_or_strtype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['_container']
+                    lc=_doc.get("_container")
                 )
 
             except ValidationException as e:
@@ -2153,14 +2096,21 @@ class JsonldPredicate(Saveable):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("_container"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `_container` field is not valid because:",
-                            SourceLine(_doc, "_container", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `_container` field is not valid because:",
+                                SourceLine(_doc, "_container", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `_container` field is not valid because:",
+                                SourceLine(_doc, "_container", str),
+                                [e],
+                            )
+                        )
         else:
             _container = None
         if "identity" in _doc:
@@ -2173,7 +2123,7 @@ class JsonldPredicate(Saveable):
                     union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['identity']
+                    lc=_doc.get("identity")
                 )
 
             except ValidationException as e:
@@ -2190,14 +2140,21 @@ class JsonldPredicate(Saveable):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("identity"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `identity` field is not valid because:",
-                            SourceLine(_doc, "identity", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `identity` field is not valid because:",
+                                SourceLine(_doc, "identity", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `identity` field is not valid because:",
+                                SourceLine(_doc, "identity", str),
+                                [e],
+                            )
+                        )
         else:
             identity = None
         if "noLinkCheck" in _doc:
@@ -2210,7 +2167,7 @@ class JsonldPredicate(Saveable):
                     union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['noLinkCheck']
+                    lc=_doc.get("noLinkCheck")
                 )
 
             except ValidationException as e:
@@ -2227,14 +2184,21 @@ class JsonldPredicate(Saveable):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("noLinkCheck"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `noLinkCheck` field is not valid because:",
-                            SourceLine(_doc, "noLinkCheck", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `noLinkCheck` field is not valid because:",
+                                SourceLine(_doc, "noLinkCheck", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `noLinkCheck` field is not valid because:",
+                                SourceLine(_doc, "noLinkCheck", str),
+                                [e],
+                            )
+                        )
         else:
             noLinkCheck = None
         if "mapSubject" in _doc:
@@ -2247,7 +2211,7 @@ class JsonldPredicate(Saveable):
                     union_of_None_type_or_strtype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['mapSubject']
+                    lc=_doc.get("mapSubject")
                 )
 
             except ValidationException as e:
@@ -2264,14 +2228,21 @@ class JsonldPredicate(Saveable):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("mapSubject"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `mapSubject` field is not valid because:",
-                            SourceLine(_doc, "mapSubject", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `mapSubject` field is not valid because:",
+                                SourceLine(_doc, "mapSubject", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `mapSubject` field is not valid because:",
+                                SourceLine(_doc, "mapSubject", str),
+                                [e],
+                            )
+                        )
         else:
             mapSubject = None
         if "mapPredicate" in _doc:
@@ -2284,7 +2255,7 @@ class JsonldPredicate(Saveable):
                     union_of_None_type_or_strtype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['mapPredicate']
+                    lc=_doc.get("mapPredicate")
                 )
 
             except ValidationException as e:
@@ -2301,14 +2272,21 @@ class JsonldPredicate(Saveable):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("mapPredicate"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `mapPredicate` field is not valid because:",
-                            SourceLine(_doc, "mapPredicate", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `mapPredicate` field is not valid because:",
+                                SourceLine(_doc, "mapPredicate", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `mapPredicate` field is not valid because:",
+                                SourceLine(_doc, "mapPredicate", str),
+                                [e],
+                            )
+                        )
         else:
             mapPredicate = None
         if "refScope" in _doc:
@@ -2321,7 +2299,7 @@ class JsonldPredicate(Saveable):
                     union_of_None_type_or_inttype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['refScope']
+                    lc=_doc.get("refScope")
                 )
 
             except ValidationException as e:
@@ -2338,14 +2316,21 @@ class JsonldPredicate(Saveable):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("refScope"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `refScope` field is not valid because:",
-                            SourceLine(_doc, "refScope", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `refScope` field is not valid because:",
+                                SourceLine(_doc, "refScope", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `refScope` field is not valid because:",
+                                SourceLine(_doc, "refScope", str),
+                                [e],
+                            )
+                        )
         else:
             refScope = None
         if "typeDSL" in _doc:
@@ -2358,7 +2343,7 @@ class JsonldPredicate(Saveable):
                     union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['typeDSL']
+                    lc=_doc.get("typeDSL")
                 )
 
             except ValidationException as e:
@@ -2375,14 +2360,21 @@ class JsonldPredicate(Saveable):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("typeDSL"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `typeDSL` field is not valid because:",
-                            SourceLine(_doc, "typeDSL", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `typeDSL` field is not valid because:",
+                                SourceLine(_doc, "typeDSL", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `typeDSL` field is not valid because:",
+                                SourceLine(_doc, "typeDSL", str),
+                                [e],
+                            )
+                        )
         else:
             typeDSL = None
         if "secondaryFilesDSL" in _doc:
@@ -2395,7 +2387,7 @@ class JsonldPredicate(Saveable):
                     union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['secondaryFilesDSL']
+                    lc=_doc.get("secondaryFilesDSL")
                 )
 
             except ValidationException as e:
@@ -2412,14 +2404,21 @@ class JsonldPredicate(Saveable):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("secondaryFilesDSL"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `secondaryFilesDSL` field is not valid because:",
-                            SourceLine(_doc, "secondaryFilesDSL", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `secondaryFilesDSL` field is not valid because:",
+                                SourceLine(_doc, "secondaryFilesDSL", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `secondaryFilesDSL` field is not valid because:",
+                                SourceLine(_doc, "secondaryFilesDSL", str),
+                                [e],
+                            )
+                        )
         else:
             secondaryFilesDSL = None
         if "subscope" in _doc:
@@ -2432,7 +2431,7 @@ class JsonldPredicate(Saveable):
                     union_of_None_type_or_strtype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['subscope']
+                    lc=_doc.get("subscope")
                 )
 
             except ValidationException as e:
@@ -2449,14 +2448,21 @@ class JsonldPredicate(Saveable):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("subscope"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `subscope` field is not valid because:",
-                            SourceLine(_doc, "subscope", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `subscope` field is not valid because:",
+                                SourceLine(_doc, "subscope", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `subscope` field is not valid because:",
+                                SourceLine(_doc, "subscope", str),
+                                [e],
+                            )
+                        )
         else:
             subscope = None
         extension_fields: Dict[str, Any] = {}
@@ -2632,28 +2638,9 @@ class SpecializeDef(Saveable):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        keys: Optional[List[str]] = None,
         docRoot: Optional[str] = None
     ) -> "SpecializeDef":
         _doc = copy.copy(doc)
-
-        if keys is None:
-            keys = []
-        global_doc = copy.copy(line_numbers)
-
-        for key in keys:
-
-            if isinstance(global_doc, CommentedMap):
-                global_doc = global_doc.get(key)
-            elif isinstance(global_doc, (CommentedSeq, list)) and isinstance(key, int):
-                if key < len(global_doc):
-                    global_doc = global_doc[key]
-                else:
-                    global_doc = None
-            else:
-                global_doc = None
-                break
-        keys = copy.copy(keys)
 
         if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
@@ -2668,7 +2655,7 @@ class SpecializeDef(Saveable):
                 uri_strtype_False_False_1,
                 baseuri,
                 loadingOptions,
-                keys=keys + ['specializeFrom']
+                lc=_doc.get("specializeFrom")
             )
 
         except ValidationException as e:
@@ -2685,14 +2672,21 @@ class SpecializeDef(Saveable):
             else:
                 if error_message != str(e):
                     val_type = type(_doc.get("specializeFrom"))
-                    e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                _errors__.append(
-                    ValidationException(
-                        "the `specializeFrom` field is not valid because:",
-                        SourceLine(_doc, "specializeFrom", str),
-                        [e],
+                    _errors__.append(
+                        ValidationException(
+                            "the `specializeFrom` field is not valid because:",
+                            SourceLine(_doc, "specializeFrom", str),
+                            [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                        )
                     )
-                )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `specializeFrom` field is not valid because:",
+                            SourceLine(_doc, "specializeFrom", str),
+                            [e],
+                        )
+                    )
         try:
             if _doc.get("specializeTo") is None:
                 raise ValidationException("* missing required field `specializeTo`", None, [])
@@ -2702,7 +2696,7 @@ class SpecializeDef(Saveable):
                 uri_strtype_False_False_1,
                 baseuri,
                 loadingOptions,
-                keys=keys + ['specializeTo']
+                lc=_doc.get("specializeTo")
             )
 
         except ValidationException as e:
@@ -2719,14 +2713,21 @@ class SpecializeDef(Saveable):
             else:
                 if error_message != str(e):
                     val_type = type(_doc.get("specializeTo"))
-                    e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                _errors__.append(
-                    ValidationException(
-                        "the `specializeTo` field is not valid because:",
-                        SourceLine(_doc, "specializeTo", str),
-                        [e],
+                    _errors__.append(
+                        ValidationException(
+                            "the `specializeTo` field is not valid because:",
+                            SourceLine(_doc, "specializeTo", str),
+                            [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                        )
                     )
-                )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `specializeTo` field is not valid because:",
+                            SourceLine(_doc, "specializeTo", str),
+                            [e],
+                        )
+                    )
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -2859,28 +2860,9 @@ class SaladRecordField(RecordField):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        keys: Optional[List[str]] = None,
         docRoot: Optional[str] = None
     ) -> "SaladRecordField":
         _doc = copy.copy(doc)
-
-        if keys is None:
-            keys = []
-        global_doc = copy.copy(line_numbers)
-
-        for key in keys:
-
-            if isinstance(global_doc, CommentedMap):
-                global_doc = global_doc.get(key)
-            elif isinstance(global_doc, (CommentedSeq, list)) and isinstance(key, int):
-                if key < len(global_doc):
-                    global_doc = global_doc[key]
-                else:
-                    global_doc = None
-            else:
-                global_doc = None
-                break
-        keys = copy.copy(keys)
 
         if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
@@ -2896,7 +2878,7 @@ class SaladRecordField(RecordField):
                     uri_strtype_True_False_None,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['name']
+                    lc=_doc.get("name")
                 )
 
             except ValidationException as e:
@@ -2913,14 +2895,21 @@ class SaladRecordField(RecordField):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("name"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `name` field is not valid because:",
-                            SourceLine(_doc, "name", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `name` field is not valid because:",
+                                SourceLine(_doc, "name", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `name` field is not valid because:",
+                                SourceLine(_doc, "name", str),
+                                [e],
+                            )
+                        )
         else:
             name = None
 
@@ -2942,7 +2931,7 @@ class SaladRecordField(RecordField):
                     union_of_None_type_or_strtype_or_array_of_strtype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['doc']
+                    lc=_doc.get("doc")
                 )
 
             except ValidationException as e:
@@ -2959,14 +2948,21 @@ class SaladRecordField(RecordField):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("doc"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `doc` field is not valid because:",
-                            SourceLine(_doc, "doc", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `doc` field is not valid because:",
+                                SourceLine(_doc, "doc", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `doc` field is not valid because:",
+                                SourceLine(_doc, "doc", str),
+                                [e],
+                            )
+                        )
         else:
             doc = None
         try:
@@ -2978,7 +2974,7 @@ class SaladRecordField(RecordField):
                 typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2,
                 baseuri,
                 loadingOptions,
-                keys=keys + ['type']
+                lc=_doc.get("type")
             )
 
         except ValidationException as e:
@@ -2995,14 +2991,21 @@ class SaladRecordField(RecordField):
             else:
                 if error_message != str(e):
                     val_type = type(_doc.get("type"))
-                    e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                _errors__.append(
-                    ValidationException(
-                        "the `type` field is not valid because:",
-                        SourceLine(_doc, "type", str),
-                        [e],
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                        )
                     )
-                )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [e],
+                        )
+                    )
         if "jsonldPredicate" in _doc:
             try:
                 if _doc.get("jsonldPredicate") is None:
@@ -3013,7 +3016,7 @@ class SaladRecordField(RecordField):
                     union_of_None_type_or_strtype_or_JsonldPredicateLoader,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['jsonldPredicate']
+                    lc=_doc.get("jsonldPredicate")
                 )
 
             except ValidationException as e:
@@ -3030,14 +3033,21 @@ class SaladRecordField(RecordField):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("jsonldPredicate"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `jsonldPredicate` field is not valid because:",
-                            SourceLine(_doc, "jsonldPredicate", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `jsonldPredicate` field is not valid because:",
+                                SourceLine(_doc, "jsonldPredicate", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `jsonldPredicate` field is not valid because:",
+                                SourceLine(_doc, "jsonldPredicate", str),
+                                [e],
+                            )
+                        )
         else:
             jsonldPredicate = None
         if "default" in _doc:
@@ -3050,7 +3060,7 @@ class SaladRecordField(RecordField):
                     union_of_None_type_or_Any_type,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['default']
+                    lc=_doc.get("default")
                 )
 
             except ValidationException as e:
@@ -3067,14 +3077,21 @@ class SaladRecordField(RecordField):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("default"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `default` field is not valid because:",
-                            SourceLine(_doc, "default", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `default` field is not valid because:",
+                                SourceLine(_doc, "default", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `default` field is not valid because:",
+                                SourceLine(_doc, "default", str),
+                                [e],
+                            )
+                        )
         else:
             default = None
         extension_fields: Dict[str, Any] = {}
@@ -3244,28 +3261,9 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        keys: Optional[List[str]] = None,
         docRoot: Optional[str] = None
     ) -> "SaladRecordSchema":
         _doc = copy.copy(doc)
-
-        if keys is None:
-            keys = []
-        global_doc = copy.copy(line_numbers)
-
-        for key in keys:
-
-            if isinstance(global_doc, CommentedMap):
-                global_doc = global_doc.get(key)
-            elif isinstance(global_doc, (CommentedSeq, list)) and isinstance(key, int):
-                if key < len(global_doc):
-                    global_doc = global_doc[key]
-                else:
-                    global_doc = None
-            else:
-                global_doc = None
-                break
-        keys = copy.copy(keys)
 
         if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
@@ -3281,7 +3279,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     uri_strtype_True_False_None,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['name']
+                    lc=_doc.get("name")
                 )
 
             except ValidationException as e:
@@ -3298,14 +3296,21 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("name"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `name` field is not valid because:",
-                            SourceLine(_doc, "name", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `name` field is not valid because:",
+                                SourceLine(_doc, "name", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `name` field is not valid because:",
+                                SourceLine(_doc, "name", str),
+                                [e],
+                            )
+                        )
         else:
             name = None
 
@@ -3327,7 +3332,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['inVocab']
+                    lc=_doc.get("inVocab")
                 )
 
             except ValidationException as e:
@@ -3344,14 +3349,21 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("inVocab"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `inVocab` field is not valid because:",
-                            SourceLine(_doc, "inVocab", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `inVocab` field is not valid because:",
+                                SourceLine(_doc, "inVocab", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `inVocab` field is not valid because:",
+                                SourceLine(_doc, "inVocab", str),
+                                [e],
+                            )
+                        )
         else:
             inVocab = None
         if "fields" in _doc:
@@ -3364,7 +3376,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['fields']
+                    lc=_doc.get("fields")
                 )
 
             except ValidationException as e:
@@ -3381,14 +3393,21 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("fields"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `fields` field is not valid because:",
-                            SourceLine(_doc, "fields", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `fields` field is not valid because:",
+                                SourceLine(_doc, "fields", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `fields` field is not valid because:",
+                                SourceLine(_doc, "fields", str),
+                                [e],
+                            )
+                        )
         else:
             fields = None
         try:
@@ -3400,7 +3419,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 typedsl_Record_nameLoader_2,
                 baseuri,
                 loadingOptions,
-                keys=keys + ['type']
+                lc=_doc.get("type")
             )
 
         except ValidationException as e:
@@ -3417,14 +3436,21 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             else:
                 if error_message != str(e):
                     val_type = type(_doc.get("type"))
-                    e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                _errors__.append(
-                    ValidationException(
-                        "the `type` field is not valid because:",
-                        SourceLine(_doc, "type", str),
-                        [e],
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                        )
                     )
-                )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [e],
+                        )
+                    )
         if "doc" in _doc:
             try:
                 if _doc.get("doc") is None:
@@ -3435,7 +3461,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     union_of_None_type_or_strtype_or_array_of_strtype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['doc']
+                    lc=_doc.get("doc")
                 )
 
             except ValidationException as e:
@@ -3452,14 +3478,21 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("doc"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `doc` field is not valid because:",
-                            SourceLine(_doc, "doc", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `doc` field is not valid because:",
+                                SourceLine(_doc, "doc", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `doc` field is not valid because:",
+                                SourceLine(_doc, "doc", str),
+                                [e],
+                            )
+                        )
         else:
             doc = None
         if "docParent" in _doc:
@@ -3472,7 +3505,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     uri_union_of_None_type_or_strtype_False_False_None,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['docParent']
+                    lc=_doc.get("docParent")
                 )
 
             except ValidationException as e:
@@ -3489,14 +3522,21 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("docParent"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `docParent` field is not valid because:",
-                            SourceLine(_doc, "docParent", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `docParent` field is not valid because:",
+                                SourceLine(_doc, "docParent", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `docParent` field is not valid because:",
+                                SourceLine(_doc, "docParent", str),
+                                [e],
+                            )
+                        )
         else:
             docParent = None
         if "docChild" in _doc:
@@ -3509,7 +3549,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['docChild']
+                    lc=_doc.get("docChild")
                 )
 
             except ValidationException as e:
@@ -3526,14 +3566,21 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("docChild"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `docChild` field is not valid because:",
-                            SourceLine(_doc, "docChild", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `docChild` field is not valid because:",
+                                SourceLine(_doc, "docChild", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `docChild` field is not valid because:",
+                                SourceLine(_doc, "docChild", str),
+                                [e],
+                            )
+                        )
         else:
             docChild = None
         if "docAfter" in _doc:
@@ -3546,7 +3593,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     uri_union_of_None_type_or_strtype_False_False_None,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['docAfter']
+                    lc=_doc.get("docAfter")
                 )
 
             except ValidationException as e:
@@ -3563,14 +3610,21 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("docAfter"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `docAfter` field is not valid because:",
-                            SourceLine(_doc, "docAfter", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `docAfter` field is not valid because:",
+                                SourceLine(_doc, "docAfter", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `docAfter` field is not valid because:",
+                                SourceLine(_doc, "docAfter", str),
+                                [e],
+                            )
+                        )
         else:
             docAfter = None
         if "jsonldPredicate" in _doc:
@@ -3583,7 +3637,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     union_of_None_type_or_strtype_or_JsonldPredicateLoader,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['jsonldPredicate']
+                    lc=_doc.get("jsonldPredicate")
                 )
 
             except ValidationException as e:
@@ -3600,14 +3654,21 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("jsonldPredicate"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `jsonldPredicate` field is not valid because:",
-                            SourceLine(_doc, "jsonldPredicate", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `jsonldPredicate` field is not valid because:",
+                                SourceLine(_doc, "jsonldPredicate", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `jsonldPredicate` field is not valid because:",
+                                SourceLine(_doc, "jsonldPredicate", str),
+                                [e],
+                            )
+                        )
         else:
             jsonldPredicate = None
         if "documentRoot" in _doc:
@@ -3620,7 +3681,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['documentRoot']
+                    lc=_doc.get("documentRoot")
                 )
 
             except ValidationException as e:
@@ -3637,14 +3698,21 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("documentRoot"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `documentRoot` field is not valid because:",
-                            SourceLine(_doc, "documentRoot", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `documentRoot` field is not valid because:",
+                                SourceLine(_doc, "documentRoot", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `documentRoot` field is not valid because:",
+                                SourceLine(_doc, "documentRoot", str),
+                                [e],
+                            )
+                        )
         else:
             documentRoot = None
         if "abstract" in _doc:
@@ -3657,7 +3725,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['abstract']
+                    lc=_doc.get("abstract")
                 )
 
             except ValidationException as e:
@@ -3674,14 +3742,21 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("abstract"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `abstract` field is not valid because:",
-                            SourceLine(_doc, "abstract", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `abstract` field is not valid because:",
+                                SourceLine(_doc, "abstract", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `abstract` field is not valid because:",
+                                SourceLine(_doc, "abstract", str),
+                                [e],
+                            )
+                        )
         else:
             abstract = None
         if "extends" in _doc:
@@ -3694,7 +3769,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['extends']
+                    lc=_doc.get("extends")
                 )
 
             except ValidationException as e:
@@ -3711,14 +3786,21 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("extends"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `extends` field is not valid because:",
-                            SourceLine(_doc, "extends", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `extends` field is not valid because:",
+                                SourceLine(_doc, "extends", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `extends` field is not valid because:",
+                                SourceLine(_doc, "extends", str),
+                                [e],
+                            )
+                        )
         else:
             extends = None
         if "specialize" in _doc:
@@ -3731,7 +3813,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['specialize']
+                    lc=_doc.get("specialize")
                 )
 
             except ValidationException as e:
@@ -3748,14 +3830,21 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("specialize"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `specialize` field is not valid because:",
-                            SourceLine(_doc, "specialize", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `specialize` field is not valid because:",
+                                SourceLine(_doc, "specialize", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `specialize` field is not valid because:",
+                                SourceLine(_doc, "specialize", str),
+                                [e],
+                            )
+                        )
         else:
             specialize = None
         extension_fields: Dict[str, Any] = {}
@@ -3983,28 +4072,9 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        keys: Optional[List[str]] = None,
         docRoot: Optional[str] = None
     ) -> "SaladEnumSchema":
         _doc = copy.copy(doc)
-
-        if keys is None:
-            keys = []
-        global_doc = copy.copy(line_numbers)
-
-        for key in keys:
-
-            if isinstance(global_doc, CommentedMap):
-                global_doc = global_doc.get(key)
-            elif isinstance(global_doc, (CommentedSeq, list)) and isinstance(key, int):
-                if key < len(global_doc):
-                    global_doc = global_doc[key]
-                else:
-                    global_doc = None
-            else:
-                global_doc = None
-                break
-        keys = copy.copy(keys)
 
         if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
@@ -4020,7 +4090,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     uri_union_of_None_type_or_strtype_True_False_None,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['name']
+                    lc=_doc.get("name")
                 )
 
             except ValidationException as e:
@@ -4037,14 +4107,21 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("name"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `name` field is not valid because:",
-                            SourceLine(_doc, "name", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `name` field is not valid because:",
+                                SourceLine(_doc, "name", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `name` field is not valid because:",
+                                SourceLine(_doc, "name", str),
+                                [e],
+                            )
+                        )
         else:
             name = None
 
@@ -4066,7 +4143,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['inVocab']
+                    lc=_doc.get("inVocab")
                 )
 
             except ValidationException as e:
@@ -4083,14 +4160,21 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("inVocab"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `inVocab` field is not valid because:",
-                            SourceLine(_doc, "inVocab", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `inVocab` field is not valid because:",
+                                SourceLine(_doc, "inVocab", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `inVocab` field is not valid because:",
+                                SourceLine(_doc, "inVocab", str),
+                                [e],
+                            )
+                        )
         else:
             inVocab = None
         try:
@@ -4102,7 +4186,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 uri_array_of_strtype_True_False_None,
                 baseuri,
                 loadingOptions,
-                keys=keys + ['symbols']
+                lc=_doc.get("symbols")
             )
 
         except ValidationException as e:
@@ -4119,14 +4203,21 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             else:
                 if error_message != str(e):
                     val_type = type(_doc.get("symbols"))
-                    e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                _errors__.append(
-                    ValidationException(
-                        "the `symbols` field is not valid because:",
-                        SourceLine(_doc, "symbols", str),
-                        [e],
+                    _errors__.append(
+                        ValidationException(
+                            "the `symbols` field is not valid because:",
+                            SourceLine(_doc, "symbols", str),
+                            [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                        )
                     )
-                )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `symbols` field is not valid because:",
+                            SourceLine(_doc, "symbols", str),
+                            [e],
+                        )
+                    )
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -4136,7 +4227,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 typedsl_Enum_nameLoader_2,
                 baseuri,
                 loadingOptions,
-                keys=keys + ['type']
+                lc=_doc.get("type")
             )
 
         except ValidationException as e:
@@ -4153,14 +4244,21 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             else:
                 if error_message != str(e):
                     val_type = type(_doc.get("type"))
-                    e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                _errors__.append(
-                    ValidationException(
-                        "the `type` field is not valid because:",
-                        SourceLine(_doc, "type", str),
-                        [e],
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                        )
                     )
-                )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [e],
+                        )
+                    )
         if "doc" in _doc:
             try:
                 if _doc.get("doc") is None:
@@ -4171,7 +4269,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     union_of_None_type_or_strtype_or_array_of_strtype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['doc']
+                    lc=_doc.get("doc")
                 )
 
             except ValidationException as e:
@@ -4188,14 +4286,21 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("doc"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `doc` field is not valid because:",
-                            SourceLine(_doc, "doc", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `doc` field is not valid because:",
+                                SourceLine(_doc, "doc", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `doc` field is not valid because:",
+                                SourceLine(_doc, "doc", str),
+                                [e],
+                            )
+                        )
         else:
             doc = None
         if "docParent" in _doc:
@@ -4208,7 +4313,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     uri_union_of_None_type_or_strtype_False_False_None,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['docParent']
+                    lc=_doc.get("docParent")
                 )
 
             except ValidationException as e:
@@ -4225,14 +4330,21 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("docParent"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `docParent` field is not valid because:",
-                            SourceLine(_doc, "docParent", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `docParent` field is not valid because:",
+                                SourceLine(_doc, "docParent", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `docParent` field is not valid because:",
+                                SourceLine(_doc, "docParent", str),
+                                [e],
+                            )
+                        )
         else:
             docParent = None
         if "docChild" in _doc:
@@ -4245,7 +4357,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['docChild']
+                    lc=_doc.get("docChild")
                 )
 
             except ValidationException as e:
@@ -4262,14 +4374,21 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("docChild"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `docChild` field is not valid because:",
-                            SourceLine(_doc, "docChild", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `docChild` field is not valid because:",
+                                SourceLine(_doc, "docChild", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `docChild` field is not valid because:",
+                                SourceLine(_doc, "docChild", str),
+                                [e],
+                            )
+                        )
         else:
             docChild = None
         if "docAfter" in _doc:
@@ -4282,7 +4401,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     uri_union_of_None_type_or_strtype_False_False_None,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['docAfter']
+                    lc=_doc.get("docAfter")
                 )
 
             except ValidationException as e:
@@ -4299,14 +4418,21 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("docAfter"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `docAfter` field is not valid because:",
-                            SourceLine(_doc, "docAfter", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `docAfter` field is not valid because:",
+                                SourceLine(_doc, "docAfter", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `docAfter` field is not valid because:",
+                                SourceLine(_doc, "docAfter", str),
+                                [e],
+                            )
+                        )
         else:
             docAfter = None
         if "jsonldPredicate" in _doc:
@@ -4319,7 +4445,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     union_of_None_type_or_strtype_or_JsonldPredicateLoader,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['jsonldPredicate']
+                    lc=_doc.get("jsonldPredicate")
                 )
 
             except ValidationException as e:
@@ -4336,14 +4462,21 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("jsonldPredicate"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `jsonldPredicate` field is not valid because:",
-                            SourceLine(_doc, "jsonldPredicate", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `jsonldPredicate` field is not valid because:",
+                                SourceLine(_doc, "jsonldPredicate", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `jsonldPredicate` field is not valid because:",
+                                SourceLine(_doc, "jsonldPredicate", str),
+                                [e],
+                            )
+                        )
         else:
             jsonldPredicate = None
         if "documentRoot" in _doc:
@@ -4356,7 +4489,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['documentRoot']
+                    lc=_doc.get("documentRoot")
                 )
 
             except ValidationException as e:
@@ -4373,14 +4506,21 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("documentRoot"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `documentRoot` field is not valid because:",
-                            SourceLine(_doc, "documentRoot", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `documentRoot` field is not valid because:",
+                                SourceLine(_doc, "documentRoot", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `documentRoot` field is not valid because:",
+                                SourceLine(_doc, "documentRoot", str),
+                                [e],
+                            )
+                        )
         else:
             documentRoot = None
         if "extends" in _doc:
@@ -4393,7 +4533,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['extends']
+                    lc=_doc.get("extends")
                 )
 
             except ValidationException as e:
@@ -4410,14 +4550,21 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("extends"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `extends` field is not valid because:",
-                            SourceLine(_doc, "extends", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `extends` field is not valid because:",
+                                SourceLine(_doc, "extends", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `extends` field is not valid because:",
+                                SourceLine(_doc, "extends", str),
+                                [e],
+                            )
+                        )
         else:
             extends = None
         extension_fields: Dict[str, Any] = {}
@@ -4611,28 +4758,9 @@ class Documentation(NamedType, DocType):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        keys: Optional[List[str]] = None,
         docRoot: Optional[str] = None
     ) -> "Documentation":
         _doc = copy.copy(doc)
-
-        if keys is None:
-            keys = []
-        global_doc = copy.copy(line_numbers)
-
-        for key in keys:
-
-            if isinstance(global_doc, CommentedMap):
-                global_doc = global_doc.get(key)
-            elif isinstance(global_doc, (CommentedSeq, list)) and isinstance(key, int):
-                if key < len(global_doc):
-                    global_doc = global_doc[key]
-                else:
-                    global_doc = None
-            else:
-                global_doc = None
-                break
-        keys = copy.copy(keys)
 
         if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
@@ -4648,7 +4776,7 @@ class Documentation(NamedType, DocType):
                     uri_strtype_True_False_None,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['name']
+                    lc=_doc.get("name")
                 )
 
             except ValidationException as e:
@@ -4665,14 +4793,21 @@ class Documentation(NamedType, DocType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("name"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `name` field is not valid because:",
-                            SourceLine(_doc, "name", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `name` field is not valid because:",
+                                SourceLine(_doc, "name", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `name` field is not valid because:",
+                                SourceLine(_doc, "name", str),
+                                [e],
+                            )
+                        )
         else:
             name = None
 
@@ -4694,7 +4829,7 @@ class Documentation(NamedType, DocType):
                     union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['inVocab']
+                    lc=_doc.get("inVocab")
                 )
 
             except ValidationException as e:
@@ -4711,14 +4846,21 @@ class Documentation(NamedType, DocType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("inVocab"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `inVocab` field is not valid because:",
-                            SourceLine(_doc, "inVocab", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `inVocab` field is not valid because:",
+                                SourceLine(_doc, "inVocab", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `inVocab` field is not valid because:",
+                                SourceLine(_doc, "inVocab", str),
+                                [e],
+                            )
+                        )
         else:
             inVocab = None
         if "doc" in _doc:
@@ -4731,7 +4873,7 @@ class Documentation(NamedType, DocType):
                     union_of_None_type_or_strtype_or_array_of_strtype,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['doc']
+                    lc=_doc.get("doc")
                 )
 
             except ValidationException as e:
@@ -4748,14 +4890,21 @@ class Documentation(NamedType, DocType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("doc"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `doc` field is not valid because:",
-                            SourceLine(_doc, "doc", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `doc` field is not valid because:",
+                                SourceLine(_doc, "doc", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `doc` field is not valid because:",
+                                SourceLine(_doc, "doc", str),
+                                [e],
+                            )
+                        )
         else:
             doc = None
         if "docParent" in _doc:
@@ -4768,7 +4917,7 @@ class Documentation(NamedType, DocType):
                     uri_union_of_None_type_or_strtype_False_False_None,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['docParent']
+                    lc=_doc.get("docParent")
                 )
 
             except ValidationException as e:
@@ -4785,14 +4934,21 @@ class Documentation(NamedType, DocType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("docParent"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `docParent` field is not valid because:",
-                            SourceLine(_doc, "docParent", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `docParent` field is not valid because:",
+                                SourceLine(_doc, "docParent", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `docParent` field is not valid because:",
+                                SourceLine(_doc, "docParent", str),
+                                [e],
+                            )
+                        )
         else:
             docParent = None
         if "docChild" in _doc:
@@ -4805,7 +4961,7 @@ class Documentation(NamedType, DocType):
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['docChild']
+                    lc=_doc.get("docChild")
                 )
 
             except ValidationException as e:
@@ -4822,14 +4978,21 @@ class Documentation(NamedType, DocType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("docChild"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `docChild` field is not valid because:",
-                            SourceLine(_doc, "docChild", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `docChild` field is not valid because:",
+                                SourceLine(_doc, "docChild", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `docChild` field is not valid because:",
+                                SourceLine(_doc, "docChild", str),
+                                [e],
+                            )
+                        )
         else:
             docChild = None
         if "docAfter" in _doc:
@@ -4842,7 +5005,7 @@ class Documentation(NamedType, DocType):
                     uri_union_of_None_type_or_strtype_False_False_None,
                     baseuri,
                     loadingOptions,
-                    keys=keys + ['docAfter']
+                    lc=_doc.get("docAfter")
                 )
 
             except ValidationException as e:
@@ -4859,14 +5022,21 @@ class Documentation(NamedType, DocType):
                 else:
                     if error_message != str(e):
                         val_type = type(_doc.get("docAfter"))
-                        e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                    _errors__.append(
-                        ValidationException(
-                            "the `docAfter` field is not valid because:",
-                            SourceLine(_doc, "docAfter", str),
-                            [e],
+                        _errors__.append(
+                            ValidationException(
+                                "the `docAfter` field is not valid because:",
+                                SourceLine(_doc, "docAfter", str),
+                                [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                            )
                         )
-                    )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `docAfter` field is not valid because:",
+                                SourceLine(_doc, "docAfter", str),
+                                [e],
+                            )
+                        )
         else:
             docAfter = None
         try:
@@ -4878,7 +5048,7 @@ class Documentation(NamedType, DocType):
                 typedsl_Documentation_nameLoader_2,
                 baseuri,
                 loadingOptions,
-                keys=keys + ['type']
+                lc=_doc.get("type")
             )
 
         except ValidationException as e:
@@ -4895,14 +5065,21 @@ class Documentation(NamedType, DocType):
             else:
                 if error_message != str(e):
                     val_type = type(_doc.get("type"))
-                    e = ValidationException(f"Expected one of {error_message} was {val_type}")
-                _errors__.append(
-                    ValidationException(
-                        "the `type` field is not valid because:",
-                        SourceLine(_doc, "type", str),
-                        [e],
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [ValidationException(f"Expected one of {error_message} was {val_type}")],
+                        )
                     )
-                )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [e],
+                        )
+                    )
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
