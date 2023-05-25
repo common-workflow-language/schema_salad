@@ -13,6 +13,7 @@ from schema_salad.utils import yaml_no_ts
 from .util import get_data
 from typing import Any
 
+
 def test_error_message1() -> None:
     t = "test_schema/test1.cwl"
     match = r"""^.*test1\.cwl:2:1:\s+Object\s+`.*test1\.cwl`\s+is\s+not valid because
