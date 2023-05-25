@@ -9,6 +9,7 @@ import pytest
 import schema_salad.tests.cwl_v1_0 as cwl_v1_0
 from schema_salad.exceptions import ValidationException
 from schema_salad.utils import yaml_no_ts
+from ruamel.yaml.comments import CommentedMap
 
 from .util import get_data
 
@@ -204,7 +205,7 @@ def test_error_message15() -> None:
         load_document_by_uri(path)
 
 
-def load_document_by_uri(path: Union[str, Path]):
+def load_document_by_uri(path: Union[str, Path]) -> CommentedMap:
     if isinstance(path, str):
         uri = urlparse(path)
         if not uri.scheme or uri.scheme == "file":
