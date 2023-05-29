@@ -82,7 +82,7 @@ else:
 install_requires = [
     "requests >= 1.0",
     "ruamel.yaml >= 0.17.6, < 0.17.27;python_version>='3.7'",
-    "ruamel.yaml >= 0.16.12, < 0.17.27",
+    "ruamel.yaml >= 0.16.12, < 0.17.29",
     "rdflib >= 4.2.2, < 7.0.0",
     "rdflib-jsonld>=0.4.0, <= 0.6.1;python_version<='3.6'",
     "mistune>=2.0.3,<2.1",
