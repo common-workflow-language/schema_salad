@@ -3,5 +3,4 @@ black>=19.10b0
 types-pkg_resources
 types-requests
 types-dataclasses
-cwl-utils
 objgraph
