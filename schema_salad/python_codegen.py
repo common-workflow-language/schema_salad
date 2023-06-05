@@ -275,26 +275,19 @@ class PythonCodeGen(CodeGenBase):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
-        inserted_line_info: Dict[int, int] = {}
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
-        doc = copy.copy(doc_line_info)
-        keys = copy.copy(keys)
-        inserted_line_info = copy.copy(inserted_line_info)
 
-        for key in keys:
-            if isinstance(doc, CommentedMap):
-                doc = doc.get(key)
-            elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
-                if key < len(doc):
-                    doc = doc[key]
-                else:
-                    doc = None
-            else:
-                doc = None
-                break
+        keys = copy.copy(keys)
+
+        doc = iterate_through_doc(keys)
+
+        if inserted_line_info is None:
+            inserted_line_info = {}
 
         if doc:
             if self.id:
@@ -305,11 +298,6 @@ class PythonCodeGen(CodeGenBase):
                     keys.append(temp_id)
                     temp_doc = doc.get(temp_id)
                     if isinstance(temp_doc, CommentedMap):
-                        temp_doc['id'] = temp_id
-                        temp_doc.lc.add_kv_line_col("id", [doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1],
-                                                           doc.lc.data[temp_id][0],
-                                                           doc.lc.data[temp_id][1] + 4])
                         doc = temp_doc
 
         if doc is not None:
@@ -336,26 +324,18 @@ class PythonCodeGen(CodeGenBase):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
-        inserted_line_info: Dict[int, int] = {}
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
         r = CommentedMap()
-        doc = copy.copy(doc_line_info)
         keys = copy.copy(keys)
-        inserted_line_info = copy.copy(inserted_line_info)
 
-        for key in keys:
-            if isinstance(doc, CommentedMap):
-                doc = doc.get(key)
-            elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
-                if key < len(doc):
-                    doc = doc[key]
-                else:
-                    doc = None
-            else:
-                doc = None
-                break
+        doc = iterate_through_doc(keys)
+
+        if inserted_line_info is None:
+            inserted_line_info = {}
 
         if doc is not None:
             r._yaml_set_line_col(doc.lc.line, doc.lc.col)
@@ -403,13 +383,18 @@ class PythonCodeGen(CodeGenBase):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
                             if key != 'class':
+                                line = doc.lc.data[key][0] + shift
+                                while line in inserted_line_info:
+                                    line += 1
+                                    shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url_to_save,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
-                                    inserted_line_info=inserted_line_info
+                                    inserted_line_info=inserted_line_info,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
@@ -430,7 +415,8 @@ class PythonCodeGen(CodeGenBase):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
-                                inserted_line_info=inserted_line_info
+                                inserted_line_info=inserted_line_info,
+                                shift=shift
                             )
 """
             )
@@ -443,13 +429,18 @@ class PythonCodeGen(CodeGenBase):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
                             if key != 'class':
+                                line = doc.lc.data[key][0] + shift
+                                while line in inserted_line_info:
+                                    line += 1
+                                    shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
                                     base_url=base_url,
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
-                                    inserted_line_info=inserted_line_info
+                                    inserted_line_info=inserted_line_info,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
@@ -470,68 +461,11 @@ class PythonCodeGen(CodeGenBase):
                                 cols=cols,
                                 min_col=min_col,
                                 max_len=max_len,
-                                inserted_line_info=inserted_line_info
+                                inserted_line_info=inserted_line_info,
+                                shift=shift
                             )
 """
             )
-
-    #             self.serializer.write(
-    #                     """
-    #             if self.id is not None and "id" not in r:
-    #                 u = save_relative_uri(self.id, base_url, True, None, relative_uris)
-    #                 r["id"] = u
-    #                 add_kv(
-    #                     old_doc=doc,
-    #                     new_doc=r,
-    #                     line_numbers=line_numbers,
-    #                     key="id",
-    #                     val=r.get("id"),
-    #                     cols=cols,
-    #                     min_col=min_col,
-    #                     max_len=max_len
-    #                 )
-    #                 if doc:
-    #                     if u in doc:
-    #                         keys.append(u)
-    #                         if isinstance(doc.get(u), (CommentedMap, CommentedSeq)):
-    #                             doc = doc.get(u)
-    #                             line_numbers = get_line_numbers(doc)
-    #                             min_col = get_min_col(line_numbers)
-    # """
-    #                 )
-    #         else:
-    #             self.serializer.write(
-    #                 """
-    #         for key in self.ordered_attrs.keys():
-    #             if isinstance(key, str) and key not in r:
-    #                 if getattr(self, key) is not None:
-    #                     saved_val = save(
-    #                         getattr(self, key),
-    #                         top=False,
-    #                         base_url=base_url,
-    #                         relative_uris=relative_uris,
-    #                         keys=keys + [key],
-    #                     )
-
-    #                     if type(saved_val) == list:
-    #                         if (
-    #                             len(saved_val) == 1
-    #                         ):  # If the returned value is a list of size 1, just save the value in the list
-    #                             saved_val = saved_val[0]
-    #                     r[key] = saved_val
-
-    #                     add_kv(
-    #                         old_doc=doc,
-    #                         new_doc=r,
-    #                         line_numbers=line_numbers,
-    #                         key=key,
-    #                         val=r.get(key),
-    #                         cols=cols,
-    #                         min_col=min_col,
-    #                         max_len=max_len
-    #                     )
-    # """
-    #             )
 
     def end_class(self, classname: str, field_names: List[str]) -> None:
         """Signal that we are done with this class."""
@@ -817,7 +751,8 @@ if self.{safename} is not None and "{fieldname}" not in r:
             cols=cols,
             min_col=min_col,
             max_len=max_len,
-            inserted_line_info=inserted_line_info
+            inserted_line_info=inserted_line_info,
+            shift=shift
         )
 """.format(
                         safename=self.safe_name(name),
@@ -835,7 +770,12 @@ if self.{safename} is not None and "{fieldname}" not in r:
                     """
 if self.{safename} is not None and "{fieldname}" not in r:
     r["{fieldname}"] = save(
-        self.{safename}, top=False, base_url={baseurl}, relative_uris=relative_uris,inserted_line_info=inserted_line_info
+        self.{safename},
+        top=False,
+        base_url={baseurl},
+        relative_uris=relative_uris,
+        inserted_line_info=inserted_line_info,
+        shift=shift
     )
     max_len, inserted_line_info = add_kv(
         old_doc=doc,
@@ -846,7 +786,8 @@ if self.{safename} is not None and "{fieldname}" not in r:
         cols=cols,
         min_col=min_col,
         max_len=max_len,
-        inserted_line_info=inserted_line_info
+        inserted_line_info=inserted_line_info,
+        shift=shift
     )
 """.format(
                         safename=self.safe_name(name),

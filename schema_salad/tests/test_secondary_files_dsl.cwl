@@ -5,6 +5,7 @@ baseCommand: python3
 inputs: 
   files: 
    type: File
+   secondaryFiles: ["inputB.txt", "inputC.txt?"]
    default: "script.py"
   other_file: File
 

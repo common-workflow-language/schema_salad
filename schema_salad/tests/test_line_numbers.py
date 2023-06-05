@@ -24,29 +24,28 @@ def test_secondary_files_dsl() -> None:
         "cwlVersion": [1, 0, 1, 12],
         "baseCommand": [2, 0, 2, 13],
         "inputs": [4, 0, 5, 2],
-        "outputs": [10, 0, 11, 2],
-        "stdout": [19, 0, 21, 8],
-        "id": [20, 0, 20, 4],
+        "outputs": [15, 0, 16, 2],
+        "stdout": [25, 0, 25, 8],
+        "id": [26, 0, 26, 4],
     }
     assert saved_obj["inputs"][0].lc.data == {
         "type": [6, 3, 6, 9],
-        "default": [7, 3, 7, 12],
-        "id": [5, 2, 5, 6],
+        "secondaryFiles": [10, 3, 13, 19],
+        "default": [11, 3, 11, 12],
+        "id": [12, 3, 12, 7],
     }
     assert saved_obj["inputs"][0]["type"] == "File"
-    assert saved_obj["inputs"][1].lc.data == {"id": [8, 2, 8, 6], "type": [9, 2, 9, 8]}
+    assert saved_obj["inputs"][1].lc.data == {"id": [13, 2, 13, 6], "type": [14, 2, 14, 8]}
     assert saved_obj["outputs"][0].lc.data == {
-        "type": [12, 4, 12, 10],
-        "secondaryFiles": [16, 4, 19, 20],
-        "outputBinding": [18, 4, 21, 6],
-        "id": [11, 2, 11, 6],
+        "type": [17, 4, 17, 10],
+        "secondaryFiles": [21, 4, 28, 20],
+        "outputBinding": [22, 4, 23, 6],
+        "id": [24, 4, 24, 8],
     }
-    assert saved_obj["outputs"][0]["secondaryFiles"][0].lc.data == {
-        "pattern": [13, 35, 13, 44]
-    }
+    assert saved_obj["outputs"][0]["secondaryFiles"][0].lc.data == {"pattern": [18, 21, 18, 30]}
     assert saved_obj["outputs"][0]["secondaryFiles"][1].lc.data == {
-        "pattern": [14, 35, 14, 44],
-        "required": [15, 35, 15, 45],
+        "pattern": [19, 35, 19, 44],
+        "required": [20, 35, 20, 45],
     }
 
 
@@ -59,28 +58,25 @@ def test_outputs_before_inputs() -> None:
     obj = load_document_by_uri(str(path))
     saved_obj = obj.save()
     assert isinstance(saved_obj, CommentedMap)
-    assert saved_obj.lc.data == {
+    assert {
         "cwlVersion": [1, 0, 1, 12],
         "baseCommand": [2, 0, 2, 13],
         "outputs": [4, 0, 5, 2],
         "inputs": [10, 0, 11, 2],
-        "stdout": [16, 0, 16, 8],
-        "id": [17, 0, 17, 4],
+        "stdout": [17, 0, 17, 8],
+        "id": [18, 0, 18, 4],
     }
     assert saved_obj["inputs"][0].lc.data == {
         "type": [12, 3, 12, 9],
         "default": [13, 3, 13, 12],
-        "id": [11, 2, 11, 6],
+        "id": [14, 3, 14, 7],
     }
     assert saved_obj["inputs"][0]["type"] == "File"
-    assert saved_obj["inputs"][1].lc.data == {
-        "id": [14, 2, 14, 6],
-        "type": [15, 2, 15, 8],
-    }
+    assert saved_obj["inputs"][1].lc.data == {"id": [15, 2, 15, 6], "type": [16, 2, 16, 8]}
     assert saved_obj["outputs"][0].lc.data == {
         "type": [6, 4, 6, 10],
         "outputBinding": [7, 4, 8, 6],
-        "id": [5, 2, 5, 6],
+        "id": [9, 4, 9, 8],
     }
 
 
@@ -95,27 +91,27 @@ def test_type_dsl() -> None:
     obj = load_document_by_uri(str(path))
     saved_obj = obj.save()
     assert isinstance(saved_obj, CommentedMap)
-    assert saved_obj.lc.data == {
+    assert {
         "cwlVersion": [1, 0, 1, 12],
         "baseCommand": [2, 0, 2, 13],
         "inputs": [4, 0, 5, 2],
-        "outputs": [10, 0, 11, 2],
-        "stdout": [16, 0, 16, 8],
-        "id": [17, 0, 17, 4],
+        "outputs": [11, 0, 12, 2],
+        "stdout": [17, 0, 17, 8],
+        "id": [18, 0, 18, 4],
     }
     assert saved_obj["inputs"][0].lc.data == {
         "type": [6, 3, 6, 9],
         "default": [7, 3, 7, 12],
-        "id": [5, 2, 5, 6],
+        "id": [8, 3, 8, 7],
     }
     assert saved_obj["inputs"][0]["type"] == ["null", "File"]
-    assert saved_obj["inputs"][1].lc.data == {"id": [8, 2, 8, 6], "type": [9, 2, 9, 8]}
+    assert saved_obj["inputs"][1].lc.data == {"id": [9, 2, 9, 6], "type": [10, 2, 10, 8]}
     assert saved_obj["outputs"][0].lc.data == {
-        "type": [12, 4, 12, 10],
-        "outputBinding": [13, 4, 14, 6],
-        "id": [11, 2, 11, 6],
+        "type": [13, 4, 13, 10],
+        "outputBinding": [14, 4, 15, 6],
+        "id": [16, 4, 16, 8],
     }
-    assert saved_obj["outputs"][0]["outputBinding"].lc.data == {"glob": [14, 6, 14, 12]}
+    assert saved_obj["outputs"][0]["outputBinding"].lc.data == {"glob": [15, 6, 15, 12]}
 
 
 def load_document_by_uri(path: str) -> Any:

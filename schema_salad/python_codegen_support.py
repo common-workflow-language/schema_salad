@@ -21,6 +21,7 @@ from typing import (
     Type,
     Union,
     cast,
+    no_type_check,
 )
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
@@ -43,6 +44,7 @@ _logger = logging.getLogger("salad")
 IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
 
 doc_line_info = CommentedMap()
+
 
 class LoadingOptions:
     idx: IdxType
@@ -203,6 +205,8 @@ class Saveable(ABC):
         base_url: str = "",
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0,
     ) -> CommentedMap:
         """Convert this object to a JSON/YAML friendly dictionary."""
 
@@ -242,28 +246,41 @@ def add_kv(
     max_len: int,
     cols: Dict[int, int],
     min_col: int = 0,
-    inserted_line_info: Dict[int, int] = {}
-) -> int:
+    inserted_line_info: Optional[Dict[int, int]] = None,
+    shift: int = 0,
+) -> Tuple[int, Optional[Dict[int, int]]]:
     """Add key value pair into Commented Map.
 
     Function to add key value pair into new CommentedMap given old CommentedMap, line_numbers
     for each key/val pair in the old CommentedMap,key/val pair to insert, max_line of the old CommentedMap,
     and max col value taken for each line.
     """
+    if inserted_line_info is None:
+        inserted_line_info = {}
+
     if len(inserted_line_info.keys()) >= 1:
         max_line = max(inserted_line_info.keys()) + 1
     else:
         max_line = 0
-    if (
-        key in line_numbers
-    ):  # If the key to insert is in the original CommentedMap as a key
-        line_info = old_doc.lc.data[key]
-        if line_info[0] not in inserted_line_info:
-            new_doc.lc.add_kv_line_col(key, old_doc.lc.data[key])
-            inserted_line_info[old_doc.lc.data[key][0]] = old_doc.lc.data[key][1]
-        else:
-            line = line_info[0]
-            while line in inserted_line_info.keys():
+
+    if key in line_numbers:  # If the passed key to insert is in the original CommentedMap as a key
+        line_info = old_doc.lc.data[key]  # Get the line information for the key
+        if (
+            line_info[0] + shift not in inserted_line_info
+        ):  # If the line of the key + shift isn't taken, add it
+            new_doc.lc.add_kv_line_col(
+                key,
+                [
+                    old_doc.lc.data[key][0] + shift,
+                    old_doc.lc.data[key][1],
+                    old_doc.lc.data[key][2] + shift,
+                    old_doc.lc.data[key][3],
+                ],
+            )
+            inserted_line_info[old_doc.lc.data[key][0] + shift] = old_doc.lc.data[key][1]
+        else:  # If the line is already taken
+            line = line_info[0] + shift
+            while line in inserted_line_info.keys():  # Find the closest free line
                 line += 1
             new_doc.lc.add_kv_line_col(
                 key,
@@ -275,64 +292,93 @@ def add_kv(
                 ],
             )
             inserted_line_info[line] = old_doc.lc.data[key][1]
-        return max_len
+        return max_len, inserted_line_info
     elif isinstance(val, (int, float, str)) and not isinstance(
         val, bool
     ):  # If the value is hashable
         if val in line_numbers:  # If the value is in the original CommentedMap
-            line = line_numbers[val]["line"]
-            if line in inserted_line_info:
+            line = line_numbers[val]["line"] + shift  # Get the line info for the value
+            if line in inserted_line_info:  # Get the appropriate line to place value on
                 line = max_line
-            if line in cols:
-                col = max(line_numbers[val]["col"], cols[line])
-            else:
-                col = line_numbers[val]["col"]
+
+            col = line_numbers[val]["col"]
             new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
             inserted_line_info[line] = col + len(key) + 2
-            cols[line] = col + len("id") + 2
-            return max_len
-        elif isinstance(val, str):
+            return max_len, inserted_line_info
+        elif isinstance(val, str):  # Logic for DSL expansition with "?"
             if val + "?" in line_numbers:
-                line = line_numbers[val + "?"]["line"]
+                line = line_numbers[val + "?"]["line"] + shift
                 if line in inserted_line_info:
                     line = max_line
-                if line in cols:
-                    col = max(line_numbers[val + "?"]["col"], cols[line])
-                else:
-                    col = line_numbers[val + "?"]["col"]
+                col = line_numbers[val + "?"]["col"]
                 new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
                 inserted_line_info[line] = col + len(key) + 2
-                cols[line] = col + len("id") + 2
-                return max_len
+                return max_len, inserted_line_info
         elif old_doc:
             if val in old_doc:
                 index = old_doc.lc.data.index(val)
                 line_info = old_doc.lc.data[index]
-                if line_info[0] not in inserted_line_info:
-                    new_doc.lc.add_kv_line_col(key, old_doc.lc.data[index])
-                    inserted_line_info[old_doc.lc.data[index][0]] = old_doc.lc.data[
-                        index
-                    ][1]
+                if line_info[0] + shift not in inserted_line_info:
+                    new_doc.lc.add_kv_line_col(
+                        key,
+                        [
+                            old_doc.lc.data[index][0] + shift,
+                            old_doc.lc.data[index][1],
+                            old_doc.lc.data[index][2] + shift,
+                            old_doc.lc.data[index][3],
+                        ],
+                    )
+                    inserted_line_info[old_doc.lc.data[index][0] + shift] = old_doc.lc.data[index][
+                        1
+                    ]
                 else:
                     new_doc.lc.add_kv_line_col(
                         key,
                         [
-                            max_line,
+                            max_line + shift,
                             old_doc.lc.data[index][1],
-                            max_line + (max_line - old_doc.lc.data[index][2]),
+                            max_line + (max_line - old_doc.lc.data[index][2]) + shift,
                             old_doc.lc.data[index][3],
                         ],
                     )
-                    inserted_line_info[max_line] = old_doc.lc.data[index][1]
-    # If neither the key or value is in the original CommentedMap (or value is not hashable)
-    new_doc.lc.add_kv_line_col(
-        key, [max_line, min_col, max_line, min_col + len(key) + 2]
-    )
+                    inserted_line_info[max_line + shift] = old_doc.lc.data[index][1]
+    # If neither the key or value is in the original CommentedMap/old doc (or value is not hashable)
+    new_doc.lc.add_kv_line_col(key, [max_line, min_col, max_line, min_col + len(key) + 2])
     inserted_line_info[max_line] = min_col + len(key) + 2
-    return max_len + 1
+    return max_len + 1, inserted_line_info
 
 
-def get_line_numbers(doc: CommentedMap) -> Dict[Any, Dict[str, int]]:
+@no_type_check
+def iterate_through_doc(keys: List[Any]) -> Optional[CommentedMap]:
+    doc = doc_line_info
+    for key in keys:
+        if isinstance(doc, CommentedMap):
+            doc = doc.get(key)
+        elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+            if key < len(doc):
+                doc = doc[key]
+            else:
+                return None
+        else:
+            return None
+    if isinstance(doc, CommentedSeq):
+        to_return = CommentedMap()
+        for index, key in enumerate(doc):
+            to_return[key] = ""
+            to_return.lc.add_kv_line_col(
+                key,
+                [
+                    doc.lc.data[index][0],
+                    doc.lc.data[index][1],
+                    doc.lc.data[index][0],
+                    doc.lc.data[index][1],
+                ],
+            )
+        return to_return
+    return doc
+
+
+def get_line_numbers(doc: Optional[CommentedMap]) -> Dict[Any, Dict[str, int]]:
     """Get line numbers for kv pairs in CommentedMap.
 
     For each key/value pair in a CommentedMap, save the line/col info into a dictionary,
@@ -387,7 +433,8 @@ def save(
     base_url: str = "",
     relative_uris: bool = True,
     keys: Optional[List[Any]] = None,
-    inserted_line_info: Dict[int, int] = {}
+    inserted_line_info: Optional[Dict[int, int]] = None,
+    shift: int = 0,
 ) -> save_type:
     """Save a val of any type.
 
@@ -396,22 +443,17 @@ def save(
     """
     if keys is None:
         keys = []
-    doc = doc_line_info
-    for key in keys:
-        if isinstance(doc, CommentedMap):
-            doc = doc.get(key)
-        elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
-            if key < len(doc):
-                doc = doc[key]
-            else:
-                doc = None
-        else:
-            doc = None
-            break
+
+    doc = iterate_through_doc(keys)
 
     if isinstance(val, Saveable):
         return val.save(
-            top=top, base_url=base_url, relative_uris=relative_uris, keys=keys, inserted_line_info=inserted_line_info
+            top=top,
+            base_url=base_url,
+            relative_uris=relative_uris,
+            keys=keys,
+            inserted_line_info=inserted_line_info,
+            shift=shift,
         )
     if isinstance(val, MutableSequence):
         r = CommentedSeq()
@@ -429,7 +471,8 @@ def save(
                     base_url=base_url,
                     relative_uris=relative_uris,
                     keys=new_keys,
-                    inserted_line_info=inserted_line_info
+                    inserted_line_info=inserted_line_info,
+                    shift=shift,
                 )
             )
         return r
@@ -451,6 +494,7 @@ def save(
                 relative_uris=relative_uris,
                 keys=new_keys,
                 inserted_line_info=inserted_line_info,
+                shift=shift,
             )
 
         return newdict
