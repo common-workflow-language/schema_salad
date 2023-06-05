@@ -118,14 +118,11 @@ def load_document_by_uri(path: str) -> Any:
     """
     Takes in a path and loads it via the python codegen.
     """
-    if isinstance(path, str):
-        uri = urlparse(path)
-        if not uri.scheme or uri.scheme == "file":
-            real_path = Path(unquote_plus(uri.path)).resolve().as_uri()
-        else:
-            real_path = path
+    uri = urlparse(path)
+    if not uri.scheme or uri.scheme == "file":
+        real_path = Path(unquote_plus(uri.path)).resolve().as_uri()
     else:
-        real_path = path.resolve().as_uri()
+        real_path = path
 
     baseuri = str(real_path)
 

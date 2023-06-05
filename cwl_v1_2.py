@@ -1290,7 +1290,7 @@ class RecordField(Documented):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -1537,7 +1537,7 @@ class RecordSchema(Saveable):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -1806,7 +1806,7 @@ class EnumSchema(Saveable):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -2046,7 +2046,7 @@ class ArraySchema(Saveable):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -2569,7 +2569,7 @@ class File(Saveable):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -3094,7 +3094,7 @@ class Directory(Saveable):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -3371,7 +3371,7 @@ class InputBinding(Saveable):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -3773,7 +3773,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -4233,7 +4233,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -4598,7 +4598,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -4959,7 +4959,7 @@ class InputArraySchema(ArraySchema, InputSchema):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -5375,7 +5375,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -5783,7 +5783,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -6148,7 +6148,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -6509,7 +6509,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -6827,7 +6827,7 @@ class InlineJavascriptRequirement(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -7044,7 +7044,7 @@ class SchemaDefRequirement(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -7274,7 +7274,7 @@ class SecondaryFileSchema(Saveable):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -7505,7 +7505,7 @@ class LoadListingRequirement(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -7722,7 +7722,7 @@ class EnvironmentDef(Saveable):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -8119,7 +8119,7 @@ class CommandLineBinding(InputBinding):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -8530,7 +8530,7 @@ class CommandOutputBinding(LoadContents):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -8786,7 +8786,7 @@ class CommandLineBindable(Saveable):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -9201,7 +9201,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -9711,7 +9711,7 @@ class CommandInputRecordSchema(
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -10130,7 +10130,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -10540,7 +10540,7 @@ class CommandInputArraySchema(
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -11002,7 +11002,7 @@ class CommandOutputRecordField(OutputRecordField):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -11442,7 +11442,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -11809,7 +11809,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -12172,7 +12172,7 @@ class CommandOutputArraySchema(OutputArraySchema):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -14764,7 +14764,7 @@ class DockerRequirement(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -15082,7 +15082,7 @@ class SoftwareRequirement(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -15318,7 +15318,7 @@ class SoftwarePackage(Saveable):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -15602,7 +15602,7 @@ class Dirent(Saveable):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -15848,7 +15848,7 @@ class InitialWorkDirRequirement(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -16051,7 +16051,7 @@ class EnvVarRequirement(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -16241,7 +16241,7 @@ class ShellCommandRequirement(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -16618,7 +16618,7 @@ class ResourceRequirement(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -16989,7 +16989,7 @@ class WorkReuse(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -17208,7 +17208,7 @@ class NetworkAccess(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -17444,7 +17444,7 @@ class InplaceUpdateRequirement(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -17654,7 +17654,7 @@ class ToolTimeLimit(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -22550,7 +22550,7 @@ class SubworkflowFeatureRequirement(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -22714,7 +22714,7 @@ class ScatterFeatureRequirement(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -22878,7 +22878,7 @@ class MultipleInputFeatureRequirement(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1
@@ -23042,7 +23042,7 @@ class StepInputExpressionRequirement(ProcessRequirement):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                if inserted_line_info:
+                                if inserted_line_info:  
                                     while line in inserted_line_info:
                                         line += 1
                                         shift += 1

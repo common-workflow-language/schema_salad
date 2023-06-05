@@ -1137,7 +1137,9 @@ class RecordField(Documented):
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, RecordField):
             return bool(
-                self.doc == other.doc and self.name == other.name and self.type == other.type
+                self.doc == other.doc
+                and self.name == other.name
+                and self.type == other.type
             )
         return False
 
@@ -1221,12 +1223,16 @@ class RecordField(Documented):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `doc`, `name`, `type`".format(k),
+                            "invalid field `{}`, expected one of: `doc`, `name`, `type`".format(
+                                k
+                            ),
                             SourceLine(_doc, k, str),
                         )
                     )
@@ -1251,7 +1257,7 @@ class RecordField(Documented):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1282,11 +1288,12 @@ class RecordField(Documented):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -1294,12 +1301,14 @@ class RecordField(Documented):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -1314,7 +1323,7 @@ class RecordField(Documented):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -1463,12 +1472,16 @@ class RecordSchema(Saveable):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `fields`, `type`".format(k),
+                            "invalid field `{}`, expected one of: `fields`, `type`".format(
+                                k
+                            ),
                             SourceLine(_doc, k, str),
                         )
                     )
@@ -1491,7 +1504,7 @@ class RecordSchema(Saveable):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1522,11 +1535,12 @@ class RecordSchema(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -1534,12 +1548,14 @@ class RecordSchema(Saveable):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -1554,7 +1570,7 @@ class RecordSchema(Saveable):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.fields is not None and "fields" not in r:
             r["fields"] = save(
@@ -1690,12 +1706,16 @@ class EnumSchema(Saveable):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `symbols`, `type`".format(k),
+                            "invalid field `{}`, expected one of: `symbols`, `type`".format(
+                                k
+                            ),
                             SourceLine(_doc, k, str),
                         )
                     )
@@ -1718,7 +1738,7 @@ class EnumSchema(Saveable):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1749,11 +1769,12 @@ class EnumSchema(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -1761,12 +1782,14 @@ class EnumSchema(Saveable):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -1781,7 +1804,7 @@ class EnumSchema(Saveable):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.symbols is not None and "symbols" not in r:
             u = save_relative_uri(self.symbols, base_url, True, None, relative_uris)
@@ -1906,12 +1929,16 @@ class ArraySchema(Saveable):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `items`, `type`".format(k),
+                            "invalid field `{}`, expected one of: `items`, `type`".format(
+                                k
+                            ),
                             SourceLine(_doc, k, str),
                         )
                     )
@@ -1934,7 +1961,7 @@ class ArraySchema(Saveable):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -1965,11 +1992,12 @@ class ArraySchema(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -1977,12 +2005,14 @@ class ArraySchema(Saveable):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -1997,7 +2027,7 @@ class ArraySchema(Saveable):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.items is not None and "items" not in r:
             r["items"] = save(
@@ -2417,7 +2447,9 @@ class File(Saveable):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -2456,7 +2488,7 @@ class File(Saveable):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -2489,11 +2521,12 @@ class File(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -2501,12 +2534,14 @@ class File(Saveable):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -2521,7 +2556,7 @@ class File(Saveable):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.location is not None and "location" not in r:
             u = save_relative_uri(self.location, base_url, False, None, relative_uris)
@@ -2847,7 +2882,9 @@ class Directory(Saveable):
         return False
 
     def __hash__(self) -> int:
-        return hash((self.class_, self.location, self.path, self.basename, self.listing))
+        return hash(
+            (self.class_, self.location, self.path, self.basename, self.listing)
+        )
 
     @classmethod
     def fromDoc(
@@ -2942,7 +2979,9 @@ class Directory(Saveable):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -2974,7 +3013,7 @@ class Directory(Saveable):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -3007,11 +3046,12 @@ class Directory(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -3019,12 +3059,14 @@ class Directory(Saveable):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -3039,7 +3081,7 @@ class Directory(Saveable):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.location is not None and "location" not in r:
             u = save_relative_uri(self.location, base_url, False, None, relative_uris)
@@ -3219,12 +3261,16 @@ class InputBinding(Saveable):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `loadContents`".format(k),
+                            "invalid field `{}`, expected one of: `loadContents`".format(
+                                k
+                            ),
                             SourceLine(_doc, k, str),
                         )
                     )
@@ -3246,7 +3292,7 @@ class InputBinding(Saveable):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -3277,11 +3323,12 @@ class InputBinding(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -3289,12 +3336,14 @@ class InputBinding(Saveable):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -3309,7 +3358,7 @@ class InputBinding(Saveable):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.loadContents is not None and "loadContents" not in r:
             r["loadContents"] = save(
@@ -3605,7 +3654,9 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -3643,7 +3694,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -3674,11 +3725,12 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -3686,12 +3738,14 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -3706,7 +3760,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -3829,7 +3883,9 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                 shift=shift,
             )
         if self.format is not None and "format" not in r:
-            u = save_relative_uri(self.format, str(self.name), True, None, relative_uris)
+            u = save_relative_uri(
+                self.format, str(self.name), True, None, relative_uris
+            )
             r["format"] = u
             max_len, inserted_line_info = add_kv(
                 old_doc=doc,
@@ -4062,7 +4118,9 @@ class InputRecordSchema(RecordSchema, InputSchema):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -4096,7 +4154,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -4127,11 +4185,12 @@ class InputRecordSchema(RecordSchema, InputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -4139,12 +4198,14 @@ class InputRecordSchema(RecordSchema, InputSchema):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -4159,7 +4220,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -4422,7 +4483,9 @@ class InputEnumSchema(EnumSchema, InputSchema):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -4456,7 +4519,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -4487,11 +4550,12 @@ class InputEnumSchema(EnumSchema, InputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -4499,12 +4563,14 @@ class InputEnumSchema(EnumSchema, InputSchema):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -4519,7 +4585,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -4537,7 +4603,9 @@ class InputEnumSchema(EnumSchema, InputSchema):
                 shift=shift,
             )
         if self.symbols is not None and "symbols" not in r:
-            u = save_relative_uri(self.symbols, str(self.name), True, None, relative_uris)
+            u = save_relative_uri(
+                self.symbols, str(self.name), True, None, relative_uris
+            )
             r["symbols"] = u
             max_len, inserted_line_info = add_kv(
                 old_doc=doc,
@@ -4776,7 +4844,9 @@ class InputArraySchema(ArraySchema, InputSchema):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -4810,7 +4880,7 @@ class InputArraySchema(ArraySchema, InputSchema):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -4841,11 +4911,12 @@ class InputArraySchema(ArraySchema, InputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -4853,12 +4924,14 @@ class InputArraySchema(ArraySchema, InputSchema):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -4873,7 +4946,7 @@ class InputArraySchema(ArraySchema, InputSchema):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -5191,7 +5264,9 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -5227,7 +5302,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -5258,11 +5333,12 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -5270,12 +5346,14 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -5290,7 +5368,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -5413,7 +5491,9 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                 shift=shift,
             )
         if self.format is not None and "format" not in r:
-            u = save_relative_uri(self.format, str(self.name), True, None, relative_uris)
+            u = save_relative_uri(
+                self.format, str(self.name), True, None, relative_uris
+            )
             r["format"] = u
             max_len, inserted_line_info = add_kv(
                 old_doc=doc,
@@ -5436,7 +5516,9 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["doc", "name", "type", "label", "secondaryFiles", "streamable", "format"])
+    attrs = frozenset(
+        ["doc", "name", "type", "label", "secondaryFiles", "streamable", "format"]
+    )
 
 
 class OutputRecordSchema(RecordSchema, OutputSchema):
@@ -5592,7 +5674,9 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -5626,7 +5710,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -5657,11 +5741,12 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -5669,12 +5754,14 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -5689,7 +5776,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -5952,7 +6039,9 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -5986,7 +6075,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -6017,11 +6106,12 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -6029,12 +6119,14 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -6049,7 +6141,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -6067,7 +6159,9 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                 shift=shift,
             )
         if self.symbols is not None and "symbols" not in r:
-            u = save_relative_uri(self.symbols, str(self.name), True, None, relative_uris)
+            u = save_relative_uri(
+                self.symbols, str(self.name), True, None, relative_uris
+            )
             r["symbols"] = u
             max_len, inserted_line_info = add_kv(
                 old_doc=doc,
@@ -6306,7 +6400,9 @@ class OutputArraySchema(ArraySchema, OutputSchema):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -6340,7 +6436,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -6371,11 +6467,12 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -6383,12 +6480,14 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -6403,7 +6502,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -6578,7 +6677,10 @@ class InlineJavascriptRequirement(ProcessRequirement):
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, InlineJavascriptRequirement):
-            return bool(self.class_ == other.class_ and self.expressionLib == other.expressionLib)
+            return bool(
+                self.class_ == other.class_
+                and self.expressionLib == other.expressionLib
+            )
         return False
 
     def __hash__(self) -> int:
@@ -6623,7 +6725,9 @@ class InlineJavascriptRequirement(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -6637,7 +6741,9 @@ class InlineJavascriptRequirement(ProcessRequirement):
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'InlineJavascriptRequirement'", None, _errors__)
+            raise ValidationException(
+                "Trying 'InlineJavascriptRequirement'", None, _errors__
+            )
         _constructed = cls(
             expressionLib=expressionLib,
             extension_fields=extension_fields,
@@ -6652,7 +6758,7 @@ class InlineJavascriptRequirement(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -6685,11 +6791,12 @@ class InlineJavascriptRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -6697,12 +6804,14 @@ class InlineJavascriptRequirement(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -6717,7 +6826,7 @@ class InlineJavascriptRequirement(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.expressionLib is not None and "expressionLib" not in r:
             r["expressionLib"] = save(
@@ -6830,12 +6939,16 @@ class SchemaDefRequirement(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `class`, `types`".format(k),
+                            "invalid field `{}`, expected one of: `class`, `types`".format(
+                                k
+                            ),
                             SourceLine(_doc, k, str),
                         )
                     )
@@ -6857,7 +6970,7 @@ class SchemaDefRequirement(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -6890,11 +7003,12 @@ class SchemaDefRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -6902,12 +7016,14 @@ class SchemaDefRequirement(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -6922,7 +7038,7 @@ class SchemaDefRequirement(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.types is not None and "types" not in r:
             r["types"] = save(
@@ -6979,7 +7095,9 @@ class SecondaryFileSchema(Saveable):
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, SecondaryFileSchema):
-            return bool(self.pattern == other.pattern and self.required == other.required)
+            return bool(
+                self.pattern == other.pattern and self.required == other.required
+            )
         return False
 
     def __hash__(self) -> int:
@@ -7035,12 +7153,16 @@ class SecondaryFileSchema(Saveable):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `pattern`, `required`".format(k),
+                            "invalid field `{}`, expected one of: `pattern`, `required`".format(
+                                k
+                            ),
                             SourceLine(_doc, k, str),
                         )
                     )
@@ -7063,7 +7185,7 @@ class SecondaryFileSchema(Saveable):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -7094,11 +7216,12 @@ class SecondaryFileSchema(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -7106,12 +7229,14 @@ class SecondaryFileSchema(Saveable):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -7126,7 +7251,7 @@ class SecondaryFileSchema(Saveable):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.pattern is not None and "pattern" not in r:
             r["pattern"] = save(
@@ -7209,7 +7334,9 @@ class LoadListingRequirement(ProcessRequirement):
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, LoadListingRequirement):
-            return bool(self.class_ == other.class_ and self.loadListing == other.loadListing)
+            return bool(
+                self.class_ == other.class_ and self.loadListing == other.loadListing
+            )
         return False
 
     def __hash__(self) -> int:
@@ -7254,19 +7381,25 @@ class LoadListingRequirement(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `class`, `loadListing`".format(k),
+                            "invalid field `{}`, expected one of: `class`, `loadListing`".format(
+                                k
+                            ),
                             SourceLine(_doc, k, str),
                         )
                     )
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'LoadListingRequirement'", None, _errors__)
+            raise ValidationException(
+                "Trying 'LoadListingRequirement'", None, _errors__
+            )
         _constructed = cls(
             loadListing=loadListing,
             extension_fields=extension_fields,
@@ -7281,7 +7414,7 @@ class LoadListingRequirement(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -7314,11 +7447,12 @@ class LoadListingRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -7326,12 +7460,14 @@ class LoadListingRequirement(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -7346,7 +7482,7 @@ class LoadListingRequirement(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.loadListing is not None and "loadListing" not in r:
             r["loadListing"] = save(
@@ -7410,7 +7546,9 @@ class EnvironmentDef(Saveable):
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, EnvironmentDef):
-            return bool(self.envName == other.envName and self.envValue == other.envValue)
+            return bool(
+                self.envName == other.envName and self.envValue == other.envValue
+            )
         return False
 
     def __hash__(self) -> int:
@@ -7463,12 +7601,16 @@ class EnvironmentDef(Saveable):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `envName`, `envValue`".format(k),
+                            "invalid field `{}`, expected one of: `envName`, `envValue`".format(
+                                k
+                            ),
                             SourceLine(_doc, k, str),
                         )
                     )
@@ -7491,7 +7633,7 @@ class EnvironmentDef(Saveable):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -7522,11 +7664,12 @@ class EnvironmentDef(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -7534,12 +7677,14 @@ class EnvironmentDef(Saveable):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -7554,7 +7699,7 @@ class EnvironmentDef(Saveable):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.envName is not None and "envName" not in r:
             r["envName"] = save(
@@ -7848,7 +7993,9 @@ class CommandLineBinding(InputBinding):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -7883,7 +8030,7 @@ class CommandLineBinding(InputBinding):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -7914,11 +8061,12 @@ class CommandLineBinding(InputBinding):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -7926,12 +8074,14 @@ class CommandLineBinding(InputBinding):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -7946,7 +8096,7 @@ class CommandLineBinding(InputBinding):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.loadContents is not None and "loadContents" not in r:
             r["loadContents"] = save(
@@ -8257,7 +8407,9 @@ class CommandOutputBinding(LoadContents):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -8289,7 +8441,7 @@ class CommandOutputBinding(LoadContents):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -8320,11 +8472,12 @@ class CommandOutputBinding(LoadContents):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -8332,12 +8485,14 @@ class CommandOutputBinding(LoadContents):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -8352,7 +8507,7 @@ class CommandOutputBinding(LoadContents):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.loadContents is not None and "loadContents" not in r:
             r["loadContents"] = save(
@@ -8511,12 +8666,16 @@ class CommandLineBindable(Saveable):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `inputBinding`".format(k),
+                            "invalid field `{}`, expected one of: `inputBinding`".format(
+                                k
+                            ),
                             SourceLine(_doc, k, str),
                         )
                     )
@@ -8538,7 +8697,7 @@ class CommandLineBindable(Saveable):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -8569,11 +8728,12 @@ class CommandLineBindable(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -8581,12 +8741,14 @@ class CommandLineBindable(Saveable):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -8601,7 +8763,7 @@ class CommandLineBindable(Saveable):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.inputBinding is not None and "inputBinding" not in r:
             r["inputBinding"] = save(
@@ -8907,7 +9069,9 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -8921,7 +9085,9 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'CommandInputRecordField'", None, _errors__)
+            raise ValidationException(
+                "Trying 'CommandInputRecordField'", None, _errors__
+            )
         _constructed = cls(
             doc=doc,
             name=name,
@@ -8946,7 +9112,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -8977,11 +9143,12 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -8989,12 +9156,14 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -9009,7 +9178,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -9132,7 +9301,9 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                 shift=shift,
             )
         if self.format is not None and "format" not in r:
-            u = save_relative_uri(self.format, str(self.name), True, None, relative_uris)
+            u = save_relative_uri(
+                self.format, str(self.name), True, None, relative_uris
+            )
             r["format"] = u
             max_len, inserted_line_info = add_kv(
                 old_doc=doc,
@@ -9234,7 +9405,9 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
     )
 
 
-class CommandInputRecordSchema(InputRecordSchema, CommandInputSchema, CommandLineBindable):
+class CommandInputRecordSchema(
+    InputRecordSchema, CommandInputSchema, CommandLineBindable
+):
     def __init__(
         self,
         type: Any,
@@ -9275,7 +9448,9 @@ class CommandInputRecordSchema(InputRecordSchema, CommandInputSchema, CommandLin
         return False
 
     def __hash__(self) -> int:
-        return hash((self.fields, self.type, self.label, self.doc, self.name, self.inputBinding))
+        return hash(
+            (self.fields, self.type, self.label, self.doc, self.name, self.inputBinding)
+        )
 
     @classmethod
     def fromDoc(
@@ -9408,7 +9583,9 @@ class CommandInputRecordSchema(InputRecordSchema, CommandInputSchema, CommandLin
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -9422,7 +9599,9 @@ class CommandInputRecordSchema(InputRecordSchema, CommandInputSchema, CommandLin
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'CommandInputRecordSchema'", None, _errors__)
+            raise ValidationException(
+                "Trying 'CommandInputRecordSchema'", None, _errors__
+            )
         _constructed = cls(
             fields=fields,
             type=type,
@@ -9443,7 +9622,7 @@ class CommandInputRecordSchema(InputRecordSchema, CommandInputSchema, CommandLin
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -9474,11 +9653,12 @@ class CommandInputRecordSchema(InputRecordSchema, CommandInputSchema, CommandLin
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -9486,12 +9666,14 @@ class CommandInputRecordSchema(InputRecordSchema, CommandInputSchema, CommandLin
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -9506,7 +9688,7 @@ class CommandInputRecordSchema(InputRecordSchema, CommandInputSchema, CommandLin
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -9820,7 +10002,9 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -9834,7 +10018,9 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'CommandInputEnumSchema'", None, _errors__)
+            raise ValidationException(
+                "Trying 'CommandInputEnumSchema'", None, _errors__
+            )
         _constructed = cls(
             symbols=symbols,
             type=type,
@@ -9855,7 +10041,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -9886,11 +10072,12 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -9898,12 +10085,14 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -9918,7 +10107,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -9936,7 +10125,9 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                 shift=shift,
             )
         if self.symbols is not None and "symbols" not in r:
-            u = save_relative_uri(self.symbols, str(self.name), True, None, relative_uris)
+            u = save_relative_uri(
+                self.symbols, str(self.name), True, None, relative_uris
+            )
             r["symbols"] = u
             max_len, inserted_line_info = add_kv(
                 old_doc=doc,
@@ -10046,7 +10237,9 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
     attrs = frozenset(["symbols", "type", "label", "doc", "name", "inputBinding"])
 
 
-class CommandInputArraySchema(InputArraySchema, CommandInputSchema, CommandLineBindable):
+class CommandInputArraySchema(
+    InputArraySchema, CommandInputSchema, CommandLineBindable
+):
     def __init__(
         self,
         items: Any,
@@ -10087,7 +10280,9 @@ class CommandInputArraySchema(InputArraySchema, CommandInputSchema, CommandLineB
         return False
 
     def __hash__(self) -> int:
-        return hash((self.items, self.type, self.label, self.doc, self.name, self.inputBinding))
+        return hash(
+            (self.items, self.type, self.label, self.doc, self.name, self.inputBinding)
+        )
 
     @classmethod
     def fromDoc(
@@ -10217,7 +10412,9 @@ class CommandInputArraySchema(InputArraySchema, CommandInputSchema, CommandLineB
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -10231,7 +10428,9 @@ class CommandInputArraySchema(InputArraySchema, CommandInputSchema, CommandLineB
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'CommandInputArraySchema'", None, _errors__)
+            raise ValidationException(
+                "Trying 'CommandInputArraySchema'", None, _errors__
+            )
         _constructed = cls(
             items=items,
             type=type,
@@ -10252,7 +10451,7 @@ class CommandInputArraySchema(InputArraySchema, CommandInputSchema, CommandLineB
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -10283,11 +10482,12 @@ class CommandInputArraySchema(InputArraySchema, CommandInputSchema, CommandLineB
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -10295,12 +10495,14 @@ class CommandInputArraySchema(InputArraySchema, CommandInputSchema, CommandLineB
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -10315,7 +10517,7 @@ class CommandInputArraySchema(InputArraySchema, CommandInputSchema, CommandLineB
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -10676,7 +10878,9 @@ class CommandOutputRecordField(OutputRecordField):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -10690,7 +10894,9 @@ class CommandOutputRecordField(OutputRecordField):
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'CommandOutputRecordField'", None, _errors__)
+            raise ValidationException(
+                "Trying 'CommandOutputRecordField'", None, _errors__
+            )
         _constructed = cls(
             doc=doc,
             name=name,
@@ -10713,7 +10919,7 @@ class CommandOutputRecordField(OutputRecordField):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -10744,11 +10950,12 @@ class CommandOutputRecordField(OutputRecordField):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -10756,12 +10963,14 @@ class CommandOutputRecordField(OutputRecordField):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -10776,7 +10985,7 @@ class CommandOutputRecordField(OutputRecordField):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -10899,7 +11108,9 @@ class CommandOutputRecordField(OutputRecordField):
                 shift=shift,
             )
         if self.format is not None and "format" not in r:
-            u = save_relative_uri(self.format, str(self.name), True, None, relative_uris)
+            u = save_relative_uri(
+                self.format, str(self.name), True, None, relative_uris
+            )
             r["format"] = u
             max_len, inserted_line_info = add_kv(
                 old_doc=doc,
@@ -11110,7 +11321,9 @@ class CommandOutputRecordSchema(OutputRecordSchema):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -11124,7 +11337,9 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'CommandOutputRecordSchema'", None, _errors__)
+            raise ValidationException(
+                "Trying 'CommandOutputRecordSchema'", None, _errors__
+            )
         _constructed = cls(
             fields=fields,
             type=type,
@@ -11144,7 +11359,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -11175,11 +11390,12 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -11187,12 +11403,14 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -11207,7 +11425,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -11470,7 +11688,9 @@ class CommandOutputEnumSchema(OutputEnumSchema):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -11484,7 +11704,9 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'CommandOutputEnumSchema'", None, _errors__)
+            raise ValidationException(
+                "Trying 'CommandOutputEnumSchema'", None, _errors__
+            )
         _constructed = cls(
             symbols=symbols,
             type=type,
@@ -11504,7 +11726,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -11535,11 +11757,12 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -11547,12 +11770,14 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -11567,7 +11792,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -11585,7 +11810,9 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                 shift=shift,
             )
         if self.symbols is not None and "symbols" not in r:
-            u = save_relative_uri(self.symbols, str(self.name), True, None, relative_uris)
+            u = save_relative_uri(
+                self.symbols, str(self.name), True, None, relative_uris
+            )
             r["symbols"] = u
             max_len, inserted_line_info = add_kv(
                 old_doc=doc,
@@ -11824,7 +12051,9 @@ class CommandOutputArraySchema(OutputArraySchema):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -11838,7 +12067,9 @@ class CommandOutputArraySchema(OutputArraySchema):
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'CommandOutputArraySchema'", None, _errors__)
+            raise ValidationException(
+                "Trying 'CommandOutputArraySchema'", None, _errors__
+            )
         _constructed = cls(
             items=items,
             type=type,
@@ -11858,7 +12089,7 @@ class CommandOutputArraySchema(OutputArraySchema):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -11889,11 +12120,12 @@ class CommandOutputArraySchema(OutputArraySchema):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -11901,12 +12133,14 @@ class CommandOutputArraySchema(OutputArraySchema):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -11921,7 +12155,7 @@ class CommandOutputArraySchema(OutputArraySchema):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
@@ -12331,7 +12565,9 @@ class CommandInputParameter(InputParameter):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -12371,7 +12607,7 @@ class CommandInputParameter(InputParameter):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -12387,7 +12623,7 @@ class CommandInputParameter(InputParameter):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
@@ -12417,11 +12653,12 @@ class CommandInputParameter(InputParameter):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -12429,12 +12666,14 @@ class CommandInputParameter(InputParameter):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -12449,7 +12688,7 @@ class CommandInputParameter(InputParameter):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -12927,7 +13166,9 @@ class CommandOutputParameter(OutputParameter):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -12941,7 +13182,9 @@ class CommandOutputParameter(OutputParameter):
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'CommandOutputParameter'", None, _errors__)
+            raise ValidationException(
+                "Trying 'CommandOutputParameter'", None, _errors__
+            )
         _constructed = cls(
             label=label,
             secondaryFiles=secondaryFiles,
@@ -12964,7 +13207,7 @@ class CommandOutputParameter(OutputParameter):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -12980,7 +13223,7 @@ class CommandOutputParameter(OutputParameter):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
@@ -13010,11 +13253,12 @@ class CommandOutputParameter(OutputParameter):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -13022,12 +13266,14 @@ class CommandOutputParameter(OutputParameter):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -13042,7 +13288,7 @@ class CommandOutputParameter(OutputParameter):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -13635,7 +13881,9 @@ class CommandLineTool(Process):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -13680,7 +13928,7 @@ class CommandLineTool(Process):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -13696,7 +13944,7 @@ class CommandLineTool(Process):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
@@ -13728,11 +13976,12 @@ class CommandLineTool(Process):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -13740,12 +13989,14 @@ class CommandLineTool(Process):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -13760,7 +14011,7 @@ class CommandLineTool(Process):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -13904,7 +14155,9 @@ class CommandLineTool(Process):
                 shift=shift,
             )
         if self.cwlVersion is not None and "cwlVersion" not in r:
-            u = save_relative_uri(self.cwlVersion, str(self.id), False, None, relative_uris)
+            u = save_relative_uri(
+                self.cwlVersion, str(self.id), False, None, relative_uris
+            )
             r["cwlVersion"] = u
             max_len, inserted_line_info = add_kv(
                 old_doc=doc,
@@ -14357,7 +14610,9 @@ class DockerRequirement(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -14391,7 +14646,7 @@ class DockerRequirement(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -14424,11 +14679,12 @@ class DockerRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -14436,12 +14692,14 @@ class DockerRequirement(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -14456,7 +14714,7 @@ class DockerRequirement(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.dockerPull is not None and "dockerPull" not in r:
             r["dockerPull"] = save(
@@ -14675,12 +14933,16 @@ class SoftwareRequirement(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `class`, `packages`".format(k),
+                            "invalid field `{}`, expected one of: `class`, `packages`".format(
+                                k
+                            ),
                             SourceLine(_doc, k, str),
                         )
                     )
@@ -14702,7 +14964,7 @@ class SoftwareRequirement(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -14735,11 +14997,12 @@ class SoftwareRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -14747,12 +15010,14 @@ class SoftwareRequirement(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -14767,7 +15032,7 @@ class SoftwareRequirement(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.packages is not None and "packages" not in r:
             r["packages"] = save(
@@ -14904,7 +15169,9 @@ class SoftwarePackage(Saveable):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -14935,7 +15202,7 @@ class SoftwarePackage(Saveable):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -14966,11 +15233,12 @@ class SoftwarePackage(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -14978,12 +15246,14 @@ class SoftwarePackage(Saveable):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -14998,7 +15268,7 @@ class SoftwarePackage(Saveable):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.package is not None and "package" not in r:
             r["package"] = save(
@@ -15179,7 +15449,9 @@ class Dirent(Saveable):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -15210,7 +15482,7 @@ class Dirent(Saveable):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -15241,11 +15513,12 @@ class Dirent(Saveable):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -15253,12 +15526,14 @@ class Dirent(Saveable):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -15273,7 +15548,7 @@ class Dirent(Saveable):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.entryname is not None and "entryname" not in r:
             r["entryname"] = save(
@@ -15417,19 +15692,25 @@ class InitialWorkDirRequirement(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `class`, `listing`".format(k),
+                            "invalid field `{}`, expected one of: `class`, `listing`".format(
+                                k
+                            ),
                             SourceLine(_doc, k, str),
                         )
                     )
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'InitialWorkDirRequirement'", None, _errors__)
+            raise ValidationException(
+                "Trying 'InitialWorkDirRequirement'", None, _errors__
+            )
         _constructed = cls(
             listing=listing,
             extension_fields=extension_fields,
@@ -15444,7 +15725,7 @@ class InitialWorkDirRequirement(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -15477,11 +15758,12 @@ class InitialWorkDirRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -15489,12 +15771,14 @@ class InitialWorkDirRequirement(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -15509,7 +15793,7 @@ class InitialWorkDirRequirement(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.listing is not None and "listing" not in r:
             r["listing"] = save(
@@ -15613,12 +15897,16 @@ class EnvVarRequirement(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `class`, `envDef`".format(k),
+                            "invalid field `{}`, expected one of: `class`, `envDef`".format(
+                                k
+                            ),
                             SourceLine(_doc, k, str),
                         )
                     )
@@ -15640,7 +15928,7 @@ class EnvVarRequirement(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -15673,11 +15961,12 @@ class EnvVarRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -15685,12 +15974,14 @@ class EnvVarRequirement(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -15705,7 +15996,7 @@ class EnvVarRequirement(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.envDef is not None and "envDef" not in r:
             r["envDef"] = save(
@@ -15797,7 +16088,9 @@ class ShellCommandRequirement(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -15809,7 +16102,9 @@ class ShellCommandRequirement(ProcessRequirement):
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'ShellCommandRequirement'", None, _errors__)
+            raise ValidationException(
+                "Trying 'ShellCommandRequirement'", None, _errors__
+            )
         _constructed = cls(
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
@@ -15823,7 +16118,7 @@ class ShellCommandRequirement(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -15856,11 +16151,12 @@ class ShellCommandRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -15868,12 +16164,14 @@ class ShellCommandRequirement(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -15888,7 +16186,7 @@ class ShellCommandRequirement(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
 
         # top refers to the directory level
@@ -16154,7 +16452,9 @@ class ResourceRequirement(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -16190,7 +16490,7 @@ class ResourceRequirement(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -16223,11 +16523,12 @@ class ResourceRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -16235,12 +16536,14 @@ class ResourceRequirement(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -16255,7 +16558,7 @@ class ResourceRequirement(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.coresMin is not None and "coresMin" not in r:
             r["coresMin"] = save(
@@ -16483,7 +16786,9 @@ class WorkReuse(ProcessRequirement):
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, WorkReuse):
-            return bool(self.class_ == other.class_ and self.enableReuse == other.enableReuse)
+            return bool(
+                self.class_ == other.class_ and self.enableReuse == other.enableReuse
+            )
         return False
 
     def __hash__(self) -> int:
@@ -16525,12 +16830,16 @@ class WorkReuse(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `class`, `enableReuse`".format(k),
+                            "invalid field `{}`, expected one of: `class`, `enableReuse`".format(
+                                k
+                            ),
                             SourceLine(_doc, k, str),
                         )
                     )
@@ -16552,7 +16861,7 @@ class WorkReuse(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -16585,11 +16894,12 @@ class WorkReuse(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -16597,12 +16907,14 @@ class WorkReuse(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -16617,7 +16929,7 @@ class WorkReuse(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.enableReuse is not None and "enableReuse" not in r:
             r["enableReuse"] = save(
@@ -16692,7 +17004,10 @@ class NetworkAccess(ProcessRequirement):
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, NetworkAccess):
-            return bool(self.class_ == other.class_ and self.networkAccess == other.networkAccess)
+            return bool(
+                self.class_ == other.class_
+                and self.networkAccess == other.networkAccess
+            )
         return False
 
     def __hash__(self) -> int:
@@ -16734,7 +17049,9 @@ class NetworkAccess(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -16763,7 +17080,7 @@ class NetworkAccess(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -16796,11 +17113,12 @@ class NetworkAccess(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -16808,12 +17126,14 @@ class NetworkAccess(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -16828,7 +17148,7 @@ class NetworkAccess(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.networkAccess is not None and "networkAccess" not in r:
             r["networkAccess"] = save(
@@ -16918,7 +17238,10 @@ class InplaceUpdateRequirement(ProcessRequirement):
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, InplaceUpdateRequirement):
-            return bool(self.class_ == other.class_ and self.inplaceUpdate == other.inplaceUpdate)
+            return bool(
+                self.class_ == other.class_
+                and self.inplaceUpdate == other.inplaceUpdate
+            )
         return False
 
     def __hash__(self) -> int:
@@ -16960,7 +17283,9 @@ class InplaceUpdateRequirement(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -16974,7 +17299,9 @@ class InplaceUpdateRequirement(ProcessRequirement):
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'InplaceUpdateRequirement'", None, _errors__)
+            raise ValidationException(
+                "Trying 'InplaceUpdateRequirement'", None, _errors__
+            )
         _constructed = cls(
             inplaceUpdate=inplaceUpdate,
             extension_fields=extension_fields,
@@ -16989,7 +17316,7 @@ class InplaceUpdateRequirement(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -17022,11 +17349,12 @@ class InplaceUpdateRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -17034,12 +17362,14 @@ class InplaceUpdateRequirement(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -17054,7 +17384,7 @@ class InplaceUpdateRequirement(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.inplaceUpdate is not None and "inplaceUpdate" not in r:
             r["inplaceUpdate"] = save(
@@ -17121,7 +17451,9 @@ class ToolTimeLimit(ProcessRequirement):
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, ToolTimeLimit):
-            return bool(self.class_ == other.class_ and self.timelimit == other.timelimit)
+            return bool(
+                self.class_ == other.class_ and self.timelimit == other.timelimit
+            )
         return False
 
     def __hash__(self) -> int:
@@ -17163,12 +17495,16 @@ class ToolTimeLimit(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
                         ValidationException(
-                            "invalid field `{}`, expected one of: `class`, `timelimit`".format(k),
+                            "invalid field `{}`, expected one of: `class`, `timelimit`".format(
+                                k
+                            ),
                             SourceLine(_doc, k, str),
                         )
                     )
@@ -17190,7 +17526,7 @@ class ToolTimeLimit(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -17223,11 +17559,12 @@ class ToolTimeLimit(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -17235,12 +17572,14 @@ class ToolTimeLimit(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -17255,7 +17594,7 @@ class ToolTimeLimit(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.timelimit is not None and "timelimit" not in r:
             r["timelimit"] = save(
@@ -17495,7 +17834,9 @@ class ExpressionToolOutputParameter(OutputParameter):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -17509,7 +17850,9 @@ class ExpressionToolOutputParameter(OutputParameter):
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'ExpressionToolOutputParameter'", None, _errors__)
+            raise ValidationException(
+                "Trying 'ExpressionToolOutputParameter'", None, _errors__
+            )
         _constructed = cls(
             label=label,
             secondaryFiles=secondaryFiles,
@@ -17531,7 +17874,7 @@ class ExpressionToolOutputParameter(OutputParameter):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -17547,7 +17890,7 @@ class ExpressionToolOutputParameter(OutputParameter):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
@@ -17577,11 +17920,12 @@ class ExpressionToolOutputParameter(OutputParameter):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -17589,12 +17933,14 @@ class ExpressionToolOutputParameter(OutputParameter):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -17609,7 +17955,7 @@ class ExpressionToolOutputParameter(OutputParameter):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -17755,7 +18101,9 @@ class ExpressionToolOutputParameter(OutputParameter):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["label", "secondaryFiles", "streamable", "doc", "id", "format", "type"])
+    attrs = frozenset(
+        ["label", "secondaryFiles", "streamable", "doc", "id", "format", "type"]
+    )
 
 
 class WorkflowInputParameter(InputParameter):
@@ -18051,7 +18399,9 @@ class WorkflowInputParameter(InputParameter):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -18065,7 +18415,9 @@ class WorkflowInputParameter(InputParameter):
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'WorkflowInputParameter'", None, _errors__)
+            raise ValidationException(
+                "Trying 'WorkflowInputParameter'", None, _errors__
+            )
         _constructed = cls(
             label=label,
             secondaryFiles=secondaryFiles,
@@ -18091,7 +18443,7 @@ class WorkflowInputParameter(InputParameter):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -18107,7 +18459,7 @@ class WorkflowInputParameter(InputParameter):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
@@ -18137,11 +18489,12 @@ class WorkflowInputParameter(InputParameter):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -18149,12 +18502,14 @@ class WorkflowInputParameter(InputParameter):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -18169,7 +18524,7 @@ class WorkflowInputParameter(InputParameter):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -18677,7 +19032,9 @@ class ExpressionTool(Process):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -18715,7 +19072,7 @@ class ExpressionTool(Process):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -18731,7 +19088,7 @@ class ExpressionTool(Process):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
@@ -18763,11 +19120,12 @@ class ExpressionTool(Process):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -18775,12 +19133,14 @@ class ExpressionTool(Process):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -18795,7 +19155,7 @@ class ExpressionTool(Process):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -18939,7 +19299,9 @@ class ExpressionTool(Process):
                 shift=shift,
             )
         if self.cwlVersion is not None and "cwlVersion" not in r:
-            u = save_relative_uri(self.cwlVersion, str(self.id), False, None, relative_uris)
+            u = save_relative_uri(
+                self.cwlVersion, str(self.id), False, None, relative_uris
+            )
             r["cwlVersion"] = u
             max_len, inserted_line_info = add_kv(
                 old_doc=doc,
@@ -19256,7 +19618,9 @@ class WorkflowOutputParameter(OutputParameter):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -19270,7 +19634,9 @@ class WorkflowOutputParameter(OutputParameter):
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'WorkflowOutputParameter'", None, _errors__)
+            raise ValidationException(
+                "Trying 'WorkflowOutputParameter'", None, _errors__
+            )
         _constructed = cls(
             label=label,
             secondaryFiles=secondaryFiles,
@@ -19294,7 +19660,7 @@ class WorkflowOutputParameter(OutputParameter):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -19310,7 +19676,7 @@ class WorkflowOutputParameter(OutputParameter):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
@@ -19340,11 +19706,12 @@ class WorkflowOutputParameter(OutputParameter):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -19352,12 +19719,14 @@ class WorkflowOutputParameter(OutputParameter):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -19372,7 +19741,7 @@ class WorkflowOutputParameter(OutputParameter):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -19489,7 +19858,9 @@ class WorkflowOutputParameter(OutputParameter):
                 shift=shift,
             )
         if self.outputSource is not None and "outputSource" not in r:
-            u = save_relative_uri(self.outputSource, str(self.id), False, 1, relative_uris)
+            u = save_relative_uri(
+                self.outputSource, str(self.id), False, 1, relative_uris
+            )
             r["outputSource"] = u
             max_len, inserted_line_info = add_kv(
                 old_doc=doc,
@@ -19850,7 +20221,9 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -19887,7 +20260,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -19903,7 +20276,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
@@ -19933,11 +20306,12 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -19945,12 +20319,14 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -19965,7 +20341,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -20228,7 +20604,9 @@ class WorkflowStepOutput(Identified):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -20256,7 +20634,7 @@ class WorkflowStepOutput(Identified):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -20272,7 +20650,7 @@ class WorkflowStepOutput(Identified):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
@@ -20302,11 +20680,12 @@ class WorkflowStepOutput(Identified):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -20314,12 +20693,14 @@ class WorkflowStepOutput(Identified):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -20334,7 +20715,7 @@ class WorkflowStepOutput(Identified):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -20633,7 +21014,7 @@ class WorkflowStep(Identified, Labeled, Documented):
         else:
             hints = None
 
-        subscope_baseuri = expand_url("run", baseuri, loadingOptions, True)
+        subscope_baseuri = expand_url('run', baseuri, loadingOptions, True)
         try:
             run = load_field(
                 _doc.get("run"),
@@ -20689,7 +21070,9 @@ class WorkflowStep(Identified, Labeled, Documented):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -20728,7 +21111,7 @@ class WorkflowStep(Identified, Labeled, Documented):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -20744,7 +21127,7 @@ class WorkflowStep(Identified, Labeled, Documented):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
@@ -20774,11 +21157,12 @@ class WorkflowStep(Identified, Labeled, Documented):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -20786,12 +21170,14 @@ class WorkflowStep(Identified, Labeled, Documented):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -20806,7 +21192,7 @@ class WorkflowStep(Identified, Labeled, Documented):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -20974,7 +21360,9 @@ class WorkflowStep(Identified, Labeled, Documented):
                 shift=shift,
             )
         if self.scatterMethod is not None and "scatterMethod" not in r:
-            u = save_relative_uri(self.scatterMethod, str(self.id), False, None, relative_uris)
+            u = save_relative_uri(
+                self.scatterMethod, str(self.id), False, None, relative_uris
+            )
             r["scatterMethod"] = u
             max_len, inserted_line_info = add_kv(
                 old_doc=doc,
@@ -21312,7 +21700,9 @@ class Workflow(Process):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -21350,7 +21740,7 @@ class Workflow(Process):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -21366,7 +21756,7 @@ class Workflow(Process):
         if doc:
             if self.id:
                 temp_id = self.id
-                if len(temp_id.split("#")) > 1:
+                if len(temp_id.split('#')) > 1:
                     temp_id = self.id.split("#")[1]
                 if temp_id in doc:
                     keys.append(temp_id)
@@ -21398,11 +21788,12 @@ class Workflow(Process):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -21410,12 +21801,14 @@ class Workflow(Process):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -21430,7 +21823,7 @@ class Workflow(Process):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
         if self.id is not None and "id" not in r:
             u = save_relative_uri(self.id, base_url, True, None, relative_uris)
@@ -21574,7 +21967,9 @@ class Workflow(Process):
                 shift=shift,
             )
         if self.cwlVersion is not None and "cwlVersion" not in r:
-            u = save_relative_uri(self.cwlVersion, str(self.id), False, None, relative_uris)
+            u = save_relative_uri(
+                self.cwlVersion, str(self.id), False, None, relative_uris
+            )
             r["cwlVersion"] = u
             max_len, inserted_line_info = add_kv(
                 old_doc=doc,
@@ -21686,7 +22081,9 @@ class SubworkflowFeatureRequirement(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -21698,7 +22095,9 @@ class SubworkflowFeatureRequirement(ProcessRequirement):
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'SubworkflowFeatureRequirement'", None, _errors__)
+            raise ValidationException(
+                "Trying 'SubworkflowFeatureRequirement'", None, _errors__
+            )
         _constructed = cls(
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
@@ -21712,7 +22111,7 @@ class SubworkflowFeatureRequirement(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -21745,11 +22144,12 @@ class SubworkflowFeatureRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -21757,12 +22157,14 @@ class SubworkflowFeatureRequirement(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -21777,7 +22179,7 @@ class SubworkflowFeatureRequirement(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
 
         # top refers to the directory level
@@ -21843,7 +22245,9 @@ class ScatterFeatureRequirement(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -21855,7 +22259,9 @@ class ScatterFeatureRequirement(ProcessRequirement):
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'ScatterFeatureRequirement'", None, _errors__)
+            raise ValidationException(
+                "Trying 'ScatterFeatureRequirement'", None, _errors__
+            )
         _constructed = cls(
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
@@ -21869,7 +22275,7 @@ class ScatterFeatureRequirement(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -21902,11 +22308,12 @@ class ScatterFeatureRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -21914,12 +22321,14 @@ class ScatterFeatureRequirement(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -21934,7 +22343,7 @@ class ScatterFeatureRequirement(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
 
         # top refers to the directory level
@@ -22000,7 +22409,9 @@ class MultipleInputFeatureRequirement(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -22012,7 +22423,9 @@ class MultipleInputFeatureRequirement(ProcessRequirement):
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'MultipleInputFeatureRequirement'", None, _errors__)
+            raise ValidationException(
+                "Trying 'MultipleInputFeatureRequirement'", None, _errors__
+            )
         _constructed = cls(
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
@@ -22026,7 +22439,7 @@ class MultipleInputFeatureRequirement(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -22059,11 +22472,12 @@ class MultipleInputFeatureRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -22071,12 +22485,14 @@ class MultipleInputFeatureRequirement(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -22091,7 +22507,7 @@ class MultipleInputFeatureRequirement(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
 
         # top refers to the directory level
@@ -22157,7 +22573,9 @@ class StepInputExpressionRequirement(ProcessRequirement):
         for k in _doc.keys():
             if k not in cls.attrs:
                 if ":" in k:
-                    ex = expand_url(k, "", loadingOptions, scoped_id=False, vocab_term=False)
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
                     extension_fields[ex] = _doc[k]
                 else:
                     _errors__.append(
@@ -22169,7 +22587,9 @@ class StepInputExpressionRequirement(ProcessRequirement):
                     break
 
         if _errors__:
-            raise ValidationException("Trying 'StepInputExpressionRequirement'", None, _errors__)
+            raise ValidationException(
+                "Trying 'StepInputExpressionRequirement'", None, _errors__
+            )
         _constructed = cls(
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
@@ -22183,7 +22603,7 @@ class StepInputExpressionRequirement(ProcessRequirement):
         relative_uris: bool = True,
         keys: Optional[List[Any]] = None,
         inserted_line_info: Optional[Dict[int, int]] = None,
-        shift: int = 0,
+        shift: int = 0
     ) -> CommentedMap:
         if keys is None:
             keys = []
@@ -22216,11 +22636,12 @@ class StepInputExpressionRequirement(ProcessRequirement):
                 if isinstance(key, str):
                     if hasattr(self, key):
                         if getattr(self, key) is not None:
-                            if key != "class":
+                            if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -22228,12 +22649,14 @@ class StepInputExpressionRequirement(ProcessRequirement):
                                     relative_uris=relative_uris,
                                     keys=keys + [key],
                                     inserted_line_info=inserted_line_info,
-                                    shift=shift,
+                                    shift=shift
                                 )
 
                                 # If the returned value is a list of size 1, just save the value in the list
                                 if type(saved_val) == list:
-                                    if len(saved_val) == 1:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
                                         saved_val = saved_val[0]
 
                                 r[key] = saved_val
@@ -22248,7 +22671,7 @@ class StepInputExpressionRequirement(ProcessRequirement):
                                 min_col=min_col,
                                 max_len=max_len,
                                 inserted_line_info=inserted_line_info,
-                                shift=shift,
+                                shift=shift
                             )
 
         # top refers to the directory level
@@ -22883,14 +23306,16 @@ union_of_None_type_or_array_of_union_of_FileLoader_or_DirectoryLoader = _UnionLo
         array_of_union_of_FileLoader_or_DirectoryLoader,
     )
 )
-secondaryfilesdsl_union_of_None_type_or_array_of_union_of_FileLoader_or_DirectoryLoader = (
-    _SecondaryDSLLoader(union_of_None_type_or_array_of_union_of_FileLoader_or_DirectoryLoader)
+secondaryfilesdsl_union_of_None_type_or_array_of_union_of_FileLoader_or_DirectoryLoader = _SecondaryDSLLoader(
+    union_of_None_type_or_array_of_union_of_FileLoader_or_DirectoryLoader
 )
 uri_union_of_None_type_or_strtype_True_False_None = _URILoader(
     union_of_None_type_or_strtype, True, False, None
 )
 Directory_classLoader = _EnumLoader(("Directory",), "Directory_class")
-uri_Directory_classLoader_False_True_None = _URILoader(Directory_classLoader, False, True, None)
+uri_Directory_classLoader_False_True_None = _URILoader(
+    Directory_classLoader, False, True, None
+)
 union_of_None_type_or_booltype = _UnionLoader(
     (
         None_type,
@@ -22904,13 +23329,11 @@ union_of_None_type_or_LoadListingEnumLoader = _UnionLoader(
     )
 )
 array_of_SecondaryFileSchemaLoader = _ArrayLoader(SecondaryFileSchemaLoader)
-union_of_None_type_or_SecondaryFileSchemaLoader_or_array_of_SecondaryFileSchemaLoader = (
-    _UnionLoader(
-        (
-            None_type,
-            SecondaryFileSchemaLoader,
-            array_of_SecondaryFileSchemaLoader,
-        )
+union_of_None_type_or_SecondaryFileSchemaLoader_or_array_of_SecondaryFileSchemaLoader = _UnionLoader(
+    (
+        None_type,
+        SecondaryFileSchemaLoader,
+        array_of_SecondaryFileSchemaLoader,
     )
 )
 secondaryfilesdsl_union_of_None_type_or_SecondaryFileSchemaLoader_or_array_of_SecondaryFileSchemaLoader = _SecondaryDSLLoader(
@@ -22924,13 +23347,11 @@ union_of_None_type_or_strtype_or_array_of_strtype_or_ExpressionLoader = _UnionLo
         ExpressionLoader,
     )
 )
-uri_union_of_None_type_or_strtype_or_array_of_strtype_or_ExpressionLoader_True_False_None = (
-    _URILoader(
-        union_of_None_type_or_strtype_or_array_of_strtype_or_ExpressionLoader,
-        True,
-        False,
-        None,
-    )
+uri_union_of_None_type_or_strtype_or_array_of_strtype_or_ExpressionLoader_True_False_None = _URILoader(
+    union_of_None_type_or_strtype_or_array_of_strtype_or_ExpressionLoader,
+    True,
+    False,
+    None,
 )
 union_of_None_type_or_strtype_or_ExpressionLoader = _UnionLoader(
     (
@@ -23028,15 +23449,13 @@ union_of_CommandInputParameterLoader_or_WorkflowInputParameterLoader = _UnionLoa
         WorkflowInputParameterLoader,
     )
 )
-array_of_union_of_CommandInputParameterLoader_or_WorkflowInputParameterLoader = _ArrayLoader(
-    union_of_CommandInputParameterLoader_or_WorkflowInputParameterLoader
+array_of_union_of_CommandInputParameterLoader_or_WorkflowInputParameterLoader = (
+    _ArrayLoader(union_of_CommandInputParameterLoader_or_WorkflowInputParameterLoader)
 )
-idmap_inputs_array_of_union_of_CommandInputParameterLoader_or_WorkflowInputParameterLoader = (
-    _IdMapLoader(
-        array_of_union_of_CommandInputParameterLoader_or_WorkflowInputParameterLoader,
-        "id",
-        "type",
-    )
+idmap_inputs_array_of_union_of_CommandInputParameterLoader_or_WorkflowInputParameterLoader = _IdMapLoader(
+    array_of_union_of_CommandInputParameterLoader_or_WorkflowInputParameterLoader,
+    "id",
+    "type",
 )
 union_of_CommandOutputParameterLoader_or_ExpressionToolOutputParameterLoader_or_WorkflowOutputParameterLoader = _UnionLoader(
     (
@@ -23240,8 +23659,10 @@ union_of_None_type_or_array_of_CommandInputRecordFieldLoader = _UnionLoader(
         array_of_CommandInputRecordFieldLoader,
     )
 )
-idmap_fields_union_of_None_type_or_array_of_CommandInputRecordFieldLoader = _IdMapLoader(
-    union_of_None_type_or_array_of_CommandInputRecordFieldLoader, "name", "type"
+idmap_fields_union_of_None_type_or_array_of_CommandInputRecordFieldLoader = (
+    _IdMapLoader(
+        union_of_None_type_or_array_of_CommandInputRecordFieldLoader, "name", "type"
+    )
 )
 union_of_CWLTypeLoader_or_CommandOutputRecordSchemaLoader_or_CommandOutputEnumSchemaLoader_or_CommandOutputArraySchemaLoader_or_strtype = _UnionLoader(
     (
@@ -23282,8 +23703,10 @@ union_of_None_type_or_array_of_CommandOutputRecordFieldLoader = _UnionLoader(
         array_of_CommandOutputRecordFieldLoader,
     )
 )
-idmap_fields_union_of_None_type_or_array_of_CommandOutputRecordFieldLoader = _IdMapLoader(
-    union_of_None_type_or_array_of_CommandOutputRecordFieldLoader, "name", "type"
+idmap_fields_union_of_None_type_or_array_of_CommandOutputRecordFieldLoader = (
+    _IdMapLoader(
+        union_of_None_type_or_array_of_CommandOutputRecordFieldLoader, "name", "type"
+    )
 )
 union_of_CWLTypeLoader_or_stdinLoader_or_CommandInputRecordSchemaLoader_or_CommandInputEnumSchemaLoader_or_CommandInputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_CommandInputRecordSchemaLoader_or_CommandInputEnumSchemaLoader_or_CommandInputArraySchemaLoader_or_strtype = _UnionLoader(
     (
@@ -23335,15 +23758,13 @@ union_of_strtype_or_ExpressionLoader_or_CommandLineBindingLoader = _UnionLoader(
         CommandLineBindingLoader,
     )
 )
-array_of_union_of_strtype_or_ExpressionLoader_or_CommandLineBindingLoader = _ArrayLoader(
-    union_of_strtype_or_ExpressionLoader_or_CommandLineBindingLoader
+array_of_union_of_strtype_or_ExpressionLoader_or_CommandLineBindingLoader = (
+    _ArrayLoader(union_of_strtype_or_ExpressionLoader_or_CommandLineBindingLoader)
 )
-union_of_None_type_or_array_of_union_of_strtype_or_ExpressionLoader_or_CommandLineBindingLoader = (
-    _UnionLoader(
-        (
-            None_type,
-            array_of_union_of_strtype_or_ExpressionLoader_or_CommandLineBindingLoader,
-        )
+union_of_None_type_or_array_of_union_of_strtype_or_ExpressionLoader_or_CommandLineBindingLoader = _UnionLoader(
+    (
+        None_type,
+        array_of_union_of_strtype_or_ExpressionLoader_or_CommandLineBindingLoader,
     )
 )
 array_of_inttype = _ArrayLoader(inttype)
@@ -23353,11 +23774,15 @@ union_of_None_type_or_array_of_inttype = _UnionLoader(
         array_of_inttype,
     )
 )
-DockerRequirement_classLoader = _EnumLoader(("DockerRequirement",), "DockerRequirement_class")
+DockerRequirement_classLoader = _EnumLoader(
+    ("DockerRequirement",), "DockerRequirement_class"
+)
 uri_DockerRequirement_classLoader_False_True_None = _URILoader(
     DockerRequirement_classLoader, False, True, None
 )
-SoftwareRequirement_classLoader = _EnumLoader(("SoftwareRequirement",), "SoftwareRequirement_class")
+SoftwareRequirement_classLoader = _EnumLoader(
+    ("SoftwareRequirement",), "SoftwareRequirement_class"
+)
 uri_SoftwareRequirement_classLoader_False_True_None = _URILoader(
     SoftwareRequirement_classLoader, False, True, None
 )
@@ -23393,7 +23818,9 @@ union_of_array_of_union_of_None_type_or_FileLoader_or_array_of_union_of_FileLoad
         ExpressionLoader,
     )
 )
-EnvVarRequirement_classLoader = _EnumLoader(("EnvVarRequirement",), "EnvVarRequirement_class")
+EnvVarRequirement_classLoader = _EnumLoader(
+    ("EnvVarRequirement",), "EnvVarRequirement_class"
+)
 uri_EnvVarRequirement_classLoader_False_True_None = _URILoader(
     EnvVarRequirement_classLoader, False, True, None
 )
@@ -23407,12 +23834,16 @@ ShellCommandRequirement_classLoader = _EnumLoader(
 uri_ShellCommandRequirement_classLoader_False_True_None = _URILoader(
     ShellCommandRequirement_classLoader, False, True, None
 )
-ResourceRequirement_classLoader = _EnumLoader(("ResourceRequirement",), "ResourceRequirement_class")
+ResourceRequirement_classLoader = _EnumLoader(
+    ("ResourceRequirement",), "ResourceRequirement_class"
+)
 uri_ResourceRequirement_classLoader_False_True_None = _URILoader(
     ResourceRequirement_classLoader, False, True, None
 )
 WorkReuse_classLoader = _EnumLoader(("WorkReuse",), "WorkReuse_class")
-uri_WorkReuse_classLoader_False_True_None = _URILoader(WorkReuse_classLoader, False, True, None)
+uri_WorkReuse_classLoader_False_True_None = _URILoader(
+    WorkReuse_classLoader, False, True, None
+)
 union_of_booltype_or_ExpressionLoader = _UnionLoader(
     (
         booltype,
@@ -23453,7 +23884,9 @@ array_of_WorkflowInputParameterLoader = _ArrayLoader(WorkflowInputParameterLoade
 idmap_inputs_array_of_WorkflowInputParameterLoader = _IdMapLoader(
     array_of_WorkflowInputParameterLoader, "id", "type"
 )
-array_of_ExpressionToolOutputParameterLoader = _ArrayLoader(ExpressionToolOutputParameterLoader)
+array_of_ExpressionToolOutputParameterLoader = _ArrayLoader(
+    ExpressionToolOutputParameterLoader
+)
 idmap_outputs_array_of_ExpressionToolOutputParameterLoader = _IdMapLoader(
     array_of_ExpressionToolOutputParameterLoader, "id", "type"
 )
@@ -23485,11 +23918,13 @@ array_of_union_of_strtype_or_WorkflowStepOutputLoader = _ArrayLoader(
 union_of_array_of_union_of_strtype_or_WorkflowStepOutputLoader = _UnionLoader(
     (array_of_union_of_strtype_or_WorkflowStepOutputLoader,)
 )
-uri_union_of_array_of_union_of_strtype_or_WorkflowStepOutputLoader_True_False_None = _URILoader(
-    union_of_array_of_union_of_strtype_or_WorkflowStepOutputLoader,
-    True,
-    False,
-    None,
+uri_union_of_array_of_union_of_strtype_or_WorkflowStepOutputLoader_True_False_None = (
+    _URILoader(
+        union_of_array_of_union_of_strtype_or_WorkflowStepOutputLoader,
+        True,
+        False,
+        None,
+    )
 )
 array_of_Any_type = _ArrayLoader(Any_type)
 union_of_None_type_or_array_of_Any_type = _UnionLoader(
@@ -23501,12 +23936,14 @@ union_of_None_type_or_array_of_Any_type = _UnionLoader(
 idmap_hints_union_of_None_type_or_array_of_Any_type = _IdMapLoader(
     union_of_None_type_or_array_of_Any_type, "class", "None"
 )
-union_of_strtype_or_CommandLineToolLoader_or_ExpressionToolLoader_or_WorkflowLoader = _UnionLoader(
-    (
-        strtype,
-        CommandLineToolLoader,
-        ExpressionToolLoader,
-        WorkflowLoader,
+union_of_strtype_or_CommandLineToolLoader_or_ExpressionToolLoader_or_WorkflowLoader = (
+    _UnionLoader(
+        (
+            strtype,
+            CommandLineToolLoader,
+            ExpressionToolLoader,
+            WorkflowLoader,
+        )
     )
 )
 uri_union_of_strtype_or_CommandLineToolLoader_or_ExpressionToolLoader_or_WorkflowLoader_False_False_None = _URILoader(
@@ -23528,7 +23965,9 @@ uri_union_of_None_type_or_ScatterMethodLoader_False_True_None = _URILoader(
     union_of_None_type_or_ScatterMethodLoader, False, True, None
 )
 Workflow_classLoader = _EnumLoader(("Workflow",), "Workflow_class")
-uri_Workflow_classLoader_False_True_None = _URILoader(Workflow_classLoader, False, True, None)
+uri_Workflow_classLoader_False_True_None = _URILoader(
+    Workflow_classLoader, False, True, None
+)
 array_of_WorkflowOutputParameterLoader = _ArrayLoader(WorkflowOutputParameterLoader)
 idmap_outputs_array_of_WorkflowOutputParameterLoader = _IdMapLoader(
     array_of_WorkflowOutputParameterLoader, "id", "type"
@@ -23569,8 +24008,10 @@ union_of_CommandLineToolLoader_or_ExpressionToolLoader_or_WorkflowLoader = _Unio
         WorkflowLoader,
     )
 )
-array_of_union_of_CommandLineToolLoader_or_ExpressionToolLoader_or_WorkflowLoader = _ArrayLoader(
-    union_of_CommandLineToolLoader_or_ExpressionToolLoader_or_WorkflowLoader
+array_of_union_of_CommandLineToolLoader_or_ExpressionToolLoader_or_WorkflowLoader = (
+    _ArrayLoader(
+        union_of_CommandLineToolLoader_or_ExpressionToolLoader_or_WorkflowLoader
+    )
 )
 union_of_CommandLineToolLoader_or_ExpressionToolLoader_or_WorkflowLoader_or_array_of_union_of_CommandLineToolLoader_or_ExpressionToolLoader_or_WorkflowLoader = _UnionLoader(
     (

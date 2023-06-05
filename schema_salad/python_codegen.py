@@ -384,9 +384,10 @@ class PythonCodeGen(CodeGenBase):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
@@ -430,9 +431,10 @@ class PythonCodeGen(CodeGenBase):
                         if getattr(self, key) is not None:
                             if key != 'class':
                                 line = doc.lc.data[key][0] + shift
-                                while line in inserted_line_info:
-                                    line += 1
-                                    shift += 1
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
                                 saved_val = save(
                                     getattr(self, key),
                                     top=False,
