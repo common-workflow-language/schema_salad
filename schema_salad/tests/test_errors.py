@@ -132,12 +132,12 @@ def test_error_message5() -> None:
 
     t = "test_schema/test5.cwl"
     match = r"""
-^.+test5\.cwl:2:1: Object\s+'.+test5\.cwl'\s+is\s+not valid because
-\s+tried 'Workflow'\s+but
-.+test5\.cwl:7:1:     the 'steps'\s+field\s+is\s+not\s+valid\s+because
-\s+tried array\s+of\s+<WorkflowStep>\s+but
-.+test5\.cwl:7:9:         item is\s+invalid\s+because
-\s+is not a\s+dict$"""[
+^.+test5\.cwl:2:1: Object\s+'.+test5\.cwl'\s+is\s+not\s+valid\s+because
+\s+tried\s+'Workflow'\s+but
+.+test5\.cwl:7:1:     the\s+'steps'\s+field\s+is\s+not\s+valid\s+because
+\s+tried\s+array\s+of\s+<WorkflowStep>\s+but
+.+test5\.cwl:7:9:         item\s+is\s+invalid\s+because
+\s+is\s+not\s+a\s+dict.\s+Expected\s+a\s+WorkflowStep\s+object.$"""[
         1:
     ]
     with pytest.raises(ValidationException, match=match):
