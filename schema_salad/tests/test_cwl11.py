@@ -67,9 +67,10 @@ def test_outputBinding(cwl_v1_2_schema: SchemaType) -> None:
 
 def test_yaml_tab_error(cwl_v1_2_schema: SchemaType) -> None:
     """Tabs in the file."""
+    res: Any = ""
     with pytest.raises(
         ValidationException,
         match=r".+found\s+character\s+'\\t'\s+that\s+cannot\s+start\s+any\s+token$",
     ):
         res = load_cwl(cwl_v1_2_schema, src="test_real_cwl/tabs_rna_seq_workflow.cwl")
-        print(res)
+    print(res)
