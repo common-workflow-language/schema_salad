@@ -137,7 +137,7 @@ def test_error_message5() -> None:
 .+test5\.cwl:8:1:\s+the 'steps'\s+field\s+is\s+not\s+valid\s+because
 \s+tried array\s+of\s+<WorkflowStep>\s+but
 .+test5\.cwl:8:9:\s+item is\s+invalid\s+because
-\s+is not a\s+dict$"""[
+\s+is not a\s+dict.\s+Expected\s+a\s+WorkflowStep\s+object.$"""[
         1:
     ]
     with pytest.raises(ValidationException, match=match):
