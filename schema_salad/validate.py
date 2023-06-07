@@ -196,7 +196,7 @@ def validate_ex(
             raise ValidationException(
                 "the value {} is not a valid {}, expected {}{}".format(
                     vpformat(datum),
-                    expected_schema.name,
+                    friendly(expected_schema.name),
                     "one of " if len(expected_schema.symbols) > 1 else "",
                     "'" + "', '".join(expected_schema.symbols) + "'",
                 )
@@ -299,7 +299,9 @@ def validate_ex(
     if isinstance(expected_schema, avro.schema.RecordSchema):
         if not isinstance(datum, MutableMapping):
             if raise_ex:
-                raise ValidationException("is not a dict")
+                raise ValidationException(
+                    f"is not a dict. Expected a {friendly(expected_schema.name)} object."
+                )
             return False
 
         classmatch = None
