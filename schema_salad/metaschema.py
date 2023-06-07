@@ -1003,7 +1003,6 @@ class RecordField(Documented):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1256,7 +1255,6 @@ class RecordSchema(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1452,7 +1450,6 @@ class EnumSchema(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1701,7 +1698,6 @@ class ArraySchema(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1902,7 +1898,6 @@ class JsonldPredicate(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -2599,7 +2594,6 @@ class SpecializeDef(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -2813,7 +2807,6 @@ class SaladRecordField(RecordField):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -3184,7 +3177,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -4001,7 +3993,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -4699,7 +4690,6 @@ class Documentation(NamedType, DocType):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:

@@ -1,7 +1,7 @@
 """Tests of helpful error messages."""
 
 from pathlib import Path
-from typing import MutableSequence, Optional, Union, cast
+from typing import Any, MutableSequence, Optional, Union, cast
 from urllib.parse import unquote_plus, urlparse
 
 import pytest
@@ -11,16 +11,15 @@ from schema_salad.exceptions import ValidationException
 from schema_salad.utils import yaml_no_ts
 
 from .util import get_data
-from typing import Any
 
 
 def test_error_message1() -> None:
     t = "test_schema/test1.cwl"
-    match = r"""^.*test1\.cwl:2:1:\s+Object\s+`.*test1\.cwl`\s+is\s+not valid because
+    match = r"""^.*test1\.cwl:2:1:\s+Object\s+`.*test1\.cwl`\s+is\s+not\s+valid\s+because
 \s+tried\s+`Workflow`\s+but
-\s+\* missing\s+required\s+field\s+`inputs`
-\s+\* missing\s+required\s+field\s+`outputs`
-\s+\* missing\s+required\s+field\s+`steps`"""
+\s+\*\s+missing\s+required\s+field\s+`inputs`
+\s+\*\s+missing\s+required\s+field\s+`outputs`
+\s+\*\s+missing\s+required\s+field\s+`steps`"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
@@ -29,10 +28,8 @@ def test_error_message1() -> None:
 
 def test_error_message2() -> None:
     t = "test_schema/test2.cwl"
-    match = r"""^.*test2\.cwl:2:1:\s+Field `class`\s+contains\s+undefined\s+reference\s+to
-\s+`file://.+/schema_salad/tests/test_schema/xWorkflow`"""[
-        1:
-    ]
+    match = r"""^.*test2\.cwl:2:1:\s+Field\s+`class`\s+contains\s+undefined\s+reference\s+to
+\s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
@@ -41,14 +38,14 @@ def test_error_message2() -> None:
 
 def test_error_message4() -> None:
     t = "test_schema/test4.cwl"
-    match = r"""^.*test4.cwl:2:1:\s+Object `.*test4.cwl` is not valid because
-\s+tried `Workflow` but
-.*test4\.cwl:6:1:\s+the `outputs` field is not valid because:
-.*test4\.cwl:7:3:\s+checking object\s+`.*test4\.cwl#bar`
+    match = r"""^.*test4.cwl:2:1:\s+Object\s+`.*test4.cwl`\s+is\s+not\s+valid\s+because
+\s+tried\s+`Workflow`\s+but
+.*test4\.cwl:6:1:\s+the\s+`outputs`\s+field\s+is\s+not\s+valid\s+because:
+.*test4\.cwl:7:3:\s+checking\s+object\s+`.*test4\.cwl#bar`
 \s+tried\s+`WorkflowOutputParameter`\s+but
 \s+the\s+`type`\s+field\s+is\s+not\s+valid\s+because:
 \s+Expected\s+one\s+of\s+\(list|dict|str,list|dict|str,list|dict|str\)\s+was
-\s+<class 'int'>"""
+\s+<class\s+'int'>"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
@@ -57,14 +54,14 @@ def test_error_message4() -> None:
 
 def test_error_message5() -> None:
     t = "test_schema/test5.cwl"
-    match = r"""^.*test5\.cwl:2:1:\s+Object\s+`.*test5\.cwl`\s+is\s+not valid because
-\s+tried `Workflow`\s+but
-.+test5\.cwl:8:1:\s+the `steps`\s+field\s+is\s+not\s+valid\s+because:
-\s+tried `array<WorkflowStep>`\s+but
-\s+-\s+tried `array<WorkflowStep>` but
-\s+Expected a list, was <class 'int'>
-\s+-\s+tried `WorkflowStep` but
-\s+Expected a dict, was <class 'int'>"""
+    match = r"""^.*test5\.cwl:2:1:\s+Object\s+`.*test5\.cwl`\s+is\s+not\s+valid\s+because
+\s+tried\s+`Workflow`\s+but
+.+test5\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
+\s+tried\s+`array<WorkflowStep>`\s+but
+\s+-\s+tried\s+`array<WorkflowStep>`\s+but
+\s+Expected\s+a\s+list,\s+was\s+<class\s+'int'>
+\s+-\s+tried\s+`WorkflowStep`\s+but
+\s+Expected\s+a\s+dict,\s+was\s+<class\s+'int'>"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
@@ -85,9 +82,6 @@ def test_error_message6() -> None:
         load_document_by_uri(path)
 
 
-# `id`
-# \s+`in`, `out`, `requirements`, `hints`, `label`, `doc`, `run`, `scatter`,
-# \s+`scatterMethod`
 def test_error_message7() -> None:
     t = "test_schema/test7.cwl"
     match = r"""^.*test7\.cwl:2:1:\s+Object\s+`.*test7\.cwl`\s+is\s+not\s+valid\s+because
@@ -100,7 +94,6 @@ def test_error_message7() -> None:
 .*test7\.cwl:10:5:\s+\*\s+invalid\s+field\s+`scatter_method`,\s+expected\s+one of:.*,
 .*,
 .*$"""
-    # match = r".*"
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
@@ -128,15 +121,15 @@ def test_error_message8() -> None:
 
 def test_error_message9() -> None:
     t = "test_schema/test9.cwl"
-    match = r"""^.*test9.cwl:2:1:\s+Object `.*test9.cwl` is not valid because
-\s+tried `Workflow` but
-.*test9\.cwl:8:1:\s+the `steps` field is not valid because:
-\s+tried `array<WorkflowStep>` but
+    match = r"""^.*test9.cwl:2:1:\s+Object\s+`.*test9.cwl`\s+is\s+not\s+valid\s+because
+\s+tried\s+`Workflow`\s+but
+.*test9\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
+\s+tried\s+`array<WorkflowStep>`\s+but
 .*test9\.cwl:9:3:\s+checking object\s+`.*test9\.cwl#step1`
-\s+tried `WorkflowStep` but
-\s+\* missing required field `run`
-.*test9\.cwl:10:5:\s+the `scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
-\s+Expected one of \("dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct"\) was\s+<class 'int'>"""
+\s+tried\s+`WorkflowStep`\s+but
+\s+\*\s+missing\s+required\s+field\s+`run`
+.*test9\.cwl:10:5:\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
+\s+Expected\s+one\s+of\s+\("dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct"\) was\s+<class 'int'>"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
@@ -146,22 +139,18 @@ def test_error_message9() -> None:
 def test_error_message10() -> None:
     t = "test_schema/test10.cwl"
     match = r"""^.*test10\.cwl:2:1:\s+Object\s+`.*test10\.cwl`\s+is\s+not\s+valid\s+because
-\s+tried `Workflow`\s+but
-.*test10\.cwl:8:1:\s+the `steps`\s+field\s+is\s+not\s+valid\s+because:
-\s+tried `array<WorkflowStep>`\s+but
-.*test10\.cwl:9:3:\s+checking object `.*test10.cwl#step1`
-\s+tried `WorkflowStep` but
-\s+\* missing\s+required\s+field\s+`run`
+\s+tried\s+`Workflow`\s+but
+.*test10\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
+\s+tried\s+`array<WorkflowStep>`\s+but
+.*test10\.cwl:9:3:\s+checking\s+object\s+`.*test10.cwl#step1`
+\s+tried\s+`WorkflowStep`\s+but
+\s+\*\s+missing\s+required\s+field\s+`run`
 .*test10\.cwl:10:5:\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
-\s+Expected one of \("dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct"\)\s+was\s+<class 'ruamel\.yaml\.comments\.CommentedSeq'>"""
+\s+Expected\s+one\s+of\s+\("dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct"\)\s+was\s+<class 'ruamel\.yaml\.comments\.CommentedSeq'>"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
         load_document_by_uri(path)
-
-
-"     "
-"     "
 
 
 def test_error_message11() -> None:
@@ -170,12 +159,11 @@ def test_error_message11() -> None:
 \s+tried\s+`Workflow`\s+but
 .*test11\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
 \s+tried\s+`array<WorkflowStep>`\s+but
-.*test11\.cwl:9:3:\s+checking object\s+`.*test11\.cwl#step1`
+.*test11\.cwl:9:3:\s+checking\s+object\s+`.*test11\.cwl#step1`
 \s+tried\s+`WorkflowStep`\s+but
 .*test11\.cwl:10:5:\s+the\s+`run`\s+field\s+is\s+not\s+valid\s+because:
 \s+contains\s+undefined\s+reference\s+to
 \s+`file:///.*/tests/test_schema/blub\.cwl`$"""
-    # match = r".*"
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
@@ -198,7 +186,6 @@ def test_error_message15() -> None:
 \s+expected\s+one\s+of:\s+`loadContents`,\s+`position`,\s+`prefix`,\s+`separate`,\s+`itemSeparator`,\s+`valueFrom`,\s+`shellQuote`
 .*test15\.cwl:12:7:\s+\*\s+invalid\s+field
 \s+`another_invalid_field`,\s+expected one\s+of:\s+`loadContents`,\s+`position`,\s+`prefix`,\s+`separate`,\s+`itemSeparator`,\s+`valueFrom`,\s+`shellQuote`$"""
-    # match = r".*"
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):

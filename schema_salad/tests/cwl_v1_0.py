@@ -999,7 +999,6 @@ class RecordField(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1252,7 +1251,6 @@ class RecordSchema(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1447,7 +1445,6 @@ class EnumSchema(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1633,7 +1630,6 @@ class ArraySchema(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -1899,7 +1895,6 @@ class File(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -2643,7 +2638,6 @@ class Directory(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -2983,7 +2977,6 @@ class InputRecordField(RecordField):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -3343,7 +3336,6 @@ class InputRecordSchema(RecordSchema, InputSchema):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -3650,7 +3642,6 @@ class InputEnumSchema(EnumSchema, InputSchema):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -4008,7 +3999,6 @@ class InputArraySchema(ArraySchema, InputSchema):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -4305,7 +4295,6 @@ class OutputRecordField(RecordField):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -4613,7 +4602,6 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -4859,7 +4847,6 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -5155,7 +5142,6 @@ class OutputArraySchema(ArraySchema, OutputSchema):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -5457,7 +5443,6 @@ class InputParameter(Parameter):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -6056,7 +6041,6 @@ class OutputParameter(Parameter):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -6576,7 +6560,6 @@ class InlineJavascriptRequirement(ProcessRequirement):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -6746,7 +6729,6 @@ class SchemaDefRequirement(ProcessRequirement):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -6904,7 +6886,6 @@ class EnvironmentDef(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -7137,7 +7118,6 @@ class CommandLineBinding(InputBinding):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -7635,7 +7615,6 @@ class CommandOutputBinding(OutputBinding):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -7893,7 +7872,6 @@ class CommandInputRecordField(InputRecordField):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -8255,7 +8233,6 @@ class CommandInputRecordSchema(InputRecordSchema):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -8564,7 +8541,6 @@ class CommandInputEnumSchema(InputEnumSchema):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -8924,7 +8900,6 @@ class CommandInputArraySchema(InputArraySchema):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -9223,7 +9198,6 @@ class CommandOutputRecordField(OutputRecordField):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -9534,7 +9508,6 @@ class CommandOutputRecordSchema(OutputRecordSchema):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -9842,7 +9815,6 @@ class CommandOutputEnumSchema(OutputEnumSchema):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -10140,7 +10112,6 @@ class CommandOutputArraySchema(OutputArraySchema):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -10448,7 +10419,6 @@ class CommandInputParameter(InputParameter):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -11054,7 +11024,6 @@ class CommandOutputParameter(OutputParameter):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -11616,7 +11585,6 @@ class CommandLineTool(Process):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -12634,7 +12602,6 @@ class DockerRequirement(ProcessRequirement):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -13087,7 +13054,6 @@ class SoftwareRequirement(ProcessRequirement):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -13239,7 +13205,6 @@ class SoftwarePackage(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -13491,7 +13456,6 @@ class Dirent(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -13741,7 +13705,6 @@ class InitialWorkDirRequirement(ProcessRequirement):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -13897,7 +13860,6 @@ class EnvVarRequirement(ProcessRequirement):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -14055,7 +14017,6 @@ class ShellCommandRequirement(ProcessRequirement):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -14187,7 +14148,6 @@ class ResourceRequirement(ProcessRequirement):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -14743,7 +14703,6 @@ class ExpressionToolOutputParameter(OutputParameter):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -15298,7 +15257,6 @@ class ExpressionTool(Process):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -15907,7 +15865,6 @@ class WorkflowOutputParameter(OutputParameter):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -16605,7 +16562,6 @@ class WorkflowStepInput(Sink):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -16971,7 +16927,6 @@ class WorkflowStepOutput(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -17188,7 +17143,6 @@ class WorkflowStep(Saveable):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -17875,7 +17829,6 @@ class Workflow(Process):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -18470,7 +18423,6 @@ class SubworkflowFeatureRequirement(ProcessRequirement):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -18576,7 +18528,6 @@ class ScatterFeatureRequirement(ProcessRequirement):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -18682,7 +18633,6 @@ class MultipleInputFeatureRequirement(ProcessRequirement):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:
@@ -18788,7 +18738,6 @@ class StepInputExpressionRequirement(ProcessRequirement):
         extension_fields: Optional[Dict[str, Any]] = None,
         loadingOptions: Optional[LoadingOptions] = None,
     ) -> None:
-
         if extension_fields:
             self.extension_fields = extension_fields
         else:

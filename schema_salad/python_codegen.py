@@ -190,8 +190,7 @@ class PythonCodeGen(CodeGenBase):
             + "\n        extension_fields: Optional[Dict[str, Any]] = None,"
             + "\n        loadingOptions: Optional[LoadingOptions] = None,"
             + "\n    ) -> None:\n"
-            + """
-        if extension_fields:
+            + """        if extension_fields:
             self.extension_fields = extension_fields
         else:
             self.extension_fields = CommentedMap()

@@ -106,10 +106,10 @@ codespell:
 
 ## format                 : check/fix all code indentation and formatting (runs black)
 format:
-	black --force-exclude metaschema.py --exclude _version.py --exclude cwl_v1_0.py --exclude cwl_v1_1.py --exclude cwl_v1_2.py schema_salad setup.py mypy-stubs
+	black --force-exclude "metaschema.py|schema_salad/tests/cwl_v1*""  --exclude _version.py schema_salad setup.py mypy-stubs 
 
 format-check:
-	black --diff --check --force-exclude metaschema.py --exclude cwl_v1_0.py --exclude cwl_v1_1.py --exclude cwl_v1_2.py --exclude _version.py schema_salad setup.py mypy-stubs
+	black --diff --check --force-exclude "metaschema.py|schema_salad/tests/cwl_v1*" --exclude _version.py setup.py mypy-stubs
 
 ## pylint                 : run static code analysis on Python code
 pylint: $(PYSOURCES)
