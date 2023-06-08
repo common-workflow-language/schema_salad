@@ -91,9 +91,7 @@ def test_error_message7() -> None:
 .*test7\.cwl:9:3:\s+checking object\s+`.*test7.cwl#step1`
 \s+tried\s+`WorkflowStep`\s+but
 \s+\*\s+missing\s+required\s+field\s+`run`
-.*test7\.cwl:10:5:\s+\*\s+invalid\s+field\s+`scatter_method`,\s+expected\s+one of:.*,
-.*,
-.*$"""
+.*test7\.cwl:10:5:\s+\*\s+invalid\s+field\s+`scatter_method`,\s+expected\s+one of:.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*$"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
@@ -109,8 +107,7 @@ def test_error_message8() -> None:
 .*test8\.cwl:9:3:\s+checking\s+object\s+`.*test8\.cwl#step1`
 \s+tried\s+`WorkflowStep`\s+but
 \s+\*\s+missing\s+required\s+field\s+`run`
-.*test8\.cwl:10:5:\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid
-\s+because:
+.*test8\.cwl:10:5:\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
 \s+contains\s+undefined\s+reference\s+to
 \s+`file:///.*/tests/test_schema/abc`$"""
     path = get_data("tests/" + t)
@@ -178,8 +175,7 @@ def test_error_message15() -> None:
 .*test15\.cwl:6:1:\s+the\s+`inputs`\s+field\s+is\s+not\s+valid\s+because:
 .*test15\.cwl:7:3:\s+checking\s+object\s+`.*test15\.cwl#message`
 \s+tried\s+`CommandInputParameter`\s+but
-.*test15\.cwl:9:5:\s+the\s+`inputBinding`\s+field\s+is\s+not\s+valid
-\s+because:
+.*test15\.cwl:9:5:\s+the\s+`inputBinding`\s+field\s+is\s+not\s+valid\s+because:
 \s+tried\s+`CommandLineBinding`\s+but
 \s+tried\s+`CommandLineBinding`\s+but
 .*test15\.cwl:11:7:\s+\*\s+invalid\s+field\s+`invalid_field`,
