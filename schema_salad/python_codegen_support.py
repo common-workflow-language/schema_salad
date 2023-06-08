@@ -350,6 +350,7 @@ def add_kv(
 
 @no_type_check
 def iterate_through_doc(keys: List[Any]) -> Optional[CommentedMap]:
+    """Take a list of keys/indexes and iterates through the global CommentedMap."""
     doc = doc_line_info
     for key in keys:
         if isinstance(doc, CommentedMap):
@@ -402,6 +403,7 @@ def get_line_numbers(doc: Optional[CommentedMap]) -> Dict[Any, Dict[str, int]]:
 
 
 def get_min_col(line_numbers: Dict[Any, Dict[str, int]]) -> int:
+    """Given a array of line column information, get the minimum column."""
     min_col = 0
     for line in line_numbers:
         if line_numbers[line]["col"] > min_col:
