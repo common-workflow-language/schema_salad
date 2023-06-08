@@ -47,7 +47,7 @@ help: Makefile
 ## cleanup                : shortcut for "make sort_imports format flake8 diff_pydocstyle_report"
 cleanup: sort_imports format flake8 diff_pydocstyle_report
 
-## install-dep            : install most of the development dependencies via pip
+## install-dep            : inshttps://github.com/common-workflow-language/cwltool/issues?q=is%3Aissue+is%3Aopen+author%3Atom-tantall most of the development dependencies via pip
 install-dep: install-dependencies
 
 install-dependencies: FORCE
@@ -106,10 +106,10 @@ codespell:
 
 ## format                 : check/fix all code indentation and formatting (runs black)
 format:
-	black --exclude metaschema.py --exclude _version.py --exclude tests/cwl_v1_0.py --exclude tests/cwl_v1_1.py --exclude tests/cwl_v1_2.py schema_salad setup.py mypy-stubs
+	black --force-exclude "metaschema.py|schema_salad/tests/cwl_v1*""  --exclude _version.py schema_salad setup.py mypy-stubs 
 
 format-check:
-	black --diff --check --exclude metaschema.py --exclude _version.py --exclude tests/cwl_v1_0.py --exclude tests/cwl_v1_1.py --exclude tests/cwl_v1_2.py  schema_salad setup.py mypy-stubs
+	black --diff --check --force-exclude "metaschema.py|schema_salad/tests/cwl_v1*" --exclude _version.py setup.py mypy-stubs
 
 ## pylint                 : run static code analysis on Python code
 pylint: $(PYSOURCES)
