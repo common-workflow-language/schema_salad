@@ -88,7 +88,7 @@ def test_error_message7() -> None:
 \s+tried\s+`Workflow`\s+but
 .*test7\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
 \s+tried\s+`array<WorkflowStep>`\s+but
-.*test7\.cwl:9:3:\s+checking object\s+`.*test7.cwl#step1`
+.*test7\.cwl:9:3:\s+checking\s+object\s+`.*test7.cwl#step1`
 \s+tried\s+`WorkflowStep`\s+but
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test7\.cwl:10:5:\s+\*\s+invalid\s+field\s+`scatter_method`,\s+expected\s+one of:.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*$"""
