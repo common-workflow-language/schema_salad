@@ -1083,6 +1083,7 @@ class RecordField(Documented):
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -1136,6 +1137,7 @@ class RecordField(Documented):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         try:
@@ -1179,6 +1181,7 @@ class RecordField(Documented):
                             [e],
                         )
                     )
+            type_ = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -1330,6 +1333,7 @@ class RecordSchema(Saveable):
                                 [e],
                             )
                         )
+                fields = None
         else:
             fields = None
         try:
@@ -1373,6 +1377,7 @@ class RecordSchema(Saveable):
                             [e],
                         )
                     )
+            type_ = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -1523,6 +1528,7 @@ class EnumSchema(Saveable):
                             [e],
                         )
                     )
+            symbols = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -1564,6 +1570,7 @@ class EnumSchema(Saveable):
                             [e],
                         )
                     )
+            type_ = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -1708,6 +1715,7 @@ class ArraySchema(Saveable):
                             [e],
                         )
                     )
+            items = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -1749,6 +1757,7 @@ class ArraySchema(Saveable):
                             [e],
                         )
                     )
+            type_ = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -2018,6 +2027,7 @@ class File(Saveable):
                                 [e],
                             )
                         )
+                location = None
         else:
             location = None
         if "path" in _doc:
@@ -2062,6 +2072,7 @@ class File(Saveable):
                                 [e],
                             )
                         )
+                path = None
         else:
             path = None
         if "basename" in _doc:
@@ -2106,6 +2117,7 @@ class File(Saveable):
                                 [e],
                             )
                         )
+                basename = None
         else:
             basename = None
         if "dirname" in _doc:
@@ -2150,6 +2162,7 @@ class File(Saveable):
                                 [e],
                             )
                         )
+                dirname = None
         else:
             dirname = None
         if "nameroot" in _doc:
@@ -2194,6 +2207,7 @@ class File(Saveable):
                                 [e],
                             )
                         )
+                nameroot = None
         else:
             nameroot = None
         if "nameext" in _doc:
@@ -2238,6 +2252,7 @@ class File(Saveable):
                                 [e],
                             )
                         )
+                nameext = None
         else:
             nameext = None
         if "checksum" in _doc:
@@ -2282,6 +2297,7 @@ class File(Saveable):
                                 [e],
                             )
                         )
+                checksum = None
         else:
             checksum = None
         if "size" in _doc:
@@ -2326,6 +2342,7 @@ class File(Saveable):
                                 [e],
                             )
                         )
+                size = None
         else:
             size = None
         if "secondaryFiles" in _doc:
@@ -2370,6 +2387,7 @@ class File(Saveable):
                                 [e],
                             )
                         )
+                secondaryFiles = None
         else:
             secondaryFiles = None
         if "format" in _doc:
@@ -2414,6 +2432,7 @@ class File(Saveable):
                                 [e],
                             )
                         )
+                format = None
         else:
             format = None
         if "contents" in _doc:
@@ -2458,6 +2477,7 @@ class File(Saveable):
                                 [e],
                             )
                         )
+                contents = None
         else:
             contents = None
         extension_fields: Dict[str, Any] = {}
@@ -2734,6 +2754,7 @@ class Directory(Saveable):
                                 [e],
                             )
                         )
+                location = None
         else:
             location = None
         if "path" in _doc:
@@ -2778,6 +2799,7 @@ class Directory(Saveable):
                                 [e],
                             )
                         )
+                path = None
         else:
             path = None
         if "basename" in _doc:
@@ -2822,6 +2844,7 @@ class Directory(Saveable):
                                 [e],
                             )
                         )
+                basename = None
         else:
             basename = None
         if "listing" in _doc:
@@ -2866,6 +2889,7 @@ class Directory(Saveable):
                                 [e],
                             )
                         )
+                listing = None
         else:
             listing = None
         extension_fields: Dict[str, Any] = {}
@@ -3055,6 +3079,7 @@ class InputBinding(Saveable):
                                 [e],
                             )
                         )
+                loadContents = None
         else:
             loadContents = None
         extension_fields: Dict[str, Any] = {}
@@ -3249,6 +3274,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -3302,6 +3328,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         try:
@@ -3345,6 +3372,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                             [e],
                         )
                     )
+            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -3387,6 +3415,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -3431,6 +3460,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 [e],
                             )
                         )
+                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -3475,6 +3505,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 [e],
                             )
                         )
+                streamable = None
         else:
             streamable = None
         if "format" in _doc:
@@ -3519,6 +3550,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 [e],
                             )
                         )
+                format = None
         else:
             format = None
         if "loadContents" in _doc:
@@ -3563,6 +3595,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 [e],
                             )
                         )
+                loadContents = None
         else:
             loadContents = None
         if "loadListing" in _doc:
@@ -3607,6 +3640,7 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 [e],
                             )
                         )
+                loadListing = None
         else:
             loadListing = None
         extension_fields: Dict[str, Any] = {}
@@ -3825,6 +3859,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -3878,6 +3913,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
                                 [e],
                             )
                         )
+                fields = None
         else:
             fields = None
         try:
@@ -3921,6 +3957,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
                             [e],
                         )
                     )
+            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -3963,6 +4000,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -4007,6 +4045,7 @@ class InputRecordSchema(RecordSchema, InputSchema):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -4182,6 +4221,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -4234,6 +4274,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
                             [e],
                         )
                     )
+            symbols = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -4275,6 +4316,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
                             [e],
                         )
                     )
+            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -4317,6 +4359,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -4361,6 +4404,7 @@ class InputEnumSchema(EnumSchema, InputSchema):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -4535,6 +4579,7 @@ class InputArraySchema(ArraySchema, InputSchema):
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -4587,6 +4632,7 @@ class InputArraySchema(ArraySchema, InputSchema):
                             [e],
                         )
                     )
+            items = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -4628,6 +4674,7 @@ class InputArraySchema(ArraySchema, InputSchema):
                             [e],
                         )
                     )
+            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -4670,6 +4717,7 @@ class InputArraySchema(ArraySchema, InputSchema):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -4714,6 +4762,7 @@ class InputArraySchema(ArraySchema, InputSchema):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -4905,6 +4954,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -4958,6 +5008,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         try:
@@ -5001,6 +5052,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                             [e],
                         )
                     )
+            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -5043,6 +5095,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -5087,6 +5140,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                                 [e],
                             )
                         )
+                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -5131,6 +5185,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                                 [e],
                             )
                         )
+                streamable = None
         else:
             streamable = None
         if "format" in _doc:
@@ -5175,6 +5230,7 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                                 [e],
                             )
                         )
+                format = None
         else:
             format = None
         extension_fields: Dict[str, Any] = {}
@@ -5367,6 +5423,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -5420,6 +5477,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                                 [e],
                             )
                         )
+                fields = None
         else:
             fields = None
         try:
@@ -5463,6 +5521,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                             [e],
                         )
                     )
+            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -5505,6 +5564,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -5549,6 +5609,7 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -5724,6 +5785,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -5776,6 +5838,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                             [e],
                         )
                     )
+            symbols = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -5817,6 +5880,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                             [e],
                         )
                     )
+            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -5859,6 +5923,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -5903,6 +5968,7 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -6077,6 +6143,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -6129,6 +6196,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                             [e],
                         )
                     )
+            items = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -6170,6 +6238,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                             [e],
                         )
                     )
+            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -6212,6 +6281,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -6256,6 +6326,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -6468,6 +6539,7 @@ class InlineJavascriptRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
+                expressionLib = None
         else:
             expressionLib = None
         extension_fields: Dict[str, Any] = {}
@@ -6637,6 +6709,7 @@ class SchemaDefRequirement(ProcessRequirement):
                             [e],
                         )
                     )
+            types = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -6783,6 +6856,7 @@ class SecondaryFileSchema(Saveable):
                             [e],
                         )
                     )
+            pattern = None
         if "required" in _doc:
             try:
                 if _doc.get("required") is None:
@@ -6825,6 +6899,7 @@ class SecondaryFileSchema(Saveable):
                                 [e],
                             )
                         )
+                required = None
         else:
             required = None
         extension_fields: Dict[str, Any] = {}
@@ -6988,6 +7063,7 @@ class LoadListingRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
+                loadListing = None
         else:
             loadListing = None
         extension_fields: Dict[str, Any] = {}
@@ -7146,6 +7222,7 @@ class EnvironmentDef(Saveable):
                             [e],
                         )
                     )
+            envName = None
         try:
             if _doc.get("envValue") is None:
                 raise ValidationException("* missing required field `envValue`", None, [])
@@ -7187,6 +7264,7 @@ class EnvironmentDef(Saveable):
                             [e],
                         )
                     )
+            envValue = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -7400,6 +7478,7 @@ class CommandLineBinding(InputBinding):
                                 [e],
                             )
                         )
+                loadContents = None
         else:
             loadContents = None
         if "position" in _doc:
@@ -7444,6 +7523,7 @@ class CommandLineBinding(InputBinding):
                                 [e],
                             )
                         )
+                position = None
         else:
             position = None
         if "prefix" in _doc:
@@ -7488,6 +7568,7 @@ class CommandLineBinding(InputBinding):
                                 [e],
                             )
                         )
+                prefix = None
         else:
             prefix = None
         if "separate" in _doc:
@@ -7532,6 +7613,7 @@ class CommandLineBinding(InputBinding):
                                 [e],
                             )
                         )
+                separate = None
         else:
             separate = None
         if "itemSeparator" in _doc:
@@ -7576,6 +7658,7 @@ class CommandLineBinding(InputBinding):
                                 [e],
                             )
                         )
+                itemSeparator = None
         else:
             itemSeparator = None
         if "valueFrom" in _doc:
@@ -7620,6 +7703,7 @@ class CommandLineBinding(InputBinding):
                                 [e],
                             )
                         )
+                valueFrom = None
         else:
             valueFrom = None
         if "shellQuote" in _doc:
@@ -7664,6 +7748,7 @@ class CommandLineBinding(InputBinding):
                                 [e],
                             )
                         )
+                shellQuote = None
         else:
             shellQuote = None
         extension_fields: Dict[str, Any] = {}
@@ -7882,6 +7967,7 @@ class CommandOutputBinding(LoadContents):
                                 [e],
                             )
                         )
+                loadContents = None
         else:
             loadContents = None
         if "loadListing" in _doc:
@@ -7926,6 +8012,7 @@ class CommandOutputBinding(LoadContents):
                                 [e],
                             )
                         )
+                loadListing = None
         else:
             loadListing = None
         if "glob" in _doc:
@@ -7970,6 +8057,7 @@ class CommandOutputBinding(LoadContents):
                                 [e],
                             )
                         )
+                glob = None
         else:
             glob = None
         if "outputEval" in _doc:
@@ -8014,6 +8102,7 @@ class CommandOutputBinding(LoadContents):
                                 [e],
                             )
                         )
+                outputEval = None
         else:
             outputEval = None
         extension_fields: Dict[str, Any] = {}
@@ -8181,6 +8270,7 @@ class CommandLineBindable(Saveable):
                                 [e],
                             )
                         )
+                inputBinding = None
         else:
             inputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -8369,6 +8459,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -8422,6 +8513,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         try:
@@ -8465,6 +8557,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                             [e],
                         )
                     )
+            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -8507,6 +8600,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -8551,6 +8645,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
+                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -8595,6 +8690,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
+                streamable = None
         else:
             streamable = None
         if "format" in _doc:
@@ -8639,6 +8735,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
+                format = None
         else:
             format = None
         if "loadContents" in _doc:
@@ -8683,6 +8780,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
+                loadContents = None
         else:
             loadContents = None
         if "loadListing" in _doc:
@@ -8727,6 +8825,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
+                loadListing = None
         else:
             loadListing = None
         if "inputBinding" in _doc:
@@ -8771,6 +8870,7 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
+                inputBinding = None
         else:
             inputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -9014,6 +9114,7 @@ class CommandInputRecordSchema(
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -9067,6 +9168,7 @@ class CommandInputRecordSchema(
                                 [e],
                             )
                         )
+                fields = None
         else:
             fields = None
         try:
@@ -9110,6 +9212,7 @@ class CommandInputRecordSchema(
                             [e],
                         )
                     )
+            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -9152,6 +9255,7 @@ class CommandInputRecordSchema(
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -9196,6 +9300,7 @@ class CommandInputRecordSchema(
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         if "inputBinding" in _doc:
@@ -9240,6 +9345,7 @@ class CommandInputRecordSchema(
                                 [e],
                             )
                         )
+                inputBinding = None
         else:
             inputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -9437,6 +9543,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -9489,6 +9596,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                             [e],
                         )
                     )
+            symbols = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -9530,6 +9638,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                             [e],
                         )
                     )
+            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -9572,6 +9681,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -9616,6 +9726,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         if "inputBinding" in _doc:
@@ -9660,6 +9771,7 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                                 [e],
                             )
                         )
+                inputBinding = None
         else:
             inputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -9851,6 +9963,7 @@ class CommandInputArraySchema(
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -9903,6 +10016,7 @@ class CommandInputArraySchema(
                             [e],
                         )
                     )
+            items = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -9944,6 +10058,7 @@ class CommandInputArraySchema(
                             [e],
                         )
                     )
+            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -9986,6 +10101,7 @@ class CommandInputArraySchema(
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -10030,6 +10146,7 @@ class CommandInputArraySchema(
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         if "inputBinding" in _doc:
@@ -10074,6 +10191,7 @@ class CommandInputArraySchema(
                                 [e],
                             )
                         )
+                inputBinding = None
         else:
             inputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -10279,6 +10397,7 @@ class CommandOutputRecordField(OutputRecordField):
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -10332,6 +10451,7 @@ class CommandOutputRecordField(OutputRecordField):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         try:
@@ -10375,6 +10495,7 @@ class CommandOutputRecordField(OutputRecordField):
                             [e],
                         )
                     )
+            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -10417,6 +10538,7 @@ class CommandOutputRecordField(OutputRecordField):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -10461,6 +10583,7 @@ class CommandOutputRecordField(OutputRecordField):
                                 [e],
                             )
                         )
+                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -10505,6 +10628,7 @@ class CommandOutputRecordField(OutputRecordField):
                                 [e],
                             )
                         )
+                streamable = None
         else:
             streamable = None
         if "format" in _doc:
@@ -10549,6 +10673,7 @@ class CommandOutputRecordField(OutputRecordField):
                                 [e],
                             )
                         )
+                format = None
         else:
             format = None
         if "outputBinding" in _doc:
@@ -10593,6 +10718,7 @@ class CommandOutputRecordField(OutputRecordField):
                                 [e],
                             )
                         )
+                outputBinding = None
         else:
             outputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -10804,6 +10930,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -10857,6 +10984,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                                 [e],
                             )
                         )
+                fields = None
         else:
             fields = None
         try:
@@ -10900,6 +11028,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                             [e],
                         )
                     )
+            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -10942,6 +11071,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -10986,6 +11116,7 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -11163,6 +11294,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -11215,6 +11347,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                             [e],
                         )
                     )
+            symbols = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -11256,6 +11389,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                             [e],
                         )
                     )
+            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -11298,6 +11432,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -11342,6 +11477,7 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -11518,6 +11654,7 @@ class CommandOutputArraySchema(OutputArraySchema):
                                 [e],
                             )
                         )
+                name = None
         else:
             name = None
 
@@ -11570,6 +11707,7 @@ class CommandOutputArraySchema(OutputArraySchema):
                             [e],
                         )
                     )
+            items = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -11611,6 +11749,7 @@ class CommandOutputArraySchema(OutputArraySchema):
                             [e],
                         )
                     )
+            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -11653,6 +11792,7 @@ class CommandOutputArraySchema(OutputArraySchema):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -11697,6 +11837,7 @@ class CommandOutputArraySchema(OutputArraySchema):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -11910,6 +12051,7 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                id = None
         else:
             id = None
 
@@ -11963,6 +12105,7 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -12007,6 +12150,7 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -12051,6 +12195,7 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                streamable = None
         else:
             streamable = None
         if "doc" in _doc:
@@ -12095,6 +12240,7 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         if "format" in _doc:
@@ -12139,6 +12285,7 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                format = None
         else:
             format = None
         if "loadContents" in _doc:
@@ -12183,6 +12330,7 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                loadContents = None
         else:
             loadContents = None
         if "loadListing" in _doc:
@@ -12227,6 +12375,7 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                loadListing = None
         else:
             loadListing = None
         if "default" in _doc:
@@ -12271,6 +12420,7 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                default = None
         else:
             default = None
         try:
@@ -12314,6 +12464,7 @@ class CommandInputParameter(InputParameter):
                             [e],
                         )
                     )
+            type_ = None
         if "inputBinding" in _doc:
             try:
                 if _doc.get("inputBinding") is None:
@@ -12356,6 +12507,7 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                inputBinding = None
         else:
             inputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -12615,6 +12767,7 @@ class CommandOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                id = None
         else:
             id = None
 
@@ -12668,6 +12821,7 @@ class CommandOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -12712,6 +12866,7 @@ class CommandOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -12756,6 +12911,7 @@ class CommandOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                streamable = None
         else:
             streamable = None
         if "doc" in _doc:
@@ -12800,6 +12956,7 @@ class CommandOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         if "format" in _doc:
@@ -12844,6 +13001,7 @@ class CommandOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                format = None
         else:
             format = None
         try:
@@ -12887,6 +13045,7 @@ class CommandOutputParameter(OutputParameter):
                             [e],
                         )
                     )
+            type_ = None
         if "outputBinding" in _doc:
             try:
                 if _doc.get("outputBinding") is None:
@@ -12929,6 +13088,7 @@ class CommandOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                outputBinding = None
         else:
             outputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -13206,6 +13366,7 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
+                id = None
         else:
             id = None
 
@@ -13259,6 +13420,7 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -13303,6 +13465,7 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         try:
@@ -13346,6 +13509,7 @@ class CommandLineTool(Process):
                             [e],
                         )
                     )
+            inputs = None
         try:
             if _doc.get("outputs") is None:
                 raise ValidationException("* missing required field `outputs`", None, [])
@@ -13387,6 +13551,7 @@ class CommandLineTool(Process):
                             [e],
                         )
                     )
+            outputs = None
         if "requirements" in _doc:
             try:
                 if _doc.get("requirements") is None:
@@ -13429,6 +13594,7 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
+                requirements = None
         else:
             requirements = None
         if "hints" in _doc:
@@ -13473,6 +13639,7 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
+                hints = None
         else:
             hints = None
         if "cwlVersion" in _doc:
@@ -13517,6 +13684,7 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
+                cwlVersion = None
         else:
             cwlVersion = None
         if "baseCommand" in _doc:
@@ -13561,6 +13729,7 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
+                baseCommand = None
         else:
             baseCommand = None
         if "arguments" in _doc:
@@ -13605,6 +13774,7 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
+                arguments = None
         else:
             arguments = None
         if "stdin" in _doc:
@@ -13649,6 +13819,7 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
+                stdin = None
         else:
             stdin = None
         if "stderr" in _doc:
@@ -13693,6 +13864,7 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
+                stderr = None
         else:
             stderr = None
         if "stdout" in _doc:
@@ -13737,6 +13909,7 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
+                stdout = None
         else:
             stdout = None
         if "successCodes" in _doc:
@@ -13781,6 +13954,7 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
+                successCodes = None
         else:
             successCodes = None
         if "temporaryFailCodes" in _doc:
@@ -13825,6 +13999,7 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
+                temporaryFailCodes = None
         else:
             temporaryFailCodes = None
         if "permanentFailCodes" in _doc:
@@ -13869,6 +14044,7 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
+                permanentFailCodes = None
         else:
             permanentFailCodes = None
         extension_fields: Dict[str, Any] = {}
@@ -14211,6 +14387,7 @@ class DockerRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
+                dockerPull = None
         else:
             dockerPull = None
         if "dockerLoad" in _doc:
@@ -14255,6 +14432,7 @@ class DockerRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
+                dockerLoad = None
         else:
             dockerLoad = None
         if "dockerFile" in _doc:
@@ -14299,6 +14477,7 @@ class DockerRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
+                dockerFile = None
         else:
             dockerFile = None
         if "dockerImport" in _doc:
@@ -14343,6 +14522,7 @@ class DockerRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
+                dockerImport = None
         else:
             dockerImport = None
         if "dockerImageId" in _doc:
@@ -14387,6 +14567,7 @@ class DockerRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
+                dockerImageId = None
         else:
             dockerImageId = None
         if "dockerOutputDirectory" in _doc:
@@ -14431,6 +14612,7 @@ class DockerRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
+                dockerOutputDirectory = None
         else:
             dockerOutputDirectory = None
         extension_fields: Dict[str, Any] = {}
@@ -14639,6 +14821,7 @@ class SoftwareRequirement(ProcessRequirement):
                             [e],
                         )
                     )
+            packages = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -14789,6 +14972,7 @@ class SoftwarePackage(Saveable):
                             [e],
                         )
                     )
+            package = None
         if "version" in _doc:
             try:
                 if _doc.get("version") is None:
@@ -14831,6 +15015,7 @@ class SoftwarePackage(Saveable):
                                 [e],
                             )
                         )
+                version = None
         else:
             version = None
         if "specs" in _doc:
@@ -14875,6 +15060,7 @@ class SoftwarePackage(Saveable):
                                 [e],
                             )
                         )
+                specs = None
         else:
             specs = None
         extension_fields: Dict[str, Any] = {}
@@ -15041,6 +15227,7 @@ class Dirent(Saveable):
                                 [e],
                             )
                         )
+                entryname = None
         else:
             entryname = None
         try:
@@ -15084,6 +15271,7 @@ class Dirent(Saveable):
                             [e],
                         )
                     )
+            entry = None
         if "writable" in _doc:
             try:
                 if _doc.get("writable") is None:
@@ -15126,6 +15314,7 @@ class Dirent(Saveable):
                                 [e],
                             )
                         )
+                writable = None
         else:
             writable = None
         extension_fields: Dict[str, Any] = {}
@@ -15290,6 +15479,7 @@ class InitialWorkDirRequirement(ProcessRequirement):
                             [e],
                         )
                     )
+            listing = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -15445,6 +15635,7 @@ class EnvVarRequirement(ProcessRequirement):
                             [e],
                         )
                     )
+            envDef = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -15763,6 +15954,7 @@ class ResourceRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
+                coresMin = None
         else:
             coresMin = None
         if "coresMax" in _doc:
@@ -15807,6 +15999,7 @@ class ResourceRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
+                coresMax = None
         else:
             coresMax = None
         if "ramMin" in _doc:
@@ -15851,6 +16044,7 @@ class ResourceRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
+                ramMin = None
         else:
             ramMin = None
         if "ramMax" in _doc:
@@ -15895,6 +16089,7 @@ class ResourceRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
+                ramMax = None
         else:
             ramMax = None
         if "tmpdirMin" in _doc:
@@ -15939,6 +16134,7 @@ class ResourceRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
+                tmpdirMin = None
         else:
             tmpdirMin = None
         if "tmpdirMax" in _doc:
@@ -15983,6 +16179,7 @@ class ResourceRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
+                tmpdirMax = None
         else:
             tmpdirMax = None
         if "outdirMin" in _doc:
@@ -16027,6 +16224,7 @@ class ResourceRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
+                outdirMin = None
         else:
             outdirMin = None
         if "outdirMax" in _doc:
@@ -16071,6 +16269,7 @@ class ResourceRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
+                outdirMax = None
         else:
             outdirMax = None
         extension_fields: Dict[str, Any] = {}
@@ -16296,6 +16495,7 @@ class WorkReuse(ProcessRequirement):
                             [e],
                         )
                     )
+            enableReuse = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -16468,6 +16668,7 @@ class NetworkAccess(ProcessRequirement):
                             [e],
                         )
                     )
+            networkAccess = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -16655,6 +16856,7 @@ class InplaceUpdateRequirement(ProcessRequirement):
                             [e],
                         )
                     )
+            inplaceUpdate = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -16820,6 +17022,7 @@ class ToolTimeLimit(ProcessRequirement):
                             [e],
                         )
                     )
+            timelimit = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -16994,6 +17197,7 @@ class ExpressionToolOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                id = None
         else:
             id = None
 
@@ -17047,6 +17251,7 @@ class ExpressionToolOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -17091,6 +17296,7 @@ class ExpressionToolOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -17135,6 +17341,7 @@ class ExpressionToolOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                streamable = None
         else:
             streamable = None
         if "doc" in _doc:
@@ -17179,6 +17386,7 @@ class ExpressionToolOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         if "format" in _doc:
@@ -17223,6 +17431,7 @@ class ExpressionToolOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                format = None
         else:
             format = None
         try:
@@ -17266,6 +17475,7 @@ class ExpressionToolOutputParameter(OutputParameter):
                             [e],
                         )
                     )
+            type_ = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -17490,6 +17700,7 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                id = None
         else:
             id = None
 
@@ -17543,6 +17754,7 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -17587,6 +17799,7 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -17631,6 +17844,7 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                streamable = None
         else:
             streamable = None
         if "doc" in _doc:
@@ -17675,6 +17889,7 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         if "format" in _doc:
@@ -17719,6 +17934,7 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                format = None
         else:
             format = None
         if "loadContents" in _doc:
@@ -17763,6 +17979,7 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                loadContents = None
         else:
             loadContents = None
         if "loadListing" in _doc:
@@ -17807,6 +18024,7 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                loadListing = None
         else:
             loadListing = None
         if "default" in _doc:
@@ -17851,6 +18069,7 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                default = None
         else:
             default = None
         try:
@@ -17894,6 +18113,7 @@ class WorkflowInputParameter(InputParameter):
                             [e],
                         )
                     )
+            type_ = None
         if "inputBinding" in _doc:
             try:
                 if _doc.get("inputBinding") is None:
@@ -17936,6 +18156,7 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
+                inputBinding = None
         else:
             inputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -18215,6 +18436,7 @@ class ExpressionTool(Process):
                                 [e],
                             )
                         )
+                id = None
         else:
             id = None
 
@@ -18268,6 +18490,7 @@ class ExpressionTool(Process):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -18312,6 +18535,7 @@ class ExpressionTool(Process):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         try:
@@ -18355,6 +18579,7 @@ class ExpressionTool(Process):
                             [e],
                         )
                     )
+            inputs = None
         try:
             if _doc.get("outputs") is None:
                 raise ValidationException("* missing required field `outputs`", None, [])
@@ -18396,6 +18621,7 @@ class ExpressionTool(Process):
                             [e],
                         )
                     )
+            outputs = None
         if "requirements" in _doc:
             try:
                 if _doc.get("requirements") is None:
@@ -18438,6 +18664,7 @@ class ExpressionTool(Process):
                                 [e],
                             )
                         )
+                requirements = None
         else:
             requirements = None
         if "hints" in _doc:
@@ -18482,6 +18709,7 @@ class ExpressionTool(Process):
                                 [e],
                             )
                         )
+                hints = None
         else:
             hints = None
         if "cwlVersion" in _doc:
@@ -18526,6 +18754,7 @@ class ExpressionTool(Process):
                                 [e],
                             )
                         )
+                cwlVersion = None
         else:
             cwlVersion = None
         try:
@@ -18569,6 +18798,7 @@ class ExpressionTool(Process):
                             [e],
                         )
                     )
+            expression = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -18814,6 +19044,7 @@ class WorkflowOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                id = None
         else:
             id = None
 
@@ -18867,6 +19098,7 @@ class WorkflowOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -18911,6 +19143,7 @@ class WorkflowOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -18955,6 +19188,7 @@ class WorkflowOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                streamable = None
         else:
             streamable = None
         if "doc" in _doc:
@@ -18999,6 +19233,7 @@ class WorkflowOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         if "format" in _doc:
@@ -19043,6 +19278,7 @@ class WorkflowOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                format = None
         else:
             format = None
         if "outputSource" in _doc:
@@ -19087,6 +19323,7 @@ class WorkflowOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                outputSource = None
         else:
             outputSource = None
         if "linkMerge" in _doc:
@@ -19131,6 +19368,7 @@ class WorkflowOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
+                linkMerge = None
         else:
             linkMerge = None
         try:
@@ -19174,6 +19412,7 @@ class WorkflowOutputParameter(OutputParameter):
                             [e],
                         )
                     )
+            type_ = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -19456,6 +19695,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 [e],
                             )
                         )
+                id = None
         else:
             id = None
 
@@ -19509,6 +19749,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 [e],
                             )
                         )
+                source = None
         else:
             source = None
         if "linkMerge" in _doc:
@@ -19553,6 +19794,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 [e],
                             )
                         )
+                linkMerge = None
         else:
             linkMerge = None
         if "loadContents" in _doc:
@@ -19597,6 +19839,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 [e],
                             )
                         )
+                loadContents = None
         else:
             loadContents = None
         if "loadListing" in _doc:
@@ -19641,6 +19884,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 [e],
                             )
                         )
+                loadListing = None
         else:
             loadListing = None
         if "label" in _doc:
@@ -19685,6 +19929,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "default" in _doc:
@@ -19729,6 +19974,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 [e],
                             )
                         )
+                default = None
         else:
             default = None
         if "valueFrom" in _doc:
@@ -19773,6 +20019,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 [e],
                             )
                         )
+                valueFrom = None
         else:
             valueFrom = None
         extension_fields: Dict[str, Any] = {}
@@ -19977,6 +20224,7 @@ class WorkflowStepOutput(Identified):
                                 [e],
                             )
                         )
+                id = None
         else:
             id = None
 
@@ -20226,6 +20474,7 @@ class WorkflowStep(Identified, Labeled, Documented):
                                 [e],
                             )
                         )
+                id = None
         else:
             id = None
 
@@ -20279,6 +20528,7 @@ class WorkflowStep(Identified, Labeled, Documented):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -20323,6 +20573,7 @@ class WorkflowStep(Identified, Labeled, Documented):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         try:
@@ -20366,6 +20617,7 @@ class WorkflowStep(Identified, Labeled, Documented):
                             [e],
                         )
                     )
+            in_ = None
         try:
             if _doc.get("out") is None:
                 raise ValidationException("* missing required field `out`", None, [])
@@ -20407,6 +20659,7 @@ class WorkflowStep(Identified, Labeled, Documented):
                             [e],
                         )
                     )
+            out = None
         if "requirements" in _doc:
             try:
                 if _doc.get("requirements") is None:
@@ -20449,6 +20702,7 @@ class WorkflowStep(Identified, Labeled, Documented):
                                 [e],
                             )
                         )
+                requirements = None
         else:
             requirements = None
         if "hints" in _doc:
@@ -20493,6 +20747,7 @@ class WorkflowStep(Identified, Labeled, Documented):
                                 [e],
                             )
                         )
+                hints = None
         else:
             hints = None
 
@@ -20538,6 +20793,7 @@ class WorkflowStep(Identified, Labeled, Documented):
                             [e],
                         )
                     )
+            run = None
         if "scatter" in _doc:
             try:
                 if _doc.get("scatter") is None:
@@ -20580,6 +20836,7 @@ class WorkflowStep(Identified, Labeled, Documented):
                                 [e],
                             )
                         )
+                scatter = None
         else:
             scatter = None
         if "scatterMethod" in _doc:
@@ -20624,6 +20881,7 @@ class WorkflowStep(Identified, Labeled, Documented):
                                 [e],
                             )
                         )
+                scatterMethod = None
         else:
             scatterMethod = None
         extension_fields: Dict[str, Any] = {}
@@ -20920,6 +21178,7 @@ class Workflow(Process):
                                 [e],
                             )
                         )
+                id = None
         else:
             id = None
 
@@ -20973,6 +21232,7 @@ class Workflow(Process):
                                 [e],
                             )
                         )
+                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -21017,6 +21277,7 @@ class Workflow(Process):
                                 [e],
                             )
                         )
+                doc = None
         else:
             doc = None
         try:
@@ -21060,6 +21321,7 @@ class Workflow(Process):
                             [e],
                         )
                     )
+            inputs = None
         try:
             if _doc.get("outputs") is None:
                 raise ValidationException("* missing required field `outputs`", None, [])
@@ -21101,6 +21363,7 @@ class Workflow(Process):
                             [e],
                         )
                     )
+            outputs = None
         if "requirements" in _doc:
             try:
                 if _doc.get("requirements") is None:
@@ -21143,6 +21406,7 @@ class Workflow(Process):
                                 [e],
                             )
                         )
+                requirements = None
         else:
             requirements = None
         if "hints" in _doc:
@@ -21187,6 +21451,7 @@ class Workflow(Process):
                                 [e],
                             )
                         )
+                hints = None
         else:
             hints = None
         if "cwlVersion" in _doc:
@@ -21231,6 +21496,7 @@ class Workflow(Process):
                                 [e],
                             )
                         )
+                cwlVersion = None
         else:
             cwlVersion = None
         try:
@@ -21274,6 +21540,7 @@ class Workflow(Process):
                             [e],
                         )
                     )
+            steps = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
