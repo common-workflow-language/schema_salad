@@ -127,8 +127,9 @@ def load_document_by_uri(path: str) -> Any:
     baseuri = str(real_path)
 
     loadingOptions = cwl_v1_2.LoadingOptions(fileuri=baseuri)
-
-    doc = loadingOptions.fetcher.fetch_text(real_path)
+    # doc = loadingOptions.fetcher.fetch_text(real_path)
+    with open(path, 'r') as file:
+        doc = file.read()
 
     yaml = yaml_no_ts()
     doc = yaml.load(doc)
