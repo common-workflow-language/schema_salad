@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from typing import Any, MutableSequence, Optional, Union, cast
+import urllib
 from urllib.parse import unquote_plus, urlparse
 
 import pytest
@@ -11,7 +12,7 @@ from schema_salad.exceptions import ValidationException
 from schema_salad.utils import yaml_no_ts
 
 from .util import get_data
-
+import os
 
 def test_error_message1() -> None:
     t = "test_schema/test1.cwl"
@@ -202,7 +203,10 @@ def load_document_by_uri(path: Union[str, Path]) -> Any:
 
     loadingOptions = cwl_v1_0.LoadingOptions(fileuri=baseuri)
 
-    doc = loadingOptions.fetcher.fetch_text(real_path)
+    with open(path, 'r') as file:
+        doc = file.read()
+
+    # doc = loadingOptions.fetcher.fetch_text(urllib.parse.unquote(str(real_path)))
 
     yaml = yaml_no_ts()
     doc = yaml.load(doc)
