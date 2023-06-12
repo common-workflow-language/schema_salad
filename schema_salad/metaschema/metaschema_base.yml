@@ -77,6 +77,8 @@ $graph:
         - RecordSchema
         - EnumSchema
         - ArraySchema
+        - MapSchema
+        - UnionSchema
         - string
         - type: array
           items:
@@ -84,6 +86,8 @@ $graph:
             - RecordSchema
             - EnumSchema
             - ArraySchema
+            - MapSchema
+            - UnionSchema
             - string
       jsonldPredicate:
         _id: sld:type
@@ -170,6 +174,8 @@ $graph:
         - RecordSchema
         - EnumSchema
         - ArraySchema
+        - MapSchema
+        - UnionSchema
         - string
         - type: array
           items:
@@ -177,9 +183,91 @@ $graph:
             - RecordSchema
             - EnumSchema
             - ArraySchema
+            - MapSchema
+            - UnionSchema
             - string
       jsonldPredicate:
         _id: "sld:items"
         _type: "@vocab"
         refScope: 2
       doc: "Defines the type of the array elements."
+
+
+- name: MapSchema
+  type: record
+  fields:
+    type:
+      doc: "Must be `map`"
+      type:
+        type: enum
+        name: Map_name
+        symbols:
+          - "sld:map"
+      jsonldPredicate:
+        _id: "sld:type"
+        _type: "@vocab"
+        typeDSL: true
+        refScope: 2
+    values:
+      type:
+        - PrimitiveType
+        - RecordSchema
+        - EnumSchema
+        - ArraySchema
+        - MapSchema
+        - UnionSchema
+        - string
+        - type: array
+          items:
+            - PrimitiveType
+            - RecordSchema
+            - EnumSchema
+            - ArraySchema
+            - MapSchema
+            - UnionSchema
+            - string
+      jsonldPredicate:
+        _id: "sld:values"
+        _type: "@vocab"
+        refScope: 2
+      doc: "Defines the type of the map elements."
+
+
+- name: UnionSchema
+  type: record
+  fields:
+    type:
+      doc: "Must be `union`"
+      type:
+        type: enum
+        name: Union_name
+        symbols:
+          - "sld:union"
+      jsonldPredicate:
+        _id: "sld:type"
+        _type: "@vocab"
+        typeDSL: true
+        refScope: 2
+    names:
+      type:
+        - PrimitiveType
+        - RecordSchema
+        - EnumSchema
+        - ArraySchema
+        - MapSchema
+        - UnionSchema
+        - string
+        - type: array
+          items:
+            - PrimitiveType
+            - RecordSchema
+            - EnumSchema
+            - ArraySchema
+            - MapSchema
+            - UnionSchema
+            - string
+      jsonldPredicate:
+        _id: "sld:names"
+        _type: "@vocab"
+        refScope: 2
+      doc: "Defines the type of the union elements."

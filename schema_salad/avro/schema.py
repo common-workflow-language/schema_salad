@@ -44,7 +44,7 @@ PRIMITIVE_TYPES = ("null", "boolean", "string", "int", "long", "float", "double"
 
 NAMED_TYPES = ("enum", "record")
 
-VALID_TYPES = PRIMITIVE_TYPES + NAMED_TYPES + ("array", "union")
+VALID_TYPES = PRIMITIVE_TYPES + NAMED_TYPES + ("array", "map", "union")
 
 SCHEMA_RESERVED_PROPS = (
     "type",
@@ -417,6 +417,35 @@ class ArraySchema(Schema):
         return cast(Schema, self.get_prop("items"))
 
 
+class MapSchema(Schema):
+    def __init__(
+        self, values: JsonDataType, names: Names, other_props: Optional[PropsType] = None
+    ) -> None:
+        # Call parent ctor
+        Schema.__init__(self, "map", other_props)
+
+        # Add class members
+        if isinstance(values, str) and names.has_name(values, None):
+            values_schema = cast(Schema, names.get_name(values, None))
+        else:
+            try:
+                values_schema = make_avsc_object(values, names)
+            except SchemaParseException:
+                raise
+            except Exception as err:
+                raise SchemaParseException(
+                    f"Values schema ({values}) not a valid Avro schema: {err}. "
+                    f"Known names: {list(names.names.keys())})."
+                ) from err
+
+        self.set_prop("values", values_schema)
+
+    # read-only properties
+    @property
+    def values(self) -> Schema:
+        return cast(Schema, self.get_prop("values"))
+
+
 class UnionSchema(Schema):
     def __init__(
         self,
@@ -606,6 +635,9 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
             if atype == "array":
                 items = json_data.get("items")
                 return ArraySchema(items, names, other_props)
+            elif atype == "map":
+                values = json_data.get("values")
+                return MapSchema(values, names, other_props)
         if atype is None:
             raise SchemaParseException(f'No "type" property: {json_data}')
         raise SchemaParseException(f"Undefined type: {atype}")
