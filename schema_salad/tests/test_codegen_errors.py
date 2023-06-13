@@ -2,7 +2,8 @@
 
 from pathlib import Path
 from typing import Any, MutableSequence, Optional, Union, cast
-from urllib.parse import unquote_plus, urlparse
+#from urllib.parse import unquote_plus, urlparse, quote
+from urllib.parse import urlparse 
 
 import pytest
 
@@ -32,6 +33,7 @@ def test_error_message2() -> None:
 \s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$"""
     path = get_data("tests/" + t)
     assert path
+    print(path)
     with pytest.raises(ValidationException, match=match):
         load_document_by_uri(path)
 
@@ -192,7 +194,7 @@ def load_document_by_uri(path: Union[str, Path]) -> Any:
     if isinstance(path, str):
         uri = urlparse(path)
         if not uri.scheme or uri.scheme == "file":
-            real_path = Path(unquote_plus(uri.path)).resolve().as_uri()
+            real_path = Path(uri.path).resolve().as_uri()
         else:
             real_path = path
     else:
