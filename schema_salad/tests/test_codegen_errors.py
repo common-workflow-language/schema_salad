@@ -2,8 +2,7 @@
 
 from pathlib import Path
 from typing import Any, MutableSequence, Optional, Union, cast
-#from urllib.parse import unquote_plus, urlparse, quote
-from urllib.parse import urlparse 
+from urllib.parse import urlparse
 
 import pytest
 
@@ -33,7 +32,6 @@ def test_error_message2() -> None:
 \s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$"""
     path = get_data("tests/" + t)
     assert path
-    print(path)
     with pytest.raises(ValidationException, match=match):
         load_document_by_uri(path)
 
