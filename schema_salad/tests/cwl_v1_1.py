@@ -1083,7 +1083,6 @@ class RecordField(Documented):
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -1137,7 +1136,6 @@ class RecordField(Documented):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         try:
@@ -1181,7 +1179,6 @@ class RecordField(Documented):
                             [e],
                         )
                     )
-            type_ = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -1333,7 +1330,6 @@ class RecordSchema(Saveable):
                                 [e],
                             )
                         )
-                fields = None
         else:
             fields = None
         try:
@@ -1377,7 +1373,6 @@ class RecordSchema(Saveable):
                             [e],
                         )
                     )
-            type_ = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -1528,7 +1523,6 @@ class EnumSchema(Saveable):
                             [e],
                         )
                     )
-            symbols = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -1570,7 +1564,6 @@ class EnumSchema(Saveable):
                             [e],
                         )
                     )
-            type_ = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -1680,7 +1673,7 @@ class ArraySchema(Saveable):
 
             items = load_field(
                 _doc.get("items"),
-                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2,
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("items")
@@ -1715,7 +1708,6 @@ class ArraySchema(Saveable):
                             [e],
                         )
                     )
-            items = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -1757,7 +1749,6 @@ class ArraySchema(Saveable):
                             [e],
                         )
                     )
-            type_ = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -1802,9 +1793,8 @@ class ArraySchema(Saveable):
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
         if self.items is not None:
-            r["items"] = save(
-                self.items, top=False, base_url=base_url, relative_uris=relative_uris
-            )
+            u = save_relative_uri(self.items, base_url, False, 2, relative_uris)
+            r["items"] = u
         if self.type_ is not None:
             r["type"] = save(
                 self.type_, top=False, base_url=base_url, relative_uris=relative_uris
@@ -2027,7 +2017,6 @@ class File(Saveable):
                                 [e],
                             )
                         )
-                location = None
         else:
             location = None
         if "path" in _doc:
@@ -2072,7 +2061,6 @@ class File(Saveable):
                                 [e],
                             )
                         )
-                path = None
         else:
             path = None
         if "basename" in _doc:
@@ -2117,7 +2105,6 @@ class File(Saveable):
                                 [e],
                             )
                         )
-                basename = None
         else:
             basename = None
         if "dirname" in _doc:
@@ -2162,7 +2149,6 @@ class File(Saveable):
                                 [e],
                             )
                         )
-                dirname = None
         else:
             dirname = None
         if "nameroot" in _doc:
@@ -2207,7 +2193,6 @@ class File(Saveable):
                                 [e],
                             )
                         )
-                nameroot = None
         else:
             nameroot = None
         if "nameext" in _doc:
@@ -2252,7 +2237,6 @@ class File(Saveable):
                                 [e],
                             )
                         )
-                nameext = None
         else:
             nameext = None
         if "checksum" in _doc:
@@ -2297,7 +2281,6 @@ class File(Saveable):
                                 [e],
                             )
                         )
-                checksum = None
         else:
             checksum = None
         if "size" in _doc:
@@ -2342,7 +2325,6 @@ class File(Saveable):
                                 [e],
                             )
                         )
-                size = None
         else:
             size = None
         if "secondaryFiles" in _doc:
@@ -2387,7 +2369,6 @@ class File(Saveable):
                                 [e],
                             )
                         )
-                secondaryFiles = None
         else:
             secondaryFiles = None
         if "format" in _doc:
@@ -2432,7 +2413,6 @@ class File(Saveable):
                                 [e],
                             )
                         )
-                format = None
         else:
             format = None
         if "contents" in _doc:
@@ -2477,7 +2457,6 @@ class File(Saveable):
                                 [e],
                             )
                         )
-                contents = None
         else:
             contents = None
         extension_fields: Dict[str, Any] = {}
@@ -2754,7 +2733,6 @@ class Directory(Saveable):
                                 [e],
                             )
                         )
-                location = None
         else:
             location = None
         if "path" in _doc:
@@ -2799,7 +2777,6 @@ class Directory(Saveable):
                                 [e],
                             )
                         )
-                path = None
         else:
             path = None
         if "basename" in _doc:
@@ -2844,7 +2821,6 @@ class Directory(Saveable):
                                 [e],
                             )
                         )
-                basename = None
         else:
             basename = None
         if "listing" in _doc:
@@ -2889,7 +2865,6 @@ class Directory(Saveable):
                                 [e],
                             )
                         )
-                listing = None
         else:
             listing = None
         extension_fields: Dict[str, Any] = {}
@@ -3079,7 +3054,6 @@ class InputBinding(Saveable):
                                 [e],
                             )
                         )
-                loadContents = None
         else:
             loadContents = None
         extension_fields: Dict[str, Any] = {}
@@ -3274,7 +3248,6 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -3328,7 +3301,6 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         try:
@@ -3372,7 +3344,6 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                             [e],
                         )
                     )
-            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -3415,7 +3386,6 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -3460,7 +3430,6 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 [e],
                             )
                         )
-                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -3505,7 +3474,6 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 [e],
                             )
                         )
-                streamable = None
         else:
             streamable = None
         if "format" in _doc:
@@ -3550,7 +3518,6 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 [e],
                             )
                         )
-                format = None
         else:
             format = None
         if "loadContents" in _doc:
@@ -3595,7 +3562,6 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 [e],
                             )
                         )
-                loadContents = None
         else:
             loadContents = None
         if "loadListing" in _doc:
@@ -3640,7 +3606,6 @@ class InputRecordField(RecordField, FieldBase, InputFormat, LoadContents):
                                 [e],
                             )
                         )
-                loadListing = None
         else:
             loadListing = None
         extension_fields: Dict[str, Any] = {}
@@ -3859,7 +3824,6 @@ class InputRecordSchema(RecordSchema, InputSchema):
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -3913,7 +3877,6 @@ class InputRecordSchema(RecordSchema, InputSchema):
                                 [e],
                             )
                         )
-                fields = None
         else:
             fields = None
         try:
@@ -3957,7 +3920,6 @@ class InputRecordSchema(RecordSchema, InputSchema):
                             [e],
                         )
                     )
-            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -4000,7 +3962,6 @@ class InputRecordSchema(RecordSchema, InputSchema):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -4045,7 +4006,6 @@ class InputRecordSchema(RecordSchema, InputSchema):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -4221,7 +4181,6 @@ class InputEnumSchema(EnumSchema, InputSchema):
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -4274,7 +4233,6 @@ class InputEnumSchema(EnumSchema, InputSchema):
                             [e],
                         )
                     )
-            symbols = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -4316,7 +4274,6 @@ class InputEnumSchema(EnumSchema, InputSchema):
                             [e],
                         )
                     )
-            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -4359,7 +4316,6 @@ class InputEnumSchema(EnumSchema, InputSchema):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -4404,7 +4360,6 @@ class InputEnumSchema(EnumSchema, InputSchema):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -4579,7 +4534,6 @@ class InputArraySchema(ArraySchema, InputSchema):
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -4597,7 +4551,7 @@ class InputArraySchema(ArraySchema, InputSchema):
 
             items = load_field(
                 _doc.get("items"),
-                typedsl_union_of_CWLTypeLoader_or_InputRecordSchemaLoader_or_InputEnumSchemaLoader_or_InputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_InputRecordSchemaLoader_or_InputEnumSchemaLoader_or_InputArraySchemaLoader_or_strtype_2,
+                uri_union_of_CWLTypeLoader_or_InputRecordSchemaLoader_or_InputEnumSchemaLoader_or_InputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_InputRecordSchemaLoader_or_InputEnumSchemaLoader_or_InputArraySchemaLoader_or_strtype_False_True_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("items")
@@ -4632,7 +4586,6 @@ class InputArraySchema(ArraySchema, InputSchema):
                             [e],
                         )
                     )
-            items = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -4674,7 +4627,6 @@ class InputArraySchema(ArraySchema, InputSchema):
                             [e],
                         )
                     )
-            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -4717,7 +4669,6 @@ class InputArraySchema(ArraySchema, InputSchema):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -4762,7 +4713,6 @@ class InputArraySchema(ArraySchema, InputSchema):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -4816,9 +4766,8 @@ class InputArraySchema(ArraySchema, InputSchema):
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
         if self.items is not None:
-            r["items"] = save(
-                self.items, top=False, base_url=self.name, relative_uris=relative_uris
-            )
+            u = save_relative_uri(self.items, self.name, False, 2, relative_uris)
+            r["items"] = u
         if self.type_ is not None:
             r["type"] = save(
                 self.type_, top=False, base_url=self.name, relative_uris=relative_uris
@@ -4954,7 +4903,6 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -5008,7 +4956,6 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         try:
@@ -5052,7 +4999,6 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                             [e],
                         )
                     )
-            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -5095,7 +5041,6 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -5140,7 +5085,6 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                                 [e],
                             )
                         )
-                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -5185,7 +5129,6 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                                 [e],
                             )
                         )
-                streamable = None
         else:
             streamable = None
         if "format" in _doc:
@@ -5230,7 +5173,6 @@ class OutputRecordField(RecordField, FieldBase, OutputFormat):
                                 [e],
                             )
                         )
-                format = None
         else:
             format = None
         extension_fields: Dict[str, Any] = {}
@@ -5423,7 +5365,6 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -5477,7 +5418,6 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                                 [e],
                             )
                         )
-                fields = None
         else:
             fields = None
         try:
@@ -5521,7 +5461,6 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                             [e],
                         )
                     )
-            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -5564,7 +5503,6 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -5609,7 +5547,6 @@ class OutputRecordSchema(RecordSchema, OutputSchema):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -5785,7 +5722,6 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -5838,7 +5774,6 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                             [e],
                         )
                     )
-            symbols = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -5880,7 +5815,6 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                             [e],
                         )
                     )
-            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -5923,7 +5857,6 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -5968,7 +5901,6 @@ class OutputEnumSchema(EnumSchema, OutputSchema):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -6143,7 +6075,6 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -6161,7 +6092,7 @@ class OutputArraySchema(ArraySchema, OutputSchema):
 
             items = load_field(
                 _doc.get("items"),
-                typedsl_union_of_CWLTypeLoader_or_OutputRecordSchemaLoader_or_OutputEnumSchemaLoader_or_OutputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_OutputRecordSchemaLoader_or_OutputEnumSchemaLoader_or_OutputArraySchemaLoader_or_strtype_2,
+                uri_union_of_CWLTypeLoader_or_OutputRecordSchemaLoader_or_OutputEnumSchemaLoader_or_OutputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_OutputRecordSchemaLoader_or_OutputEnumSchemaLoader_or_OutputArraySchemaLoader_or_strtype_False_True_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("items")
@@ -6196,7 +6127,6 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                             [e],
                         )
                     )
-            items = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -6238,7 +6168,6 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                             [e],
                         )
                     )
-            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -6281,7 +6210,6 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -6326,7 +6254,6 @@ class OutputArraySchema(ArraySchema, OutputSchema):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -6380,9 +6307,8 @@ class OutputArraySchema(ArraySchema, OutputSchema):
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
         if self.items is not None:
-            r["items"] = save(
-                self.items, top=False, base_url=self.name, relative_uris=relative_uris
-            )
+            u = save_relative_uri(self.items, self.name, False, 2, relative_uris)
+            r["items"] = u
         if self.type_ is not None:
             r["type"] = save(
                 self.type_, top=False, base_url=self.name, relative_uris=relative_uris
@@ -6539,7 +6465,6 @@ class InlineJavascriptRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
-                expressionLib = None
         else:
             expressionLib = None
         extension_fields: Dict[str, Any] = {}
@@ -6709,7 +6634,6 @@ class SchemaDefRequirement(ProcessRequirement):
                             [e],
                         )
                     )
-            types = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -6856,7 +6780,6 @@ class SecondaryFileSchema(Saveable):
                             [e],
                         )
                     )
-            pattern = None
         if "required" in _doc:
             try:
                 if _doc.get("required") is None:
@@ -6899,7 +6822,6 @@ class SecondaryFileSchema(Saveable):
                                 [e],
                             )
                         )
-                required = None
         else:
             required = None
         extension_fields: Dict[str, Any] = {}
@@ -7063,7 +6985,6 @@ class LoadListingRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
-                loadListing = None
         else:
             loadListing = None
         extension_fields: Dict[str, Any] = {}
@@ -7222,7 +7143,6 @@ class EnvironmentDef(Saveable):
                             [e],
                         )
                     )
-            envName = None
         try:
             if _doc.get("envValue") is None:
                 raise ValidationException("* missing required field `envValue`", None, [])
@@ -7264,7 +7184,6 @@ class EnvironmentDef(Saveable):
                             [e],
                         )
                     )
-            envValue = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -7478,7 +7397,6 @@ class CommandLineBinding(InputBinding):
                                 [e],
                             )
                         )
-                loadContents = None
         else:
             loadContents = None
         if "position" in _doc:
@@ -7523,7 +7441,6 @@ class CommandLineBinding(InputBinding):
                                 [e],
                             )
                         )
-                position = None
         else:
             position = None
         if "prefix" in _doc:
@@ -7568,7 +7485,6 @@ class CommandLineBinding(InputBinding):
                                 [e],
                             )
                         )
-                prefix = None
         else:
             prefix = None
         if "separate" in _doc:
@@ -7613,7 +7529,6 @@ class CommandLineBinding(InputBinding):
                                 [e],
                             )
                         )
-                separate = None
         else:
             separate = None
         if "itemSeparator" in _doc:
@@ -7658,7 +7573,6 @@ class CommandLineBinding(InputBinding):
                                 [e],
                             )
                         )
-                itemSeparator = None
         else:
             itemSeparator = None
         if "valueFrom" in _doc:
@@ -7703,7 +7617,6 @@ class CommandLineBinding(InputBinding):
                                 [e],
                             )
                         )
-                valueFrom = None
         else:
             valueFrom = None
         if "shellQuote" in _doc:
@@ -7748,7 +7661,6 @@ class CommandLineBinding(InputBinding):
                                 [e],
                             )
                         )
-                shellQuote = None
         else:
             shellQuote = None
         extension_fields: Dict[str, Any] = {}
@@ -7967,7 +7879,6 @@ class CommandOutputBinding(LoadContents):
                                 [e],
                             )
                         )
-                loadContents = None
         else:
             loadContents = None
         if "loadListing" in _doc:
@@ -8012,7 +7923,6 @@ class CommandOutputBinding(LoadContents):
                                 [e],
                             )
                         )
-                loadListing = None
         else:
             loadListing = None
         if "glob" in _doc:
@@ -8057,7 +7967,6 @@ class CommandOutputBinding(LoadContents):
                                 [e],
                             )
                         )
-                glob = None
         else:
             glob = None
         if "outputEval" in _doc:
@@ -8102,7 +8011,6 @@ class CommandOutputBinding(LoadContents):
                                 [e],
                             )
                         )
-                outputEval = None
         else:
             outputEval = None
         extension_fields: Dict[str, Any] = {}
@@ -8270,7 +8178,6 @@ class CommandLineBindable(Saveable):
                                 [e],
                             )
                         )
-                inputBinding = None
         else:
             inputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -8459,7 +8366,6 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -8513,7 +8419,6 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         try:
@@ -8557,7 +8462,6 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                             [e],
                         )
                     )
-            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -8600,7 +8504,6 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -8645,7 +8548,6 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
-                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -8690,7 +8592,6 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
-                streamable = None
         else:
             streamable = None
         if "format" in _doc:
@@ -8735,7 +8636,6 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
-                format = None
         else:
             format = None
         if "loadContents" in _doc:
@@ -8780,7 +8680,6 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
-                loadContents = None
         else:
             loadContents = None
         if "loadListing" in _doc:
@@ -8825,7 +8724,6 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
-                loadListing = None
         else:
             loadListing = None
         if "inputBinding" in _doc:
@@ -8870,7 +8768,6 @@ class CommandInputRecordField(InputRecordField, CommandLineBindable):
                                 [e],
                             )
                         )
-                inputBinding = None
         else:
             inputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -9114,7 +9011,6 @@ class CommandInputRecordSchema(
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -9168,7 +9064,6 @@ class CommandInputRecordSchema(
                                 [e],
                             )
                         )
-                fields = None
         else:
             fields = None
         try:
@@ -9212,7 +9107,6 @@ class CommandInputRecordSchema(
                             [e],
                         )
                     )
-            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -9255,7 +9149,6 @@ class CommandInputRecordSchema(
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -9300,7 +9193,6 @@ class CommandInputRecordSchema(
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         if "inputBinding" in _doc:
@@ -9345,7 +9237,6 @@ class CommandInputRecordSchema(
                                 [e],
                             )
                         )
-                inputBinding = None
         else:
             inputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -9543,7 +9434,6 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -9596,7 +9486,6 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                             [e],
                         )
                     )
-            symbols = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -9638,7 +9527,6 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                             [e],
                         )
                     )
-            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -9681,7 +9569,6 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -9726,7 +9613,6 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         if "inputBinding" in _doc:
@@ -9771,7 +9657,6 @@ class CommandInputEnumSchema(InputEnumSchema, CommandInputSchema, CommandLineBin
                                 [e],
                             )
                         )
-                inputBinding = None
         else:
             inputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -9963,7 +9848,6 @@ class CommandInputArraySchema(
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -9981,7 +9865,7 @@ class CommandInputArraySchema(
 
             items = load_field(
                 _doc.get("items"),
-                typedsl_union_of_CWLTypeLoader_or_CommandInputRecordSchemaLoader_or_CommandInputEnumSchemaLoader_or_CommandInputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_CommandInputRecordSchemaLoader_or_CommandInputEnumSchemaLoader_or_CommandInputArraySchemaLoader_or_strtype_2,
+                uri_union_of_CWLTypeLoader_or_CommandInputRecordSchemaLoader_or_CommandInputEnumSchemaLoader_or_CommandInputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_CommandInputRecordSchemaLoader_or_CommandInputEnumSchemaLoader_or_CommandInputArraySchemaLoader_or_strtype_False_True_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("items")
@@ -10016,7 +9900,6 @@ class CommandInputArraySchema(
                             [e],
                         )
                     )
-            items = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -10058,7 +9941,6 @@ class CommandInputArraySchema(
                             [e],
                         )
                     )
-            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -10101,7 +9983,6 @@ class CommandInputArraySchema(
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -10146,7 +10027,6 @@ class CommandInputArraySchema(
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         if "inputBinding" in _doc:
@@ -10191,7 +10071,6 @@ class CommandInputArraySchema(
                                 [e],
                             )
                         )
-                inputBinding = None
         else:
             inputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -10248,9 +10127,8 @@ class CommandInputArraySchema(
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
         if self.items is not None:
-            r["items"] = save(
-                self.items, top=False, base_url=self.name, relative_uris=relative_uris
-            )
+            u = save_relative_uri(self.items, self.name, False, 2, relative_uris)
+            r["items"] = u
         if self.type_ is not None:
             r["type"] = save(
                 self.type_, top=False, base_url=self.name, relative_uris=relative_uris
@@ -10397,7 +10275,6 @@ class CommandOutputRecordField(OutputRecordField):
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -10451,7 +10328,6 @@ class CommandOutputRecordField(OutputRecordField):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         try:
@@ -10495,7 +10371,6 @@ class CommandOutputRecordField(OutputRecordField):
                             [e],
                         )
                     )
-            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -10538,7 +10413,6 @@ class CommandOutputRecordField(OutputRecordField):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -10583,7 +10457,6 @@ class CommandOutputRecordField(OutputRecordField):
                                 [e],
                             )
                         )
-                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -10628,7 +10501,6 @@ class CommandOutputRecordField(OutputRecordField):
                                 [e],
                             )
                         )
-                streamable = None
         else:
             streamable = None
         if "format" in _doc:
@@ -10673,7 +10545,6 @@ class CommandOutputRecordField(OutputRecordField):
                                 [e],
                             )
                         )
-                format = None
         else:
             format = None
         if "outputBinding" in _doc:
@@ -10718,7 +10589,6 @@ class CommandOutputRecordField(OutputRecordField):
                                 [e],
                             )
                         )
-                outputBinding = None
         else:
             outputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -10930,7 +10800,6 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -10984,7 +10853,6 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                                 [e],
                             )
                         )
-                fields = None
         else:
             fields = None
         try:
@@ -11028,7 +10896,6 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                             [e],
                         )
                     )
-            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -11071,7 +10938,6 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -11116,7 +10982,6 @@ class CommandOutputRecordSchema(OutputRecordSchema):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -11294,7 +11159,6 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -11347,7 +11211,6 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                             [e],
                         )
                     )
-            symbols = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -11389,7 +11252,6 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                             [e],
                         )
                     )
-            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -11432,7 +11294,6 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -11477,7 +11338,6 @@ class CommandOutputEnumSchema(OutputEnumSchema):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -11654,7 +11514,6 @@ class CommandOutputArraySchema(OutputArraySchema):
                                 [e],
                             )
                         )
-                name = None
         else:
             name = None
 
@@ -11672,7 +11531,7 @@ class CommandOutputArraySchema(OutputArraySchema):
 
             items = load_field(
                 _doc.get("items"),
-                typedsl_union_of_CWLTypeLoader_or_CommandOutputRecordSchemaLoader_or_CommandOutputEnumSchemaLoader_or_CommandOutputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_CommandOutputRecordSchemaLoader_or_CommandOutputEnumSchemaLoader_or_CommandOutputArraySchemaLoader_or_strtype_2,
+                uri_union_of_CWLTypeLoader_or_CommandOutputRecordSchemaLoader_or_CommandOutputEnumSchemaLoader_or_CommandOutputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_CommandOutputRecordSchemaLoader_or_CommandOutputEnumSchemaLoader_or_CommandOutputArraySchemaLoader_or_strtype_False_True_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("items")
@@ -11707,7 +11566,6 @@ class CommandOutputArraySchema(OutputArraySchema):
                             [e],
                         )
                     )
-            items = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("* missing required field `type`", None, [])
@@ -11749,7 +11607,6 @@ class CommandOutputArraySchema(OutputArraySchema):
                             [e],
                         )
                     )
-            type_ = None
         if "label" in _doc:
             try:
                 if _doc.get("label") is None:
@@ -11792,7 +11649,6 @@ class CommandOutputArraySchema(OutputArraySchema):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -11837,7 +11693,6 @@ class CommandOutputArraySchema(OutputArraySchema):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         extension_fields: Dict[str, Any] = {}
@@ -11893,9 +11748,8 @@ class CommandOutputArraySchema(OutputArraySchema):
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
         if self.items is not None:
-            r["items"] = save(
-                self.items, top=False, base_url=self.name, relative_uris=relative_uris
-            )
+            u = save_relative_uri(self.items, self.name, False, 2, relative_uris)
+            r["items"] = u
         if self.type_ is not None:
             r["type"] = save(
                 self.type_, top=False, base_url=self.name, relative_uris=relative_uris
@@ -12051,7 +11905,6 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                id = None
         else:
             id = None
 
@@ -12105,7 +11958,6 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -12150,7 +12002,6 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -12195,7 +12046,6 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                streamable = None
         else:
             streamable = None
         if "doc" in _doc:
@@ -12240,7 +12090,6 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         if "format" in _doc:
@@ -12285,7 +12134,6 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                format = None
         else:
             format = None
         if "loadContents" in _doc:
@@ -12330,7 +12178,6 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                loadContents = None
         else:
             loadContents = None
         if "loadListing" in _doc:
@@ -12375,7 +12222,6 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                loadListing = None
         else:
             loadListing = None
         if "default" in _doc:
@@ -12385,7 +12231,7 @@ class CommandInputParameter(InputParameter):
 
                 default = load_field(
                     _doc.get("default"),
-                    union_of_None_type_or_FileLoader_or_DirectoryLoader_or_Any_type,
+                    union_of_None_type_or_Any_type,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("default")
@@ -12420,7 +12266,6 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                default = None
         else:
             default = None
         try:
@@ -12464,7 +12309,6 @@ class CommandInputParameter(InputParameter):
                             [e],
                         )
                     )
-            type_ = None
         if "inputBinding" in _doc:
             try:
                 if _doc.get("inputBinding") is None:
@@ -12507,7 +12351,6 @@ class CommandInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                inputBinding = None
         else:
             inputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -12767,7 +12610,6 @@ class CommandOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                id = None
         else:
             id = None
 
@@ -12821,7 +12663,6 @@ class CommandOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -12866,7 +12707,6 @@ class CommandOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -12911,7 +12751,6 @@ class CommandOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                streamable = None
         else:
             streamable = None
         if "doc" in _doc:
@@ -12956,7 +12795,6 @@ class CommandOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         if "format" in _doc:
@@ -13001,7 +12839,6 @@ class CommandOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                format = None
         else:
             format = None
         try:
@@ -13045,7 +12882,6 @@ class CommandOutputParameter(OutputParameter):
                             [e],
                         )
                     )
-            type_ = None
         if "outputBinding" in _doc:
             try:
                 if _doc.get("outputBinding") is None:
@@ -13088,7 +12924,6 @@ class CommandOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                outputBinding = None
         else:
             outputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -13366,7 +13201,6 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
-                id = None
         else:
             id = None
 
@@ -13420,7 +13254,6 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -13465,7 +13298,6 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         try:
@@ -13509,7 +13341,6 @@ class CommandLineTool(Process):
                             [e],
                         )
                     )
-            inputs = None
         try:
             if _doc.get("outputs") is None:
                 raise ValidationException("* missing required field `outputs`", None, [])
@@ -13551,7 +13382,6 @@ class CommandLineTool(Process):
                             [e],
                         )
                     )
-            outputs = None
         if "requirements" in _doc:
             try:
                 if _doc.get("requirements") is None:
@@ -13594,7 +13424,6 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
-                requirements = None
         else:
             requirements = None
         if "hints" in _doc:
@@ -13604,7 +13433,7 @@ class CommandLineTool(Process):
 
                 hints = load_field(
                     _doc.get("hints"),
-                    idmap_hints_union_of_None_type_or_array_of_union_of_InlineJavascriptRequirementLoader_or_SchemaDefRequirementLoader_or_LoadListingRequirementLoader_or_DockerRequirementLoader_or_SoftwareRequirementLoader_or_InitialWorkDirRequirementLoader_or_EnvVarRequirementLoader_or_ShellCommandRequirementLoader_or_ResourceRequirementLoader_or_WorkReuseLoader_or_NetworkAccessLoader_or_InplaceUpdateRequirementLoader_or_ToolTimeLimitLoader_or_SubworkflowFeatureRequirementLoader_or_ScatterFeatureRequirementLoader_or_MultipleInputFeatureRequirementLoader_or_StepInputExpressionRequirementLoader_or_Any_type,
+                    idmap_hints_union_of_None_type_or_array_of_Any_type,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("hints")
@@ -13639,7 +13468,6 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
-                hints = None
         else:
             hints = None
         if "cwlVersion" in _doc:
@@ -13684,7 +13512,6 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
-                cwlVersion = None
         else:
             cwlVersion = None
         if "baseCommand" in _doc:
@@ -13729,7 +13556,6 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
-                baseCommand = None
         else:
             baseCommand = None
         if "arguments" in _doc:
@@ -13774,7 +13600,6 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
-                arguments = None
         else:
             arguments = None
         if "stdin" in _doc:
@@ -13819,7 +13644,6 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
-                stdin = None
         else:
             stdin = None
         if "stderr" in _doc:
@@ -13864,7 +13688,6 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
-                stderr = None
         else:
             stderr = None
         if "stdout" in _doc:
@@ -13909,7 +13732,6 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
-                stdout = None
         else:
             stdout = None
         if "successCodes" in _doc:
@@ -13954,7 +13776,6 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
-                successCodes = None
         else:
             successCodes = None
         if "temporaryFailCodes" in _doc:
@@ -13999,7 +13820,6 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
-                temporaryFailCodes = None
         else:
             temporaryFailCodes = None
         if "permanentFailCodes" in _doc:
@@ -14044,7 +13864,6 @@ class CommandLineTool(Process):
                                 [e],
                             )
                         )
-                permanentFailCodes = None
         else:
             permanentFailCodes = None
         extension_fields: Dict[str, Any] = {}
@@ -14387,7 +14206,6 @@ class DockerRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
-                dockerPull = None
         else:
             dockerPull = None
         if "dockerLoad" in _doc:
@@ -14432,7 +14250,6 @@ class DockerRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
-                dockerLoad = None
         else:
             dockerLoad = None
         if "dockerFile" in _doc:
@@ -14477,7 +14294,6 @@ class DockerRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
-                dockerFile = None
         else:
             dockerFile = None
         if "dockerImport" in _doc:
@@ -14522,7 +14338,6 @@ class DockerRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
-                dockerImport = None
         else:
             dockerImport = None
         if "dockerImageId" in _doc:
@@ -14567,7 +14382,6 @@ class DockerRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
-                dockerImageId = None
         else:
             dockerImageId = None
         if "dockerOutputDirectory" in _doc:
@@ -14612,7 +14426,6 @@ class DockerRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
-                dockerOutputDirectory = None
         else:
             dockerOutputDirectory = None
         extension_fields: Dict[str, Any] = {}
@@ -14821,7 +14634,6 @@ class SoftwareRequirement(ProcessRequirement):
                             [e],
                         )
                     )
-            packages = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -14972,7 +14784,6 @@ class SoftwarePackage(Saveable):
                             [e],
                         )
                     )
-            package = None
         if "version" in _doc:
             try:
                 if _doc.get("version") is None:
@@ -15015,7 +14826,6 @@ class SoftwarePackage(Saveable):
                                 [e],
                             )
                         )
-                version = None
         else:
             version = None
         if "specs" in _doc:
@@ -15060,7 +14870,6 @@ class SoftwarePackage(Saveable):
                                 [e],
                             )
                         )
-                specs = None
         else:
             specs = None
         extension_fields: Dict[str, Any] = {}
@@ -15227,7 +15036,6 @@ class Dirent(Saveable):
                                 [e],
                             )
                         )
-                entryname = None
         else:
             entryname = None
         try:
@@ -15271,7 +15079,6 @@ class Dirent(Saveable):
                             [e],
                         )
                     )
-            entry = None
         if "writable" in _doc:
             try:
                 if _doc.get("writable") is None:
@@ -15314,7 +15121,6 @@ class Dirent(Saveable):
                                 [e],
                             )
                         )
-                writable = None
         else:
             writable = None
         extension_fields: Dict[str, Any] = {}
@@ -15479,7 +15285,6 @@ class InitialWorkDirRequirement(ProcessRequirement):
                             [e],
                         )
                     )
-            listing = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -15635,7 +15440,6 @@ class EnvVarRequirement(ProcessRequirement):
                             [e],
                         )
                     )
-            envDef = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -15954,7 +15758,6 @@ class ResourceRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
-                coresMin = None
         else:
             coresMin = None
         if "coresMax" in _doc:
@@ -15999,7 +15802,6 @@ class ResourceRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
-                coresMax = None
         else:
             coresMax = None
         if "ramMin" in _doc:
@@ -16044,7 +15846,6 @@ class ResourceRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
-                ramMin = None
         else:
             ramMin = None
         if "ramMax" in _doc:
@@ -16089,7 +15890,6 @@ class ResourceRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
-                ramMax = None
         else:
             ramMax = None
         if "tmpdirMin" in _doc:
@@ -16134,7 +15934,6 @@ class ResourceRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
-                tmpdirMin = None
         else:
             tmpdirMin = None
         if "tmpdirMax" in _doc:
@@ -16179,7 +15978,6 @@ class ResourceRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
-                tmpdirMax = None
         else:
             tmpdirMax = None
         if "outdirMin" in _doc:
@@ -16224,7 +16022,6 @@ class ResourceRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
-                outdirMin = None
         else:
             outdirMin = None
         if "outdirMax" in _doc:
@@ -16269,7 +16066,6 @@ class ResourceRequirement(ProcessRequirement):
                                 [e],
                             )
                         )
-                outdirMax = None
         else:
             outdirMax = None
         extension_fields: Dict[str, Any] = {}
@@ -16495,7 +16291,6 @@ class WorkReuse(ProcessRequirement):
                             [e],
                         )
                     )
-            enableReuse = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -16668,7 +16463,6 @@ class NetworkAccess(ProcessRequirement):
                             [e],
                         )
                     )
-            networkAccess = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -16856,7 +16650,6 @@ class InplaceUpdateRequirement(ProcessRequirement):
                             [e],
                         )
                     )
-            inplaceUpdate = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -17022,7 +16815,6 @@ class ToolTimeLimit(ProcessRequirement):
                             [e],
                         )
                     )
-            timelimit = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -17197,7 +16989,6 @@ class ExpressionToolOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                id = None
         else:
             id = None
 
@@ -17251,7 +17042,6 @@ class ExpressionToolOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -17296,7 +17086,6 @@ class ExpressionToolOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -17341,7 +17130,6 @@ class ExpressionToolOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                streamable = None
         else:
             streamable = None
         if "doc" in _doc:
@@ -17386,7 +17174,6 @@ class ExpressionToolOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         if "format" in _doc:
@@ -17431,7 +17218,6 @@ class ExpressionToolOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                format = None
         else:
             format = None
         try:
@@ -17475,7 +17261,6 @@ class ExpressionToolOutputParameter(OutputParameter):
                             [e],
                         )
                     )
-            type_ = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -17700,7 +17485,6 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                id = None
         else:
             id = None
 
@@ -17754,7 +17538,6 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -17799,7 +17582,6 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -17844,7 +17626,6 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                streamable = None
         else:
             streamable = None
         if "doc" in _doc:
@@ -17889,7 +17670,6 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         if "format" in _doc:
@@ -17934,7 +17714,6 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                format = None
         else:
             format = None
         if "loadContents" in _doc:
@@ -17979,7 +17758,6 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                loadContents = None
         else:
             loadContents = None
         if "loadListing" in _doc:
@@ -18024,7 +17802,6 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                loadListing = None
         else:
             loadListing = None
         if "default" in _doc:
@@ -18034,7 +17811,7 @@ class WorkflowInputParameter(InputParameter):
 
                 default = load_field(
                     _doc.get("default"),
-                    union_of_None_type_or_FileLoader_or_DirectoryLoader_or_Any_type,
+                    union_of_None_type_or_Any_type,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("default")
@@ -18069,7 +17846,6 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                default = None
         else:
             default = None
         try:
@@ -18113,7 +17889,6 @@ class WorkflowInputParameter(InputParameter):
                             [e],
                         )
                     )
-            type_ = None
         if "inputBinding" in _doc:
             try:
                 if _doc.get("inputBinding") is None:
@@ -18156,7 +17931,6 @@ class WorkflowInputParameter(InputParameter):
                                 [e],
                             )
                         )
-                inputBinding = None
         else:
             inputBinding = None
         extension_fields: Dict[str, Any] = {}
@@ -18436,7 +18210,6 @@ class ExpressionTool(Process):
                                 [e],
                             )
                         )
-                id = None
         else:
             id = None
 
@@ -18490,7 +18263,6 @@ class ExpressionTool(Process):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -18535,7 +18307,6 @@ class ExpressionTool(Process):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         try:
@@ -18579,7 +18350,6 @@ class ExpressionTool(Process):
                             [e],
                         )
                     )
-            inputs = None
         try:
             if _doc.get("outputs") is None:
                 raise ValidationException("* missing required field `outputs`", None, [])
@@ -18621,7 +18391,6 @@ class ExpressionTool(Process):
                             [e],
                         )
                     )
-            outputs = None
         if "requirements" in _doc:
             try:
                 if _doc.get("requirements") is None:
@@ -18664,7 +18433,6 @@ class ExpressionTool(Process):
                                 [e],
                             )
                         )
-                requirements = None
         else:
             requirements = None
         if "hints" in _doc:
@@ -18674,7 +18442,7 @@ class ExpressionTool(Process):
 
                 hints = load_field(
                     _doc.get("hints"),
-                    idmap_hints_union_of_None_type_or_array_of_union_of_InlineJavascriptRequirementLoader_or_SchemaDefRequirementLoader_or_LoadListingRequirementLoader_or_DockerRequirementLoader_or_SoftwareRequirementLoader_or_InitialWorkDirRequirementLoader_or_EnvVarRequirementLoader_or_ShellCommandRequirementLoader_or_ResourceRequirementLoader_or_WorkReuseLoader_or_NetworkAccessLoader_or_InplaceUpdateRequirementLoader_or_ToolTimeLimitLoader_or_SubworkflowFeatureRequirementLoader_or_ScatterFeatureRequirementLoader_or_MultipleInputFeatureRequirementLoader_or_StepInputExpressionRequirementLoader_or_Any_type,
+                    idmap_hints_union_of_None_type_or_array_of_Any_type,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("hints")
@@ -18709,7 +18477,6 @@ class ExpressionTool(Process):
                                 [e],
                             )
                         )
-                hints = None
         else:
             hints = None
         if "cwlVersion" in _doc:
@@ -18754,7 +18521,6 @@ class ExpressionTool(Process):
                                 [e],
                             )
                         )
-                cwlVersion = None
         else:
             cwlVersion = None
         try:
@@ -18798,7 +18564,6 @@ class ExpressionTool(Process):
                             [e],
                         )
                     )
-            expression = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -19044,7 +18809,6 @@ class WorkflowOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                id = None
         else:
             id = None
 
@@ -19098,7 +18862,6 @@ class WorkflowOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "secondaryFiles" in _doc:
@@ -19143,7 +18906,6 @@ class WorkflowOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                secondaryFiles = None
         else:
             secondaryFiles = None
         if "streamable" in _doc:
@@ -19188,7 +18950,6 @@ class WorkflowOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                streamable = None
         else:
             streamable = None
         if "doc" in _doc:
@@ -19233,7 +18994,6 @@ class WorkflowOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         if "format" in _doc:
@@ -19278,7 +19038,6 @@ class WorkflowOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                format = None
         else:
             format = None
         if "outputSource" in _doc:
@@ -19288,7 +19047,7 @@ class WorkflowOutputParameter(OutputParameter):
 
                 outputSource = load_field(
                     _doc.get("outputSource"),
-                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1,
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_0,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("outputSource")
@@ -19323,7 +19082,6 @@ class WorkflowOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                outputSource = None
         else:
             outputSource = None
         if "linkMerge" in _doc:
@@ -19368,7 +19126,6 @@ class WorkflowOutputParameter(OutputParameter):
                                 [e],
                             )
                         )
-                linkMerge = None
         else:
             linkMerge = None
         try:
@@ -19412,7 +19169,6 @@ class WorkflowOutputParameter(OutputParameter):
                             [e],
                         )
                     )
-            type_ = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -19495,7 +19251,7 @@ class WorkflowOutputParameter(OutputParameter):
             u = save_relative_uri(self.format, self.id, True, None, relative_uris)
             r["format"] = u
         if self.outputSource is not None:
-            u = save_relative_uri(self.outputSource, self.id, False, 1, relative_uris)
+            u = save_relative_uri(self.outputSource, self.id, False, 0, relative_uris)
             r["outputSource"] = u
         if self.linkMerge is not None:
             r["linkMerge"] = save(
@@ -19695,7 +19451,6 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 [e],
                             )
                         )
-                id = None
         else:
             id = None
 
@@ -19749,7 +19504,6 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 [e],
                             )
                         )
-                source = None
         else:
             source = None
         if "linkMerge" in _doc:
@@ -19794,7 +19548,6 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 [e],
                             )
                         )
-                linkMerge = None
         else:
             linkMerge = None
         if "loadContents" in _doc:
@@ -19839,7 +19592,6 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 [e],
                             )
                         )
-                loadContents = None
         else:
             loadContents = None
         if "loadListing" in _doc:
@@ -19884,7 +19636,6 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 [e],
                             )
                         )
-                loadListing = None
         else:
             loadListing = None
         if "label" in _doc:
@@ -19929,7 +19680,6 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "default" in _doc:
@@ -19939,7 +19689,7 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
 
                 default = load_field(
                     _doc.get("default"),
-                    union_of_None_type_or_FileLoader_or_DirectoryLoader_or_Any_type,
+                    union_of_None_type_or_Any_type,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("default")
@@ -19974,7 +19724,6 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 [e],
                             )
                         )
-                default = None
         else:
             default = None
         if "valueFrom" in _doc:
@@ -20019,7 +19768,6 @@ class WorkflowStepInput(Identified, Sink, LoadContents, Labeled):
                                 [e],
                             )
                         )
-                valueFrom = None
         else:
             valueFrom = None
         extension_fields: Dict[str, Any] = {}
@@ -20224,7 +19972,6 @@ class WorkflowStepOutput(Identified):
                                 [e],
                             )
                         )
-                id = None
         else:
             id = None
 
@@ -20474,7 +20221,6 @@ class WorkflowStep(Identified, Labeled, Documented):
                                 [e],
                             )
                         )
-                id = None
         else:
             id = None
 
@@ -20528,7 +20274,6 @@ class WorkflowStep(Identified, Labeled, Documented):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -20573,7 +20318,6 @@ class WorkflowStep(Identified, Labeled, Documented):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         try:
@@ -20617,7 +20361,6 @@ class WorkflowStep(Identified, Labeled, Documented):
                             [e],
                         )
                     )
-            in_ = None
         try:
             if _doc.get("out") is None:
                 raise ValidationException("* missing required field `out`", None, [])
@@ -20659,7 +20402,6 @@ class WorkflowStep(Identified, Labeled, Documented):
                             [e],
                         )
                     )
-            out = None
         if "requirements" in _doc:
             try:
                 if _doc.get("requirements") is None:
@@ -20702,7 +20444,6 @@ class WorkflowStep(Identified, Labeled, Documented):
                                 [e],
                             )
                         )
-                requirements = None
         else:
             requirements = None
         if "hints" in _doc:
@@ -20747,7 +20488,6 @@ class WorkflowStep(Identified, Labeled, Documented):
                                 [e],
                             )
                         )
-                hints = None
         else:
             hints = None
 
@@ -20793,7 +20533,6 @@ class WorkflowStep(Identified, Labeled, Documented):
                             [e],
                         )
                     )
-            run = None
         if "scatter" in _doc:
             try:
                 if _doc.get("scatter") is None:
@@ -20836,7 +20575,6 @@ class WorkflowStep(Identified, Labeled, Documented):
                                 [e],
                             )
                         )
-                scatter = None
         else:
             scatter = None
         if "scatterMethod" in _doc:
@@ -20881,7 +20619,6 @@ class WorkflowStep(Identified, Labeled, Documented):
                                 [e],
                             )
                         )
-                scatterMethod = None
         else:
             scatterMethod = None
         extension_fields: Dict[str, Any] = {}
@@ -21178,7 +20915,6 @@ class Workflow(Process):
                                 [e],
                             )
                         )
-                id = None
         else:
             id = None
 
@@ -21232,7 +20968,6 @@ class Workflow(Process):
                                 [e],
                             )
                         )
-                label = None
         else:
             label = None
         if "doc" in _doc:
@@ -21277,7 +21012,6 @@ class Workflow(Process):
                                 [e],
                             )
                         )
-                doc = None
         else:
             doc = None
         try:
@@ -21321,7 +21055,6 @@ class Workflow(Process):
                             [e],
                         )
                     )
-            inputs = None
         try:
             if _doc.get("outputs") is None:
                 raise ValidationException("* missing required field `outputs`", None, [])
@@ -21363,7 +21096,6 @@ class Workflow(Process):
                             [e],
                         )
                     )
-            outputs = None
         if "requirements" in _doc:
             try:
                 if _doc.get("requirements") is None:
@@ -21406,7 +21138,6 @@ class Workflow(Process):
                                 [e],
                             )
                         )
-                requirements = None
         else:
             requirements = None
         if "hints" in _doc:
@@ -21416,7 +21147,7 @@ class Workflow(Process):
 
                 hints = load_field(
                     _doc.get("hints"),
-                    idmap_hints_union_of_None_type_or_array_of_union_of_InlineJavascriptRequirementLoader_or_SchemaDefRequirementLoader_or_LoadListingRequirementLoader_or_DockerRequirementLoader_or_SoftwareRequirementLoader_or_InitialWorkDirRequirementLoader_or_EnvVarRequirementLoader_or_ShellCommandRequirementLoader_or_ResourceRequirementLoader_or_WorkReuseLoader_or_NetworkAccessLoader_or_InplaceUpdateRequirementLoader_or_ToolTimeLimitLoader_or_SubworkflowFeatureRequirementLoader_or_ScatterFeatureRequirementLoader_or_MultipleInputFeatureRequirementLoader_or_StepInputExpressionRequirementLoader_or_Any_type,
+                    idmap_hints_union_of_None_type_or_array_of_Any_type,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("hints")
@@ -21451,7 +21182,6 @@ class Workflow(Process):
                                 [e],
                             )
                         )
-                hints = None
         else:
             hints = None
         if "cwlVersion" in _doc:
@@ -21496,7 +21226,6 @@ class Workflow(Process):
                                 [e],
                             )
                         )
-                cwlVersion = None
         else:
             cwlVersion = None
         try:
@@ -21540,7 +21269,6 @@ class Workflow(Process):
                             [e],
                         )
                     )
-            steps = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -22659,6 +22387,12 @@ enum_d961d79c225752b9fadb617367615ab176b47d77Loader = _EnumLoader(
 typedsl_enum_d961d79c225752b9fadb617367615ab176b47d77Loader_2 = _TypeDSLLoader(
     enum_d961d79c225752b9fadb617367615ab176b47d77Loader, 2
 )
+uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2 = _URILoader(
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype,
+    False,
+    True,
+    2,
+)
 enum_d062602be0b4b8fd33e69e29a841317b6ab665bcLoader = _EnumLoader(
     ("array",), "enum_d062602be0b4b8fd33e69e29a841317b6ab665bc"
 )
@@ -22790,6 +22524,12 @@ union_of_None_type_or_array_of_InputRecordFieldLoader = _UnionLoader(
 idmap_fields_union_of_None_type_or_array_of_InputRecordFieldLoader = _IdMapLoader(
     union_of_None_type_or_array_of_InputRecordFieldLoader, "name", "type"
 )
+uri_union_of_CWLTypeLoader_or_InputRecordSchemaLoader_or_InputEnumSchemaLoader_or_InputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_InputRecordSchemaLoader_or_InputEnumSchemaLoader_or_InputArraySchemaLoader_or_strtype_False_True_2 = _URILoader(
+    union_of_CWLTypeLoader_or_InputRecordSchemaLoader_or_InputEnumSchemaLoader_or_InputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_InputRecordSchemaLoader_or_InputEnumSchemaLoader_or_InputArraySchemaLoader_or_strtype,
+    False,
+    True,
+    2,
+)
 union_of_CWLTypeLoader_or_OutputRecordSchemaLoader_or_OutputEnumSchemaLoader_or_OutputArraySchemaLoader_or_strtype = _UnionLoader(
     (
         CWLTypeLoader,
@@ -22826,11 +22566,15 @@ union_of_None_type_or_array_of_OutputRecordFieldLoader = _UnionLoader(
 idmap_fields_union_of_None_type_or_array_of_OutputRecordFieldLoader = _IdMapLoader(
     union_of_None_type_or_array_of_OutputRecordFieldLoader, "name", "type"
 )
-union_of_None_type_or_FileLoader_or_DirectoryLoader_or_Any_type = _UnionLoader(
+uri_union_of_CWLTypeLoader_or_OutputRecordSchemaLoader_or_OutputEnumSchemaLoader_or_OutputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_OutputRecordSchemaLoader_or_OutputEnumSchemaLoader_or_OutputArraySchemaLoader_or_strtype_False_True_2 = _URILoader(
+    union_of_CWLTypeLoader_or_OutputRecordSchemaLoader_or_OutputEnumSchemaLoader_or_OutputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_OutputRecordSchemaLoader_or_OutputEnumSchemaLoader_or_OutputArraySchemaLoader_or_strtype,
+    False,
+    True,
+    2,
+)
+union_of_None_type_or_Any_type = _UnionLoader(
     (
         None_type,
-        FileLoader,
-        DirectoryLoader,
         Any_type,
     )
 )
@@ -22898,41 +22642,15 @@ idmap_requirements_union_of_None_type_or_array_of_union_of_InlineJavascriptRequi
     "class",
     "None",
 )
-union_of_InlineJavascriptRequirementLoader_or_SchemaDefRequirementLoader_or_LoadListingRequirementLoader_or_DockerRequirementLoader_or_SoftwareRequirementLoader_or_InitialWorkDirRequirementLoader_or_EnvVarRequirementLoader_or_ShellCommandRequirementLoader_or_ResourceRequirementLoader_or_WorkReuseLoader_or_NetworkAccessLoader_or_InplaceUpdateRequirementLoader_or_ToolTimeLimitLoader_or_SubworkflowFeatureRequirementLoader_or_ScatterFeatureRequirementLoader_or_MultipleInputFeatureRequirementLoader_or_StepInputExpressionRequirementLoader_or_Any_type = _UnionLoader(
-    (
-        InlineJavascriptRequirementLoader,
-        SchemaDefRequirementLoader,
-        LoadListingRequirementLoader,
-        DockerRequirementLoader,
-        SoftwareRequirementLoader,
-        InitialWorkDirRequirementLoader,
-        EnvVarRequirementLoader,
-        ShellCommandRequirementLoader,
-        ResourceRequirementLoader,
-        WorkReuseLoader,
-        NetworkAccessLoader,
-        InplaceUpdateRequirementLoader,
-        ToolTimeLimitLoader,
-        SubworkflowFeatureRequirementLoader,
-        ScatterFeatureRequirementLoader,
-        MultipleInputFeatureRequirementLoader,
-        StepInputExpressionRequirementLoader,
-        Any_type,
-    )
-)
-array_of_union_of_InlineJavascriptRequirementLoader_or_SchemaDefRequirementLoader_or_LoadListingRequirementLoader_or_DockerRequirementLoader_or_SoftwareRequirementLoader_or_InitialWorkDirRequirementLoader_or_EnvVarRequirementLoader_or_ShellCommandRequirementLoader_or_ResourceRequirementLoader_or_WorkReuseLoader_or_NetworkAccessLoader_or_InplaceUpdateRequirementLoader_or_ToolTimeLimitLoader_or_SubworkflowFeatureRequirementLoader_or_ScatterFeatureRequirementLoader_or_MultipleInputFeatureRequirementLoader_or_StepInputExpressionRequirementLoader_or_Any_type = _ArrayLoader(
-    union_of_InlineJavascriptRequirementLoader_or_SchemaDefRequirementLoader_or_LoadListingRequirementLoader_or_DockerRequirementLoader_or_SoftwareRequirementLoader_or_InitialWorkDirRequirementLoader_or_EnvVarRequirementLoader_or_ShellCommandRequirementLoader_or_ResourceRequirementLoader_or_WorkReuseLoader_or_NetworkAccessLoader_or_InplaceUpdateRequirementLoader_or_ToolTimeLimitLoader_or_SubworkflowFeatureRequirementLoader_or_ScatterFeatureRequirementLoader_or_MultipleInputFeatureRequirementLoader_or_StepInputExpressionRequirementLoader_or_Any_type
-)
-union_of_None_type_or_array_of_union_of_InlineJavascriptRequirementLoader_or_SchemaDefRequirementLoader_or_LoadListingRequirementLoader_or_DockerRequirementLoader_or_SoftwareRequirementLoader_or_InitialWorkDirRequirementLoader_or_EnvVarRequirementLoader_or_ShellCommandRequirementLoader_or_ResourceRequirementLoader_or_WorkReuseLoader_or_NetworkAccessLoader_or_InplaceUpdateRequirementLoader_or_ToolTimeLimitLoader_or_SubworkflowFeatureRequirementLoader_or_ScatterFeatureRequirementLoader_or_MultipleInputFeatureRequirementLoader_or_StepInputExpressionRequirementLoader_or_Any_type = _UnionLoader(
+array_of_Any_type = _ArrayLoader(Any_type)
+union_of_None_type_or_array_of_Any_type = _UnionLoader(
     (
         None_type,
-        array_of_union_of_InlineJavascriptRequirementLoader_or_SchemaDefRequirementLoader_or_LoadListingRequirementLoader_or_DockerRequirementLoader_or_SoftwareRequirementLoader_or_InitialWorkDirRequirementLoader_or_EnvVarRequirementLoader_or_ShellCommandRequirementLoader_or_ResourceRequirementLoader_or_WorkReuseLoader_or_NetworkAccessLoader_or_InplaceUpdateRequirementLoader_or_ToolTimeLimitLoader_or_SubworkflowFeatureRequirementLoader_or_ScatterFeatureRequirementLoader_or_MultipleInputFeatureRequirementLoader_or_StepInputExpressionRequirementLoader_or_Any_type,
+        array_of_Any_type,
     )
 )
-idmap_hints_union_of_None_type_or_array_of_union_of_InlineJavascriptRequirementLoader_or_SchemaDefRequirementLoader_or_LoadListingRequirementLoader_or_DockerRequirementLoader_or_SoftwareRequirementLoader_or_InitialWorkDirRequirementLoader_or_EnvVarRequirementLoader_or_ShellCommandRequirementLoader_or_ResourceRequirementLoader_or_WorkReuseLoader_or_NetworkAccessLoader_or_InplaceUpdateRequirementLoader_or_ToolTimeLimitLoader_or_SubworkflowFeatureRequirementLoader_or_ScatterFeatureRequirementLoader_or_MultipleInputFeatureRequirementLoader_or_StepInputExpressionRequirementLoader_or_Any_type = _IdMapLoader(
-    union_of_None_type_or_array_of_union_of_InlineJavascriptRequirementLoader_or_SchemaDefRequirementLoader_or_LoadListingRequirementLoader_or_DockerRequirementLoader_or_SoftwareRequirementLoader_or_InitialWorkDirRequirementLoader_or_EnvVarRequirementLoader_or_ShellCommandRequirementLoader_or_ResourceRequirementLoader_or_WorkReuseLoader_or_NetworkAccessLoader_or_InplaceUpdateRequirementLoader_or_ToolTimeLimitLoader_or_SubworkflowFeatureRequirementLoader_or_ScatterFeatureRequirementLoader_or_MultipleInputFeatureRequirementLoader_or_StepInputExpressionRequirementLoader_or_Any_type,
-    "class",
-    "None",
+idmap_hints_union_of_None_type_or_array_of_Any_type = _IdMapLoader(
+    union_of_None_type_or_array_of_Any_type, "class", "None"
 )
 union_of_None_type_or_CWLVersionLoader = _UnionLoader(
     (
@@ -22943,23 +22661,12 @@ union_of_None_type_or_CWLVersionLoader = _UnionLoader(
 uri_union_of_None_type_or_CWLVersionLoader_False_True_None = _URILoader(
     union_of_None_type_or_CWLVersionLoader, False, True, None
 )
-InlineJavascriptRequirement_classLoader = _EnumLoader(
-    ("InlineJavascriptRequirement",), "InlineJavascriptRequirement_class"
-)
-uri_InlineJavascriptRequirement_classLoader_False_True_None = _URILoader(
-    InlineJavascriptRequirement_classLoader, False, True, None
-)
+uri_strtype_False_True_None = _URILoader(strtype, False, True, None)
 union_of_None_type_or_array_of_strtype = _UnionLoader(
     (
         None_type,
         array_of_strtype,
     )
-)
-SchemaDefRequirement_classLoader = _EnumLoader(
-    ("SchemaDefRequirement",), "SchemaDefRequirement_class"
-)
-uri_SchemaDefRequirement_classLoader_False_True_None = _URILoader(
-    SchemaDefRequirement_classLoader, False, True, None
 )
 union_of_CommandInputRecordSchemaLoader_or_CommandInputEnumSchemaLoader_or_CommandInputArraySchemaLoader = _UnionLoader(
     (
@@ -22983,12 +22690,6 @@ union_of_None_type_or_booltype_or_ExpressionLoader = _UnionLoader(
         booltype,
         ExpressionLoader,
     )
-)
-LoadListingRequirement_classLoader = _EnumLoader(
-    ("LoadListingRequirement",), "LoadListingRequirement_class"
-)
-uri_LoadListingRequirement_classLoader_False_True_None = _URILoader(
-    LoadListingRequirement_classLoader, False, True, None
 )
 union_of_None_type_or_inttype_or_ExpressionLoader = _UnionLoader(
     (
@@ -23055,6 +22756,12 @@ idmap_fields_union_of_None_type_or_array_of_CommandInputRecordFieldLoader = (
         union_of_None_type_or_array_of_CommandInputRecordFieldLoader, "name", "type"
     )
 )
+uri_union_of_CWLTypeLoader_or_CommandInputRecordSchemaLoader_or_CommandInputEnumSchemaLoader_or_CommandInputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_CommandInputRecordSchemaLoader_or_CommandInputEnumSchemaLoader_or_CommandInputArraySchemaLoader_or_strtype_False_True_2 = _URILoader(
+    union_of_CWLTypeLoader_or_CommandInputRecordSchemaLoader_or_CommandInputEnumSchemaLoader_or_CommandInputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_CommandInputRecordSchemaLoader_or_CommandInputEnumSchemaLoader_or_CommandInputArraySchemaLoader_or_strtype,
+    False,
+    True,
+    2,
+)
 union_of_CWLTypeLoader_or_CommandOutputRecordSchemaLoader_or_CommandOutputEnumSchemaLoader_or_CommandOutputArraySchemaLoader_or_strtype = _UnionLoader(
     (
         CWLTypeLoader,
@@ -23099,6 +22806,12 @@ idmap_fields_union_of_None_type_or_array_of_CommandOutputRecordFieldLoader = (
         union_of_None_type_or_array_of_CommandOutputRecordFieldLoader, "name", "type"
     )
 )
+uri_union_of_CWLTypeLoader_or_CommandOutputRecordSchemaLoader_or_CommandOutputEnumSchemaLoader_or_CommandOutputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_CommandOutputRecordSchemaLoader_or_CommandOutputEnumSchemaLoader_or_CommandOutputArraySchemaLoader_or_strtype_False_True_2 = _URILoader(
+    union_of_CWLTypeLoader_or_CommandOutputRecordSchemaLoader_or_CommandOutputEnumSchemaLoader_or_CommandOutputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_CommandOutputRecordSchemaLoader_or_CommandOutputEnumSchemaLoader_or_CommandOutputArraySchemaLoader_or_strtype,
+    False,
+    True,
+    2,
+)
 union_of_CWLTypeLoader_or_stdinLoader_or_CommandInputRecordSchemaLoader_or_CommandInputEnumSchemaLoader_or_CommandInputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_CommandInputRecordSchemaLoader_or_CommandInputEnumSchemaLoader_or_CommandInputArraySchemaLoader_or_strtype = _UnionLoader(
     (
         CWLTypeLoader,
@@ -23129,10 +22842,6 @@ union_of_CWLTypeLoader_or_stdoutLoader_or_stderrLoader_or_CommandOutputRecordSch
 typedsl_union_of_CWLTypeLoader_or_stdoutLoader_or_stderrLoader_or_CommandOutputRecordSchemaLoader_or_CommandOutputEnumSchemaLoader_or_CommandOutputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_CommandOutputRecordSchemaLoader_or_CommandOutputEnumSchemaLoader_or_CommandOutputArraySchemaLoader_or_strtype_2 = _TypeDSLLoader(
     union_of_CWLTypeLoader_or_stdoutLoader_or_stderrLoader_or_CommandOutputRecordSchemaLoader_or_CommandOutputEnumSchemaLoader_or_CommandOutputArraySchemaLoader_or_strtype_or_array_of_union_of_CWLTypeLoader_or_CommandOutputRecordSchemaLoader_or_CommandOutputEnumSchemaLoader_or_CommandOutputArraySchemaLoader_or_strtype,
     2,
-)
-CommandLineTool_classLoader = _EnumLoader(("CommandLineTool",), "CommandLineTool_class")
-uri_CommandLineTool_classLoader_False_True_None = _URILoader(
-    CommandLineTool_classLoader, False, True, None
 )
 array_of_CommandInputParameterLoader = _ArrayLoader(CommandInputParameterLoader)
 idmap_inputs_array_of_CommandInputParameterLoader = _IdMapLoader(
@@ -23165,30 +22874,12 @@ union_of_None_type_or_array_of_inttype = _UnionLoader(
         array_of_inttype,
     )
 )
-DockerRequirement_classLoader = _EnumLoader(
-    ("DockerRequirement",), "DockerRequirement_class"
-)
-uri_DockerRequirement_classLoader_False_True_None = _URILoader(
-    DockerRequirement_classLoader, False, True, None
-)
-SoftwareRequirement_classLoader = _EnumLoader(
-    ("SoftwareRequirement",), "SoftwareRequirement_class"
-)
-uri_SoftwareRequirement_classLoader_False_True_None = _URILoader(
-    SoftwareRequirement_classLoader, False, True, None
-)
 array_of_SoftwarePackageLoader = _ArrayLoader(SoftwarePackageLoader)
 idmap_packages_array_of_SoftwarePackageLoader = _IdMapLoader(
     array_of_SoftwarePackageLoader, "package", "specs"
 )
 uri_union_of_None_type_or_array_of_strtype_False_False_None = _URILoader(
     union_of_None_type_or_array_of_strtype, False, False, None
-)
-InitialWorkDirRequirement_classLoader = _EnumLoader(
-    ("InitialWorkDirRequirement",), "InitialWorkDirRequirement_class"
-)
-uri_InitialWorkDirRequirement_classLoader_False_True_None = _URILoader(
-    InitialWorkDirRequirement_classLoader, False, True, None
 )
 union_of_None_type_or_FileLoader_or_array_of_union_of_FileLoader_or_DirectoryLoader_or_DirectoryLoader_or_DirentLoader_or_ExpressionLoader = _UnionLoader(
     (
@@ -23209,51 +22900,15 @@ union_of_array_of_union_of_None_type_or_FileLoader_or_array_of_union_of_FileLoad
         ExpressionLoader,
     )
 )
-EnvVarRequirement_classLoader = _EnumLoader(
-    ("EnvVarRequirement",), "EnvVarRequirement_class"
-)
-uri_EnvVarRequirement_classLoader_False_True_None = _URILoader(
-    EnvVarRequirement_classLoader, False, True, None
-)
 array_of_EnvironmentDefLoader = _ArrayLoader(EnvironmentDefLoader)
 idmap_envDef_array_of_EnvironmentDefLoader = _IdMapLoader(
     array_of_EnvironmentDefLoader, "envName", "envValue"
-)
-ShellCommandRequirement_classLoader = _EnumLoader(
-    ("ShellCommandRequirement",), "ShellCommandRequirement_class"
-)
-uri_ShellCommandRequirement_classLoader_False_True_None = _URILoader(
-    ShellCommandRequirement_classLoader, False, True, None
-)
-ResourceRequirement_classLoader = _EnumLoader(
-    ("ResourceRequirement",), "ResourceRequirement_class"
-)
-uri_ResourceRequirement_classLoader_False_True_None = _URILoader(
-    ResourceRequirement_classLoader, False, True, None
-)
-WorkReuse_classLoader = _EnumLoader(("WorkReuse",), "WorkReuse_class")
-uri_WorkReuse_classLoader_False_True_None = _URILoader(
-    WorkReuse_classLoader, False, True, None
 )
 union_of_booltype_or_ExpressionLoader = _UnionLoader(
     (
         booltype,
         ExpressionLoader,
     )
-)
-NetworkAccess_classLoader = _EnumLoader(("NetworkAccess",), "NetworkAccess_class")
-uri_NetworkAccess_classLoader_False_True_None = _URILoader(
-    NetworkAccess_classLoader, False, True, None
-)
-InplaceUpdateRequirement_classLoader = _EnumLoader(
-    ("InplaceUpdateRequirement",), "InplaceUpdateRequirement_class"
-)
-uri_InplaceUpdateRequirement_classLoader_False_True_None = _URILoader(
-    InplaceUpdateRequirement_classLoader, False, True, None
-)
-ToolTimeLimit_classLoader = _EnumLoader(("ToolTimeLimit",), "ToolTimeLimit_class")
-uri_ToolTimeLimit_classLoader_False_True_None = _URILoader(
-    ToolTimeLimit_classLoader, False, True, None
 )
 union_of_inttype_or_ExpressionLoader = _UnionLoader(
     (
@@ -23267,10 +22922,6 @@ union_of_None_type_or_InputBindingLoader = _UnionLoader(
         InputBindingLoader,
     )
 )
-ExpressionTool_classLoader = _EnumLoader(("ExpressionTool",), "ExpressionTool_class")
-uri_ExpressionTool_classLoader_False_True_None = _URILoader(
-    ExpressionTool_classLoader, False, True, None
-)
 array_of_WorkflowInputParameterLoader = _ArrayLoader(WorkflowInputParameterLoader)
 idmap_inputs_array_of_WorkflowInputParameterLoader = _IdMapLoader(
     array_of_WorkflowInputParameterLoader, "id", "type"
@@ -23281,8 +22932,8 @@ array_of_ExpressionToolOutputParameterLoader = _ArrayLoader(
 idmap_outputs_array_of_ExpressionToolOutputParameterLoader = _IdMapLoader(
     array_of_ExpressionToolOutputParameterLoader, "id", "type"
 )
-uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1 = _URILoader(
-    union_of_None_type_or_strtype_or_array_of_strtype, False, False, 1
+uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_0 = _URILoader(
+    union_of_None_type_or_strtype_or_array_of_strtype, False, False, 0
 )
 union_of_None_type_or_LinkMergeMethodLoader = _UnionLoader(
     (
@@ -23317,16 +22968,6 @@ uri_union_of_array_of_union_of_strtype_or_WorkflowStepOutputLoader_True_False_No
         None,
     )
 )
-array_of_Any_type = _ArrayLoader(Any_type)
-union_of_None_type_or_array_of_Any_type = _UnionLoader(
-    (
-        None_type,
-        array_of_Any_type,
-    )
-)
-idmap_hints_union_of_None_type_or_array_of_Any_type = _IdMapLoader(
-    union_of_None_type_or_array_of_Any_type, "class", "None"
-)
 union_of_strtype_or_CommandLineToolLoader_or_ExpressionToolLoader_or_WorkflowLoader = (
     _UnionLoader(
         (
@@ -23343,9 +22984,6 @@ uri_union_of_strtype_or_CommandLineToolLoader_or_ExpressionToolLoader_or_Workflo
     False,
     None,
 )
-uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_0 = _URILoader(
-    union_of_None_type_or_strtype_or_array_of_strtype, False, False, 0
-)
 union_of_None_type_or_ScatterMethodLoader = _UnionLoader(
     (
         None_type,
@@ -23355,10 +22993,6 @@ union_of_None_type_or_ScatterMethodLoader = _UnionLoader(
 uri_union_of_None_type_or_ScatterMethodLoader_False_True_None = _URILoader(
     union_of_None_type_or_ScatterMethodLoader, False, True, None
 )
-Workflow_classLoader = _EnumLoader(("Workflow",), "Workflow_class")
-uri_Workflow_classLoader_False_True_None = _URILoader(
-    Workflow_classLoader, False, True, None
-)
 array_of_WorkflowOutputParameterLoader = _ArrayLoader(WorkflowOutputParameterLoader)
 idmap_outputs_array_of_WorkflowOutputParameterLoader = _IdMapLoader(
     array_of_WorkflowOutputParameterLoader, "id", "type"
@@ -23367,30 +23001,6 @@ array_of_WorkflowStepLoader = _ArrayLoader(WorkflowStepLoader)
 union_of_array_of_WorkflowStepLoader = _UnionLoader((array_of_WorkflowStepLoader,))
 idmap_steps_union_of_array_of_WorkflowStepLoader = _IdMapLoader(
     union_of_array_of_WorkflowStepLoader, "id", "None"
-)
-SubworkflowFeatureRequirement_classLoader = _EnumLoader(
-    ("SubworkflowFeatureRequirement",), "SubworkflowFeatureRequirement_class"
-)
-uri_SubworkflowFeatureRequirement_classLoader_False_True_None = _URILoader(
-    SubworkflowFeatureRequirement_classLoader, False, True, None
-)
-ScatterFeatureRequirement_classLoader = _EnumLoader(
-    ("ScatterFeatureRequirement",), "ScatterFeatureRequirement_class"
-)
-uri_ScatterFeatureRequirement_classLoader_False_True_None = _URILoader(
-    ScatterFeatureRequirement_classLoader, False, True, None
-)
-MultipleInputFeatureRequirement_classLoader = _EnumLoader(
-    ("MultipleInputFeatureRequirement",), "MultipleInputFeatureRequirement_class"
-)
-uri_MultipleInputFeatureRequirement_classLoader_False_True_None = _URILoader(
-    MultipleInputFeatureRequirement_classLoader, False, True, None
-)
-StepInputExpressionRequirement_classLoader = _EnumLoader(
-    ("StepInputExpressionRequirement",), "StepInputExpressionRequirement_class"
-)
-uri_StepInputExpressionRequirement_classLoader_False_True_None = _URILoader(
-    StepInputExpressionRequirement_classLoader, False, True, None
 )
 union_of_CommandLineToolLoader_or_ExpressionToolLoader_or_WorkflowLoader = _UnionLoader(
     (
