@@ -2,7 +2,7 @@
 
 import sys
 
-import cwl_utils.parser
+import cwl_utils.parser  # type: ignore[import]
 import objgraph  # type: ignore[import]
 
 growth = []
