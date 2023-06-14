@@ -9,6 +9,9 @@ from rdflib.compare import to_isomorphic
 from requests import Session
 
 import schema_salad.metaschema as cg_metaschema
+import schema_salad.tests.cwl_v1_0 as cg_cwl_v1_0
+import schema_salad.tests.cwl_v1_1 as cg_cwl_v1_1
+import schema_salad.tests.cwl_v1_2 as cg_cwl_v1_2
 from schema_salad import codegen
 from schema_salad.avro.schema import Names
 from schema_salad.fetcher import DefaultFetcher
@@ -17,6 +20,7 @@ from schema_salad.python_codegen_support import LoadingOptions
 from schema_salad.schema import load_schema
 
 from .util import basket_file_uri, cwl_file_uri, get_data, metaschema_file_uri
+from .util import cwl_v1_0_file_uri, cwl_v1_1_file_uri, cwl_v1_2_file_uri
 
 
 def test_safe_identifiers() -> None:
@@ -46,6 +50,22 @@ def test_meta_schema_gen_up_to_date(tmp_path: Path) -> None:
     assert os.path.exists(src_target)
     with open(src_target) as f:
         assert f.read() == inspect.getsource(cg_metaschema)
+
+
+def test_cwl_gen_up_to_date(tmp_path: Path) -> None:
+    src_target = tmp_path / "src.py"
+    python_codegen(cwl_v1_0_file_uri, src_target, parser_info="org.w3id.cwl.v1_0")
+    assert os.path.exists(src_target)
+    with open(src_target) as f:
+        assert f.read() == inspect.getsource(cg_cwl_v1_0)
+    python_codegen(cwl_v1_1_file_uri, src_target, parser_info="org.w3id.cwl.v1_1")
+    assert os.path.exists(src_target)
+    with open(src_target) as f:
+        assert f.read() == inspect.getsource(cg_cwl_v1_1)
+    python_codegen(cwl_v1_2_file_uri, src_target, parser_info="org.w3id.cwl.v1_2")
+    assert os.path.exists(src_target)
+    with open(src_target) as f:
+        assert f.read() == inspect.getsource(cg_cwl_v1_2)
 
 
 def test_meta_schema_gen_no_base(tmp_path: Path) -> None:
