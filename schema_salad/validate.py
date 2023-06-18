@@ -89,6 +89,7 @@ def avro_type_name(url: str) -> str:
 
 
 def friendly(v: Any) -> Any:
+    """Format an Avro schema into a pretty-printed representation."""
     if isinstance(v, avro.schema.NamedSchema):
         return avro_shortname(v.name)
     if isinstance(v, avro.schema.ArraySchema):
@@ -101,6 +102,7 @@ def friendly(v: Any) -> Any:
 
 
 def vpformat(datum: Any) -> str:
+    """Truncate a pretty-printed representation of a Python object to 160 characters."""
     a = pprint.pformat(datum)
     if len(a) > 160:
         a = a[0:160] + "[...]"

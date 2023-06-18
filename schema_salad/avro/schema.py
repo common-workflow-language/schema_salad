@@ -21,6 +21,7 @@ A schema may be one of:
   A record, mapping field names to field value data;
   An enum, containing one of a small set of symbols;
   An array of values, all of the same schema;
+  A map of values, all of the same schema;
   A union of other schemas;
   A unicode string;
   A 32-bit signed int;
@@ -393,6 +394,8 @@ class EnumSchema(NamedSchema):
 
 
 class ArraySchema(Schema):
+    """Avro array schema class."""
+
     def __init__(
         self,
         items: JsonDataType,
@@ -423,19 +426,25 @@ class ArraySchema(Schema):
     # read-only properties
     @property
     def items(self) -> Schema:
+        """Avro schema describing the array items' type."""
         return cast(Schema, self.get_prop("items"))
 
+    @property
     def flatten(self) -> bool:
+        """Flatten nested Array objects at load time."""
         return cast(bool, self.get_prop("flatten"))
 
 
 class MapSchema(Schema):
+    """Avro map schema class."""
+
     def __init__(
         self,
         values: JsonDataType,
         names: Names,
         other_props: Optional[PropsType] = None,
     ) -> None:
+        """Create a MapSchema object."""
         # Call parent ctor
         Schema.__init__(self, "map", other_props)
 
@@ -458,10 +467,13 @@ class MapSchema(Schema):
     # read-only properties
     @property
     def values(self) -> Schema:
+        """Avro schema describing the map values' type."""
         return cast(Schema, self.get_prop("values"))
 
 
 class NamedMapSchema(NamedSchema):
+    """Avro named map schema class."""
+
     def __init__(
         self,
         values: JsonDataType,
@@ -471,6 +483,7 @@ class NamedMapSchema(NamedSchema):
         doc: Optional[Union[str, List[str]]] = None,
         other_props: Optional[PropsType] = None,
     ) -> None:
+        """Create a NamedMapSchema object."""
         # Call parent ctor
         NamedSchema.__init__(self, "map", name, namespace, names, other_props)
 
@@ -495,6 +508,7 @@ class NamedMapSchema(NamedSchema):
     # read-only properties
     @property
     def values(self) -> Schema:
+        """Avro schema describing the map values' type."""
         return cast(Schema, self.get_prop("values"))
 
 
@@ -525,6 +539,8 @@ def _build_schema_objects(schemas: List[JsonDataType], names: Names) -> List[Sch
 
 
 class UnionSchema(Schema):
+    """Avro union schema class."""
+
     def __init__(
         self,
         schemas: List[JsonDataType],
@@ -532,6 +548,7 @@ class UnionSchema(Schema):
     ) -> None:
         """
         Initialize a new UnionSchema.
+
         :param names: a dictionary of schema objects
         """
         # Ensure valid ctor args
@@ -549,10 +566,13 @@ class UnionSchema(Schema):
     # read-only properties
     @property
     def schemas(self) -> List[Schema]:
+        """Avro schemas composing the Union type."""
         return self._schemas
 
 
 class NamedUnionSchema(NamedSchema):
+    """Avro named union schema class."""
+
     def __init__(
         self,
         schemas: List[JsonDataType],
@@ -563,6 +583,7 @@ class NamedUnionSchema(NamedSchema):
     ):
         """
         Initialize a new NamedUnionSchema.
+
         :param names: a dictionary of schema objects
         """
         # Ensure valid ctor args

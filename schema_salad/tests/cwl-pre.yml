@@ -81,6 +81,7 @@
           "RecordSchema",
           "EnumSchema",
           "ArraySchema",
+          "MapSchema",
           "UnionSchema",
           "string",
           {
@@ -90,6 +91,7 @@
               "RecordSchema",
               "EnumSchema",
               "ArraySchema",
+              "MapSchema",
               "UnionSchema",
               "string"
             ]
@@ -212,6 +214,7 @@
           "RecordSchema",
           "EnumSchema",
           "ArraySchema",
+          "MapSchema",
           "UnionSchema",
           "string",
           {
@@ -221,6 +224,7 @@
               "RecordSchema",
               "EnumSchema",
               "ArraySchema",
+              "MapSchema",
               "UnionSchema",
               "string"
             ]

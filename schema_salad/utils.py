@@ -41,6 +41,7 @@ AttachmentsType = Callable[[Union[CommentedMap, CommentedSeq]], bool]
 
 
 def add_dictlist(di: Dict[Any, Any], key: Any, val: Any) -> None:
+    """Manage element insertion in dicts of lists."""
     if key not in di:
         di[key] = []
     di[key].append(val)
@@ -58,6 +59,7 @@ def aslist(thing: Any) -> MutableSequence[Any]:
 
 
 def flatten(thing: Any, ltypes: Any = (list, tuple)) -> Any:
+    """Flatten lists recursively."""
     # http://rightfootin.blogspot.com/2006/09/more-on-python-flatten.html
     if thing is None:
         return []
@@ -78,12 +80,13 @@ def flatten(thing: Any, ltypes: Any = (list, tuple)) -> Any:
     return ltype(lst)
 
 
-# Check if we are on windows OS
 def onWindows() -> bool:
+    """Check if Python is running on Windows OS."""
     return os.name == "nt"
 
 
 def convert_to_dict(j4: Any) -> Any:
+    """Convert generic Mapping objects to dicts recursively."""
     if isinstance(j4, Mapping):
         return {k: convert_to_dict(v) for k, v in j4.items()}
     if isinstance(j4, MutableSequence):

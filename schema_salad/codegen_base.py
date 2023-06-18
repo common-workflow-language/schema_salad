@@ -54,6 +54,7 @@ class LazyInitDef:
         name: str,
         init: str,
     ) -> None:
+        """Create a LazyInitDef object."""
         self.name = name
         self.init = init
 

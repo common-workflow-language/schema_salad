@@ -520,7 +520,12 @@ class _MapLoader(_Loader):
         self.name = name
 
     def load(
-        self, doc: Any, baseuri: str, loadingOptions: LoadingOptions, docRoot: Optional[str] = None
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
     ) -> Any:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(f"Expected a map, was {type(doc)}")
@@ -528,7 +533,7 @@ class _MapLoader(_Loader):
         errors: List[SchemaSaladException] = []
         for k, v in doc.items():
             try:
-                lf = load_field(v, self.values, baseuri, loadingOptions)
+                lf = load_field(v, self.values, baseuri, loadingOptions, lc)
                 r[k] = lf
             except ValidationException as e:
                 errors.append(e.with_sourceline(SourceLine(doc, k, str)))
@@ -836,9 +841,9 @@ class _TypeDSLLoader(_Loader):
 
     def resolve(
         self,
-        doc: str,  # type: str
-        baseuri: str,  # type: str
-        loadingOptions: LoadingOptions,  # type: LoadingOptions
+        doc: str,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
     ) -> Union[List[Union[Dict[str, Any], str]], Dict[str, Any], str]:
         doc_ = doc
         optional = False
@@ -1039,6 +1044,7 @@ def _document_load_by_url(
 
 
 def file_uri(path: str, split_frag: bool = False) -> str:
+    """Transform a file path into a URL with file scheme."""
     if path.startswith("file://"):
         return path
     if split_frag:

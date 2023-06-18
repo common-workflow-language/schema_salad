@@ -523,7 +523,12 @@ class _MapLoader(_Loader):
         self.name = name
 
     def load(
-        self, doc: Any, baseuri: str, loadingOptions: LoadingOptions, docRoot: Optional[str] = None
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
     ) -> Any:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(f"Expected a map, was {type(doc)}")
@@ -531,7 +536,7 @@ class _MapLoader(_Loader):
         errors: List[SchemaSaladException] = []
         for k, v in doc.items():
             try:
-                lf = load_field(v, self.values, baseuri, loadingOptions)
+                lf = load_field(v, self.values, baseuri, loadingOptions, lc)
                 r[k] = lf
             except ValidationException as e:
                 errors.append(e.with_sourceline(SourceLine(doc, k, str)))
@@ -839,9 +844,9 @@ class _TypeDSLLoader(_Loader):
 
     def resolve(
         self,
-        doc: str,  # type: str
-        baseuri: str,  # type: str
-        loadingOptions: LoadingOptions,  # type: LoadingOptions
+        doc: str,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
     ) -> Union[List[Union[Dict[str, Any], str]], Dict[str, Any], str]:
         doc_ = doc
         optional = False
@@ -1042,6 +1047,7 @@ def _document_load_by_url(
 
 
 def file_uri(path: str, split_frag: bool = False) -> str:
+    """Transform a file path into a URL with file scheme."""
     if path.startswith("file://"):
         return path
     if split_frag:
@@ -1279,7 +1285,7 @@ class RecordField(Documented):
 
             type_ = load_field(
                 _doc.get("type"),
-                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_2,
+                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -1929,7 +1935,7 @@ class ArraySchema(Saveable):
 
             items = load_field(
                 _doc.get("items"),
-                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("items")
@@ -3541,7 +3547,7 @@ class SaladRecordField(RecordField):
 
             type_ = load_field(
                 _doc.get("type"),
-                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_2,
+                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -7212,33 +7218,35 @@ union_of_None_type_or_strtype_or_array_of_strtype = _UnionLoader(
     )
 )
 uri_strtype_True_False_None_None = _URILoader(strtype, True, False, None, None)
-union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
+union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
     (
         PrimitiveTypeLoader,
         RecordSchemaLoader,
         EnumSchemaLoader,
         ArraySchemaLoader,
+        MapSchemaLoader,
         UnionSchemaLoader,
         strtype,
     )
 )
-array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype = _ArrayLoader(
-    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype,
+array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _ArrayLoader(
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
     True,
 )
-union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
+union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
     (
         PrimitiveTypeLoader,
         RecordSchemaLoader,
         EnumSchemaLoader,
         ArraySchemaLoader,
+        MapSchemaLoader,
         UnionSchemaLoader,
         strtype,
-        array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype,
+        array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
     )
 )
-typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_2 = _TypeDSLLoader(
-    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype,
+typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2 = _TypeDSLLoader(
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
     2,
     "v1.1",
 )
@@ -7277,8 +7285,8 @@ union_of_None_type_or_booltype = _UnionLoader(
 uri_union_of_None_type_or_booltype_False_True_2_None = _URILoader(
     union_of_None_type_or_booltype, False, True, 2, None
 )
-uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None = _URILoader(
-    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_UnionSchemaLoader_or_strtype,
+uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None = _URILoader(
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
     False,
     True,
     2,
@@ -7288,40 +7296,6 @@ Array_nameLoader = _EnumLoader(("array",), "Array_name")
 typedsl_Array_nameLoader_2 = _TypeDSLLoader(Array_nameLoader, 2, "v1.1")
 Map_nameLoader = _EnumLoader(("map",), "Map_name")
 typedsl_Map_nameLoader_2 = _TypeDSLLoader(Map_nameLoader, 2, "v1.1")
-union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
-    (
-        PrimitiveTypeLoader,
-        RecordSchemaLoader,
-        EnumSchemaLoader,
-        ArraySchemaLoader,
-        MapSchemaLoader,
-        UnionSchemaLoader,
-        strtype,
-    )
-)
-array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _ArrayLoader(
-    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
-    True,
-)
-union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
-    (
-        PrimitiveTypeLoader,
-        RecordSchemaLoader,
-        EnumSchemaLoader,
-        ArraySchemaLoader,
-        MapSchemaLoader,
-        UnionSchemaLoader,
-        strtype,
-        array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
-    )
-)
-uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None = _URILoader(
-    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
-    False,
-    True,
-    2,
-    None,
-)
 Union_nameLoader = _EnumLoader(("union",), "Union_name")
 typedsl_Union_nameLoader_2 = _TypeDSLLoader(Union_nameLoader, 2, "v1.1")
 union_of_None_type_or_inttype = _UnionLoader(
