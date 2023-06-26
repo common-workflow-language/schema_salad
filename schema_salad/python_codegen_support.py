@@ -3,7 +3,6 @@ import copy
 import logging
 import os
 import pathlib
-import re
 import tempfile
 import uuid as _uuid__  # pylint: disable=unused-import # noqa: F401
 import xml.sax  # nosec
@@ -571,8 +570,6 @@ class _URILoader(_Loader):
 
 
 class _TypeDSLLoader(_Loader):
-    typeDSLregex = re.compile(r"^([^[?]+)(\[\])?(\?)?$")
-
     def __init__(self, inner, refScope):
         # type: (_Loader, Union[int, None]) -> None
         self.inner = inner
@@ -584,28 +581,25 @@ class _TypeDSLLoader(_Loader):
         baseuri,  # type: str
         loadingOptions,  # type: LoadingOptions
     ):
-        # type: (...) -> Union[List[Union[Dict[str, str], str]], Dict[str, str], str]
-        m = self.typeDSLregex.match(doc)
-        if m:
-            group1 = m.group(1)
-            assert group1 is not None  # nosec
-            first = expand_url(group1, baseuri, loadingOptions, False, True, self.refScope)
-            second = third = None
-            if bool(m.group(2)):
-                second = {"type": "array", "items": first}
-                # second = CommentedMap((("type", "array"),
-                #                       ("items", first)))
-                # second.lc.add_kv_line_col("type", lc)
-                # second.lc.add_kv_line_col("items", lc)
-                # second.lc.filename = filename
-            if bool(m.group(3)):
-                third = ["null", second or first]
-                # third = CommentedSeq(["null", second or first])
-                # third.lc.add_kv_line_col(0, lc)
-                # third.lc.add_kv_line_col(1, lc)
-                # third.lc.filename = filename
-            return third or second or first
-        return doc
+        # type: (...) -> Union[List[Union[Dict[str, Any], str]], Dict[str, Any], str]
+        doc_ = doc
+        optional = False
+        if doc_.endswith("?"):
+            optional = True
+            doc_ = doc_[0:-1]
+
+        if doc_.endswith("[]"):
+            items = self.resolve(doc_[0:-2], baseuri, loadingOptions)
+            if isinstance(items, str):
+                items = expand_url(items, baseuri, loadingOptions, False, True, self.refScope)
+            expanded = {"type": "array", "items": items}  # type: Union[Dict[str, Any], str]
+        else:
+            expanded = expand_url(doc_, baseuri, loadingOptions, False, True, self.refScope)
+
+        if optional:
+            return ["null", expanded]
+        else:
+            return expanded
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None):
         # type: (Any, str, LoadingOptions, Optional[str]) -> Any

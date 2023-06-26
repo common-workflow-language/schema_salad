@@ -51,7 +51,6 @@ from .utils import (
 )
 
 _logger = logging.getLogger("salad")
-typeDSLregex = re.compile(r"^([^[?]+)(\[\])?(\?)?$")
 
 
 def file_uri(path: str, split_frag: bool = False) -> str:
@@ -631,23 +630,32 @@ class Loader:
         if not isinstance(t, str):
             return t
 
-        m = typeDSLregex.match(t)
-        if not m:
-            return t
-        first = m.group(1)
-        assert first  # nosec
-        second = third = None
-        if bool(m.group(2)):
-            second = CommentedMap((("type", "array"), ("items", first)))
-            second.lc.add_kv_line_col("type", lc)
-            second.lc.add_kv_line_col("items", lc)
-            second.lc.filename = filename
-        if bool(m.group(3)):
-            third = CommentedSeq(["null", second or first])
-            third.lc.add_kv_line_col(0, lc)
-            third.lc.add_kv_line_col(1, lc)
-            third.lc.filename = filename
-        return third or second or first
+        t_ = t
+        optional = False
+        if t_.endswith("?"):
+            optional = True
+            t_ = t_[0:-1]
+
+        if t_.endswith("[]"):
+            items = self._type_dsl(t_[0:-2], lc, filename)
+            cmap = CommentedMap((("type", "array"), ("items", items)))
+            cmap.lc.add_kv_line_col("type", lc)
+            cmap.lc.add_kv_line_col("items", lc)
+            cmap.lc.filename = filename
+            expanded: Union[str, CommentedMap, CommentedSeq] = cmap
+        else:
+            expanded = t_
+
+        if optional:
+            cs = CommentedSeq(["null", expanded])
+            cs.lc.add_kv_line_col(0, lc)
+            cs.lc.add_kv_line_col(1, lc)
+            cs.lc.filename = filename
+            ret: Union[str, CommentedMap, CommentedSeq] = cs
+        else:
+            ret = expanded
+
+        return ret
 
     def _secondaryFile_dsl(
         self,
