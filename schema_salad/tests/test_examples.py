@@ -355,6 +355,9 @@ def test_typedsl_ref() -> None:
     ra, _ = ldr.resolve_all(cmap({"type": "File[]?"}), "")
     assert {"type": ["null", {"items": "File", "type": "array"}]} == ra
 
+    ra, _ = ldr.resolve_all(cmap({"type": "File[][]"}), "")
+    assert {"type": {"items": {"items": "File", "type": "array"}, "type": "array"}} == ra
+
 
 def test_secondaryFile_dsl_ref() -> None:
     ldr = Loader({})
