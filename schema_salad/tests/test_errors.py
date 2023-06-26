@@ -225,10 +225,6 @@ def test_error_message10() -> None:
         load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
 
 
-"     "
-"     "
-
-
 def test_error_message11() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     assert path
