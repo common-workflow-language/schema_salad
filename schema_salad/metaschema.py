@@ -600,7 +600,7 @@ class _TypeDSLLoader(_Loader):
 
         if doc_.endswith("[]"):
             salad_versions = [int(v) for v in loadingOptions.salad_version[1:].split(".")]
-            items = ""  # type: Union[list[Union[dict[str, Any], str]], dict[str, Any], str]
+            items = ""  # type: Union[List[Union[dict[str, Any], str]], dict[str, Any], str]
             if salad_versions < [1, 3]:
                 items = expand_url(doc_[0:-2], baseuri, loadingOptions, False, True, self.refScope)
             else:
