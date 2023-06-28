@@ -355,6 +355,23 @@ def test_typedsl_ref() -> None:
     ra, _ = ldr.resolve_all(cmap({"type": "File[]?"}), "")
     assert {"type": ["null", {"items": "File", "type": "array"}]} == ra
 
+    assert ldr.salad_version == "v1.0"
+    ra, _ = ldr.resolve_all(cmap({"type": "File[][]"}), "")
+    assert {"type": {"items": "File[]", "type": "array"}} == ra
+
+
+def test_nested_typedsl_ref() -> None:
+    ldr = Loader({})
+    ldr.add_context(
+        {
+            "File": "http://example.com/File",
+            "null": "http://example.com/null",
+            "array": "http://example.com/array",
+            "type": {"@type": "@vocab", "typeDSL": True},
+        }
+    )
+    ldr.salad_version = "v1.3"
+
     ra, _ = ldr.resolve_all(cmap({"type": "File[][]"}), "")
     assert {"type": {"items": {"items": "File", "type": "array"}, "type": "array"}} == ra
 

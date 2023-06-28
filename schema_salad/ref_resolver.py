@@ -205,6 +205,7 @@ class Loader:
         self.subscopes: Dict[str, str] = {}
         self.secondaryFile_dsl_fields: Set[str] = set()
         self.allow_attachments = allow_attachments
+        self.salad_version = "v1.0"
 
         self.add_context(ctx)
 
@@ -637,8 +638,12 @@ class Loader:
             t_ = t_[0:-1]
 
         if t_.endswith("[]"):
-            items = self._type_dsl(t_[0:-2], lc, filename)
-            cmap = CommentedMap((("type", "array"), ("items", items)))
+            salad_versions = [int(v) for v in self.salad_version[1:].split(".")]
+            if salad_versions < [1, 3]:
+                cmap = CommentedMap((("type", "array"), ("items", t_[0:-2])))
+            else:
+                items = self._type_dsl(t_[0:-2], lc, filename)
+                cmap = CommentedMap((("type", "array"), ("items", items)))
             cmap.lc.add_kv_line_col("type", lc)
             cmap.lc.add_kv_line_col("items", lc)
             cmap.lc.filename = filename
