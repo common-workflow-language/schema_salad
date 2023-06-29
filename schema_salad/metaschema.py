@@ -59,7 +59,6 @@ class LoadingOptions:
     cache: CacheType
     imports: List[str]
     includes: List[str]
-    salad_version: str
 
     def __init__(
         self,
@@ -74,7 +73,6 @@ class LoadingOptions:
         idx: Optional[IdxType] = None,
         imports: Optional[List[str]] = None,
         includes: Optional[List[str]] = None,
-        salad_version: Optional[str] = None,
     ) -> None:
         """Create a LoadingOptions object."""
         self.original_doc = original_doc
@@ -139,11 +137,6 @@ class LoadingOptions:
 
         self.vocab = _vocab
         self.rvocab = _rvocab
-
-        if salad_version:
-            self.salad_version = salad_version
-        else:
-            self.salad_version = "v1.0"
 
         if namespaces is not None:
             self.vocab = self.vocab.copy()
@@ -580,10 +573,11 @@ class _URILoader(_Loader):
 
 
 class _TypeDSLLoader(_Loader):
-    def __init__(self, inner, refScope):
-        # type: (_Loader, Union[int, None]) -> None
+    def __init__(self, inner, refScope, salad_version):
+        # type: (_Loader, Union[int, None], str) -> None
         self.inner = inner
         self.refScope = refScope
+        self.salad_version = salad_version
 
     def resolve(
         self,
@@ -599,7 +593,7 @@ class _TypeDSLLoader(_Loader):
             doc_ = doc_[0:-1]
 
         if doc_.endswith("[]"):
-            salad_versions = [int(v) for v in loadingOptions.salad_version[1:].split(".")]
+            salad_versions = [int(v) for v in self.salad_version[1:].split(".")]
             items = ""  # type: Union[List[Union[Dict[str, Any], str]], Dict[str, Any], str]
             if salad_versions < [1, 3]:
                 items = expand_url(doc_[0:-2], baseuri, loadingOptions, False, True, self.refScope)
@@ -719,9 +713,6 @@ def _document_load(
                 loader.load(doc, baseuri, loadingOptions, docRoot=baseuri),
                 loadingOptions,
             )
-
-        if "saladVersion" in doc:
-            loadingOptions.salad_version = doc["saladVersion"]
 
         if docuri != baseuri:
             loadingOptions.idx[docuri] = loadingOptions.idx[baseuri]
@@ -3585,6 +3576,7 @@ union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArrayS
 typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2 = _TypeDSLLoader(
     union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype,
     2,
+    "v1.1",
 )
 array_of_RecordFieldLoader = _ArrayLoader(RecordFieldLoader)
 union_of_None_type_or_array_of_RecordFieldLoader = _UnionLoader(
@@ -3597,7 +3589,7 @@ idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader = _IdMapLoader(
     union_of_None_type_or_array_of_RecordFieldLoader, "name", "type"
 )
 Record_nameLoader = _EnumLoader(("record",), "Record_name")
-typedsl_Record_nameLoader_2 = _TypeDSLLoader(Record_nameLoader, 2)
+typedsl_Record_nameLoader_2 = _TypeDSLLoader(Record_nameLoader, 2, "v1.1")
 union_of_None_type_or_strtype = _UnionLoader(
     (
         None_type,
@@ -3609,7 +3601,7 @@ uri_union_of_None_type_or_strtype_True_False_None = _URILoader(
 )
 uri_array_of_strtype_True_False_None = _URILoader(array_of_strtype, True, False, None)
 Enum_nameLoader = _EnumLoader(("enum",), "Enum_name")
-typedsl_Enum_nameLoader_2 = _TypeDSLLoader(Enum_nameLoader, 2)
+typedsl_Enum_nameLoader_2 = _TypeDSLLoader(Enum_nameLoader, 2, "v1.1")
 uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2 = _URILoader(
     union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype,
     False,
@@ -3617,7 +3609,7 @@ uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_Ar
     2,
 )
 Array_nameLoader = _EnumLoader(("array",), "Array_name")
-typedsl_Array_nameLoader_2 = _TypeDSLLoader(Array_nameLoader, 2)
+typedsl_Array_nameLoader_2 = _TypeDSLLoader(Array_nameLoader, 2, "v1.1")
 union_of_None_type_or_booltype = _UnionLoader(
     (
         None_type,
@@ -3674,7 +3666,7 @@ idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader = _IdMapLoad
     union_of_None_type_or_array_of_SpecializeDefLoader, "specializeFrom", "specializeTo"
 )
 Documentation_nameLoader = _EnumLoader(("documentation",), "Documentation_name")
-typedsl_Documentation_nameLoader_2 = _TypeDSLLoader(Documentation_nameLoader, 2)
+typedsl_Documentation_nameLoader_2 = _TypeDSLLoader(Documentation_nameLoader, 2, "v1.1")
 union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader = (
     _UnionLoader(
         (

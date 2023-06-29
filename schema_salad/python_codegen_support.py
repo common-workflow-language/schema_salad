@@ -56,7 +56,6 @@ class LoadingOptions:
     cache: CacheType
     imports: List[str]
     includes: List[str]
-    salad_version: str
 
     def __init__(
         self,
@@ -71,7 +70,6 @@ class LoadingOptions:
         idx: Optional[IdxType] = None,
         imports: Optional[List[str]] = None,
         includes: Optional[List[str]] = None,
-        salad_version: Optional[str] = None,
     ) -> None:
         """Create a LoadingOptions object."""
         self.original_doc = original_doc
@@ -136,11 +134,6 @@ class LoadingOptions:
 
         self.vocab = _vocab
         self.rvocab = _rvocab
-
-        if salad_version:
-            self.salad_version = salad_version
-        else:
-            self.salad_version = "v1.0"
 
         if namespaces is not None:
             self.vocab = self.vocab.copy()
@@ -577,10 +570,11 @@ class _URILoader(_Loader):
 
 
 class _TypeDSLLoader(_Loader):
-    def __init__(self, inner, refScope):
-        # type: (_Loader, Union[int, None]) -> None
+    def __init__(self, inner, refScope, salad_version):
+        # type: (_Loader, Union[int, None], str) -> None
         self.inner = inner
         self.refScope = refScope
+        self.salad_version = salad_version
 
     def resolve(
         self,
@@ -596,7 +590,7 @@ class _TypeDSLLoader(_Loader):
             doc_ = doc_[0:-1]
 
         if doc_.endswith("[]"):
-            salad_versions = [int(v) for v in loadingOptions.salad_version[1:].split(".")]
+            salad_versions = [int(v) for v in self.salad_version[1:].split(".")]
             items = ""  # type: Union[List[Union[Dict[str, Any], str]], Dict[str, Any], str]
             if salad_versions < [1, 3]:
                 items = expand_url(doc_[0:-2], baseuri, loadingOptions, False, True, self.refScope)
@@ -716,9 +710,6 @@ def _document_load(
                 loader.load(doc, baseuri, loadingOptions, docRoot=baseuri),
                 loadingOptions,
             )
-
-        if "saladVersion" in doc:
-            loadingOptions.salad_version = doc["saladVersion"]
 
         if docuri != baseuri:
             loadingOptions.idx[docuri] = loadingOptions.idx[baseuri]

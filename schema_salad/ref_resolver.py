@@ -140,6 +140,7 @@ def SubLoader(loader: "Loader") -> "Loader":
         url_fields=loader.url_fields,
         allow_attachments=loader.allow_attachments,
         session=loader.session,
+        salad_version=loader.salad_version,
     )
 
 
@@ -157,6 +158,7 @@ class Loader:
         url_fields: Optional[Set[str]] = None,
         allow_attachments: Optional[AttachmentsType] = None,
         doc_cache: Union[str, bool] = True,
+        salad_version: Optional[str] = None,
     ) -> None:
         self.idx: IdxType = (
             NormDict(lambda url: urllib.parse.urlsplit(url).geturl()) if idx is None else idx
@@ -205,7 +207,11 @@ class Loader:
         self.subscopes: Dict[str, str] = {}
         self.secondaryFile_dsl_fields: Set[str] = set()
         self.allow_attachments = allow_attachments
-        self.salad_version = "v1.0"
+
+        if salad_version:
+            self.salad_version = salad_version
+        else:
+            self.salad_version = "v1.1"
 
         self.add_context(ctx)
 
