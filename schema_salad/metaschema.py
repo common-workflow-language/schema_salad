@@ -595,10 +595,15 @@ class _TypeDSLLoader(_Loader):
         if doc_.endswith("[]"):
             salad_versions = [int(v) for v in self.salad_version[1:].split(".")]
             items = ""  # type: Union[List[Union[Dict[str, Any], str]], Dict[str, Any], str]
+            rest = doc_[0:-2]
             if salad_versions < [1, 3]:
-                items = expand_url(doc_[0:-2], baseuri, loadingOptions, False, True, self.refScope)
+                if rest.endswith("[]"):
+                    # To show the error message with the original type
+                    return doc
+                else:
+                    items = expand_url(rest, baseuri, loadingOptions, False, True, self.refScope)
             else:
-                items = self.resolve(doc_[0:-2], baseuri, loadingOptions)
+                items = self.resolve(rest, baseuri, loadingOptions)
                 if isinstance(items, str):
                     items = expand_url(items, baseuri, loadingOptions, False, True, self.refScope)
             expanded = {"type": "array", "items": items}  # type: Union[Dict[str, Any], str]

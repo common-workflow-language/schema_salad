@@ -645,10 +645,15 @@ class Loader:
 
         if t_.endswith("[]"):
             salad_versions = [int(v) for v in self.salad_version[1:].split(".")]
+            rest = t_[0:-2]
             if salad_versions < [1, 3]:
-                cmap = CommentedMap((("type", "array"), ("items", t_[0:-2])))
+                if rest.endswith("[]"):
+                    # To show the error message with the original type
+                    return t
+                else:
+                    cmap = CommentedMap((("type", "array"), ("items", rest)))
             else:
-                items = self._type_dsl(t_[0:-2], lc, filename)
+                items = self._type_dsl(rest, lc, filename)
                 cmap = CommentedMap((("type", "array"), ("items", items)))
             cmap.lc.add_kv_line_col("type", lc)
             cmap.lc.add_kv_line_col("items", lc)

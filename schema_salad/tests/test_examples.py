@@ -9,6 +9,7 @@ from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 import schema_salad.main
 import schema_salad.schema
+from schema_salad.exceptions import ValidationException
 from schema_salad.jsonld_context import makerdf
 from schema_salad.ref_resolver import Loader, file_uri, uri_file_path
 from schema_salad.sourceline import SourceLine, cmap
@@ -355,8 +356,8 @@ def test_typedsl_ref() -> None:
     ra, _ = ldr.resolve_all(cmap({"type": "File[]?"}), "")
     assert {"type": ["null", {"items": "File", "type": "array"}]} == ra
 
-    ra, _ = ldr.resolve_all(cmap({"type": "File[][]"}), "")
-    assert {"type": {"items": "File[]", "type": "array"}} == ra
+    with pytest.raises(ValidationException):
+        ldr.resolve_all(cmap({"type": "File[][]"}), "")
 
 
 def test_nested_typedsl_ref() -> None:
