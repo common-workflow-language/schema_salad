@@ -299,7 +299,10 @@ def main(argsl: Optional[List[str]] = None) -> int:
         raise ValidationException(f"Expected a CommentedSeq, got {type(schema_doc)}: {schema_doc}.")
 
     # Create the loader that will be used to load the target document.
-    document_loader = Loader(schema_ctx, skip_schemas=args.skip_schemas)
+    schema_version = schema_metadata.get("saladVersion", None)
+    document_loader = Loader(
+        schema_ctx, skip_schemas=args.skip_schemas, salad_version=schema_version
+    )
 
     if args.codegen:
         codegen.codegen(
