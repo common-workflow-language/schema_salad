@@ -22,6 +22,7 @@ class DlangCodeGen(CodeGenBase):
         package: str,
         copyright_: Optional[str],
         parser_info: Optional[str],
+        salad_version: str,
     ) -> None:
         """Initialize the D codegen."""
         super().__init__()
@@ -31,6 +32,7 @@ class DlangCodeGen(CodeGenBase):
         self.package = package
         self.copyright = copyright_
         self.parser_info = parser_info
+        self.salad_version = salad_version
         self.doc_root_types: List[str] = []
 
     def prologue(self) -> None:
@@ -60,7 +62,7 @@ class DlangCodeGen(CodeGenBase):
             f"""module {self.package};
 
 import salad.meta.dumper : genDumper;
-import salad.meta.impl : genCtor, genIdentifier, genOpEq;
+import salad.meta.impl : genCtor_, genIdentifier, genOpEq;
 import salad.meta.parser : import_ = importFromURI;
 import salad.meta.uda : documentRoot, id, idMap, link, LinkResolver, secondaryFilesDSL, typeDSL;
 import salad.primitives : SchemaBase;
@@ -74,6 +76,17 @@ import salad.type : None, Either;
 enum parserInfo = "{self.parser_info}";
 """  # noqa: B907
             )
+
+        self.target.write(
+            f"""
+enum saladVersion = "{self.salad_version}";
+
+mixin template genCtor()
+{{
+    mixin genCtor_!saladVersion;
+}}
+"""
+        )
 
     def epilogue(self, root_loader: TypeDef) -> None:
         """Trigger to generate the epilouge code."""

@@ -82,6 +82,7 @@ def codegen(
                 pkg,
                 copyright,
                 info,
+                salad_version,
             )
             gen.parse(j)
             return
