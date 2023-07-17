@@ -327,7 +327,7 @@ for k in _doc.keys():
         else:
             _errors__.append(
                 ValidationException(
-                    "* invalid field `{{}}`, expected one of: {attrstr}".format(
+                    "invalid field `{{}}`, expected one of: {attrstr}".format(
                         k
                     ),
                     SourceLine(_doc, k, str),
@@ -335,10 +335,9 @@ for k in _doc.keys():
             )
 
 if _errors__:
-    raise ValidationException(\"tried `{class_}` but\", None, _errors__)
+    raise ValidationException("", None, _errors__, "*")
 """.format(
                     attrstr=", ".join([f"`{f}`" for f in field_names]),
-                    class_=self.safe_name(classname),
                 ),
                 8,
             )
@@ -477,7 +476,7 @@ if _errors__:
                 safename=self.safe_name(name)
             )
         else:
-            opt = """_errors__.append(ValidationException("* missing {fieldname}"))""".format(
+            opt = """_errors__.append(ValidationException("missing {fieldname}"))""".format(
                 fieldname=shortname(name)
             )
 
@@ -531,7 +530,7 @@ if _errors__:
         self.out.write(
             """{spc}        try:
 {spc}            if _doc.get("{fieldname}") is None:
-{spc}                raise ValidationException("* missing required field `{fieldname}`", None, [])
+{spc}                raise ValidationException("missing required field `{fieldname}`", None, [])
 
 {spc}            {safename} = load_field(
 {spc}                _doc.get("{fieldname}"),
@@ -553,17 +552,16 @@ if _errors__:
 {spc}        except ValidationException as e:
 {spc}            error_message = parse_errors(str(e))
 
-{spc}            if str(e) == "* missing required field `{fieldname}`":
+{spc}            if str(e) == "missing required field `{fieldname}`":
 {spc}                _errors__.append(
 {spc}                    ValidationException(
-{spc}                        "",
-{spc}                        None,
-{spc}                        [e]
+{spc}                        str(e),
+{spc}                        None
 {spc}                    )
 {spc}                )
 {spc}            else:
 {spc}                if error_message != str(e):
-{spc}                    val_type = type(_doc.get("{fieldname}"))
+{spc}                    val_type = convert_typing(extract_type(type(_doc.get("{fieldname}"))))
 {spc}                    _errors__.append(
 {spc}                        ValidationException(
 {spc}                            \"the `{fieldname}` field is not valid because:\",

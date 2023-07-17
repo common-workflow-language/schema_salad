@@ -252,6 +252,23 @@ def load_field(val, fieldtype, baseuri, loadingOptions, lc=None):
 save_type = Optional[Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]]
 
 
+def extract_type(val_str: str) -> str:
+    val_str = str(val_str)
+    return val_str.split("'")[1]
+
+
+def convert_typing(val_type: str) -> str:
+    if "None" in val_type:
+        return "null"
+    if "CommentedSeq" in val_type or 'list' in val_type:
+        return "array"
+    if "CommentedMap" in val_type or 'dict' in val_type:
+        return "object"
+    if "False" in val_type or "True" in val_type:
+        return "boolean"
+    return val_type
+
+
 def parse_errors(error_message: str) -> str:
     """Parse error messages from several loaders into one error message."""
     types = set()
@@ -275,7 +292,7 @@ def parse_errors(error_message: str) -> str:
                 types.add(individual_vals[1].replace(",", ""))
     types = set(val for val in types if val != "NoneType")
     if "str" in types:
-        types = set(val for val in types if "'" not in val)
+        types = set(convert_typing(val) for val in types if "'" not in val)
     return str(types).replace("{", "(").replace("}", ")").replace("'", "")
 
 
@@ -434,7 +451,7 @@ class _ArrayLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
         if not isinstance(doc, MutableSequence):
-            raise ValidationException(f"Expected a list, was {type(doc)}")
+            raise ValidationException(f"Expected an array, was {convert_typing(extract_type(type(doc)))}")
         r = []  # type: List[Any]
         errors = []  # type: List[SchemaSaladException]
         fields = []  # type: List[str]
@@ -442,7 +459,7 @@ class _ArrayLoader(_Loader):
         for i in range(0, len(doc)):
             try:
                 lf = load_field(
-                    doc[i], _UnionLoader((self, self.items)), baseuri, loadingOptions, lc=lc
+                    doc[i], _UnionLoader(([self, self.items])), baseuri, loadingOptions, lc=lc
                 )
                 if isinstance(lf, MutableSequence):
                     r.extend(lf)
@@ -463,7 +480,8 @@ class _ArrayLoader(_Loader):
                             fields.append(doc[i].get("id"))
 
             except ValidationException as e:
-                errors.append(e.with_sourceline(SourceLine(doc, i, str)))
+                e = ValidationException("", SourceLine(doc, i, str), [e])
+                errors.append(e)
         if errors:
             raise ValidationException("", None, errors)
         return r
@@ -562,7 +580,7 @@ class _RecordLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
         if not isinstance(doc, MutableMapping):
-            raise ValidationException(f"Expected a dict, was {type(doc)}")
+            raise ValidationException(f"Expected an object, was {convert_typing(extract_type(type(doc)))}")
         return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
     def __repr__(self):  # type: () -> str
@@ -576,7 +594,7 @@ class _ExpressionLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
         if not isinstance(doc, str):
-            raise ValidationException(f"Expected a str, was {type(doc)}")
+            raise ValidationException(f"Expected a str, was {convert_typing(extract_type(type(doc)))}")
         return doc
 
 
@@ -600,7 +618,7 @@ class _UnionLoader(_Loader):
                         if str(doc.get("class")) == str(t):
                             errors.append(
                                 ValidationException(
-                                    f"Object `{baseuri.split('/')[-1]}` is not valid because",
+                                    f"Object `{baseuri.split('/')[-1]}` is not valid because:",
                                     SourceLine(doc, next(iter(doc)), str),
                                     [e],
                                 )
@@ -635,12 +653,8 @@ class _UnionLoader(_Loader):
                                         ValidationException(f"tried `{t}` but", None, [e])
                                     )
                 else:
-                    if isinstance(
-                        t, (_EnumLoader, _PrimitiveLoader)
-                    ):  # avoids "tried <class "CWLType"> but x" and instead returns the values for parsing
-                        errors.append(ValidationException("", None, [e]))
-                    else:
-                        errors.append(ValidationException(f"tried `{t}` but", None, [e]))
+                    # avoids "tried <class "CWLType"> but x" and instead returns the values for parsing
+                    errors.append(ValidationException("", None, [e]))
 
         if isinstance(doc, (CommentedMap, dict)) and "class" in doc:
             if str(doc.get("class")) not in str(self.alternates):
@@ -656,7 +670,7 @@ class _UnionLoader(_Loader):
                         [],
                     )
                 )
-        raise ValidationException("", None, errors, "-")
+        raise ValidationException("", None, errors, "*")
 
     def __repr__(self):  # type: () -> str
         return " | ".join(str(a) for a in self.alternates)
