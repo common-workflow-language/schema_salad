@@ -169,7 +169,7 @@ def load_document_by_uri(path: Union[str, Path]) -> Any:
     if isinstance(path, str):
         uri = urlparse(path)
         if not uri.scheme or uri.scheme == "file":
-            real_path = Path(unquote_plus(uri.path)).resolve().as_uri()
+            real_path = Path(uri.path).resolve().as_uri()
         else:
             real_path = path
     else:
