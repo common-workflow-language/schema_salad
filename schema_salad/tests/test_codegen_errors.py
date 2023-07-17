@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from typing import Any, MutableSequence, Optional, Union, cast, Dict, List
-from urllib.parse import unquote_plus, urlparse
+from urllib.parse import urlparse
 
 
 import pytest
@@ -195,6 +195,7 @@ def load_document_by_uri(path: Union[str, Path]) -> Any:
             lst.append(r)
         return lst
     return result
+
 
 def python_codegen(
     file_uri: str,

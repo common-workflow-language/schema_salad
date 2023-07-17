@@ -42,6 +42,3 @@ def get_data_uri(resource_path: str) -> str:
 cwl_file_uri = get_data_uri("tests/test_schema/CommonWorkflowLanguage.yml")
 metaschema_file_uri = get_data_uri("metaschema/metaschema.yml")
 basket_file_uri = get_data_uri("tests/basket_schema.yml")
-cwl_v1_0_file_uri = "https://raw.githubusercontent.com/common-workflow-language/common-workflow-language/main/v1.0/CommonWorkflowLanguage.yml"
-cwl_v1_1_file_uri = "https://raw.githubusercontent.com/common-workflow-language/cwl-v1.1/main/CommonWorkflowLanguage.yml"
-cwl_v1_2_file_uri = "https://raw.githubusercontent.com/common-workflow-language/cwl-v1.2/v1.2.0/CommonWorkflowLanguage.yml"
