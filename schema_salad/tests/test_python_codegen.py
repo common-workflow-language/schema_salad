@@ -46,7 +46,7 @@ def test_meta_schema_gen_up_to_date(tmp_path: Path) -> None:
     assert os.path.exists(src_target)
     with open(src_target) as f:
         assert f.read() == inspect.getsource(cg_metaschema)
-        
+
 
 def test_meta_schema_gen_no_base(tmp_path: Path) -> None:
     src_target = tmp_path / "src.py"
