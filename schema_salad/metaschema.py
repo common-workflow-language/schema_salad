@@ -263,9 +263,9 @@ def extract_type(val_type: Type[Any]) -> str:
 def convert_typing(val_type: str) -> str:
     if "None" in val_type:
         return "null"
-    if "CommentedSeq" in val_type or 'list' in val_type:
+    if "CommentedSeq" in val_type or "list" in val_type:
         return "array"
-    if "CommentedMap" in val_type or 'dict' in val_type:
+    if "CommentedMap" in val_type or "dict" in val_type:
         return "object"
     if "False" in val_type or "True" in val_type:
         return "boolean"
@@ -454,7 +454,9 @@ class _ArrayLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
         if not isinstance(doc, MutableSequence):
-            raise ValidationException(f"Expected an array, was {convert_typing(extract_type(type(doc)))}")
+            raise ValidationException(
+                f"Expected an array, was {convert_typing(extract_type(type(doc)))}"
+            )
         r = []  # type: List[Any]
         errors = []  # type: List[SchemaSaladException]
         fields = []  # type: List[str]
@@ -583,7 +585,9 @@ class _RecordLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
         if not isinstance(doc, MutableMapping):
-            raise ValidationException(f"Expected an object, was {convert_typing(extract_type(type(doc)))}")
+            raise ValidationException(
+                f"Expected an object, was {convert_typing(extract_type(type(doc)))}"
+            )
         return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
     def __repr__(self):  # type: () -> str
@@ -597,7 +601,9 @@ class _ExpressionLoader(_Loader):
     def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
         if not isinstance(doc, str):
-            raise ValidationException(f"Expected a str, was {convert_typing(extract_type(type(doc)))}")
+            raise ValidationException(
+                f"Expected a str, was {convert_typing(extract_type(type(doc)))}"
+            )
         return doc
 
 
