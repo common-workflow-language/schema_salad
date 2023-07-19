@@ -1,21 +1,19 @@
 """Tests of helpful error messages."""
 
-from pathlib import Path
-from typing import Any, MutableSequence, Optional, Union, cast, Dict, List
-from urllib.parse import urlparse
 import importlib
-
+from pathlib import Path
+from typing import Any, Dict, List, MutableSequence, Optional, Union, cast
+from urllib.parse import urlparse
 
 import pytest
 
 from schema_salad import codegen
 from schema_salad.avro.schema import Names
 from schema_salad.exceptions import ValidationException
-from schema_salad.utils import yaml_no_ts
 from schema_salad.schema import load_schema
+from schema_salad.utils import yaml_no_ts
 
-
-from .util import get_data, cwl_file_uri
+from .util import cwl_file_uri, get_data
 
 
 def test_error_message1(tmp_path: Path) -> None:
@@ -188,7 +186,7 @@ def load_document_by_uri(tmp_path: Path, path: Union[str, Path]) -> Any:
 
     loadingOptions = cwl_v1_0.LoadingOptions(fileuri=baseuri)
 
-    with open(path, 'r') as file:
+    with open(path, "r") as file:
         doc = file.read()
     # doc = loadingOptions.fetcher.fetch_text(urllib.parse.unquote(str(real_path)))
     yaml = yaml_no_ts()
