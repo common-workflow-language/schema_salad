@@ -252,8 +252,8 @@ def load_field(val, fieldtype, baseuri, loadingOptions, lc=None):
 save_type = Optional[Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]]
 
 
-def extract_type(val_str: str) -> str:
-    val_str = str(val_str)
+def extract_type(val_type: Type[Any]) -> str:
+    val_str = str(val_type)
     return val_str.split("'")[1]
 
 

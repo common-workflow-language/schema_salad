@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Any, MutableSequence, Optional, Union, cast, Dict, List
 from urllib.parse import urlparse
+import importlib
 
 
 import pytest
@@ -13,10 +14,11 @@ from schema_salad.exceptions import ValidationException
 from schema_salad.utils import yaml_no_ts
 from schema_salad.schema import load_schema
 
+
 from .util import get_data, cwl_file_uri
 
 
-def test_error_message1() -> None:
+def test_error_message1(tmp_path: Path) -> None:
     t = "test_schema/test1.cwl"
     match = r"""^.*test1\.cwl:2:1:\s+Object\s+`.*test1\.cwl`\s+is\s+not\s+valid\s+because:
 \s+\*\s+missing\s+required\s+field\s+`inputs`
@@ -25,20 +27,20 @@ def test_error_message1() -> None:
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
-        load_document_by_uri(path)
+        load_document_by_uri(tmp_path, path)
 
 
-def test_error_message2() -> None:
+def test_error_message2(tmp_path: Path) -> None:
     t = "test_schema/test2.cwl"
     match = r"""^.*test2\.cwl:2:1:\s+Field\s+`class`\s+contains\s+undefined\s+reference\s+to
 \s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
-        load_document_by_uri(path)
+        load_document_by_uri(tmp_path, path)
 
 
-def test_error_message4() -> None:
+def test_error_message4(tmp_path: Path) -> None:
     t = "test_schema/test4.cwl"
     match = r"""^.*test4.cwl:2:1:\s+Object\s+`.*test4.cwl`\s+is\s+not\s+valid\s+because:
 .*test4\.cwl:6:1:\s+the\s+`outputs`\s+field\s+is\s+not\s+valid\s+because:
@@ -48,22 +50,22 @@ def test_error_message4() -> None:
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
-        load_document_by_uri(path)
+        load_document_by_uri(tmp_path, path)
 
 
-def test_error_message5() -> None:
+def test_error_message5(tmp_path: Path) -> None:
     t = "test_schema/test5.cwl"
     match = r"""^.*test5\.cwl:2:1:\s+Object\s+`.*test5\.cwl`\s+is\s+not\s+valid\s+because:
 .+test5\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
-.+test5\.cwl:8:9:\s+Expected an array,\s+was\s+int
-\s+Expected an object,\s+was\s+int"""
+.+test5\.cwl:8:9:\s+Expected\s+an\s+array,\s+was\s+int
+\s+Expected\s+an\s+object,\s+was\s+int"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
-        load_document_by_uri(path)
+        load_document_by_uri(tmp_path, path)
 
 
-def test_error_message6() -> None:
+def test_error_message6(tmp_path: Path) -> None:
     t = "test_schema/test6.cwl"
     match = r"""\*\s+tried\s+`CommandLineTool`\s+but
 \s+Missing\s+'class'\s+field
@@ -74,10 +76,10 @@ def test_error_message6() -> None:
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
-        load_document_by_uri(path)
+        load_document_by_uri(tmp_path, path)
 
 
-def test_error_message7() -> None:
+def test_error_message7(tmp_path: Path) -> None:
     t = "test_schema/test7.cwl"
     match = r"""^.*test7\.cwl:2:1:\s+Object\s+`.*test7\.cwl`\s+is\s+not\s+valid\s+because:
 .*test7\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
@@ -87,10 +89,10 @@ def test_error_message7() -> None:
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
-        load_document_by_uri(path)
+        load_document_by_uri(tmp_path, path)
 
 
-def test_error_message8() -> None:
+def test_error_message8(tmp_path: Path) -> None:
     t = "test_schema/test8.cwl"
     match = r"""^.*test8.cwl:2:1:\s+Object\s+`.*test8.cwl`\s+is\s+not\s+valid\s+because:
 .*test8\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
@@ -102,10 +104,10 @@ def test_error_message8() -> None:
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
-        load_document_by_uri(path)
+        load_document_by_uri(tmp_path, path)
 
 
-def test_error_message9() -> None:
+def test_error_message9(tmp_path: Path) -> None:
     t = "test_schema/test9.cwl"
     match = r"""^.*test9.cwl:2:1:\s+Object\s+`.*test9.cwl`\s+is\s+not\s+valid\s+because:
 .*test9\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
@@ -116,10 +118,10 @@ def test_error_message9() -> None:
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
-        load_document_by_uri(path)
+        load_document_by_uri(tmp_path, path)
 
 
-def test_error_message10() -> None:
+def test_error_message10(tmp_path: Path) -> None:
     t = "test_schema/test10.cwl"
     match = r"""^.*test10\.cwl:2:1:\s+Object\s+`.*test10\.cwl`\s+is\s+not\s+valid\s+because:
 .*test10\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
@@ -130,10 +132,10 @@ def test_error_message10() -> None:
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
-        load_document_by_uri(path)
+        load_document_by_uri(tmp_path, path)
 
 
-def test_error_message11() -> None:
+def test_error_message11(tmp_path: Path) -> None:
     t = "test_schema/test11.cwl"
     match = r"""^.*test11\.cwl:2:1:\s+Object\s+`.*test11.cwl`\s+is\s+not\s+valid\s+because:
 .*test11\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
@@ -144,11 +146,11 @@ def test_error_message11() -> None:
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
-        load_document_by_uri(path)
+        load_document_by_uri(tmp_path, path)
 
 
 # `loadContents`,\s+`position`,\s+`prefix`,\s+`separate`,\s+`itemSeparator`,\s+`valueFrom`,\s+`shellQuote`
-def test_error_message15() -> None:
+def test_error_message15(tmp_path: Path) -> None:
     t = "test_schema/test15.cwl"
     match = r"""^.*test15\.cwl:3:1:\s+Object\s+`.*test15\.cwl`\s+is\s+not\s+valid\s+because:
 .*test15\.cwl:6:1:\s+the\s+`inputs`\s+field\s+is\s+not\s+valid\s+because:
@@ -160,12 +162,19 @@ def test_error_message15() -> None:
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
-        load_document_by_uri(path)
+        load_document_by_uri(tmp_path, path)
 
 
-def load_document_by_uri(path: Union[str, Path]) -> Any:
-    python_codegen(cwl_file_uri, "cwl_v1_0.py")
-    import cwl_v1_0
+def load_document_by_uri(tmp_path: Path, path: Union[str, Path]) -> Any:
+    src_target = tmp_path / "cwl_v1_0.py"
+    python_codegen(cwl_file_uri, src_target)
+    spec = importlib.util.spec_from_file_location("cwl_v1_0", src_target)
+    assert isinstance(spec, importlib.machinery.ModuleSpec)
+    assert isinstance(spec.loader, importlib.abc.Loader)
+    temp_cwl_v1_0 = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(temp_cwl_v1_0)
+    cwl_v1_0: Any = temp_cwl_v1_0
+
     if isinstance(path, str):
         uri = urlparse(path)
         if not uri.scheme or uri.scheme == "file":
