@@ -82,6 +82,7 @@ class PythonCodeGen(CodeGenBase):
         out: IO[str],
         copyright: Optional[str],
         parser_info: str,
+        salad_version: str,
     ) -> None:
         super().__init__()
         self.out = out
@@ -90,6 +91,7 @@ class PythonCodeGen(CodeGenBase):
         self.idfield = ""
         self.copyright = copyright
         self.parser_info = parser_info
+        self.salad_version = salad_version
 
     @staticmethod
     def safe_name(name: str) -> str:
@@ -664,7 +666,7 @@ if self.{safename} is not None:
         return self.declare_type(
             TypeDef(
                 f"typedsl_{self.safe_name(inner.name)}_{ref_scope}",
-                f"_TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope})",
+                f"_TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope}, '{self.salad_version}')",
             )
         )
 

@@ -57,6 +57,8 @@ def codegen(
         else ".".join(list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/"))
     )
     info = parser_info or pkg
+    salad_version = schema_metadata.get("saladVersion", "v1.1")
+
     if lang in set(["python", "cpp", "dlang"]):
         if target:
             dest: Union[TextIOWrapper, TextIO] = open(target, mode="w", encoding="utf-8")
@@ -83,7 +85,9 @@ def codegen(
             )
             gen.parse(j)
             return
-        gen = PythonCodeGen(dest, copyright=copyright, parser_info=info)
+        gen = PythonCodeGen(
+            dest, copyright=copyright, parser_info=info, salad_version=salad_version
+        )
 
     elif lang == "java":
         gen = JavaCodeGen(
