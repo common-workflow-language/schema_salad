@@ -177,7 +177,8 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
             },
             "typeDSL": saladp + "JsonldPredicate/typeDSL",
             "xsd": "http://www.w3.org/2001/XMLSchema#",
-        }
+        },
+        salad_version="v1.3",
     )
 
     for salad in SALAD_FILES:
