@@ -482,7 +482,7 @@ class _ArrayLoader(_Loader):
                             fields.append(doc[i].get("id"))
 
             except ValidationException as e:
-                e = ValidationException("", SourceLine(doc, i, str), [e])
+                e = ValidationException("array item is invalid because", SourceLine(doc, i, str), [e])
                 errors.append(e)
         if errors:
             raise ValidationException("", None, errors)
@@ -619,6 +619,8 @@ class _UnionLoader(_Loader):
             try:
                 return t.load(doc, baseuri, loadingOptions, docRoot=docRoot, lc=lc)
             except ValidationException as e:
+                if isinstance(t, _ArrayLoader) and len(self.alternates) > 1:
+                    continue
                 if isinstance(doc, (CommentedMap, dict)):
                     if "class" in doc:
                         if str(doc.get("class")) == str(t):

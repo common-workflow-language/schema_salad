@@ -42,6 +42,7 @@ def test_error_message4(tmp_path: Path) -> None:
     t = "test_schema/test4.cwl"
     match = r"""^.*test4.cwl:2:1:\s+Object\s+`.*test4.cwl`\s+is\s+not\s+valid\s+because:
 .*test4\.cwl:6:1:\s+the\s+`outputs`\s+field\s+is\s+not\s+valid\s+because:
+\s+array\s+item\s+is\s+invalid\s+because
 .*test4\.cwl:7:3:\s+checking\s+object\s+`.*test4\.cwl#bar`
 \s+the\s+`type`\s+field\s+is\s+not\s+valid\s+because:
 \s+Expected\s+one\s+of\s+\(str|object|array,str|object|array,list|str|object|array\)\s+was\s+int"""
@@ -55,7 +56,7 @@ def test_error_message5(tmp_path: Path) -> None:
     t = "test_schema/test5.cwl"
     match = r"""^.*test5\.cwl:2:1:\s+Object\s+`.*test5\.cwl`\s+is\s+not\s+valid\s+because:
 .+test5\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
-.+test5\.cwl:8:9:\s+Expected\s+an\s+array,\s+was\s+int
+.+test5\.cwl:8:9:\s+array\s+item\s+is\s+invalid\s+because
 \s+Expected\s+an\s+object,\s+was\s+int"""
     path = get_data("tests/" + t)
     assert path
@@ -81,6 +82,7 @@ def test_error_message7(tmp_path: Path) -> None:
     t = "test_schema/test7.cwl"
     match = r"""^.*test7\.cwl:2:1:\s+Object\s+`.*test7\.cwl`\s+is\s+not\s+valid\s+because:
 .*test7\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
+\s+array\s+item\s+is\s+invalid\s+because
 .*test7\.cwl:9:3:\s+checking\s+object\s+`.*test7.cwl#step1`
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test7\.cwl:10:5:\s+\*\s+invalid\s+field\s+`scatter_method`,\s+expected\s+one\s+of:\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*$"""
@@ -94,6 +96,7 @@ def test_error_message8(tmp_path: Path) -> None:
     t = "test_schema/test8.cwl"
     match = r"""^.*test8.cwl:2:1:\s+Object\s+`.*test8.cwl`\s+is\s+not\s+valid\s+because:
 .*test8\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
+\s+array\s+item\s+is\s+invalid\s+because
 .*test8\.cwl:9:3:\s+checking\s+object\s+`.*test8\.cwl#step1`
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test8\.cwl:10:5:\s+\*\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
@@ -109,6 +112,7 @@ def test_error_message9(tmp_path: Path) -> None:
     t = "test_schema/test9.cwl"
     match = r"""^.*test9.cwl:2:1:\s+Object\s+`.*test9.cwl`\s+is\s+not\s+valid\s+because:
 .*test9\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
+\s+array\s+item\s+is\s+invalid\s+because
 .*test9\.cwl:9:3:\s+checking object\s+`.*test9\.cwl#step1`
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test9\.cwl:10:5:\s+\*\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
@@ -123,6 +127,7 @@ def test_error_message10(tmp_path: Path) -> None:
     t = "test_schema/test10.cwl"
     match = r"""^.*test10\.cwl:2:1:\s+Object\s+`.*test10\.cwl`\s+is\s+not\s+valid\s+because:
 .*test10\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
+\s+array\s+item\s+is\s+invalid\s+because
 .*test10\.cwl:9:3:\s+checking\s+object\s+`.*test10.cwl#step1`
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test10\.cwl:10:5:\s+\*\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
@@ -137,6 +142,7 @@ def test_error_message11(tmp_path: Path) -> None:
     t = "test_schema/test11.cwl"
     match = r"""^.*test11\.cwl:2:1:\s+Object\s+`.*test11.cwl`\s+is\s+not\s+valid\s+because:
 .*test11\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
+\s+array\s+item\s+is\s+invalid\s+because
 .*test11\.cwl:9:3:\s+checking\s+object\s+`.*test11\.cwl#step1`
 .*test11\.cwl:10:5:\s+the\s+`run`\s+field\s+is\s+not\s+valid\s+because:
 \s+contains\s+undefined\s+reference\s+to
@@ -152,6 +158,7 @@ def test_error_message15(tmp_path: Path) -> None:
     t = "test_schema/test15.cwl"
     match = r"""^.*test15\.cwl:3:1:\s+Object\s+`.*test15\.cwl`\s+is\s+not\s+valid\s+because:
 .*test15\.cwl:6:1:\s+the\s+`inputs`\s+field\s+is\s+not\s+valid\s+because:
+\s+array\s+item\s+is\s+invalid\s+because
 .*test15\.cwl:7:3:\s+checking\s+object\s+`.*test15\.cwl#message`
 .*test15\.cwl:9:5:\s+the\s+`inputBinding`\s+field\s+is\s+not\s+valid\s+because:
 \s+tried\s+`CommandLineBinding`\s+but
