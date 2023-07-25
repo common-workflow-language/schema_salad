@@ -484,7 +484,9 @@ class _ArrayLoader(_Loader):
                             fields.append(doc[i].get("id"))
 
             except ValidationException as e:
-                e = ValidationException("array item is invalid because", SourceLine(doc, i, str), [e])
+                e = ValidationException(
+                    "array item is invalid because", SourceLine(doc, i, str), [e]
+                )
                 errors.append(e)
         if errors:
             raise ValidationException("", None, errors)
