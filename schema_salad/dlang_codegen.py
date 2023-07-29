@@ -66,7 +66,7 @@ import salad.meta.impl : genCtor_, genIdentifier, genOpEq;
 import salad.meta.parser : import_ = importFromURI;
 import salad.meta.uda : documentRoot, id, idMap, link, LinkResolver, secondaryFilesDSL, typeDSL;
 import salad.primitives : SchemaBase;
-import salad.type : None, Either;
+import salad.type : None, Union;
 
 """
         )
@@ -91,7 +91,7 @@ mixin template genCtor()
     def epilogue(self, root_loader: TypeDef) -> None:
         """Trigger to generate the epilouge code."""
         doc_root_type_str = ", ".join(self.doc_root_types)
-        doc_root_type = f"Either!({doc_root_type_str})"
+        doc_root_type = f"Union!({doc_root_type_str})"
         self.target.write(
             f"""
 ///
@@ -198,7 +198,7 @@ unittest
         elif isinstance(type_, list):
             t_str = [self.parse_record_field_type(t, None)[1] for t in type_]
             union_types = ", ".join(t_str)
-            type_str = f"Either!({union_types})"
+            type_str = f"Union!({union_types})"
         elif shortname(type_["type"]) == "array":
             item_type = self.parse_record_field_type(type_["items"], None)[1]
             type_str = f"{item_type}[]"
