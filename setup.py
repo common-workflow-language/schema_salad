@@ -91,6 +91,8 @@ install_requires = [
     "CacheControl[filecache] < 0.13;python_version<='3.6'",
     "urllib3<2;python_version<='3.6'",
     "mypy_extensions",
+    "importlib_resources>=1.4",  # equivalent to Python 3.9,
+    "importlib_metadata;python_version<'3.8'",
 ]
 
 extras_require = {
