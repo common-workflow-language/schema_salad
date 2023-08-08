@@ -182,7 +182,8 @@ mypy_3.6: $(filter-out setup.py,$(PYSOURCES))
 	MYPYPATH=$$MYPYPATH:mypy-stubs mypy --python-version 3.6 $^
 
 mypyc: $(PYSOURCES)
-	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 pytest "${PYTEST_EXTRA}"
+	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 pip install --verbose -e . \
+		 && pytest "${PYTEST_EXTRA}"
 
 mypyi:
 	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 pip install .${EXTRAS}

@@ -32,6 +32,9 @@ jobs:
           - py-ver-major: 3
             py-ver-minor: 6
             step: lint
+          - py-ver-major: 3
+            py-ver-minor: 12
+            step: memleak
 
     env:
       py-semver: ${{ format('{0}.{1}', matrix.py-ver-major, matrix.py-ver-minor) }}
