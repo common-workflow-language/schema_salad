@@ -18,7 +18,7 @@ try:
 except ModuleNotFoundError:
     black = None  # type: ignore[assignment]
 
-from pkg_resources import resource_stream
+from importlib_resources import files
 
 from . import schema
 from .codegen_base import CodeGenBase, TypeDef
@@ -125,10 +125,10 @@ class PythonCodeGen(CodeGenBase):
                 )
             )
 
-        stream = resource_stream(__name__, "python_codegen_support.py")
-        python_codegen_support = stream.read().decode("UTF-8")
+        python_codegen_support = (
+            files("schema_salad").joinpath("python_codegen_support.py").read_text("UTF-8")
+        )
         self.out.write(python_codegen_support[python_codegen_support.find("\n") + 1 :])
-        stream.close()
         self.out.write("\n\n")
 
         self.out.write(

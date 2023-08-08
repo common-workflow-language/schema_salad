@@ -7,7 +7,6 @@ import sys
 from typing import Any, Dict, List, Mapping, MutableSequence, Optional, Union, cast
 from urllib.parse import urlparse
 
-import pkg_resources  # part of setuptools
 from rdflib import __version__ as rdflib_version
 from rdflib.parser import Parser
 from rdflib.plugin import register
@@ -22,6 +21,11 @@ from .utils import json_dump, stdout
 
 if int(rdflib_version.split(".", maxsplit=1)[0]) < 6:
     register("json-ld", Parser, "rdflib_jsonld.parser", "JsonLDParser")
+
+if sys.version_info >= (3, 8):
+    import importlib.metadata as importlib_metadata
+else:
+    import importlib_metadata
 _logger = logging.getLogger("salad")
 
 
@@ -221,12 +225,12 @@ def main(argsl: Optional[List[str]] = None) -> int:
     if args.debug:
         _logger.setLevel(logging.DEBUG)
 
-    pkg = pkg_resources.require("schema_salad")
+    pkg = importlib_metadata.version("schema_salad")
     if pkg:
         if args.version:
-            print(f"{sys.argv[0]} Current version: {pkg[0].version}")
+            print(f"{sys.argv[0]} Current version: {pkg}")
             return 0
-        _logger.info("%s Current version: %s", sys.argv[0], pkg[0].version)
+        _logger.info("%s Current version: %s", sys.argv[0], pkg)
 
     # Get the metaschema to validate the schema
     metaschema_names, metaschema_doc, metaschema_loader = schema.get_metaschema()

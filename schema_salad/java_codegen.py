@@ -16,7 +16,7 @@ from typing import (
     Union,
 )
 
-import pkg_resources
+from importlib_resources import files
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, TypeDef
@@ -788,15 +788,13 @@ public enum {clazz} {{
             license_url="https://www.apache.org/licenses/LICENSE-2.0.txt",
         )
 
-        def template_from_resource(resource: str) -> string.Template:
-            template_str = pkg_resources.resource_string(__name__, f"java/{resource}").decode(
-                "utf-8"
-            )
+        def template_from_resource(resource: Path) -> string.Template:
+            template_str = resource.read_text("utf-8")
             template = string.Template(template_str)
             return template
 
         def expand_resource_template_to(resource: str, path: Path) -> None:
-            template = template_from_resource(resource)
+            template = template_from_resource(files("schema_salad").joinpath(f"java/{resource}"))
             src = template.safe_substitute(template_vars)
             _ensure_directory_and_write(path, src)
 
@@ -880,9 +878,9 @@ public enum {clazz} {{
             "test_utils": self.test_src_dir,
         }
         for util_src, util_target in util_src_dirs.items():
-            for util in pkg_resources.resource_listdir(__name__, f"java/{util_src}"):
-                src_path = util_target / "utils" / util
-                src_template = template_from_resource(os.path.join(util_src, util))
+            for util in files("schema_salad").joinpath(f"java/{util_src}").iterdir():
+                src_path = util_target / "utils" / util.name
+                src_template = template_from_resource(util)
                 src = src_template.safe_substitute(template_args)
                 _ensure_directory_and_write(src_path, src)
 

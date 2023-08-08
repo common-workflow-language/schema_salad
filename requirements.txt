@@ -10,3 +10,6 @@ CacheControl[filecache]< 0.13;python_version<='3.6'
 urllib3<2;python_version<='3.6'
 black<23.8
 mypy_extensions
+importlib_metadata;python_version<'3.8'
+importlib_resources>=1.4
+# ^^ equivalent to Python 3.9

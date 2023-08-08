@@ -5,9 +5,9 @@ requires = [
     'mypy==0.971; python_version == "3.6"',  # last version for Python 3.6
     'mypy==1.4.1; python_version >= "3.7"',  # update mypy-requirements as well
     "black>=19.10b0",
-    "types-pkg_resources",
     "types-requests",
     "types-dataclasses",
+    "importlib_resources>=1.4",  # equivalent to Python 3.9
     "ruamel.yaml>= 0.12.4, != 0.16.6, < 0.18",
     "types-setuptools"
 ]

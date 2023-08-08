@@ -16,7 +16,7 @@ from typing import (
 )
 from xml.sax.saxutils import escape  # nosec
 
-import pkg_resources
+from importlib_resources import files
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, TypeDef
@@ -855,15 +855,13 @@ public class {enum_name} : IEnumClass<{enum_name}>
             license_name="Apache License, Version 2.0",
         )
 
-        def template_from_resource(resource: str) -> string.Template:
-            template_str = pkg_resources.resource_string(__name__, f"dotnet/{resource}").decode(
-                "utf-8"
-            )
+        def template_from_resource(resource: Path) -> string.Template:
+            template_str = resource.read_text("utf-8")
             template = string.Template(template_str)
             return template
 
         def expand_resource_template_to(resource: str, path: Path) -> None:
-            template = template_from_resource(resource)
+            template = template_from_resource(files("schema_salad").joinpath(f"dotnet/{resource}"))
             src = template.safe_substitute(template_vars)
             _ensure_directory_and_write(path, src)
 
@@ -944,13 +942,12 @@ public class {enum_name} : IEnumClass<{enum_name}>
         }
 
         def copy_utils_recursive(util_src: str, util_target: Path) -> None:
-            for util in pkg_resources.resource_listdir(__name__, f"dotnet/{util_src}"):
-                template_path = os.path.join(util_src, util)
-                if pkg_resources.resource_isdir(__name__, f"dotnet/{template_path}"):
-                    copy_utils_recursive(os.path.join(util_src, util), util_target / util)
+            for util in files("schema_salad").joinpath(f"dotnet/{util_src}").iterdir():
+                if util.is_dir():
+                    copy_utils_recursive(os.path.join(util_src, util.name), util_target / util.name)
                     continue
-                src_path = util_target / util
-                src_template = template_from_resource(template_path)
+                src_path = util_target / util.name
+                src_template = template_from_resource(util)
                 src = src_template.safe_substitute(template_args)
                 _ensure_directory_and_write(src_path, src)
 
