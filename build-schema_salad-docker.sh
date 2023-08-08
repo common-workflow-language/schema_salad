@@ -2,7 +2,7 @@
 set -ex
 docker build --file=schema_salad.Dockerfile --tag=quay.io/commonwl/schema_salad .
 docker run quay.io/commonwl/schema_salad /bin/sh -c \
-	'apk add --no-cache py3-pip && pip install pytest-xdist && pytest --pyargs schema_salad -n auto'
+	'apk add --no-cache py3-pip && pip install pytest-xdist && cd /tmp && pytest --pyargs schema_salad -n auto'
 
 # version=$(git describe --tags)
 # if echo "$version" | grep -vq '\-' >& /dev/null ; then
