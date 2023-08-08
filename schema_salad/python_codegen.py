@@ -631,7 +631,8 @@ if self.{safename} is not None:
         return self.declare_type(
             TypeDef(
                 f"typedsl_{self.safe_name(inner.name)}_{ref_scope}",
-                f"_TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope}, '{self.salad_version}')",
+                f"_TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope}, "  # noqa: B907
+                f"'{self.salad_version}')",
             )
         )
 

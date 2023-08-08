@@ -85,7 +85,7 @@ mixin template genCtor()
 {{
     mixin genCtor_!saladVersion;
 }}
-"""
+"""  # noqa: B907
         )
 
     def epilogue(self, root_loader: TypeDef) -> None:
