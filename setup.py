@@ -81,18 +81,12 @@ else:
 
 install_requires = [
     "requests >= 1.0",
-    "ruamel.yaml >= 0.16.12, < 0.18",
-    "ruamel.yaml >= 0.17.6;python_version>='3.7'",
+    "ruamel.yaml >= 0.17.6, < 0.18",
     "rdflib >= 4.2.2, < 7.0.0",
-    "rdflib < 6.0.0;python_version<='3.6'",
-    "rdflib-jsonld>=0.4.0, <= 0.6.1;python_version<='3.6'",
     "mistune>=2.0.3,<2.1",
     "CacheControl[filecache] >= 0.11.7, < 0.14",
-    "CacheControl[filecache] < 0.13;python_version<='3.6'",
-    "urllib3<2;python_version<='3.6'",
     "mypy_extensions",
     "importlib_resources>=1.4",  # equivalent to Python 3.9,
-    "importlib_metadata;python_version<'3.8'",
 ]
 
 extras_require = {
@@ -120,7 +114,7 @@ setup(
     download_url="https://github.com/common-workflow-language/schema_salad/releases",
     ext_modules=ext_modules,
     license="Apache 2.0",
-    python_requires=">=3.6,<3.13",
+    python_requires=">=3.8,<3.13",
     setup_requires=pytest_runner + ["setuptools_scm"],
     packages=["schema_salad", "schema_salad.tests", "schema_salad.avro"],
     package_data={
@@ -168,7 +162,6 @@ setup(
         "Operating System :: POSIX",
         "Operating System :: MacOS :: MacOS X",
         "Development Status :: 5 - Production/Stable",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
