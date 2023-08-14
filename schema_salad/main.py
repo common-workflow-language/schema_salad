@@ -22,10 +22,8 @@ from .utils import json_dump, stdout
 if int(rdflib_version.split(".", maxsplit=1)[0]) < 6:
     register("json-ld", Parser, "rdflib_jsonld.parser", "JsonLDParser")
 
-if sys.version_info >= (3, 8):
-    import importlib.metadata as importlib_metadata
-else:
-    import importlib_metadata
+import importlib.metadata
+
 _logger = logging.getLogger("salad")
 
 
@@ -225,8 +223,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
     if args.debug:
         _logger.setLevel(logging.DEBUG)
 
-    pkg = importlib_metadata.version("schema_salad")
-    if pkg:
+    if pkg := importlib.metadata.version("schema_salad"):
         if args.version:
             print(f"{sys.argv[0]} Current version: {pkg}")
             return 0

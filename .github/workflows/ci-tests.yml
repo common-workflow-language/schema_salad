@@ -15,23 +15,14 @@ jobs:
   tox:
     name: CI tests via Tox
 
-    runs-on: ubuntu-20.04  # 22.04 doesn't support Python 3.6
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
         py-ver-major: [3]
-        py-ver-minor: [6, 8, 9, 10, 11, 12]
+        py-ver-minor: [8, 9, 10, 11, 12]
         step: [lint, bandit, unit, mypy, memleak]
         exclude:
-          - py-ver-major: 3
-            py-ver-minor: 6
-            step: mypy
-          - py-ver-major: 3
-            py-ver-minor: 6
-            step: memleak
-          - py-ver-major: 3
-            py-ver-minor: 6
-            step: lint
           - py-ver-major: 3
             py-ver-minor: 12
             step: memleak

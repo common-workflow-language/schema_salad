@@ -23,7 +23,7 @@ generation, and transformation to RDF_. Salad provides a bridge
 between document and record oriented data modeling and the Semantic
 Web.
 
-The Schema Salad library is Python 3.6+ only.
+The Schema Salad library is Python 3.8+ only.
 
 Installation
 ------------

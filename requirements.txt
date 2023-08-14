@@ -1,15 +1,9 @@
 requests >= 1.0
-ruamel.yaml >= 0.16.12, < 0.18
-ruamel.yaml >= 0.17.6;python_version>='3.7'
+ruamel.yaml >= 0.17.6, < 0.18
 rdflib>= 4.2.2, < 7.0.0
-rdflib< 6.0.0;python_version<='3.6'
-rdflib-jsonld>=0.4.0, <= 0.6.1;python_version<='3.6'
 mistune>=2.0.3,<2.1
 CacheControl[filecache]>= 0.11.7, < 0.14
-CacheControl[filecache]< 0.13;python_version<='3.6'
-urllib3<2;python_version<='3.6'
 black<23.8
 mypy_extensions
-importlib_metadata;python_version<'3.8'
 importlib_resources>=1.4
 # ^^ equivalent to Python 3.9

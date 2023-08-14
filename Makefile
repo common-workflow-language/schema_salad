@@ -178,9 +178,6 @@ mypy3: mypy
 mypy: $(filter-out setup.py,$(PYSOURCES))
 	MYPYPATH=$$MYPYPATH:mypy-stubs mypy $^
 
-mypy_3.6: $(filter-out setup.py,$(PYSOURCES))
-	MYPYPATH=$$MYPYPATH:mypy-stubs mypy --python-version 3.6 $^
-
 mypyc: $(PYSOURCES)
 	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 pip install --verbose -e . \
 		 && pytest "${PYTEST_EXTRA}"
@@ -206,7 +203,8 @@ shellcheck: FORCE
 	shellcheck build-schema_salad-docker.sh release-test.sh
 
 pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
-	pyupgrade --exit-zero-even-if-changed --py36-plus $^
+	pyupgrade --exit-zero-even-if-changed --py38-plus $^
+	auto-walrus $^
 
 release-test: FORCE
 	git diff-index --quiet HEAD -- || ( echo You have uncommitted changes, please commit them and try again; false )
