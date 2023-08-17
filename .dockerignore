@@ -16,6 +16,7 @@ testenv*/
 *.img
 *.sif
 *.so
+*.swp
 .github/
 schema_salad/*.so
 *.Dockerfile

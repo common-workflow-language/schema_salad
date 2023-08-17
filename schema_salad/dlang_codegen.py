@@ -22,6 +22,7 @@ class DlangCodeGen(CodeGenBase):
         package: str,
         copyright_: Optional[str],
         parser_info: Optional[str],
+        salad_version: str,
     ) -> None:
         """Initialize the D codegen."""
         super().__init__()
@@ -31,6 +32,7 @@ class DlangCodeGen(CodeGenBase):
         self.package = package
         self.copyright = copyright_
         self.parser_info = parser_info
+        self.salad_version = salad_version
         self.doc_root_types: List[str] = []
 
     def prologue(self) -> None:
@@ -60,11 +62,11 @@ class DlangCodeGen(CodeGenBase):
             f"""module {self.package};
 
 import salad.meta.dumper : genDumper;
-import salad.meta.impl : genCtor, genIdentifier, genOpEq;
+import salad.meta.impl : genCtor_, genIdentifier, genOpEq;
 import salad.meta.parser : import_ = importFromURI;
 import salad.meta.uda : documentRoot, id, idMap, link, LinkResolver, secondaryFilesDSL, typeDSL;
 import salad.primitives : SchemaBase;
-import salad.type : None, Either;
+import salad.type : None, Union;
 
 """
         )
@@ -75,10 +77,21 @@ enum parserInfo = "{self.parser_info}";
 """  # noqa: B907
             )
 
+        self.target.write(
+            f"""
+enum saladVersion = "{self.salad_version}";
+
+mixin template genCtor()
+{{
+    mixin genCtor_!saladVersion;
+}}
+"""  # noqa: B907
+        )
+
     def epilogue(self, root_loader: TypeDef) -> None:
         """Trigger to generate the epilouge code."""
         doc_root_type_str = ", ".join(self.doc_root_types)
-        doc_root_type = f"Either!({doc_root_type_str})"
+        doc_root_type = f"Union!({doc_root_type_str})"
         self.target.write(
             f"""
 ///
@@ -185,7 +198,7 @@ unittest
         elif isinstance(type_, list):
             t_str = [self.parse_record_field_type(t, None)[1] for t in type_]
             union_types = ", ".join(t_str)
-            type_str = f"Either!({union_types})"
+            type_str = f"Union!({union_types})"
         elif shortname(type_["type"]) == "array":
             item_type = self.parse_record_field_type(type_["items"], None)[1]
             type_str = f"{item_type}[]"

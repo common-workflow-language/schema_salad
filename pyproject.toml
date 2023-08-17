@@ -2,12 +2,12 @@
 requires = [
     "setuptools>=45",
     "setuptools_scm[toml]>=6.2",
-    'mypy==0.971; python_version == "3.6"',  # last version for Python 3.6
-    'mypy==1.4.1; python_version >= "3.7"',  # update mypy-requirements as well
+    'mypy==1.5.0',  # update mypy-requirements as well
     "black>=19.10b0",
     "types-pkg_resources",
     "types-requests",
     "types-dataclasses",
+    "importlib_resources>=1.4",  # equivalent to Python 3.9
     "ruamel.yaml>= 0.12.4, != 0.16.6, < 0.18",
     "types-setuptools"
 ]
@@ -21,11 +21,11 @@ before-build = "python -m pip install -r requirements.txt -r mypy-requirements.t
 test-command = "python -m pytest -n 2 --junitxml=/output/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad"
 test-requires = "-r test-requirements.txt"
 test-extras = "pycodegen"
-skip = "pp* cp36-*"
+skip = "pp* cp36-* cp37-* cp312-*"
 #      ^ skip building wheels on PyPy (any version)
-#           ^ skip building wheels on Python 3.6 (we now need mypy 0.990+ which doesn't support Python 3.6)
+#           ^ skip building wheels on Python 3.6 / 3.7 (not supported) & 3.12 (not ready)
 build-verbosity = "1"
 
 [tool.black]
 line-length = 100
-target-version = [ "py36" ]
+target-version = [ "py38" ]
