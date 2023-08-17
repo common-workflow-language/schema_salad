@@ -1,4 +1,4 @@
-mypy==1.4.1  # update pyproject.toml as well
+mypy==1.5.1  # update pyproject.toml as well
 black>=19.10b0
 types-pkg_resources
 types-requests

@@ -19,7 +19,7 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-from pkg_resources import resource_stream
+from importlib_resources import files
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from schema_salad.utils import (
@@ -182,11 +182,13 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
     )
 
     for salad in SALAD_FILES:
-        with resource_stream("schema_salad", "metaschema/" + salad) as stream:
-            loader.cache["https://w3id.org/cwl/" + salad] = stream.read().decode("UTF-8")
+        loader.cache["https://w3id.org/cwl/" + salad] = (
+            files("schema_salad").joinpath("metaschema/" + salad).read_text("UTF-8")
+        )
 
-    with resource_stream("schema_salad", "metaschema/metaschema.yml") as stream:
-        loader.cache["https://w3id.org/cwl/salad"] = stream.read().decode("UTF-8")
+    loader.cache["https://w3id.org/cwl/salad"] = (
+        files("schema_salad").joinpath("metaschema/metaschema.yml").read_text("UTF-8")
+    )
 
     yaml = yaml_no_ts()
     j = yaml.load(loader.cache["https://w3id.org/cwl/salad"])

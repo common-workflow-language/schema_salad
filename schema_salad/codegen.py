@@ -59,7 +59,7 @@ def codegen(
     info = parser_info or pkg
     salad_version = schema_metadata.get("saladVersion", "v1.1")
 
-    if lang in set(["python", "cpp", "dlang"]):
+    if lang in {"python", "cpp", "dlang"}:
         if target:
             dest: Union[TextIOWrapper, TextIO] = open(target, mode="w", encoding="utf-8")
         else:
@@ -82,6 +82,7 @@ def codegen(
                 pkg,
                 copyright,
                 info,
+                salad_version,
             )
             gen.parse(j)
             return

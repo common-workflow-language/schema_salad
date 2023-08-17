@@ -85,8 +85,7 @@ def indent(v: str, nolead: bool = False, shift: str = "  ", bullet: str = "  ") 
         return v.splitlines()[0] + "\n".join([shift + line for line in v.splitlines()[1:]])
 
     def lineno(i: int, line: str) -> str:
-        r = lineno_re.match(line)
-        if r is not None:
+        if (r := lineno_re.match(line)) is not None:
             group1 = r.group(1)
             group2 = r.group(2)
             assert group1 is not None  # nosec

@@ -1,3 +1,5 @@
 pytest >= 6.2, < 7.5
 pytest-cov
 pytest-xdist
+setuptools
+-rrequirements.txt

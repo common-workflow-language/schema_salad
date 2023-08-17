@@ -161,7 +161,7 @@
                     "typeDSL": true,
                     "refScope": 2
                 },
-                "doc": "The field type\n"
+                "doc": "The field type. If it is an array, it indicates\nthat the field type is a union type of its elements.\nIts elements may be duplicated.\n"
             }
         ]
     },
