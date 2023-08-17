@@ -255,11 +255,13 @@ save_type = Optional[Union[MutableMapping[str, Any], MutableSequence[Any], int, 
 
 
 def extract_type(val_type: Type[Any]) -> str:
+    """Take a type of value, and extracts the value as a string."""
     val_str = str(val_type)
     return val_str.split("'")[1]
 
 
 def convert_typing(val_type: str) -> str:
+    """Convert typing to be consistent with CWL schema standards."""
     if "None" in val_type:
         return "null"
     if "CommentedSeq" in val_type or "list" in val_type:
