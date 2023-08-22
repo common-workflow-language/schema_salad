@@ -453,7 +453,8 @@ class _ArrayLoader(_Loader):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
         if not isinstance(doc, MutableSequence):
             raise ValidationException(
-                f"Expected an array, was {convert_typing(extract_type(type(doc)))}"
+                f"Value is a {convert_typing(extract_type(type(doc)))}, "
+                f"but valid type for this field is an array."
             )
         r = []  # type: List[Any]
         errors = []  # type: List[SchemaSaladException]
@@ -586,7 +587,8 @@ class _RecordLoader(_Loader):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
         if not isinstance(doc, MutableMapping):
             raise ValidationException(
-                f"Expected an object, was {convert_typing(extract_type(type(doc)))}"
+                f"Value is a {convert_typing(extract_type(type(doc)))}, "
+                f"but valid type for this field is an object."
             )
         return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
@@ -602,7 +604,8 @@ class _ExpressionLoader(_Loader):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
         if not isinstance(doc, str):
             raise ValidationException(
-                f"Expected a str, was {convert_typing(extract_type(type(doc)))}"
+                f"Value is a {convert_typing(extract_type(type(doc)))}, "
+                f"but valid type for this field is a str."
             )
         return doc
 

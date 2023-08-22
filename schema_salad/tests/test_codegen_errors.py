@@ -44,8 +44,7 @@ def test_error_message4(tmp_path: Path) -> None:
 .*test4\.cwl:6:1:\s+the\s+`outputs`\s+field\s+is\s+not\s+valid\s+because:
 \s+array\s+item\s+is\s+invalid\s+because
 .*test4\.cwl:7:3:\s+checking\s+object\s+`.*test4\.cwl#bar`
-\s+the\s+`type`\s+field\s+is\s+not\s+valid\s+because:
-\s+Expected\s+one\s+of\s+\(str|object|array,str|object|array,list|str|object|array\)\s+was\s+int"""
+\s+Value\s+is\s+a\s+int,\s+but\s+valid\s+types\s+for\s+this\s+field\s+are\s+\(str|object|array,str|object|array,list|str|object|array\)"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
@@ -57,7 +56,7 @@ def test_error_message5(tmp_path: Path) -> None:
     match = r"""^.*test5\.cwl:2:1:\s+Object\s+`.*test5\.cwl`\s+is\s+not\s+valid\s+because:
 .+test5\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
 .+test5\.cwl:8:9:\s+array\s+item\s+is\s+invalid\s+because
-\s+Expected\s+an\s+object,\s+was\s+int"""
+\s+Value\s+is\s+a\s+int,\s+but\s+valid\s+type\s+for\s+this\s+field\s+is\s+an\s+object"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
@@ -116,7 +115,7 @@ def test_error_message9(tmp_path: Path) -> None:
 .*test9\.cwl:9:3:\s+checking object\s+`.*test9\.cwl#step1`
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test9\.cwl:10:5:\s+\*\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
-\s+Expected\s+one\s+of\s+\("dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct"\) was\s+int"""
+\s+Value\s+is\s+a\s+int,\s+but\s+valid\s+types\s+for\s+this\s+field\s+are\s+\("dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct"\)"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
@@ -131,7 +130,7 @@ def test_error_message10(tmp_path: Path) -> None:
 .*test10\.cwl:9:3:\s+checking\s+object\s+`.*test10.cwl#step1`
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test10\.cwl:10:5:\s+\*\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
-\s+Expected\s+one\s+of\s+\("dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct"\)\s+was\s+array"""
+\s+Value\s+is\s+a\s+array,\s+but\s+valid\s+types\s+for\s+this\s+field\s+are\s+\("dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct"\)"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):

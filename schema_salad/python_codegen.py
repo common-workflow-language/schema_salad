@@ -568,7 +568,9 @@ if _errors__:
 {spc}                        ValidationException(
 {spc}                            \"the `{fieldname}` field is not valid because:\",
 {spc}                            SourceLine(_doc, "{fieldname}", str),
-{spc}                            [ValidationException(f"Expected one of {{error_message}} was {{val_type}}")],
+{spc}                            [ValidationException(f"Value is a {{val_type}}, "
+{spc}                                                 f"but valid types for this field "
+{spc}                                                 f"are {{error_message}}")],
 {spc}                        )
 {spc}                    )
 {spc}                else:
