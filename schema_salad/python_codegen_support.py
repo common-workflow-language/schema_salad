@@ -258,7 +258,7 @@ def extract_type(val_type: Type[Any]) -> str:
 
 
 def convert_typing(val_type: str) -> str:
-    """Convert typing to be consistent with CWL schema standards."""
+    """Normalize type names to schema-salad types."""
     if "None" in val_type:
         return "null"
     if "CommentedSeq" in val_type or "list" in val_type:
