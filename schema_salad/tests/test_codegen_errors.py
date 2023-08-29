@@ -113,7 +113,7 @@ def test_error_message9(tmp_path: Path) -> None:
     match = r"""^.*test9.cwl:2:1:\s+Object\s+`.*test9.cwl`\s+is\s+not\s+valid\s+because:
 .*test9\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
 \s+array\s+item\s+is\s+invalid\s+because
-.*test9\.cwl:9:3:\s+checking object\s+`.*test9\.cwl#step1`
+.*test9\.cwl:9:3:\s+checking\s+object\s+`.*test9\.cwl#step1`
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test9\.cwl:10:5:\s+\*\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
 \s+Value\s+is\s+a\s+int,\s+but\s+valid\s+types\s+for\s+this\s+field\s+are\s+\("(dotproduct|nested_crossproduct|flat_crossproduct)",\s+"(dotproduct|nested_crossproduct|flat_crossproduct)",\s+"(dotproduct|nested_crossproduct|flat_crossproduct)"\)"""
