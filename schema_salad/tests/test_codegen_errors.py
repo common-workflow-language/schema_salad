@@ -44,7 +44,8 @@ def test_error_message4(tmp_path: Path) -> None:
 .*test4\.cwl:6:1:\s+the\s+`outputs`\s+field\s+is\s+not\s+valid\s+because:
 \s+array\s+item\s+is\s+invalid\s+because
 .*test4\.cwl:7:3:\s+checking\s+object\s+`.*test4\.cwl#bar`
-\s+Value\s+is\s+a\s+int,\s+but\s+valid\s+types\s+for\s+this\s+field\s+are\s+\(str|object|array,str|object|array,list|str|object|array\)"""
+\s+the\s+`type`\s+field\s+is\s+not\s+valid\s+because:
+\s+Value\s+is\s+a\s+int,\s+but\s+valid\s+types\s+for\s+this\s+field\s+are\s+\((str|object),\s+(str|object)\)"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
@@ -115,7 +116,7 @@ def test_error_message9(tmp_path: Path) -> None:
 .*test9\.cwl:9:3:\s+checking object\s+`.*test9\.cwl#step1`
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test9\.cwl:10:5:\s+\*\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
-\s+Value\s+is\s+a\s+int,\s+but\s+valid\s+types\s+for\s+this\s+field\s+are\s+\("dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct"\)"""
+\s+Value\s+is\s+a\s+int,\s+but\s+valid\s+types\s+for\s+this\s+field\s+are\s+\("(dotproduct|nested_crossproduct|flat_crossproduct)",\s+"(dotproduct|nested_crossproduct|flat_crossproduct)",\s+"(dotproduct|nested_crossproduct|flat_crossproduct)"\)"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):

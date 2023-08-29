@@ -272,25 +272,26 @@ def convert_typing(val_type: str) -> str:
 
 def parse_errors(error_message: str) -> str:
     """Parse error messages from several loaders into one error message."""
-    types = set()
     if not error_message.startswith("Expected"):
         return error_message
-    vals = error_message.split("Expected ")
+    vals = error_message.split("\n")
     if len(vals) == 1:
         return error_message
+    types = set()
     for val in vals:
         individual_vals = val.split(" ")
         if val == "":
             continue
-        if individual_vals[0] == "one":
+        if individual_vals[1] == "one":
             individual_vals = val.split("(")[1].split(",")
             for t in individual_vals:
                 types.add(t.strip(" ").strip(")\n"))
+        elif individual_vals[2] == "<class":
+            types.add(individual_vals[3].strip(">").replace("'", ""))
+        elif individual_vals[0] == "Value":
+            types.add(individual_vals[-1].strip("."))
         else:
-            if individual_vals[1] == "<class":
-                types.add(individual_vals[2].strip(">").replace("'", ""))
-            else:
-                types.add(individual_vals[1].replace(",", ""))
+            types.add(individual_vals[1].replace(",", ""))
     types = set(val for val in types if val != "NoneType")
     if "str" in types:
         types = set(convert_typing(val) for val in types if "'" not in val)
