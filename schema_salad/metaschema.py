@@ -273,13 +273,13 @@ def convert_typing(val_type: str) -> str:
     return val_type
 
 
-def parse_errors(error_message: str) -> str:
+def parse_errors(error_message: str) -> Tuple[str, str, str]:
     """Parse error messages from several loaders into one error message."""
     if not error_message.startswith("Expected"):
-        return error_message
+        return error_message, "", ""
     vals = error_message.split("\n")
     if len(vals) == 1:
-        return error_message
+        return error_message, "", ""
     types = set()
     for val in vals:
         individual_vals = val.split(" ")
@@ -298,7 +298,17 @@ def parse_errors(error_message: str) -> str:
     types = set(val for val in types if val != "NoneType")
     if "str" in types:
         types = set(convert_typing(val) for val in types if "'" not in val)
-    return str(types).replace("{", "(").replace("}", ")").replace("'", "")
+    to_print = ""
+    for val in types:
+        if "'" in val:
+            to_print = "value" if len(types) == 1 else "values"
+
+    if to_print == "":
+        to_print = "type" if len(types) == 1 else "types"
+
+    verb_tensage = "is" if len(types) == 1 else "are"
+
+    return str(types).replace("{", "(").replace("}", ")").replace("'", ""), to_print, verb_tensage
 
 
 def save(
@@ -1090,7 +1100,7 @@ class RecordField(Documented):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `name`":
                     _errors__.append(
@@ -1107,8 +1117,8 @@ class RecordField(Documented):
                                 "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -1144,7 +1154,7 @@ class RecordField(Documented):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `doc`":
                     _errors__.append(
@@ -1161,8 +1171,8 @@ class RecordField(Documented):
                                 "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -1188,7 +1198,7 @@ class RecordField(Documented):
             )
 
         except ValidationException as e:
-            error_message = parse_errors(str(e))
+            error_message, to_print, verb_tensage = parse_errors(str(e))
 
             if str(e) == "missing required field `type`":
                 _errors__.append(
@@ -1205,8 +1215,8 @@ class RecordField(Documented):
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [ValidationException(f"Value is a {val_type}, "
-                                                 f"but valid types for this field "
-                                                 f"are {error_message}")],
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
                         )
                     )
                 else:
@@ -1340,7 +1350,7 @@ class RecordSchema(Saveable):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `fields`":
                     _errors__.append(
@@ -1357,8 +1367,8 @@ class RecordSchema(Saveable):
                                 "the `fields` field is not valid because:",
                                 SourceLine(_doc, "fields", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -1384,7 +1394,7 @@ class RecordSchema(Saveable):
             )
 
         except ValidationException as e:
-            error_message = parse_errors(str(e))
+            error_message, to_print, verb_tensage = parse_errors(str(e))
 
             if str(e) == "missing required field `type`":
                 _errors__.append(
@@ -1401,8 +1411,8 @@ class RecordSchema(Saveable):
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [ValidationException(f"Value is a {val_type}, "
-                                                 f"but valid types for this field "
-                                                 f"are {error_message}")],
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
                         )
                     )
                 else:
@@ -1542,7 +1552,7 @@ class EnumSchema(Saveable):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `name`":
                     _errors__.append(
@@ -1559,8 +1569,8 @@ class EnumSchema(Saveable):
                                 "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -1595,7 +1605,7 @@ class EnumSchema(Saveable):
             )
 
         except ValidationException as e:
-            error_message = parse_errors(str(e))
+            error_message, to_print, verb_tensage = parse_errors(str(e))
 
             if str(e) == "missing required field `symbols`":
                 _errors__.append(
@@ -1612,8 +1622,8 @@ class EnumSchema(Saveable):
                             "the `symbols` field is not valid because:",
                             SourceLine(_doc, "symbols", str),
                             [ValidationException(f"Value is a {val_type}, "
-                                                 f"but valid types for this field "
-                                                 f"are {error_message}")],
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
                         )
                     )
                 else:
@@ -1637,7 +1647,7 @@ class EnumSchema(Saveable):
             )
 
         except ValidationException as e:
-            error_message = parse_errors(str(e))
+            error_message, to_print, verb_tensage = parse_errors(str(e))
 
             if str(e) == "missing required field `type`":
                 _errors__.append(
@@ -1654,8 +1664,8 @@ class EnumSchema(Saveable):
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [ValidationException(f"Value is a {val_type}, "
-                                                 f"but valid types for this field "
-                                                 f"are {error_message}")],
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
                         )
                     )
                 else:
@@ -1787,7 +1797,7 @@ class ArraySchema(Saveable):
             )
 
         except ValidationException as e:
-            error_message = parse_errors(str(e))
+            error_message, to_print, verb_tensage = parse_errors(str(e))
 
             if str(e) == "missing required field `items`":
                 _errors__.append(
@@ -1804,8 +1814,8 @@ class ArraySchema(Saveable):
                             "the `items` field is not valid because:",
                             SourceLine(_doc, "items", str),
                             [ValidationException(f"Value is a {val_type}, "
-                                                 f"but valid types for this field "
-                                                 f"are {error_message}")],
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
                         )
                     )
                 else:
@@ -1829,7 +1839,7 @@ class ArraySchema(Saveable):
             )
 
         except ValidationException as e:
-            error_message = parse_errors(str(e))
+            error_message, to_print, verb_tensage = parse_errors(str(e))
 
             if str(e) == "missing required field `type`":
                 _errors__.append(
@@ -1846,8 +1856,8 @@ class ArraySchema(Saveable):
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [ValidationException(f"Value is a {val_type}, "
-                                                 f"but valid types for this field "
-                                                 f"are {error_message}")],
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
                         )
                     )
                 else:
@@ -2025,7 +2035,7 @@ class JsonldPredicate(Saveable):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `_id`":
                     _errors__.append(
@@ -2042,8 +2052,8 @@ class JsonldPredicate(Saveable):
                                 "the `_id` field is not valid because:",
                                 SourceLine(_doc, "_id", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -2070,7 +2080,7 @@ class JsonldPredicate(Saveable):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `_type`":
                     _errors__.append(
@@ -2087,8 +2097,8 @@ class JsonldPredicate(Saveable):
                                 "the `_type` field is not valid because:",
                                 SourceLine(_doc, "_type", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -2115,7 +2125,7 @@ class JsonldPredicate(Saveable):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `_container`":
                     _errors__.append(
@@ -2132,8 +2142,8 @@ class JsonldPredicate(Saveable):
                                 "the `_container` field is not valid because:",
                                 SourceLine(_doc, "_container", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -2160,7 +2170,7 @@ class JsonldPredicate(Saveable):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `identity`":
                     _errors__.append(
@@ -2177,8 +2187,8 @@ class JsonldPredicate(Saveable):
                                 "the `identity` field is not valid because:",
                                 SourceLine(_doc, "identity", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -2205,7 +2215,7 @@ class JsonldPredicate(Saveable):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `noLinkCheck`":
                     _errors__.append(
@@ -2222,8 +2232,8 @@ class JsonldPredicate(Saveable):
                                 "the `noLinkCheck` field is not valid because:",
                                 SourceLine(_doc, "noLinkCheck", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -2250,7 +2260,7 @@ class JsonldPredicate(Saveable):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `mapSubject`":
                     _errors__.append(
@@ -2267,8 +2277,8 @@ class JsonldPredicate(Saveable):
                                 "the `mapSubject` field is not valid because:",
                                 SourceLine(_doc, "mapSubject", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -2295,7 +2305,7 @@ class JsonldPredicate(Saveable):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `mapPredicate`":
                     _errors__.append(
@@ -2312,8 +2322,8 @@ class JsonldPredicate(Saveable):
                                 "the `mapPredicate` field is not valid because:",
                                 SourceLine(_doc, "mapPredicate", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -2340,7 +2350,7 @@ class JsonldPredicate(Saveable):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `refScope`":
                     _errors__.append(
@@ -2357,8 +2367,8 @@ class JsonldPredicate(Saveable):
                                 "the `refScope` field is not valid because:",
                                 SourceLine(_doc, "refScope", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -2385,7 +2395,7 @@ class JsonldPredicate(Saveable):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `typeDSL`":
                     _errors__.append(
@@ -2402,8 +2412,8 @@ class JsonldPredicate(Saveable):
                                 "the `typeDSL` field is not valid because:",
                                 SourceLine(_doc, "typeDSL", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -2430,7 +2440,7 @@ class JsonldPredicate(Saveable):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `secondaryFilesDSL`":
                     _errors__.append(
@@ -2447,8 +2457,8 @@ class JsonldPredicate(Saveable):
                                 "the `secondaryFilesDSL` field is not valid because:",
                                 SourceLine(_doc, "secondaryFilesDSL", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -2475,7 +2485,7 @@ class JsonldPredicate(Saveable):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `subscope`":
                     _errors__.append(
@@ -2492,8 +2502,8 @@ class JsonldPredicate(Saveable):
                                 "the `subscope` field is not valid because:",
                                 SourceLine(_doc, "subscope", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -2699,7 +2709,7 @@ class SpecializeDef(Saveable):
             )
 
         except ValidationException as e:
-            error_message = parse_errors(str(e))
+            error_message, to_print, verb_tensage = parse_errors(str(e))
 
             if str(e) == "missing required field `specializeFrom`":
                 _errors__.append(
@@ -2716,8 +2726,8 @@ class SpecializeDef(Saveable):
                             "the `specializeFrom` field is not valid because:",
                             SourceLine(_doc, "specializeFrom", str),
                             [ValidationException(f"Value is a {val_type}, "
-                                                 f"but valid types for this field "
-                                                 f"are {error_message}")],
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
                         )
                     )
                 else:
@@ -2741,7 +2751,7 @@ class SpecializeDef(Saveable):
             )
 
         except ValidationException as e:
-            error_message = parse_errors(str(e))
+            error_message, to_print, verb_tensage = parse_errors(str(e))
 
             if str(e) == "missing required field `specializeTo`":
                 _errors__.append(
@@ -2758,8 +2768,8 @@ class SpecializeDef(Saveable):
                             "the `specializeTo` field is not valid because:",
                             SourceLine(_doc, "specializeTo", str),
                             [ValidationException(f"Value is a {val_type}, "
-                                                 f"but valid types for this field "
-                                                 f"are {error_message}")],
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
                         )
                     )
                 else:
@@ -2923,7 +2933,7 @@ class SaladRecordField(RecordField):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `name`":
                     _errors__.append(
@@ -2940,8 +2950,8 @@ class SaladRecordField(RecordField):
                                 "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -2977,7 +2987,7 @@ class SaladRecordField(RecordField):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `doc`":
                     _errors__.append(
@@ -2994,8 +3004,8 @@ class SaladRecordField(RecordField):
                                 "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -3021,7 +3031,7 @@ class SaladRecordField(RecordField):
             )
 
         except ValidationException as e:
-            error_message = parse_errors(str(e))
+            error_message, to_print, verb_tensage = parse_errors(str(e))
 
             if str(e) == "missing required field `type`":
                 _errors__.append(
@@ -3038,8 +3048,8 @@ class SaladRecordField(RecordField):
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [ValidationException(f"Value is a {val_type}, "
-                                                 f"but valid types for this field "
-                                                 f"are {error_message}")],
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
                         )
                     )
                 else:
@@ -3064,7 +3074,7 @@ class SaladRecordField(RecordField):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `jsonldPredicate`":
                     _errors__.append(
@@ -3081,8 +3091,8 @@ class SaladRecordField(RecordField):
                                 "the `jsonldPredicate` field is not valid because:",
                                 SourceLine(_doc, "jsonldPredicate", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -3109,7 +3119,7 @@ class SaladRecordField(RecordField):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `default`":
                     _errors__.append(
@@ -3126,8 +3136,8 @@ class SaladRecordField(RecordField):
                                 "the `default` field is not valid because:",
                                 SourceLine(_doc, "default", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -3328,7 +3338,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `name`":
                     _errors__.append(
@@ -3345,8 +3355,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -3382,7 +3392,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `inVocab`":
                     _errors__.append(
@@ -3399,8 +3409,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 "the `inVocab` field is not valid because:",
                                 SourceLine(_doc, "inVocab", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -3427,7 +3437,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `fields`":
                     _errors__.append(
@@ -3444,8 +3454,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 "the `fields` field is not valid because:",
                                 SourceLine(_doc, "fields", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -3471,7 +3481,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             )
 
         except ValidationException as e:
-            error_message = parse_errors(str(e))
+            error_message, to_print, verb_tensage = parse_errors(str(e))
 
             if str(e) == "missing required field `type`":
                 _errors__.append(
@@ -3488,8 +3498,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [ValidationException(f"Value is a {val_type}, "
-                                                 f"but valid types for this field "
-                                                 f"are {error_message}")],
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
                         )
                     )
                 else:
@@ -3514,7 +3524,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `doc`":
                     _errors__.append(
@@ -3531,8 +3541,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -3559,7 +3569,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `docParent`":
                     _errors__.append(
@@ -3576,8 +3586,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 "the `docParent` field is not valid because:",
                                 SourceLine(_doc, "docParent", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -3604,7 +3614,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `docChild`":
                     _errors__.append(
@@ -3621,8 +3631,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 "the `docChild` field is not valid because:",
                                 SourceLine(_doc, "docChild", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -3649,7 +3659,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `docAfter`":
                     _errors__.append(
@@ -3666,8 +3676,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 "the `docAfter` field is not valid because:",
                                 SourceLine(_doc, "docAfter", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -3694,7 +3704,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `jsonldPredicate`":
                     _errors__.append(
@@ -3711,8 +3721,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 "the `jsonldPredicate` field is not valid because:",
                                 SourceLine(_doc, "jsonldPredicate", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -3739,7 +3749,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `documentRoot`":
                     _errors__.append(
@@ -3756,8 +3766,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 "the `documentRoot` field is not valid because:",
                                 SourceLine(_doc, "documentRoot", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -3784,7 +3794,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `abstract`":
                     _errors__.append(
@@ -3801,8 +3811,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 "the `abstract` field is not valid because:",
                                 SourceLine(_doc, "abstract", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -3829,7 +3839,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `extends`":
                     _errors__.append(
@@ -3846,8 +3856,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 "the `extends` field is not valid because:",
                                 SourceLine(_doc, "extends", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -3874,7 +3884,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `specialize`":
                     _errors__.append(
@@ -3891,8 +3901,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 "the `specialize` field is not valid because:",
                                 SourceLine(_doc, "specialize", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -4151,7 +4161,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `name`":
                     _errors__.append(
@@ -4168,8 +4178,8 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -4205,7 +4215,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `inVocab`":
                     _errors__.append(
@@ -4222,8 +4232,8 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 "the `inVocab` field is not valid because:",
                                 SourceLine(_doc, "inVocab", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -4249,7 +4259,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             )
 
         except ValidationException as e:
-            error_message = parse_errors(str(e))
+            error_message, to_print, verb_tensage = parse_errors(str(e))
 
             if str(e) == "missing required field `symbols`":
                 _errors__.append(
@@ -4266,8 +4276,8 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                             "the `symbols` field is not valid because:",
                             SourceLine(_doc, "symbols", str),
                             [ValidationException(f"Value is a {val_type}, "
-                                                 f"but valid types for this field "
-                                                 f"are {error_message}")],
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
                         )
                     )
                 else:
@@ -4291,7 +4301,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             )
 
         except ValidationException as e:
-            error_message = parse_errors(str(e))
+            error_message, to_print, verb_tensage = parse_errors(str(e))
 
             if str(e) == "missing required field `type`":
                 _errors__.append(
@@ -4308,8 +4318,8 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [ValidationException(f"Value is a {val_type}, "
-                                                 f"but valid types for this field "
-                                                 f"are {error_message}")],
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
                         )
                     )
                 else:
@@ -4334,7 +4344,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `doc`":
                     _errors__.append(
@@ -4351,8 +4361,8 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -4379,7 +4389,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `docParent`":
                     _errors__.append(
@@ -4396,8 +4406,8 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 "the `docParent` field is not valid because:",
                                 SourceLine(_doc, "docParent", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -4424,7 +4434,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `docChild`":
                     _errors__.append(
@@ -4441,8 +4451,8 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 "the `docChild` field is not valid because:",
                                 SourceLine(_doc, "docChild", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -4469,7 +4479,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `docAfter`":
                     _errors__.append(
@@ -4486,8 +4496,8 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 "the `docAfter` field is not valid because:",
                                 SourceLine(_doc, "docAfter", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -4514,7 +4524,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `jsonldPredicate`":
                     _errors__.append(
@@ -4531,8 +4541,8 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 "the `jsonldPredicate` field is not valid because:",
                                 SourceLine(_doc, "jsonldPredicate", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -4559,7 +4569,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `documentRoot`":
                     _errors__.append(
@@ -4576,8 +4586,8 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 "the `documentRoot` field is not valid because:",
                                 SourceLine(_doc, "documentRoot", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -4604,7 +4614,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `extends`":
                     _errors__.append(
@@ -4621,8 +4631,8 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 "the `extends` field is not valid because:",
                                 SourceLine(_doc, "extends", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -4847,7 +4857,7 @@ class Documentation(NamedType, DocType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `name`":
                     _errors__.append(
@@ -4864,8 +4874,8 @@ class Documentation(NamedType, DocType):
                                 "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -4901,7 +4911,7 @@ class Documentation(NamedType, DocType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `inVocab`":
                     _errors__.append(
@@ -4918,8 +4928,8 @@ class Documentation(NamedType, DocType):
                                 "the `inVocab` field is not valid because:",
                                 SourceLine(_doc, "inVocab", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -4946,7 +4956,7 @@ class Documentation(NamedType, DocType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `doc`":
                     _errors__.append(
@@ -4963,8 +4973,8 @@ class Documentation(NamedType, DocType):
                                 "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -4991,7 +5001,7 @@ class Documentation(NamedType, DocType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `docParent`":
                     _errors__.append(
@@ -5008,8 +5018,8 @@ class Documentation(NamedType, DocType):
                                 "the `docParent` field is not valid because:",
                                 SourceLine(_doc, "docParent", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -5036,7 +5046,7 @@ class Documentation(NamedType, DocType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `docChild`":
                     _errors__.append(
@@ -5053,8 +5063,8 @@ class Documentation(NamedType, DocType):
                                 "the `docChild` field is not valid because:",
                                 SourceLine(_doc, "docChild", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -5081,7 +5091,7 @@ class Documentation(NamedType, DocType):
                 )
 
             except ValidationException as e:
-                error_message = parse_errors(str(e))
+                error_message, to_print, verb_tensage = parse_errors(str(e))
 
                 if str(e) == "missing required field `docAfter`":
                     _errors__.append(
@@ -5098,8 +5108,8 @@ class Documentation(NamedType, DocType):
                                 "the `docAfter` field is not valid because:",
                                 SourceLine(_doc, "docAfter", str),
                                 [ValidationException(f"Value is a {val_type}, "
-                                                     f"but valid types for this field "
-                                                     f"are {error_message}")],
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
                             )
                         )
                     else:
@@ -5125,7 +5135,7 @@ class Documentation(NamedType, DocType):
             )
 
         except ValidationException as e:
-            error_message = parse_errors(str(e))
+            error_message, to_print, verb_tensage = parse_errors(str(e))
 
             if str(e) == "missing required field `type`":
                 _errors__.append(
@@ -5142,8 +5152,8 @@ class Documentation(NamedType, DocType):
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [ValidationException(f"Value is a {val_type}, "
-                                                 f"but valid types for this field "
-                                                 f"are {error_message}")],
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
                         )
                     )
                 else:

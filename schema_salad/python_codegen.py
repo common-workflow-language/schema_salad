@@ -552,7 +552,7 @@ if _errors__:
         self.out.write(
             """
 {spc}        except ValidationException as e:
-{spc}            error_message = parse_errors(str(e))
+{spc}            error_message, to_print, verb_tensage = parse_errors(str(e))
 
 {spc}            if str(e) == "missing required field `{fieldname}`":
 {spc}                _errors__.append(
@@ -569,8 +569,8 @@ if _errors__:
 {spc}                            \"the `{fieldname}` field is not valid because:\",
 {spc}                            SourceLine(_doc, "{fieldname}", str),
 {spc}                            [ValidationException(f"Value is a {{val_type}}, "
-{spc}                                                 f"but valid types for this field "
-{spc}                                                 f"are {{error_message}}")],
+{spc}                                                 f"but valid {{to_print}} for this field "
+{spc}                                                 f"{{verb_tensage}} {{error_message}}")],
 {spc}                        )
 {spc}                    )
 {spc}                else:

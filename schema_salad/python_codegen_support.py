@@ -270,13 +270,13 @@ def convert_typing(val_type: str) -> str:
     return val_type
 
 
-def parse_errors(error_message: str) -> str:
+def parse_errors(error_message: str) -> Tuple[str, str, str]:
     """Parse error messages from several loaders into one error message."""
     if not error_message.startswith("Expected"):
-        return error_message
+        return error_message, "", ""
     vals = error_message.split("\n")
     if len(vals) == 1:
-        return error_message
+        return error_message, "", ""
     types = set()
     for val in vals:
         individual_vals = val.split(" ")
@@ -295,7 +295,17 @@ def parse_errors(error_message: str) -> str:
     types = set(val for val in types if val != "NoneType")
     if "str" in types:
         types = set(convert_typing(val) for val in types if "'" not in val)
-    return str(types).replace("{", "(").replace("}", ")").replace("'", "")
+    to_print = ""
+    for val in types:
+        if "'" in val:
+            to_print = "value" if len(types) == 1 else "values"
+
+    if to_print == "":
+        to_print = "type" if len(types) == 1 else "types"
+
+    verb_tensage = "is" if len(types) == 1 else "are"
+
+    return str(types).replace("{", "(").replace("}", ")").replace("'", ""), to_print, verb_tensage
 
 
 def save(
