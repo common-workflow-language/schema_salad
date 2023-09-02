@@ -2,7 +2,7 @@
 requires = [
     "setuptools>=45",
     "setuptools_scm[toml]>=6.2",
-    'mypy==1.5.0',  # update mypy-requirements as well
+    'mypy==1.5.1',  # update mypy-requirements as well
     "black>=19.10b0",
     "types-pkg_resources",
     "types-requests",
@@ -21,9 +21,9 @@ before-build = "python -m pip install -r requirements.txt -r mypy-requirements.t
 test-command = "python -m pytest -n 2 --junitxml=/output/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad"
 test-requires = "-r test-requirements.txt"
 test-extras = "pycodegen"
-skip = "pp* cp36-* cp37-* cp312-*"
+skip = "pp* cp312-*"
 #      ^ skip building wheels on PyPy (any version)
-#           ^ skip building wheels on Python 3.6 / 3.7 (not supported) & 3.12 (not ready)
+#           ^ skip building wheels on 3.12 (not ready)
 build-verbosity = "1"
 
 [tool.black]
