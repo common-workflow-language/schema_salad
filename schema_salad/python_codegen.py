@@ -101,7 +101,7 @@ class PythonCodeGen(CodeGenBase):
             avn = avn[5:]
         elif avn[0].isdigit():
             avn = f"_{avn}"
-        elif avn in ("class", "in"):
+        elif avn in ("class", "in", "type"):
             # reserved words
             avn = f"{avn}_"
         return avn.replace(".", "_")
@@ -192,8 +192,7 @@ class PythonCodeGen(CodeGenBase):
             + "\n        extension_fields: Optional[Dict[str, Any]] = None,"
             + "\n        loadingOptions: Optional[LoadingOptions] = None,"
             + "\n    ) -> None:\n"
-            + """
-        if extension_fields:
+            + """        if extension_fields:
             self.extension_fields = extension_fields
         else:
             self.extension_fields = CommentedMap()
@@ -257,9 +256,10 @@ class PythonCodeGen(CodeGenBase):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
+        docRoot: Optional[str] = None
     ) -> "{classname}":
         _doc = copy.copy(doc)
+
         if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
@@ -288,8 +288,10 @@ class PythonCodeGen(CodeGenBase):
         if "class" in field_names:
             self.out.write(
                 """
+        if "class" not in _doc:
+            raise ValidationException("Missing 'class' field")
         if _doc.get("class") != "{class_}":
-            raise ValidationException("Not a {class_}")
+            raise ValidationException("tried `{class_}` but")
 
 """.format(
                     class_=classname
@@ -315,7 +317,11 @@ class PythonCodeGen(CodeGenBase):
 extension_fields: Dict[str, Any] = {{}}
 for k in _doc.keys():
     if k not in cls.attrs:
-        if ":" in k:
+        if not k:
+            _errors__.append(
+                ValidationException("mapping with implicit null key")
+            )
+        elif ":" in k:
             ex = expand_url(
                 k, "", loadingOptions, scoped_id=False, vocab_term=False
             )
@@ -329,13 +335,11 @@ for k in _doc.keys():
                     SourceLine(_doc, k, str),
                 )
             )
-            break
 
 if _errors__:
-    raise ValidationException(\"Trying '{class_}'\", None, _errors__)
+    raise ValidationException("", None, _errors__, "*")
 """.format(
                     attrstr=", ".join([f"`{f}`" for f in field_names]),
-                    class_=self.safe_name(classname),
                 ),
                 8,
             )
@@ -474,7 +478,7 @@ if _errors__:
                 safename=self.safe_name(name)
             )
         else:
-            opt = """raise ValidationException("Missing {fieldname}")""".format(
+            opt = """_errors__.append(ValidationException("missing {fieldname}"))""".format(
                 fieldname=shortname(name)
             )
 
@@ -527,25 +531,58 @@ if _errors__:
 
         self.out.write(
             """{spc}        try:
+{spc}            if _doc.get("{fieldname}") is None:
+{spc}                raise ValidationException("missing required field `{fieldname}`", None, [])
+
 {spc}            {safename} = load_field(
 {spc}                _doc.get("{fieldname}"),
 {spc}                {fieldtype},
 {spc}                {baseurivar},
 {spc}                loadingOptions,
-{spc}            )
-{spc}        except ValidationException as e:
-{spc}            _errors__.append(
-{spc}                ValidationException(
-{spc}                    \"the {fieldname!r} field is not valid because:\",
-{spc}                    SourceLine(_doc, "{fieldname}", str),
-{spc}                    [e],
-{spc}                )
+{spc}                lc=_doc.get("{fieldname}")
 {spc}            )
 """.format(
                 safename=self.safe_name(name),
                 fieldname=shortname(name),
                 fieldtype=fieldtype.name,
                 baseurivar=baseurivar,
+                spc=spc,
+            )
+        )
+        self.out.write(
+            """
+{spc}        except ValidationException as e:
+{spc}            error_message, to_print, verb_tensage = parse_errors(str(e))
+
+{spc}            if str(e) == "missing required field `{fieldname}`":
+{spc}                _errors__.append(
+{spc}                    ValidationException(
+{spc}                        str(e),
+{spc}                        None
+{spc}                    )
+{spc}                )
+{spc}            else:
+{spc}                if error_message != str(e):
+{spc}                    val_type = convert_typing(extract_type(type(_doc.get("{fieldname}"))))
+{spc}                    _errors__.append(
+{spc}                        ValidationException(
+{spc}                            \"the `{fieldname}` field is not valid because:\",
+{spc}                            SourceLine(_doc, "{fieldname}", str),
+{spc}                            [ValidationException(f"Value is a {{val_type}}, "
+{spc}                                                 f"but valid {{to_print}} for this field "
+{spc}                                                 f"{{verb_tensage}} {{error_message}}")],
+{spc}                        )
+{spc}                    )
+{spc}                else:
+{spc}                    _errors__.append(
+{spc}                        ValidationException(
+{spc}                            \"the `{fieldname}` field is not valid because:\",
+{spc}                            SourceLine(_doc, "{fieldname}", str),
+{spc}                            [e],
+{spc}                        )
+{spc}                    )
+""".format(
+                fieldname=shortname(name),
                 spc=spc,
             )
         )

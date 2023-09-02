@@ -21,10 +21,10 @@ def test_load() -> None:
     rs = cg_metaschema.RecordSchema.fromDoc(
         doc, "http://example.com/", cg_metaschema.LoadingOptions()
     )
-    assert "record" == rs.type
+    assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
     assert "Hello test case" == rs.fields[0].doc
-    assert "string" == rs.fields[0].type
+    assert "string" == rs.fields[0].type_
     assert {
         "type": "record",
         "fields": [
@@ -54,7 +54,7 @@ def test_include() -> None:
     )
     assert "http://example.com/#hello" == rf.name
     assert ["hello world!\n"] == rf.doc
-    assert "documentation" == rf.type
+    assert "documentation" == rf.type_
     assert {
         "name": "http://example.com/#hello",
         "doc": ["hello world!\n"],
@@ -70,10 +70,10 @@ def test_import() -> None:
     rs = cg_metaschema.RecordSchema.fromDoc(
         doc, "http://example.com/", cg_metaschema.LoadingOptions(fileuri=lead + "/_")
     )
-    assert "record" == rs.type
+    assert "record" == rs.type_
     assert rs.fields and lead + "/hellofield.yml#hello" == rs.fields[0].name
     assert "hello world!\n" == rs.fields[0].doc
-    assert "string" == rs.fields[0].type
+    assert "string" == rs.fields[0].type_
     assert {
         "type": "record",
         "fields": [
@@ -129,10 +129,10 @@ def test_idmap() -> None:
     rs = cg_metaschema.RecordSchema.fromDoc(
         doc, "http://example.com/", cg_metaschema.LoadingOptions()
     )
-    assert "record" == rs.type
+    assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
     assert "Hello test case" == rs.fields[0].doc
-    assert "string" == rs.fields[0].type
+    assert "string" == rs.fields[0].type_
     assert {
         "type": "record",
         "fields": [
@@ -150,10 +150,10 @@ def test_idmap2() -> None:
     rs = cg_metaschema.RecordSchema.fromDoc(
         doc, "http://example.com/", cg_metaschema.LoadingOptions()
     )
-    assert "record" == rs.type
+    assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
     assert rs.fields[0].doc is None
-    assert "string" == rs.fields[0].type
+    assert "string" == rs.fields[0].type_
     assert {
         "type": "record",
         "fields": [{"name": "http://example.com/#hello", "type": "string"}],
