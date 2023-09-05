@@ -19,11 +19,11 @@ jobs:
         os: [ubuntu-22.04 ] #  macOS-11
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         if: ${{ github.event_name != 'repository_dispatch' }}
         with:
           fetch-depth: 0  # slow, but gets all the tags
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         if: ${{ github.event_name == 'repository_dispatch' }}
         with:
           fetch-depth: 0  # slow, but gets all the tags
@@ -64,11 +64,11 @@ jobs:
     name: Build source distribution
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         if: ${{ github.event_name != 'repository_dispatch' }}
         with:
           fetch-depth: 0  # slow, but gets all the tags
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         if: ${{ github.event_name == 'repository_dispatch' }}
         with:
           fetch-depth: 0  # slow, but gets all the tags
