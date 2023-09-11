@@ -25,7 +25,7 @@ from typing import (
     cast,
 )
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
-from urllib.request import pathname2url, url2pathname
+from urllib.request import pathname2url
 
 from rdflib import Graph
 from rdflib.plugins.parsers.notation3 import BadSyntax
@@ -144,29 +144,6 @@ class LoadingOptions:
             for k, v in namespaces.items():
                 self.vocab[k] = v
                 self.rvocab[v] = k
-
-    def check_exists(self, url: str) -> bool:
-        """Check if a url exists and is valid."""
-        if url in self.cache:
-            return True
-
-        split = urlsplit(url)
-        scheme, path = split.scheme, split.path
-
-        if scheme in ["http", "https"]:
-            if self.fetcher is None:
-                raise ValidationException(f"Can't check {self.fetcher} URL, fetcher is None")
-            try:
-                self.fetcher.fetch_text(url)
-            except Exception:
-                return False
-            self.cache[url] = True
-            return True
-        if scheme == "file":
-            return os.path.exists(url2pathname(str(path)))
-        if scheme == "mailto":
-            return True
-        raise ValidationException(f"Unsupported scheme '{scheme}' in url: {url}")
 
     @property
     def graph(self) -> Graph:
@@ -489,7 +466,7 @@ class _ArrayLoader(_Loader):
                         if doc[i].get("id") in fields:
                             errors.append(
                                 ValidationException(
-                                    f"Duplicate field '{doc[i].get('id')}'",
+                                    f"Duplicate field {doc[i].get('id')!r}",
                                     SourceLine(doc[i], "id", str),
                                     [],
                                 )
@@ -743,7 +720,7 @@ class _URILoader(_Loader):
         if isinstance(doc, str):
             errors = []
             try:
-                if not loadingOptions.check_exists(doc):
+                if not loadingOptions.fetcher.check_exists(doc):
                     errors.append(ValidationException(f"contains undefined reference to `{doc}`"))
             except ValidationException:
                 pass
