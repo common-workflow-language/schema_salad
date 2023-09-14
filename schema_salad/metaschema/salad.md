@@ -94,6 +94,17 @@ ease the development of extensions to CWL v1.2. The only change is that
 inherited records can narrow the types of fields if those fields are re-specified
 with a matching jsonldPredicate.
 
+## Introduction to v1.3
+
+This is the fifth version of the Schema Salad specification. It was created to
+enhance code generation by representing CWL data types as specific Python objects
+(instead of  relying on the generic `Any` type). The following changes have been made:
+
+* Support for the Avro `map` schema
+* Add named versions of the `map` and `union` Avro types
+* Support for nested named `union` type definitions
+* Add *flatten* property to the `array` schema to regulate the behaviour of nested `array` objects
+
 ## References to Other Specifications
 
 **Javascript Object Notation (JSON)**: http://json.org

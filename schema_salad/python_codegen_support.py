@@ -210,7 +210,7 @@ def load_field(
     fieldtype: "_Loader",
     baseuri: str,
     loadingOptions: LoadingOptions,
-    lc: Optional[List[Any]],
+    lc: Optional[List[Any]] = None,
 ) -> Any:
     """Load field."""
     if isinstance(val, MutableMapping):

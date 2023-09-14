@@ -808,7 +808,7 @@ def is_subtype(types: Dict[str, Any], existing: PropType, new: PropType) -> bool
         if existing.get("type") == "array" and new.get("type") == "array":
             return is_subtype(types, existing["items"], new["items"])
         if existing.get("type") == "map" and new.get("type") == "map":
-            return is_subtype(existing["values"], new["values"])
+            return is_subtype(types, existing["values"], new["values"])
         if existing.get("type") == "enum" and new.get("type") == "enum":
             return is_subtype(types, existing["symbols"], new["symbols"])
         if existing.get("type") == "record" and new.get("type") == "record":
