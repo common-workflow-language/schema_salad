@@ -141,6 +141,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: record schema-salad version
-        run: pip install setuptools_scm[toml] && python -m setuptools_scm
+        run: pip install 'setuptools_scm[toml]<8' && python -m setuptools_scm
       - name: build & test schema_salad container
         run: ./build-schema_salad-docker.sh
