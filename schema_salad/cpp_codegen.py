@@ -137,9 +137,15 @@ class ClassDefinition:
 
         for field in self.fields:
             fieldname = safename(field.name)
-            target.write(
-                f'{fullInd}{ind}addYamlField(n, "{field.name}", toYaml(*{fieldname}));\n'  # noqa: B907
-            )
+            if field.remap != "":
+                target.write(
+                    f"""{fullInd}{ind}addYamlField(n, "{field.name}",
+convertListToMap(toYaml(*{fieldname}), "{field.remap}"));\n"""  # noqa: B907
+                )
+            else:
+                target.write(
+                    f'{fullInd}{ind}addYamlField(n, "{field.name}", toYaml(*{fieldname}));\n'  # noqa: B907
+                )
             # target.write(f"{fullInd}{ind}addYamlIfNotEmpty(n, \"{field.name}\", toYaml(*{fieldname}));\n")
 
         target.write(f"{fullInd}{ind}return n;\n{fullInd}}}\n")
@@ -147,10 +153,11 @@ class ClassDefinition:
 
 # Prototype of a single field of a class
 class FieldDefinition:
-    def __init__(self, name: str, typeStr: str, optional: bool):
+    def __init__(self, name: str, typeStr: str, optional: bool, remap: str):
         self.name = name
         self.typeStr = typeStr
         self.optional = optional
+        self.remap = remap
 
     def writeDefinition(self, target: IO[Any], fullInd: str, ind: str, namespace: str) -> None:
         """Write a C++ definition for the class field."""
@@ -440,6 +447,17 @@ inline void addYamlField(YAML::Node& node, std::string const& key, YAML::Node va
     }
 }
 
+inline auto convertListToMap(YAML::Node list, std::string const& key_name) {
+    if (list.size() == 0) return list;
+    auto map = YAML::Node{};
+    for (YAML::Node n : list) {
+        auto key = n[key_name].as<std::string>();
+        n.remove(key_name);
+        map[key] = n;
+    }
+    return map;
+}
+
 // fwd declaring toYaml
 template <typename T>
 auto toYaml(std::vector<T> const& v) -> YAML::Node;
@@ -516,7 +534,6 @@ public:
             if len(self.classDefinitions[key].specializationTypes) > 0:
                 self.classDefinitions[key].extends = []
 
-
         # remove fields that are available in a parent class
         for key in self.classDefinitions:
             for field in self.classDefinitions[key].allfields:
@@ -532,7 +549,6 @@ public:
 
                 if not found:
                     self.classDefinitions[key].fields.append(field)
-
 
         for key in self.enumDefinitions:
             self.enumDefinitions[key].writeDefinition(self.target, "    ")
@@ -572,6 +588,11 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node {
 
     def parseRecordField(self, field: Dict[str, Any]) -> FieldDefinition:
         (namespace, classname, fieldname) = split_field(field["name"])
+        remap = ""
+        if "jsonldPredicate" in field:
+            if "mapSubject" in field["jsonldPredicate"]:
+                remap = field["jsonldPredicate"]["mapSubject"]
+
         if isinstance(field["type"], dict):
             if field["type"]["type"] == "enum":
                 fieldtype = "Enum"
@@ -582,7 +603,7 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node {
             fieldtype = field["type"]
             fieldtype = self.convertTypeToCpp(fieldtype)
 
-        return FieldDefinition(name=fieldname, typeStr=fieldtype, optional=False)
+        return FieldDefinition(name=fieldname, typeStr=fieldtype, optional=False, remap=remap)
 
     def parseRecordSchema(self, stype: Dict[str, Any]) -> None:
         cd = ClassDefinition(name=stype["name"])
