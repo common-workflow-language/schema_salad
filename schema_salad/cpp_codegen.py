@@ -428,7 +428,7 @@ inline auto toYaml(std::string const& v) {
     return YAML::Node{v};
 }
 
-inline void addYamlField(YAML::Node node, std::string const& key, YAML::Node value) {
+inline void addYamlField(YAML::Node& node, std::string const& key, YAML::Node value) {
     if (value.IsDefined()) {
         node[key] = value;
     }
