@@ -81,6 +81,12 @@ class ClassDefinition:
     def __init__(self, name: str):
         self.fullName = name
         self.extends: List[Dict[str, str]] = []
+
+        # List of types from parent classes that have been specialized
+        self.specializationTypes: List[str] = []
+
+        # this includes fields that are also inheritant
+        self.allfields: List[FieldDefinition] = []
         self.fields: List[FieldDefinition] = []
         self.abstract = False
         (self.namespace, self.classname) = split_name(name)
@@ -505,6 +511,29 @@ public:
         for key in self.classDefinitions:
             self.classDefinitions[key].writeFwdDeclaration(self.target, "", "    ")
 
+        # remove parent classes, that are specialized/templated versions
+        for key in self.classDefinitions:
+            if len(self.classDefinitions[key].specializationTypes) > 0:
+                self.classDefinitions[key].extends = []
+
+
+        # remove fields that are available in a parent class
+        for key in self.classDefinitions:
+            for field in self.classDefinitions[key].allfields:
+                found = False
+                for parent_key in self.classDefinitions[key].extends:
+                    fullKey = parent_key["namespace"] + "#" + parent_key["classname"]
+                    for f in self.classDefinitions[fullKey].allfields:
+                        if f.name == field.name:
+                            found = True
+                            break
+                    if found:
+                        break
+
+                if not found:
+                    self.classDefinitions[key].fields.append(field)
+
+
         for key in self.enumDefinitions:
             self.enumDefinitions[key].writeDefinition(self.target, "    ")
         for key in self.classDefinitions:
@@ -565,9 +594,13 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node {
                 ext = {"namespace": base_namespace, "classname": base_classname}
                 cd.extends.append(ext)
 
+        if "specialize" in stype:
+            for e in aslist(stype["specialize"]):
+                cd.specializationTypes.append(e["specializeFrom"])
+
         if "fields" in stype:
             for field in stype["fields"]:
-                cd.fields.append(self.parseRecordField(field))
+                cd.allfields.append(self.parseRecordField(field))
 
         self.classDefinitions[stype["name"]] = cd
 
