@@ -1,5 +1,6 @@
 """Test C++ code generation."""
 
+import filecmp
 import os
 from pathlib import Path
 from typing import Any, Dict, List, cast
@@ -18,6 +19,26 @@ def test_cwl_cpp_gen(tmp_path: Path) -> None:
     source = get_data("tests/codegen/cwl.cpp")
     assert source
     assert os.path.exists(src_target)
+
+
+def test_cwl_cpp_generations(tmp_path: Path) -> None:
+    """End to end test of C++ generator using the CWL v1.0 schema."""
+
+    test_dir = Path(cast(str, get_data("cpp_tests/01_single_record.yml"))).parents[0]
+
+    # iterate through all cpp_tests YAML files
+    for file in test_dir.iterdir():
+        if file.suffix != ".yaml":
+            continue
+
+        # file with generated cpp output
+        src_target = tmp_path / "test.h"
+        # file with expected cpp output
+        expected = test_dir.with_suffix(".h")
+
+        cpp_codegen(os.fspath(file), src_target)
+
+        assert filecmp.cmp(expected, src_target, shallow=False)
 
 
 def cpp_codegen(
