@@ -5,6 +5,7 @@ import pytest
 from schema_salad.avro import schema
 from schema_salad.avro.schema import Names, SchemaParseException
 from schema_salad.schema import load_schema
+
 from .util import get_data
 
 types = [

@@ -134,6 +134,7 @@ setup(
         "schema_salad.tests": [
             "*.json",
             "*.yml",
+            "cpp_tests/*",
             "docimp/*",
             "*.owl",
             "*.cwl",

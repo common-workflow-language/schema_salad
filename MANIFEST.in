@@ -8,6 +8,7 @@ include schema_salad/tests/*
 include schema_salad/tests/test_schema/*.md
 include schema_salad/tests/test_schema/*.yml
 include schema_salad/tests/test_schema/*.cwl
+recursive-include schema_salad/tests/cpp_tests *.h *.yml
 include schema_salad/tests/foreign/*.cwl
 recursive-include schema_salad/tests/test_real_cwl *
 include schema_salad/metaschema/*

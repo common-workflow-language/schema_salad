@@ -1,0 +1,10 @@
+- name: MyRecordOne
+  doc: Number One Record
+  type: record
+  fields:
+    name: string
+- name: MyRecordTwo
+  doc: Number Two Record
+  type: record
+  fields:
+    value: int
