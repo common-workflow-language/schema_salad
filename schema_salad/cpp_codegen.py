@@ -28,6 +28,11 @@ from .schema import shortname
 from .utils import aslist
 
 
+def q(s: str) -> str:
+    """Put quotes around a string."""
+    return '"' + s + '"'
+
+
 def replaceKeywords(s: str) -> str:
     """Rename keywords that are reserved in C++."""
     if s in (
@@ -125,6 +130,7 @@ class ClassDefinition:
         if self.abstract:
             target.write(f"{fullInd}{ind}virtual ~{self.classname}() = 0;\n")
         target.write(f"{fullInd}{ind}{virtual}auto toYaml() const -> YAML::Node{override};\n")
+        target.write(f"{fullInd}{ind}{virtual}void fromYaml(YAML::Node const& n) {override};\n")
         target.write(f"{fullInd}}};\n")
         target.write(f"{fullInd}}}\n\n")
 
@@ -132,11 +138,13 @@ class ClassDefinition:
         """Write definition with implementation."""
         extends = list(map(safename2, self.extends))
 
+        # Declaring default destructor
         if self.abstract:
             target.write(
                 f"{fullInd}inline {self.namespace}::{self.classname}::~{self.classname}() = default;\n"
             )
 
+        # Writte toYaml function
         target.write(
             f"""{fullInd}inline auto {self.namespace}::{self.classname}::toYaml() const -> YAML::Node {{
 {fullInd}{ind}using ::toYaml;
@@ -150,16 +158,69 @@ class ClassDefinition:
             fieldname = safename(field.name)
             if field.remap != "":
                 target.write(
-                    f"""{fullInd}{ind}addYamlField(n, "{field.name}",
-convertListToMap(toYaml(*{fieldname}), "{field.remap}"));\n"""  # noqa: B907
+                    f"""{fullInd}{ind}addYamlField(n, {q(field.name)},
+{fullInd}{ind}{ind}convertListToMap(toYaml(*{fieldname}), {q(field.remap)}));\n"""
                 )
             else:
                 target.write(
-                    f'{fullInd}{ind}addYamlField(n, "{field.name}", toYaml(*{fieldname}));\n'  # noqa: B907
+                    f"{fullInd}{ind}addYamlField(n, {q(field.name)}, toYaml(*{fieldname}));\n"
                 )
-            # target.write(f"{fullInd}{ind}addYamlIfNotEmpty(n, \"{field.name}\", toYaml(*{fieldname}));\n")
 
         target.write(f"{fullInd}{ind}return n;\n{fullInd}}}\n")
+
+        # Write fromYaml function
+        target.write(
+            f"""{fullInd}inline void {self.namespace}::{self.classname}::fromYaml(YAML::Node const& n) {{
+{fullInd}{ind}using ::fromYaml;
+"""
+        )
+        for e in extends:
+            target.write(f"{fullInd}{ind}{e}::fromYaml(n);\n")
+
+        for field in self.fields:
+            fieldname = safename(field.name)
+            if field.remap != "":
+                target.write(
+                    f"""
+                    {fullInd}{ind}fromYaml(convertMapToList(n[{q(field.name)}],
+{q(field.remap)}), *{fieldname});\n"""
+                )
+            else:
+                target.write(f"{fullInd}{ind}fromYaml(n[{q(field.name)}], *{fieldname});\n")
+
+        target.write(f"{fullInd}}}\n")
+
+        # write type detection function
+        if not self.abstract:
+            e = f"{self.namespace}::{self.classname}"
+            target.write(
+                f"""
+template <>
+struct DetectAndExtractFromYaml<{e}> {{
+    auto operator()(YAML::Node const& n) const -> std::optional<{e}> {{
+        if (!n.IsDefined()) return std::nullopt;
+        if (!n.IsMap()) return std::nullopt;
+        auto res = {e}{{}};
+                """
+            )
+            for field in self.fields:
+                fieldname = safename(field.name)
+                target.write(
+                    f"""
+        if constexpr (IsConstant<decltype(res.{fieldname})::value_t>::value) try {{
+            fromYaml(n[{q(field.name)}], *res.{fieldname});
+            fromYaml(n, res);
+            return res;
+        }} catch(...) {{}}
+                    """
+                )
+            target.write(
+                """
+             return std::nullopt;
+             }
+         };
+                """
+            )
 
 
 class FieldDefinition:
@@ -223,13 +284,20 @@ class EnumDefinition:
         target.write(f"{ind}static auto m = std::map<std::string, {name}, std::less<>> {{\n")
         for v in self.values:
             target.write(f'{ind}{ind}{{"{v}", {name}::{safename(v)}}},\n')  # noqa: B907
-        target.write(f"{ind}}};\n{ind}out = m.find(v)->second;\n}}\n")
+        target.write(f"{ind}}};\n{ind}auto iter = m.find(v);\n")
+        target.write(f"{ind}if (iter == m.end()) throw bool{{}};\n")
+        target.write(f"{ind}out = iter->second;\n}}\n")
 
+        # Write toYaml function
         target.write(f"inline auto toYaml({name} v) {{\n")
         target.write(f"{ind}return YAML::Node{{std::string{{to_string(v)}}}};\n}}\n")
 
-        target.write(f"inline auto yamlToEnum(YAML::Node n, {name}& out) {{\n")
+        # Write fromYaml function
+        target.write(f"inline void fromYaml(YAML::Node n, {name}& out) {{\n")
         target.write(f"{ind}to_enum(n.as<std::string>(), out);\n}}\n")
+
+        if len(self.values):
+            target.write(f"{ind}template <> struct IsConstant<{name}> : std::true_type {{}};")
 
 
 # !TODO way tot many functions, most of these shouldn't exists
@@ -424,16 +492,17 @@ class CppCodeGen(CodeGenBase):
 
 // Generated by schema-salad code generator
 
+#include <any>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <variant>
 #include <vector>
 #include <yaml-cpp/yaml.h>
-#include <any>
 
 inline auto mergeYaml(YAML::Node n1, YAML::Node n2) {
     for (auto const& e : n1) {
@@ -464,9 +533,32 @@ inline auto toYaml(std::any const&) {
 inline auto toYaml(std::monostate const&) {
     return YAML::Node(YAML::NodeType::Undefined);
 }
-
 inline auto toYaml(std::string const& v) {
     return YAML::Node{v};
+}
+
+// declaring fromYaml
+inline void fromYaml(YAML::Node const& n, bool& v) {
+    v = n.as<bool>();
+}
+inline void fromYaml(YAML::Node const& n, float& v) {
+    v = n.as<float>();
+}
+inline void fromYaml(YAML::Node const& n, double& v) {
+    v = n.as<double>();
+}
+inline void fromYaml(YAML::Node const& n, int32_t& v) {
+    v = n.as<int32_t>();
+}
+inline void fromYaml(YAML::Node const& n, int64_t& v) {
+    v = n.as<int64_t>();
+}
+inline void fromYaml(YAML::Node const& n, std::string& v) {
+    v = n.as<std::string>();
+}
+inline void fromYaml(YAML::Node const& n, std::any& v) {
+}
+inline void fromYaml(YAML::Node const& n, std::monostate&) {
 }
 
 inline void addYamlField(YAML::Node& node, std::string const& key, YAML::Node value) {
@@ -485,6 +577,18 @@ inline auto convertListToMap(YAML::Node list, std::string const& key_name) {
     }
     return map;
 }
+inline auto convertMapToList(YAML::Node map, std::string const& key_name) {
+    if (!map.IsDefined()) return map;
+    if (!map.IsMap()) return map;
+    auto list = YAML::Node{};
+    for (auto n : map) {
+        n.second[key_name] = n.first;
+        list.push_back(n.second);
+    }
+    return list;
+}
+
+template <typename T> struct IsConstant : std::false_type {};
 
 // fwd declaring toYaml
 template <typename T>
@@ -494,10 +598,64 @@ auto toYaml(T const& t) -> YAML::Node;
 template <typename ...Args>
 auto toYaml(std::variant<Args...> const& t) -> YAML::Node;
 
+// fwd declaring fromYaml
+template <typename T>
+void fromYaml(YAML::Node const& n, std::vector<T>& v);
+template <typename T>
+void fromYaml(YAML::Node const& n, T& t);
+template <typename ...Args>
+void fromYaml(YAML::Node const& n, std::variant<Args...>& t);
+
+template <typename T>
+struct DetectAndExtractFromYaml {
+    auto operator()(YAML::Node const& n) const -> std::optional<T> {
+        return std::nullopt;
+    }
+};
+
+template <>
+struct DetectAndExtractFromYaml<std::monostate> {
+    auto operator()(YAML::Node const& n) const -> std::optional<std::monostate> {
+        if (!n.IsDefined()) return std::monostate{};
+        return std::nullopt;
+    }
+};
+
+template <typename S>
+struct DetectAndExtractFromYaml_implScalar {
+    auto operator()(YAML::Node const& n) const -> std::optional<S> {
+        try {
+            if (n.IsScalar()) return n.as<S>();
+        } catch(...) {}
+        return std::nullopt;
+    }
+};
+
+template <> struct DetectAndExtractFromYaml<bool>        : DetectAndExtractFromYaml_implScalar<bool>{};
+template <> struct DetectAndExtractFromYaml<float>       : DetectAndExtractFromYaml_implScalar<float>{};
+template <> struct DetectAndExtractFromYaml<double>      : DetectAndExtractFromYaml_implScalar<double>{};
+template <> struct DetectAndExtractFromYaml<int32_t>     : DetectAndExtractFromYaml_implScalar<int32_t>{};
+template <> struct DetectAndExtractFromYaml<int64_t>     : DetectAndExtractFromYaml_implScalar<int64_t>{};
+template <> struct DetectAndExtractFromYaml<std::string> : DetectAndExtractFromYaml_implScalar<std::string>{};
+
+template <typename T>
+struct DetectAndExtractFromYaml<std::vector<T>> {
+    auto operator()(YAML::Node const& n) const -> std::optional<std::vector<T>> {
+        if (!n.IsDefined()) return std::nullopt;
+        if (!n.IsSequence()) return std::nullopt;
+        auto res = std::vector<T>{};
+        fromYaml(n, res);
+        return res;
+    }
+};
+
+
+
 template <typename T>
 class heap_object {
     std::unique_ptr<T> data = std::make_unique<T>();
 public:
+    using value_t = T;
     heap_object() = default;
     heap_object(heap_object const& oth) {
         *data = *oth;
@@ -610,6 +768,56 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node {
     return std::visit([](auto const& e) {
         return toYaml(e);
     }, t);
+}
+
+template <typename T>
+void fromYaml(YAML::Node const& n, std::vector<T>& v){
+    if (!n.IsSequence()) return;
+    for (auto e : n) {
+        v.emplace_back();
+        fromYaml(e, v.back());
+    }
+}
+
+template <typename T>
+void fromYaml(YAML::Node const& n, T& t){
+    if constexpr (std::is_enum_v<T>) {
+        fromYaml(n, t);
+    } else {
+        t.fromYaml(n);
+    }
+}
+
+template <typename SomeVariant, typename Head, typename ...Args>
+bool detectAndExtractFromYaml(YAML::Node const& n, SomeVariant& v, Head* = nullptr) {
+    auto r = DetectAndExtractFromYaml<Head>{}(n);
+    if (r) {
+        v = *r;
+        return true;
+    }
+    if constexpr (sizeof...(Args)) {
+        return detectAndExtractFromYaml<SomeVariant, Args...>(n, v);
+    }
+    return false;
+}
+
+template <typename SomeVariant, typename Head, typename Tail>
+bool detectAndExtractFromYaml(YAML::Node const& n, std::variant<std::monostate, Tail>& v, Head* = nullptr) {
+    auto r = DetectAndExtractFromYaml<Head>{}(n);
+    if (r) {
+        v = *r;
+        return true;
+    }
+    auto t = Tail{};
+    fromYaml(n, t);
+    v = t;
+    return true;
+}
+
+template <typename ...Args>
+void fromYaml(YAML::Node const& n, std::variant<Args...>& v){
+    bool found = detectAndExtractFromYaml<std::variant<Args...>, Args...>(n, v);
+    if (!found) throw std::runtime_error{"didn't find any overload"};
 }
 """
         )
