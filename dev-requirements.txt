@@ -1,5 +1,5 @@
 diff_cover < 7.8
-pylint < 2.18
+pylint < 3.1
 pydocstyle < 6.4
 flake8 > 4
 flake8-bugbear < 23.10
