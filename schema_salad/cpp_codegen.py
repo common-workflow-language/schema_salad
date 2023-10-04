@@ -144,7 +144,7 @@ class ClassDefinition:
                 f"{fullInd}inline {self.namespace}::{self.classname}::~{self.classname}() = default;\n"
             )
 
-        # Writte toYaml function
+        # Write toYaml function
         target.write(
             f"""{fullInd}inline auto {self.namespace}::{self.classname}::toYaml() const -> YAML::Node {{
 {fullInd}{ind}using ::toYaml;
@@ -169,8 +169,9 @@ class ClassDefinition:
         target.write(f"{fullInd}{ind}return n;\n{fullInd}}}\n")
 
         # Write fromYaml function
+        functionname = f"{self.namespace}::{self.classname}::fromYaml"
         target.write(
-            f"""{fullInd}inline void {self.namespace}::{self.classname}::fromYaml(YAML::Node const& n) {{
+            f"""{fullInd}inline void {functionname}([[maybe_unused]] YAML::Node const& n) {{
 {fullInd}{ind}using ::fromYaml;
 """
         )
@@ -201,7 +202,7 @@ struct DetectAndExtractFromYaml<{e}> {{
         if (!n.IsDefined()) return std::nullopt;
         if (!n.IsMap()) return std::nullopt;
         auto res = {e}{{}};
-                """
+"""
             )
             for field in self.fields:
                 fieldname = safename(field.name)
@@ -212,14 +213,14 @@ struct DetectAndExtractFromYaml<{e}> {{
             fromYaml(n, res);
             return res;
         }} catch(...) {{}}
-                    """
+"""
                 )
             target.write(
                 """
-             return std::nullopt;
-             }
-         };
-                """
+        return std::nullopt;
+    }
+};
+"""
             )
 
 
@@ -283,7 +284,7 @@ class EnumDefinition:
         target.write(f"inline void to_enum(std::string_view v, {name}& out) {{\n")
         target.write(f"{ind}static auto m = std::map<std::string, {name}, std::less<>> {{\n")
         for v in self.values:
-            target.write(f'{ind}{ind}{{"{v}", {name}::{safename(v)}}},\n')  # noqa: B907
+            target.write(f"""{ind}{ind}{{"{v}", {name}::{safename(v)}}},\n""")
         target.write(f"{ind}}};\n{ind}auto iter = m.find(v);\n")
         target.write(f"{ind}if (iter == m.end()) throw bool{{}};\n")
         target.write(f"{ind}out = iter->second;\n}}\n")
@@ -487,23 +488,19 @@ class CppCodeGen(CodeGenBase):
 
     def epilogue(self, root_loader: Optional[TypeDef]) -> None:
         """Generate final part of our cpp file."""
-        self.target.write("#pragma once\n")
-
-        copyrightstatement = ""
-        if self.copyright:
-            copyrightstatement = f"The original schema is {self.copyright}."
+        self.target.write("#pragma once\n\n")
 
         self.target.write(
-            f"""/* This file was generated using schema-salad code generator.
+            """/* This file was generated using schema-salad code generator.
  *
- * The embedded document is subject to the license of the original schema.",
- *
- * {copyrightstatement}
- * License: Apache-2.0
- */
+ * The embedded document is subject to the license of the original schema.
  """
         )
 
+        if self.copyright:
+            self.target.write("* The original schema is {self.copyright}.\n")
+
+        self.target.write("*/\n\n")
 
         self.target.write(
             """#include <any>
@@ -570,9 +567,9 @@ inline void fromYaml(YAML::Node const& n, int64_t& v) {
 inline void fromYaml(YAML::Node const& n, std::string& v) {
     v = n.as<std::string>();
 }
-inline void fromYaml(YAML::Node const& n, std::any& v) {
+inline void fromYaml(YAML::Node const&, std::any&) {
 }
-inline void fromYaml(YAML::Node const& n, std::monostate&) {
+inline void fromYaml(YAML::Node const&, std::monostate&) {
 }
 
 inline void addYamlField(YAML::Node& node, std::string const& key, YAML::Node value) {
@@ -622,7 +619,7 @@ void fromYaml(YAML::Node const& n, std::variant<Args...>& t);
 
 template <typename T>
 struct DetectAndExtractFromYaml {
-    auto operator()(YAML::Node const& n) const -> std::optional<T> {
+    auto operator()(YAML::Node const&) const -> std::optional<T> {
         return std::nullopt;
     }
 };
@@ -663,11 +660,10 @@ struct DetectAndExtractFromYaml<std::vector<T>> {
     }
 };
 
-
-
 template <typename T>
 class heap_object {
     std::unique_ptr<T> data = std::make_unique<T>();
+
 public:
     using value_t = T;
     heap_object() = default;
@@ -719,7 +715,6 @@ public:
     auto operator*() const -> T const& {
         return *data;
     }
-
 };
 
 """
@@ -809,7 +804,7 @@ bool detectAndExtractFromYaml(YAML::Node const& n, SomeVariant& v, Head* = nullp
         v = *r;
         return true;
     }
-    if constexpr (sizeof...(Args)) {
+    if constexpr (sizeof...(Args) > 0) {
         return detectAndExtractFromYaml<SomeVariant, Args...>(n, v);
     }
     return false;
