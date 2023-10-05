@@ -465,7 +465,7 @@ if _errors__:
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: str,
+        doc: Optional[str],
         optional: bool,
     ) -> None:
         if self.current_class_is_abstract:
@@ -503,7 +503,7 @@ if _errors__:
         fieldtype: TypeDef,
         doc: Optional[str],
         optional: bool,
-        subscope: str,
+        subscope: Optional[str],
     ) -> None:
         if self.current_class_is_abstract:
             return

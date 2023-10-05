@@ -92,7 +92,7 @@ pushd out/${package}*
 make dist
 make test
 pip install "-r${DIR}/mypy-requirements.txt"
-make mypy
+make mypyc
 pip uninstall -y ${package} || true; pip uninstall -y ${package} || true; make install
 mkdir ../not-${module}
 pushd ../not-${module}

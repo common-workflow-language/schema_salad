@@ -38,20 +38,24 @@ if USE_MYPYC and any(
     ]
 ):
     mypyc_targets = [
-        # "schema_salad/codegen_base.py",  # interpreted classes cannot inherit from compiled
-        # "schema_salad/codegen.py",
-        # "schema_salad/exceptions.py", # leads to memory leaks
         "schema_salad/__init__.py",
-        # "schema_salad/java_codegen.py",  # due to use of __name__
-        "schema_salad/jsonld_context.py",
         "schema_salad/__main__.py",
+        "schema_salad/codegen.py",
+        "schema_salad/codegen_base.py",
+        "schema_salad/cpp_codegen.py",
+        "schema_salad/dlang_codegen.py",
+        "schema_salad/dotnet_codegen.py",
+        # "schema_salad/exceptions.py", # leads to memory leaks
+        "schema_salad/java_codegen.py",
+        "schema_salad/jsonld_context.py",
         "schema_salad/main.py",
         "schema_salad/makedoc.py",
-        # "schema_salad/python_codegen.py",  # due to use of __name__
+        "schema_salad/python_codegen.py",
         "schema_salad/ref_resolver.py",
         # "schema_salad/fetcher.py",  # to allow subclassing {Default,}Fetcher
         "schema_salad/schema.py",
         "schema_salad/sourceline.py",
+        "schema_salad/typescript_codegen.py",
         "schema_salad/utils.py",
         "schema_salad/validate.py",
         "schema_salad/avro/__init__.py",

@@ -558,7 +558,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
         fieldtype: TypeDef,
         doc: Optional[str],
         optional: bool,
-        subscope: str,
+        subscope: Optional[str],
     ) -> None:
         """Output the code to load the given field."""
         if self.current_class_is_abstract:
@@ -739,7 +739,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: str,
+        doc: Optional[str],
         optional: bool,
     ) -> None:
         """Output the code to handle the given ID field."""
