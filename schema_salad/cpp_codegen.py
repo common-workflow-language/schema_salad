@@ -846,8 +846,7 @@ void fromYaml(YAML::Node const& n, std::variant<Args...>& v){
                 fieldtype = self.convertTypeToCpp(field["type"])
 
         else:
-            fieldtype = field["type"]
-            fieldtype = self.convertTypeToCpp(fieldtype)
+            fieldtype = self.convertTypeToCpp(field["type"])
 
         return FieldDefinition(name=fieldname, typeStr=fieldtype, optional=False, remap=remap)
 

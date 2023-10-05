@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 
 import requests
+from mypy_extensions import mypyc_attr
 
 from .exceptions import ValidationException
 from .utils import CacheType
@@ -17,6 +18,7 @@ _re_drive = re.compile(r"/([a-zA-Z]):")
 _logger = logging.getLogger("salad")
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)
 class Fetcher(ABC):
     """Fetch resources from URIs."""
 
@@ -39,6 +41,7 @@ class Fetcher(ABC):
         return self.schemes
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)
 class MemoryCachingFetcher(Fetcher):
     """Fetcher that caches resources in memory after retrieval."""
 
@@ -47,6 +50,7 @@ class MemoryCachingFetcher(Fetcher):
         self.cache = cache
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)
 class DefaultFetcher(MemoryCachingFetcher):
     """The default Fetcher implementation."""
 

@@ -570,7 +570,7 @@ public enum {clazz} {{
         fieldtype: TypeDef,
         doc: Optional[str],
         optional: bool,
-        subscope: str,
+        subscope: Optional[str],
     ) -> None:
         fieldname = name
         property_name = self.property_name(fieldname)
@@ -670,7 +670,7 @@ public enum {clazz} {{
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: str,
+        doc: Optional[str],
         optional: bool,
     ) -> None:
         if self.current_class_is_abstract:
