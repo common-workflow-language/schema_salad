@@ -129,8 +129,11 @@ class ClassDefinition:
 
         if self.abstract:
             target.write(f"{fullInd}{ind}virtual ~{self.classname}() = 0;\n")
+        else:
+            target.write(f"{fullInd}{ind}{virtual}~{self.classname}(){override} = default;\n")
+
         target.write(f"{fullInd}{ind}{virtual}auto toYaml() const -> YAML::Node{override};\n")
-        target.write(f"{fullInd}{ind}{virtual}void fromYaml(YAML::Node const& n) {override};\n")
+        target.write(f"{fullInd}{ind}{virtual}void fromYaml(YAML::Node const& n){override};\n")
         target.write(f"{fullInd}}};\n")
         target.write(f"{fullInd}}}\n\n")
 
@@ -666,7 +669,7 @@ class heap_object {
 
 public:
     using value_t = T;
-    heap_object() = default;
+    heap_object() noexcept(false) = default;
     heap_object(heap_object const& oth) {
         *data = *oth;
     }
