@@ -1,3 +1,5 @@
+$base: "https://example.com#"
+$graph:
 - name: MyRecordOne
   doc: Number One Record
   abstract: True
