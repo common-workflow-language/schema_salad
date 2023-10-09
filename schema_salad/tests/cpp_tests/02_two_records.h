@@ -168,7 +168,7 @@ class heap_object {
 
 public:
     using value_t = T;
-    heap_object() = default;
+    heap_object() noexcept(false) = default;
     heap_object(heap_object const& oth) {
         *data = *oth;
     }
@@ -219,41 +219,43 @@ public:
     }
 };
 
-namespace file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_02_two_records_yml { struct MyRecordOne; }
-namespace file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_02_two_records_yml { struct MyRecordTwo; }
-namespace file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_02_two_records_yml {
+namespace https___example_com_ { struct MyRecordOne; }
+namespace https___example_com_ { struct MyRecordTwo; }
+namespace https___example_com_ {
 struct MyRecordOne {
     heap_object<std::string> name;
+    virtual ~MyRecordOne() = default;
     virtual auto toYaml() const -> YAML::Node;
-    virtual void fromYaml(YAML::Node const& n) ;
+    virtual void fromYaml(YAML::Node const& n);
 };
 }
 
-namespace file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_02_two_records_yml {
+namespace https___example_com_ {
 struct MyRecordTwo {
     heap_object<int32_t> value;
+    virtual ~MyRecordTwo() = default;
     virtual auto toYaml() const -> YAML::Node;
-    virtual void fromYaml(YAML::Node const& n) ;
+    virtual void fromYaml(YAML::Node const& n);
 };
 }
 
-inline auto file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_02_two_records_yml::MyRecordOne::toYaml() const -> YAML::Node {
+inline auto https___example_com_::MyRecordOne::toYaml() const -> YAML::Node {
     using ::toYaml;
     auto n = YAML::Node{};
     addYamlField(n, "name", toYaml(*name));
     return n;
 }
-inline void file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_02_two_records_yml::MyRecordOne::fromYaml([[maybe_unused]] YAML::Node const& n) {
+inline void https___example_com_::MyRecordOne::fromYaml([[maybe_unused]] YAML::Node const& n) {
     using ::fromYaml;
     fromYaml(n["name"], *name);
 }
 
 template <>
-struct DetectAndExtractFromYaml<file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_02_two_records_yml::MyRecordOne> {
-    auto operator()(YAML::Node const& n) const -> std::optional<file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_02_two_records_yml::MyRecordOne> {
+struct DetectAndExtractFromYaml<https___example_com_::MyRecordOne> {
+    auto operator()(YAML::Node const& n) const -> std::optional<https___example_com_::MyRecordOne> {
         if (!n.IsDefined()) return std::nullopt;
         if (!n.IsMap()) return std::nullopt;
-        auto res = file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_02_two_records_yml::MyRecordOne{};
+        auto res = https___example_com_::MyRecordOne{};
 
         if constexpr (IsConstant<decltype(res.name)::value_t>::value) try {
             fromYaml(n["name"], *res.name);
@@ -264,23 +266,23 @@ struct DetectAndExtractFromYaml<file____home_gene_Coding_schema_salad_schema_sal
         return std::nullopt;
     }
 };
-inline auto file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_02_two_records_yml::MyRecordTwo::toYaml() const -> YAML::Node {
+inline auto https___example_com_::MyRecordTwo::toYaml() const -> YAML::Node {
     using ::toYaml;
     auto n = YAML::Node{};
     addYamlField(n, "value", toYaml(*value));
     return n;
 }
-inline void file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_02_two_records_yml::MyRecordTwo::fromYaml([[maybe_unused]] YAML::Node const& n) {
+inline void https___example_com_::MyRecordTwo::fromYaml([[maybe_unused]] YAML::Node const& n) {
     using ::fromYaml;
     fromYaml(n["value"], *value);
 }
 
 template <>
-struct DetectAndExtractFromYaml<file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_02_two_records_yml::MyRecordTwo> {
-    auto operator()(YAML::Node const& n) const -> std::optional<file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_02_two_records_yml::MyRecordTwo> {
+struct DetectAndExtractFromYaml<https___example_com_::MyRecordTwo> {
+    auto operator()(YAML::Node const& n) const -> std::optional<https___example_com_::MyRecordTwo> {
         if (!n.IsDefined()) return std::nullopt;
         if (!n.IsMap()) return std::nullopt;
-        auto res = file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_02_two_records_yml::MyRecordTwo{};
+        auto res = https___example_com_::MyRecordTwo{};
 
         if constexpr (IsConstant<decltype(res.value)::value_t>::value) try {
             fromYaml(n["value"], *res.value);

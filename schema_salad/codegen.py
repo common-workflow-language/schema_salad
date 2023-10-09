@@ -38,6 +38,8 @@ def codegen(
     examples: Optional[str] = None,
     package: Optional[str] = None,
     copyright: Optional[str] = None,
+    spdx_copyright_text: Optional[List[str]] = None,
+    spdx_license_identifier: Optional[str] = None,
     parser_info: Optional[str] = None,
 ) -> None:
     """Generate classes with loaders for the given Schema Salad description."""
@@ -71,6 +73,8 @@ def codegen(
                 examples,
                 pkg,
                 copyright,
+                spdx_copyright_text,
+                spdx_license_identifier,
             )
             gen.parse(j)
             return

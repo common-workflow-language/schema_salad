@@ -131,6 +131,23 @@ def arg_parser() -> argparse.ArgumentParser:
     ),
 
     parser.add_argument(
+        "--codegen-spdx-copyright-text",
+        nargs="+",
+        metavar="spdx_copyright_text",
+        default=[],
+        help="List of copyright text. Each entry will show up as "
+        "'SPDX-FileCopyrightText: ...' (Currently c++ only)",
+    ),
+
+    parser.add_argument(
+        "--codegen-spdx-license-identifier",
+        type=str,
+        metavar="spdx_license_identifier",
+        default=None,
+        help="Optional spdx license identifier, e.g.: GPL-3.0-only (Currently c++ only)",
+    ),
+
+    parser.add_argument(
         "--codegen-parser-info",
         metavar="parser_info",
         type=str,
@@ -315,6 +332,8 @@ def main(argsl: Optional[List[str]] = None) -> int:
             examples=args.codegen_examples,
             package=args.codegen_package,
             copyright=args.codegen_copyright,
+            spdx_license_identifier=args.codegen_spdx_license_identifier,
+            spdx_copyright_text=args.codegen_spdx_copyright_text,
             parser_info=args.codegen_parser_info,
         )
         return 0

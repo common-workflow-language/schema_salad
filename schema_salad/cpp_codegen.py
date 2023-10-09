@@ -287,7 +287,7 @@ class EnumDefinition:
         target.write(f"inline void to_enum(std::string_view v, {name}& out) {{\n")
         target.write(f"{ind}static auto m = std::map<std::string, {name}, std::less<>> {{\n")
         for v in self.values:
-            target.write(f"""{ind}{ind}{{"{v}", {name}::{safename(v)}}},\n""")
+            target.write(f"""{ind}{ind}{{{q(v)}, {name}::{safename(v)}}},\n""")
         target.write(f"{ind}}};\n{ind}auto iter = m.find(v);\n")
         target.write(f"{ind}if (iter == m.end()) throw bool{{}};\n")
         target.write(f"{ind}out = iter->second;\n}}\n")
@@ -383,6 +383,8 @@ class CppCodeGen(CodeGenBase):
         examples: Optional[str],
         package: str,
         copyright: Optional[str],
+        spdx_copyright_text: Optional[List[str]],
+        spdx_license_identifier: Optional[str],
     ) -> None:
         """Initialize the C++ code generator."""
         super().__init__()
@@ -391,6 +393,8 @@ class CppCodeGen(CodeGenBase):
         self.examples = examples
         self.package = package
         self.copyright = copyright
+        self.spdx_copyright_text = spdx_copyright_text
+        self.spdx_license_identifier = spdx_license_identifier
 
         self.classDefinitions: Dict[str, ClassDefinition] = {}
         self.enumDefinitions: Dict[str, EnumDefinition] = {}
@@ -491,6 +495,12 @@ class CppCodeGen(CodeGenBase):
 
     def epilogue(self, root_loader: Optional[TypeDef]) -> None:
         """Generate final part of our cpp file."""
+        if self.spdx_copyright_text:
+            for text in self.spdx_copyright_text:
+                self.target.write(f"""// SPDX-FileCopyrightText: {text}\n""")
+
+        if self.spdx_license_identifier:
+            self.target.write(f"""// SPDX-License-Identifier: {self.spdx_license_identifier}\n""")
         self.target.write("#pragma once\n\n")
 
         self.target.write(

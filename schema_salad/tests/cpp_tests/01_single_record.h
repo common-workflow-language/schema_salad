@@ -168,7 +168,7 @@ class heap_object {
 
 public:
     using value_t = T;
-    heap_object() = default;
+    heap_object() noexcept(false) = default;
     heap_object(heap_object const& oth) {
         *data = *oth;
     }
@@ -219,32 +219,33 @@ public:
     }
 };
 
-namespace file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_01_single_record_yml { struct MyRecord; }
-namespace file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_01_single_record_yml {
+namespace https___example_com_ { struct MyRecord; }
+namespace https___example_com_ {
 struct MyRecord {
     heap_object<std::string> name;
+    virtual ~MyRecord() = default;
     virtual auto toYaml() const -> YAML::Node;
-    virtual void fromYaml(YAML::Node const& n) ;
+    virtual void fromYaml(YAML::Node const& n);
 };
 }
 
-inline auto file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_01_single_record_yml::MyRecord::toYaml() const -> YAML::Node {
+inline auto https___example_com_::MyRecord::toYaml() const -> YAML::Node {
     using ::toYaml;
     auto n = YAML::Node{};
     addYamlField(n, "name", toYaml(*name));
     return n;
 }
-inline void file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_01_single_record_yml::MyRecord::fromYaml([[maybe_unused]] YAML::Node const& n) {
+inline void https___example_com_::MyRecord::fromYaml([[maybe_unused]] YAML::Node const& n) {
     using ::fromYaml;
     fromYaml(n["name"], *name);
 }
 
 template <>
-struct DetectAndExtractFromYaml<file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_01_single_record_yml::MyRecord> {
-    auto operator()(YAML::Node const& n) const -> std::optional<file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_01_single_record_yml::MyRecord> {
+struct DetectAndExtractFromYaml<https___example_com_::MyRecord> {
+    auto operator()(YAML::Node const& n) const -> std::optional<https___example_com_::MyRecord> {
         if (!n.IsDefined()) return std::nullopt;
         if (!n.IsMap()) return std::nullopt;
-        auto res = file____home_gene_Coding_schema_salad_schema_salad_tests_cpp_tests_01_single_record_yml::MyRecord{};
+        auto res = https___example_com_::MyRecord{};
 
         if constexpr (IsConstant<decltype(res.name)::value_t>::value) try {
             fromYaml(n["name"], *res.name);
