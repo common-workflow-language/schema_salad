@@ -81,7 +81,9 @@ class DefaultFetcher(MemoryCachingFetcher):
             except Exception as e:
                 raise ValidationException(f"Error fetching {url}: {e}") from e
             if content_types and "content-type" in resp.headers:
-                received_content_types = set(resp.headers["content-type"].split(";")[:1][0].split(","))
+                received_content_types = set(
+                    resp.headers["content-type"].split(";")[:1][0].split(",")
+                )
                 if set(content_types).isdisjoint(received_content_types):
                     _logger.warning(
                         "While fetching %s, got content-type of %r. Expected one of %s.",
