@@ -2,8 +2,8 @@
 
 import sys
 
-import cwl_utils.parser  # type: ignore[import]
-import objgraph  # type: ignore[import]
+import cwl_utils.parser  # type: ignore[import-not-found]
+import objgraph  # type: ignore[import-untyped]
 
 growth = []
 for _ in range(5):
