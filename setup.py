@@ -100,7 +100,6 @@ extras_require = {
         "pytest < 8",
         "sphinx-autoapi",
         "sphinx-autodoc-typehints",
-        "typed_ast;python_version<'3.8'",
         "sphinxcontrib-autoprogram",
     ],
     "pycodegen": ["black"],
@@ -108,7 +107,6 @@ extras_require = {
 
 setup(
     name="schema-salad",
-    version="8.4",  # update the VERSION prefix in the Makefile as well 🙂
     description="Schema Annotations for Linked Avro Data (SALAD)",
     long_description=open(README).read(),
     long_description_content_type="text/x-rst",
@@ -119,7 +117,8 @@ setup(
     ext_modules=ext_modules,
     license="Apache 2.0",
     python_requires=">=3.8,<3.13",
-    setup_requires=pytest_runner + ["setuptools_scm"],
+    use_scm_version=True,
+    setup_requires=pytest_runner + ["setuptools_scm>=8.0.4,<9"],
     packages=["schema_salad", "schema_salad.tests", "schema_salad.avro"],
     package_data={
         "schema_salad": [
@@ -174,5 +173,4 @@ setup(
         "Programming Language :: Python :: 3.12",
         "Typing :: Typed",
     ],
-    use_scm_version=True,
 )
