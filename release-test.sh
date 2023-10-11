@@ -18,8 +18,8 @@ else
     HEAD=$(git rev-parse HEAD)
 fi
 run_tests="bin/py.test --pyargs ${module}"
-pipver=20.3.3  # minimum required version of pip for Python 3.10
-setuptoolsver=50.0.1  # required for Python 3.10
+pipver=23.1  # minimum required version of pip for Python 3.12
+setuptoolsver=67.6.1  # required for Python 3.12
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 rm -Rf testenv? || /bin/true

@@ -31,8 +31,6 @@ DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt
 COVBASE=coverage run --append
 PYTEST_EXTRA ?= -rs
 
-# Updating the Major & Minor version below?
-# Don't forget to update setup.py as well
 VERSION=8.4.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
 

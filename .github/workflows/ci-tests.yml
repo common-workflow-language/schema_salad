@@ -22,10 +22,6 @@ jobs:
         py-ver-major: [3]
         py-ver-minor: [8, 9, 10, 11, 12]
         step: [lint, bandit, unit, mypy, memleak]
-        exclude:
-          - py-ver-major: 3
-            py-ver-minor: 12
-            step: memleak
 
     env:
       py-semver: ${{ format('{0}.{1}', matrix.py-ver-major, matrix.py-ver-minor) }}
@@ -38,7 +34,6 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.py-semver }}
-          allow-prereleases: true
           cache: pip
           cache-dependency-path: |
             requirements.txt
@@ -76,8 +71,8 @@ jobs:
         step: [lintreadme, pydocstyle]
 
     env:
-      py-semver: "3.11"
-      TOXENV: ${{ format('py311-{0}', matrix.step) }}
+      py-semver: "3.12"
+      TOXENV: ${{ format('py312-{0}', matrix.step) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -118,7 +113,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Cache for pip
         uses: actions/cache@v3
@@ -141,6 +136,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: record schema-salad version
-        run: pip install 'setuptools_scm[toml]<8' && python -m setuptools_scm
+        run: pip install -U setuptools wheel && pip install setuptools_scm[toml] && python setup.py --version
       - name: build & test schema_salad container
         run: ./build-schema_salad-docker.sh

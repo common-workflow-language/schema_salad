@@ -15,8 +15,6 @@ import sys
 from datetime import datetime
 import time
 
-sys.path.insert(0, os.path.abspath(".."))
-
 from schema_salad import _version
 
 # -- Project information -----------------------------------------------------
