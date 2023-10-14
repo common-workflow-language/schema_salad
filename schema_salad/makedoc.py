@@ -8,10 +8,10 @@ import sys
 from io import StringIO, TextIOWrapper
 from typing import (
     IO,
-    TYPE_CHECKING,
     Any,
     Dict,
     List,
+    Literal,
     MutableMapping,
     MutableSequence,
     Optional,
@@ -22,21 +22,30 @@ from typing import (
 from urllib.parse import urldefrag
 
 from mistune import create_markdown
-from mistune.renderers import HTMLRenderer
-from mistune.util import escape_html
+from mistune.core import BlockState
+from mistune.markdown import Markdown
+from mistune.renderers.html import HTMLRenderer
 
 from .exceptions import SchemaSaladException, ValidationException
 from .schema import avro_field_name, extend_and_specialize, get_metaschema
 from .utils import add_dictlist, aslist
 from .validate import avro_type_name
 
-if TYPE_CHECKING:
-    # avoid import error since typing stubs do not exist in actual package
-    from mistune import State
-    from mistune.markdown import Markdown
-    from mistune.plugins import PluginName
+PluginName = Literal[
+    "url",
+    "strikethrough",
+    "footnotes",
+    "table",
+    "task_lists",
+    "def_list",
+    "abbr",
+]
 
 _logger = logging.getLogger("salad")
+
+
+def escape_html(s: str) -> str:
+    return html.escape(html.unescape(s)).replace('&#x27;', "'")
 
 
 def vocab_type_name(url: str) -> str:
@@ -70,7 +79,7 @@ def linkto(item: str) -> str:
 class MyRenderer(HTMLRenderer):
     """Custom renderer with different representations of selected HTML tags."""
 
-    def heading(self, text: str, level: int) -> str:
+    def heading(self, text: str, level: int, **attrs: Any) -> str:
         """Override HTML heading creation with text IDs."""
         return """<h{} id="{}" class="section">{} <a href="#{}">&sect;</a></h{}>""".format(
             level, to_id(text), text, to_id(text), level
@@ -104,9 +113,10 @@ class MyRenderer(HTMLRenderer):
         return text + ">" + html.escape(code, quote=self._escape) + "</code></pre>\n"
 
 
+# FIXME: this can be removed with mistune v3!
 def markdown_list_hook(
-    markdown: "Markdown[str, Any]", text: str, state: "State"
-) -> Tuple[str, "State"]:
+    markdown: Markdown, state: BlockState, text: Optional[str] = None,
+) -> Tuple[str, BlockState]:
     """Patches problematic Markdown lists for later HTML generation.
 
     When a Markdown list with paragraphs not indented with the list
@@ -154,6 +164,8 @@ def markdown_list_hook(
         r"(?P<remain>.*)",
         re.MULTILINE,
     )
+    if text is None:
+        text = state.src
     matches = list(re.finditer(pattern, text))
     if not matches:
         return text, state
@@ -179,7 +191,7 @@ def markdown_list_hook(
                     if line.strip()
                 ]
             )
-            intend_list, _ = markdown_list_hook(markdown, intend_list, state)
+            intend_list, _ = markdown_list_hook(markdown, state, intend_list)
             # remove final newline from other if/else branch
             intend_list = intend_list.rstrip()
             intend_list = "\n".join([indent_prefix + line for line in intend_list.split("\n")])
@@ -579,7 +591,7 @@ class RenderType:
             f["doc"] = number_headings(self.toc, f["doc"])
 
         doc = doc + "\n\n" + f["doc"]
-        plugins: List["PluginName"] = [
+        plugins: List[PluginName] = [
             "strikethrough",
             "footnotes",
             "table",
@@ -588,12 +600,12 @@ class RenderType:
         # if escape active, wraps literal HTML into '<p> {HTML} </p>'
         # we must pass it to both since 'MyRenderer' is predefined
         escape = False
-        markdown2html: "Markdown[str, Any]" = create_markdown(
+        markdown2html: Markdown = create_markdown(
             renderer=MyRenderer(escape=escape),
             plugins=plugins,
             escape=escape,
         )
-        markdown2html.before_parse_hooks.append(markdown_list_hook)
+        ##markdown2html.before_parse_hooks.append(markdown_list_hook)  # FIXME: this can be removed with mistune v3!
         doc = markdown2html(doc)
 
         if f["type"] == "record":
