@@ -449,7 +449,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                         # instance_type="List<{}>".format(i.instance_type),
                         instance_type=instance_type,
                         name=f"array_of_{i.name}",
-                        init=f"new ArrayLoader({i.name})",
+                        init=f"new ArrayLoader({i.name}, {self.to_java(type_declaration.get('flatten', True))})",
                         loader_type=f"Loader<java.util.List<{i.instance_type}>>",
                     )
                 )
@@ -458,16 +458,11 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                 "https://w3id.org/cwl/salad#map",
             ):
                 i = self.type_loader(type_declaration["values"])
-                instance_type = (
-                    "java.util.Map<String, String>"
-                    if i.instance_type == "String"
-                    else "java.util.Map<String, Object>"
-                )
                 return self.declare_type(
                     TypeDef(
                         # special doesn't work out with subclassing, gotta be more clever
                         # instance_type="Map<String, {}>".format(i.instance_type),
-                        instance_type=instance_type,
+                        instance_type=f"java.util.Map<String, {i.instance_type}>",
                         name=f"map_of_{i.name}",
                         init=f"new MapLoader({i.name})",
                         loader_type=f"Loader<java.util.Map<String, {i.instance_type}>>",
@@ -501,7 +496,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                 loader_type = TypeDef(
                     instance_type="Object",
                     init="new UnionLoader(new Loader[] {})",
-                    name=self.safe_name(type_declaration["name"]),
+                    name=loader_name,
                     loader_type="Loader<Object>",
                 )
                 self.declare_type(loader_type)

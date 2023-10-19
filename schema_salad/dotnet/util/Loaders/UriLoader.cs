@@ -24,7 +24,7 @@ internal class UriLoader : ILoader<object>
         LoadingOptions innerLoadingOptions = loadingOptions;
         if (this.noLinkCheck != null)
         {
-            innerLoadingOptions = new LoadingOptions(copyFrom: innerLoadingOptions, noLinkCheck: this.noLinkCheck);
+            innerLoadingOptions = new LoadingOptions(copyFrom: loadingOptions, noLinkCheck: this.noLinkCheck);
         }
         object doc = doc_;
         if (doc is IList)

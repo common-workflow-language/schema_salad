@@ -9,6 +9,11 @@ internal class UnionLoader : ILoader<object>
         this.alternatives = alternatives;
     }
 
+    public void addLoaders(IEnumerable<ILoader> loaders)
+    {
+        this.alternatives.AddRange(loaders);
+    }
+
     public object Load(in object doc, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot = null)
     {
         List<ValidationException> errors = new();

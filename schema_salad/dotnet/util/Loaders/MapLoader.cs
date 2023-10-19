@@ -2,52 +2,43 @@
 
 namespace ${project_name};
 
-internal class ArrayLoader<T> : ILoader<List<T>>
+internal class MapLoader<T> : ILoader<Dictionary<string, T>>
 {
-    private readonly ILoader itemLoader;
-    private readonly bool flatten;
+    private readonly ILoader valueLoader;
 
-    public ArrayLoader(in ILoader itemLoader, in bool flatten = true)
+    public MapLoader(in ILoader valueLoader)
     {
-        this.itemLoader = itemLoader;
-        this.flatten = flatten;
+        this.valueLoader = valueLoader;
     }
 
-    public List<T> Load(in object doc, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot = null)
+    public Dictionary<string, T> Load(in object doc, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot = null)
     {
         if (doc == null)
         {
             throw new ValidationException("Expected non null");
         }
 
-        if (doc is not IList)
+        if (doc is not IDictionary)
         {
             throw new ValidationException("Expected list");
         }
 
-        IList docList = (IList)doc;
-        List<T> returnValue = new();
+        IDictionary docDictionary = (IDictionary)doc;
+        Dictionary<string, T> returnValue = new();
         List<ILoader> loaders = new()
         {
             this,
-            itemLoader
+            valueLoader
         };
         ILoader<object> unionLoader = new UnionLoader(loaders);
         List<ValidationException> errors = new();
 
-        foreach (object? e1 in docList)
+        foreach (KeyValuePair<string, T> item in docDictionary)
         {
             try
             {
-                dynamic loadedField = unionLoader.LoadField(e1, baseuri, loadingOptions);
-                if (this.flatten && loadedField is IList)
-                {
-                    returnValue.AddRange((List<T>)loadedField);
-                }
-                else
-                {
-                    returnValue.Add(loadedField);
-                }
+                dynamic loadedField = unionLoader.LoadField(item.Value, baseuri, loadingOptions);
+                returnValue[item.Key] = loadedField;
             }
             catch (ValidationException e)
             {

@@ -773,13 +773,19 @@ class _UnionLoader(_Loader):
 
 class _URILoader(_Loader):
     def __init__(
-        self, inner: _Loader, scoped_id: bool, vocab_term: bool, scoped_ref: Optional[int], no_link_check: Optional[bool]
+        self,
+        inner: _Loader,
+        scoped_id: bool,
+        vocab_term: bool,
+        scoped_ref: Optional[int],
+        no_link_check: Optional[bool],
     ) -> None:
         self.inner = inner
         self.scoped_id = scoped_id
         self.vocab_term = vocab_term
         self.scoped_ref = scoped_ref
         self.no_link_check = no_link_check
+
     def load(
         self,
         doc: Any,

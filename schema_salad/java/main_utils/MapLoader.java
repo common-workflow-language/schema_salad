@@ -17,7 +17,7 @@ public class MapLoader<T> implements Loader<Map<String, T>> {
       final String baseUri,
       final LoadingOptions loadingOptions,
       final String docRoot) {
-    final Map<String, Object> docMap = (Map<String, Object> Loader.validateOfJavaType(Map.class, doc);
+    final Map<String, Object> docMap = (Map<String, Object>) Loader.validateOfJavaType(Map.class, doc);
     final Map<String, T> r = new HashMap();
     final List<ValidationException> errors = new ArrayList();
     for (final Map.Entry<String, Object> entry : docMap.entrySet()) {

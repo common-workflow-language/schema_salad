@@ -10,6 +10,7 @@ public class LoadingOptions {
   Fetcher fetcher;
   String fileUri;
   Map<String, String> namespaces;
+  Boolean noLinkCheck;
   List<String> schemas;
   Boolean noLinkCheck;
   Map<String, Object> idx;
