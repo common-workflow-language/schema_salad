@@ -70,6 +70,7 @@ class LoadingOptions:
         idx: Optional[IdxType] = None,
         imports: Optional[List[str]] = None,
         includes: Optional[List[str]] = None,
+        no_link_check: bool = False,
     ) -> None:
         """Create a LoadingOptions object."""
         self.original_doc = original_doc
@@ -113,6 +114,8 @@ class LoadingOptions:
             self.includes = includes
         else:
             self.includes = copyfrom.includes if copyfrom is not None else []
+
+        self.no_link_check = no_link_check
 
         if fetcher is not None:
             self.fetcher = fetcher
@@ -679,15 +682,20 @@ class _UnionLoader(_Loader):
 
 
 class _URILoader(_Loader):
-    def __init__(self, inner, scoped_id, vocab_term, scoped_ref):
-        # type: (_Loader, bool, bool, Union[int, None]) -> None
+    def __init__(self, inner, scoped_id, vocab_term, scoped_ref, no_link_check):
+        # type: (_Loader, bool, bool, Union[int, None], Union[bool, None]) -> None
         self.inner = inner
         self.scoped_id = scoped_id
         self.vocab_term = vocab_term
         self.scoped_ref = scoped_ref
+        self.no_link_check = no_link_check
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+        if self.no_link_check is not None:
+            loadingOptions = LoadingOptions(
+                copyfrom=loadingOptions, no_link_check=self.no_link_check
+            )
         if isinstance(doc, MutableSequence):
             newdoc = []
             for i in doc:
@@ -715,14 +723,17 @@ class _URILoader(_Loader):
                 self.scoped_ref,
             )
         if isinstance(doc, str):
-            errors = []
-            try:
-                if not loadingOptions.fetcher.check_exists(doc):
-                    errors.append(ValidationException(f"contains undefined reference to `{doc}`"))
-            except ValidationException:
-                pass
-            if len(errors) > 0:
-                raise ValidationException("", None, errors)
+            if not loadingOptions.no_link_check:
+                errors = []
+                try:
+                    if not loadingOptions.fetcher.check_exists(doc):
+                        errors.append(
+                            ValidationException(f"contains undefined reference to `{doc}`")
+                        )
+                except ValidationException:
+                    pass
+                if len(errors) > 0:
+                    raise ValidationException("", None, errors)
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 

@@ -11,6 +11,7 @@ public class LoadingOptions {
   String fileUri;
   Map<String, String> namespaces;
   List<String> schemas;
+  Boolean noLinkCheck;
   Map<String, Object> idx;
   Map<String, String> vocab;
   Map<String, String> rvocab;
@@ -20,11 +21,13 @@ public class LoadingOptions {
       final String fileUri,
       final Map<String, String> namespaces,
       final List<String> schemas,
+      final Boolean noLinkCheck,
       final Map<String, Object> idx) {
     this.fetcher = fetcher;
     this.fileUri = fileUri;
     this.namespaces = namespaces;
     this.schemas = schemas;
+    this.noLinkCheck = noLinkCheck;
     this.idx = idx;
 
     if (namespaces != null) {

@@ -670,17 +670,19 @@ export enum {enum_name} {{
         scoped_id: bool,
         vocab_term: bool,
         ref_scope: Optional[int],
+        no_link_check: Optional[bool],
     ) -> TypeDef:
         """Construct the TypeDef for the given URI loader."""
         instance_type = inner.instance_type or "any"
         return self.declare_type(
             TypeDef(
-                f"uri{inner.name}{scoped_id}{vocab_term}{ref_scope}",
-                "new _URILoader({}, {}, {}, {})".format(
+                f"uri{inner.name}{scoped_id}{vocab_term}{ref_scope}{no_link_check}",
+                "new _URILoader({}, {}, {}, {}, {})".format(
                     inner.name,
                     self.to_typescript(scoped_id),
                     self.to_typescript(vocab_term),
                     self.to_typescript(ref_scope),
+                    self.to_typescript(no_link_check),
                 ),
                 is_uri=True,
                 scoped_id=scoped_id,
