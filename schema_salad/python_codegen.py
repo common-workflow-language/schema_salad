@@ -640,12 +640,13 @@ if self.{safename} is not None:
         scoped_id: bool,
         vocab_term: bool,
         ref_scope: Optional[int],
+        no_link_check: Optional[bool],
     ) -> TypeDef:
         """Construct the TypeDef for the given URI loader."""
         return self.declare_type(
             TypeDef(
-                f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}",
-                f"_URILoader({inner.name}, {scoped_id}, {vocab_term}, {ref_scope})",
+                f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}_{no_link_check}",
+                f"_URILoader({inner.name}, {scoped_id}, {vocab_term}, {ref_scope}, {no_link_check})",
                 is_uri=True,
                 scoped_id=scoped_id,
                 ref_scope=ref_scope,

@@ -115,6 +115,7 @@ class CodeGenBase:
         scoped_id: bool,
         vocab_term: bool,
         ref_scope: Optional[int],
+        no_link_check: Optional[bool],
     ) -> TypeDef:
         """Construct the TypeDef for the given URI loader."""
         raise NotImplementedError()

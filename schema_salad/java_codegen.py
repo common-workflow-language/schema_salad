@@ -715,17 +715,19 @@ public enum {clazz} {{
         scoped_id: bool,
         vocab_term: bool,
         ref_scope: Optional[int],
+        no_link_check: Optional[bool],
     ) -> TypeDef:
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
             TypeDef(
                 instance_type=instance_type,  # ?
-                name=f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}",
-                init="new UriLoader({}, {}, {}, {})".format(
+                name=f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}_{no_link_check}",
+                init="new UriLoader({}, {}, {}, {}, {})".format(
                     inner.name,
                     self.to_java(scoped_id),
                     self.to_java(vocab_term),
                     self.to_java(ref_scope),
+                    self.to_java(no_link_check),
                 ),
                 is_uri=True,
                 scoped_id=scoped_id,

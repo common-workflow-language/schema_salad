@@ -5,6 +5,7 @@ public class LoadingOptions
     public IFetcher fetcher;
     public string? fileUri;
     public Dictionary<string, string>? namespaces;
+    public bool? noLinkCheck;
     public List<string>? schemas;
     public Dictionary<string, object> idx;
     public Dictionary<string, string> vocab;
@@ -15,12 +16,14 @@ public class LoadingOptions
         in IFetcher? fetcher = null,
         in string? fileUri = null,
         in Dictionary<string, string>? namespaces = null,
+        in bool? noLinkCheck = null,
         in List<string>? schemas = null,
         in Dictionary<string, object>? idx = null,
         LoadingOptions? copyFrom = null)
     {
         this.fileUri = fileUri;
         this.namespaces = namespaces;
+        this.noLinkCheck = noLinkCheck;
         this.schemas = schemas;
         this.idx = idx ?? new Dictionary<string, object>();
 
@@ -40,6 +43,11 @@ public class LoadingOptions
             if (namespaces == null)
             {
                 this.namespaces = copyFrom.namespaces;
+            }
+
+            if (noLinkCheck == null)
+            {
+                this.noLinkCheck = copyFrom.noLinkCheck;
             }
 
             if (schemas == null)

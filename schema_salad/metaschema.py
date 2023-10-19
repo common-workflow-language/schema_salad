@@ -73,6 +73,7 @@ class LoadingOptions:
         idx: Optional[IdxType] = None,
         imports: Optional[List[str]] = None,
         includes: Optional[List[str]] = None,
+        no_link_check: bool = False,
     ) -> None:
         """Create a LoadingOptions object."""
         self.original_doc = original_doc
@@ -116,6 +117,8 @@ class LoadingOptions:
             self.includes = includes
         else:
             self.includes = copyfrom.includes if copyfrom is not None else []
+
+        self.no_link_check = no_link_check
 
         if fetcher is not None:
             self.fetcher = fetcher
@@ -682,15 +685,20 @@ class _UnionLoader(_Loader):
 
 
 class _URILoader(_Loader):
-    def __init__(self, inner, scoped_id, vocab_term, scoped_ref):
-        # type: (_Loader, bool, bool, Union[int, None]) -> None
+    def __init__(self, inner, scoped_id, vocab_term, scoped_ref, no_link_check):
+        # type: (_Loader, bool, bool, Union[int, None], Union[bool, None]) -> None
         self.inner = inner
         self.scoped_id = scoped_id
         self.vocab_term = vocab_term
         self.scoped_ref = scoped_ref
+        self.no_link_check = no_link_check
 
     def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
         # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+        if self.no_link_check is not None:
+            loadingOptions = LoadingOptions(
+                copyfrom=loadingOptions, no_link_check=self.no_link_check
+            )
         if isinstance(doc, MutableSequence):
             newdoc = []
             for i in doc:
@@ -718,14 +726,17 @@ class _URILoader(_Loader):
                 self.scoped_ref,
             )
         if isinstance(doc, str):
-            errors = []
-            try:
-                if not loadingOptions.fetcher.check_exists(doc):
-                    errors.append(ValidationException(f"contains undefined reference to `{doc}`"))
-            except ValidationException:
-                pass
-            if len(errors) > 0:
-                raise ValidationException("", None, errors)
+            if not loadingOptions.no_link_check:
+                errors = []
+                try:
+                    if not loadingOptions.fetcher.check_exists(doc):
+                        errors.append(
+                            ValidationException(f"contains undefined reference to `{doc}`")
+                        )
+                except ValidationException:
+                    pass
+                if len(errors) > 0:
+                    raise ValidationException("", None, errors)
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
@@ -1070,7 +1081,7 @@ class RecordField(Documented):
 
                 name = load_field(
                     _doc.get("name"),
-                    uri_strtype_True_False_None,
+                    uri_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("name")
@@ -1522,7 +1533,7 @@ class EnumSchema(Saveable):
 
                 name = load_field(
                     _doc.get("name"),
-                    uri_union_of_None_type_or_strtype_True_False_None,
+                    uri_union_of_None_type_or_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("name")
@@ -1575,7 +1586,7 @@ class EnumSchema(Saveable):
 
             symbols = load_field(
                 _doc.get("symbols"),
-                uri_array_of_strtype_True_False_None,
+                uri_array_of_strtype_True_False_None_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("symbols")
@@ -1767,7 +1778,7 @@ class ArraySchema(Saveable):
 
             items = load_field(
                 _doc.get("items"),
-                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2,
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("items")
@@ -2005,7 +2016,7 @@ class JsonldPredicate(Saveable):
 
                 _id = load_field(
                     _doc.get("_id"),
-                    uri_union_of_None_type_or_strtype_True_False_None,
+                    uri_union_of_None_type_or_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("_id")
@@ -2679,7 +2690,7 @@ class SpecializeDef(Saveable):
 
             specializeFrom = load_field(
                 _doc.get("specializeFrom"),
-                uri_strtype_False_False_1,
+                uri_strtype_False_False_1_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("specializeFrom")
@@ -2721,7 +2732,7 @@ class SpecializeDef(Saveable):
 
             specializeTo = load_field(
                 _doc.get("specializeTo"),
-                uri_strtype_False_False_1,
+                uri_strtype_False_False_1_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("specializeTo")
@@ -2903,7 +2914,7 @@ class SaladRecordField(RecordField):
 
                 name = load_field(
                     _doc.get("name"),
-                    uri_strtype_True_False_None,
+                    uri_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("name")
@@ -3308,7 +3319,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
 
                 name = load_field(
                     _doc.get("name"),
-                    uri_strtype_True_False_None,
+                    uri_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("name")
@@ -3539,7 +3550,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
 
                 docParent = load_field(
                     _doc.get("docParent"),
-                    uri_union_of_None_type_or_strtype_False_False_None,
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docParent")
@@ -3584,7 +3595,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
 
                 docChild = load_field(
                     _doc.get("docChild"),
-                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None,
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docChild")
@@ -3629,7 +3640,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
 
                 docAfter = load_field(
                     _doc.get("docAfter"),
-                    uri_union_of_None_type_or_strtype_False_False_None,
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docAfter")
@@ -3809,7 +3820,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
 
                 extends = load_field(
                     _doc.get("extends"),
-                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1,
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("extends")
@@ -4131,7 +4142,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
 
                 name = load_field(
                     _doc.get("name"),
-                    uri_union_of_None_type_or_strtype_True_False_None,
+                    uri_union_of_None_type_or_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("name")
@@ -4229,7 +4240,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
 
             symbols = load_field(
                 _doc.get("symbols"),
-                uri_array_of_strtype_True_False_None,
+                uri_array_of_strtype_True_False_None_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("symbols")
@@ -4359,7 +4370,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
 
                 docParent = load_field(
                     _doc.get("docParent"),
-                    uri_union_of_None_type_or_strtype_False_False_None,
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docParent")
@@ -4404,7 +4415,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
 
                 docChild = load_field(
                     _doc.get("docChild"),
-                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None,
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docChild")
@@ -4449,7 +4460,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
 
                 docAfter = load_field(
                     _doc.get("docAfter"),
-                    uri_union_of_None_type_or_strtype_False_False_None,
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docAfter")
@@ -4584,7 +4595,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
 
                 extends = load_field(
                     _doc.get("extends"),
-                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1,
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("extends")
@@ -4827,7 +4838,7 @@ class Documentation(NamedType, DocType):
 
                 name = load_field(
                     _doc.get("name"),
-                    uri_strtype_True_False_None,
+                    uri_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("name")
@@ -4971,7 +4982,7 @@ class Documentation(NamedType, DocType):
 
                 docParent = load_field(
                     _doc.get("docParent"),
-                    uri_union_of_None_type_or_strtype_False_False_None,
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docParent")
@@ -5016,7 +5027,7 @@ class Documentation(NamedType, DocType):
 
                 docChild = load_field(
                     _doc.get("docChild"),
-                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None,
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docChild")
@@ -5061,7 +5072,7 @@ class Documentation(NamedType, DocType):
 
                 docAfter = load_field(
                     _doc.get("docAfter"),
-                    uri_union_of_None_type_or_strtype_False_False_None,
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docAfter")
@@ -5341,7 +5352,7 @@ union_of_None_type_or_strtype_or_array_of_strtype = _UnionLoader(
         array_of_strtype,
     )
 )
-uri_strtype_True_False_None = _URILoader(strtype, True, False, None)
+uri_strtype_True_False_None_None = _URILoader(strtype, True, False, None, None)
 union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype = _UnionLoader(
     (
         PrimitiveTypeLoader,
@@ -5387,17 +5398,20 @@ union_of_None_type_or_strtype = _UnionLoader(
         strtype,
     )
 )
-uri_union_of_None_type_or_strtype_True_False_None = _URILoader(
-    union_of_None_type_or_strtype, True, False, None
+uri_union_of_None_type_or_strtype_True_False_None_None = _URILoader(
+    union_of_None_type_or_strtype, True, False, None, None
 )
-uri_array_of_strtype_True_False_None = _URILoader(array_of_strtype, True, False, None)
+uri_array_of_strtype_True_False_None_None = _URILoader(
+    array_of_strtype, True, False, None, None
+)
 Enum_nameLoader = _EnumLoader(("enum",), "Enum_name")
 typedsl_Enum_nameLoader_2 = _TypeDSLLoader(Enum_nameLoader, 2, "v1.1")
-uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2 = _URILoader(
+uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2_None = _URILoader(
     union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype,
     False,
     True,
     2,
+    None,
 )
 Array_nameLoader = _EnumLoader(("array",), "Array_name")
 typedsl_Array_nameLoader_2 = _TypeDSLLoader(Array_nameLoader, 2, "v1.1")
@@ -5413,12 +5427,14 @@ union_of_None_type_or_inttype = _UnionLoader(
         inttype,
     )
 )
-uri_strtype_False_False_1 = _URILoader(strtype, False, False, 1)
-uri_union_of_None_type_or_strtype_False_False_None = _URILoader(
-    union_of_None_type_or_strtype, False, False, None
+uri_strtype_False_False_1_None = _URILoader(strtype, False, False, 1, None)
+uri_union_of_None_type_or_strtype_False_False_None_None = _URILoader(
+    union_of_None_type_or_strtype, False, False, None, None
 )
-uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None = _URILoader(
-    union_of_None_type_or_strtype_or_array_of_strtype, False, False, None
+uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None = (
+    _URILoader(
+        union_of_None_type_or_strtype_or_array_of_strtype, False, False, None, None
+    )
 )
 union_of_None_type_or_strtype_or_JsonldPredicateLoader = _UnionLoader(
     (
@@ -5443,8 +5459,8 @@ union_of_None_type_or_array_of_SaladRecordFieldLoader = _UnionLoader(
 idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader = _IdMapLoader(
     union_of_None_type_or_array_of_SaladRecordFieldLoader, "name", "type"
 )
-uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1 = _URILoader(
-    union_of_None_type_or_strtype_or_array_of_strtype, False, False, 1
+uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None = _URILoader(
+    union_of_None_type_or_strtype_or_array_of_strtype, False, False, 1, None
 )
 array_of_SpecializeDefLoader = _ArrayLoader(SpecializeDefLoader)
 union_of_None_type_or_array_of_SpecializeDefLoader = _UnionLoader(

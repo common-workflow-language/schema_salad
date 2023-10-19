@@ -792,19 +792,21 @@ public class {enum_name} : IEnumClass<{enum_name}>
         scoped_id: bool,
         vocab_term: bool,
         ref_scope: Optional[int],
+        no_link_check: Optional[bool],
     ) -> TypeDef:
         """Construct the TypeDef for the given URI loader."""
         instance_type = inner.instance_type or "object"
         return self.declare_type(
             TypeDef(
                 instance_type=instance_type,
-                name=f"uri{inner.name}{scoped_id}{vocab_term}{ref_scope}",
+                name=f"uri{inner.name}{scoped_id}{vocab_term}{ref_scope}{no_link_check}",
                 loader_type="ILoader<object>",
-                init="new UriLoader({}, {}, {}, {})".format(
+                init="new UriLoader({}, {}, {}, {}, {})".format(
                     inner.name,
                     self.to_dotnet(scoped_id),
                     self.to_dotnet(vocab_term),
                     self.to_dotnet(ref_scope),
+                    self.to_dotnet(no_link_check),
                 ),
                 is_uri=True,
                 scoped_id=scoped_id,
