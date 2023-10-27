@@ -172,8 +172,8 @@ public:
     heap_object(heap_object const& oth) {
         *data = *oth;
     }
-    heap_object(heap_object&& oth) {
-        *data = *oth;
+    heap_object(heap_object&& oth) noexcept(noexcept(*data = std::move(*oth))) {
+        *data = std::move(*oth);
     }
 
     template <typename T2>
@@ -181,15 +181,17 @@ public:
         *data = oth;
     }
     template <typename T2>
-    heap_object(T2&& oth) {
-        *data = oth;
+    heap_object(T2&& oth) noexcept(noexcept(*data = std::forward<T2>(oth))) {
+        *data = std::forward<T2>(oth);
     }
+
+    ~heap_object() = default;
 
     auto operator=(heap_object const& oth) -> heap_object& {
         *data = *oth;
         return *this;
     }
-    auto operator=(heap_object&& oth) -> heap_object& {
+    auto operator=(heap_object&& oth) noexcept(noexcept(*data = std::move(*oth))) -> heap_object& {
         *data = std::move(*oth);
         return *this;
     }
@@ -200,21 +202,21 @@ public:
         return *this;
     }
     template <typename T2>
-    auto operator=(T2&& oth) -> heap_object& {
-        *data = std::move(oth);
+    auto operator=(T2&& oth) noexcept(noexcept(*data = std::forward<T2>(oth))) -> heap_object& {
+        *data = std::forward<T2>(oth);
         return *this;
     }
 
-    auto operator->() -> T* {
+    auto operator->() noexcept(true) -> T* {
         return data.get();
     }
-    auto operator->() const -> T const* {
+    auto operator->() const noexcept(true) -> T const* {
         return data.get();
     }
-    auto operator*() -> T& {
+    auto operator*() noexcept(true) -> T& {
         return *data;
     }
-    auto operator*() const -> T const& {
+    auto operator*() const noexcept(true) -> T const& {
         return *data;
     }
 };
