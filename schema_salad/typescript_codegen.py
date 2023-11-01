@@ -429,7 +429,7 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                 loader_type = TypeDef(
                     loader_name,
                     "new _UnionLoader([])",
-                    instance_type="Object",
+                    instance_type="any",
                 )
                 self.declare_type(loader_type)
                 # Parse inner types
