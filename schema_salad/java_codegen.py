@@ -449,7 +449,8 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                         # instance_type="List<{}>".format(i.instance_type),
                         instance_type=instance_type,
                         name=f"array_of_{i.name}",
-                        init=f"new ArrayLoader({i.name}, {self.to_java(type_declaration.get('flatten', True))})",
+                        init=f"new ArrayLoader({i.name}, "
+                        f"{self.to_java(type_declaration.get('flatten', True))})",
                         loader_type=f"Loader<java.util.List<{i.instance_type}>>",
                     )
                 )

@@ -2,9 +2,11 @@ import { Loader, loadField, LoadingOptions, _UnionLoader, ValidationException } 
 
 export class _ArrayLoader implements Loader {
   items: Loader[]
+  flatten: boolean
 
-  constructor (items: Loader[]) {
+  constructor (items: Loader[], flatten: boolean = true) {
     this.items = items
+    this.flatten = flatten
   }
 
   async load (doc: any, baseuri: string, loadingOptions: LoadingOptions, docRoot?: string): Promise<any> {
@@ -16,7 +18,7 @@ export class _ArrayLoader implements Loader {
     for (var val of doc) {
       try {
         const lf = await loadField(val, new _UnionLoader([this, ...this.items]), baseuri, loadingOptions)
-        if (Array.isArray(lf)) {
+        if (this.flatten && Array.isArray(lf)) {
           r = r.concat(lf)
         } else {
           r.push(lf)

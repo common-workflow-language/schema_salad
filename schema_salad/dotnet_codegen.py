@@ -421,7 +421,8 @@ public class {cls} : {current_interface}, ISaveable
                         instance_type=f"List<{i.instance_type}>",
                         name=f"array_of_{i.name}",
                         loader_type=f"ILoader<List<{i.instance_type}>>",
-                        init=f"new ArrayLoader<{i.instance_type}>({i.name}, {'true' if type_declaration.get('flatten', True) else 'false'})",
+                        init=f"new ArrayLoader<{i.instance_type}>({i.name}, "
+                        f"{'true' if type_declaration.get('flatten', True) else 'false'})",
                     )
                 )
             if type_declaration["type"] in (

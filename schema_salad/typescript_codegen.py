@@ -18,7 +18,7 @@ from typing import (
 from importlib_resources import files
 
 from . import _logger, schema
-from .codegen_base import CodeGenBase, TypeDef
+from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
 from .exceptions import SchemaException
 from .java_codegen import _ensure_directory_and_write, _safe_makedirs
 from .schema import shortname
@@ -386,8 +386,21 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                 return self.declare_type(
                     TypeDef(
                         f"arrayOf{i.name}",
-                        f"new _ArrayLoader([{i.name}])",
+                        f"new _ArrayLoader([{i.name}], "
+                        f"{self.to_typescript(type_declaration.get('flatten', True))})",
                         instance_type=f"Array<{i.instance_type}>",
+                    )
+                )
+            if type_declaration["type"] in (
+                "map",
+                "https://w3id.org/cwl/salad#map",
+            ):
+                i = self.type_loader(type_declaration["values"])
+                return self.declare_type(
+                    TypeDef(
+                        f"mapOf{i.name}",
+                        f"new _MapLoader([{i.name}])",
+                        instance_type=f"Dictionary<{i.instance_type}>",
                     )
                 )
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
@@ -407,6 +420,31 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                         abstract=type_declaration.get("abstract", False),
                     )
                 )
+            if type_declaration["type"] in (
+                "union",
+                "https://w3id.org/cwl/salad#union",
+            ):
+                # Declare the named loader to handle recursive union definitions
+                loader_name = self.safe_name(type_declaration["name"]) + "Loader"
+                loader_type = TypeDef(
+                    loader_name,
+                    "new _UnionLoader([])",
+                    instance_type="Object",
+                )
+                self.declare_type(loader_type)
+                # Parse inner types
+                sub_types = [self.type_loader(i) for i in type_declaration["names"]]
+
+                # Register lazy initialization for the loader
+                self.add_lazy_init(
+                    LazyInitDef(
+                        loader_name,
+                        "{}.addLoaders([{}]);".format(
+                            loader_name, ", ".join(s.name for s in sub_types)
+                        ),
+                    )
+                )
+                return loader_type
             raise SchemaException("wft {}".format(type_declaration["type"]))
 
         if type_declaration in prims:
@@ -767,6 +805,11 @@ export enum {enum_name} {{
 
         sorted_modules = sorted(self.modules)
         internal_module_exports = "\n".join(f"export * from '../{f}'" for f in sorted_modules)
+
+        if self.lazy_inits:
+            loader_instances += "\n"
+            for lazy_init in self.lazy_inits.values():
+                loader_instances += f"{lazy_init.init}\n"
 
         example_tests = ""
         if self.examples:
