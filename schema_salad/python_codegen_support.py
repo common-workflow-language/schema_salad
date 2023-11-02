@@ -57,6 +57,7 @@ class LoadingOptions:
     cache: CacheType
     imports: List[str]
     includes: List[str]
+    no_link_check: Optional[bool]
 
     def __init__(
         self,
@@ -71,7 +72,7 @@ class LoadingOptions:
         idx: Optional[IdxType] = None,
         imports: Optional[List[str]] = None,
         includes: Optional[List[str]] = None,
-        no_link_check: bool = False,
+        no_link_check: Optional[bool] = None,
     ) -> None:
         """Create a LoadingOptions object."""
         self.original_doc = original_doc
@@ -116,7 +117,10 @@ class LoadingOptions:
         else:
             self.includes = copyfrom.includes if copyfrom is not None else []
 
-        self.no_link_check = no_link_check
+        if no_link_check is not None:
+            self.no_link_check = no_link_check
+        else:
+            self.no_link_check = copyfrom.no_link_check if copyfrom is not None else False
 
         if fetcher is not None:
             self.fetcher = fetcher
