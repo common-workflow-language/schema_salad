@@ -10,6 +10,7 @@ Contributors:
 * The developers of JSON-LD
 * Nebojša Tijanić <nebojsa.tijanic@sbgenomics.com>, Seven Bridges Genomics
 * Michael R. Crusoe, ELIXIR-DE
+* Iacopo Colonnelli, University of Torino
 
 # Abstract
 

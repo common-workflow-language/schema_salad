@@ -326,7 +326,7 @@ class UnionDefinition:
         """Write union definition to output."""
         target.write(f"namespace {self.namespace} {{\n")
         target.write(f"struct {self.classname} {{\n")
-        target.write(f"{ind}heap_object<{self.types}> *value = nullptr;\n")
+        target.write(f"{ind}{self.types} *value = nullptr;\n")
         target.write(f"{ind}{self.classname}();\n")
         target.write(f"{ind}~{self.classname}();\n")
         target.write(f"{ind}auto toYaml() const -> YAML::Node;\n")
@@ -340,7 +340,7 @@ class UnionDefinition:
         functionname = f"{self.namespace}::{self.classname}::{self.classname}"
         target.write(
             f"""{fullInd}{functionname}() {{
-{fullInd}{ind}value = new heap_object<{self.types}>();\n{fullInd}}}\n
+{fullInd}{ind}value = new {self.types}();\n{fullInd}}}\n
 """
         )
 
@@ -361,7 +361,7 @@ class UnionDefinition:
         target.write(
             f"""{fullInd}inline auto {functionname}() const -> YAML::Node {{
 {fullInd}{ind}using ::toYaml;
-{fullInd}{ind}return toYaml(**value);\n{fullInd}}}\n
+{fullInd}{ind}return toYaml(*value);\n{fullInd}}}\n
 """
         )
 
@@ -370,7 +370,7 @@ class UnionDefinition:
         target.write(
             f"""{fullInd}inline void {functionname}([[maybe_unused]] YAML::Node const& n) {{
 {fullInd}{ind}using ::fromYaml;
-{fullInd}{ind}fromYaml(n, **value);\n{fullInd}}}\n
+{fullInd}{ind}fromYaml(n, *value);\n{fullInd}}}\n
 """
         )
 
