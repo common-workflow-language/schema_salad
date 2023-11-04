@@ -101,10 +101,10 @@ render as SVG::
 Codegen Examples
 ----------------
 
-These are helpful to see how to use the output of `schema-salad-tool --codegen`
-in different languages for loading and/or creating/editing/saving objects,
-using the `CWL v1.2 schema <https://github.com/common-workflow-language/cwl-v1.2/blob/1.2.1_proposed/CommonWorkflowLanguage.yml>`_
-as an example.
+The examples in the tables below are helpful to see how to use the output of `schema-salad-tool --codegen`
+in different languages for loading and/or creating/editing/saving objects.
+
+First set of examples is using the `CWL v1.2 schema <https://github.com/common-workflow-language/cwl-v1.2/blob/1.2.1_proposed/CommonWorkflowLanguage.yml>`_:
 
 +-------------+---------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Language    | Repository                                              | Serialization Example                                                                                                                                 | Deserialization Example                                                                                                                                                   |
@@ -121,6 +121,18 @@ as an example.
 +-------------+---------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | D           | https://github.com/common-workflow-lab/cwl-d-auto       | `How to use <https://github.com/common-workflow-lab/cwl-d-auto#how-to-use>`_                                                                         | `How to use <https://github.com/common-workflow-lab/cwl-d-auto#how-to-use>`_                                                                                               |
 +-------------+---------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+Second set of examples is for the `Galaxy Workflow Format 2 <https://github.com/galaxyproject/gxformat2/>`_ schema:
+
++-------------+------------------------------------------------------------------------------------+
+| Language    | Path                                                                               |
++=============+====================================================================================+
+| Python      | https://github.com/galaxyproject/gxformat2/blob/master/gxformat2/schema/v19_09.py  |
++-------------+------------------------------------------------------------------------------------+
+| Java        | https://github.com/galaxyproject/gxformat2/tree/master/java                        |
++-------------+------------------------------------------------------------------------------------+
+| TypeScript  | https://github.com/galaxyproject/gxformat2/tree/master/typescript                  |
++-------------+------------------------------------------------------------------------------------+
 
 Quick Start
 -----------
