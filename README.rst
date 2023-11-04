@@ -129,7 +129,8 @@ Second set of examples is for the `Galaxy Workflow Format 2 <https://github.com/
 +=============+====================================================================================+
 | Python      | https://github.com/galaxyproject/gxformat2/blob/master/gxformat2/schema/v19_09.py  |
 +-------------+------------------------------------------------------------------------------------+
-| Java        | https://github.com/galaxyproject/gxformat2/tree/master/java                        |                  +-------------+------------------------------------------------------------------------------------+
+| Java        | https://github.com/galaxyproject/gxformat2/tree/master/java                        |
++-------------+------------------------------------------------------------------------------------+
 | TypeScript  | https://github.com/galaxyproject/gxformat2/tree/master/typescript                  |
 +-------------+------------------------------------------------------------------------------------+
 
