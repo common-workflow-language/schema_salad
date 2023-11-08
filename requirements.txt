@@ -3,7 +3,7 @@ ruamel.yaml >= 0.17.6, < 0.19
 rdflib>= 4.2.2, < 8.0.0
 mistune>=2.0.3,<2.1
 CacheControl[filecache]>= 0.11.7, < 0.14
-black<23.11
+black<23.12
 mypy_extensions
 importlib_resources>=1.4
 # ^^ equivalent to Python 3.9
