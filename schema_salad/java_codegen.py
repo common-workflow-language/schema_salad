@@ -16,7 +16,7 @@ from typing import (
     Union,
 )
 
-import pkg_resources
+from importlib_resources import files
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, TypeDef
@@ -570,7 +570,7 @@ public enum {clazz} {{
         fieldtype: TypeDef,
         doc: Optional[str],
         optional: bool,
-        subscope: str,
+        subscope: Optional[str],
     ) -> None:
         fieldname = name
         property_name = self.property_name(fieldname)
@@ -670,7 +670,7 @@ public enum {clazz} {{
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: str,
+        doc: Optional[str],
         optional: bool,
     ) -> None:
         if self.current_class_is_abstract:
@@ -715,17 +715,19 @@ public enum {clazz} {{
         scoped_id: bool,
         vocab_term: bool,
         ref_scope: Optional[int],
+        no_link_check: Optional[bool],
     ) -> TypeDef:
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
             TypeDef(
                 instance_type=instance_type,  # ?
-                name=f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}",
-                init="new UriLoader({}, {}, {}, {})".format(
+                name=f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}_{no_link_check}",
+                init="new UriLoader({}, {}, {}, {}, {})".format(
                     inner.name,
                     self.to_java(scoped_id),
                     self.to_java(vocab_term),
                     self.to_java(ref_scope),
+                    self.to_java(no_link_check),
                 ),
                 is_uri=True,
                 scoped_id=scoped_id,
@@ -788,15 +790,13 @@ public enum {clazz} {{
             license_url="https://www.apache.org/licenses/LICENSE-2.0.txt",
         )
 
-        def template_from_resource(resource: str) -> string.Template:
-            template_str = pkg_resources.resource_string(__name__, f"java/{resource}").decode(
-                "utf-8"
-            )
+        def template_from_resource(resource: Path) -> string.Template:
+            template_str = resource.read_text("utf-8")
             template = string.Template(template_str)
             return template
 
         def expand_resource_template_to(resource: str, path: Path) -> None:
-            template = template_from_resource(resource)
+            template = template_from_resource(files("schema_salad").joinpath(f"java/{resource}"))
             src = template.safe_substitute(template_vars)
             _ensure_directory_and_write(path, src)
 
@@ -880,9 +880,9 @@ public enum {clazz} {{
             "test_utils": self.test_src_dir,
         }
         for util_src, util_target in util_src_dirs.items():
-            for util in pkg_resources.resource_listdir(__name__, f"java/{util_src}"):
-                src_path = util_target / "utils" / util
-                src_template = template_from_resource(os.path.join(util_src, util))
+            for util in files("schema_salad").joinpath(f"java/{util_src}").iterdir():
+                src_path = util_target / "utils" / util.name
+                src_template = template_from_resource(util)
                 src = src_template.safe_substitute(template_args)
                 _ensure_directory_and_write(src_path, src)
 

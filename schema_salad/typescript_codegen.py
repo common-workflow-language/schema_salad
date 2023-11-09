@@ -15,7 +15,7 @@ from typing import (
     Union,
 )
 
-import pkg_resources
+from importlib_resources import files
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, TypeDef
@@ -462,7 +462,7 @@ export enum {enum_name} {{
         fieldtype: TypeDef,
         doc: Optional[str],
         optional: bool,
-        subscope: str,
+        subscope: Optional[str],
     ) -> None:
         """Output the code to load the given field."""
         safename = self.safe_name(name)
@@ -625,7 +625,7 @@ export enum {enum_name} {{
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: str,
+        doc: Optional[str],
         optional: bool,
     ) -> None:
         """Output the code to handle the given ID field."""
@@ -670,17 +670,19 @@ export enum {enum_name} {{
         scoped_id: bool,
         vocab_term: bool,
         ref_scope: Optional[int],
+        no_link_check: Optional[bool],
     ) -> TypeDef:
         """Construct the TypeDef for the given URI loader."""
         instance_type = inner.instance_type or "any"
         return self.declare_type(
             TypeDef(
-                f"uri{inner.name}{scoped_id}{vocab_term}{ref_scope}",
-                "new _URILoader({}, {}, {}, {})".format(
+                f"uri{inner.name}{scoped_id}{vocab_term}{ref_scope}{no_link_check}",
+                "new _URILoader({}, {}, {}, {}, {})".format(
                     inner.name,
                     self.to_typescript(scoped_id),
                     self.to_typescript(vocab_term),
                     self.to_typescript(ref_scope),
+                    self.to_typescript(no_link_check),
                 ),
                 is_uri=True,
                 scoped_id=scoped_id,
@@ -731,15 +733,15 @@ export enum {enum_name} {{
             generated_class_imports=generated_class_imports,
         )
 
-        def template_from_resource(resource: str) -> string.Template:
-            template_str = pkg_resources.resource_string(__name__, f"typescript/{resource}").decode(
-                "utf-8"
-            )
+        def template_from_resource(resource: Path) -> string.Template:
+            template_str = resource.read_text("utf-8")
             template = string.Template(template_str)
             return template
 
         def expand_resource_template_to(resource: str, path: Path) -> None:
-            template = template_from_resource(resource)
+            template = template_from_resource(
+                files("schema_salad").joinpath(f"typescript/{resource}")
+            )
             src = template.safe_substitute(template_vars)
             _ensure_directory_and_write(path, src)
 
@@ -806,13 +808,12 @@ export enum {enum_name} {{
         }
 
         def copy_utils_recursive(util_src: str, util_target: Path) -> None:
-            for util in pkg_resources.resource_listdir(__name__, f"typescript/{util_src}"):
-                template_path = os.path.join(util_src, util)
-                if pkg_resources.resource_isdir(__name__, f"typescript/{template_path}"):
-                    copy_utils_recursive(os.path.join(util_src, util), util_target / util)
+            for util in files("schema_salad").joinpath(f"typescript/{util_src}").iterdir():
+                if util.is_dir():
+                    copy_utils_recursive(os.path.join(util_src, util.name), util_target / util.name)
                     continue
-                src_path = util_target / util
-                src_template = template_from_resource(template_path)
+                src_path = util_target / util.name
+                src_template = template_from_resource(util)
                 src = src_template.safe_substitute(template_args)
                 _ensure_directory_and_write(src_path, src)
 

@@ -40,7 +40,7 @@
             "```\n\nThis becomes:\n\n```\n",
             "{\n    \"mapped\": [\n        {\n            \"value\": \"daphne\",\n            \"key\": \"fred\"\n        },\n        {\n            \"value\": \"scooby\",\n            \"key\": \"shaggy\"\n        }\n    ]\n}\n",
             "```\n",
-            "## Domain Specific Language for types\n\nFields may be tagged `typeDSL: true` in `jsonldPredicate`.  If so, the field is expanded using the\nfollowing micro-DSL for schema salad types:\n\n* If the type ends with a question mark `?`, the question mark is stripped off and the type is expanded to a union with `null`\n* If the type ends with square brackets `[]` it is expanded to an array with items of the preceding type symbol\n* The type may end with both `[]?` to indicate it is an optional array.\n* Identifier resolution is applied after type DSL expansion.\n\n### Type DSL example\n\nGiven the following schema:\n\n```\n",
+            "## Domain Specific Language for types\n\nFields may be tagged `typeDSL: true` in `jsonldPredicate`.  If so, the field is expanded using the\nfollowing micro-DSL for schema salad types:\n\n* If the type ends with a question mark `?`, the question mark is stripped off and the type is expanded to a union with `null`\n* If the type ends with square brackets `[]` it is expanded to an array with items of the preceding type symbol\n* The type may end with both square brackets with one question mark (`[]?`) to indicate it is an optional array.\n* Identifier resolution is applied after type DSL expansion.\n\nStarting with Schema Salad version 1.3, fields tagged with `typeDSL: true` in `jsonldPredicate` have the following additional behavior:\n\n* Square brackes `[]` can be repeated to indicate 2, 3, or more dimensional array types.\n* These multi-dimensional arrays, like 1-dimensional arrays, can be combined with `?` (for example, `[][]?`) to indicate that it is an optional multi-dimensional array.\n\n### Type DSL example\n\nGiven the following schema:\n\n```\n",
             "{\n  \"$graph\": [\n  {\"$import\": \"metaschema_base.yml\"},\n  {\n    \"name\": \"TypeDSLExample\",\n    \"type\": \"record\",\n    \"documentRoot\": true,\n    \"fields\": [{\n      \"name\": \"extype\",\n      \"type\": \"string\",\n      \"jsonldPredicate\": {\n        _type: \"@vocab\",\n        \"typeDSL\": true\n      }\n    }]\n  }]\n}\n",
             "```\n\nProcess the following example:\n\n```\n",
             "[{\n  \"extype\": \"string\"\n}, {\n  \"extype\": \"string?\"\n}, {\n  \"extype\": \"string[]\"\n}, {\n  \"extype\": \"string[]?\"\n}]\n",
@@ -161,7 +161,7 @@
                     "typeDSL": true,
                     "refScope": 2
                 },
-                "doc": "The field type\n"
+                "doc": "The field type. If it is an array, it indicates\nthat the field type is a union type of its elements.\nIts elements may be duplicated.\n"
             }
         ]
     },

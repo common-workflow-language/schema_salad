@@ -8,7 +8,7 @@ RUN python3 -m venv env3
 RUN source env3/bin/activate && python3 -m pip install -U pip setuptools wheel build
 RUN export SETUPTOOLS_SCM_PRETEND_VERSION=$(grep __version__ schema_salad/_version.py  | awk -F\' '{ print $2 }') ; source env3/bin/activate && SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH=mypy-stubs python3 -m build --wheel --outdir=/wheels
 RUN source env3/bin/activate && python3 -m pip wheel -r requirements.txt --wheel-dir=/wheels
-RUN source env3/bin/activate && python3 -m pip install --force-reinstall --no-index --no-warn-script-location --root=/pythonroot/ /wheels/*.whl
+RUN source env3/bin/activate && python3 -m pip install --force-reinstall --no-index --no-warn-script-location --prefix=/pythonroot/usr /wheels/*.whl
 
 FROM alpine:latest as module
 LABEL maintainer peter.amstutz@curoverse.com

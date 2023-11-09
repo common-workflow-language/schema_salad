@@ -19,7 +19,7 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-from pkg_resources import resource_stream
+from importlib_resources import files
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from schema_salad.utils import (
@@ -177,15 +177,18 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
             },
             "typeDSL": saladp + "JsonldPredicate/typeDSL",
             "xsd": "http://www.w3.org/2001/XMLSchema#",
-        }
+        },
+        salad_version="v1.3",
     )
 
     for salad in SALAD_FILES:
-        with resource_stream("schema_salad", "metaschema/" + salad) as stream:
-            loader.cache["https://w3id.org/cwl/" + salad] = stream.read().decode("UTF-8")
+        loader.cache["https://w3id.org/cwl/" + salad] = (
+            files("schema_salad").joinpath("metaschema/" + salad).read_text("UTF-8")
+        )
 
-    with resource_stream("schema_salad", "metaschema/metaschema.yml") as stream:
-        loader.cache["https://w3id.org/cwl/salad"] = stream.read().decode("UTF-8")
+    loader.cache["https://w3id.org/cwl/salad"] = (
+        files("schema_salad").joinpath("metaschema/metaschema.yml").read_text("UTF-8")
+    )
 
     yaml = yaml_no_ts()
     j = yaml.load(loader.cache["https://w3id.org/cwl/salad"])
@@ -591,6 +594,7 @@ def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[D
     """Apply 'extend' and 'specialize' to fully materialize derived record types."""
     items2 = deepcopy_strip(items)
     types = {i["name"]: i for i in items2}  # type: Dict[str, Any]
+    types.update({k[len(saladp) :]: v for k, v in types.items() if k.startswith(saladp)})
     results = []
 
     for stype in items2:
@@ -651,7 +655,7 @@ def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[D
                         field = exfield
                     else:
                         # make sure field name has not been used yet
-                        if not is_subtype(exfield["type"], field["type"]):
+                        if not is_subtype(types, exfield["type"], field["type"]):
                             raise SchemaParseException(
                                 f"Field name {field['name']} already in use with "
                                 "incompatible type. "

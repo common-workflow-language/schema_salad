@@ -38,20 +38,24 @@ if USE_MYPYC and any(
     ]
 ):
     mypyc_targets = [
-        # "schema_salad/codegen_base.py",  # interpreted classes cannot inherit from compiled
-        # "schema_salad/codegen.py",
-        # "schema_salad/exceptions.py", # leads to memory leaks
         "schema_salad/__init__.py",
-        # "schema_salad/java_codegen.py",  # due to use of __name__
-        "schema_salad/jsonld_context.py",
         "schema_salad/__main__.py",
+        "schema_salad/codegen.py",
+        "schema_salad/codegen_base.py",
+        "schema_salad/cpp_codegen.py",
+        "schema_salad/dlang_codegen.py",
+        "schema_salad/dotnet_codegen.py",
+        # "schema_salad/exceptions.py", # leads to memory leaks
+        "schema_salad/java_codegen.py",
+        "schema_salad/jsonld_context.py",
         "schema_salad/main.py",
         "schema_salad/makedoc.py",
-        # "schema_salad/python_codegen.py",  # due to use of __name__
+        "schema_salad/python_codegen.py",
         "schema_salad/ref_resolver.py",
         # "schema_salad/fetcher.py",  # to allow subclassing {Default,}Fetcher
         "schema_salad/schema.py",
         "schema_salad/sourceline.py",
+        "schema_salad/typescript_codegen.py",
         "schema_salad/utils.py",
         "schema_salad/validate.py",
         "schema_salad/avro/__init__.py",
@@ -81,26 +85,21 @@ else:
 
 install_requires = [
     "requests >= 1.0",
-    "ruamel.yaml >= 0.16.12, < 0.18",
-    "ruamel.yaml >= 0.17.6;python_version>='3.7'",
-    "rdflib >= 4.2.2, < 7.0.0",
-    "rdflib < 6.0.0;python_version<='3.6'",
-    "rdflib-jsonld>=0.4.0, <= 0.6.1;python_version<='3.6'",
+    "ruamel.yaml >= 0.17.6, < 0.19",
+    "rdflib >= 4.2.2, < 8.0.0",
     "mistune>=2.0.3,<2.1",
     "CacheControl[filecache] >= 0.11.7, < 0.14",
-    "CacheControl[filecache] < 0.13;python_version<='3.6'",
-    "urllib3<2;python_version<='3.6'",
     "mypy_extensions",
+    "importlib_resources>=1.4",  # equivalent to Python 3.9,
 ]
 
 extras_require = {
     "docs": [
         "sphinx >= 2.2",
-        "sphinx-rtd-theme",
+        "sphinx-rtd-theme >= 1",
         "pytest < 8",
         "sphinx-autoapi",
         "sphinx-autodoc-typehints",
-        "typed_ast;python_version<'3.8'",
         "sphinxcontrib-autoprogram",
     ],
     "pycodegen": ["black"],
@@ -108,7 +107,6 @@ extras_require = {
 
 setup(
     name="schema-salad",
-    version="8.4",  # update the VERSION prefix in the Makefile as well 🙂
     description="Schema Annotations for Linked Avro Data (SALAD)",
     long_description=open(README).read(),
     long_description_content_type="text/x-rst",
@@ -118,8 +116,9 @@ setup(
     download_url="https://github.com/common-workflow-language/schema_salad/releases",
     ext_modules=ext_modules,
     license="Apache 2.0",
-    python_requires=">=3.6,<3.12",
-    setup_requires=pytest_runner + ["setuptools_scm"],
+    python_requires=">=3.8,<3.13",
+    use_scm_version=True,
+    setup_requires=pytest_runner + ["setuptools_scm>=8.0.4,<9"],
     packages=["schema_salad", "schema_salad.tests", "schema_salad.avro"],
     package_data={
         "schema_salad": [
@@ -138,6 +137,7 @@ setup(
         "schema_salad.tests": [
             "*.json",
             "*.yml",
+            "cpp_tests/*",
             "docimp/*",
             "*.owl",
             "*.cwl",
@@ -166,13 +166,11 @@ setup(
         "Operating System :: POSIX",
         "Operating System :: MacOS :: MacOS X",
         "Development Status :: 5 - Production/Stable",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Typing :: Typed",
     ],
-    use_scm_version=True,
 )

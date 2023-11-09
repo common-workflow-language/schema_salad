@@ -7,7 +7,6 @@ import sys
 from typing import Any, Dict, List, Mapping, MutableSequence, Optional, Union, cast
 from urllib.parse import urlparse
 
-import pkg_resources  # part of setuptools
 from rdflib import __version__ as rdflib_version
 from rdflib.parser import Parser
 from rdflib.plugin import register
@@ -22,6 +21,9 @@ from .utils import json_dump, stdout
 
 if int(rdflib_version.split(".", maxsplit=1)[0]) < 6:
     register("json-ld", Parser, "rdflib_jsonld.parser", "JsonLDParser")
+
+import importlib.metadata
+
 _logger = logging.getLogger("salad")
 
 
@@ -129,6 +131,23 @@ def arg_parser() -> argparse.ArgumentParser:
     ),
 
     parser.add_argument(
+        "--codegen-spdx-copyright-text",
+        nargs="+",
+        metavar="spdx_copyright_text",
+        default=[],
+        help="List of copyright text. Each entry will show up as "
+        "'SPDX-FileCopyrightText: ...' (Currently c++ only)",
+    ),
+
+    parser.add_argument(
+        "--codegen-spdx-license-identifier",
+        type=str,
+        metavar="spdx_license_identifier",
+        default=None,
+        help="Optional spdx license identifier, e.g.: GPL-3.0-only (Currently c++ only)",
+    ),
+
+    parser.add_argument(
         "--codegen-parser-info",
         metavar="parser_info",
         type=str,
@@ -221,12 +240,11 @@ def main(argsl: Optional[List[str]] = None) -> int:
     if args.debug:
         _logger.setLevel(logging.DEBUG)
 
-    pkg = pkg_resources.require("schema_salad")
-    if pkg:
+    if pkg := importlib.metadata.version("schema_salad"):
         if args.version:
-            print(f"{sys.argv[0]} Current version: {pkg[0].version}")
+            print(f"{sys.argv[0]} Current version: {pkg}")
             return 0
-        _logger.info("%s Current version: %s", sys.argv[0], pkg[0].version)
+        _logger.info("%s Current version: %s", sys.argv[0], pkg)
 
     # Get the metaschema to validate the schema
     metaschema_names, metaschema_doc, metaschema_loader = schema.get_metaschema()
@@ -299,7 +317,10 @@ def main(argsl: Optional[List[str]] = None) -> int:
         raise ValidationException(f"Expected a CommentedSeq, got {type(schema_doc)}: {schema_doc}.")
 
     # Create the loader that will be used to load the target document.
-    document_loader = Loader(schema_ctx, skip_schemas=args.skip_schemas)
+    schema_version = schema_metadata.get("saladVersion", None)
+    document_loader = Loader(
+        schema_ctx, skip_schemas=args.skip_schemas, salad_version=schema_version
+    )
 
     if args.codegen:
         codegen.codegen(
@@ -311,6 +332,8 @@ def main(argsl: Optional[List[str]] = None) -> int:
             examples=args.codegen_examples,
             package=args.codegen_package,
             copyright=args.codegen_copyright,
+            spdx_license_identifier=args.codegen_spdx_license_identifier,
+            spdx_copyright_text=args.codegen_spdx_copyright_text,
             parser_info=args.codegen_parser_info,
         )
         return 0

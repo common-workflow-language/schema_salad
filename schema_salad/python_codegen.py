@@ -18,7 +18,7 @@ try:
 except ModuleNotFoundError:
     black = None  # type: ignore[assignment]
 
-from pkg_resources import resource_stream
+from importlib_resources import files
 
 from . import schema
 from .codegen_base import CodeGenBase, TypeDef
@@ -82,6 +82,7 @@ class PythonCodeGen(CodeGenBase):
         out: IO[str],
         copyright: Optional[str],
         parser_info: str,
+        salad_version: str,
     ) -> None:
         super().__init__()
         self.out = out
@@ -90,6 +91,7 @@ class PythonCodeGen(CodeGenBase):
         self.idfield = ""
         self.copyright = copyright
         self.parser_info = parser_info
+        self.salad_version = salad_version
 
     @staticmethod
     def safe_name(name: str) -> str:
@@ -99,7 +101,7 @@ class PythonCodeGen(CodeGenBase):
             avn = avn[5:]
         elif avn[0].isdigit():
             avn = f"_{avn}"
-        elif avn in ("class", "in"):
+        elif avn in ("class", "in", "type"):
             # reserved words
             avn = f"{avn}_"
         return avn.replace(".", "_")
@@ -123,10 +125,10 @@ class PythonCodeGen(CodeGenBase):
                 )
             )
 
-        stream = resource_stream(__name__, "python_codegen_support.py")
-        python_codegen_support = stream.read().decode("UTF-8")
+        python_codegen_support = (
+            files("schema_salad").joinpath("python_codegen_support.py").read_text("UTF-8")
+        )
         self.out.write(python_codegen_support[python_codegen_support.find("\n") + 1 :])
-        stream.close()
         self.out.write("\n\n")
 
         self.out.write(
@@ -190,8 +192,7 @@ class PythonCodeGen(CodeGenBase):
             + "\n        extension_fields: Optional[Dict[str, Any]] = None,"
             + "\n        loadingOptions: Optional[LoadingOptions] = None,"
             + "\n    ) -> None:\n"
-            + """
-        if extension_fields:
+            + """        if extension_fields:
             self.extension_fields = extension_fields
         else:
             self.extension_fields = CommentedMap()
@@ -255,9 +256,10 @@ class PythonCodeGen(CodeGenBase):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
+        docRoot: Optional[str] = None
     ) -> "{classname}":
         _doc = copy.copy(doc)
+
         if hasattr(doc, "lc"):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
@@ -356,8 +358,10 @@ class PythonCodeGen(CodeGenBase):
         if "class" in field_names:
             self.out.write(
                 """
+        if "class" not in _doc:
+            raise ValidationException("Missing 'class' field")
         if _doc.get("class") != "{class_}":
-            raise ValidationException("Not a {class_}")
+            raise ValidationException("tried `{class_}` but")
 
 """.format(
                     class_=classname
@@ -480,7 +484,11 @@ class PythonCodeGen(CodeGenBase):
 extension_fields: Dict[str, Any] = {{}}
 for k in _doc.keys():
     if k not in cls.attrs:
-        if ":" in k:
+        if not k:
+            _errors__.append(
+                ValidationException("mapping with implicit null key")
+            )
+        elif ":" in k:
             ex = expand_url(
                 k, "", loadingOptions, scoped_id=False, vocab_term=False
             )
@@ -494,13 +502,11 @@ for k in _doc.keys():
                     SourceLine(_doc, k, str),
                 )
             )
-            break
 
 if _errors__:
-    raise ValidationException(\"Trying '{class_}'\", None, _errors__)
+    raise ValidationException("", None, _errors__, "*")
 """.format(
                     attrstr=", ".join([f"`{f}`" for f in field_names]),
-                    class_=self.safe_name(classname),
                 ),
                 8,
             )
@@ -635,7 +641,7 @@ if _errors__:
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: str,
+        doc: Optional[str],
         optional: bool,
     ) -> None:
         if self.current_class_is_abstract:
@@ -648,7 +654,7 @@ if _errors__:
                 safename=self.safe_name(name)
             )
         else:
-            opt = """raise ValidationException("Missing {fieldname}")""".format(
+            opt = """_errors__.append(ValidationException("missing {fieldname}"))""".format(
                 fieldname=shortname(name)
             )
 
@@ -673,7 +679,7 @@ if _errors__:
         fieldtype: TypeDef,
         doc: Optional[str],
         optional: bool,
-        subscope: str,
+        subscope: Optional[str],
     ) -> None:
         if self.current_class_is_abstract:
             return
@@ -701,25 +707,58 @@ if _errors__:
 
         self.out.write(
             """{spc}        try:
+{spc}            if _doc.get("{fieldname}") is None:
+{spc}                raise ValidationException("missing required field `{fieldname}`", None, [])
+
 {spc}            {safename} = load_field(
 {spc}                _doc.get("{fieldname}"),
 {spc}                {fieldtype},
 {spc}                {baseurivar},
 {spc}                loadingOptions,
-{spc}            )
-{spc}        except ValidationException as e:
-{spc}            _errors__.append(
-{spc}                ValidationException(
-{spc}                    \"the {fieldname!r} field is not valid because:\",
-{spc}                    SourceLine(_doc, "{fieldname}", str),
-{spc}                    [e],
-{spc}                )
+{spc}                lc=_doc.get("{fieldname}")
 {spc}            )
 """.format(
                 safename=self.safe_name(name),
                 fieldname=shortname(name),
                 fieldtype=fieldtype.name,
                 baseurivar=baseurivar,
+                spc=spc,
+            )
+        )
+        self.out.write(
+            """
+{spc}        except ValidationException as e:
+{spc}            error_message, to_print, verb_tensage = parse_errors(str(e))
+
+{spc}            if str(e) == "missing required field `{fieldname}`":
+{spc}                _errors__.append(
+{spc}                    ValidationException(
+{spc}                        str(e),
+{spc}                        None
+{spc}                    )
+{spc}                )
+{spc}            else:
+{spc}                if error_message != str(e):
+{spc}                    val_type = convert_typing(extract_type(type(_doc.get("{fieldname}"))))
+{spc}                    _errors__.append(
+{spc}                        ValidationException(
+{spc}                            \"the `{fieldname}` field is not valid because:\",
+{spc}                            SourceLine(_doc, "{fieldname}", str),
+{spc}                            [ValidationException(f"Value is a {{val_type}}, "
+{spc}                                                 f"but valid {{to_print}} for this field "
+{spc}                                                 f"{{verb_tensage}} {{error_message}}")],
+{spc}                        )
+{spc}                    )
+{spc}                else:
+{spc}                    _errors__.append(
+{spc}                        ValidationException(
+{spc}                            \"the `{fieldname}` field is not valid because:\",
+{spc}                            SourceLine(_doc, "{fieldname}", str),
+{spc}                            [e],
+{spc}                        )
+{spc}                    )
+""".format(
+                fieldname=shortname(name),
                 spc=spc,
             )
         )
@@ -806,12 +845,13 @@ if self.{safename} is not None and "{fieldname}" not in r:
         scoped_id: bool,
         vocab_term: bool,
         ref_scope: Optional[int],
+        no_link_check: Optional[bool],
     ) -> TypeDef:
         """Construct the TypeDef for the given URI loader."""
         return self.declare_type(
             TypeDef(
-                f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}",
-                f"_URILoader({inner.name}, {scoped_id}, {vocab_term}, {ref_scope})",
+                f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}_{no_link_check}",
+                f"_URILoader({inner.name}, {scoped_id}, {vocab_term}, {ref_scope}, {no_link_check})",
                 is_uri=True,
                 scoped_id=scoped_id,
                 ref_scope=ref_scope,
@@ -834,7 +874,8 @@ if self.{safename} is not None and "{fieldname}" not in r:
         return self.declare_type(
             TypeDef(
                 f"typedsl_{self.safe_name(inner.name)}_{ref_scope}",
-                f"_TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope})",
+                f"_TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope}, "  # noqa: B907
+                f"'{self.salad_version}')",
             )
         )
 

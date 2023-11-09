@@ -38,6 +38,8 @@ def codegen(
     examples: Optional[str] = None,
     package: Optional[str] = None,
     copyright: Optional[str] = None,
+    spdx_copyright_text: Optional[List[str]] = None,
+    spdx_license_identifier: Optional[str] = None,
     parser_info: Optional[str] = None,
 ) -> None:
     """Generate classes with loaders for the given Schema Salad description."""
@@ -57,7 +59,9 @@ def codegen(
         else ".".join(list(reversed(sp.netloc.split("."))) + sp.path.strip("/").split("/"))
     )
     info = parser_info or pkg
-    if lang in set(["python", "cpp", "dlang"]):
+    salad_version = schema_metadata.get("saladVersion", "v1.1")
+
+    if lang in {"python", "cpp", "dlang"}:
         if target:
             dest: Union[TextIOWrapper, TextIO] = open(target, mode="w", encoding="utf-8")
         else:
@@ -69,6 +73,8 @@ def codegen(
                 examples,
                 pkg,
                 copyright,
+                spdx_copyright_text,
+                spdx_license_identifier,
             )
             gen.parse(j)
             return
@@ -80,10 +86,13 @@ def codegen(
                 pkg,
                 copyright,
                 info,
+                salad_version,
             )
             gen.parse(j)
             return
-        gen = PythonCodeGen(dest, copyright=copyright, parser_info=info)
+        gen = PythonCodeGen(
+            dest, copyright=copyright, parser_info=info, salad_version=salad_version
+        )
 
     elif lang == "java":
         gen = JavaCodeGen(
@@ -155,7 +164,9 @@ def codegen(
                     subscope = field.get("subscope")
                     fieldpred = field["name"]
                     optional = bool("https://w3id.org/cwl/salad#null" in field["type"])
-                    uri_loader = gen.uri_loader(gen.type_loader(field["type"]), True, False, None)
+                    uri_loader = gen.uri_loader(
+                        gen.type_loader(field["type"]), True, False, None, None
+                    )
                     gen.declare_id_field(
                         fieldpred,
                         uri_loader,
@@ -180,10 +191,16 @@ def codegen(
                         type_loader = gen.secondaryfilesdsl_loader(type_loader)
                     elif jld.get("_type") == "@id":
                         type_loader = gen.uri_loader(
-                            type_loader, jld.get("identity", False), False, ref_scope
+                            type_loader,
+                            jld.get("identity", False),
+                            False,
+                            ref_scope,
+                            jld.get("noLinkCheck"),
                         )
                     elif jld.get("_type") == "@vocab":
-                        type_loader = gen.uri_loader(type_loader, False, True, ref_scope)
+                        type_loader = gen.uri_loader(
+                            type_loader, False, True, ref_scope, jld.get("noLinkCheck")
+                        )
 
                     map_subject = jld.get("mapSubject")
                     if map_subject:

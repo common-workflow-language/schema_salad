@@ -39,8 +39,8 @@ jobs:
           name: install cibuildwheel and other build reqs
           command: |
             python3 -m pip install --upgrade pip setuptools setuptools_scm[toml]
-            python3 -m pip install cibuildwheel
-            python3 -m setuptools_scm
+            python3 -m pip install -rcibw-requirements.txt
+            python3 ./setup.py --version
 
       - run:
           name: pip freeze

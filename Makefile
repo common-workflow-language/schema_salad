@@ -27,13 +27,10 @@ EXTRAS=[pycodegen]
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py ${MODULE}/avro/*.py ${MODULE}/tests/*.py) setup.py
-EXCLUDE_FILES := schema_salad/metaschema.py schema_salad/tests/cwl_v1_0.py schema_salad/tests/cwl_v1_1.py schema_salad/tests/cwl_v1_2.py
 DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt
 COVBASE=coverage run --append
 PYTEST_EXTRA ?= -rs
 
-# Updating the Major & Minor version below?
-# Don't forget to update setup.py as well
 VERSION=8.4.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
 
@@ -124,7 +121,7 @@ diff_pylint_report: pylint_report.txt
 	diff-quality --compare-branch=main --violations=pylint pylint_report.txt
 
 .coverage:
-	python setup.py test --addopts "--cov --cov-config=.coveragerc --cov-report= ${PYTEST_EXTRA}"
+	pytest --cov --cov-config=.coveragerc --cov-report= ${PYTEST_EXTRA}
 	$(COVBASE) -m schema_salad.main \
 		--print-jsonld-context schema_salad/metaschema/metaschema.yml \
 		> /dev/null
@@ -162,7 +159,7 @@ test: $(PYSOURCES)
 
 ## testcov                : run the schema-salad test suite and collect coverage
 testcov: $(PYSOURCES)
-	python setup.py test --addopts "--cov" ${PYTEST_EXTRA}
+	pytest --cov ${PYTEST_EXTRA}
 
 sloccount.sc: $(PYSOURCES) Makefile
 	sloccount --duplicates --wide --details $^ > $@
@@ -179,11 +176,9 @@ mypy3: mypy
 mypy: $(filter-out setup.py,$(PYSOURCES))
 	MYPYPATH=$$MYPYPATH:mypy-stubs mypy $^
 
-mypy_3.6: $(filter-out setup.py,$(PYSOURCES))
-	MYPYPATH=$$MYPYPATH:mypy-stubs mypy --python-version 3.6 $^
-
 mypyc: $(PYSOURCES)
-	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 python setup.py test --addopts "${PYTEST_EXTRA}"
+	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 pip install --verbose -e . \
+		 && pytest "${PYTEST_EXTRA}"
 
 mypyi:
 	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 pip install .${EXTRAS}
@@ -205,8 +200,9 @@ compute-metaschema-hash:
 shellcheck: FORCE
 	shellcheck build-schema_salad-docker.sh release-test.sh
 
-pyupgrade: $(filter-out $(EXCLUDE_FILES),$(PYSOURCES))
-	pyupgrade --exit-zero-even-if-changed --py36-plus $^
+pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
+	pyupgrade --exit-zero-even-if-changed --py38-plus $^
+	auto-walrus $^
 
 release-test: FORCE
 	git diff-index --quiet HEAD -- || ( echo You have uncommitted changes, please commit them and try again; false )

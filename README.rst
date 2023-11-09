@@ -23,7 +23,7 @@ generation, and transformation to RDF_. Salad provides a bridge
 between document and record oriented data modeling and the Semantic
 Web.
 
-The Schema Salad library is Python 3.6+ only.
+The Schema Salad library is Python 3.8+ only.
 
 Installation
 ------------
@@ -101,10 +101,10 @@ render as SVG::
 Codegen Examples
 ----------------
 
-These are helpful to see how to use the output of `schema-salad-tool --codegen`
-in different languages for loading and/or creating/editing/saving objects,
-using the `CWL v1.2 schema <https://github.com/common-workflow-language/cwl-v1.2/blob/1.2.1_proposed/CommonWorkflowLanguage.yml>`_
-as an example.
+The examples in the tables below are helpful to see how to use the output of `schema-salad-tool --codegen`
+in different languages for loading and/or creating/editing/saving objects.
+
+First set of examples is using the `CWL v1.2 schema <https://github.com/common-workflow-language/cwl-v1.2/blob/1.2.1_proposed/CommonWorkflowLanguage.yml>`_:
 
 +-------------+---------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Language    | Repository                                              | Serialization Example                                                                                                                                 | Deserialization Example                                                                                                                                                   |
@@ -117,10 +117,22 @@ as an example.
 +-------------+---------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | .Net        | https://github.com/common-workflow-lab/CWLDotNet        | `Creating, editing, and saving CWL docs with .Net <https://github.com/common-workflow-lab/CWLDotNet#creating-editing-and-serializing-documents>`_    | `Loading CWL documents with .Net <https://github.com/common-workflow-lab/CWLDotNet#loading-documents>`_                                                                    |
 +-------------+---------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| C++         | https://github.com/common-workflow-lab/cwl-cpp-auto     | `cwl_output_example.cpp <https://github.com/common-workflow-lab/cwl-cpp-auto/blob/main/cwl_output_example.cpp>`_                                     | (Not yet implemented)                                                                                                                                                      |
+| C++         | https://github.com/common-workflow-lab/cwl-cpp-auto     | `cwl_output_example.cpp <https://github.com/common-workflow-lab/cwl-cpp-auto/blob/main/cwl_output_example.cpp>`_                                     | `cwl_input_example.cpp <https://github.com/common-workflow-lab/cwl-cpp-auto/blob/main/cwl_input_example.cpp>`_                                                             |
 +-------------+---------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | D           | https://github.com/common-workflow-lab/cwl-d-auto       | `How to use <https://github.com/common-workflow-lab/cwl-d-auto#how-to-use>`_                                                                         | `How to use <https://github.com/common-workflow-lab/cwl-d-auto#how-to-use>`_                                                                                               |
 +-------------+---------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+Second set of examples is for the `Galaxy Workflow Format 2 <https://github.com/galaxyproject/gxformat2/>`_ schema:
+
++-------------+------------------------------------------------------------------------------------+
+| Language    | Path                                                                               |
++=============+====================================================================================+
+| Python      | https://github.com/galaxyproject/gxformat2/blob/master/gxformat2/schema/v19_09.py  |
++-------------+------------------------------------------------------------------------------------+
+| Java        | https://github.com/galaxyproject/gxformat2/tree/master/java                        |
++-------------+------------------------------------------------------------------------------------+
+| TypeScript  | https://github.com/galaxyproject/gxformat2/tree/master/typescript                  |
++-------------+------------------------------------------------------------------------------------+
 
 Quick Start
 -----------

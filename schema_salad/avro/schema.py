@@ -620,7 +620,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
     raise SchemaParseException(fail_msg)
 
 
-def is_subtype(existing: PropType, new: PropType) -> bool:
+def is_subtype(types: Dict[str, Any], existing: PropType, new: PropType) -> bool:
     """Check if a new type specification is compatible with an existing type spec."""
     if existing == new:
         return True
@@ -632,46 +632,35 @@ def is_subtype(existing: PropType, new: PropType) -> bool:
         if isinstance(new, list) and "null" in new:
             return False
         return True
-    if (
-        isinstance(existing, dict)
-        and "type" in existing
-        and existing["type"] == "array"
-        and isinstance(new, dict)
-        and "type" in new
-        and new["type"] == "array"
-    ):
-        return is_subtype(existing["items"], new["items"])
-    if (
-        isinstance(existing, dict)
-        and "type" in existing
-        and existing["type"] == "enum"
-        and isinstance(new, dict)
-        and "type" in new
-        and new["type"] == "enum"
-    ):
-        return is_subtype(existing["symbols"], new["symbols"])
-    if (
-        isinstance(existing, dict)
-        and "type" in existing
-        and existing["type"] == "record"
-        and isinstance(new, dict)
-        and "type" in new
-        and new["type"] == "record"
-    ):
-        for new_field in cast(List[Dict[str, Any]], new["fields"]):
-            new_field_missing = True
-            for existing_field in cast(List[Dict[str, Any]], existing["fields"]):
-                if new_field["name"] == existing_field["name"]:
-                    if not is_subtype(existing_field["type"], new_field["type"]):
-                        return False
-                    new_field_missing = False
-            if new_field_missing:
-                return False
-        return True
+    if isinstance(existing, str) and existing in types:
+        return is_subtype(types, types[existing], new)
+    if isinstance(new, str) and new in types:
+        return is_subtype(types, existing, types[new])
+    if isinstance(existing, dict) and isinstance(new, dict):
+        if "extends" in new and new["extends"] == existing.get("name"):
+            return True
+        if existing.get("type") == "array" and new.get("type") == "array":
+            return is_subtype(types, existing["items"], new["items"])
+        if existing.get("type") == "enum" and new.get("type") == "enum":
+            return is_subtype(types, existing["symbols"], new["symbols"])
+        if existing.get("type") == "record" and new.get("type") == "record":
+            for new_field in cast(List[Dict[str, Any]], new["fields"]):
+                new_field_missing = True
+                for existing_field in cast(List[Dict[str, Any]], existing["fields"]):
+                    if new_field["name"] == existing_field["name"]:
+                        if not is_subtype(types, existing_field["type"], new_field["type"]):
+                            return False
+                        new_field_missing = False
+                if new_field_missing:
+                    return False
+            return True
     if isinstance(existing, list) and isinstance(new, list):
         missing = False
-        for _type in new:
-            if _type not in existing and (not is_subtype(existing, cast(PropType, _type))):
+        for _type_new in new:
+            if _type_new not in existing and not any(
+                is_subtype(types, cast(PropType, _type_existing), cast(PropType, _type_new))
+                for _type_existing in existing
+            ):
                 missing = True
         return not missing
     return False

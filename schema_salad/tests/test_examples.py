@@ -9,6 +9,7 @@ from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 import schema_salad.main
 import schema_salad.schema
+from schema_salad.exceptions import ValidationException
 from schema_salad.jsonld_context import makerdf
 from schema_salad.ref_resolver import Loader, file_uri, uri_file_path
 from schema_salad.sourceline import SourceLine, cmap
@@ -333,7 +334,7 @@ def test_yaml_float_test() -> None:
 
 
 def test_typedsl_ref() -> None:
-    ldr = Loader({})
+    ldr = Loader({}, salad_version="v1.1")
     ldr.add_context(
         {
             "File": "http://example.com/File",
@@ -354,6 +355,24 @@ def test_typedsl_ref() -> None:
 
     ra, _ = ldr.resolve_all(cmap({"type": "File[]?"}), "")
     assert {"type": ["null", {"items": "File", "type": "array"}]} == ra
+
+    with pytest.raises(ValidationException):
+        ldr.resolve_all(cmap({"type": "File[][]"}), "")
+
+
+def test_nested_typedsl_ref() -> None:
+    ldr = Loader({}, salad_version="v1.3")
+    ldr.add_context(
+        {
+            "File": "http://example.com/File",
+            "null": "http://example.com/null",
+            "array": "http://example.com/array",
+            "type": {"@type": "@vocab", "typeDSL": True},
+        }
+    )
+
+    ra, _ = ldr.resolve_all(cmap({"type": "File[][]"}), "")
+    assert {"type": {"items": {"items": "File", "type": "array"}, "type": "array"}} == ra
 
 
 def test_secondaryFile_dsl_ref() -> None:
