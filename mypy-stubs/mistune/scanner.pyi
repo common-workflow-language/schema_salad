@@ -16,7 +16,7 @@ from typing import (
 from mistune._types import State
 from typing_extensions import TypeAlias
 
-MethodFunc: TypeAlias = Callable[["ScannerParser", Match, State], Any]
+MethodFunc: TypeAlias = Callable[["ScannerParser", Match[str], State], Any]
 RuleMethod = Tuple[Pattern[str], MethodFunc]
 Lexicon = List[Tuple[Pattern[str], Tuple[str, RuleMethod]]]
 TextParser = Callable[[str, State], str]
