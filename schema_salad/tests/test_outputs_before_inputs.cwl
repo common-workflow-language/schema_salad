@@ -1,5 +1,5 @@
 class: CommandLineTool
-cwlVersion: v1.2
+cwlVersion: v1.0
 baseCommand: python3
 
 outputs:

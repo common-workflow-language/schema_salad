@@ -1133,13 +1133,10 @@ def _document_load(
             doc.pop("$schemas")
         if "$base" in doc:
             doc.pop("$base")
-<<<<<<< HEAD
 
         if isinstance(doc, CommentedMap):
             global doc_line_info
             doc_line_info = doc
-=======
->>>>>>> main
 
         if "$graph" in doc:
             loadingOptions.idx[baseuri] = (

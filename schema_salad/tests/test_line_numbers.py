@@ -1,23 +1,25 @@
-# from parser import load_document_by_uri, save
+import importlib
 from pathlib import Path
-from typing import Any, MutableSequence, Optional, cast
-from urllib.parse import unquote_plus, urlparse
+from typing import Any, Dict, List, MutableSequence, Optional, Union, cast
+from urllib.parse import urlparse
 
 from ruamel.yaml.comments import CommentedMap
 
-import schema_salad.tests.cwl_v1_2 as cwl_v1_2
 from schema_salad.utils import yaml_no_ts
+from schema_salad import codegen
+from schema_salad.avro.schema import Names
+from schema_salad.exceptions import ValidationException
+from schema_salad.schema import load_schema
 
-from .util import get_data
+from .util import get_data, cwl_file_uri
 
-
-def test_secondary_files_dsl() -> None:
+def test_secondary_files_dsl(tmp_path: Path) -> None:
     """
     Checks object is properly saving when dsl is used
     """
     t = "test_secondary_files_dsl.cwl"
     path = get_data("tests/" + t)
-    obj = load_document_by_uri(str(path))
+    obj = load_document_by_uri(tmp_path, str(path))
     saved_obj = obj.save()
     assert isinstance(saved_obj, CommentedMap)
     assert saved_obj.lc.data == {
@@ -49,13 +51,13 @@ def test_secondary_files_dsl() -> None:
     }
 
 
-def test_outputs_before_inputs() -> None:
+def test_outputs_before_inputs(tmp_path: Path) -> None:
     """
     Tests when output comes in cwl file before inputs
     """
     t = "test_outputs_before_inputs.cwl"
     path = get_data("tests/" + t)
-    obj = load_document_by_uri(str(path))
+    obj = load_document_by_uri(tmp_path, str(path))
     saved_obj = obj.save()
     assert isinstance(saved_obj, CommentedMap)
     assert {
@@ -80,7 +82,7 @@ def test_outputs_before_inputs() -> None:
     }
 
 
-def test_type_dsl() -> None:
+def test_type_dsl(tmp_path: Path) -> None:
     """
     Checks object is properly saving when type DSL is used.
     In this example, type for the input is File? which should expand to
@@ -88,7 +90,7 @@ def test_type_dsl() -> None:
     """
     t = "test_type_dsl.cwl"
     path = get_data("tests/" + t)
-    obj = load_document_by_uri(str(path))
+    obj = load_document_by_uri(tmp_path, str(path))
     saved_obj = obj.save()
     assert isinstance(saved_obj, CommentedMap)
     assert {
@@ -114,28 +116,37 @@ def test_type_dsl() -> None:
     assert saved_obj["outputs"][0]["outputBinding"].lc.data == {"glob": [15, 6, 15, 12]}
 
 
-def load_document_by_uri(path: str) -> Any:
-    """
-    Takes in a path and loads it via the python codegen.
-    """
-    uri = urlparse(path)
-    if not uri.scheme or uri.scheme == "file":
-        real_path = Path(unquote_plus(uri.path)).resolve().as_uri()
+def load_document_by_uri(tmp_path: Path, path: Union[str, Path]) -> Any:
+    src_target = tmp_path / "cwl_v1_0.py"
+    python_codegen(cwl_file_uri, src_target)
+    spec = importlib.util.spec_from_file_location("cwl_v1_0", src_target)
+    assert isinstance(spec, importlib.machinery.ModuleSpec)
+    assert isinstance(spec.loader, importlib.abc.Loader)
+    temp_cwl_v1_0 = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(temp_cwl_v1_0)
+    cwl_v1_0: Any = temp_cwl_v1_0
+
+    if isinstance(path, str):
+        uri = urlparse(path)
+        if not uri.scheme or uri.scheme == "file":
+            real_path = Path(uri.path).resolve().as_uri()
+        else:
+            real_path = path
     else:
-        real_path = path
+        real_path = path.resolve().as_uri()
 
     baseuri = str(real_path)
 
-    loadingOptions = cwl_v1_2.LoadingOptions(fileuri=baseuri)
-    # doc = loadingOptions.fetcher.fetch_text(real_path)
-    with open(path, 'r') as file:
-        doc = file.read()
+    loadingOptions = cwl_v1_0.LoadingOptions(fileuri=baseuri)
 
+    with open(path, "r") as file:
+        doc = file.read()
+    # doc = loadingOptions.fetcher.fetch_text(urllib.parse.unquote(str(real_path)))
     yaml = yaml_no_ts()
     doc = yaml.load(doc)
 
-    result = cwl_v1_2.load_document_by_yaml(
-        doc, baseuri, cast(Optional[cwl_v1_2.LoadingOptions], loadingOptions)
+    result = cwl_v1_0.load_document_by_yaml(
+        doc, baseuri, cast(Optional[cwl_v1_0.LoadingOptions], loadingOptions)
     )
 
     if isinstance(result, MutableSequence):
@@ -144,3 +155,25 @@ def load_document_by_uri(path: str) -> Any:
             lst.append(r)
         return lst
     return result
+
+
+
+def python_codegen(
+    file_uri: str,
+    target: Path,
+    parser_info: Optional[str] = None,
+    package: Optional[str] = None,
+) -> None:
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(file_uri)
+    assert isinstance(avsc_names, Names)
+    schema_raw_doc = metaschema_loader.fetch(file_uri)
+    schema_doc, schema_metadata = metaschema_loader.resolve_all(schema_raw_doc, file_uri)
+    codegen.codegen(
+        "python",
+        cast(List[Dict[str, Any]], schema_doc),
+        schema_metadata,
+        document_loader,
+        target=str(target),
+        parser_info=parser_info,
+        package=package,
+    )
