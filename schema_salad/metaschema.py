@@ -1192,9 +1192,6 @@ class RecordField(Documented):
         _errors__ = []
         if "name" in _doc:
             try:
-                if _doc.get("name") is None:
-                    raise ValidationException("missing required field `name`", None, [])
-
                 name = load_field(
                     _doc.get("name"),
                     uri_strtype_True_False_None_None,
@@ -1246,9 +1243,6 @@ class RecordField(Documented):
             baseuri = name
         if "doc" in _doc:
             try:
-                if _doc.get("doc") is None:
-                    raise ValidationException("missing required field `doc`", None, [])
-
                 doc = load_field(
                     _doc.get("doc"),
                     union_of_None_type_or_strtype_or_array_of_strtype,
@@ -1442,9 +1436,6 @@ class RecordSchema(Saveable):
         _errors__ = []
         if "fields" in _doc:
             try:
-                if _doc.get("fields") is None:
-                    raise ValidationException("missing required field `fields`", None, [])
-
                 fields = load_field(
                     _doc.get("fields"),
                     idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader,
@@ -1644,9 +1635,6 @@ class EnumSchema(Saveable):
         _errors__ = []
         if "name" in _doc:
             try:
-                if _doc.get("name") is None:
-                    raise ValidationException("missing required field `name`", None, [])
-
                 name = load_field(
                     _doc.get("name"),
                     uri_union_of_None_type_or_strtype_True_False_None_None,
@@ -1896,9 +1884,6 @@ class ArraySchema(Saveable):
         _errors__ = []
         if "flatten" in _doc:
             try:
-                if _doc.get("flatten") is None:
-                    raise ValidationException("missing required field `flatten`", None, [])
-
                 flatten = load_field(
                     _doc.get("flatten"),
                     uri_union_of_None_type_or_booltype_False_True_2_None,
@@ -2556,9 +2541,6 @@ class JsonldPredicate(Saveable):
         _errors__ = []
         if "_id" in _doc:
             try:
-                if _doc.get("_id") is None:
-                    raise ValidationException("missing required field `_id`", None, [])
-
                 _id = load_field(
                     _doc.get("_id"),
                     uri_union_of_None_type_or_strtype_True_False_None_None,
@@ -2601,9 +2583,6 @@ class JsonldPredicate(Saveable):
             _id = None
         if "_type" in _doc:
             try:
-                if _doc.get("_type") is None:
-                    raise ValidationException("missing required field `_type`", None, [])
-
                 _type = load_field(
                     _doc.get("_type"),
                     union_of_None_type_or_strtype,
@@ -2646,9 +2625,6 @@ class JsonldPredicate(Saveable):
             _type = None
         if "_container" in _doc:
             try:
-                if _doc.get("_container") is None:
-                    raise ValidationException("missing required field `_container`", None, [])
-
                 _container = load_field(
                     _doc.get("_container"),
                     union_of_None_type_or_strtype,
@@ -2691,9 +2667,6 @@ class JsonldPredicate(Saveable):
             _container = None
         if "identity" in _doc:
             try:
-                if _doc.get("identity") is None:
-                    raise ValidationException("missing required field `identity`", None, [])
-
                 identity = load_field(
                     _doc.get("identity"),
                     union_of_None_type_or_booltype,
@@ -2736,9 +2709,6 @@ class JsonldPredicate(Saveable):
             identity = None
         if "noLinkCheck" in _doc:
             try:
-                if _doc.get("noLinkCheck") is None:
-                    raise ValidationException("missing required field `noLinkCheck`", None, [])
-
                 noLinkCheck = load_field(
                     _doc.get("noLinkCheck"),
                     union_of_None_type_or_booltype,
@@ -2781,9 +2751,6 @@ class JsonldPredicate(Saveable):
             noLinkCheck = None
         if "mapSubject" in _doc:
             try:
-                if _doc.get("mapSubject") is None:
-                    raise ValidationException("missing required field `mapSubject`", None, [])
-
                 mapSubject = load_field(
                     _doc.get("mapSubject"),
                     union_of_None_type_or_strtype,
@@ -2826,9 +2793,6 @@ class JsonldPredicate(Saveable):
             mapSubject = None
         if "mapPredicate" in _doc:
             try:
-                if _doc.get("mapPredicate") is None:
-                    raise ValidationException("missing required field `mapPredicate`", None, [])
-
                 mapPredicate = load_field(
                     _doc.get("mapPredicate"),
                     union_of_None_type_or_strtype,
@@ -2871,9 +2835,6 @@ class JsonldPredicate(Saveable):
             mapPredicate = None
         if "refScope" in _doc:
             try:
-                if _doc.get("refScope") is None:
-                    raise ValidationException("missing required field `refScope`", None, [])
-
                 refScope = load_field(
                     _doc.get("refScope"),
                     union_of_None_type_or_inttype,
@@ -2916,9 +2877,6 @@ class JsonldPredicate(Saveable):
             refScope = None
         if "typeDSL" in _doc:
             try:
-                if _doc.get("typeDSL") is None:
-                    raise ValidationException("missing required field `typeDSL`", None, [])
-
                 typeDSL = load_field(
                     _doc.get("typeDSL"),
                     union_of_None_type_or_booltype,
@@ -2961,9 +2919,6 @@ class JsonldPredicate(Saveable):
             typeDSL = None
         if "secondaryFilesDSL" in _doc:
             try:
-                if _doc.get("secondaryFilesDSL") is None:
-                    raise ValidationException("missing required field `secondaryFilesDSL`", None, [])
-
                 secondaryFilesDSL = load_field(
                     _doc.get("secondaryFilesDSL"),
                     union_of_None_type_or_booltype,
@@ -3006,9 +2961,6 @@ class JsonldPredicate(Saveable):
             secondaryFilesDSL = None
         if "subscope" in _doc:
             try:
-                if _doc.get("subscope") is None:
-                    raise ValidationException("missing required field `subscope`", None, [])
-
                 subscope = load_field(
                     _doc.get("subscope"),
                     union_of_None_type_or_strtype,
@@ -3454,9 +3406,6 @@ class SaladRecordField(RecordField):
         _errors__ = []
         if "name" in _doc:
             try:
-                if _doc.get("name") is None:
-                    raise ValidationException("missing required field `name`", None, [])
-
                 name = load_field(
                     _doc.get("name"),
                     uri_strtype_True_False_None_None,
@@ -3508,9 +3457,6 @@ class SaladRecordField(RecordField):
             baseuri = name
         if "doc" in _doc:
             try:
-                if _doc.get("doc") is None:
-                    raise ValidationException("missing required field `doc`", None, [])
-
                 doc = load_field(
                     _doc.get("doc"),
                     union_of_None_type_or_strtype_or_array_of_strtype,
@@ -3595,9 +3541,6 @@ class SaladRecordField(RecordField):
                     )
         if "jsonldPredicate" in _doc:
             try:
-                if _doc.get("jsonldPredicate") is None:
-                    raise ValidationException("missing required field `jsonldPredicate`", None, [])
-
                 jsonldPredicate = load_field(
                     _doc.get("jsonldPredicate"),
                     union_of_None_type_or_strtype_or_JsonldPredicateLoader,
@@ -3640,9 +3583,6 @@ class SaladRecordField(RecordField):
             jsonldPredicate = None
         if "default" in _doc:
             try:
-                if _doc.get("default") is None:
-                    raise ValidationException("missing required field `default`", None, [])
-
                 default = load_field(
                     _doc.get("default"),
                     union_of_None_type_or_Any_type,
@@ -3859,9 +3799,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         _errors__ = []
         if "name" in _doc:
             try:
-                if _doc.get("name") is None:
-                    raise ValidationException("missing required field `name`", None, [])
-
                 name = load_field(
                     _doc.get("name"),
                     uri_strtype_True_False_None_None,
@@ -3913,9 +3850,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             baseuri = name
         if "inVocab" in _doc:
             try:
-                if _doc.get("inVocab") is None:
-                    raise ValidationException("missing required field `inVocab`", None, [])
-
                 inVocab = load_field(
                     _doc.get("inVocab"),
                     union_of_None_type_or_booltype,
@@ -3958,9 +3892,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             inVocab = None
         if "fields" in _doc:
             try:
-                if _doc.get("fields") is None:
-                    raise ValidationException("missing required field `fields`", None, [])
-
                 fields = load_field(
                     _doc.get("fields"),
                     idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader,
@@ -4045,9 +3976,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     )
         if "doc" in _doc:
             try:
-                if _doc.get("doc") is None:
-                    raise ValidationException("missing required field `doc`", None, [])
-
                 doc = load_field(
                     _doc.get("doc"),
                     union_of_None_type_or_strtype_or_array_of_strtype,
@@ -4090,9 +4018,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             doc = None
         if "docParent" in _doc:
             try:
-                if _doc.get("docParent") is None:
-                    raise ValidationException("missing required field `docParent`", None, [])
-
                 docParent = load_field(
                     _doc.get("docParent"),
                     uri_union_of_None_type_or_strtype_False_False_None_None,
@@ -4135,9 +4060,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             docParent = None
         if "docChild" in _doc:
             try:
-                if _doc.get("docChild") is None:
-                    raise ValidationException("missing required field `docChild`", None, [])
-
                 docChild = load_field(
                     _doc.get("docChild"),
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
@@ -4180,9 +4102,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             docChild = None
         if "docAfter" in _doc:
             try:
-                if _doc.get("docAfter") is None:
-                    raise ValidationException("missing required field `docAfter`", None, [])
-
                 docAfter = load_field(
                     _doc.get("docAfter"),
                     uri_union_of_None_type_or_strtype_False_False_None_None,
@@ -4225,9 +4144,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             docAfter = None
         if "jsonldPredicate" in _doc:
             try:
-                if _doc.get("jsonldPredicate") is None:
-                    raise ValidationException("missing required field `jsonldPredicate`", None, [])
-
                 jsonldPredicate = load_field(
                     _doc.get("jsonldPredicate"),
                     union_of_None_type_or_strtype_or_JsonldPredicateLoader,
@@ -4270,9 +4186,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             jsonldPredicate = None
         if "documentRoot" in _doc:
             try:
-                if _doc.get("documentRoot") is None:
-                    raise ValidationException("missing required field `documentRoot`", None, [])
-
                 documentRoot = load_field(
                     _doc.get("documentRoot"),
                     union_of_None_type_or_booltype,
@@ -4315,9 +4228,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             documentRoot = None
         if "abstract" in _doc:
             try:
-                if _doc.get("abstract") is None:
-                    raise ValidationException("missing required field `abstract`", None, [])
-
                 abstract = load_field(
                     _doc.get("abstract"),
                     union_of_None_type_or_booltype,
@@ -4360,9 +4270,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             abstract = None
         if "extends" in _doc:
             try:
-                if _doc.get("extends") is None:
-                    raise ValidationException("missing required field `extends`", None, [])
-
                 extends = load_field(
                     _doc.get("extends"),
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None,
@@ -4405,9 +4312,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             extends = None
         if "specialize" in _doc:
             try:
-                if _doc.get("specialize") is None:
-                    raise ValidationException("missing required field `specialize`", None, [])
-
                 specialize = load_field(
                     _doc.get("specialize"),
                     idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader,
@@ -4682,9 +4586,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         _errors__ = []
         if "name" in _doc:
             try:
-                if _doc.get("name") is None:
-                    raise ValidationException("missing required field `name`", None, [])
-
                 name = load_field(
                     _doc.get("name"),
                     uri_union_of_None_type_or_strtype_True_False_None_None,
@@ -4736,9 +4637,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             baseuri = name
         if "inVocab" in _doc:
             try:
-                if _doc.get("inVocab") is None:
-                    raise ValidationException("missing required field `inVocab`", None, [])
-
                 inVocab = load_field(
                     _doc.get("inVocab"),
                     union_of_None_type_or_booltype,
@@ -4865,9 +4763,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     )
         if "doc" in _doc:
             try:
-                if _doc.get("doc") is None:
-                    raise ValidationException("missing required field `doc`", None, [])
-
                 doc = load_field(
                     _doc.get("doc"),
                     union_of_None_type_or_strtype_or_array_of_strtype,
@@ -4910,9 +4805,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             doc = None
         if "docParent" in _doc:
             try:
-                if _doc.get("docParent") is None:
-                    raise ValidationException("missing required field `docParent`", None, [])
-
                 docParent = load_field(
                     _doc.get("docParent"),
                     uri_union_of_None_type_or_strtype_False_False_None_None,
@@ -4955,9 +4847,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             docParent = None
         if "docChild" in _doc:
             try:
-                if _doc.get("docChild") is None:
-                    raise ValidationException("missing required field `docChild`", None, [])
-
                 docChild = load_field(
                     _doc.get("docChild"),
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
@@ -5000,9 +4889,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             docChild = None
         if "docAfter" in _doc:
             try:
-                if _doc.get("docAfter") is None:
-                    raise ValidationException("missing required field `docAfter`", None, [])
-
                 docAfter = load_field(
                     _doc.get("docAfter"),
                     uri_union_of_None_type_or_strtype_False_False_None_None,
@@ -5045,9 +4931,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             docAfter = None
         if "jsonldPredicate" in _doc:
             try:
-                if _doc.get("jsonldPredicate") is None:
-                    raise ValidationException("missing required field `jsonldPredicate`", None, [])
-
                 jsonldPredicate = load_field(
                     _doc.get("jsonldPredicate"),
                     union_of_None_type_or_strtype_or_JsonldPredicateLoader,
@@ -5090,9 +4973,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             jsonldPredicate = None
         if "documentRoot" in _doc:
             try:
-                if _doc.get("documentRoot") is None:
-                    raise ValidationException("missing required field `documentRoot`", None, [])
-
                 documentRoot = load_field(
                     _doc.get("documentRoot"),
                     union_of_None_type_or_booltype,
@@ -5135,9 +5015,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             documentRoot = None
         if "extends" in _doc:
             try:
-                if _doc.get("extends") is None:
-                    raise ValidationException("missing required field `extends`", None, [])
-
                 extends = load_field(
                     _doc.get("extends"),
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None,
@@ -5389,9 +5266,6 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
         _errors__ = []
         if "name" in _doc:
             try:
-                if _doc.get("name") is None:
-                    raise ValidationException("missing required field `name`", None, [])
-
                 name = load_field(
                     _doc.get("name"),
                     uri_strtype_True_False_None_None,
@@ -5443,9 +5317,6 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             baseuri = name
         if "inVocab" in _doc:
             try:
-                if _doc.get("inVocab") is None:
-                    raise ValidationException("missing required field `inVocab`", None, [])
-
                 inVocab = load_field(
                     _doc.get("inVocab"),
                     union_of_None_type_or_booltype,
@@ -5572,9 +5443,6 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                     )
         if "doc" in _doc:
             try:
-                if _doc.get("doc") is None:
-                    raise ValidationException("missing required field `doc`", None, [])
-
                 doc = load_field(
                     _doc.get("doc"),
                     union_of_None_type_or_strtype_or_array_of_strtype,
@@ -5617,9 +5485,6 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             doc = None
         if "docParent" in _doc:
             try:
-                if _doc.get("docParent") is None:
-                    raise ValidationException("missing required field `docParent`", None, [])
-
                 docParent = load_field(
                     _doc.get("docParent"),
                     uri_union_of_None_type_or_strtype_False_False_None_None,
@@ -5662,9 +5527,6 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             docParent = None
         if "docChild" in _doc:
             try:
-                if _doc.get("docChild") is None:
-                    raise ValidationException("missing required field `docChild`", None, [])
-
                 docChild = load_field(
                     _doc.get("docChild"),
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
@@ -5707,9 +5569,6 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             docChild = None
         if "docAfter" in _doc:
             try:
-                if _doc.get("docAfter") is None:
-                    raise ValidationException("missing required field `docAfter`", None, [])
-
                 docAfter = load_field(
                     _doc.get("docAfter"),
                     uri_union_of_None_type_or_strtype_False_False_None_None,
@@ -5752,9 +5611,6 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             docAfter = None
         if "jsonldPredicate" in _doc:
             try:
-                if _doc.get("jsonldPredicate") is None:
-                    raise ValidationException("missing required field `jsonldPredicate`", None, [])
-
                 jsonldPredicate = load_field(
                     _doc.get("jsonldPredicate"),
                     union_of_None_type_or_strtype_or_JsonldPredicateLoader,
@@ -5797,9 +5653,6 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             jsonldPredicate = None
         if "documentRoot" in _doc:
             try:
-                if _doc.get("documentRoot") is None:
-                    raise ValidationException("missing required field `documentRoot`", None, [])
-
                 documentRoot = load_field(
                     _doc.get("documentRoot"),
                     union_of_None_type_or_booltype,
@@ -6046,9 +5899,6 @@ class SaladUnionSchema(NamedType, UnionSchema, SchemaDefinedType):
         _errors__ = []
         if "name" in _doc:
             try:
-                if _doc.get("name") is None:
-                    raise ValidationException("missing required field `name`", None, [])
-
                 name = load_field(
                     _doc.get("name"),
                     uri_strtype_True_False_None_None,
@@ -6100,9 +5950,6 @@ class SaladUnionSchema(NamedType, UnionSchema, SchemaDefinedType):
             baseuri = name
         if "inVocab" in _doc:
             try:
-                if _doc.get("inVocab") is None:
-                    raise ValidationException("missing required field `inVocab`", None, [])
-
                 inVocab = load_field(
                     _doc.get("inVocab"),
                     union_of_None_type_or_booltype,
@@ -6229,9 +6076,6 @@ class SaladUnionSchema(NamedType, UnionSchema, SchemaDefinedType):
                     )
         if "doc" in _doc:
             try:
-                if _doc.get("doc") is None:
-                    raise ValidationException("missing required field `doc`", None, [])
-
                 doc = load_field(
                     _doc.get("doc"),
                     union_of_None_type_or_strtype_or_array_of_strtype,
@@ -6274,9 +6118,6 @@ class SaladUnionSchema(NamedType, UnionSchema, SchemaDefinedType):
             doc = None
         if "docParent" in _doc:
             try:
-                if _doc.get("docParent") is None:
-                    raise ValidationException("missing required field `docParent`", None, [])
-
                 docParent = load_field(
                     _doc.get("docParent"),
                     uri_union_of_None_type_or_strtype_False_False_None_None,
@@ -6319,9 +6160,6 @@ class SaladUnionSchema(NamedType, UnionSchema, SchemaDefinedType):
             docParent = None
         if "docChild" in _doc:
             try:
-                if _doc.get("docChild") is None:
-                    raise ValidationException("missing required field `docChild`", None, [])
-
                 docChild = load_field(
                     _doc.get("docChild"),
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
@@ -6364,9 +6202,6 @@ class SaladUnionSchema(NamedType, UnionSchema, SchemaDefinedType):
             docChild = None
         if "docAfter" in _doc:
             try:
-                if _doc.get("docAfter") is None:
-                    raise ValidationException("missing required field `docAfter`", None, [])
-
                 docAfter = load_field(
                     _doc.get("docAfter"),
                     uri_union_of_None_type_or_strtype_False_False_None_None,
@@ -6409,9 +6244,6 @@ class SaladUnionSchema(NamedType, UnionSchema, SchemaDefinedType):
             docAfter = None
         if "jsonldPredicate" in _doc:
             try:
-                if _doc.get("jsonldPredicate") is None:
-                    raise ValidationException("missing required field `jsonldPredicate`", None, [])
-
                 jsonldPredicate = load_field(
                     _doc.get("jsonldPredicate"),
                     union_of_None_type_or_strtype_or_JsonldPredicateLoader,
@@ -6454,9 +6286,6 @@ class SaladUnionSchema(NamedType, UnionSchema, SchemaDefinedType):
             jsonldPredicate = None
         if "documentRoot" in _doc:
             try:
-                if _doc.get("documentRoot") is None:
-                    raise ValidationException("missing required field `documentRoot`", None, [])
-
                 documentRoot = load_field(
                     _doc.get("documentRoot"),
                     union_of_None_type_or_booltype,
@@ -6692,9 +6521,6 @@ class Documentation(NamedType, DocType):
         _errors__ = []
         if "name" in _doc:
             try:
-                if _doc.get("name") is None:
-                    raise ValidationException("missing required field `name`", None, [])
-
                 name = load_field(
                     _doc.get("name"),
                     uri_strtype_True_False_None_None,
@@ -6746,9 +6572,6 @@ class Documentation(NamedType, DocType):
             baseuri = name
         if "inVocab" in _doc:
             try:
-                if _doc.get("inVocab") is None:
-                    raise ValidationException("missing required field `inVocab`", None, [])
-
                 inVocab = load_field(
                     _doc.get("inVocab"),
                     union_of_None_type_or_booltype,
@@ -6791,9 +6614,6 @@ class Documentation(NamedType, DocType):
             inVocab = None
         if "doc" in _doc:
             try:
-                if _doc.get("doc") is None:
-                    raise ValidationException("missing required field `doc`", None, [])
-
                 doc = load_field(
                     _doc.get("doc"),
                     union_of_None_type_or_strtype_or_array_of_strtype,
@@ -6836,9 +6656,6 @@ class Documentation(NamedType, DocType):
             doc = None
         if "docParent" in _doc:
             try:
-                if _doc.get("docParent") is None:
-                    raise ValidationException("missing required field `docParent`", None, [])
-
                 docParent = load_field(
                     _doc.get("docParent"),
                     uri_union_of_None_type_or_strtype_False_False_None_None,
@@ -6881,9 +6698,6 @@ class Documentation(NamedType, DocType):
             docParent = None
         if "docChild" in _doc:
             try:
-                if _doc.get("docChild") is None:
-                    raise ValidationException("missing required field `docChild`", None, [])
-
                 docChild = load_field(
                     _doc.get("docChild"),
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
@@ -6926,9 +6740,6 @@ class Documentation(NamedType, DocType):
             docChild = None
         if "docAfter" in _doc:
             try:
-                if _doc.get("docAfter") is None:
-                    raise ValidationException("missing required field `docAfter`", None, [])
-
                 docAfter = load_field(
                     _doc.get("docAfter"),
                     uri_union_of_None_type_or_strtype_False_False_None_None,

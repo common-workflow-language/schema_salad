@@ -555,11 +555,23 @@ if _errors__:
             baseurivar = "baseuri"
 
         self.out.write(
-            """{spc}        try:
-{spc}            if _doc.get("{fieldname}") is None:
+            f"""{spc}        try:
+"""
+        )
+
+        if not optional:
+            self.out.write(
+                """{spc}            if _doc.get("{fieldname}") is None:
 {spc}                raise ValidationException("missing required field `{fieldname}`", None, [])
 
-{spc}            {safename} = load_field(
+""".format(
+                    fieldname=shortname(name),
+                    spc=spc,
+                )
+            )
+
+        self.out.write(
+            """{spc}            {safename} = load_field(
 {spc}                _doc.get("{fieldname}"),
 {spc}                {fieldtype},
 {spc}                {baseurivar},
