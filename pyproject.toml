@@ -21,9 +21,8 @@ before-build = "python -m pip install -r requirements.txt -r mypy-requirements.t
 test-command = "python -m pytest -n 2 --junitxml=/output/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad"
 test-requires = "-r test-requirements.txt"
 test-extras = "pycodegen"
-skip = "pp* cp312-*"
+skip = "pp*"
 #      ^ skip building wheels on PyPy (any version)
-#           ^ skip building wheels on 3.12 (not ready)
 build-verbosity = "1"
 
 [tool.black]
