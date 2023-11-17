@@ -23,13 +23,14 @@ from typing import (
     Type,
     Union,
     cast,
+    no_type_check,
 )
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
 from rdflib import Graph
 from rdflib.plugins.parsers.notation3 import BadSyntax
-from ruamel.yaml.comments import CommentedMap
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from schema_salad.exceptions import SchemaSaladException, ValidationException
 from schema_salad.fetcher import DefaultFetcher, Fetcher, MemoryCachingFetcher
@@ -43,6 +44,8 @@ _logger = logging.getLogger("salad")
 
 
 IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
+
+doc_line_info = CommentedMap()
 
 
 class LoadingOptions:
@@ -202,8 +205,14 @@ class Saveable(ABC):
 
     @abstractmethod
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True
-    ) -> Dict[str, Any]:
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0,
+    ) -> CommentedMap:
         """Convert this object to a JSON/YAML friendly dictionary."""
 
 
@@ -234,6 +243,196 @@ def load_field(val, fieldtype, baseuri, loadingOptions, lc=None):
 save_type = Optional[Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]]
 
 
+def add_kv(
+    old_doc: CommentedMap,
+    new_doc: CommentedMap,
+    line_numbers: Dict[Any, Dict[str, int]],
+    key: str,
+    val: Any,
+    max_len: int,
+    cols: Dict[int, int],
+    min_col: int = 0,
+    inserted_line_info: Optional[Dict[int, int]] = None,
+    shift: int = 0,
+) -> Tuple[int, Optional[Dict[int, int]]]:
+    """Add key value pair into Commented Map.
+
+    Function to add key value pair into new CommentedMap given old CommentedMap, line_numbers
+    for each key/val pair in the old CommentedMap,key/val pair to insert, max_line of the old CommentedMap,
+    and max col value taken for each line.
+    """
+    if inserted_line_info is None:
+        inserted_line_info = {}
+
+    if len(inserted_line_info.keys()) >= 1:
+        max_line = max(inserted_line_info.keys()) + 1
+    else:
+        max_line = 0
+
+    if key in line_numbers:  # If the passed key to insert is in the original CommentedMap as a key
+        line_info = old_doc.lc.data[key]  # Get the line information for the key
+        if (
+            line_info[0] + shift not in inserted_line_info
+        ):  # If the line of the key + shift isn't taken, add it
+            new_doc.lc.add_kv_line_col(
+                key,
+                [
+                    old_doc.lc.data[key][0] + shift,
+                    old_doc.lc.data[key][1],
+                    old_doc.lc.data[key][2] + shift,
+                    old_doc.lc.data[key][3],
+                ],
+            )
+            inserted_line_info[old_doc.lc.data[key][0] + shift] = old_doc.lc.data[key][1]
+        else:  # If the line is already taken
+            line = line_info[0] + shift
+            while line in inserted_line_info.keys():  # Find the closest free line
+                line += 1
+            new_doc.lc.add_kv_line_col(
+                key,
+                [
+                    line,
+                    old_doc.lc.data[key][1],
+                    line + (line - old_doc.lc.data[key][2]),
+                    old_doc.lc.data[key][3],
+                ],
+            )
+            inserted_line_info[line] = old_doc.lc.data[key][1]
+        return max_len, inserted_line_info
+    elif isinstance(val, (int, float, str)) and not isinstance(
+        val, bool
+    ):  # If the value is hashable
+        if val in line_numbers:  # If the value is in the original CommentedMap
+            line = line_numbers[val]["line"] + shift  # Get the line info for the value
+            if line in inserted_line_info:  # Get the appropriate line to place value on
+                line = max_line
+
+            col = line_numbers[val]["col"]
+            new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
+            inserted_line_info[line] = col + len(key) + 2
+            return max_len, inserted_line_info
+        elif isinstance(val, str):  # Logic for DSL expansition with "?"
+            if val + "?" in line_numbers:
+                line = line_numbers[val + "?"]["line"] + shift
+                if line in inserted_line_info:
+                    line = max_line
+                col = line_numbers[val + "?"]["col"]
+                new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
+                inserted_line_info[line] = col + len(key) + 2
+                return max_len, inserted_line_info
+        elif old_doc:
+            if val in old_doc:
+                index = old_doc.lc.data.index(val)
+                line_info = old_doc.lc.data[index]
+                if line_info[0] + shift not in inserted_line_info:
+                    new_doc.lc.add_kv_line_col(
+                        key,
+                        [
+                            old_doc.lc.data[index][0] + shift,
+                            old_doc.lc.data[index][1],
+                            old_doc.lc.data[index][2] + shift,
+                            old_doc.lc.data[index][3],
+                        ],
+                    )
+                    inserted_line_info[old_doc.lc.data[index][0] + shift] = old_doc.lc.data[index][
+                        1
+                    ]
+                else:
+                    new_doc.lc.add_kv_line_col(
+                        key,
+                        [
+                            max_line + shift,
+                            old_doc.lc.data[index][1],
+                            max_line + (max_line - old_doc.lc.data[index][2]) + shift,
+                            old_doc.lc.data[index][3],
+                        ],
+                    )
+                    inserted_line_info[max_line + shift] = old_doc.lc.data[index][1]
+    # If neither the key or value is in the original CommentedMap/old doc (or value is not hashable)
+    new_doc.lc.add_kv_line_col(key, [max_line, min_col, max_line, min_col + len(key) + 2])
+    inserted_line_info[max_line] = min_col + len(key) + 2
+    return max_len + 1, inserted_line_info
+
+
+@no_type_check
+def iterate_through_doc(keys: List[Any]) -> Optional[CommentedMap]:
+    """Take a list of keys/indexes and iterates through the global CommentedMap."""
+    doc = doc_line_info
+    for key in keys:
+        if isinstance(doc, CommentedMap):
+            doc = doc.get(key)
+        elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+            if key < len(doc):
+                doc = doc[key]
+            else:
+                return None
+        else:
+            return None
+    if isinstance(doc, CommentedSeq):
+        to_return = CommentedMap()
+        for index, key in enumerate(doc):
+            to_return[key] = ""
+            to_return.lc.add_kv_line_col(
+                key,
+                [
+                    doc.lc.data[index][0],
+                    doc.lc.data[index][1],
+                    doc.lc.data[index][0],
+                    doc.lc.data[index][1],
+                ],
+            )
+        return to_return
+    return doc
+
+
+def get_line_numbers(doc: Optional[CommentedMap]) -> Dict[Any, Dict[str, int]]:
+    """Get line numbers for kv pairs in CommentedMap.
+
+    For each key/value pair in a CommentedMap, save the line/col info into a dictionary,
+    only save value info if value is hashable.
+    """
+    line_numbers: Dict[Any, Dict[str, int]] = {}
+    if doc is None:
+        return {}
+    if doc.lc.data is None:
+        return {}
+    for key, value in doc.lc.data.items():
+        line_numbers[key] = {}
+
+        line_numbers[key]["line"] = doc.lc.data[key][0]
+        line_numbers[key]["col"] = doc.lc.data[key][1]
+        if isinstance(value, (int, float, bool, str)):
+            line_numbers[value] = {}
+            line_numbers[value]["line"] = doc.lc.data[key][2]
+            line_numbers[value]["col"] = doc.lc.data[key][3]
+    return line_numbers
+
+
+def get_min_col(line_numbers: Dict[Any, Dict[str, int]]) -> int:
+    """Given a array of line column information, get the minimum column."""
+    min_col = 0
+    for line in line_numbers:
+        if line_numbers[line]["col"] > min_col:
+            min_col = line_numbers[line]["col"]
+    return min_col
+
+
+def get_max_line_num(doc: CommentedMap) -> int:
+    """Get the max line number for a CommentedMap.
+
+    Iterate through the the key with the highest line number until you reach a non-CommentedMap value
+    or empty CommentedMap.
+    """
+    max_line = 0
+    max_key = ""
+    cur = doc
+    while isinstance(cur, CommentedMap) and len(cur) > 0:
+        for key in cur.lc.data.keys():
+            if cur.lc.data[key][2] >= max_line:
+                max_line = cur.lc.data[key][2]
+            max_key = key
+        cur = cur[max_key]
+    return max_line + 1
 def extract_type(val_type: Type[Any]) -> str:
     """Take a type of value, and extracts the value as a string."""
     val_str = str(val_type)
@@ -296,15 +495,71 @@ def save(
     top: bool = True,
     base_url: str = "",
     relative_uris: bool = True,
+    keys: Optional[List[Any]] = None,
+    inserted_line_info: Optional[Dict[int, int]] = None,
+    shift: int = 0,
 ) -> save_type:
+    """Save a val of any type.
+
+    Recursively calls save method from class if val is of type Saveable.
+    Otherwise, saves val to CommentedMap or CommentedSeq.
+    """
+    if keys is None:
+        keys = []
+
+    doc = iterate_through_doc(keys)
+
     if isinstance(val, Saveable):
-        return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
+        return val.save(
+            top=top,
+            base_url=base_url,
+            relative_uris=relative_uris,
+            keys=keys,
+            inserted_line_info=inserted_line_info,
+            shift=shift,
+        )
     if isinstance(val, MutableSequence):
-        return [save(v, top=False, base_url=base_url, relative_uris=relative_uris) for v in val]
+        r = CommentedSeq()
+        r.lc.data = {}
+        for i in range(0, len(val)):
+            new_keys = keys
+            if doc:
+                if str(i) in doc:
+                    r.lc.data[i] = doc.lc.data[i]
+                    new_keys.append(i)
+            r.append(
+                save(
+                    val[i],
+                    top=False,
+                    base_url=base_url,
+                    relative_uris=relative_uris,
+                    keys=new_keys,
+                    inserted_line_info=inserted_line_info,
+                    shift=shift,
+                )
+            )
+        return r
+
     if isinstance(val, MutableMapping):
-        newdict = {}
+        newdict = CommentedMap()
+        new_keys = keys
         for key in val:
-            newdict[key] = save(val[key], top=False, base_url=base_url, relative_uris=relative_uris)
+
+            if doc:
+                if key in doc:
+                    newdict.lc.add_kv_line_col(key, doc.lc.data[key])
+                    new_keys.append(key)
+
+            newdict[key] = save(
+                val[key],
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                keys=new_keys,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+
         return newdict
     if val is None or isinstance(val, (int, float, bool, str)):
         return val
@@ -842,7 +1097,7 @@ class _IdMapLoader(_Loader):
 
 def _document_load(
     loader: _Loader,
-    doc: Union[str, MutableMapping[str, Any], MutableSequence[Any]],
+    doc: Union[CommentedMap, str, MutableMapping[str, Any], MutableSequence[Any]],
     baseuri: str,
     loadingOptions: LoadingOptions,
     addl_metadata_fields: Optional[MutableSequence[str]] = None,
@@ -882,6 +1137,10 @@ def _document_load(
         if "$base" in doc:
             doc.pop("$base")
 
+        if isinstance(doc, CommentedMap):
+            global doc_line_info
+            doc_line_info = doc
+
         if "$graph" in doc:
             loadingOptions.idx[baseuri] = (
                 loader.load(doc["$graph"], baseuri, loadingOptions),
@@ -897,7 +1156,6 @@ def _document_load(
             loadingOptions.idx[docuri] = loadingOptions.idx[baseuri]
 
         return loadingOptions.idx[baseuri]
-
     if isinstance(doc, MutableSequence):
         loadingOptions.idx[baseuri] = (
             loader.load(doc, baseuri, loadingOptions),
@@ -1250,9 +1508,30 @@ class RecordField(Documented):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True
-    ) -> Dict[str, Any]:
-        r: Dict[str, Any] = {}
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0
+    ) -> CommentedMap:
+        if keys is None:
+            keys = []
+        r = CommentedMap()
+        keys = copy.copy(keys)
+
+        doc = iterate_through_doc(keys)
+
+        if inserted_line_info is None:
+            inserted_line_info = {}
+
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
+        cols: Dict[int, int] = {}
 
         if relative_uris:
             for ef in self.extension_fields:
@@ -1260,16 +1539,105 @@ class RecordField(Documented):
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.name is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                line = doc.lc.data[key][0] + shift
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                    inserted_line_info=inserted_line_info,
+                                    shift=shift
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len, inserted_line_info = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info,
+                                shift=shift
+                            )
+        if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-        if self.doc is not None:
-            r["doc"] = save(
-                self.doc, top=False, base_url=self.name, relative_uris=relative_uris
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="name",
+                val=r.get("name"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.type_ is not None:
+        if self.doc is not None and "doc" not in r:
+            r["doc"] = save(
+                self.doc,
+                top=False,
+                base_url=str(self.name),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="doc",
+                val=r.get("doc"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.type_ is not None and "type" not in r:
             r["type"] = save(
-                self.type_, top=False, base_url=self.name, relative_uris=relative_uris
+                self.type_,
+                top=False,
+                base_url=str(self.name),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="type",
+                val=r.get("type"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
 
         # top refers to the directory level
@@ -1444,9 +1812,30 @@ class RecordSchema(Saveable):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True
-    ) -> Dict[str, Any]:
-        r: Dict[str, Any] = {}
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0
+    ) -> CommentedMap:
+        if keys is None:
+            keys = []
+        r = CommentedMap()
+        keys = copy.copy(keys)
+
+        doc = iterate_through_doc(keys)
+
+        if inserted_line_info is None:
+            inserted_line_info = {}
+
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
+        cols: Dict[int, int] = {}
 
         if relative_uris:
             for ef in self.extension_fields:
@@ -1454,13 +1843,90 @@ class RecordSchema(Saveable):
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.fields is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                line = doc.lc.data[key][0] + shift
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                    inserted_line_info=inserted_line_info,
+                                    shift=shift
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len, inserted_line_info = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info,
+                                shift=shift
+                            )
+        if self.fields is not None and "fields" not in r:
             r["fields"] = save(
-                self.fields, top=False, base_url=base_url, relative_uris=relative_uris
+                self.fields,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.type_ is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="fields",
+                val=r.get("fields"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.type_ is not None and "type" not in r:
             r["type"] = save(
-                self.type_, top=False, base_url=base_url, relative_uris=relative_uris
+                self.type_,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="type",
+                val=r.get("type"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
 
         # top refers to the directory level
@@ -1699,9 +2165,30 @@ class EnumSchema(Saveable):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True
-    ) -> Dict[str, Any]:
-        r: Dict[str, Any] = {}
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0
+    ) -> CommentedMap:
+        if keys is None:
+            keys = []
+        r = CommentedMap()
+        keys = copy.copy(keys)
+
+        doc = iterate_through_doc(keys)
+
+        if inserted_line_info is None:
+            inserted_line_info = {}
+
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
+        cols: Dict[int, int] = {}
 
         if relative_uris:
             for ef in self.extension_fields:
@@ -1709,15 +2196,101 @@ class EnumSchema(Saveable):
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.name is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                line = doc.lc.data[key][0] + shift
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                    inserted_line_info=inserted_line_info,
+                                    shift=shift
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len, inserted_line_info = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info,
+                                shift=shift
+                            )
+        if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-        if self.symbols is not None:
-            u = save_relative_uri(self.symbols, self.name, True, None, relative_uris)
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="name",
+                val=r.get("name"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.symbols is not None and "symbols" not in r:
+            u = save_relative_uri(
+                self.symbols, str(self.name), True, None, relative_uris
+            )
             r["symbols"] = u
-        if self.type_ is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="symbols",
+                val=r.get("symbols"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.type_ is not None and "type" not in r:
             r["type"] = save(
-                self.type_, top=False, base_url=self.name, relative_uris=relative_uris
+                self.type_,
+                top=False,
+                base_url=str(self.name),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="type",
+                val=r.get("type"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
 
         # top refers to the directory level
@@ -1889,9 +2462,30 @@ class ArraySchema(Saveable):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True
-    ) -> Dict[str, Any]:
-        r: Dict[str, Any] = {}
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0
+    ) -> CommentedMap:
+        if keys is None:
+            keys = []
+        r = CommentedMap()
+        keys = copy.copy(keys)
+
+        doc = iterate_through_doc(keys)
+
+        if inserted_line_info is None:
+            inserted_line_info = {}
+
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
+        cols: Dict[int, int] = {}
 
         if relative_uris:
             for ef in self.extension_fields:
@@ -1899,12 +2493,84 @@ class ArraySchema(Saveable):
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.items is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                line = doc.lc.data[key][0] + shift
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                    inserted_line_info=inserted_line_info,
+                                    shift=shift
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len, inserted_line_info = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info,
+                                shift=shift
+                            )
+        if self.items is not None and "items" not in r:
             u = save_relative_uri(self.items, base_url, False, 2, relative_uris)
             r["items"] = u
-        if self.type_ is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="items",
+                val=r.get("items"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.type_ is not None and "type" not in r:
             r["type"] = save(
-                self.type_, top=False, base_url=base_url, relative_uris=relative_uris
+                self.type_,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="type",
+                val=r.get("type"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
 
         # top refers to the directory level
@@ -2546,9 +3212,30 @@ class JsonldPredicate(Saveable):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True
-    ) -> Dict[str, Any]:
-        r: Dict[str, Any] = {}
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0
+    ) -> CommentedMap:
+        if keys is None:
+            keys = []
+        r = CommentedMap()
+        keys = copy.copy(keys)
+
+        doc = iterate_through_doc(keys)
+
+        if inserted_line_info is None:
+            inserted_line_info = {}
+
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
+        cols: Dict[int, int] = {}
 
         if relative_uris:
             for ef in self.extension_fields:
@@ -2556,63 +3243,273 @@ class JsonldPredicate(Saveable):
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self._id is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                line = doc.lc.data[key][0] + shift
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                    inserted_line_info=inserted_line_info,
+                                    shift=shift
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len, inserted_line_info = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info,
+                                shift=shift
+                            )
+        if self._id is not None and "_id" not in r:
             u = save_relative_uri(self._id, base_url, True, None, relative_uris)
             r["_id"] = u
-        if self._type is not None:
-            r["_type"] = save(
-                self._type, top=False, base_url=base_url, relative_uris=relative_uris
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="_id",
+                val=r.get("_id"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self._container is not None:
+        if self._type is not None and "_type" not in r:
+            r["_type"] = save(
+                self._type,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="_type",
+                val=r.get("_type"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self._container is not None and "_container" not in r:
             r["_container"] = save(
                 self._container,
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.identity is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="_container",
+                val=r.get("_container"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.identity is not None and "identity" not in r:
             r["identity"] = save(
-                self.identity, top=False, base_url=base_url, relative_uris=relative_uris
+                self.identity,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.noLinkCheck is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="identity",
+                val=r.get("identity"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.noLinkCheck is not None and "noLinkCheck" not in r:
             r["noLinkCheck"] = save(
                 self.noLinkCheck,
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.mapSubject is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="noLinkCheck",
+                val=r.get("noLinkCheck"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.mapSubject is not None and "mapSubject" not in r:
             r["mapSubject"] = save(
                 self.mapSubject,
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.mapPredicate is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="mapSubject",
+                val=r.get("mapSubject"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.mapPredicate is not None and "mapPredicate" not in r:
             r["mapPredicate"] = save(
                 self.mapPredicate,
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.refScope is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="mapPredicate",
+                val=r.get("mapPredicate"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.refScope is not None and "refScope" not in r:
             r["refScope"] = save(
-                self.refScope, top=False, base_url=base_url, relative_uris=relative_uris
+                self.refScope,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.typeDSL is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="refScope",
+                val=r.get("refScope"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.typeDSL is not None and "typeDSL" not in r:
             r["typeDSL"] = save(
-                self.typeDSL, top=False, base_url=base_url, relative_uris=relative_uris
+                self.typeDSL,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.secondaryFilesDSL is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="typeDSL",
+                val=r.get("typeDSL"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.secondaryFilesDSL is not None and "secondaryFilesDSL" not in r:
             r["secondaryFilesDSL"] = save(
                 self.secondaryFilesDSL,
                 top=False,
                 base_url=base_url,
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.subscope is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="secondaryFilesDSL",
+                val=r.get("secondaryFilesDSL"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.subscope is not None and "subscope" not in r:
             r["subscope"] = save(
-                self.subscope, top=False, base_url=base_url, relative_uris=relative_uris
+                self.subscope,
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="subscope",
+                val=r.get("subscope"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
 
         # top refers to the directory level
@@ -2801,9 +3698,30 @@ class SpecializeDef(Saveable):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True
-    ) -> Dict[str, Any]:
-        r: Dict[str, Any] = {}
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0
+    ) -> CommentedMap:
+        if keys is None:
+            keys = []
+        r = CommentedMap()
+        keys = copy.copy(keys)
+
+        doc = iterate_through_doc(keys)
+
+        if inserted_line_info is None:
+            inserted_line_info = {}
+
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
+        cols: Dict[int, int] = {}
 
         if relative_uris:
             for ef in self.extension_fields:
@@ -2811,14 +3729,81 @@ class SpecializeDef(Saveable):
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.specializeFrom is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                line = doc.lc.data[key][0] + shift
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                    inserted_line_info=inserted_line_info,
+                                    shift=shift
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len, inserted_line_info = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info,
+                                shift=shift
+                            )
+        if self.specializeFrom is not None and "specializeFrom" not in r:
             u = save_relative_uri(
                 self.specializeFrom, base_url, False, 1, relative_uris
             )
             r["specializeFrom"] = u
-        if self.specializeTo is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="specializeFrom",
+                val=r.get("specializeFrom"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.specializeTo is not None and "specializeTo" not in r:
             u = save_relative_uri(self.specializeTo, base_url, False, 1, relative_uris)
             r["specializeTo"] = u
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="specializeTo",
+                val=r.get("specializeTo"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
 
         # top refers to the directory level
         if top:
@@ -3175,9 +4160,30 @@ class SaladRecordField(RecordField):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True
-    ) -> Dict[str, Any]:
-        r: Dict[str, Any] = {}
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0
+    ) -> CommentedMap:
+        if keys is None:
+            keys = []
+        r = CommentedMap()
+        keys = copy.copy(keys)
+
+        doc = iterate_through_doc(keys)
+
+        if inserted_line_info is None:
+            inserted_line_info = {}
+
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
+        cols: Dict[int, int] = {}
 
         if relative_uris:
             for ef in self.extension_fields:
@@ -3185,27 +4191,147 @@ class SaladRecordField(RecordField):
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.name is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                line = doc.lc.data[key][0] + shift
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                    inserted_line_info=inserted_line_info,
+                                    shift=shift
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len, inserted_line_info = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info,
+                                shift=shift
+                            )
+        if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-        if self.doc is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="name",
+                val=r.get("name"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.doc is not None and "doc" not in r:
             r["doc"] = save(
-                self.doc, top=False, base_url=self.name, relative_uris=relative_uris
+                self.doc,
+                top=False,
+                base_url=str(self.name),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.type_ is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="doc",
+                val=r.get("doc"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.type_ is not None and "type" not in r:
             r["type"] = save(
-                self.type_, top=False, base_url=self.name, relative_uris=relative_uris
+                self.type_,
+                top=False,
+                base_url=str(self.name),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.jsonldPredicate is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="type",
+                val=r.get("type"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.jsonldPredicate is not None and "jsonldPredicate" not in r:
             r["jsonldPredicate"] = save(
                 self.jsonldPredicate,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.default is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="jsonldPredicate",
+                val=r.get("jsonldPredicate"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.default is not None and "default" not in r:
             r["default"] = save(
-                self.default, top=False, base_url=self.name, relative_uris=relative_uris
+                self.default,
+                top=False,
+                base_url=str(self.name),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="default",
+                val=r.get("default"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
 
         # top refers to the directory level
@@ -3948,9 +5074,30 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True
-    ) -> Dict[str, Any]:
-        r: Dict[str, Any] = {}
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0
+    ) -> CommentedMap:
+        if keys is None:
+            keys = []
+        r = CommentedMap()
+        keys = copy.copy(keys)
+
+        doc = iterate_through_doc(keys)
+
+        if inserted_line_info is None:
+            inserted_line_info = {}
+
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
+        cols: Dict[int, int] = {}
 
         if relative_uris:
             for ef in self.extension_fields:
@@ -3958,64 +5105,297 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.name is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                line = doc.lc.data[key][0] + shift
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                    inserted_line_info=inserted_line_info,
+                                    shift=shift
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len, inserted_line_info = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info,
+                                shift=shift
+                            )
+        if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-        if self.inVocab is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="name",
+                val=r.get("name"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.inVocab is not None and "inVocab" not in r:
             r["inVocab"] = save(
-                self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris
+                self.inVocab,
+                top=False,
+                base_url=str(self.name),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.fields is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="inVocab",
+                val=r.get("inVocab"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.fields is not None and "fields" not in r:
             r["fields"] = save(
-                self.fields, top=False, base_url=self.name, relative_uris=relative_uris
+                self.fields,
+                top=False,
+                base_url=str(self.name),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.type_ is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="fields",
+                val=r.get("fields"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.type_ is not None and "type" not in r:
             r["type"] = save(
-                self.type_, top=False, base_url=self.name, relative_uris=relative_uris
+                self.type_,
+                top=False,
+                base_url=str(self.name),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.doc is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="type",
+                val=r.get("type"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.doc is not None and "doc" not in r:
             r["doc"] = save(
-                self.doc, top=False, base_url=self.name, relative_uris=relative_uris
+                self.doc,
+                top=False,
+                base_url=str(self.name),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.docParent is not None:
-            u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="doc",
+                val=r.get("doc"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.docParent is not None and "docParent" not in r:
+            u = save_relative_uri(
+                self.docParent, str(self.name), False, None, relative_uris
+            )
             r["docParent"] = u
-        if self.docChild is not None:
-            u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="docParent",
+                val=r.get("docParent"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.docChild is not None and "docChild" not in r:
+            u = save_relative_uri(
+                self.docChild, str(self.name), False, None, relative_uris
+            )
             r["docChild"] = u
-        if self.docAfter is not None:
-            u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="docChild",
+                val=r.get("docChild"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.docAfter is not None and "docAfter" not in r:
+            u = save_relative_uri(
+                self.docAfter, str(self.name), False, None, relative_uris
+            )
             r["docAfter"] = u
-        if self.jsonldPredicate is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="docAfter",
+                val=r.get("docAfter"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.jsonldPredicate is not None and "jsonldPredicate" not in r:
             r["jsonldPredicate"] = save(
                 self.jsonldPredicate,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.documentRoot is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="jsonldPredicate",
+                val=r.get("jsonldPredicate"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.documentRoot is not None and "documentRoot" not in r:
             r["documentRoot"] = save(
                 self.documentRoot,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.abstract is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="documentRoot",
+                val=r.get("documentRoot"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.abstract is not None and "abstract" not in r:
             r["abstract"] = save(
                 self.abstract,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.extends is not None:
-            u = save_relative_uri(self.extends, self.name, False, 1, relative_uris)
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="abstract",
+                val=r.get("abstract"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.extends is not None and "extends" not in r:
+            u = save_relative_uri(self.extends, str(self.name), False, 1, relative_uris)
             r["extends"] = u
-        if self.specialize is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="extends",
+                val=r.get("extends"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.specialize is not None and "specialize" not in r:
             r["specialize"] = save(
                 self.specialize,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="specialize",
+                val=r.get("specialize"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
 
         # top refers to the directory level
@@ -4676,9 +6056,30 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True
-    ) -> Dict[str, Any]:
-        r: Dict[str, Any] = {}
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0
+    ) -> CommentedMap:
+        if keys is None:
+            keys = []
+        r = CommentedMap()
+        keys = copy.copy(keys)
+
+        doc = iterate_through_doc(keys)
+
+        if inserted_line_info is None:
+            inserted_line_info = {}
+
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
+        cols: Dict[int, int] = {}
 
         if relative_uris:
             for ef in self.extension_fields:
@@ -4686,50 +6087,252 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.name is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                line = doc.lc.data[key][0] + shift
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                    inserted_line_info=inserted_line_info,
+                                    shift=shift
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len, inserted_line_info = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info,
+                                shift=shift
+                            )
+        if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-        if self.inVocab is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="name",
+                val=r.get("name"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.inVocab is not None and "inVocab" not in r:
             r["inVocab"] = save(
-                self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris
+                self.inVocab,
+                top=False,
+                base_url=str(self.name),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.symbols is not None:
-            u = save_relative_uri(self.symbols, self.name, True, None, relative_uris)
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="inVocab",
+                val=r.get("inVocab"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.symbols is not None and "symbols" not in r:
+            u = save_relative_uri(
+                self.symbols, str(self.name), True, None, relative_uris
+            )
             r["symbols"] = u
-        if self.type_ is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="symbols",
+                val=r.get("symbols"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.type_ is not None and "type" not in r:
             r["type"] = save(
-                self.type_, top=False, base_url=self.name, relative_uris=relative_uris
+                self.type_,
+                top=False,
+                base_url=str(self.name),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.doc is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="type",
+                val=r.get("type"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.doc is not None and "doc" not in r:
             r["doc"] = save(
-                self.doc, top=False, base_url=self.name, relative_uris=relative_uris
+                self.doc,
+                top=False,
+                base_url=str(self.name),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.docParent is not None:
-            u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="doc",
+                val=r.get("doc"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.docParent is not None and "docParent" not in r:
+            u = save_relative_uri(
+                self.docParent, str(self.name), False, None, relative_uris
+            )
             r["docParent"] = u
-        if self.docChild is not None:
-            u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="docParent",
+                val=r.get("docParent"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.docChild is not None and "docChild" not in r:
+            u = save_relative_uri(
+                self.docChild, str(self.name), False, None, relative_uris
+            )
             r["docChild"] = u
-        if self.docAfter is not None:
-            u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="docChild",
+                val=r.get("docChild"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.docAfter is not None and "docAfter" not in r:
+            u = save_relative_uri(
+                self.docAfter, str(self.name), False, None, relative_uris
+            )
             r["docAfter"] = u
-        if self.jsonldPredicate is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="docAfter",
+                val=r.get("docAfter"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.jsonldPredicate is not None and "jsonldPredicate" not in r:
             r["jsonldPredicate"] = save(
                 self.jsonldPredicate,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.documentRoot is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="jsonldPredicate",
+                val=r.get("jsonldPredicate"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.documentRoot is not None and "documentRoot" not in r:
             r["documentRoot"] = save(
                 self.documentRoot,
                 top=False,
-                base_url=self.name,
+                base_url=str(self.name),
                 relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.extends is not None:
-            u = save_relative_uri(self.extends, self.name, False, 1, relative_uris)
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="documentRoot",
+                val=r.get("documentRoot"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.extends is not None and "extends" not in r:
+            u = save_relative_uri(self.extends, str(self.name), False, 1, relative_uris)
             r["extends"] = u
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="extends",
+                val=r.get("extends"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
 
         # top refers to the directory level
         if top:
@@ -5191,9 +6794,30 @@ class Documentation(NamedType, DocType):
         return _constructed
 
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True
-    ) -> Dict[str, Any]:
-        r: Dict[str, Any] = {}
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0
+    ) -> CommentedMap:
+        if keys is None:
+            keys = []
+        r = CommentedMap()
+        keys = copy.copy(keys)
+
+        doc = iterate_through_doc(keys)
+
+        if inserted_line_info is None:
+            inserted_line_info = {}
+
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
+        cols: Dict[int, int] = {}
 
         if relative_uris:
             for ef in self.extension_fields:
@@ -5201,29 +6825,177 @@ class Documentation(NamedType, DocType):
         else:
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
-        if self.name is not None:
+
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                line = doc.lc.data[key][0] + shift
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                    inserted_line_info=inserted_line_info,
+                                    shift=shift
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len, inserted_line_info = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info,
+                                shift=shift
+                            )
+        if self.name is not None and "name" not in r:
             u = save_relative_uri(self.name, base_url, True, None, relative_uris)
             r["name"] = u
-        if self.inVocab is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="name",
+                val=r.get("name"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.inVocab is not None and "inVocab" not in r:
             r["inVocab"] = save(
-                self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris
+                self.inVocab,
+                top=False,
+                base_url=str(self.name),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.doc is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="inVocab",
+                val=r.get("inVocab"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.doc is not None and "doc" not in r:
             r["doc"] = save(
-                self.doc, top=False, base_url=self.name, relative_uris=relative_uris
+                self.doc,
+                top=False,
+                base_url=str(self.name),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
-        if self.docParent is not None:
-            u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="doc",
+                val=r.get("doc"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.docParent is not None and "docParent" not in r:
+            u = save_relative_uri(
+                self.docParent, str(self.name), False, None, relative_uris
+            )
             r["docParent"] = u
-        if self.docChild is not None:
-            u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="docParent",
+                val=r.get("docParent"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.docChild is not None and "docChild" not in r:
+            u = save_relative_uri(
+                self.docChild, str(self.name), False, None, relative_uris
+            )
             r["docChild"] = u
-        if self.docAfter is not None:
-            u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="docChild",
+                val=r.get("docChild"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.docAfter is not None and "docAfter" not in r:
+            u = save_relative_uri(
+                self.docAfter, str(self.name), False, None, relative_uris
+            )
             r["docAfter"] = u
-        if self.type_ is not None:
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="docAfter",
+                val=r.get("docAfter"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+        if self.type_ is not None and "type" not in r:
             r["type"] = save(
-                self.type_, top=False, base_url=self.name, relative_uris=relative_uris
+                self.type_,
+                top=False,
+                base_url=str(self.name),
+                relative_uris=relative_uris,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+            max_len, inserted_line_info = add_kv(
+                old_doc=doc,
+                new_doc=r,
+                line_numbers=line_numbers,
+                key="type",
+                val=r.get("type"),
+                cols=cols,
+                min_col=min_col,
+                max_len=max_len,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
             )
 
         # top refers to the directory level

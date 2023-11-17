@@ -20,13 +20,14 @@ from typing import (
     Type,
     Union,
     cast,
+    no_type_check,
 )
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
 from rdflib import Graph
 from rdflib.plugins.parsers.notation3 import BadSyntax
-from ruamel.yaml.comments import CommentedMap
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from schema_salad.exceptions import SchemaSaladException, ValidationException
 from schema_salad.fetcher import DefaultFetcher, Fetcher, MemoryCachingFetcher
@@ -40,6 +41,8 @@ _logger = logging.getLogger("salad")
 
 
 IdxType = MutableMapping[str, Tuple[Any, "LoadingOptions"]]
+
+doc_line_info = CommentedMap()
 
 
 class LoadingOptions:
@@ -199,8 +202,14 @@ class Saveable(ABC):
 
     @abstractmethod
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True
-    ) -> Dict[str, Any]:
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0,
+    ) -> CommentedMap:
         """Convert this object to a JSON/YAML friendly dictionary."""
 
 
@@ -231,6 +240,196 @@ def load_field(val, fieldtype, baseuri, loadingOptions, lc=None):
 save_type = Optional[Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]]
 
 
+def add_kv(
+    old_doc: CommentedMap,
+    new_doc: CommentedMap,
+    line_numbers: Dict[Any, Dict[str, int]],
+    key: str,
+    val: Any,
+    max_len: int,
+    cols: Dict[int, int],
+    min_col: int = 0,
+    inserted_line_info: Optional[Dict[int, int]] = None,
+    shift: int = 0,
+) -> Tuple[int, Optional[Dict[int, int]]]:
+    """Add key value pair into Commented Map.
+
+    Function to add key value pair into new CommentedMap given old CommentedMap, line_numbers
+    for each key/val pair in the old CommentedMap,key/val pair to insert, max_line of the old CommentedMap,
+    and max col value taken for each line.
+    """
+    if inserted_line_info is None:
+        inserted_line_info = {}
+
+    if len(inserted_line_info.keys()) >= 1:
+        max_line = max(inserted_line_info.keys()) + 1
+    else:
+        max_line = 0
+
+    if key in line_numbers:  # If the passed key to insert is in the original CommentedMap as a key
+        line_info = old_doc.lc.data[key]  # Get the line information for the key
+        if (
+            line_info[0] + shift not in inserted_line_info
+        ):  # If the line of the key + shift isn't taken, add it
+            new_doc.lc.add_kv_line_col(
+                key,
+                [
+                    old_doc.lc.data[key][0] + shift,
+                    old_doc.lc.data[key][1],
+                    old_doc.lc.data[key][2] + shift,
+                    old_doc.lc.data[key][3],
+                ],
+            )
+            inserted_line_info[old_doc.lc.data[key][0] + shift] = old_doc.lc.data[key][1]
+        else:  # If the line is already taken
+            line = line_info[0] + shift
+            while line in inserted_line_info.keys():  # Find the closest free line
+                line += 1
+            new_doc.lc.add_kv_line_col(
+                key,
+                [
+                    line,
+                    old_doc.lc.data[key][1],
+                    line + (line - old_doc.lc.data[key][2]),
+                    old_doc.lc.data[key][3],
+                ],
+            )
+            inserted_line_info[line] = old_doc.lc.data[key][1]
+        return max_len, inserted_line_info
+    elif isinstance(val, (int, float, str)) and not isinstance(
+        val, bool
+    ):  # If the value is hashable
+        if val in line_numbers:  # If the value is in the original CommentedMap
+            line = line_numbers[val]["line"] + shift  # Get the line info for the value
+            if line in inserted_line_info:  # Get the appropriate line to place value on
+                line = max_line
+
+            col = line_numbers[val]["col"]
+            new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
+            inserted_line_info[line] = col + len(key) + 2
+            return max_len, inserted_line_info
+        elif isinstance(val, str):  # Logic for DSL expansition with "?"
+            if val + "?" in line_numbers:
+                line = line_numbers[val + "?"]["line"] + shift
+                if line in inserted_line_info:
+                    line = max_line
+                col = line_numbers[val + "?"]["col"]
+                new_doc.lc.add_kv_line_col(key, [line, col, line, col + len(key) + 2])
+                inserted_line_info[line] = col + len(key) + 2
+                return max_len, inserted_line_info
+        elif old_doc:
+            if val in old_doc:
+                index = old_doc.lc.data.index(val)
+                line_info = old_doc.lc.data[index]
+                if line_info[0] + shift not in inserted_line_info:
+                    new_doc.lc.add_kv_line_col(
+                        key,
+                        [
+                            old_doc.lc.data[index][0] + shift,
+                            old_doc.lc.data[index][1],
+                            old_doc.lc.data[index][2] + shift,
+                            old_doc.lc.data[index][3],
+                        ],
+                    )
+                    inserted_line_info[old_doc.lc.data[index][0] + shift] = old_doc.lc.data[index][
+                        1
+                    ]
+                else:
+                    new_doc.lc.add_kv_line_col(
+                        key,
+                        [
+                            max_line + shift,
+                            old_doc.lc.data[index][1],
+                            max_line + (max_line - old_doc.lc.data[index][2]) + shift,
+                            old_doc.lc.data[index][3],
+                        ],
+                    )
+                    inserted_line_info[max_line + shift] = old_doc.lc.data[index][1]
+    # If neither the key or value is in the original CommentedMap/old doc (or value is not hashable)
+    new_doc.lc.add_kv_line_col(key, [max_line, min_col, max_line, min_col + len(key) + 2])
+    inserted_line_info[max_line] = min_col + len(key) + 2
+    return max_len + 1, inserted_line_info
+
+
+@no_type_check
+def iterate_through_doc(keys: List[Any]) -> Optional[CommentedMap]:
+    """Take a list of keys/indexes and iterates through the global CommentedMap."""
+    doc = doc_line_info
+    for key in keys:
+        if isinstance(doc, CommentedMap):
+            doc = doc.get(key)
+        elif isinstance(doc, (CommentedSeq, list)) and isinstance(key, int):
+            if key < len(doc):
+                doc = doc[key]
+            else:
+                return None
+        else:
+            return None
+    if isinstance(doc, CommentedSeq):
+        to_return = CommentedMap()
+        for index, key in enumerate(doc):
+            to_return[key] = ""
+            to_return.lc.add_kv_line_col(
+                key,
+                [
+                    doc.lc.data[index][0],
+                    doc.lc.data[index][1],
+                    doc.lc.data[index][0],
+                    doc.lc.data[index][1],
+                ],
+            )
+        return to_return
+    return doc
+
+
+def get_line_numbers(doc: Optional[CommentedMap]) -> Dict[Any, Dict[str, int]]:
+    """Get line numbers for kv pairs in CommentedMap.
+
+    For each key/value pair in a CommentedMap, save the line/col info into a dictionary,
+    only save value info if value is hashable.
+    """
+    line_numbers: Dict[Any, Dict[str, int]] = {}
+    if doc is None:
+        return {}
+    if doc.lc.data is None:
+        return {}
+    for key, value in doc.lc.data.items():
+        line_numbers[key] = {}
+
+        line_numbers[key]["line"] = doc.lc.data[key][0]
+        line_numbers[key]["col"] = doc.lc.data[key][1]
+        if isinstance(value, (int, float, bool, str)):
+            line_numbers[value] = {}
+            line_numbers[value]["line"] = doc.lc.data[key][2]
+            line_numbers[value]["col"] = doc.lc.data[key][3]
+    return line_numbers
+
+
+def get_min_col(line_numbers: Dict[Any, Dict[str, int]]) -> int:
+    """Given a array of line column information, get the minimum column."""
+    min_col = 0
+    for line in line_numbers:
+        if line_numbers[line]["col"] > min_col:
+            min_col = line_numbers[line]["col"]
+    return min_col
+
+
+def get_max_line_num(doc: CommentedMap) -> int:
+    """Get the max line number for a CommentedMap.
+
+    Iterate through the the key with the highest line number until you reach a non-CommentedMap value
+    or empty CommentedMap.
+    """
+    max_line = 0
+    max_key = ""
+    cur = doc
+    while isinstance(cur, CommentedMap) and len(cur) > 0:
+        for key in cur.lc.data.keys():
+            if cur.lc.data[key][2] >= max_line:
+                max_line = cur.lc.data[key][2]
+            max_key = key
+        cur = cur[max_key]
+    return max_line + 1
 def extract_type(val_type: Type[Any]) -> str:
     """Take a type of value, and extracts the value as a string."""
     val_str = str(val_type)
@@ -293,15 +492,71 @@ def save(
     top: bool = True,
     base_url: str = "",
     relative_uris: bool = True,
+    keys: Optional[List[Any]] = None,
+    inserted_line_info: Optional[Dict[int, int]] = None,
+    shift: int = 0,
 ) -> save_type:
+    """Save a val of any type.
+
+    Recursively calls save method from class if val is of type Saveable.
+    Otherwise, saves val to CommentedMap or CommentedSeq.
+    """
+    if keys is None:
+        keys = []
+
+    doc = iterate_through_doc(keys)
+
     if isinstance(val, Saveable):
-        return val.save(top=top, base_url=base_url, relative_uris=relative_uris)
+        return val.save(
+            top=top,
+            base_url=base_url,
+            relative_uris=relative_uris,
+            keys=keys,
+            inserted_line_info=inserted_line_info,
+            shift=shift,
+        )
     if isinstance(val, MutableSequence):
-        return [save(v, top=False, base_url=base_url, relative_uris=relative_uris) for v in val]
+        r = CommentedSeq()
+        r.lc.data = {}
+        for i in range(0, len(val)):
+            new_keys = keys
+            if doc:
+                if str(i) in doc:
+                    r.lc.data[i] = doc.lc.data[i]
+                    new_keys.append(i)
+            r.append(
+                save(
+                    val[i],
+                    top=False,
+                    base_url=base_url,
+                    relative_uris=relative_uris,
+                    keys=new_keys,
+                    inserted_line_info=inserted_line_info,
+                    shift=shift,
+                )
+            )
+        return r
+
     if isinstance(val, MutableMapping):
-        newdict = {}
+        newdict = CommentedMap()
+        new_keys = keys
         for key in val:
-            newdict[key] = save(val[key], top=False, base_url=base_url, relative_uris=relative_uris)
+
+            if doc:
+                if key in doc:
+                    newdict.lc.add_kv_line_col(key, doc.lc.data[key])
+                    new_keys.append(key)
+
+            newdict[key] = save(
+                val[key],
+                top=False,
+                base_url=base_url,
+                relative_uris=relative_uris,
+                keys=new_keys,
+                inserted_line_info=inserted_line_info,
+                shift=shift,
+            )
+
         return newdict
     if val is None or isinstance(val, (int, float, bool, str)):
         return val
@@ -839,7 +1094,7 @@ class _IdMapLoader(_Loader):
 
 def _document_load(
     loader: _Loader,
-    doc: Union[str, MutableMapping[str, Any], MutableSequence[Any]],
+    doc: Union[CommentedMap, str, MutableMapping[str, Any], MutableSequence[Any]],
     baseuri: str,
     loadingOptions: LoadingOptions,
     addl_metadata_fields: Optional[MutableSequence[str]] = None,
@@ -879,6 +1134,10 @@ def _document_load(
         if "$base" in doc:
             doc.pop("$base")
 
+        if isinstance(doc, CommentedMap):
+            global doc_line_info
+            doc_line_info = doc
+
         if "$graph" in doc:
             loadingOptions.idx[baseuri] = (
                 loader.load(doc["$graph"], baseuri, loadingOptions),
@@ -894,7 +1153,6 @@ def _document_load(
             loadingOptions.idx[docuri] = loadingOptions.idx[baseuri]
 
         return loadingOptions.idx[baseuri]
-
     if isinstance(doc, MutableSequence):
         loadingOptions.idx[baseuri] = (
             loader.load(doc, baseuri, loadingOptions),

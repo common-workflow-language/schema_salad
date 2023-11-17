@@ -268,13 +268,46 @@ class PythonCodeGen(CodeGenBase):
         )
 
         self.idfield = idfield
-
-        self.serializer.write(
-            """
+        if "id" in field_names:
+            self.serializer.write(
+                """
     def save(
-        self, top: bool = False, base_url: str = "", relative_uris: bool = True
-    ) -> Dict[str, Any]:
-        r: Dict[str, Any] = {}
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0
+    ) -> CommentedMap:
+        if keys is None:
+            keys = []
+        r = CommentedMap()
+
+        keys = copy.copy(keys)
+
+        doc = iterate_through_doc(keys)
+
+        if inserted_line_info is None:
+            inserted_line_info = {}
+
+        if doc:
+            if self.id:
+                temp_id = self.id
+                if len(temp_id.split('#')) > 1:
+                    temp_id = self.id.split("#")[1]
+                if temp_id in doc:
+                    keys.append(temp_id)
+                    temp_doc = doc.get(temp_id)
+                    if isinstance(temp_doc, CommentedMap):
+                        doc = temp_doc
+
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
+        cols: Dict[int, int] = {}
 
         if relative_uris:
             for ef in self.extension_fields:
@@ -283,7 +316,44 @@ class PythonCodeGen(CodeGenBase):
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
 """
-        )
+            )
+        else:
+            self.serializer.write(
+                """
+    def save(
+        self,
+        top: bool = False,
+        base_url: str = "",
+        relative_uris: bool = True,
+        keys: Optional[List[Any]] = None,
+        inserted_line_info: Optional[Dict[int, int]] = None,
+        shift: int = 0
+    ) -> CommentedMap:
+        if keys is None:
+            keys = []
+        r = CommentedMap()
+        keys = copy.copy(keys)
+
+        doc = iterate_through_doc(keys)
+
+        if inserted_line_info is None:
+            inserted_line_info = {}
+
+        if doc is not None:
+            r._yaml_set_line_col(doc.lc.line, doc.lc.col)
+        line_numbers = get_line_numbers(doc)
+        max_len = get_max_line_num(doc)
+        min_col = get_min_col(line_numbers)
+        cols: Dict[int, int] = {}
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
+"""
+            )
 
         if "class" in field_names:
             self.out.write(
@@ -304,6 +374,103 @@ class PythonCodeGen(CodeGenBase):
 """.format(
                     class_=classname
                 )
+            )
+        if "id" in field_names:
+            self.serializer.write(
+                """
+        if doc:
+            base_url_to_save = base_url
+            if self.id:
+                base_url_to_save = self.id
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                line = doc.lc.data[key][0] + shift
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url_to_save,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                    inserted_line_info=inserted_line_info,
+                                    shift=shift
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len, inserted_line_info = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info,
+                                shift=shift
+                            )
+"""
+            )
+        else:
+            self.serializer.write(
+                """
+        if doc:
+            for key in doc.lc.data.keys():
+                if isinstance(key, str):
+                    if hasattr(self, key):
+                        if getattr(self, key) is not None:
+                            if key != 'class':
+                                line = doc.lc.data[key][0] + shift
+                                if inserted_line_info:
+                                    while line in inserted_line_info:
+                                        line += 1
+                                        shift += 1
+                                saved_val = save(
+                                    getattr(self, key),
+                                    top=False,
+                                    base_url=base_url,
+                                    relative_uris=relative_uris,
+                                    keys=keys + [key],
+                                    inserted_line_info=inserted_line_info,
+                                    shift=shift
+                                )
+
+                                # If the returned value is a list of size 1, just save the value in the list
+                                if type(saved_val) == list:
+                                    if (
+                                        len(saved_val) == 1
+                                    ):
+                                        saved_val = saved_val[0]
+
+                                r[key] = saved_val
+
+                            max_len, inserted_line_info = add_kv(
+                                old_doc=doc,
+                                new_doc=r,
+                                line_numbers=line_numbers,
+                                key=key,
+                                val=r.get(key),
+                                cols=cols,
+                                min_col=min_col,
+                                max_len=max_len,
+                                inserted_line_info=inserted_line_info,
+                                shift=shift
+                            )
+"""
             )
 
     def end_class(self, classname: str, field_names: List[str]) -> None:
@@ -365,6 +532,14 @@ if _errors__:
             )
         )
 
+        # names = []
+        # for name in field_names:
+        #     names.append("('%s', 0)"%name)
+
+        # self.serializer.write(
+        #    fmt(f"""ordered_attrs = CommentedMap(["{', '.join(names)}])\n""", 4)
+        # )
+
         safe_init_fields = [
             self.safe_name(f) for f in field_names if f != "class"
         ]  # type: List[str]
@@ -396,6 +571,7 @@ if _errors__:
             sub_names: List[str] = list(
                 dict.fromkeys([self.type_loader(i).name for i in type_declaration])
             )
+
             return self.declare_type(
                 TypeDef(
                     "union_of_{}".format("_or_".join(sub_names)),
@@ -598,15 +774,27 @@ if _errors__:
         if name == self.idfield or not self.idfield:
             baseurl = "base_url"
         else:
-            baseurl = f"self.{self.safe_name(self.idfield)}"
+            baseurl = f"str(self.{self.safe_name(self.idfield)})"
 
         if fieldtype.is_uri:
             self.serializer.write(
                 fmt(
                     """
-if self.{safename} is not None:
+if self.{safename} is not None and "{fieldname}" not in r:
     u = save_relative_uri(self.{safename}, {baseurl}, {scoped_id}, {ref_scope}, relative_uris)
     r["{fieldname}"] = u
+    max_len, inserted_line_info = add_kv(
+            old_doc=doc,
+            new_doc=r,
+            line_numbers=line_numbers,
+            key="{fieldname}",
+            val=r.get("{fieldname}"),
+            cols=cols,
+            min_col=min_col,
+            max_len=max_len,
+            inserted_line_info=inserted_line_info,
+            shift=shift
+        )
 """.format(
                         safename=self.safe_name(name),
                         fieldname=shortname(name).strip(),
@@ -621,9 +809,26 @@ if self.{safename} is not None:
             self.serializer.write(
                 fmt(
                     """
-if self.{safename} is not None:
+if self.{safename} is not None and "{fieldname}" not in r:
     r["{fieldname}"] = save(
-        self.{safename}, top=False, base_url={baseurl}, relative_uris=relative_uris
+        self.{safename},
+        top=False,
+        base_url={baseurl},
+        relative_uris=relative_uris,
+        inserted_line_info=inserted_line_info,
+        shift=shift
+    )
+    max_len, inserted_line_info = add_kv(
+        old_doc=doc,
+        new_doc=r,
+        line_numbers=line_numbers,
+        key="{fieldname}",
+        val=r.get("{fieldname}"),
+        cols=cols,
+        min_col=min_col,
+        max_len=max_len,
+        inserted_line_info=inserted_line_info,
+        shift=shift
     )
 """.format(
                         safename=self.safe_name(name),

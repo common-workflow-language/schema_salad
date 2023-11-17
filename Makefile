@@ -44,7 +44,7 @@ help: Makefile
 ## cleanup                : shortcut for "make sort_imports format flake8 diff_pydocstyle_report"
 cleanup: sort_imports format flake8 diff_pydocstyle_report
 
-## install-dep            : install most of the development dependencies via pip
+## install-dep            : inshttps://github.com/common-workflow-language/cwltool/issues?q=is%3Aissue+is%3Aopen+author%3Atom-tantall most of the development dependencies via pip
 install-dep: install-dependencies
 
 install-dependencies: FORCE
@@ -79,18 +79,18 @@ clean: FORCE
 
 # Linting and code style related targets
 ## sort_import            : sorting imports using isort: https://github.com/timothycrosley/isort
-sort_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES)) mypy-stubs
+sort_imports: $(filter-out $(EXCLUDE_FILES),$(PYSOURCES)) mypy-stubs
 	isort $^
 
-remove_unused_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
+remove_unused_imports: $(filter-out $(EXCLUDE_FILES),$(PYSOURCES))
 	autoflake --in-place --remove-all-unused-imports $^
 
 pep257: pydocstyle
 ## pydocstyle             : check Python docstring style
-pydocstyle: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
+pydocstyle: $(filter-out  $(EXCLUDE_FILES),$(PYSOURCES))
 	pydocstyle --add-ignore=D100,D101,D102,D103 $^ || true
 
-pydocstyle_report.txt: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
+pydocstyle_report.txt: $(filter-out $(EXCLUDE_FILES),$(PYSOURCES))
 	pydocstyle setup.py $^ > $@ 2>&1 || true
 
 ## diff_pydocstyle_report : check Python docstring style for changed files only
@@ -103,10 +103,10 @@ codespell:
 
 ## format                 : check/fix all code indentation and formatting (runs black)
 format:
-	black --force-exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
+	black --force-exclude "metaschema.py|schema_salad/tests/cwl_v1*""  --exclude _version.py schema_salad setup.py mypy-stubs 
 
 format-check:
-	black --diff --check --force-exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
+	black --diff --check --force-exclude "metaschema.py|schema_salad/tests/cwl_v1*" --exclude _version.py setup.py mypy-stubs
 
 ## pylint                 : run static code analysis on Python code
 pylint: $(PYSOURCES)
