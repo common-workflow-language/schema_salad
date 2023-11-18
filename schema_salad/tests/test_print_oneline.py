@@ -94,8 +94,8 @@ def test_print_oneline_for_errors_in_the_same_line() -> None:
             assert msgs[0].endswith(src + ":14:5: missing required field 'id'")
             assert msgs[1].endswith(
                 src + ":14:5: invalid field 'aa', expected one of: 'label', "
-                "'secondaryFiles', 'format', 'streamable', 'doc', 'id', "
-                "'outputBinding', 'type'"
+                "'secondaryFiles', 'streamable', 'doc', 'id', "
+                "'outputBinding', 'format', 'type'"
             )
             print("\n", e)
             raise
