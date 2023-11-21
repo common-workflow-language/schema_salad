@@ -58,6 +58,7 @@ class LoadingOptions:
     imports: List[str]
     includes: List[str]
     no_link_check: Optional[bool]
+    container: Optional[str]
 
     def __init__(
         self,
@@ -73,6 +74,7 @@ class LoadingOptions:
         imports: Optional[List[str]] = None,
         includes: Optional[List[str]] = None,
         no_link_check: Optional[bool] = None,
+        container: Optional[str] = None,
     ) -> None:
         """Create a LoadingOptions object."""
         self.original_doc = original_doc
@@ -121,6 +123,11 @@ class LoadingOptions:
             self.no_link_check = no_link_check
         else:
             self.no_link_check = copyfrom.no_link_check if copyfrom is not None else False
+
+        if container is not None:
+            self.container = container
+        else:
+            self.container = copyfrom.container if copyfrom is not None else None
 
         if fetcher is not None:
             self.fetcher = fetcher
@@ -462,9 +469,8 @@ class _PrimitiveLoader(_Loader):
 
 
 class _ArrayLoader(_Loader):
-    def __init__(self, items: _Loader, flatten: bool = True) -> None:
+    def __init__(self, items: _Loader) -> None:
         self.items = items
-        self.flatten = flatten
 
     def load(
         self,
@@ -487,7 +493,8 @@ class _ArrayLoader(_Loader):
                 lf = load_field(
                     doc[i], _UnionLoader(([self, self.items])), baseuri, loadingOptions, lc=lc
                 )
-                if self.flatten and isinstance(lf, MutableSequence):
+                flatten = loadingOptions.container != "@list"
+                if flatten and isinstance(lf, MutableSequence):
                     r.extend(lf)
                 else:
                     r.append(lf)
@@ -519,9 +526,12 @@ class _ArrayLoader(_Loader):
 
 
 class _MapLoader(_Loader):
-    def __init__(self, values: _Loader, name: Optional[str] = None) -> None:
+    def __init__(
+        self, values: _Loader, name: Optional[str] = None, container: Optional[str] = None
+    ) -> None:
         self.values = values
         self.name = name
+        self.container = container
 
     def load(
         self,
@@ -533,6 +543,8 @@ class _MapLoader(_Loader):
     ) -> Any:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(f"Expected a map, was {type(doc)}")
+        if self.container is not None:
+            loadingOptions = LoadingOptions(copyfrom=loadingOptions, container=self.container)
         r: Dict[str, Any] = {}
         errors: List[SchemaSaladException] = []
         for k, v in doc.items():
@@ -643,8 +655,9 @@ class _SecondaryDSLLoader(_Loader):
 
 
 class _RecordLoader(_Loader):
-    def __init__(self, classtype: Type[Saveable]) -> None:
+    def __init__(self, classtype: Type[Saveable], container: Optional[str] = None) -> None:
         self.classtype = classtype
+        self.container = container
 
     def load(
         self,
@@ -659,6 +672,8 @@ class _RecordLoader(_Loader):
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
                 f"but valid type for this field is an object."
             )
+        if self.container is not None:
+            loadingOptions = LoadingOptions(copyfrom=loadingOptions, container=self.container)
         return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
     def __repr__(self) -> str:

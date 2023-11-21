@@ -362,7 +362,11 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
 """
             )
 
-    def type_loader(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> TypeDef:
+    def type_loader(
+        self,
+        type_declaration: Union[List[Any], Dict[str, Any], str],
+        container: Optional[str] = None,
+    ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
             sub_types = [self.type_loader(i) for i in type_declaration]
@@ -386,8 +390,7 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                 return self.declare_type(
                     TypeDef(
                         f"arrayOf{i.name}",
-                        f"new _ArrayLoader([{i.name}], "
-                        f"{self.to_typescript(type_declaration.get('flatten', True))})",
+                        f"new _ArrayLoader([{i.name}])",
                         instance_type=f"Array<{i.instance_type}>",
                     )
                 )
@@ -399,7 +402,9 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                 return self.declare_type(
                     TypeDef(
                         f"mapOf{i.name}",
-                        f"new _MapLoader([{i.name}])",
+                        "new _MapLoader([{}], {})".format(
+                            i.name, f"'{container}'" if container is not None else None
+                        ),
                         instance_type=f"Dictionary<{i.instance_type}>",
                     )
                 )
@@ -413,8 +418,9 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                 return self.declare_type(
                     TypeDef(
                         self.safe_name(type_declaration["name"]) + "Loader",
-                        "new _RecordLoader({}.fromDoc)".format(
+                        "new _RecordLoader({}.fromDoc, {})".format(
                             self.safe_name(type_declaration["name"]),
+                            f"'{container}'" if container is not None else None,
                         ),
                         instance_type="Internal." + self.safe_name(type_declaration["name"]),
                         abstract=type_declaration.get("abstract", False),

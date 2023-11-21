@@ -196,19 +196,6 @@
     "type": "record",
     "fields": [
       {
-        "doc": "Flatten inner array objects into a single sequence (default: true).",
-        "jsonldPredicate": {
-          "_id": "https://w3id.org/cwl/salad#flatten",
-          "_type": "@vocab",
-          "refScope": 2
-        },
-        "name": "https://w3id.org/cwl/salad#ArraySchema/flatten",
-        "type": [
-          "null",
-          "boolean"
-        ]
-      },
-      {
         "type": [
           "PrimitiveType",
           "RecordSchema",
@@ -687,7 +674,6 @@
       "https://w3id.org/cwl/cwl#File",
       "https://w3id.org/cwl/cwl#Directory",
       {
-        "flatten": false,
         "items": [
           "null",
           "https://w3id.org/cwl/cwl#CWLObjectType"
@@ -711,7 +697,11 @@
       "null",
       "https://w3id.org/cwl/cwl#CWLObjectType"
     ],
-    "doc": "Type representing a valid CWL input file as a `map<string, CWLObjectType>`.\n"
+    "doc": "Type representing a valid CWL input file as a `map<string, CWLObjectType>`.\n",
+    "jsonldPredicate": {
+      "_id": "https://w3id.org/cwl/cwl#inputfile",
+      "_container": "@list"
+    }
   },
   {
     "name": "https://w3id.org/cwl/cwl#BaseTypesDoc",
@@ -1125,6 +1115,7 @@
         ],
         "jsonldPredicate": {
           "_id": "https://w3id.org/cwl/cwl#default",
+          "_container": "@list",
           "noLinkCheck": true
         },
         "doc": "The default value to use for this parameter if the parameter is missing\nfrom the input object, or if the value of the parameter in the input\nobject is `null`.  Default values are applied before evaluating expressions\n(e.g. dependent `valueFrom` fields).\n"
@@ -2490,6 +2481,7 @@
         "doc": "The default value for this parameter to use if either there is no\n`source` field, or the value produced by the `source` is `null`.  The\ndefault must be applied prior to scattering or evaluating `valueFrom`.\n",
         "jsonldPredicate": {
           "_id": "https://w3id.org/cwl/cwl#default",
+          "_container": "@list",
           "noLinkCheck": true
         }
       },

@@ -5,9 +5,11 @@ import java.lang.reflect.InvocationTargetException;
 
 public class RecordLoader<T extends Saveable> implements Loader<T> {
   private final Class<? extends T> saveableClass;
+  private final String container;
 
-  public RecordLoader(final Class<? extends T> saveableClass) {
+  public RecordLoader(final Class<? extends T> saveableClass, final String container) {
     this.saveableClass = saveableClass;
+    this.container = container;
   }
 
   public T load(
@@ -20,7 +22,11 @@ public class RecordLoader<T extends Saveable> implements Loader<T> {
       final Constructor<? extends T> constructor =
           this.saveableClass.getConstructor(
               new Class[] {Object.class, String.class, LoadingOptions.class, String.class});
-      final T ret = constructor.newInstance(doc, baseUri, loadingOptions, docRoot);
+      LoadingOptions innerLoadingOptions = loadingOptions;
+      if (this.container != null) {
+        innerLoadingOptions = new LoadingOptionsBuilder().copiedFrom(loadingOptions).setContainer(this.container).build();
+      }
+      final T ret = constructor.newInstance(doc, baseUri, innerLoadingOptions, docRoot);
       return ret;
     } catch (InvocationTargetException e) {
       final Throwable cause = e.getCause();

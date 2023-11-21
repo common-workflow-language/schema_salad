@@ -104,7 +104,6 @@ enhance code generation by representing CWL data types as specific Python object
 * Support for the Avro `map` schema
 * Add named versions of the `map` and `union` Avro types
 * Support for nested named `union` type definitions
-* Add *flatten* property to the `array` schema to regulate the behaviour of nested `array` objects
 
 ## References to Other Specifications
 

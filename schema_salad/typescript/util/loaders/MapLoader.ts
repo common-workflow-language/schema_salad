@@ -2,14 +2,19 @@ import {Loader, loadField, LoadingOptions, _UnionLoader, ValidationException, Ty
 
 export class _MapLoader implements Loader {
   values: Loader[]
+  container?: string
 
-  constructor (values: Loader[]) {
+  constructor (values: Loader[], container?: string) {
     this.values = values
+    this.container = container
   }
 
   async load (doc: any, baseuri: string, loadingOptions: LoadingOptions, docRoot?: string): Promise<any> {
     if (!TypeGuards.isDictionary(doc)) {
       throw new ValidationException('Expected a dict')
+    }
+    if (this.container !== undefined) {
+      loadingOptions = new LoadingOptions({ copyFrom: loadingOptions, container: this.container })
     }
     let r : Dictionary = {}
     const errors: ValidationException[] = []

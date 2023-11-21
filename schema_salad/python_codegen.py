@@ -378,7 +378,11 @@ if _errors__:
 
         self.out.write("\n\n")
 
-    def type_loader(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> TypeDef:
+    def type_loader(
+        self,
+        type_declaration: Union[List[Any], Dict[str, Any], str],
+        container: Optional[str] = None,
+    ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         sub_names: List[str]
         if isinstance(type_declaration, MutableSequence):
@@ -398,7 +402,7 @@ if _errors__:
                 return self.declare_type(
                     TypeDef(
                         f"array_of_{i.name}",
-                        f"_ArrayLoader({i.name}, {type_declaration.get('flatten', True)})",
+                        f"_ArrayLoader({i.name})",
                     )
                 )
             if type_declaration["type"] in (
@@ -406,7 +410,20 @@ if _errors__:
                 "https://w3id.org/cwl/salad#map",
             ):
                 i = self.type_loader(type_declaration["values"])
-                anon_type = self.declare_type(TypeDef(f"map_of_{i.name}", f"_MapLoader({i.name})"))
+                anon_type = self.declare_type(
+                    TypeDef(
+                        f"map_of_{i.name}",
+                        "_MapLoader({}, {}, {})".format(
+                            i.name,
+                            "'{}'".format(
+                                self.safe_name(type_declaration.get("name"))
+                                if "name" in type_declaration
+                                else None
+                            ),
+                            f"'{container}'" if container is not None else None,
+                        ),
+                    )
+                )
                 if "name" in type_declaration:
                     return self.declare_type(
                         TypeDef(self.safe_name(type_declaration["name"]) + "Loader", anon_type.name)
@@ -445,8 +462,9 @@ if _errors__:
                 return self.declare_type(
                     TypeDef(
                         self.safe_name(type_declaration["name"]) + "Loader",
-                        "_RecordLoader({})".format(
+                        "_RecordLoader({}, {})".format(
                             self.safe_name(type_declaration["name"]),
+                            f"'{container}'" if container is not None else None,
                         ),
                         abstract=type_declaration.get("abstract", False),
                     )

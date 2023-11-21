@@ -400,7 +400,6 @@ class ArraySchema(Schema):
         self,
         items: JsonDataType,
         names: Names,
-        flatten: Optional[bool] = True,
         other_props: Optional[PropsType] = None,
     ) -> None:
         # Call parent ctor
@@ -421,18 +420,12 @@ class ArraySchema(Schema):
                 ) from err
 
         self.set_prop("items", items_schema)
-        self.set_prop("flatten", flatten)
 
     # read-only properties
     @property
     def items(self) -> Schema:
         """Avro schema describing the array items' type."""
         return cast(Schema, self.get_prop("items"))
-
-    @property
-    def flatten(self) -> bool:
-        """Flatten nested Array objects at load time."""
-        return cast(bool, self.get_prop("flatten"))
 
 
 class MapSchema(Schema):
@@ -744,8 +737,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
         if atype in VALID_TYPES:
             if atype == "array":
                 items = json_data.get("items")
-                flatten = json_data.get("flatten")
-                return ArraySchema(items, names, flatten, other_props)
+                return ArraySchema(items, names, other_props)
             elif atype == "map":
                 values = json_data.get("values")
                 if "name" in json_data:

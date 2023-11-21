@@ -461,7 +461,6 @@ $graph:
       items:
         - "null"
         - CWLObjectType
-      flatten: false
     - type: map
       values:
         - "null"
@@ -471,7 +470,6 @@ $graph:
     `default` values passed to CWL `InputParameter` and `WorkflowStepInput`
     record fields.
 
-
 - name: CWLInputFile
   type: map
   values:
@@ -479,3 +477,6 @@ $graph:
     - CWLObjectType
   doc: |
     Type representing a valid CWL input file as a `map<string, CWLObjectType>`.
+  jsonldPredicate:
+    _id: "cwl:inputfile"
+    _container: "@list"

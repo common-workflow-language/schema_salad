@@ -12,6 +12,7 @@ public class LoadingOptionsBuilder {
   private Optional<List<String>> schemas = Optional.empty();
   private Optional<LoadingOptions> copyFrom = Optional.empty();
   private Optional<Boolean> noLinkCheck = Optional.empty();
+  private Optional<String> container = Optional.empty();
 
   public LoadingOptionsBuilder() {}
 
@@ -40,12 +41,18 @@ public class LoadingOptionsBuilder {
     return this;
   }
 
+  public LoadingOptionsBuilder setContainer(final String container) {
+    this.container = Optional.of(container);
+    return this;
+  }
+
   public LoadingOptions build() {
     Fetcher fetcher = this.fetcher.orElse(null);
     String fileUri = this.fileUri.orElse(null);
     List<String> schemas = this.schemas.orElse(null);
     Map<String, String> namespaces = this.namespaces.orElse(null);
     Boolean noLinkCheck = this.noLinkCheck.orElse(null);
+    String container = this.container.orElse(null);
     Map<String, Object> idx = new HashMap<String, Object>();
     if (this.copyFrom.isPresent()) {
       final LoadingOptions copyFrom = this.copyFrom.get();
@@ -63,10 +70,13 @@ public class LoadingOptionsBuilder {
       if (noLinkCheck == null) {
         noLinkCheck = copyFrom.noLinkCheck;
       }
+      if (container == null) {
+        container = copyFrom.container;
+      }
     }
     if (fetcher == null) {
       fetcher = new DefaultFetcher();
     }
-    return new LoadingOptions(fetcher, fileUri, namespaces, schemas, noLinkCheck, idx);
+    return new LoadingOptions(fetcher, fileUri, namespaces, schemas, noLinkCheck, container, idx);
   }
 }

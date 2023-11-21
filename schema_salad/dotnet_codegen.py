@@ -394,7 +394,11 @@ public class {cls} : {current_interface}, ISaveable
 """
             )
 
-    def type_loader(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> TypeDef:
+    def type_loader(
+        self,
+        type_declaration: Union[List[Any], Dict[str, Any], str],
+        container: Optional[str] = None,
+    ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
             sub_types = [self.type_loader(i) for i in type_declaration]
@@ -421,8 +425,7 @@ public class {cls} : {current_interface}, ISaveable
                         instance_type=f"List<{i.instance_type}>",
                         name=f"array_of_{i.name}",
                         loader_type=f"ILoader<List<{i.instance_type}>>",
-                        init=f"new ArrayLoader<{i.instance_type}>({i.name}, "
-                        f"{'true' if type_declaration.get('flatten', True) else 'false'})",
+                        init=f"new ArrayLoader<{i.instance_type}>({i.name})",
                     )
                 )
             if type_declaration["type"] in (
@@ -435,7 +438,11 @@ public class {cls} : {current_interface}, ISaveable
                         instance_type=f"Dictionary<string, {i.instance_type}>",
                         name=f"map_of_{i.name}",
                         loader_type=f"ILoader<Dictionary<string, {i.instance_type}>>",
-                        init=f"new MapLoader<{i.instance_type}>({i.name})",
+                        init="new MapLoader<{}>({}, {})".format(
+                            i.instance_type,
+                            i.name,
+                            f"'{container}'" if container is not None else None,
+                        ),
                     )
                 )
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
@@ -448,8 +455,9 @@ public class {cls} : {current_interface}, ISaveable
                     TypeDef(
                         instance_type=self.safe_name(type_declaration["name"]),
                         name=self.safe_name(type_declaration["name"]) + "Loader",
-                        init="new RecordLoader<{}>()".format(
+                        init="new RecordLoader<{}>({})".format(
                             self.safe_name(type_declaration["name"]),
+                            f"'{container}'" if container is not None else None,
                         ),
                         loader_type="ILoader<{}>".format(self.safe_name(type_declaration["name"])),
                         abstract=type_declaration.get("abstract", False),

@@ -5,12 +5,10 @@ namespace ${project_name};
 internal class ArrayLoader<T> : ILoader<List<T>>
 {
     private readonly ILoader itemLoader;
-    private readonly bool flatten;
 
-    public ArrayLoader(in ILoader itemLoader, in bool flatten = true)
+    public ArrayLoader(in ILoader itemLoader)
     {
         this.itemLoader = itemLoader;
-        this.flatten = flatten;
     }
 
     public List<T> Load(in object doc, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot = null)
@@ -40,7 +38,8 @@ internal class ArrayLoader<T> : ILoader<List<T>>
             try
             {
                 dynamic loadedField = unionLoader.LoadField(e1, baseuri, loadingOptions);
-                if (this.flatten && loadedField is IList)
+                bool flatten = !String.Equals("@list", loadingOptions.container);
+                if (flatten && loadedField is IList)
                 {
                     returnValue.AddRange((List<T>)loadedField);
                 }

@@ -5,15 +5,9 @@ import java.util.List;
 
 public class ArrayLoader<T> implements Loader<List<T>> {
   private final Loader<T> itemLoader;
-  private final boolean flatten;
 
   public ArrayLoader(Loader<T> itemLoader) {
-    this(itemLoader, true);
-  }
-
-  public ArrayLoader(Loader<T> itemLoader, boolean flatten) {
     this.itemLoader = itemLoader;
-    this.flatten = flatten;
   }
 
   public List<T> load(
@@ -31,7 +25,8 @@ public class ArrayLoader<T> implements Loader<List<T>> {
     for (final Object el : docList) {
       try {
         final Object loadedField = unionLoader.loadField(el, baseUri, loadingOptions);
-        if (this.flatten && loadedField instanceof List) {
+        final boolean flatten = !"@list".equals(loadingOptions.container);
+        if (flatten && loadedField instanceof List) {
           r.addAll((List<T>) loadedField);
         } else {
           r.add((T) loadedField);

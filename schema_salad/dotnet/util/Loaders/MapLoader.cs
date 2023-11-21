@@ -5,10 +5,12 @@ namespace ${project_name};
 internal class MapLoader<T> : ILoader<Dictionary<string, T>>
 {
     private readonly ILoader valueLoader;
+    private readonly string? container;
 
-    public MapLoader(in ILoader valueLoader)
+    public MapLoader(in ILoader valueLoader, in string? container)
     {
         this.valueLoader = valueLoader;
+        this.container = container;
     }
 
     public Dictionary<string, T> Load(in object doc, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot = null)
@@ -21,6 +23,12 @@ internal class MapLoader<T> : ILoader<Dictionary<string, T>>
         if (doc is not IDictionary)
         {
             throw new ValidationException("Expected list");
+        }
+
+        LoadingOptions innerLoadingOptions = loadingOptions;
+        if (this.container != null)
+        {
+            innerLoadingOptions = new LoadingOptions(copyFrom: loadingOptions, container: this.container);
         }
 
         IDictionary docDictionary = (IDictionary)doc;
@@ -37,7 +45,7 @@ internal class MapLoader<T> : ILoader<Dictionary<string, T>>
         {
             try
             {
-                dynamic loadedField = unionLoader.LoadField(item.Value, baseuri, loadingOptions);
+                dynamic loadedField = unionLoader.LoadField(item.Value, baseuri, innerLoadingOptions);
                 returnValue[item.Key] = loadedField;
             }
             catch (ValidationException e)

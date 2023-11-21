@@ -115,7 +115,9 @@ def codegen(
 
     for rec in j:
         if rec["type"] in ("enum", "map", "record", "union"):
-            gen.type_loader(rec)
+            jld = rec.get("jsonldPredicate")
+            container = jld.get("_container") if isinstance(jld, MutableMapping) else None
+            gen.type_loader(rec, container)
             gen.add_vocab(shortname(rec["name"]), rec["name"])
 
     for rec in j:
@@ -177,8 +179,9 @@ def codegen(
 
             for field in sorted_fields:
                 optional = bool("https://w3id.org/cwl/salad#null" in field["type"])
-                type_loader = gen.type_loader(field["type"])
                 jld = field.get("jsonldPredicate")
+                container = jld.get("_container") if isinstance(jld, MutableMapping) else None
+                type_loader = gen.type_loader(field["type"], container)
                 fieldpred = field["name"]
                 subscope = None
 

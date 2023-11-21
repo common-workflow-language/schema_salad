@@ -373,7 +373,11 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
 """
             )
 
-    def type_loader(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> TypeDef:
+    def type_loader(
+        self,
+        type_declaration: Union[List[Any], Dict[str, Any], str],
+        container: Optional[str] = None,
+    ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
             sub = [self.type_loader(i) for i in type_declaration]
@@ -449,8 +453,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                         # instance_type="List<{}>".format(i.instance_type),
                         instance_type=instance_type,
                         name=f"array_of_{i.name}",
-                        init=f"new ArrayLoader({i.name}, "
-                        f"{self.to_java(type_declaration.get('flatten', True))})",
+                        init=f"new ArrayLoader({i.name})",
                         loader_type=f"Loader<java.util.List<{i.instance_type}>>",
                     )
                 )
@@ -465,7 +468,9 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                         # instance_type="Map<String, {}>".format(i.instance_type),
                         instance_type=f"java.util.Map<String, {i.instance_type}>",
                         name=f"map_of_{i.name}",
-                        init=f"new MapLoader({i.name})",
+                        init="new MapLoader({}, {})".format(
+                            i.name, f"'{container}'" if container is not None else None
+                        ),
                         loader_type=f"Loader<java.util.Map<String, {i.instance_type}>>",
                     )
                 )
@@ -481,9 +486,10 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                     TypeDef(
                         instance_type=self.safe_name(type_declaration["name"]),
                         name=self.safe_name(type_declaration["name"]),
-                        init="new RecordLoader<{clazz}>({clazz}{ext}.class)".format(
+                        init="new RecordLoader<{clazz}>({clazz}{ext}.class, {container})".format(
                             clazz=fqclass,
                             ext="Impl" if not is_abstract else "",
+                            container=f"'{container}'" if container is not None else None,
                         ),
                         loader_type=f"Loader<{fqclass}>",
                     )
