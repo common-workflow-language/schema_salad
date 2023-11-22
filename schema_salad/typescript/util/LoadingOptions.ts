@@ -6,17 +6,19 @@ export class LoadingOptions {
   fileUri?: string
   namespaces?: Dictionary<string>
   noLinkCheck?: boolean
+  container?: string
   schemas?: Dictionary<string>
   copyFrom?: LoadingOptions
   originalDoc: any
   vocab: Dictionary<string>
   rvocab: Dictionary<string>
 
-  constructor ({ fileUri, namespaces, noLinkCheck, schemas, originalDoc, copyFrom, fetcher }: {fileUri?: string, namespaces?: Dictionary<string>, noLinkCheck?: boolean, schemas?: Dictionary<string>, originalDoc?: any, copyFrom?: LoadingOptions, fetcher?: Fetcher}) {
+  constructor ({ fileUri, namespaces, noLinkCheck, container, schemas, originalDoc, copyFrom, fetcher}: {fileUri?: string, namespaces?: Dictionary<string>, noLinkCheck?: boolean, container?: string, schemas?: Dictionary<string>, originalDoc?: any, copyFrom?: LoadingOptions, fetcher?: Fetcher}) {
     this.idx = {}
     this.fileUri = fileUri
     this.namespaces = namespaces
     this.noLinkCheck = noLinkCheck
+    this.container = container
     this.schemas = schemas
     this.originalDoc = originalDoc
 
@@ -33,6 +35,9 @@ export class LoadingOptions {
       }
       if (noLinkCheck === undefined) {
         this.noLinkCheck = copyFrom.noLinkCheck
+      }
+      if (container === undefined) {
+        this.container = copyFrom.container
       }
       if (schemas === undefined) {
         this.schemas = copyFrom.schemas

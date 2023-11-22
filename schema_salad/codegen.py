@@ -114,8 +114,12 @@ def codegen(
     document_roots = []
 
     for rec in j:
-        if rec["type"] in ("enum", "record"):
-            gen.type_loader(rec)
+        if rec["type"] in ("enum", "map", "record", "union"):
+            jld = rec.get("jsonldPredicate")
+            if isinstance(jld, MutableMapping):
+                gen.type_loader(rec, jld.get("_container"), jld.get("noLinkCheck"))
+            else:
+                gen.type_loader(rec)
             gen.add_vocab(shortname(rec["name"]), rec["name"])
 
     for rec in j:
@@ -164,9 +168,7 @@ def codegen(
                     subscope = field.get("subscope")
                     fieldpred = field["name"]
                     optional = bool("https://w3id.org/cwl/salad#null" in field["type"])
-                    uri_loader = gen.uri_loader(
-                        gen.type_loader(field["type"]), True, False, None, None
-                    )
+                    uri_loader = gen.uri_loader(gen.type_loader(field["type"]), True, False, None)
                     gen.declare_id_field(
                         fieldpred,
                         uri_loader,
@@ -177,12 +179,14 @@ def codegen(
 
             for field in sorted_fields:
                 optional = bool("https://w3id.org/cwl/salad#null" in field["type"])
-                type_loader = gen.type_loader(field["type"])
                 jld = field.get("jsonldPredicate")
                 fieldpred = field["name"]
                 subscope = None
 
                 if isinstance(jld, MutableMapping):
+                    type_loader = gen.type_loader(
+                        field["type"], jld.get("_container"), jld.get("noLinkCheck")
+                    )
                     ref_scope = jld.get("refScope")
                     subscope = jld.get("subscope")
                     if jld.get("typeDSL"):
@@ -213,6 +217,8 @@ def codegen(
 
                     if "_id" in jld and jld["_id"][0] != "@":
                         fieldpred = jld["_id"]
+                else:
+                    type_loader = gen.type_loader(field["type"])
 
                 if jld == "@id":
                     continue

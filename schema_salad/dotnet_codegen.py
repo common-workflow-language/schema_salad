@@ -19,7 +19,7 @@ from xml.sax.saxutils import escape  # nosec
 from importlib_resources import files
 
 from . import _logger, schema
-from .codegen_base import CodeGenBase, TypeDef
+from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
 from .exceptions import SchemaException
 from .java_codegen import _ensure_directory_and_write, _safe_makedirs
 from .schema import shortname
@@ -394,7 +394,12 @@ public class {cls} : {current_interface}, ISaveable
 """
             )
 
-    def type_loader(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> TypeDef:
+    def type_loader(
+        self,
+        type_declaration: Union[List[Any], Dict[str, Any], str],
+        container: Optional[str] = None,
+        no_link_check: Optional[bool] = None,
+    ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
             sub_types = [self.type_loader(i) for i in type_declaration]
@@ -424,6 +429,24 @@ public class {cls} : {current_interface}, ISaveable
                         init=f"new ArrayLoader<{i.instance_type}>({i.name})",
                     )
                 )
+            if type_declaration["type"] in (
+                "map",
+                "https://w3id.org/cwl/salad#map",
+            ):
+                i = self.type_loader(type_declaration["values"])
+                return self.declare_type(
+                    TypeDef(
+                        instance_type=f"Dictionary<string, {i.instance_type}>",
+                        name=f"map_of_{i.name}",
+                        loader_type=f"ILoader<Dictionary<string, {i.instance_type}>>",
+                        init="new MapLoader<{}>({}, {}, {})".format(
+                            i.instance_type,
+                            i.name,
+                            f"'{container}'" if container is not None else None,
+                            self.to_dotnet(no_link_check),
+                        ),
+                    )
+                )
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
                 return self.type_loader_enum(type_declaration)
             if type_declaration["type"] in (
@@ -434,13 +457,40 @@ public class {cls} : {current_interface}, ISaveable
                     TypeDef(
                         instance_type=self.safe_name(type_declaration["name"]),
                         name=self.safe_name(type_declaration["name"]) + "Loader",
-                        init="new RecordLoader<{}>()".format(
+                        init="new RecordLoader<{}>({}, {})".format(
                             self.safe_name(type_declaration["name"]),
+                            f"'{container}'" if container is not None else None,
+                            self.to_dotnet(no_link_check),
                         ),
                         loader_type="ILoader<{}>".format(self.safe_name(type_declaration["name"])),
                         abstract=type_declaration.get("abstract", False),
                     )
                 )
+            if type_declaration["type"] in (
+                "union",
+                "https://w3id.org/cwl/salad#union",
+            ):
+                # Declare the named loader to handle recursive union definitions
+                loader_name = self.safe_name(type_declaration["name"]) + "Loader"
+                loader_type = TypeDef(
+                    name=loader_name,
+                    init="new UnionLoader(new List<ILoader>())",
+                    instance_type="object",
+                    loader_type="ILoader<object>",
+                )
+                self.declare_type(loader_type)
+                # Parse inner types
+                sub_types = [self.type_loader(i) for i in type_declaration["names"]]
+                # Register lazy initialization for the loader
+                self.add_lazy_init(
+                    LazyInitDef(
+                        loader_name,
+                        "((UnionLoader){}).addLoaders(new List<ILoader> {{ {} }});".format(
+                            loader_name, ", ".join(s.name for s in sub_types)
+                        ),
+                    )
+                )
+                return loader_type
             raise SchemaException("wft {}".format(type_declaration["type"]))
         if type_declaration in prims:
             return prims[type_declaration]
@@ -792,7 +842,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
         scoped_id: bool,
         vocab_term: bool,
         ref_scope: Optional[int],
-        no_link_check: Optional[bool],
+        no_link_check: Optional[bool] = None,
     ) -> TypeDef:
         """Construct the TypeDef for the given URI loader."""
         instance_type = inner.instance_type or "object"
@@ -902,8 +952,13 @@ public class {enum_name} : IEnumClass<{enum_name}>
                     collected_type.loader_type, collected_type.name, collected_type.init
                 )
 
-        example_tests = ""
+        if self.lazy_inits:
+            loader_instances += "\n    static LoaderInstances()\n    {\n"
+            for lazy_init in self.lazy_inits.values():
+                loader_instances += f"        {lazy_init.init}\n"
+            loader_instances += "    }\n"
 
+        example_tests = ""
         if self.examples:
             _safe_makedirs(self.test_resources_dir)
             utils_resources = self.test_resources_dir / "examples"

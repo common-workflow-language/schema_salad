@@ -25,7 +25,8 @@ public class ArrayLoader<T> implements Loader<List<T>> {
     for (final Object el : docList) {
       try {
         final Object loadedField = unionLoader.loadField(el, baseUri, loadingOptions);
-        if (loadedField instanceof List) {
+        final boolean flatten = !"@list".equals(loadingOptions.container);
+        if (flatten && loadedField instanceof List) {
           r.addAll((List<T>) loadedField);
         } else {
           r.add((T) loadedField);

@@ -6,6 +6,7 @@ public class LoadingOptions
     public string? fileUri;
     public Dictionary<string, string>? namespaces;
     public bool? noLinkCheck;
+    public string? container;
     public List<string>? schemas;
     public Dictionary<string, object> idx;
     public Dictionary<string, string> vocab;
@@ -17,6 +18,7 @@ public class LoadingOptions
         in string? fileUri = null,
         in Dictionary<string, string>? namespaces = null,
         in bool? noLinkCheck = null,
+        in string? container = null,
         in List<string>? schemas = null,
         in Dictionary<string, object>? idx = null,
         LoadingOptions? copyFrom = null)
@@ -24,6 +26,7 @@ public class LoadingOptions
         this.fileUri = fileUri;
         this.namespaces = namespaces;
         this.noLinkCheck = noLinkCheck;
+        this.container = container;
         this.schemas = schemas;
         this.idx = idx ?? new Dictionary<string, object>();
 
@@ -48,6 +51,11 @@ public class LoadingOptions
             if (noLinkCheck == null)
             {
                 this.noLinkCheck = copyFrom.noLinkCheck;
+            }
+
+            if (container == null)
+            {
+                this.container = copyFrom.container;
             }
 
             if (schemas == null)

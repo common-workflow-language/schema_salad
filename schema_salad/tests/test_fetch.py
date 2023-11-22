@@ -62,7 +62,7 @@ outputs: []
 """
         raise RuntimeError(f"Not foo.cwl, was {url}")
 
-    def check_exists(self, url):  # type: (str) -> bool
+    def check_exists(self, url: str) -> bool:
         return url == "baz:bar/foo.cwl"
 
     def urljoin(self, base: str, url: str) -> str:

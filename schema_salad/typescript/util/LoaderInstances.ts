@@ -8,6 +8,7 @@ import {
   _ArrayLoader,
   _EnumLoader,
   _IdMapLoader,
+  _MapLoader,
   _TypeDSLLoader,
   _SecondaryDSLLoader,
   TypeGuards,

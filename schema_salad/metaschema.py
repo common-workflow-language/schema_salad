@@ -11,6 +11,7 @@ import uuid as _uuid__  # pylint: disable=unused-import # noqa: F401
 import xml.sax  # nosec
 from abc import ABC, abstractmethod
 from io import StringIO
+from itertools import chain
 from typing import (
     Any,
     Dict,
@@ -59,6 +60,8 @@ class LoadingOptions:
     cache: CacheType
     imports: List[str]
     includes: List[str]
+    no_link_check: Optional[bool]
+    container: Optional[str]
 
     def __init__(
         self,
@@ -73,7 +76,8 @@ class LoadingOptions:
         idx: Optional[IdxType] = None,
         imports: Optional[List[str]] = None,
         includes: Optional[List[str]] = None,
-        no_link_check: bool = False,
+        no_link_check: Optional[bool] = None,
+        container: Optional[str] = None,
     ) -> None:
         """Create a LoadingOptions object."""
         self.original_doc = original_doc
@@ -118,7 +122,15 @@ class LoadingOptions:
         else:
             self.includes = copyfrom.includes if copyfrom is not None else []
 
-        self.no_link_check = no_link_check
+        if no_link_check is not None:
+            self.no_link_check = no_link_check
+        else:
+            self.no_link_check = copyfrom.no_link_check if copyfrom is not None else False
+
+        if container is not None:
+            self.container = container
+        else:
+            self.container = copyfrom.container if copyfrom is not None else None
 
         if fetcher is not None:
             self.fetcher = fetcher
@@ -141,10 +153,10 @@ class LoadingOptions:
         self.vocab = _vocab
         self.rvocab = _rvocab
 
-        if namespaces is not None:
+        if self.namespaces is not None:
             self.vocab = self.vocab.copy()
             self.rvocab = self.rvocab.copy()
-            for k, v in namespaces.items():
+            for k, v in self.namespaces.items():
                 self.vocab[k] = v
                 self.rvocab[v] = k
 
@@ -207,8 +219,13 @@ class Saveable(ABC):
         """Convert this object to a JSON/YAML friendly dictionary."""
 
 
-def load_field(val, fieldtype, baseuri, loadingOptions, lc=None):
-    # type: (Union[str, Dict[str, str]], _Loader, str, LoadingOptions, Optional[List[Any]]) -> Any
+def load_field(
+    val: Union[str, Dict[str, str]],
+    fieldtype: "_Loader",
+    baseuri: str,
+    loadingOptions: LoadingOptions,
+    lc: Optional[List[Any]] = None,
+) -> Any:
     """Load field."""
     if isinstance(val, MutableMapping):
         if "$import" in val:
@@ -340,14 +357,13 @@ def save_with_metadata(
 
 
 def expand_url(
-    url,  # type: str
-    base_url,  # type: str
-    loadingOptions,  # type: LoadingOptions
-    scoped_id=False,  # type: bool
-    vocab_term=False,  # type: bool
-    scoped_ref=None,  # type: Optional[int]
-):
-    # type: (...) -> str
+    url: str,
+    base_url: str,
+    loadingOptions: LoadingOptions,
+    scoped_id: bool = False,
+    vocab_term: bool = False,
+    scoped_ref: Optional[int] = None,
+) -> str:
     if url in ("@id", "@type"):
         return url
 
@@ -408,58 +424,80 @@ def expand_url(
 
 
 class _Loader:
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         pass
 
 
 class _AnyLoader(_Loader):
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if doc is not None:
             return doc
         raise ValidationException("Expected non-null")
 
 
 class _PrimitiveLoader(_Loader):
-    def __init__(self, tp):
-        # type: (Union[type, Tuple[Type[str], Type[str]]]) -> None
+    def __init__(self, tp: Union[type, Tuple[Type[str], Type[str]]]) -> None:
         self.tp = tp
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if not isinstance(doc, self.tp):
             raise ValidationException(
                 "Expected a {} but got {}".format(self.tp, doc.__class__.__name__)
             )
         return doc
 
-    def __repr__(self):  # type: () -> str
+    def __repr__(self) -> str:
         return str(self.tp)
 
 
 class _ArrayLoader(_Loader):
-    def __init__(self, items):
-        # type: (_Loader) -> None
+    def __init__(self, items: _Loader) -> None:
         self.items = items
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if not isinstance(doc, MutableSequence):
             raise ValidationException(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
                 f"but valid type for this field is an array."
             )
-        r = []  # type: List[Any]
-        errors = []  # type: List[SchemaSaladException]
-        fields = []  # type: List[str]
-
+        r: List[Any] = []
+        errors: List[SchemaSaladException] = []
+        fields: List[str] = []
         for i in range(0, len(doc)):
             try:
                 lf = load_field(
                     doc[i], _UnionLoader(([self, self.items])), baseuri, loadingOptions, lc=lc
                 )
-                if isinstance(lf, MutableSequence):
+                flatten = loadingOptions.container != "@list"
+                if flatten and isinstance(lf, MutableSequence):
                     r.extend(lf)
                 else:
                     r.append(lf)
@@ -486,8 +524,51 @@ class _ArrayLoader(_Loader):
             raise ValidationException("", None, errors)
         return r
 
-    def __repr__(self):  # type: () -> str
+    def __repr__(self) -> str:
         return f"array<{self.items}>"
+
+
+class _MapLoader(_Loader):
+    def __init__(
+        self,
+        values: _Loader,
+        name: Optional[str] = None,
+        container: Optional[str] = None,
+        no_link_check: Optional[bool] = None,
+    ) -> None:
+        self.values = values
+        self.name = name
+        self.container = container
+        self.no_link_check = no_link_check
+
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
+        if not isinstance(doc, MutableMapping):
+            raise ValidationException(f"Expected a map, was {type(doc)}")
+        if self.container is not None or self.no_link_check is not None:
+            loadingOptions = LoadingOptions(
+                copyfrom=loadingOptions, container=self.container, no_link_check=self.no_link_check
+            )
+        r: Dict[str, Any] = {}
+        errors: List[SchemaSaladException] = []
+        for k, v in doc.items():
+            try:
+                lf = load_field(v, self.values, baseuri, loadingOptions, lc)
+                r[k] = lf
+            except ValidationException as e:
+                errors.append(e.with_sourceline(SourceLine(doc, k, str)))
+        if errors:
+            raise ValidationException("", None, errors)
+        return r
+
+    def __repr__(self) -> str:
+        return self.name if self.name is not None else f"map<string, {self.values}>"
 
 
 class _EnumLoader(_Loader):
@@ -495,23 +576,34 @@ class _EnumLoader(_Loader):
         self.symbols = symbols
         self.name = name
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if doc in self.symbols:
             return doc
         raise ValidationException(f"Expected one of {self.symbols}")
 
-    def __repr__(self):  # type: () -> str
+    def __repr__(self) -> str:
         return self.name
 
 
 class _SecondaryDSLLoader(_Loader):
-    def __init__(self, inner):
-        # type: (_Loader) -> None
+    def __init__(self, inner: _Loader) -> None:
         self.inner = inner
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         r: List[Dict[str, Any]] = []
         if isinstance(doc, MutableSequence):
             for d in doc:
@@ -573,20 +665,36 @@ class _SecondaryDSLLoader(_Loader):
 
 
 class _RecordLoader(_Loader):
-    def __init__(self, classtype):
-        # type: (Type[Saveable]) -> None
+    def __init__(
+        self,
+        classtype: Type[Saveable],
+        container: Optional[str] = None,
+        no_link_check: Optional[bool] = None,
+    ) -> None:
         self.classtype = classtype
+        self.container = container
+        self.no_link_check = no_link_check
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
                 f"but valid type for this field is an object."
             )
+        if self.container is not None or self.no_link_check is not None:
+            loadingOptions = LoadingOptions(
+                copyfrom=loadingOptions, container=self.container, no_link_check=self.no_link_check
+            )
         return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
-    def __repr__(self):  # type: () -> str
+    def __repr__(self) -> str:
         return str(self.classtype.__name__)
 
 
@@ -594,8 +702,14 @@ class _ExpressionLoader(_Loader):
     def __init__(self, items: Type[str]) -> None:
         self.items = items
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if not isinstance(doc, str):
             raise ValidationException(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
@@ -605,11 +719,21 @@ class _ExpressionLoader(_Loader):
 
 
 class _UnionLoader(_Loader):
-    def __init__(self, alternates: Sequence[_Loader]) -> None:
+    def __init__(self, alternates: Sequence[_Loader], name: Optional[str] = None) -> None:
         self.alternates = alternates
+        self.name = name
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def add_loaders(self, loaders: Sequence[_Loader]) -> None:
+        self.alternates = tuple(loader for loader in chain(self.alternates, loaders))
+
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         errors = []
 
         if lc is None:
@@ -680,21 +804,33 @@ class _UnionLoader(_Loader):
                 )
         raise ValidationException("", None, errors, "*")
 
-    def __repr__(self):  # type: () -> str
-        return " | ".join(str(a) for a in self.alternates)
+    def __repr__(self) -> str:
+        return self.name if self.name is not None else " | ".join(str(a) for a in self.alternates)
 
 
 class _URILoader(_Loader):
-    def __init__(self, inner, scoped_id, vocab_term, scoped_ref, no_link_check):
-        # type: (_Loader, bool, bool, Union[int, None], Union[bool, None]) -> None
+    def __init__(
+        self,
+        inner: _Loader,
+        scoped_id: bool,
+        vocab_term: bool,
+        scoped_ref: Optional[int],
+        no_link_check: Optional[bool],
+    ) -> None:
         self.inner = inner
         self.scoped_id = scoped_id
         self.vocab_term = vocab_term
         self.scoped_ref = scoped_ref
         self.no_link_check = no_link_check
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if self.no_link_check is not None:
             loadingOptions = LoadingOptions(
                 copyfrom=loadingOptions, no_link_check=self.no_link_check
@@ -741,19 +877,17 @@ class _URILoader(_Loader):
 
 
 class _TypeDSLLoader(_Loader):
-    def __init__(self, inner, refScope, salad_version):
-        # type: (_Loader, Union[int, None], str) -> None
+    def __init__(self, inner: _Loader, refScope: Optional[int], salad_version: str) -> None:
         self.inner = inner
         self.refScope = refScope
         self.salad_version = salad_version
 
     def resolve(
         self,
-        doc,  # type: str
-        baseuri,  # type: str
-        loadingOptions,  # type: LoadingOptions
-    ):
-        # type: (...) -> Union[List[Union[Dict[str, Any], str]], Dict[str, Any], str]
+        doc: str,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+    ) -> Union[List[Union[Dict[str, Any], str]], Dict[str, Any], str]:
         doc_ = doc
         optional = False
         if doc_.endswith("?"):
@@ -762,7 +896,7 @@ class _TypeDSLLoader(_Loader):
 
         if doc_.endswith("[]"):
             salad_versions = [int(v) for v in self.salad_version[1:].split(".")]
-            items = ""  # type: Union[List[Union[Dict[str, Any], str]], Dict[str, Any], str]
+            items: Union[List[Union[Dict[str, Any], str]], Dict[str, Any], str] = ""
             rest = doc_[0:-2]
             if salad_versions < [1, 3]:
                 if rest.endswith("[]"):
@@ -774,7 +908,7 @@ class _TypeDSLLoader(_Loader):
                 items = self.resolve(rest, baseuri, loadingOptions)
                 if isinstance(items, str):
                     items = expand_url(items, baseuri, loadingOptions, False, True, self.refScope)
-            expanded = {"type": "array", "items": items}  # type: Union[Dict[str, Any], str]
+            expanded: Union[Dict[str, Any], str] = {"type": "array", "items": items}
         else:
             expanded = expand_url(doc_, baseuri, loadingOptions, False, True, self.refScope)
 
@@ -783,10 +917,16 @@ class _TypeDSLLoader(_Loader):
         else:
             return expanded
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if isinstance(doc, MutableSequence):
-            r = []  # type: List[Any]
+            r: List[Any] = []
             for d in doc:
                 if isinstance(d, str):
                     resolved = self.resolve(d, baseuri, loadingOptions)
@@ -807,16 +947,21 @@ class _TypeDSLLoader(_Loader):
 
 
 class _IdMapLoader(_Loader):
-    def __init__(self, inner, mapSubject, mapPredicate):
-        # type: (_Loader, str, Union[str, None]) -> None
+    def __init__(self, inner: _Loader, mapSubject: str, mapPredicate: Optional[str]) -> None:
         self.inner = inner
         self.mapSubject = mapSubject
         self.mapPredicate = mapPredicate
 
-    def load(self, doc, baseuri, loadingOptions, docRoot=None, lc=None):
-        # type: (Any, str, LoadingOptions, Optional[str], Optional[List[Any]]) -> Any
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None,
+        lc: Optional[List[Any]] = None,
+    ) -> Any:
         if isinstance(doc, MutableMapping):
-            r = []  # type: List[Any]
+            r: List[Any] = []
             for k in sorted(doc.keys()):
                 val = doc[k]
                 if isinstance(val, CommentedMap):
@@ -941,7 +1086,8 @@ def _document_load_by_url(
     return loadingOptions.idx[url]
 
 
-def file_uri(path, split_frag=False):  # type: (str, bool) -> str
+def file_uri(path: str, split_frag: bool = False) -> str:
+    """Transform a file path into a URL with file scheme."""
     if path.startswith("file://"):
         return path
     if split_frag:
@@ -1076,9 +1222,6 @@ class RecordField(Documented):
         _errors__ = []
         if "name" in _doc:
             try:
-                if _doc.get("name") is None:
-                    raise ValidationException("missing required field `name`", None, [])
-
                 name = load_field(
                     _doc.get("name"),
                     uri_strtype_True_False_None_None,
@@ -1130,9 +1273,6 @@ class RecordField(Documented):
             baseuri = name
         if "doc" in _doc:
             try:
-                if _doc.get("doc") is None:
-                    raise ValidationException("missing required field `doc`", None, [])
-
                 doc = load_field(
                     _doc.get("doc"),
                     union_of_None_type_or_strtype_or_array_of_strtype,
@@ -1179,7 +1319,7 @@ class RecordField(Documented):
 
             type_ = load_field(
                 _doc.get("type"),
-                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2,
+                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -1326,9 +1466,6 @@ class RecordSchema(Saveable):
         _errors__ = []
         if "fields" in _doc:
             try:
-                if _doc.get("fields") is None:
-                    raise ValidationException("missing required field `fields`", None, [])
-
                 fields = load_field(
                     _doc.get("fields"),
                     idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader,
@@ -1528,9 +1665,6 @@ class EnumSchema(Saveable):
         _errors__ = []
         if "name" in _doc:
             try:
-                if _doc.get("name") is None:
-                    raise ValidationException("missing required field `name`", None, [])
-
                 name = load_field(
                     _doc.get("name"),
                     uri_union_of_None_type_or_strtype_True_False_None_None,
@@ -1778,7 +1912,7 @@ class ArraySchema(Saveable):
 
             items = load_field(
                 _doc.get("items"),
-                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2_None,
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("items")
@@ -1918,6 +2052,380 @@ class ArraySchema(Saveable):
     attrs = frozenset(["items", "type"])
 
 
+class MapSchema(Saveable):
+    def __init__(
+        self,
+        type_: Any,
+        values: Any,
+        extension_fields: Optional[Dict[str, Any]] = None,
+        loadingOptions: Optional[LoadingOptions] = None,
+    ) -> None:
+        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.type_ = type_
+        self.values = values
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, MapSchema):
+            return bool(self.type_ == other.type_ and self.values == other.values)
+        return False
+
+    def __hash__(self) -> int:
+        return hash((self.type_, self.values))
+
+    @classmethod
+    def fromDoc(
+        cls,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None
+    ) -> "MapSchema":
+        _doc = copy.copy(doc)
+
+        if hasattr(doc, "lc"):
+            _doc.lc.data = doc.lc.data
+            _doc.lc.filename = doc.lc.filename
+        _errors__ = []
+        try:
+            if _doc.get("type") is None:
+                raise ValidationException("missing required field `type`", None, [])
+
+            type_ = load_field(
+                _doc.get("type"),
+                typedsl_Map_nameLoader_2,
+                baseuri,
+                loadingOptions,
+                lc=_doc.get("type")
+            )
+
+        except ValidationException as e:
+            error_message, to_print, verb_tensage = parse_errors(str(e))
+
+            if str(e) == "missing required field `type`":
+                _errors__.append(
+                    ValidationException(
+                        str(e),
+                        None
+                    )
+                )
+            else:
+                if error_message != str(e):
+                    val_type = convert_typing(extract_type(type(_doc.get("type"))))
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
+                        )
+                    )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [e],
+                        )
+                    )
+        try:
+            if _doc.get("values") is None:
+                raise ValidationException("missing required field `values`", None, [])
+
+            values = load_field(
+                _doc.get("values"),
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
+                baseuri,
+                loadingOptions,
+                lc=_doc.get("values")
+            )
+
+        except ValidationException as e:
+            error_message, to_print, verb_tensage = parse_errors(str(e))
+
+            if str(e) == "missing required field `values`":
+                _errors__.append(
+                    ValidationException(
+                        str(e),
+                        None
+                    )
+                )
+            else:
+                if error_message != str(e):
+                    val_type = convert_typing(extract_type(type(_doc.get("values"))))
+                    _errors__.append(
+                        ValidationException(
+                            "the `values` field is not valid because:",
+                            SourceLine(_doc, "values", str),
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
+                        )
+                    )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `values` field is not valid because:",
+                            SourceLine(_doc, "values", str),
+                            [e],
+                        )
+                    )
+        extension_fields: Dict[str, Any] = {}
+        for k in _doc.keys():
+            if k not in cls.attrs:
+                if not k:
+                    _errors__.append(
+                        ValidationException("mapping with implicit null key")
+                    )
+                elif ":" in k:
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
+                    extension_fields[ex] = _doc[k]
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "invalid field `{}`, expected one of: `type`, `values`".format(
+                                k
+                            ),
+                            SourceLine(_doc, k, str),
+                        )
+                    )
+
+        if _errors__:
+            raise ValidationException("", None, _errors__, "*")
+        _constructed = cls(
+            type_=type_,
+            values=values,
+            extension_fields=extension_fields,
+            loadingOptions=loadingOptions,
+        )
+        return _constructed
+
+    def save(
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True
+    ) -> Dict[str, Any]:
+        r: Dict[str, Any] = {}
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
+        if self.type_ is not None:
+            r["type"] = save(
+                self.type_, top=False, base_url=base_url, relative_uris=relative_uris
+            )
+        if self.values is not None:
+            u = save_relative_uri(self.values, base_url, False, 2, relative_uris)
+            r["values"] = u
+
+        # top refers to the directory level
+        if top:
+            if self.loadingOptions.namespaces:
+                r["$namespaces"] = self.loadingOptions.namespaces
+            if self.loadingOptions.schemas:
+                r["$schemas"] = self.loadingOptions.schemas
+        return r
+
+    attrs = frozenset(["type", "values"])
+
+
+class UnionSchema(Saveable):
+    def __init__(
+        self,
+        names: Any,
+        type_: Any,
+        extension_fields: Optional[Dict[str, Any]] = None,
+        loadingOptions: Optional[LoadingOptions] = None,
+    ) -> None:
+        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.names = names
+        self.type_ = type_
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, UnionSchema):
+            return bool(self.names == other.names and self.type_ == other.type_)
+        return False
+
+    def __hash__(self) -> int:
+        return hash((self.names, self.type_))
+
+    @classmethod
+    def fromDoc(
+        cls,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None
+    ) -> "UnionSchema":
+        _doc = copy.copy(doc)
+
+        if hasattr(doc, "lc"):
+            _doc.lc.data = doc.lc.data
+            _doc.lc.filename = doc.lc.filename
+        _errors__ = []
+        try:
+            if _doc.get("names") is None:
+                raise ValidationException("missing required field `names`", None, [])
+
+            names = load_field(
+                _doc.get("names"),
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
+                baseuri,
+                loadingOptions,
+                lc=_doc.get("names")
+            )
+
+        except ValidationException as e:
+            error_message, to_print, verb_tensage = parse_errors(str(e))
+
+            if str(e) == "missing required field `names`":
+                _errors__.append(
+                    ValidationException(
+                        str(e),
+                        None
+                    )
+                )
+            else:
+                if error_message != str(e):
+                    val_type = convert_typing(extract_type(type(_doc.get("names"))))
+                    _errors__.append(
+                        ValidationException(
+                            "the `names` field is not valid because:",
+                            SourceLine(_doc, "names", str),
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
+                        )
+                    )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `names` field is not valid because:",
+                            SourceLine(_doc, "names", str),
+                            [e],
+                        )
+                    )
+        try:
+            if _doc.get("type") is None:
+                raise ValidationException("missing required field `type`", None, [])
+
+            type_ = load_field(
+                _doc.get("type"),
+                typedsl_Union_nameLoader_2,
+                baseuri,
+                loadingOptions,
+                lc=_doc.get("type")
+            )
+
+        except ValidationException as e:
+            error_message, to_print, verb_tensage = parse_errors(str(e))
+
+            if str(e) == "missing required field `type`":
+                _errors__.append(
+                    ValidationException(
+                        str(e),
+                        None
+                    )
+                )
+            else:
+                if error_message != str(e):
+                    val_type = convert_typing(extract_type(type(_doc.get("type"))))
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
+                        )
+                    )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [e],
+                        )
+                    )
+        extension_fields: Dict[str, Any] = {}
+        for k in _doc.keys():
+            if k not in cls.attrs:
+                if not k:
+                    _errors__.append(
+                        ValidationException("mapping with implicit null key")
+                    )
+                elif ":" in k:
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
+                    extension_fields[ex] = _doc[k]
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "invalid field `{}`, expected one of: `names`, `type`".format(
+                                k
+                            ),
+                            SourceLine(_doc, k, str),
+                        )
+                    )
+
+        if _errors__:
+            raise ValidationException("", None, _errors__, "*")
+        _constructed = cls(
+            names=names,
+            type_=type_,
+            extension_fields=extension_fields,
+            loadingOptions=loadingOptions,
+        )
+        return _constructed
+
+    def save(
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True
+    ) -> Dict[str, Any]:
+        r: Dict[str, Any] = {}
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
+        if self.names is not None:
+            u = save_relative_uri(self.names, base_url, False, 2, relative_uris)
+            r["names"] = u
+        if self.type_ is not None:
+            r["type"] = save(
+                self.type_, top=False, base_url=base_url, relative_uris=relative_uris
+            )
+
+        # top refers to the directory level
+        if top:
+            if self.loadingOptions.namespaces:
+                r["$namespaces"] = self.loadingOptions.namespaces
+            if self.loadingOptions.schemas:
+                r["$schemas"] = self.loadingOptions.schemas
+        return r
+
+    attrs = frozenset(["names", "type"])
+
+
 class JsonldPredicate(Saveable):
     """
     Attached to a record field to define how the parent record field is handled for
@@ -2011,9 +2519,6 @@ class JsonldPredicate(Saveable):
         _errors__ = []
         if "_id" in _doc:
             try:
-                if _doc.get("_id") is None:
-                    raise ValidationException("missing required field `_id`", None, [])
-
                 _id = load_field(
                     _doc.get("_id"),
                     uri_union_of_None_type_or_strtype_True_False_None_None,
@@ -2056,9 +2561,6 @@ class JsonldPredicate(Saveable):
             _id = None
         if "_type" in _doc:
             try:
-                if _doc.get("_type") is None:
-                    raise ValidationException("missing required field `_type`", None, [])
-
                 _type = load_field(
                     _doc.get("_type"),
                     union_of_None_type_or_strtype,
@@ -2101,9 +2603,6 @@ class JsonldPredicate(Saveable):
             _type = None
         if "_container" in _doc:
             try:
-                if _doc.get("_container") is None:
-                    raise ValidationException("missing required field `_container`", None, [])
-
                 _container = load_field(
                     _doc.get("_container"),
                     union_of_None_type_or_strtype,
@@ -2146,9 +2645,6 @@ class JsonldPredicate(Saveable):
             _container = None
         if "identity" in _doc:
             try:
-                if _doc.get("identity") is None:
-                    raise ValidationException("missing required field `identity`", None, [])
-
                 identity = load_field(
                     _doc.get("identity"),
                     union_of_None_type_or_booltype,
@@ -2191,9 +2687,6 @@ class JsonldPredicate(Saveable):
             identity = None
         if "noLinkCheck" in _doc:
             try:
-                if _doc.get("noLinkCheck") is None:
-                    raise ValidationException("missing required field `noLinkCheck`", None, [])
-
                 noLinkCheck = load_field(
                     _doc.get("noLinkCheck"),
                     union_of_None_type_or_booltype,
@@ -2236,9 +2729,6 @@ class JsonldPredicate(Saveable):
             noLinkCheck = None
         if "mapSubject" in _doc:
             try:
-                if _doc.get("mapSubject") is None:
-                    raise ValidationException("missing required field `mapSubject`", None, [])
-
                 mapSubject = load_field(
                     _doc.get("mapSubject"),
                     union_of_None_type_or_strtype,
@@ -2281,9 +2771,6 @@ class JsonldPredicate(Saveable):
             mapSubject = None
         if "mapPredicate" in _doc:
             try:
-                if _doc.get("mapPredicate") is None:
-                    raise ValidationException("missing required field `mapPredicate`", None, [])
-
                 mapPredicate = load_field(
                     _doc.get("mapPredicate"),
                     union_of_None_type_or_strtype,
@@ -2326,9 +2813,6 @@ class JsonldPredicate(Saveable):
             mapPredicate = None
         if "refScope" in _doc:
             try:
-                if _doc.get("refScope") is None:
-                    raise ValidationException("missing required field `refScope`", None, [])
-
                 refScope = load_field(
                     _doc.get("refScope"),
                     union_of_None_type_or_inttype,
@@ -2371,9 +2855,6 @@ class JsonldPredicate(Saveable):
             refScope = None
         if "typeDSL" in _doc:
             try:
-                if _doc.get("typeDSL") is None:
-                    raise ValidationException("missing required field `typeDSL`", None, [])
-
                 typeDSL = load_field(
                     _doc.get("typeDSL"),
                     union_of_None_type_or_booltype,
@@ -2416,9 +2897,6 @@ class JsonldPredicate(Saveable):
             typeDSL = None
         if "secondaryFilesDSL" in _doc:
             try:
-                if _doc.get("secondaryFilesDSL") is None:
-                    raise ValidationException("missing required field `secondaryFilesDSL`", None, [])
-
                 secondaryFilesDSL = load_field(
                     _doc.get("secondaryFilesDSL"),
                     union_of_None_type_or_booltype,
@@ -2461,9 +2939,6 @@ class JsonldPredicate(Saveable):
             secondaryFilesDSL = None
         if "subscope" in _doc:
             try:
-                if _doc.get("subscope") is None:
-                    raise ValidationException("missing required field `subscope`", None, [])
-
                 subscope = load_field(
                     _doc.get("subscope"),
                     union_of_None_type_or_strtype,
@@ -2909,9 +3384,6 @@ class SaladRecordField(RecordField):
         _errors__ = []
         if "name" in _doc:
             try:
-                if _doc.get("name") is None:
-                    raise ValidationException("missing required field `name`", None, [])
-
                 name = load_field(
                     _doc.get("name"),
                     uri_strtype_True_False_None_None,
@@ -2963,9 +3435,6 @@ class SaladRecordField(RecordField):
             baseuri = name
         if "doc" in _doc:
             try:
-                if _doc.get("doc") is None:
-                    raise ValidationException("missing required field `doc`", None, [])
-
                 doc = load_field(
                     _doc.get("doc"),
                     union_of_None_type_or_strtype_or_array_of_strtype,
@@ -3012,7 +3481,7 @@ class SaladRecordField(RecordField):
 
             type_ = load_field(
                 _doc.get("type"),
-                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2,
+                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -3050,9 +3519,6 @@ class SaladRecordField(RecordField):
                     )
         if "jsonldPredicate" in _doc:
             try:
-                if _doc.get("jsonldPredicate") is None:
-                    raise ValidationException("missing required field `jsonldPredicate`", None, [])
-
                 jsonldPredicate = load_field(
                     _doc.get("jsonldPredicate"),
                     union_of_None_type_or_strtype_or_JsonldPredicateLoader,
@@ -3095,9 +3561,6 @@ class SaladRecordField(RecordField):
             jsonldPredicate = None
         if "default" in _doc:
             try:
-                if _doc.get("default") is None:
-                    raise ValidationException("missing required field `default`", None, [])
-
                 default = load_field(
                     _doc.get("default"),
                     union_of_None_type_or_Any_type,
@@ -3314,9 +3777,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         _errors__ = []
         if "name" in _doc:
             try:
-                if _doc.get("name") is None:
-                    raise ValidationException("missing required field `name`", None, [])
-
                 name = load_field(
                     _doc.get("name"),
                     uri_strtype_True_False_None_None,
@@ -3368,9 +3828,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             baseuri = name
         if "inVocab" in _doc:
             try:
-                if _doc.get("inVocab") is None:
-                    raise ValidationException("missing required field `inVocab`", None, [])
-
                 inVocab = load_field(
                     _doc.get("inVocab"),
                     union_of_None_type_or_booltype,
@@ -3413,9 +3870,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             inVocab = None
         if "fields" in _doc:
             try:
-                if _doc.get("fields") is None:
-                    raise ValidationException("missing required field `fields`", None, [])
-
                 fields = load_field(
                     _doc.get("fields"),
                     idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader,
@@ -3500,9 +3954,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     )
         if "doc" in _doc:
             try:
-                if _doc.get("doc") is None:
-                    raise ValidationException("missing required field `doc`", None, [])
-
                 doc = load_field(
                     _doc.get("doc"),
                     union_of_None_type_or_strtype_or_array_of_strtype,
@@ -3545,9 +3996,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             doc = None
         if "docParent" in _doc:
             try:
-                if _doc.get("docParent") is None:
-                    raise ValidationException("missing required field `docParent`", None, [])
-
                 docParent = load_field(
                     _doc.get("docParent"),
                     uri_union_of_None_type_or_strtype_False_False_None_None,
@@ -3590,9 +4038,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             docParent = None
         if "docChild" in _doc:
             try:
-                if _doc.get("docChild") is None:
-                    raise ValidationException("missing required field `docChild`", None, [])
-
                 docChild = load_field(
                     _doc.get("docChild"),
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
@@ -3635,9 +4080,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             docChild = None
         if "docAfter" in _doc:
             try:
-                if _doc.get("docAfter") is None:
-                    raise ValidationException("missing required field `docAfter`", None, [])
-
                 docAfter = load_field(
                     _doc.get("docAfter"),
                     uri_union_of_None_type_or_strtype_False_False_None_None,
@@ -3680,9 +4122,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             docAfter = None
         if "jsonldPredicate" in _doc:
             try:
-                if _doc.get("jsonldPredicate") is None:
-                    raise ValidationException("missing required field `jsonldPredicate`", None, [])
-
                 jsonldPredicate = load_field(
                     _doc.get("jsonldPredicate"),
                     union_of_None_type_or_strtype_or_JsonldPredicateLoader,
@@ -3725,9 +4164,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             jsonldPredicate = None
         if "documentRoot" in _doc:
             try:
-                if _doc.get("documentRoot") is None:
-                    raise ValidationException("missing required field `documentRoot`", None, [])
-
                 documentRoot = load_field(
                     _doc.get("documentRoot"),
                     union_of_None_type_or_booltype,
@@ -3770,9 +4206,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             documentRoot = None
         if "abstract" in _doc:
             try:
-                if _doc.get("abstract") is None:
-                    raise ValidationException("missing required field `abstract`", None, [])
-
                 abstract = load_field(
                     _doc.get("abstract"),
                     union_of_None_type_or_booltype,
@@ -3815,9 +4248,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             abstract = None
         if "extends" in _doc:
             try:
-                if _doc.get("extends") is None:
-                    raise ValidationException("missing required field `extends`", None, [])
-
                 extends = load_field(
                     _doc.get("extends"),
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None,
@@ -3860,9 +4290,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             extends = None
         if "specialize" in _doc:
             try:
-                if _doc.get("specialize") is None:
-                    raise ValidationException("missing required field `specialize`", None, [])
-
                 specialize = load_field(
                     _doc.get("specialize"),
                     idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader,
@@ -4137,9 +4564,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         _errors__ = []
         if "name" in _doc:
             try:
-                if _doc.get("name") is None:
-                    raise ValidationException("missing required field `name`", None, [])
-
                 name = load_field(
                     _doc.get("name"),
                     uri_union_of_None_type_or_strtype_True_False_None_None,
@@ -4191,9 +4615,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             baseuri = name
         if "inVocab" in _doc:
             try:
-                if _doc.get("inVocab") is None:
-                    raise ValidationException("missing required field `inVocab`", None, [])
-
                 inVocab = load_field(
                     _doc.get("inVocab"),
                     union_of_None_type_or_booltype,
@@ -4320,9 +4741,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     )
         if "doc" in _doc:
             try:
-                if _doc.get("doc") is None:
-                    raise ValidationException("missing required field `doc`", None, [])
-
                 doc = load_field(
                     _doc.get("doc"),
                     union_of_None_type_or_strtype_or_array_of_strtype,
@@ -4365,9 +4783,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             doc = None
         if "docParent" in _doc:
             try:
-                if _doc.get("docParent") is None:
-                    raise ValidationException("missing required field `docParent`", None, [])
-
                 docParent = load_field(
                     _doc.get("docParent"),
                     uri_union_of_None_type_or_strtype_False_False_None_None,
@@ -4410,9 +4825,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             docParent = None
         if "docChild" in _doc:
             try:
-                if _doc.get("docChild") is None:
-                    raise ValidationException("missing required field `docChild`", None, [])
-
                 docChild = load_field(
                     _doc.get("docChild"),
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
@@ -4455,9 +4867,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             docChild = None
         if "docAfter" in _doc:
             try:
-                if _doc.get("docAfter") is None:
-                    raise ValidationException("missing required field `docAfter`", None, [])
-
                 docAfter = load_field(
                     _doc.get("docAfter"),
                     uri_union_of_None_type_or_strtype_False_False_None_None,
@@ -4500,9 +4909,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             docAfter = None
         if "jsonldPredicate" in _doc:
             try:
-                if _doc.get("jsonldPredicate") is None:
-                    raise ValidationException("missing required field `jsonldPredicate`", None, [])
-
                 jsonldPredicate = load_field(
                     _doc.get("jsonldPredicate"),
                     union_of_None_type_or_strtype_or_JsonldPredicateLoader,
@@ -4545,9 +4951,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             jsonldPredicate = None
         if "documentRoot" in _doc:
             try:
-                if _doc.get("documentRoot") is None:
-                    raise ValidationException("missing required field `documentRoot`", None, [])
-
                 documentRoot = load_field(
                     _doc.get("documentRoot"),
                     union_of_None_type_or_booltype,
@@ -4590,9 +4993,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             documentRoot = None
         if "extends" in _doc:
             try:
-                if _doc.get("extends") is None:
-                    raise ValidationException("missing required field `extends`", None, [])
-
                 extends = load_field(
                     _doc.get("extends"),
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None,
@@ -4756,6 +5156,1217 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
     )
 
 
+class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
+    """
+    Define a map type.
+
+    """
+
+    def __init__(
+        self,
+        name: Any,
+        type_: Any,
+        values: Any,
+        inVocab: Optional[Any] = None,
+        doc: Optional[Any] = None,
+        docParent: Optional[Any] = None,
+        docChild: Optional[Any] = None,
+        docAfter: Optional[Any] = None,
+        jsonldPredicate: Optional[Any] = None,
+        documentRoot: Optional[Any] = None,
+        extension_fields: Optional[Dict[str, Any]] = None,
+        loadingOptions: Optional[LoadingOptions] = None,
+    ) -> None:
+        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.name = name
+        self.inVocab = inVocab
+        self.type_ = type_
+        self.values = values
+        self.doc = doc
+        self.docParent = docParent
+        self.docChild = docChild
+        self.docAfter = docAfter
+        self.jsonldPredicate = jsonldPredicate
+        self.documentRoot = documentRoot
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, SaladMapSchema):
+            return bool(
+                self.name == other.name
+                and self.inVocab == other.inVocab
+                and self.type_ == other.type_
+                and self.values == other.values
+                and self.doc == other.doc
+                and self.docParent == other.docParent
+                and self.docChild == other.docChild
+                and self.docAfter == other.docAfter
+                and self.jsonldPredicate == other.jsonldPredicate
+                and self.documentRoot == other.documentRoot
+            )
+        return False
+
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self.name,
+                self.inVocab,
+                self.type_,
+                self.values,
+                self.doc,
+                self.docParent,
+                self.docChild,
+                self.docAfter,
+                self.jsonldPredicate,
+                self.documentRoot,
+            )
+        )
+
+    @classmethod
+    def fromDoc(
+        cls,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None
+    ) -> "SaladMapSchema":
+        _doc = copy.copy(doc)
+
+        if hasattr(doc, "lc"):
+            _doc.lc.data = doc.lc.data
+            _doc.lc.filename = doc.lc.filename
+        _errors__ = []
+        if "name" in _doc:
+            try:
+                name = load_field(
+                    _doc.get("name"),
+                    uri_strtype_True_False_None_None,
+                    baseuri,
+                    loadingOptions,
+                    lc=_doc.get("name")
+                )
+
+            except ValidationException as e:
+                error_message, to_print, verb_tensage = parse_errors(str(e))
+
+                if str(e) == "missing required field `name`":
+                    _errors__.append(
+                        ValidationException(
+                            str(e),
+                            None
+                        )
+                    )
+                else:
+                    if error_message != str(e):
+                        val_type = convert_typing(extract_type(type(_doc.get("name"))))
+                        _errors__.append(
+                            ValidationException(
+                                "the `name` field is not valid because:",
+                                SourceLine(_doc, "name", str),
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
+                            )
+                        )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `name` field is not valid because:",
+                                SourceLine(_doc, "name", str),
+                                [e],
+                            )
+                        )
+        else:
+            name = None
+
+        __original_name_is_none = name is None
+        if name is None:
+            if docRoot is not None:
+                name = docRoot
+            else:
+                _errors__.append(ValidationException("missing name"))
+        if not __original_name_is_none:
+            baseuri = name
+        if "inVocab" in _doc:
+            try:
+                inVocab = load_field(
+                    _doc.get("inVocab"),
+                    union_of_None_type_or_booltype,
+                    baseuri,
+                    loadingOptions,
+                    lc=_doc.get("inVocab")
+                )
+
+            except ValidationException as e:
+                error_message, to_print, verb_tensage = parse_errors(str(e))
+
+                if str(e) == "missing required field `inVocab`":
+                    _errors__.append(
+                        ValidationException(
+                            str(e),
+                            None
+                        )
+                    )
+                else:
+                    if error_message != str(e):
+                        val_type = convert_typing(extract_type(type(_doc.get("inVocab"))))
+                        _errors__.append(
+                            ValidationException(
+                                "the `inVocab` field is not valid because:",
+                                SourceLine(_doc, "inVocab", str),
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
+                            )
+                        )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `inVocab` field is not valid because:",
+                                SourceLine(_doc, "inVocab", str),
+                                [e],
+                            )
+                        )
+        else:
+            inVocab = None
+        try:
+            if _doc.get("type") is None:
+                raise ValidationException("missing required field `type`", None, [])
+
+            type_ = load_field(
+                _doc.get("type"),
+                typedsl_Map_nameLoader_2,
+                baseuri,
+                loadingOptions,
+                lc=_doc.get("type")
+            )
+
+        except ValidationException as e:
+            error_message, to_print, verb_tensage = parse_errors(str(e))
+
+            if str(e) == "missing required field `type`":
+                _errors__.append(
+                    ValidationException(
+                        str(e),
+                        None
+                    )
+                )
+            else:
+                if error_message != str(e):
+                    val_type = convert_typing(extract_type(type(_doc.get("type"))))
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
+                        )
+                    )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [e],
+                        )
+                    )
+        try:
+            if _doc.get("values") is None:
+                raise ValidationException("missing required field `values`", None, [])
+
+            values = load_field(
+                _doc.get("values"),
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
+                baseuri,
+                loadingOptions,
+                lc=_doc.get("values")
+            )
+
+        except ValidationException as e:
+            error_message, to_print, verb_tensage = parse_errors(str(e))
+
+            if str(e) == "missing required field `values`":
+                _errors__.append(
+                    ValidationException(
+                        str(e),
+                        None
+                    )
+                )
+            else:
+                if error_message != str(e):
+                    val_type = convert_typing(extract_type(type(_doc.get("values"))))
+                    _errors__.append(
+                        ValidationException(
+                            "the `values` field is not valid because:",
+                            SourceLine(_doc, "values", str),
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
+                        )
+                    )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `values` field is not valid because:",
+                            SourceLine(_doc, "values", str),
+                            [e],
+                        )
+                    )
+        if "doc" in _doc:
+            try:
+                doc = load_field(
+                    _doc.get("doc"),
+                    union_of_None_type_or_strtype_or_array_of_strtype,
+                    baseuri,
+                    loadingOptions,
+                    lc=_doc.get("doc")
+                )
+
+            except ValidationException as e:
+                error_message, to_print, verb_tensage = parse_errors(str(e))
+
+                if str(e) == "missing required field `doc`":
+                    _errors__.append(
+                        ValidationException(
+                            str(e),
+                            None
+                        )
+                    )
+                else:
+                    if error_message != str(e):
+                        val_type = convert_typing(extract_type(type(_doc.get("doc"))))
+                        _errors__.append(
+                            ValidationException(
+                                "the `doc` field is not valid because:",
+                                SourceLine(_doc, "doc", str),
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
+                            )
+                        )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `doc` field is not valid because:",
+                                SourceLine(_doc, "doc", str),
+                                [e],
+                            )
+                        )
+        else:
+            doc = None
+        if "docParent" in _doc:
+            try:
+                docParent = load_field(
+                    _doc.get("docParent"),
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
+                    baseuri,
+                    loadingOptions,
+                    lc=_doc.get("docParent")
+                )
+
+            except ValidationException as e:
+                error_message, to_print, verb_tensage = parse_errors(str(e))
+
+                if str(e) == "missing required field `docParent`":
+                    _errors__.append(
+                        ValidationException(
+                            str(e),
+                            None
+                        )
+                    )
+                else:
+                    if error_message != str(e):
+                        val_type = convert_typing(extract_type(type(_doc.get("docParent"))))
+                        _errors__.append(
+                            ValidationException(
+                                "the `docParent` field is not valid because:",
+                                SourceLine(_doc, "docParent", str),
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
+                            )
+                        )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `docParent` field is not valid because:",
+                                SourceLine(_doc, "docParent", str),
+                                [e],
+                            )
+                        )
+        else:
+            docParent = None
+        if "docChild" in _doc:
+            try:
+                docChild = load_field(
+                    _doc.get("docChild"),
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
+                    baseuri,
+                    loadingOptions,
+                    lc=_doc.get("docChild")
+                )
+
+            except ValidationException as e:
+                error_message, to_print, verb_tensage = parse_errors(str(e))
+
+                if str(e) == "missing required field `docChild`":
+                    _errors__.append(
+                        ValidationException(
+                            str(e),
+                            None
+                        )
+                    )
+                else:
+                    if error_message != str(e):
+                        val_type = convert_typing(extract_type(type(_doc.get("docChild"))))
+                        _errors__.append(
+                            ValidationException(
+                                "the `docChild` field is not valid because:",
+                                SourceLine(_doc, "docChild", str),
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
+                            )
+                        )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `docChild` field is not valid because:",
+                                SourceLine(_doc, "docChild", str),
+                                [e],
+                            )
+                        )
+        else:
+            docChild = None
+        if "docAfter" in _doc:
+            try:
+                docAfter = load_field(
+                    _doc.get("docAfter"),
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
+                    baseuri,
+                    loadingOptions,
+                    lc=_doc.get("docAfter")
+                )
+
+            except ValidationException as e:
+                error_message, to_print, verb_tensage = parse_errors(str(e))
+
+                if str(e) == "missing required field `docAfter`":
+                    _errors__.append(
+                        ValidationException(
+                            str(e),
+                            None
+                        )
+                    )
+                else:
+                    if error_message != str(e):
+                        val_type = convert_typing(extract_type(type(_doc.get("docAfter"))))
+                        _errors__.append(
+                            ValidationException(
+                                "the `docAfter` field is not valid because:",
+                                SourceLine(_doc, "docAfter", str),
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
+                            )
+                        )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `docAfter` field is not valid because:",
+                                SourceLine(_doc, "docAfter", str),
+                                [e],
+                            )
+                        )
+        else:
+            docAfter = None
+        if "jsonldPredicate" in _doc:
+            try:
+                jsonldPredicate = load_field(
+                    _doc.get("jsonldPredicate"),
+                    union_of_None_type_or_strtype_or_JsonldPredicateLoader,
+                    baseuri,
+                    loadingOptions,
+                    lc=_doc.get("jsonldPredicate")
+                )
+
+            except ValidationException as e:
+                error_message, to_print, verb_tensage = parse_errors(str(e))
+
+                if str(e) == "missing required field `jsonldPredicate`":
+                    _errors__.append(
+                        ValidationException(
+                            str(e),
+                            None
+                        )
+                    )
+                else:
+                    if error_message != str(e):
+                        val_type = convert_typing(extract_type(type(_doc.get("jsonldPredicate"))))
+                        _errors__.append(
+                            ValidationException(
+                                "the `jsonldPredicate` field is not valid because:",
+                                SourceLine(_doc, "jsonldPredicate", str),
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
+                            )
+                        )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `jsonldPredicate` field is not valid because:",
+                                SourceLine(_doc, "jsonldPredicate", str),
+                                [e],
+                            )
+                        )
+        else:
+            jsonldPredicate = None
+        if "documentRoot" in _doc:
+            try:
+                documentRoot = load_field(
+                    _doc.get("documentRoot"),
+                    union_of_None_type_or_booltype,
+                    baseuri,
+                    loadingOptions,
+                    lc=_doc.get("documentRoot")
+                )
+
+            except ValidationException as e:
+                error_message, to_print, verb_tensage = parse_errors(str(e))
+
+                if str(e) == "missing required field `documentRoot`":
+                    _errors__.append(
+                        ValidationException(
+                            str(e),
+                            None
+                        )
+                    )
+                else:
+                    if error_message != str(e):
+                        val_type = convert_typing(extract_type(type(_doc.get("documentRoot"))))
+                        _errors__.append(
+                            ValidationException(
+                                "the `documentRoot` field is not valid because:",
+                                SourceLine(_doc, "documentRoot", str),
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
+                            )
+                        )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `documentRoot` field is not valid because:",
+                                SourceLine(_doc, "documentRoot", str),
+                                [e],
+                            )
+                        )
+        else:
+            documentRoot = None
+        extension_fields: Dict[str, Any] = {}
+        for k in _doc.keys():
+            if k not in cls.attrs:
+                if not k:
+                    _errors__.append(
+                        ValidationException("mapping with implicit null key")
+                    )
+                elif ":" in k:
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
+                    extension_fields[ex] = _doc[k]
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "invalid field `{}`, expected one of: `name`, `inVocab`, `type`, `values`, `doc`, `docParent`, `docChild`, `docAfter`, `jsonldPredicate`, `documentRoot`".format(
+                                k
+                            ),
+                            SourceLine(_doc, k, str),
+                        )
+                    )
+
+        if _errors__:
+            raise ValidationException("", None, _errors__, "*")
+        _constructed = cls(
+            name=name,
+            inVocab=inVocab,
+            type_=type_,
+            values=values,
+            doc=doc,
+            docParent=docParent,
+            docChild=docChild,
+            docAfter=docAfter,
+            jsonldPredicate=jsonldPredicate,
+            documentRoot=documentRoot,
+            extension_fields=extension_fields,
+            loadingOptions=loadingOptions,
+        )
+        loadingOptions.idx[name] = (_constructed, loadingOptions)
+        return _constructed
+
+    def save(
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True
+    ) -> Dict[str, Any]:
+        r: Dict[str, Any] = {}
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
+        if self.name is not None:
+            u = save_relative_uri(self.name, base_url, True, None, relative_uris)
+            r["name"] = u
+        if self.inVocab is not None:
+            r["inVocab"] = save(
+                self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris
+            )
+        if self.type_ is not None:
+            r["type"] = save(
+                self.type_, top=False, base_url=self.name, relative_uris=relative_uris
+            )
+        if self.values is not None:
+            u = save_relative_uri(self.values, self.name, False, 2, relative_uris)
+            r["values"] = u
+        if self.doc is not None:
+            r["doc"] = save(
+                self.doc, top=False, base_url=self.name, relative_uris=relative_uris
+            )
+        if self.docParent is not None:
+            u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
+            r["docParent"] = u
+        if self.docChild is not None:
+            u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
+            r["docChild"] = u
+        if self.docAfter is not None:
+            u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
+            r["docAfter"] = u
+        if self.jsonldPredicate is not None:
+            r["jsonldPredicate"] = save(
+                self.jsonldPredicate,
+                top=False,
+                base_url=self.name,
+                relative_uris=relative_uris,
+            )
+        if self.documentRoot is not None:
+            r["documentRoot"] = save(
+                self.documentRoot,
+                top=False,
+                base_url=self.name,
+                relative_uris=relative_uris,
+            )
+
+        # top refers to the directory level
+        if top:
+            if self.loadingOptions.namespaces:
+                r["$namespaces"] = self.loadingOptions.namespaces
+            if self.loadingOptions.schemas:
+                r["$schemas"] = self.loadingOptions.schemas
+        return r
+
+    attrs = frozenset(
+        [
+            "name",
+            "inVocab",
+            "type",
+            "values",
+            "doc",
+            "docParent",
+            "docChild",
+            "docAfter",
+            "jsonldPredicate",
+            "documentRoot",
+        ]
+    )
+
+
+class SaladUnionSchema(NamedType, UnionSchema, DocType):
+    """
+    Define a union type.
+
+    """
+
+    def __init__(
+        self,
+        name: Any,
+        names: Any,
+        type_: Any,
+        inVocab: Optional[Any] = None,
+        doc: Optional[Any] = None,
+        docParent: Optional[Any] = None,
+        docChild: Optional[Any] = None,
+        docAfter: Optional[Any] = None,
+        documentRoot: Optional[Any] = None,
+        extension_fields: Optional[Dict[str, Any]] = None,
+        loadingOptions: Optional[LoadingOptions] = None,
+    ) -> None:
+        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.name = name
+        self.inVocab = inVocab
+        self.names = names
+        self.type_ = type_
+        self.doc = doc
+        self.docParent = docParent
+        self.docChild = docChild
+        self.docAfter = docAfter
+        self.documentRoot = documentRoot
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, SaladUnionSchema):
+            return bool(
+                self.name == other.name
+                and self.inVocab == other.inVocab
+                and self.names == other.names
+                and self.type_ == other.type_
+                and self.doc == other.doc
+                and self.docParent == other.docParent
+                and self.docChild == other.docChild
+                and self.docAfter == other.docAfter
+                and self.documentRoot == other.documentRoot
+            )
+        return False
+
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self.name,
+                self.inVocab,
+                self.names,
+                self.type_,
+                self.doc,
+                self.docParent,
+                self.docChild,
+                self.docAfter,
+                self.documentRoot,
+            )
+        )
+
+    @classmethod
+    def fromDoc(
+        cls,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: Optional[str] = None
+    ) -> "SaladUnionSchema":
+        _doc = copy.copy(doc)
+
+        if hasattr(doc, "lc"):
+            _doc.lc.data = doc.lc.data
+            _doc.lc.filename = doc.lc.filename
+        _errors__ = []
+        if "name" in _doc:
+            try:
+                name = load_field(
+                    _doc.get("name"),
+                    uri_strtype_True_False_None_None,
+                    baseuri,
+                    loadingOptions,
+                    lc=_doc.get("name")
+                )
+
+            except ValidationException as e:
+                error_message, to_print, verb_tensage = parse_errors(str(e))
+
+                if str(e) == "missing required field `name`":
+                    _errors__.append(
+                        ValidationException(
+                            str(e),
+                            None
+                        )
+                    )
+                else:
+                    if error_message != str(e):
+                        val_type = convert_typing(extract_type(type(_doc.get("name"))))
+                        _errors__.append(
+                            ValidationException(
+                                "the `name` field is not valid because:",
+                                SourceLine(_doc, "name", str),
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
+                            )
+                        )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `name` field is not valid because:",
+                                SourceLine(_doc, "name", str),
+                                [e],
+                            )
+                        )
+        else:
+            name = None
+
+        __original_name_is_none = name is None
+        if name is None:
+            if docRoot is not None:
+                name = docRoot
+            else:
+                _errors__.append(ValidationException("missing name"))
+        if not __original_name_is_none:
+            baseuri = name
+        if "inVocab" in _doc:
+            try:
+                inVocab = load_field(
+                    _doc.get("inVocab"),
+                    union_of_None_type_or_booltype,
+                    baseuri,
+                    loadingOptions,
+                    lc=_doc.get("inVocab")
+                )
+
+            except ValidationException as e:
+                error_message, to_print, verb_tensage = parse_errors(str(e))
+
+                if str(e) == "missing required field `inVocab`":
+                    _errors__.append(
+                        ValidationException(
+                            str(e),
+                            None
+                        )
+                    )
+                else:
+                    if error_message != str(e):
+                        val_type = convert_typing(extract_type(type(_doc.get("inVocab"))))
+                        _errors__.append(
+                            ValidationException(
+                                "the `inVocab` field is not valid because:",
+                                SourceLine(_doc, "inVocab", str),
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
+                            )
+                        )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `inVocab` field is not valid because:",
+                                SourceLine(_doc, "inVocab", str),
+                                [e],
+                            )
+                        )
+        else:
+            inVocab = None
+        try:
+            if _doc.get("names") is None:
+                raise ValidationException("missing required field `names`", None, [])
+
+            names = load_field(
+                _doc.get("names"),
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
+                baseuri,
+                loadingOptions,
+                lc=_doc.get("names")
+            )
+
+        except ValidationException as e:
+            error_message, to_print, verb_tensage = parse_errors(str(e))
+
+            if str(e) == "missing required field `names`":
+                _errors__.append(
+                    ValidationException(
+                        str(e),
+                        None
+                    )
+                )
+            else:
+                if error_message != str(e):
+                    val_type = convert_typing(extract_type(type(_doc.get("names"))))
+                    _errors__.append(
+                        ValidationException(
+                            "the `names` field is not valid because:",
+                            SourceLine(_doc, "names", str),
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
+                        )
+                    )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `names` field is not valid because:",
+                            SourceLine(_doc, "names", str),
+                            [e],
+                        )
+                    )
+        try:
+            if _doc.get("type") is None:
+                raise ValidationException("missing required field `type`", None, [])
+
+            type_ = load_field(
+                _doc.get("type"),
+                typedsl_Union_nameLoader_2,
+                baseuri,
+                loadingOptions,
+                lc=_doc.get("type")
+            )
+
+        except ValidationException as e:
+            error_message, to_print, verb_tensage = parse_errors(str(e))
+
+            if str(e) == "missing required field `type`":
+                _errors__.append(
+                    ValidationException(
+                        str(e),
+                        None
+                    )
+                )
+            else:
+                if error_message != str(e):
+                    val_type = convert_typing(extract_type(type(_doc.get("type"))))
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}")],
+                        )
+                    )
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "the `type` field is not valid because:",
+                            SourceLine(_doc, "type", str),
+                            [e],
+                        )
+                    )
+        if "doc" in _doc:
+            try:
+                doc = load_field(
+                    _doc.get("doc"),
+                    union_of_None_type_or_strtype_or_array_of_strtype,
+                    baseuri,
+                    loadingOptions,
+                    lc=_doc.get("doc")
+                )
+
+            except ValidationException as e:
+                error_message, to_print, verb_tensage = parse_errors(str(e))
+
+                if str(e) == "missing required field `doc`":
+                    _errors__.append(
+                        ValidationException(
+                            str(e),
+                            None
+                        )
+                    )
+                else:
+                    if error_message != str(e):
+                        val_type = convert_typing(extract_type(type(_doc.get("doc"))))
+                        _errors__.append(
+                            ValidationException(
+                                "the `doc` field is not valid because:",
+                                SourceLine(_doc, "doc", str),
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
+                            )
+                        )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `doc` field is not valid because:",
+                                SourceLine(_doc, "doc", str),
+                                [e],
+                            )
+                        )
+        else:
+            doc = None
+        if "docParent" in _doc:
+            try:
+                docParent = load_field(
+                    _doc.get("docParent"),
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
+                    baseuri,
+                    loadingOptions,
+                    lc=_doc.get("docParent")
+                )
+
+            except ValidationException as e:
+                error_message, to_print, verb_tensage = parse_errors(str(e))
+
+                if str(e) == "missing required field `docParent`":
+                    _errors__.append(
+                        ValidationException(
+                            str(e),
+                            None
+                        )
+                    )
+                else:
+                    if error_message != str(e):
+                        val_type = convert_typing(extract_type(type(_doc.get("docParent"))))
+                        _errors__.append(
+                            ValidationException(
+                                "the `docParent` field is not valid because:",
+                                SourceLine(_doc, "docParent", str),
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
+                            )
+                        )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `docParent` field is not valid because:",
+                                SourceLine(_doc, "docParent", str),
+                                [e],
+                            )
+                        )
+        else:
+            docParent = None
+        if "docChild" in _doc:
+            try:
+                docChild = load_field(
+                    _doc.get("docChild"),
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
+                    baseuri,
+                    loadingOptions,
+                    lc=_doc.get("docChild")
+                )
+
+            except ValidationException as e:
+                error_message, to_print, verb_tensage = parse_errors(str(e))
+
+                if str(e) == "missing required field `docChild`":
+                    _errors__.append(
+                        ValidationException(
+                            str(e),
+                            None
+                        )
+                    )
+                else:
+                    if error_message != str(e):
+                        val_type = convert_typing(extract_type(type(_doc.get("docChild"))))
+                        _errors__.append(
+                            ValidationException(
+                                "the `docChild` field is not valid because:",
+                                SourceLine(_doc, "docChild", str),
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
+                            )
+                        )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `docChild` field is not valid because:",
+                                SourceLine(_doc, "docChild", str),
+                                [e],
+                            )
+                        )
+        else:
+            docChild = None
+        if "docAfter" in _doc:
+            try:
+                docAfter = load_field(
+                    _doc.get("docAfter"),
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
+                    baseuri,
+                    loadingOptions,
+                    lc=_doc.get("docAfter")
+                )
+
+            except ValidationException as e:
+                error_message, to_print, verb_tensage = parse_errors(str(e))
+
+                if str(e) == "missing required field `docAfter`":
+                    _errors__.append(
+                        ValidationException(
+                            str(e),
+                            None
+                        )
+                    )
+                else:
+                    if error_message != str(e):
+                        val_type = convert_typing(extract_type(type(_doc.get("docAfter"))))
+                        _errors__.append(
+                            ValidationException(
+                                "the `docAfter` field is not valid because:",
+                                SourceLine(_doc, "docAfter", str),
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
+                            )
+                        )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `docAfter` field is not valid because:",
+                                SourceLine(_doc, "docAfter", str),
+                                [e],
+                            )
+                        )
+        else:
+            docAfter = None
+        if "documentRoot" in _doc:
+            try:
+                documentRoot = load_field(
+                    _doc.get("documentRoot"),
+                    union_of_None_type_or_booltype,
+                    baseuri,
+                    loadingOptions,
+                    lc=_doc.get("documentRoot")
+                )
+
+            except ValidationException as e:
+                error_message, to_print, verb_tensage = parse_errors(str(e))
+
+                if str(e) == "missing required field `documentRoot`":
+                    _errors__.append(
+                        ValidationException(
+                            str(e),
+                            None
+                        )
+                    )
+                else:
+                    if error_message != str(e):
+                        val_type = convert_typing(extract_type(type(_doc.get("documentRoot"))))
+                        _errors__.append(
+                            ValidationException(
+                                "the `documentRoot` field is not valid because:",
+                                SourceLine(_doc, "documentRoot", str),
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}")],
+                            )
+                        )
+                    else:
+                        _errors__.append(
+                            ValidationException(
+                                "the `documentRoot` field is not valid because:",
+                                SourceLine(_doc, "documentRoot", str),
+                                [e],
+                            )
+                        )
+        else:
+            documentRoot = None
+        extension_fields: Dict[str, Any] = {}
+        for k in _doc.keys():
+            if k not in cls.attrs:
+                if not k:
+                    _errors__.append(
+                        ValidationException("mapping with implicit null key")
+                    )
+                elif ":" in k:
+                    ex = expand_url(
+                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                    )
+                    extension_fields[ex] = _doc[k]
+                else:
+                    _errors__.append(
+                        ValidationException(
+                            "invalid field `{}`, expected one of: `name`, `inVocab`, `names`, `type`, `doc`, `docParent`, `docChild`, `docAfter`, `documentRoot`".format(
+                                k
+                            ),
+                            SourceLine(_doc, k, str),
+                        )
+                    )
+
+        if _errors__:
+            raise ValidationException("", None, _errors__, "*")
+        _constructed = cls(
+            name=name,
+            inVocab=inVocab,
+            names=names,
+            type_=type_,
+            doc=doc,
+            docParent=docParent,
+            docChild=docChild,
+            docAfter=docAfter,
+            documentRoot=documentRoot,
+            extension_fields=extension_fields,
+            loadingOptions=loadingOptions,
+        )
+        loadingOptions.idx[name] = (_constructed, loadingOptions)
+        return _constructed
+
+    def save(
+        self, top: bool = False, base_url: str = "", relative_uris: bool = True
+    ) -> Dict[str, Any]:
+        r: Dict[str, Any] = {}
+
+        if relative_uris:
+            for ef in self.extension_fields:
+                r[prefix_url(ef, self.loadingOptions.vocab)] = self.extension_fields[ef]
+        else:
+            for ef in self.extension_fields:
+                r[ef] = self.extension_fields[ef]
+        if self.name is not None:
+            u = save_relative_uri(self.name, base_url, True, None, relative_uris)
+            r["name"] = u
+        if self.inVocab is not None:
+            r["inVocab"] = save(
+                self.inVocab, top=False, base_url=self.name, relative_uris=relative_uris
+            )
+        if self.names is not None:
+            u = save_relative_uri(self.names, self.name, False, 2, relative_uris)
+            r["names"] = u
+        if self.type_ is not None:
+            r["type"] = save(
+                self.type_, top=False, base_url=self.name, relative_uris=relative_uris
+            )
+        if self.doc is not None:
+            r["doc"] = save(
+                self.doc, top=False, base_url=self.name, relative_uris=relative_uris
+            )
+        if self.docParent is not None:
+            u = save_relative_uri(self.docParent, self.name, False, None, relative_uris)
+            r["docParent"] = u
+        if self.docChild is not None:
+            u = save_relative_uri(self.docChild, self.name, False, None, relative_uris)
+            r["docChild"] = u
+        if self.docAfter is not None:
+            u = save_relative_uri(self.docAfter, self.name, False, None, relative_uris)
+            r["docAfter"] = u
+        if self.documentRoot is not None:
+            r["documentRoot"] = save(
+                self.documentRoot,
+                top=False,
+                base_url=self.name,
+                relative_uris=relative_uris,
+            )
+
+        # top refers to the directory level
+        if top:
+            if self.loadingOptions.namespaces:
+                r["$namespaces"] = self.loadingOptions.namespaces
+            if self.loadingOptions.schemas:
+                r["$schemas"] = self.loadingOptions.schemas
+        return r
+
+    attrs = frozenset(
+        [
+            "name",
+            "inVocab",
+            "names",
+            "type",
+            "doc",
+            "docParent",
+            "docChild",
+            "docAfter",
+            "documentRoot",
+        ]
+    )
+
+
 class Documentation(NamedType, DocType):
     """
     A documentation section.  This type exists to facilitate self-documenting
@@ -4833,9 +6444,6 @@ class Documentation(NamedType, DocType):
         _errors__ = []
         if "name" in _doc:
             try:
-                if _doc.get("name") is None:
-                    raise ValidationException("missing required field `name`", None, [])
-
                 name = load_field(
                     _doc.get("name"),
                     uri_strtype_True_False_None_None,
@@ -4887,9 +6495,6 @@ class Documentation(NamedType, DocType):
             baseuri = name
         if "inVocab" in _doc:
             try:
-                if _doc.get("inVocab") is None:
-                    raise ValidationException("missing required field `inVocab`", None, [])
-
                 inVocab = load_field(
                     _doc.get("inVocab"),
                     union_of_None_type_or_booltype,
@@ -4932,9 +6537,6 @@ class Documentation(NamedType, DocType):
             inVocab = None
         if "doc" in _doc:
             try:
-                if _doc.get("doc") is None:
-                    raise ValidationException("missing required field `doc`", None, [])
-
                 doc = load_field(
                     _doc.get("doc"),
                     union_of_None_type_or_strtype_or_array_of_strtype,
@@ -4977,9 +6579,6 @@ class Documentation(NamedType, DocType):
             doc = None
         if "docParent" in _doc:
             try:
-                if _doc.get("docParent") is None:
-                    raise ValidationException("missing required field `docParent`", None, [])
-
                 docParent = load_field(
                     _doc.get("docParent"),
                     uri_union_of_None_type_or_strtype_False_False_None_None,
@@ -5022,9 +6621,6 @@ class Documentation(NamedType, DocType):
             docParent = None
         if "docChild" in _doc:
             try:
-                if _doc.get("docChild") is None:
-                    raise ValidationException("missing required field `docChild`", None, [])
-
                 docChild = load_field(
                     _doc.get("docChild"),
                     uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
@@ -5067,9 +6663,6 @@ class Documentation(NamedType, DocType):
             docChild = None
         if "docAfter" in _doc:
             try:
-                if _doc.get("docAfter") is None:
-                    raise ValidationException("missing required field `docAfter`", None, [])
-
                 docAfter = load_field(
                     _doc.get("docAfter"),
                     uri_union_of_None_type_or_strtype_False_False_None_None,
@@ -5247,15 +6840,19 @@ _vocab = {
     "Documented": "https://w3id.org/cwl/salad#Documented",
     "EnumSchema": "https://w3id.org/cwl/salad#EnumSchema",
     "JsonldPredicate": "https://w3id.org/cwl/salad#JsonldPredicate",
+    "MapSchema": "https://w3id.org/cwl/salad#MapSchema",
     "NamedType": "https://w3id.org/cwl/salad#NamedType",
     "PrimitiveType": "https://w3id.org/cwl/salad#PrimitiveType",
     "RecordField": "https://w3id.org/cwl/salad#RecordField",
     "RecordSchema": "https://w3id.org/cwl/salad#RecordSchema",
     "SaladEnumSchema": "https://w3id.org/cwl/salad#SaladEnumSchema",
+    "SaladMapSchema": "https://w3id.org/cwl/salad#SaladMapSchema",
     "SaladRecordField": "https://w3id.org/cwl/salad#SaladRecordField",
     "SaladRecordSchema": "https://w3id.org/cwl/salad#SaladRecordSchema",
+    "SaladUnionSchema": "https://w3id.org/cwl/salad#SaladUnionSchema",
     "SchemaDefinedType": "https://w3id.org/cwl/salad#SchemaDefinedType",
     "SpecializeDef": "https://w3id.org/cwl/salad#SpecializeDef",
+    "UnionSchema": "https://w3id.org/cwl/salad#UnionSchema",
     "array": "https://w3id.org/cwl/salad#array",
     "boolean": "http://www.w3.org/2001/XMLSchema#boolean",
     "documentation": "https://w3id.org/cwl/salad#documentation",
@@ -5264,9 +6861,11 @@ _vocab = {
     "float": "http://www.w3.org/2001/XMLSchema#float",
     "int": "http://www.w3.org/2001/XMLSchema#int",
     "long": "http://www.w3.org/2001/XMLSchema#long",
+    "map": "https://w3id.org/cwl/salad#map",
     "null": "https://w3id.org/cwl/salad#null",
     "record": "https://w3id.org/cwl/salad#record",
     "string": "http://www.w3.org/2001/XMLSchema#string",
+    "union": "https://w3id.org/cwl/salad#union",
 }
 _rvocab = {
     "https://w3id.org/cwl/salad#Any": "Any",
@@ -5276,15 +6875,19 @@ _rvocab = {
     "https://w3id.org/cwl/salad#Documented": "Documented",
     "https://w3id.org/cwl/salad#EnumSchema": "EnumSchema",
     "https://w3id.org/cwl/salad#JsonldPredicate": "JsonldPredicate",
+    "https://w3id.org/cwl/salad#MapSchema": "MapSchema",
     "https://w3id.org/cwl/salad#NamedType": "NamedType",
     "https://w3id.org/cwl/salad#PrimitiveType": "PrimitiveType",
     "https://w3id.org/cwl/salad#RecordField": "RecordField",
     "https://w3id.org/cwl/salad#RecordSchema": "RecordSchema",
     "https://w3id.org/cwl/salad#SaladEnumSchema": "SaladEnumSchema",
+    "https://w3id.org/cwl/salad#SaladMapSchema": "SaladMapSchema",
     "https://w3id.org/cwl/salad#SaladRecordField": "SaladRecordField",
     "https://w3id.org/cwl/salad#SaladRecordSchema": "SaladRecordSchema",
+    "https://w3id.org/cwl/salad#SaladUnionSchema": "SaladUnionSchema",
     "https://w3id.org/cwl/salad#SchemaDefinedType": "SchemaDefinedType",
     "https://w3id.org/cwl/salad#SpecializeDef": "SpecializeDef",
+    "https://w3id.org/cwl/salad#UnionSchema": "UnionSchema",
     "https://w3id.org/cwl/salad#array": "array",
     "http://www.w3.org/2001/XMLSchema#boolean": "boolean",
     "https://w3id.org/cwl/salad#documentation": "documentation",
@@ -5293,9 +6896,11 @@ _rvocab = {
     "http://www.w3.org/2001/XMLSchema#float": "float",
     "http://www.w3.org/2001/XMLSchema#int": "int",
     "http://www.w3.org/2001/XMLSchema#long": "long",
+    "https://w3id.org/cwl/salad#map": "map",
     "https://w3id.org/cwl/salad#null": "null",
     "https://w3id.org/cwl/salad#record": "record",
     "http://www.w3.org/2001/XMLSchema#string": "string",
+    "https://w3id.org/cwl/salad#union": "union",
 }
 
 strtype = _PrimitiveLoader(str)
@@ -5334,16 +6939,20 @@ AnyLoader = _EnumLoader(("Any",), "Any")
 """
 The **Any** type validates for any non-null value.
 """
-RecordFieldLoader = _RecordLoader(RecordField)
-RecordSchemaLoader = _RecordLoader(RecordSchema)
-EnumSchemaLoader = _RecordLoader(EnumSchema)
-ArraySchemaLoader = _RecordLoader(ArraySchema)
-JsonldPredicateLoader = _RecordLoader(JsonldPredicate)
-SpecializeDefLoader = _RecordLoader(SpecializeDef)
-SaladRecordFieldLoader = _RecordLoader(SaladRecordField)
-SaladRecordSchemaLoader = _RecordLoader(SaladRecordSchema)
-SaladEnumSchemaLoader = _RecordLoader(SaladEnumSchema)
-DocumentationLoader = _RecordLoader(Documentation)
+RecordFieldLoader = _RecordLoader(RecordField, None, None)
+RecordSchemaLoader = _RecordLoader(RecordSchema, None, None)
+EnumSchemaLoader = _RecordLoader(EnumSchema, None, None)
+ArraySchemaLoader = _RecordLoader(ArraySchema, None, None)
+MapSchemaLoader = _RecordLoader(MapSchema, None, None)
+UnionSchemaLoader = _RecordLoader(UnionSchema, None, None)
+JsonldPredicateLoader = _RecordLoader(JsonldPredicate, None, None)
+SpecializeDefLoader = _RecordLoader(SpecializeDef, None, None)
+SaladRecordFieldLoader = _RecordLoader(SaladRecordField, None, None)
+SaladRecordSchemaLoader = _RecordLoader(SaladRecordSchema, None, None)
+SaladEnumSchemaLoader = _RecordLoader(SaladEnumSchema, None, None)
+SaladMapSchemaLoader = _RecordLoader(SaladMapSchema, None, None)
+SaladUnionSchemaLoader = _RecordLoader(SaladUnionSchema, None, None)
+DocumentationLoader = _RecordLoader(Documentation, None, None)
 array_of_strtype = _ArrayLoader(strtype)
 union_of_None_type_or_strtype_or_array_of_strtype = _UnionLoader(
     (
@@ -5353,30 +6962,34 @@ union_of_None_type_or_strtype_or_array_of_strtype = _UnionLoader(
     )
 )
 uri_strtype_True_False_None_None = _URILoader(strtype, True, False, None, None)
-union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype = _UnionLoader(
+union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
     (
         PrimitiveTypeLoader,
         RecordSchemaLoader,
         EnumSchemaLoader,
         ArraySchemaLoader,
+        MapSchemaLoader,
+        UnionSchemaLoader,
         strtype,
     )
 )
-array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype = _ArrayLoader(
-    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype
+array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _ArrayLoader(
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype
 )
-union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype = _UnionLoader(
+union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
     (
         PrimitiveTypeLoader,
         RecordSchemaLoader,
         EnumSchemaLoader,
         ArraySchemaLoader,
+        MapSchemaLoader,
+        UnionSchemaLoader,
         strtype,
-        array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype,
+        array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
     )
 )
-typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_2 = _TypeDSLLoader(
-    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype,
+typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2 = _TypeDSLLoader(
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
     2,
     "v1.1",
 )
@@ -5406,8 +7019,8 @@ uri_array_of_strtype_True_False_None_None = _URILoader(
 )
 Enum_nameLoader = _EnumLoader(("enum",), "Enum_name")
 typedsl_Enum_nameLoader_2 = _TypeDSLLoader(Enum_nameLoader, 2, "v1.1")
-uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_False_True_2_None = _URILoader(
-    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_strtype,
+uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None = _URILoader(
+    union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
     False,
     True,
     2,
@@ -5415,6 +7028,10 @@ uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_Ar
 )
 Array_nameLoader = _EnumLoader(("array",), "Array_name")
 typedsl_Array_nameLoader_2 = _TypeDSLLoader(Array_nameLoader, 2, "v1.1")
+Map_nameLoader = _EnumLoader(("map",), "Map_name")
+typedsl_Map_nameLoader_2 = _TypeDSLLoader(Map_nameLoader, 2, "v1.1")
+Union_nameLoader = _EnumLoader(("union",), "Union_name")
+typedsl_Union_nameLoader_2 = _TypeDSLLoader(Union_nameLoader, 2, "v1.1")
 union_of_None_type_or_booltype = _UnionLoader(
     (
         None_type,
@@ -5474,24 +7091,26 @@ idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader = _IdMapLoad
 )
 Documentation_nameLoader = _EnumLoader(("documentation",), "Documentation_name")
 typedsl_Documentation_nameLoader_2 = _TypeDSLLoader(Documentation_nameLoader, 2, "v1.1")
-union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader = (
-    _UnionLoader(
-        (
-            SaladRecordSchemaLoader,
-            SaladEnumSchemaLoader,
-            DocumentationLoader,
-        )
-    )
-)
-array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader = _ArrayLoader(
-    union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader
-)
-union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader = _UnionLoader(
+union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader = _UnionLoader(
     (
         SaladRecordSchemaLoader,
         SaladEnumSchemaLoader,
+        SaladMapSchemaLoader,
+        SaladUnionSchemaLoader,
         DocumentationLoader,
-        array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader,
+    )
+)
+array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader = _ArrayLoader(
+    union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader
+)
+union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader = _UnionLoader(
+    (
+        SaladRecordSchemaLoader,
+        SaladEnumSchemaLoader,
+        SaladMapSchemaLoader,
+        SaladUnionSchemaLoader,
+        DocumentationLoader,
+        array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader,
     )
 )
 
@@ -5506,7 +7125,7 @@ def load_document(
     if loadingOptions is None:
         loadingOptions = LoadingOptions()
     result, metadata = _document_load(
-        union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader,
+        union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader,
         doc,
         baseuri,
         loadingOptions,
@@ -5525,7 +7144,7 @@ def load_document_with_metadata(
     if loadingOptions is None:
         loadingOptions = LoadingOptions(fileuri=baseuri)
     return _document_load(
-        union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader,
+        union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader,
         doc,
         baseuri,
         loadingOptions,
@@ -5546,7 +7165,7 @@ def load_document_by_string(
         loadingOptions = LoadingOptions(fileuri=uri)
 
     result, metadata = _document_load(
-        union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader,
+        union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader,
         result,
         uri,
         loadingOptions,
@@ -5569,7 +7188,7 @@ def load_document_by_yaml(
         loadingOptions = LoadingOptions(fileuri=uri)
 
     result, metadata = _document_load(
-        union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_DocumentationLoader,
+        union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader,
         yaml,
         uri,
         loadingOptions,

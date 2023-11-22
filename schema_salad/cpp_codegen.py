@@ -46,6 +46,7 @@ def replaceKeywords(s: str) -> str:
         "stdin",
         "stdout",
         "stderr",
+        "union",
     ):
         s = s + "_"
     return s
@@ -248,6 +249,132 @@ class FieldDefinition:
         target.write(f"{fullInd}heap_object<{typeStr}> {name};\n")
 
 
+class MapDefinition:
+    """Prototype of a map."""
+
+    def __init__(self, name: str, values: List[str]):
+        """Initialize union definition with a name and possible values."""
+        self.values = values
+        (self.namespace, self.classname) = split_name(name)
+        self.namespace = safename(self.namespace)
+        self.classname = safename(self.classname)
+
+    def _remove_namespace(self, typeStr: str) -> str:
+        return typeStr.replace(f"{self.namespace}::", "")
+
+    def writeFwdDeclaration(self, target: IO[str], fullInd: str, ind: str) -> None:
+        """Write forward declaration."""
+        target.write(f"{fullInd}namespace {self.namespace} {{ struct {self.classname}; }}\n")
+
+    def writeDefinition(self, target: IO[str], ind: str) -> None:
+        """Write map definition to output."""
+        target.write(f"namespace {self.namespace} {{\n")
+        if len(self.values) == 1:
+            valueType = self._remove_namespace(self.values[0])
+        else:
+            valueType = f"std::variant<{', '.join(self._remove_namespace(v) for v in self.values)}>"
+        target.write(f"struct {self.classname} {{\n")
+        target.write(f"{ind}heap_object<std::map<std::string, {valueType}>> value;\n")
+        target.write(f"{ind}auto toYaml() const -> YAML::Node;\n")
+        target.write(f"{ind}void fromYaml(YAML::Node const& n);\n")
+        target.write("};\n")
+        target.write("}\n\n")
+
+    def writeImplDefinition(self, target: IO[str], fullInd: str, ind: str) -> None:
+        """Write definition with implementation."""
+        # Write toYaml function
+        functionname = f"{self.namespace}::{self.classname}::toYaml"
+        target.write(
+            f"""{fullInd}inline auto {functionname}() const -> YAML::Node {{
+{fullInd}{ind}using ::toYaml;
+{fullInd}{ind}return toYaml(*value);\n{fullInd}}}\n
+"""
+        )
+
+        # Write fromYaml function
+        functionname = f"{self.namespace}::{self.classname}::fromYaml"
+        target.write(
+            f"""{fullInd}inline void {functionname}([[maybe_unused]] YAML::Node const& n) {{
+{fullInd}{ind}using ::fromYaml;
+{fullInd}{ind}fromYaml(n, *value);\n{fullInd}}}\n
+"""
+        )
+
+
+class UnionDefinition:
+    """Prototype of a union."""
+
+    def __init__(self, name: str, types: List[str]):
+        """Initialize union definition with a name and possible types."""
+        (self.namespace, self.classname) = split_name(name)
+        self.namespace = safename(self.namespace)
+        self.classname = safename(self.classname)
+        self.types = (
+            self._remove_namespace(types[0])
+            if len(types) == 1
+            else f"std::variant<{', '.join(self._remove_namespace(t) for t in types)}>"
+        )
+
+    def _remove_namespace(self, typeStr: str) -> str:
+        return typeStr.replace(f"{self.namespace}::", "")
+
+    def writeFwdDeclaration(self, target: IO[str], fullInd: str, ind: str) -> None:
+        """Write forward declaration."""
+        target.write(f"{fullInd}namespace {self.namespace} {{ struct {self.classname}; }}\n")
+
+    def writeDefinition(self, target: IO[str], ind: str) -> None:
+        """Write union definition to output."""
+        target.write(f"namespace {self.namespace} {{\n")
+        target.write(f"struct {self.classname} {{\n")
+        target.write(f"{ind}{self.types} *value = nullptr;\n")
+        target.write(f"{ind}{self.classname}();\n")
+        target.write(f"{ind}~{self.classname}();\n")
+        target.write(f"{ind}auto toYaml() const -> YAML::Node;\n")
+        target.write(f"{ind}void fromYaml(YAML::Node const& n);\n")
+        target.write("};\n")
+        target.write("}\n\n")
+
+    def writeImplDefinition(self, target: IO[str], fullInd: str, ind: str) -> None:
+        """Write definition with implementation."""
+        # Write constructor
+        functionname = f"{self.namespace}::{self.classname}::{self.classname}"
+        target.write(
+            f"""{fullInd}{functionname}() {{
+{fullInd}{ind}value = new {self.types}();\n{fullInd}}}\n
+"""
+        )
+
+        # Write destructor
+        functionname = f"{self.namespace}::{self.classname}::~{self.classname}"
+        target.write(
+            f"""{fullInd}{functionname}() {{
+{fullInd}{ind}if (value != nullptr) {{
+{fullInd}{ind}{ind}delete value;
+{fullInd}{ind}{ind}value = nullptr;
+{fullInd}{ind}}}
+{fullInd}}}\n
+"""
+        )
+
+        # Write toYaml function
+        functionname = f"{self.namespace}::{self.classname}::toYaml"
+        target.write(
+            f"""{fullInd}inline auto {functionname}() const -> YAML::Node {{
+{fullInd}{ind}using ::toYaml;
+{fullInd}{ind}return toYaml(*value);\n{fullInd}}}\n
+"""
+        )
+
+        # Write fromYaml function
+        functionname = f"{self.namespace}::{self.classname}::fromYaml"
+        target.write(
+            f"""{fullInd}inline void {functionname}([[maybe_unused]] YAML::Node const& n) {{
+{fullInd}{ind}using ::fromYaml;
+{fullInd}{ind}fromYaml(n, *value);\n{fullInd}}}\n
+"""
+        )
+
+
 class EnumDefinition:
     """Prototype of a enum."""
 
@@ -301,7 +428,9 @@ class EnumDefinition:
         target.write(f"{ind}to_enum(n.as<std::string>(), out);\n}}\n")
 
         if len(self.values):
-            target.write(f"{ind}template <> struct IsConstant<{name}> : std::true_type {{}};")
+            target.write(f"template <> struct IsConstant<{name}> : std::true_type {{}};\n")
+
+        target.write("\n")
 
 
 # !TODO way tot many functions, most of these shouldn't exists
@@ -318,7 +447,7 @@ def hasFieldValue(e: Any, f: str, v: Any) -> bool:
         return False
     if f not in e:
         return False
-    return bool(e[f] == v)
+    return bool(e[f] in [v, f"https://w3id.org/cwl/salad#{v}"])
 
 
 def isRecordSchema(v: Any) -> bool:
@@ -354,6 +483,8 @@ def pred(i: Any) -> bool:
         or isRecordSchema(i)
         or isEnumSchema(i)
         or isArraySchema(i)
+        or isMapSchema(i)
+        or isUnionSchema(i)
         or isinstance(i, str)
     )
 
@@ -371,6 +502,26 @@ def isArraySchema(v: Any) -> bool:
         if not (pred(i) or isArray(i)):
             return False
     return True
+
+
+def isMapSchema(v: Any) -> bool:
+    """Check if v is of type map schema."""
+    if not hasFieldValue(v, "type", "map"):
+        return False
+    if "values" not in v:
+        return False
+    if not isinstance(v["values"], list):
+        return False
+
+    for i in v["values"]:
+        if not (pred(i) or isArray(i)):
+            return False
+    return True
+
+
+def isUnionSchema(v: Any) -> bool:
+    """Check if v is of type union schema."""
+    return hasFieldValue(v, "type", "union")
 
 
 class CppCodeGen(CodeGenBase):
@@ -398,6 +549,8 @@ class CppCodeGen(CodeGenBase):
 
         self.classDefinitions: Dict[str, ClassDefinition] = {}
         self.enumDefinitions: Dict[str, EnumDefinition] = {}
+        self.mapDefinitions: Dict[str, MapDefinition] = {}
+        self.unionDefinitions: Dict[str, UnionDefinition] = {}
 
     def convertTypeToCpp(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> str:
         """Convert a Schema Salad type to a C++ type."""
@@ -462,14 +615,24 @@ class CppCodeGen(CodeGenBase):
                 ):
                     items = type_declaration[0]["items"]
                     if isinstance(items, list):
-                        ts = []
-                        for i in items:
-                            ts.append(self.convertTypeToCpp(i))
+                        ts = [self.convertTypeToCpp(i) for i in items]
                         name = ", ".join(ts)
                         return f"std::vector<std::variant<{name}>>"
                     else:
                         i = self.convertTypeToCpp(items)
                         return f"std::vector<{i}>"
+                elif "type" in type_declaration[0] and type_declaration[0]["type"] in (
+                    "map",
+                    "https://w3id.org/cwl/salad#map",
+                ):
+                    values = type_declaration[0]["values"]
+                    if isinstance(values, list):
+                        ts = [self.convertTypeToCpp(i) for i in values]
+                        name = ", ".join(ts)
+                        return f"std::map<std::string, std::variant<{name}>>"
+                    else:
+                        i = self.convertTypeToCpp(values)
+                        return f"std::map<std::string, {i}>"
                 elif "type" in type_declaration[0] and type_declaration[0]["type"] in (
                     "record",
                     "https://w3id.org/cwl/salad#record",
@@ -618,6 +781,8 @@ template <typename T> struct IsConstant : std::false_type {};
 template <typename T>
 auto toYaml(std::vector<T> const& v) -> YAML::Node;
 template <typename T>
+auto toYaml(std::map<std::string, T> const& v) -> YAML::Node;
+template <typename T>
 auto toYaml(T const& t) -> YAML::Node;
 template <typename ...Args>
 auto toYaml(std::variant<Args...> const& t) -> YAML::Node;
@@ -625,6 +790,8 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node;
 // fwd declaring fromYaml
 template <typename T>
 void fromYaml(YAML::Node const& n, std::vector<T>& v);
+template <typename T>
+void fromYaml(YAML::Node const& n, std::map<std::string, T>& v);
 template <typename T>
 void fromYaml(YAML::Node const& n, T& t);
 template <typename ...Args>
@@ -668,6 +835,17 @@ struct DetectAndExtractFromYaml<std::vector<T>> {
         if (!n.IsDefined()) return std::nullopt;
         if (!n.IsSequence()) return std::nullopt;
         auto res = std::vector<T>{};
+        fromYaml(n, res);
+        return res;
+    }
+};
+
+template <typename T>
+struct DetectAndExtractFromYaml<std::map<std::string, T>> {
+    auto operator()(YAML::Node const& n) const -> std::optional<std::map<std::string, T>> {
+        if (!n.IsDefined()) return std::nullopt;
+        if (!n.IsMap()) return std::nullopt;
+        auto res = std::map<std::string, T>{};
         fromYaml(n, res);
         return res;
     }
@@ -738,6 +916,10 @@ public:
 
         for key in self.classDefinitions:
             self.classDefinitions[key].writeFwdDeclaration(self.target, "", "    ")
+        for key in self.mapDefinitions:
+            self.mapDefinitions[key].writeFwdDeclaration(self.target, "", "    ")
+        for key in self.unionDefinitions:
+            self.unionDefinitions[key].writeFwdDeclaration(self.target, "", "    ")
 
         # remove parent classes, that are specialized/templated versions
         for key in self.classDefinitions:
@@ -760,12 +942,23 @@ public:
                 if not found:
                     self.classDefinitions[key].fields.append(field)
 
+        # write definitions
         for key in self.enumDefinitions:
             self.enumDefinitions[key].writeDefinition(self.target, "    ")
         for key in self.classDefinitions:
             self.classDefinitions[key].writeDefinition(self.target, "", "    ")
+        for key in self.mapDefinitions:
+            self.mapDefinitions[key].writeDefinition(self.target, "    ")
+        for key in self.unionDefinitions:
+            self.unionDefinitions[key].writeDefinition(self.target, "    ")
+
+        # write implementations
         for key in self.classDefinitions:
             self.classDefinitions[key].writeImplDefinition(self.target, "", "    ")
+        for key in self.mapDefinitions:
+            self.mapDefinitions[key].writeImplDefinition(self.target, "", "    ")
+        for key in self.unionDefinitions:
+            self.unionDefinitions[key].writeImplDefinition(self.target, "", "    ")
 
         self.target.write(
             """
@@ -774,6 +967,15 @@ auto toYaml(std::vector<T> const& v) -> YAML::Node {
     auto n = YAML::Node(YAML::NodeType::Sequence);
     for (auto const& e : v) {
         n.push_back(toYaml(e));
+    }
+    return n;
+}
+
+template <typename T>
+auto toYaml(std::map<std::string, T> const& v) -> YAML::Node {
+    auto n = YAML::Node(YAML::NodeType::Map);
+    for (auto const& [key, value] : v) {
+        n[key] = toYaml(value);
     }
     return n;
 }
@@ -800,6 +1002,15 @@ void fromYaml(YAML::Node const& n, std::vector<T>& v){
     for (auto e : n) {
         v.emplace_back();
         fromYaml(e, v.back());
+    }
+}
+
+template <typename T>
+void fromYaml(YAML::Node const& n, std::map<std::string, T>& v){
+    if (!n.IsMap()) return;
+    for (auto e : n) {
+        auto key = e.first.as<std::string>();
+        fromYaml(e.second, v[key]);
     }
 }
 
@@ -886,6 +1097,24 @@ void fromYaml(YAML::Node const& n, std::variant<Args...>& v){
 
         self.classDefinitions[stype["name"]] = cd
 
+    def parseMapSchema(self, stype: Dict[str, Any]) -> str:
+        """Parse a map schema."""
+        name = cast(str, stype["name"])
+        if name not in self.mapDefinitions:
+            self.mapDefinitions[name] = MapDefinition(
+                name, list(map(self.convertTypeToCpp, stype["values"]))
+            )
+        return name
+
+    def parseUnionSchema(self, stype: Dict[str, Any]) -> str:
+        """Parse a union schema."""
+        name = cast(str, stype["name"])
+        if name not in self.unionDefinitions:
+            self.unionDefinitions[name] = UnionDefinition(
+                name, list(map(self.convertTypeToCpp, stype["names"]))
+            )
+        return name
+
     def parseEnum(self, stype: Dict[str, Any]) -> str:
         """Parse a schema salad enum."""
         name = cast(str, stype["name"])
@@ -911,6 +1140,10 @@ void fromYaml(YAML::Node const& n, std::variant<Args...>& v){
             # parsing a record
             if isRecordSchema(stype):
                 self.parseRecordSchema(stype)
+            elif isMapSchema(stype):
+                self.parseMapSchema(stype)
+            elif isUnionSchema(stype):
+                self.parseUnionSchema(stype)
             elif isEnumSchema(stype):
                 self.parseEnum(stype)
             else:
