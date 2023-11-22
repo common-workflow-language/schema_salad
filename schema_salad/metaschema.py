@@ -530,11 +530,16 @@ class _ArrayLoader(_Loader):
 
 class _MapLoader(_Loader):
     def __init__(
-        self, values: _Loader, name: Optional[str] = None, container: Optional[str] = None
+        self,
+        values: _Loader,
+        name: Optional[str] = None,
+        container: Optional[str] = None,
+        no_link_check: Optional[bool] = None,
     ) -> None:
         self.values = values
         self.name = name
         self.container = container
+        self.no_link_check = no_link_check
 
     def load(
         self,
@@ -546,8 +551,10 @@ class _MapLoader(_Loader):
     ) -> Any:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(f"Expected a map, was {type(doc)}")
-        if self.container is not None:
-            loadingOptions = LoadingOptions(copyfrom=loadingOptions, container=self.container)
+        if self.container is not None or self.no_link_check is not None:
+            loadingOptions = LoadingOptions(
+                copyfrom=loadingOptions, container=self.container, no_link_check=self.no_link_check
+            )
         r: Dict[str, Any] = {}
         errors: List[SchemaSaladException] = []
         for k, v in doc.items():
@@ -658,9 +665,15 @@ class _SecondaryDSLLoader(_Loader):
 
 
 class _RecordLoader(_Loader):
-    def __init__(self, classtype: Type[Saveable], container: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        classtype: Type[Saveable],
+        container: Optional[str] = None,
+        no_link_check: Optional[bool] = None,
+    ) -> None:
         self.classtype = classtype
         self.container = container
+        self.no_link_check = no_link_check
 
     def load(
         self,
@@ -675,8 +688,10 @@ class _RecordLoader(_Loader):
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
                 f"but valid type for this field is an object."
             )
-        if self.container is not None:
-            loadingOptions = LoadingOptions(copyfrom=loadingOptions, container=self.container)
+        if self.container is not None or self.no_link_check is not None:
+            loadingOptions = LoadingOptions(
+                copyfrom=loadingOptions, container=self.container, no_link_check=self.no_link_check
+            )
         return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
     def __repr__(self) -> str:
@@ -6924,20 +6939,20 @@ AnyLoader = _EnumLoader(("Any",), "Any")
 """
 The **Any** type validates for any non-null value.
 """
-RecordFieldLoader = _RecordLoader(RecordField, None)
-RecordSchemaLoader = _RecordLoader(RecordSchema, None)
-EnumSchemaLoader = _RecordLoader(EnumSchema, None)
-ArraySchemaLoader = _RecordLoader(ArraySchema, None)
-MapSchemaLoader = _RecordLoader(MapSchema, None)
-UnionSchemaLoader = _RecordLoader(UnionSchema, None)
-JsonldPredicateLoader = _RecordLoader(JsonldPredicate, None)
-SpecializeDefLoader = _RecordLoader(SpecializeDef, None)
-SaladRecordFieldLoader = _RecordLoader(SaladRecordField, None)
-SaladRecordSchemaLoader = _RecordLoader(SaladRecordSchema, None)
-SaladEnumSchemaLoader = _RecordLoader(SaladEnumSchema, None)
-SaladMapSchemaLoader = _RecordLoader(SaladMapSchema, None)
-SaladUnionSchemaLoader = _RecordLoader(SaladUnionSchema, None)
-DocumentationLoader = _RecordLoader(Documentation, None)
+RecordFieldLoader = _RecordLoader(RecordField, None, None)
+RecordSchemaLoader = _RecordLoader(RecordSchema, None, None)
+EnumSchemaLoader = _RecordLoader(EnumSchema, None, None)
+ArraySchemaLoader = _RecordLoader(ArraySchema, None, None)
+MapSchemaLoader = _RecordLoader(MapSchema, None, None)
+UnionSchemaLoader = _RecordLoader(UnionSchema, None, None)
+JsonldPredicateLoader = _RecordLoader(JsonldPredicate, None, None)
+SpecializeDefLoader = _RecordLoader(SpecializeDef, None, None)
+SaladRecordFieldLoader = _RecordLoader(SaladRecordField, None, None)
+SaladRecordSchemaLoader = _RecordLoader(SaladRecordSchema, None, None)
+SaladEnumSchemaLoader = _RecordLoader(SaladEnumSchema, None, None)
+SaladMapSchemaLoader = _RecordLoader(SaladMapSchema, None, None)
+SaladUnionSchemaLoader = _RecordLoader(SaladUnionSchema, None, None)
+DocumentationLoader = _RecordLoader(Documentation, None, None)
 array_of_strtype = _ArrayLoader(strtype)
 union_of_None_type_or_strtype_or_array_of_strtype = _UnionLoader(
     (

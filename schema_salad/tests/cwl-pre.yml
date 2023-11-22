@@ -700,7 +700,8 @@
     "doc": "Type representing a valid CWL input file as a `map<string, CWLObjectType>`.\n",
     "jsonldPredicate": {
       "_id": "https://w3id.org/cwl/cwl#inputfile",
-      "_container": "@list"
+      "_container": "@list",
+      "noLinkCheck": true
     }
   },
   {

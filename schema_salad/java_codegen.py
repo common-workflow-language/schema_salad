@@ -377,6 +377,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
         self,
         type_declaration: Union[List[Any], Dict[str, Any], str],
         container: Optional[str] = None,
+        no_link_check: Optional[bool] = None,
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
@@ -468,8 +469,10 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                         # instance_type="Map<String, {}>".format(i.instance_type),
                         instance_type=f"java.util.Map<String, {i.instance_type}>",
                         name=f"map_of_{i.name}",
-                        init="new MapLoader({}, {})".format(
-                            i.name, f"'{container}'" if container is not None else None
+                        init="new MapLoader({}, {}, {})".format(
+                            i.name,
+                            f"'{container}'" if container is not None else None,
+                            self.to_java(no_link_check),
                         ),
                         loader_type=f"Loader<java.util.Map<String, {i.instance_type}>>",
                     )
@@ -486,10 +489,12 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                     TypeDef(
                         instance_type=self.safe_name(type_declaration["name"]),
                         name=self.safe_name(type_declaration["name"]),
-                        init="new RecordLoader<{clazz}>({clazz}{ext}.class, {container})".format(
+                        init="new RecordLoader<{clazz}>({clazz}{ext}.class, "
+                        "{container}, {no_link_check})".format(
                             clazz=fqclass,
                             ext="Impl" if not is_abstract else "",
                             container=f"'{container}'" if container is not None else None,
+                            no_link_check=self.to_java(no_link_check),
                         ),
                         loader_type=f"Loader<{fqclass}>",
                     )
@@ -805,7 +810,7 @@ public enum {clazz} {{
         scoped_id: bool,
         vocab_term: bool,
         ref_scope: Optional[int],
-        no_link_check: Optional[bool],
+        no_link_check: Optional[bool] = None,
     ) -> TypeDef:
         instance_type = inner.instance_type or "Object"
         return self.declare_type(

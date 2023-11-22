@@ -398,6 +398,7 @@ public class {cls} : {current_interface}, ISaveable
         self,
         type_declaration: Union[List[Any], Dict[str, Any], str],
         container: Optional[str] = None,
+        no_link_check: Optional[bool] = None,
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
@@ -438,10 +439,11 @@ public class {cls} : {current_interface}, ISaveable
                         instance_type=f"Dictionary<string, {i.instance_type}>",
                         name=f"map_of_{i.name}",
                         loader_type=f"ILoader<Dictionary<string, {i.instance_type}>>",
-                        init="new MapLoader<{}>({}, {})".format(
+                        init="new MapLoader<{}>({}, {}, {})".format(
                             i.instance_type,
                             i.name,
                             f"'{container}'" if container is not None else None,
+                            self.to_dotnet(no_link_check),
                         ),
                     )
                 )
@@ -455,9 +457,10 @@ public class {cls} : {current_interface}, ISaveable
                     TypeDef(
                         instance_type=self.safe_name(type_declaration["name"]),
                         name=self.safe_name(type_declaration["name"]) + "Loader",
-                        init="new RecordLoader<{}>({})".format(
+                        init="new RecordLoader<{}>({}, {})".format(
                             self.safe_name(type_declaration["name"]),
                             f"'{container}'" if container is not None else None,
+                            self.to_dotnet(no_link_check),
                         ),
                         loader_type="ILoader<{}>".format(self.safe_name(type_declaration["name"])),
                         abstract=type_declaration.get("abstract", False),
@@ -839,7 +842,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
         scoped_id: bool,
         vocab_term: bool,
         ref_scope: Optional[int],
-        no_link_check: Optional[bool],
+        no_link_check: Optional[bool] = None,
     ) -> TypeDef:
         """Construct the TypeDef for the given URI loader."""
         instance_type = inner.instance_type or "object"

@@ -480,3 +480,4 @@ $graph:
   jsonldPredicate:
     _id: "cwl:inputfile"
     _container: "@list"
+    noLinkCheck: true

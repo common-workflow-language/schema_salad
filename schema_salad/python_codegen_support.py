@@ -527,11 +527,16 @@ class _ArrayLoader(_Loader):
 
 class _MapLoader(_Loader):
     def __init__(
-        self, values: _Loader, name: Optional[str] = None, container: Optional[str] = None
+        self,
+        values: _Loader,
+        name: Optional[str] = None,
+        container: Optional[str] = None,
+        no_link_check: Optional[bool] = None,
     ) -> None:
         self.values = values
         self.name = name
         self.container = container
+        self.no_link_check = no_link_check
 
     def load(
         self,
@@ -543,8 +548,10 @@ class _MapLoader(_Loader):
     ) -> Any:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(f"Expected a map, was {type(doc)}")
-        if self.container is not None:
-            loadingOptions = LoadingOptions(copyfrom=loadingOptions, container=self.container)
+        if self.container is not None or self.no_link_check is not None:
+            loadingOptions = LoadingOptions(
+                copyfrom=loadingOptions, container=self.container, no_link_check=self.no_link_check
+            )
         r: Dict[str, Any] = {}
         errors: List[SchemaSaladException] = []
         for k, v in doc.items():
@@ -655,9 +662,15 @@ class _SecondaryDSLLoader(_Loader):
 
 
 class _RecordLoader(_Loader):
-    def __init__(self, classtype: Type[Saveable], container: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        classtype: Type[Saveable],
+        container: Optional[str] = None,
+        no_link_check: Optional[bool] = None,
+    ) -> None:
         self.classtype = classtype
         self.container = container
+        self.no_link_check = no_link_check
 
     def load(
         self,
@@ -672,8 +685,10 @@ class _RecordLoader(_Loader):
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
                 f"but valid type for this field is an object."
             )
-        if self.container is not None:
-            loadingOptions = LoadingOptions(copyfrom=loadingOptions, container=self.container)
+        if self.container is not None or self.no_link_check is not None:
+            loadingOptions = LoadingOptions(
+                copyfrom=loadingOptions, container=self.container, no_link_check=self.no_link_check
+            )
         return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
     def __repr__(self) -> str:

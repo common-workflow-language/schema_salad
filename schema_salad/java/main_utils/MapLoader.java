@@ -8,10 +8,12 @@ import java.util.Map;
 public class MapLoader<T> implements Loader<Map<String, T>> {
   private final Loader<T> valueLoader;
   private final String container;
+  private final Boolean noLinkCheck;
 
-  public MapLoader(Loader<T> valueLoader, String container) {
+  public MapLoader(Loader<T> valueLoader, final String container, final Boolean noLinkCheck) {
     this.valueLoader = valueLoader;
     this.container = container;
+    this.noLinkCheck = noLinkCheck;
   }
 
   public Map<String, T> load(
@@ -21,8 +23,15 @@ public class MapLoader<T> implements Loader<Map<String, T>> {
       final String docRoot) {
     final Map<String, Object> docMap = (Map<String, Object>) Loader.validateOfJavaType(Map.class, doc);
     LoadingOptions innerLoadingOptions = loadingOptions;
-    if (this.container != null) {
-      innerLoadingOptions = new LoadingOptionsBuilder().copiedFrom(loadingOptions).setContainer(this.container).build();
+    if (this.container != null || this.noLinkCheck != null) {
+      LoadingOptionsBuilder builder = new LoadingOptionsBuilder().copiedFrom(loadingOptions);
+      if (this.container != null) {
+        builder.setContainer(this.container);
+      }
+      if (this.noLinkCheck != null) {
+        builder.setNoLinkCheck(this.noLinkCheck);
+      }
+      innerLoadingOptions = builder.build();
     }
     final Map<String, T> r = new HashMap();
     final List<ValidationException> errors = new ArrayList();

@@ -6,11 +6,13 @@ internal class MapLoader<T> : ILoader<Dictionary<string, T>>
 {
     private readonly ILoader valueLoader;
     private readonly string? container;
+    private readonly bool? noLinkCheck;
 
-    public MapLoader(in ILoader valueLoader, in string? container)
+    public MapLoader(in ILoader valueLoader, in string? container, in bool? noLinkCheck)
     {
         this.valueLoader = valueLoader;
         this.container = container;
+        this.noLinkCheck = noLinkCheck;
     }
 
     public Dictionary<string, T> Load(in object doc, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot = null)
@@ -26,9 +28,9 @@ internal class MapLoader<T> : ILoader<Dictionary<string, T>>
         }
 
         LoadingOptions innerLoadingOptions = loadingOptions;
-        if (this.container != null)
+        if (this.container != null || this.noLinkCheck != null)
         {
-            innerLoadingOptions = new LoadingOptions(copyFrom: loadingOptions, container: this.container);
+            innerLoadingOptions = new LoadingOptions(copyFrom: loadingOptions, container: this.container, noLinkCheck: this.noLinkCheck);
         }
 
         IDictionary docDictionary = (IDictionary)doc;

@@ -108,7 +108,10 @@ class CodeGenBase:
         raise NotImplementedError()
 
     def type_loader(
-        self, type_declaration: Union[List[Any], Dict[str, Any]], container: Optional[str] = None
+        self,
+        type_declaration: Union[List[Any], Dict[str, Any]],
+        container: Optional[str] = None,
+        no_link_check: Optional[bool] = None,
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         raise NotImplementedError()
@@ -140,7 +143,7 @@ class CodeGenBase:
         scoped_id: bool,
         vocab_term: bool,
         ref_scope: Optional[int],
-        no_link_check: Optional[bool],
+        no_link_check: Optional[bool] = None,
     ) -> TypeDef:
         """Construct the TypeDef for the given URI loader."""
         raise NotImplementedError()
