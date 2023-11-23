@@ -1,9 +1,12 @@
+"""Shared test functions and attributes."""
+import atexit
 import os
+from contextlib import ExitStack
+from pathlib import Path
 from typing import Optional
 
-from pkg_resources import Requirement, ResolutionError, resource_filename
-
 from schema_salad import ref_resolver
+from schema_salad.utils import as_file, files
 
 
 def get_data(filename: str) -> Optional[str]:
@@ -16,18 +19,21 @@ def get_data(filename: str) -> Optional[str]:
     # or else it will cause problem when joining path
     filepath = None
     try:
-        filepath = resource_filename(Requirement.parse("schema-salad"), filename)
-    except ResolutionError:
+        file_manager = ExitStack()
+        atexit.register(file_manager.close)
+        traversable = files("schema-salad") / filename
+        filepath = file_manager.enter_context(as_file(traversable))
+    except ModuleNotFoundError:
         pass
     if not filepath or not os.path.isfile(filepath):
         # First try to load it from the local directory, probably ``./tests/``.
-        filepath = os.path.join(os.path.dirname(__file__), filename)
-        if not os.path.isfile(filepath):
+        filepath = Path(os.path.dirname(__file__)) / filename
+        if not filepath.is_file():
             # If that didn't work, then default to tests/../${filename},
             # note that we return the parent as it is expected that __file__
             # is a test file.
-            filepath = os.path.join(os.path.dirname(__file__), os.pardir, filename)
-    return filepath
+            filepath = Path(os.path.dirname(__file__)) / ".." / filename
+    return str(filepath.resolve())
 
 
 def get_data_uri(resource_path: str) -> str:

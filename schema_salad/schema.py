@@ -19,7 +19,6 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-from importlib_resources import files
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from schema_salad.utils import (
@@ -28,6 +27,7 @@ from schema_salad.utils import (
     add_dictlist,
     aslist,
     convert_to_dict,
+    files,
     flatten,
     json_dumps,
     yaml_no_ts,

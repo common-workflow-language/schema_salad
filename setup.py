@@ -90,7 +90,7 @@ install_requires = [
     "mistune>=2.0.3,<2.1",
     "CacheControl[filecache] >= 0.11.7, < 0.14",
     "mypy_extensions",
-    "importlib_resources>=1.4",  # equivalent to Python 3.9,
+    "importlib_resources>=1.4;python_version<'3.9'",
 ]
 
 extras_require = {

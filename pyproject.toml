@@ -4,10 +4,9 @@ requires = [
     "setuptools_scm[toml]>=8.0.4,<9",
     'mypy[mypyc]==1.7.0',  # update mypy-requirements as well
     "black>=19.10b0,<23.12",
-    "types-pkg_resources",
     "types-requests",
     "types-dataclasses",
-    "importlib_resources>=1.4",  # equivalent to Python 3.9
+    "importlib_resources>=1.4;python_version<'3.9'",
     "ruamel.yaml>=0.17.6, < 0.19",
     "types-setuptools"
 ]
