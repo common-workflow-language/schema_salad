@@ -1,19 +1,28 @@
 """Python code generator for a given schema salad definition."""
 import textwrap
 from io import StringIO
-from typing import Any, Dict, IO, List, MutableMapping, MutableSequence, Optional, Set, Union
+from typing import (
+    IO,
+    Any,
+    Dict,
+    List,
+    MutableMapping,
+    MutableSequence,
+    Optional,
+    Set,
+    Union,
+)
 
 try:
     import black
 except ModuleNotFoundError:
     black = None  # type: ignore[assignment]
 
-from importlib_resources import files
-
 from . import schema
 from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
+from .utils import files
 
 _string_type_def = TypeDef("strtype", "_PrimitiveLoader(str)")
 _int_type_def = TypeDef("inttype", "_PrimitiveLoader(int)")

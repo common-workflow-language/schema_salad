@@ -16,13 +16,12 @@ from typing import (
 )
 from xml.sax.saxutils import escape  # nosec
 
-from importlib_resources import files
-
 from . import _logger, schema
 from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
 from .exceptions import SchemaException
 from .java_codegen import _ensure_directory_and_write, _safe_makedirs
 from .schema import shortname
+from .utils import Traversable, files
 
 
 def doc_to_doc_string(doc: Optional[str], indent_level: int = 0) -> str:
@@ -907,7 +906,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
             license_name="Apache License, Version 2.0",
         )
 
-        def template_from_resource(resource: Path) -> string.Template:
+        def template_from_resource(resource: Traversable) -> string.Template:
             template_str = resource.read_text("utf-8")
             template = string.Template(template_str)
             return template

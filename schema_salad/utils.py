@@ -26,6 +26,18 @@ from ruamel.yaml.main import YAML
 if TYPE_CHECKING:
     from .fetcher import Fetcher
 
+if sys.version_info >= (3, 11):
+    from importlib.resources import as_file, files
+    from importlib.resources.abc import Traversable
+elif sys.version_info >= (3, 9):
+    from importlib.abc import Traversable
+    from importlib.resources import as_file, files
+else:
+    from importlib_resources import as_file, files
+    from importlib_resources.abc import Traversable
+
+__all__ = ["files", "as_file", "Traversable"]
+
 ContextType = Dict[str, Union[Dict[str, Any], str, Iterable[str]]]
 DocumentType = TypeVar("DocumentType", CommentedSeq, CommentedMap)
 DocumentOrStrType = TypeVar("DocumentOrStrType", CommentedSeq, CommentedMap, str)

@@ -1,6 +1,5 @@
 mypy[mypyc]==1.7.0  # update pyproject.toml as well
 black>=19.10b0
-types-pkg_resources
 types-requests
 types-dataclasses
 objgraph

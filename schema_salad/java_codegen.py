@@ -16,12 +16,11 @@ from typing import (
     Union,
 )
 
-from importlib_resources import files
-
 from . import _logger, schema
 from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
+from .utils import Traversable, files
 
 # experiment at providing more typed objects building a optional type that allows
 # referencing one or a list of objects. It is useful for improving the RootLoader
@@ -885,7 +884,7 @@ public enum {clazz} {{
             license_url="https://www.apache.org/licenses/LICENSE-2.0.txt",
         )
 
-        def template_from_resource(resource: Path) -> string.Template:
+        def template_from_resource(resource: Traversable) -> string.Template:
             template_str = resource.read_text("utf-8")
             template = string.Template(template_str)
             return template
