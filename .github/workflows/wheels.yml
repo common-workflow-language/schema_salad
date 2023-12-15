@@ -65,7 +65,7 @@ jobs:
           # Linux arm64 wheels are built on circleci
           CIBW_ARCHS_LINUX: auto64 # ppc64le s390x
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: ./wheelhouse/*.whl
 
@@ -89,7 +89,7 @@ jobs:
       - name: Build sdist
         run: pipx run build --sdist
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: dist/*.tar.gz
 
