@@ -120,7 +120,7 @@ def arg_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional override of the package name which is other derived "
         "from the base URL (Java/TypeScript/.Net/Dlang only).",
-    ),
+    )
 
     parser.add_argument(
         "--codegen-copyright",
@@ -128,7 +128,7 @@ def arg_parser() -> argparse.ArgumentParser:
         metavar="copyright_string",
         default=None,
         help="Optional copyright of the input schema.",
-    ),
+    )
 
     parser.add_argument(
         "--codegen-spdx-copyright-text",
@@ -137,7 +137,7 @@ def arg_parser() -> argparse.ArgumentParser:
         default=[],
         help="List of copyright text. Each entry will show up as "
         "'SPDX-FileCopyrightText: ...' (Currently c++ only)",
-    ),
+    )
 
     parser.add_argument(
         "--codegen-spdx-license-identifier",
@@ -145,7 +145,7 @@ def arg_parser() -> argparse.ArgumentParser:
         metavar="spdx_license_identifier",
         default=None,
         help="Optional spdx license identifier, e.g.: GPL-3.0-only (Currently c++ only)",
-    ),
+    )
 
     parser.add_argument(
         "--codegen-parser-info",
