@@ -1220,6 +1220,7 @@ class RecordField(Documented):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         _errors__ = []
+        name = None
         if "name" in _doc:
             try:
                 name = load_field(
@@ -1260,8 +1261,6 @@ class RecordField(Documented):
                                 [e],
                             )
                         )
-        else:
-            name = None
 
         __original_name_is_none = name is None
         if name is None:
@@ -1270,7 +1269,8 @@ class RecordField(Documented):
             else:
                 _errors__.append(ValidationException("missing name"))
         if not __original_name_is_none:
-            baseuri = name
+            baseuri = cast(str, name)
+        doc = None
         if "doc" in _doc:
             try:
                 doc = load_field(
@@ -1311,8 +1311,6 @@ class RecordField(Documented):
                                 [e],
                             )
                         )
-        else:
-            doc = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("missing required field `type`", None, [])
@@ -1386,7 +1384,7 @@ class RecordField(Documented):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
-        loadingOptions.idx[name] = (_constructed, loadingOptions)
+        loadingOptions.idx[cast(str, name)] = (_constructed, loadingOptions)
         return _constructed
 
     def save(
@@ -1464,6 +1462,7 @@ class RecordSchema(Saveable):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         _errors__ = []
+        fields = None
         if "fields" in _doc:
             try:
                 fields = load_field(
@@ -1504,8 +1503,6 @@ class RecordSchema(Saveable):
                                 [e],
                             )
                         )
-        else:
-            fields = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("missing required field `type`", None, [])
@@ -1663,6 +1660,7 @@ class EnumSchema(Saveable):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         _errors__ = []
+        name = None
         if "name" in _doc:
             try:
                 name = load_field(
@@ -1703,8 +1701,6 @@ class EnumSchema(Saveable):
                                 [e],
                             )
                         )
-        else:
-            name = None
 
         __original_name_is_none = name is None
         if name is None:
@@ -1713,7 +1709,7 @@ class EnumSchema(Saveable):
             else:
                 name = "_:" + str(_uuid__.uuid4())
         if not __original_name_is_none:
-            baseuri = name
+            baseuri = cast(str, name)
         try:
             if _doc.get("symbols") is None:
                 raise ValidationException("missing required field `symbols`", None, [])
@@ -1829,7 +1825,7 @@ class EnumSchema(Saveable):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
-        loadingOptions.idx[name] = (_constructed, loadingOptions)
+        loadingOptions.idx[cast(str, name)] = (_constructed, loadingOptions)
         return _constructed
 
     def save(
@@ -2517,6 +2513,7 @@ class JsonldPredicate(Saveable):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         _errors__ = []
+        _id = None
         if "_id" in _doc:
             try:
                 _id = load_field(
@@ -2557,8 +2554,7 @@ class JsonldPredicate(Saveable):
                                 [e],
                             )
                         )
-        else:
-            _id = None
+        _type = None
         if "_type" in _doc:
             try:
                 _type = load_field(
@@ -2599,8 +2595,7 @@ class JsonldPredicate(Saveable):
                                 [e],
                             )
                         )
-        else:
-            _type = None
+        _container = None
         if "_container" in _doc:
             try:
                 _container = load_field(
@@ -2641,8 +2636,7 @@ class JsonldPredicate(Saveable):
                                 [e],
                             )
                         )
-        else:
-            _container = None
+        identity = None
         if "identity" in _doc:
             try:
                 identity = load_field(
@@ -2683,8 +2677,7 @@ class JsonldPredicate(Saveable):
                                 [e],
                             )
                         )
-        else:
-            identity = None
+        noLinkCheck = None
         if "noLinkCheck" in _doc:
             try:
                 noLinkCheck = load_field(
@@ -2725,8 +2718,7 @@ class JsonldPredicate(Saveable):
                                 [e],
                             )
                         )
-        else:
-            noLinkCheck = None
+        mapSubject = None
         if "mapSubject" in _doc:
             try:
                 mapSubject = load_field(
@@ -2767,8 +2759,7 @@ class JsonldPredicate(Saveable):
                                 [e],
                             )
                         )
-        else:
-            mapSubject = None
+        mapPredicate = None
         if "mapPredicate" in _doc:
             try:
                 mapPredicate = load_field(
@@ -2809,8 +2800,7 @@ class JsonldPredicate(Saveable):
                                 [e],
                             )
                         )
-        else:
-            mapPredicate = None
+        refScope = None
         if "refScope" in _doc:
             try:
                 refScope = load_field(
@@ -2851,8 +2841,7 @@ class JsonldPredicate(Saveable):
                                 [e],
                             )
                         )
-        else:
-            refScope = None
+        typeDSL = None
         if "typeDSL" in _doc:
             try:
                 typeDSL = load_field(
@@ -2893,8 +2882,7 @@ class JsonldPredicate(Saveable):
                                 [e],
                             )
                         )
-        else:
-            typeDSL = None
+        secondaryFilesDSL = None
         if "secondaryFilesDSL" in _doc:
             try:
                 secondaryFilesDSL = load_field(
@@ -2935,8 +2923,7 @@ class JsonldPredicate(Saveable):
                                 [e],
                             )
                         )
-        else:
-            secondaryFilesDSL = None
+        subscope = None
         if "subscope" in _doc:
             try:
                 subscope = load_field(
@@ -2977,8 +2964,6 @@ class JsonldPredicate(Saveable):
                                 [e],
                             )
                         )
-        else:
-            subscope = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -3382,6 +3367,7 @@ class SaladRecordField(RecordField):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         _errors__ = []
+        name = None
         if "name" in _doc:
             try:
                 name = load_field(
@@ -3422,8 +3408,6 @@ class SaladRecordField(RecordField):
                                 [e],
                             )
                         )
-        else:
-            name = None
 
         __original_name_is_none = name is None
         if name is None:
@@ -3432,7 +3416,8 @@ class SaladRecordField(RecordField):
             else:
                 _errors__.append(ValidationException("missing name"))
         if not __original_name_is_none:
-            baseuri = name
+            baseuri = cast(str, name)
+        doc = None
         if "doc" in _doc:
             try:
                 doc = load_field(
@@ -3473,8 +3458,6 @@ class SaladRecordField(RecordField):
                                 [e],
                             )
                         )
-        else:
-            doc = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("missing required field `type`", None, [])
@@ -3517,6 +3500,7 @@ class SaladRecordField(RecordField):
                             [e],
                         )
                     )
+        jsonldPredicate = None
         if "jsonldPredicate" in _doc:
             try:
                 jsonldPredicate = load_field(
@@ -3557,8 +3541,7 @@ class SaladRecordField(RecordField):
                                 [e],
                             )
                         )
-        else:
-            jsonldPredicate = None
+        default = None
         if "default" in _doc:
             try:
                 default = load_field(
@@ -3599,8 +3582,6 @@ class SaladRecordField(RecordField):
                                 [e],
                             )
                         )
-        else:
-            default = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -3634,7 +3615,7 @@ class SaladRecordField(RecordField):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
-        loadingOptions.idx[name] = (_constructed, loadingOptions)
+        loadingOptions.idx[cast(str, name)] = (_constructed, loadingOptions)
         return _constructed
 
     def save(
@@ -3775,6 +3756,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         _errors__ = []
+        name = None
         if "name" in _doc:
             try:
                 name = load_field(
@@ -3815,8 +3797,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            name = None
 
         __original_name_is_none = name is None
         if name is None:
@@ -3825,7 +3805,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             else:
                 _errors__.append(ValidationException("missing name"))
         if not __original_name_is_none:
-            baseuri = name
+            baseuri = cast(str, name)
+        inVocab = None
         if "inVocab" in _doc:
             try:
                 inVocab = load_field(
@@ -3866,8 +3847,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            inVocab = None
+        fields = None
         if "fields" in _doc:
             try:
                 fields = load_field(
@@ -3908,8 +3888,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            fields = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("missing required field `type`", None, [])
@@ -3952,6 +3930,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                             [e],
                         )
                     )
+        doc = None
         if "doc" in _doc:
             try:
                 doc = load_field(
@@ -3992,8 +3971,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            doc = None
+        docParent = None
         if "docParent" in _doc:
             try:
                 docParent = load_field(
@@ -4034,8 +4012,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            docParent = None
+        docChild = None
         if "docChild" in _doc:
             try:
                 docChild = load_field(
@@ -4076,8 +4053,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            docChild = None
+        docAfter = None
         if "docAfter" in _doc:
             try:
                 docAfter = load_field(
@@ -4118,8 +4094,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            docAfter = None
+        jsonldPredicate = None
         if "jsonldPredicate" in _doc:
             try:
                 jsonldPredicate = load_field(
@@ -4160,8 +4135,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            jsonldPredicate = None
+        documentRoot = None
         if "documentRoot" in _doc:
             try:
                 documentRoot = load_field(
@@ -4202,8 +4176,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            documentRoot = None
+        abstract = None
         if "abstract" in _doc:
             try:
                 abstract = load_field(
@@ -4244,8 +4217,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            abstract = None
+        extends = None
         if "extends" in _doc:
             try:
                 extends = load_field(
@@ -4286,8 +4258,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            extends = None
+        specialize = None
         if "specialize" in _doc:
             try:
                 specialize = load_field(
@@ -4328,8 +4299,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            specialize = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -4371,7 +4340,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
-        loadingOptions.idx[name] = (_constructed, loadingOptions)
+        loadingOptions.idx[cast(str, name)] = (_constructed, loadingOptions)
         return _constructed
 
     def save(
@@ -4562,6 +4531,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         _errors__ = []
+        name = None
         if "name" in _doc:
             try:
                 name = load_field(
@@ -4602,8 +4572,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            name = None
 
         __original_name_is_none = name is None
         if name is None:
@@ -4612,7 +4580,8 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             else:
                 name = "_:" + str(_uuid__.uuid4())
         if not __original_name_is_none:
-            baseuri = name
+            baseuri = cast(str, name)
+        inVocab = None
         if "inVocab" in _doc:
             try:
                 inVocab = load_field(
@@ -4653,8 +4622,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            inVocab = None
         try:
             if _doc.get("symbols") is None:
                 raise ValidationException("missing required field `symbols`", None, [])
@@ -4739,6 +4706,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                             [e],
                         )
                     )
+        doc = None
         if "doc" in _doc:
             try:
                 doc = load_field(
@@ -4779,8 +4747,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            doc = None
+        docParent = None
         if "docParent" in _doc:
             try:
                 docParent = load_field(
@@ -4821,8 +4788,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            docParent = None
+        docChild = None
         if "docChild" in _doc:
             try:
                 docChild = load_field(
@@ -4863,8 +4829,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            docChild = None
+        docAfter = None
         if "docAfter" in _doc:
             try:
                 docAfter = load_field(
@@ -4905,8 +4870,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            docAfter = None
+        jsonldPredicate = None
         if "jsonldPredicate" in _doc:
             try:
                 jsonldPredicate = load_field(
@@ -4947,8 +4911,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            jsonldPredicate = None
+        documentRoot = None
         if "documentRoot" in _doc:
             try:
                 documentRoot = load_field(
@@ -4989,8 +4952,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            documentRoot = None
+        extends = None
         if "extends" in _doc:
             try:
                 extends = load_field(
@@ -5031,8 +4993,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            extends = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -5072,7 +5032,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
-        loadingOptions.idx[name] = (_constructed, loadingOptions)
+        loadingOptions.idx[cast(str, name)] = (_constructed, loadingOptions)
         return _constructed
 
     def save(
@@ -5242,6 +5202,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         _errors__ = []
+        name = None
         if "name" in _doc:
             try:
                 name = load_field(
@@ -5282,8 +5243,6 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            name = None
 
         __original_name_is_none = name is None
         if name is None:
@@ -5292,7 +5251,8 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             else:
                 _errors__.append(ValidationException("missing name"))
         if not __original_name_is_none:
-            baseuri = name
+            baseuri = cast(str, name)
+        inVocab = None
         if "inVocab" in _doc:
             try:
                 inVocab = load_field(
@@ -5333,8 +5293,6 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            inVocab = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("missing required field `type`", None, [])
@@ -5419,6 +5377,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                             [e],
                         )
                     )
+        doc = None
         if "doc" in _doc:
             try:
                 doc = load_field(
@@ -5459,8 +5418,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            doc = None
+        docParent = None
         if "docParent" in _doc:
             try:
                 docParent = load_field(
@@ -5501,8 +5459,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            docParent = None
+        docChild = None
         if "docChild" in _doc:
             try:
                 docChild = load_field(
@@ -5543,8 +5500,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            docChild = None
+        docAfter = None
         if "docAfter" in _doc:
             try:
                 docAfter = load_field(
@@ -5585,8 +5541,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            docAfter = None
+        jsonldPredicate = None
         if "jsonldPredicate" in _doc:
             try:
                 jsonldPredicate = load_field(
@@ -5627,8 +5582,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            jsonldPredicate = None
+        documentRoot = None
         if "documentRoot" in _doc:
             try:
                 documentRoot = load_field(
@@ -5669,8 +5623,6 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                                 [e],
                             )
                         )
-        else:
-            documentRoot = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -5709,7 +5661,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
-        loadingOptions.idx[name] = (_constructed, loadingOptions)
+        loadingOptions.idx[cast(str, name)] = (_constructed, loadingOptions)
         return _constructed
 
     def save(
@@ -5871,6 +5823,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         _errors__ = []
+        name = None
         if "name" in _doc:
             try:
                 name = load_field(
@@ -5911,8 +5864,6 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                                 [e],
                             )
                         )
-        else:
-            name = None
 
         __original_name_is_none = name is None
         if name is None:
@@ -5921,7 +5872,8 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
             else:
                 _errors__.append(ValidationException("missing name"))
         if not __original_name_is_none:
-            baseuri = name
+            baseuri = cast(str, name)
+        inVocab = None
         if "inVocab" in _doc:
             try:
                 inVocab = load_field(
@@ -5962,8 +5914,6 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                                 [e],
                             )
                         )
-        else:
-            inVocab = None
         try:
             if _doc.get("names") is None:
                 raise ValidationException("missing required field `names`", None, [])
@@ -6048,6 +5998,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                             [e],
                         )
                     )
+        doc = None
         if "doc" in _doc:
             try:
                 doc = load_field(
@@ -6088,8 +6039,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                                 [e],
                             )
                         )
-        else:
-            doc = None
+        docParent = None
         if "docParent" in _doc:
             try:
                 docParent = load_field(
@@ -6130,8 +6080,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                                 [e],
                             )
                         )
-        else:
-            docParent = None
+        docChild = None
         if "docChild" in _doc:
             try:
                 docChild = load_field(
@@ -6172,8 +6121,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                                 [e],
                             )
                         )
-        else:
-            docChild = None
+        docAfter = None
         if "docAfter" in _doc:
             try:
                 docAfter = load_field(
@@ -6214,8 +6162,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                                 [e],
                             )
                         )
-        else:
-            docAfter = None
+        documentRoot = None
         if "documentRoot" in _doc:
             try:
                 documentRoot = load_field(
@@ -6256,8 +6203,6 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                                 [e],
                             )
                         )
-        else:
-            documentRoot = None
         extension_fields: Dict[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
@@ -6295,7 +6240,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
-        loadingOptions.idx[name] = (_constructed, loadingOptions)
+        loadingOptions.idx[cast(str, name)] = (_constructed, loadingOptions)
         return _constructed
 
     def save(
@@ -6442,6 +6387,7 @@ class Documentation(NamedType, DocType):
             _doc.lc.data = doc.lc.data
             _doc.lc.filename = doc.lc.filename
         _errors__ = []
+        name = None
         if "name" in _doc:
             try:
                 name = load_field(
@@ -6482,8 +6428,6 @@ class Documentation(NamedType, DocType):
                                 [e],
                             )
                         )
-        else:
-            name = None
 
         __original_name_is_none = name is None
         if name is None:
@@ -6492,7 +6436,8 @@ class Documentation(NamedType, DocType):
             else:
                 _errors__.append(ValidationException("missing name"))
         if not __original_name_is_none:
-            baseuri = name
+            baseuri = cast(str, name)
+        inVocab = None
         if "inVocab" in _doc:
             try:
                 inVocab = load_field(
@@ -6533,8 +6478,7 @@ class Documentation(NamedType, DocType):
                                 [e],
                             )
                         )
-        else:
-            inVocab = None
+        doc = None
         if "doc" in _doc:
             try:
                 doc = load_field(
@@ -6575,8 +6519,7 @@ class Documentation(NamedType, DocType):
                                 [e],
                             )
                         )
-        else:
-            doc = None
+        docParent = None
         if "docParent" in _doc:
             try:
                 docParent = load_field(
@@ -6617,8 +6560,7 @@ class Documentation(NamedType, DocType):
                                 [e],
                             )
                         )
-        else:
-            docParent = None
+        docChild = None
         if "docChild" in _doc:
             try:
                 docChild = load_field(
@@ -6659,8 +6601,7 @@ class Documentation(NamedType, DocType):
                                 [e],
                             )
                         )
-        else:
-            docChild = None
+        docAfter = None
         if "docAfter" in _doc:
             try:
                 docAfter = load_field(
@@ -6701,8 +6642,6 @@ class Documentation(NamedType, DocType):
                                 [e],
                             )
                         )
-        else:
-            docAfter = None
         try:
             if _doc.get("type") is None:
                 raise ValidationException("missing required field `type`", None, [])
@@ -6780,7 +6719,7 @@ class Documentation(NamedType, DocType):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
-        loadingOptions.idx[name] = (_constructed, loadingOptions)
+        loadingOptions.idx[cast(str, name)] = (_constructed, loadingOptions)
         return _constructed
 
     def save(

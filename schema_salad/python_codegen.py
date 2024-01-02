@@ -377,7 +377,7 @@ if _errors__:
         )
         if self.idfield:
             self.out.write(
-                f"        loadingOptions.idx[{self.safe_name(self.idfield)}] "
+                f"        loadingOptions.idx[cast(str, {self.safe_name(self.idfield)})] "
                 "= (_constructed, loadingOptions)\n"
             )
 
@@ -545,7 +545,7 @@ if _errors__:
             else:
                 {opt}
         if not __original_{safename}_is_none:
-            baseuri = {safename}
+            baseuri = cast(str, {safename})
 """.format(
                 safename=self.safe_name(name), opt=opt
             )
@@ -566,6 +566,7 @@ if _errors__:
             return
 
         if optional:
+            self.out.write(f"""        {self.safe_name(name)} = None\n""")
             self.out.write(f"""        if "{shortname(name)}" in _doc:\n""")  # noqa: B907
             spc = "    "
         else:
@@ -652,14 +653,6 @@ if _errors__:
                 spc=spc,
             )
         )
-        if optional:
-            self.out.write(
-                """        else:
-            {safename} = None
-""".format(
-                    safename=self.safe_name(name)
-                )
-            )
 
         if name == self.idfield or not self.idfield:
             baseurl = "base_url"
