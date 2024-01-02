@@ -470,7 +470,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                         name=f"map_of_{i.name}",
                         init="new MapLoader({}, {}, {})".format(
                             i.name,
-                            f"'{container}'" if container is not None else None,
+                            f"'{container}'" if container is not None else None,  # noqa: B907
                             self.to_java(no_link_check),
                         ),
                         loader_type=f"Loader<java.util.Map<String, {i.instance_type}>>",
@@ -492,7 +492,9 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                         "{container}, {no_link_check})".format(
                             clazz=fqclass,
                             ext="Impl" if not is_abstract else "",
-                            container=f"'{container}'" if container is not None else None,
+                            container=f"'{container}'"  # noqa: B907
+                            if container is not None
+                            else None,
                             no_link_check=self.to_java(no_link_check),
                         ),
                         loader_type=f"Loader<{fqclass}>",

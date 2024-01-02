@@ -428,8 +428,8 @@ if _errors__:
                         f"map_of_{i.name}",
                         "_MapLoader({}, {}, {}, {})".format(
                             i.name,
-                            f"'{name}'",
-                            f"'{container}'" if container is not None else None,
+                            f"'{name}'",  # noqa: B907
+                            f"'{container}'" if container is not None else None,  # noqa: B907
                             no_link_check,
                         ),
                     )
@@ -474,7 +474,7 @@ if _errors__:
                         self.safe_name(type_declaration["name"]) + "Loader",
                         "_RecordLoader({}, {}, {})".format(
                             self.safe_name(type_declaration["name"]),
-                            f"'{container}'" if container is not None else None,
+                            f"'{container}'" if container is not None else None,  # noqa: B907
                             no_link_check,
                         ),
                         abstract=type_declaration.get("abstract", False),
@@ -736,7 +736,7 @@ if self.{safename} is not None:
             TypeDef(
                 f"typedsl_{self.safe_name(inner.name)}_{ref_scope}",
                 f"_TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope}, "  # noqa: B907
-                f"'{self.salad_version}')",
+                f"'{self.salad_version}')",  # noqa: B907
             )
         )
 

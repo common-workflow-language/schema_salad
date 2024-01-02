@@ -441,7 +441,7 @@ public class {cls} : {current_interface}, ISaveable
                         init="new MapLoader<{}>({}, {}, {})".format(
                             i.instance_type,
                             i.name,
-                            f"'{container}'" if container is not None else None,
+                            f"'{container}'" if container is not None else None,  # noqa: B907
                             self.to_dotnet(no_link_check),
                         ),
                     )
@@ -458,7 +458,7 @@ public class {cls} : {current_interface}, ISaveable
                         name=self.safe_name(type_declaration["name"]) + "Loader",
                         init="new RecordLoader<{}>({}, {})".format(
                             self.safe_name(type_declaration["name"]),
-                            f"'{container}'" if container is not None else None,
+                            f"'{container}'" if container is not None else None,  # noqa: B907
                             self.to_dotnet(no_link_check),
                         ),
                         loader_type="ILoader<{}>".format(self.safe_name(type_declaration["name"])),
