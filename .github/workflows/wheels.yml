@@ -67,6 +67,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
+          name: artifact-${{ matrix.image }}
           path: ./wheelhouse/*.whl
 
   build_sdist:
@@ -91,6 +92,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
+          name: artifact-source
           path: dist/*.tar.gz
 
   upload_pypi:
@@ -105,7 +107,7 @@ jobs:
         with:
           # unpacks default artifact into dist/
           # if `name: artifact` is omitted, the action will create extra parent dir
-          name: artifact
+          pattern: artifact-*
           path: dist
 
       - uses: pypa/gh-action-pypi-publish@release/v1
