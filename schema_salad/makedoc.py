@@ -18,6 +18,7 @@ from typing import (
     Set,
     Tuple,
     Union,
+    cast,
 )
 from urllib.parse import urldefrag
 
@@ -606,7 +607,7 @@ class RenderType:
             escape=escape,
         )
         ##markdown2html.before_parse_hooks.append(markdown_list_hook)  # FIXME: this can be removed with mistune v3!
-        doc = markdown2html(doc)
+        doc = cast(str, markdown2html(doc))
 
         if f["type"] == "record":
             doc += "<h3>Fields</h3>"
