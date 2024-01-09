@@ -18,12 +18,11 @@ try:
 except ModuleNotFoundError:
     black = None  # type: ignore[assignment]
 
-from importlib_resources import files
-
 from . import schema
-from .codegen_base import CodeGenBase, TypeDef
+from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
+from .utils import files
 
 _string_type_def = TypeDef("strtype", "_PrimitiveLoader(str)")
 _int_type_def = TypeDef("inttype", "_PrimitiveLoader(int)")
@@ -365,9 +364,7 @@ if _errors__:
             )
         )
 
-        safe_init_fields = [
-            self.safe_name(f) for f in field_names if f != "class"
-        ]  # type: List[str]
+        safe_init_fields: List[str] = [self.safe_name(f) for f in field_names if f != "class"]
 
         safe_inits = [f + "=" + f for f in safe_init_fields]
 
@@ -380,7 +377,7 @@ if _errors__:
         )
         if self.idfield:
             self.out.write(
-                f"        loadingOptions.idx[{self.safe_name(self.idfield)}] "
+                f"        loadingOptions.idx[cast(str, {self.safe_name(self.idfield)})] "
                 "= (_constructed, loadingOptions)\n"
             )
 
@@ -390,12 +387,16 @@ if _errors__:
 
         self.out.write("\n\n")
 
-    def type_loader(self, type_declaration: Union[List[Any], Dict[str, Any], str]) -> TypeDef:
+    def type_loader(
+        self,
+        type_declaration: Union[List[Any], Dict[str, Any], str],
+        container: Optional[str] = None,
+        no_link_check: Optional[bool] = None,
+    ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
+        sub_names: List[str]
         if isinstance(type_declaration, MutableSequence):
-            sub_names: List[str] = list(
-                dict.fromkeys([self.type_loader(i).name for i in type_declaration])
-            )
+            sub_names = list(dict.fromkeys([self.type_loader(i).name for i in type_declaration]))
             return self.declare_type(
                 TypeDef(
                     "union_of_{}".format("_or_".join(sub_names)),
@@ -408,7 +409,37 @@ if _errors__:
                 "https://w3id.org/cwl/salad#array",
             ):
                 i = self.type_loader(type_declaration["items"])
-                return self.declare_type(TypeDef(f"array_of_{i.name}", f"_ArrayLoader({i.name})"))
+                return self.declare_type(
+                    TypeDef(
+                        f"array_of_{i.name}",
+                        f"_ArrayLoader({i.name})",
+                    )
+                )
+            if type_declaration["type"] in (
+                "map",
+                "https://w3id.org/cwl/salad#map",
+            ):
+                i = self.type_loader(type_declaration["values"])
+                name = (
+                    self.safe_name(type_declaration["name"]) if "name" in type_declaration else None
+                )
+                anon_type = self.declare_type(
+                    TypeDef(
+                        f"map_of_{i.name}",
+                        "_MapLoader({}, {}, {}, {})".format(
+                            i.name,
+                            f"'{name}'",  # noqa: B907
+                            f"'{container}'" if container is not None else None,  # noqa: B907
+                            no_link_check,
+                        ),
+                    )
+                )
+                if "name" in type_declaration:
+                    return self.declare_type(
+                        TypeDef(self.safe_name(type_declaration["name"]) + "Loader", anon_type.name)
+                    )
+                else:
+                    return anon_type
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
                 for sym in type_declaration["symbols"]:
                     self.add_vocab(shortname(sym), sym)
@@ -441,12 +472,35 @@ if _errors__:
                 return self.declare_type(
                     TypeDef(
                         self.safe_name(type_declaration["name"]) + "Loader",
-                        "_RecordLoader({})".format(
+                        "_RecordLoader({}, {}, {})".format(
                             self.safe_name(type_declaration["name"]),
+                            f"'{container}'" if container is not None else None,  # noqa: B907
+                            no_link_check,
                         ),
                         abstract=type_declaration.get("abstract", False),
                     )
                 )
+
+            if type_declaration["type"] in (
+                "union",
+                "https://w3id.org/cwl/salad#union",
+            ):
+                # Declare the named loader to handle recursive union definitions
+                loader_name = self.safe_name(type_declaration["name"]) + "Loader"
+                loader_type = TypeDef(loader_name, "_UnionLoader((), '{}')".format(loader_name))
+                self.declare_type(loader_type)
+                # Parse inner types
+                sub_names = list(
+                    dict.fromkeys([self.type_loader(i).name for i in type_declaration["names"]])
+                )
+                # Register lazy initialization for the loader
+                self.add_lazy_init(
+                    LazyInitDef(
+                        loader_name,
+                        "{}.add_loaders(({},))".format(loader_name, ", ".join(sub_names)),
+                    )
+                )
+                return loader_type
             raise SchemaException("wft {}".format(type_declaration["type"]))
 
         if type_declaration in prims:
@@ -491,7 +545,7 @@ if _errors__:
             else:
                 {opt}
         if not __original_{safename}_is_none:
-            baseuri = {safename}
+            baseuri = cast(str, {safename})
 """.format(
                 safename=self.safe_name(name), opt=opt
             )
@@ -512,6 +566,7 @@ if _errors__:
             return
 
         if optional:
+            self.out.write(f"""        {self.safe_name(name)} = None\n""")
             self.out.write(f"""        if "{shortname(name)}" in _doc:\n""")  # noqa: B907
             spc = "    "
         else:
@@ -530,11 +585,23 @@ if _errors__:
             baseurivar = "baseuri"
 
         self.out.write(
-            """{spc}        try:
-{spc}            if _doc.get("{fieldname}") is None:
+            f"""{spc}        try:
+"""
+        )
+
+        if not optional:
+            self.out.write(
+                """{spc}            if _doc.get("{fieldname}") is None:
 {spc}                raise ValidationException("missing required field `{fieldname}`", None, [])
 
-{spc}            {safename} = load_field(
+""".format(
+                    fieldname=shortname(name),
+                    spc=spc,
+                )
+            )
+
+        self.out.write(
+            """{spc}            {safename} = load_field(
 {spc}                _doc.get("{fieldname}"),
 {spc}                {fieldtype},
 {spc}                {baseurivar},
@@ -586,14 +653,6 @@ if _errors__:
                 spc=spc,
             )
         )
-        if optional:
-            self.out.write(
-                """        else:
-            {safename} = None
-""".format(
-                    safename=self.safe_name(name)
-                )
-            )
 
         if name == self.idfield or not self.idfield:
             baseurl = "base_url"
@@ -640,12 +699,13 @@ if self.{safename} is not None:
         scoped_id: bool,
         vocab_term: bool,
         ref_scope: Optional[int],
+        no_link_check: Optional[bool] = None,
     ) -> TypeDef:
         """Construct the TypeDef for the given URI loader."""
         return self.declare_type(
             TypeDef(
-                f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}",
-                f"_URILoader({inner.name}, {scoped_id}, {vocab_term}, {ref_scope})",
+                f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}_{no_link_check}",
+                f"_URILoader({inner.name}, {scoped_id}, {vocab_term}, {ref_scope}, {no_link_check})",
                 is_uri=True,
                 scoped_id=scoped_id,
                 ref_scope=ref_scope,
@@ -669,7 +729,7 @@ if self.{safename} is not None:
             TypeDef(
                 f"typedsl_{self.safe_name(inner.name)}_{ref_scope}",
                 f"_TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope}, "  # noqa: B907
-                f"'{self.salad_version}')",
+                f"'{self.salad_version}')",  # noqa: B907
             )
         )
 
@@ -678,12 +738,13 @@ if self.{safename} is not None:
         return self.declare_type(
             TypeDef(
                 f"secondaryfilesdsl_{inner.name}",
-                f"_SecondaryDSLLoader({inner.name})",
+                f"_UnionLoader((_SecondaryDSLLoader({inner.name}), {inner.name},))",
             )
         )
 
     def epilogue(self, root_loader: TypeDef) -> None:
         """Trigger to generate the epilouge code."""
+
         self.out.write("_vocab = {\n")
         for k in sorted(self.vocab.keys()):
             self.out.write(f'    "{k}": "{self.vocab[k]}",\n')  # noqa: B907
@@ -698,6 +759,11 @@ if self.{safename} is not None:
             if not collected_type.abstract:
                 self.out.write(fmt(f"{collected_type.name} = {collected_type.init}\n", 0))
         self.out.write("\n")
+
+        if self.lazy_inits:
+            for lazy_init in self.lazy_inits.values():
+                self.out.write(fmt(f"{lazy_init.init}\n", 0))
+            self.out.write("\n")
 
         self.out.write(
             """

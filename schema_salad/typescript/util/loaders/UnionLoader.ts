@@ -7,6 +7,10 @@ export class _UnionLoader implements Loader {
     this.alternates = alternates
   }
 
+  addLoaders(loaders: Loader[]) {
+    this.alternates.concat(loaders);
+  }
+
   async load (doc: any, baseuri: string, loadingOptions: LoadingOptions, docRoot?: string): Promise<Saveable> {
     const errors: ValidationException[] = []
     for (const t of this.alternates) {

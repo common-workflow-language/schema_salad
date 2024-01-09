@@ -107,6 +107,8 @@ template <typename T> struct IsConstant : std::false_type {};
 template <typename T>
 auto toYaml(std::vector<T> const& v) -> YAML::Node;
 template <typename T>
+auto toYaml(std::map<std::string, T> const& v) -> YAML::Node;
+template <typename T>
 auto toYaml(T const& t) -> YAML::Node;
 template <typename ...Args>
 auto toYaml(std::variant<Args...> const& t) -> YAML::Node;
@@ -114,6 +116,8 @@ auto toYaml(std::variant<Args...> const& t) -> YAML::Node;
 // fwd declaring fromYaml
 template <typename T>
 void fromYaml(YAML::Node const& n, std::vector<T>& v);
+template <typename T>
+void fromYaml(YAML::Node const& n, std::map<std::string, T>& v);
 template <typename T>
 void fromYaml(YAML::Node const& n, T& t);
 template <typename ...Args>
@@ -163,6 +167,17 @@ struct DetectAndExtractFromYaml<std::vector<T>> {
 };
 
 template <typename T>
+struct DetectAndExtractFromYaml<std::map<std::string, T>> {
+    auto operator()(YAML::Node const& n) const -> std::optional<std::map<std::string, T>> {
+        if (!n.IsDefined()) return std::nullopt;
+        if (!n.IsMap()) return std::nullopt;
+        auto res = std::map<std::string, T>{};
+        fromYaml(n, res);
+        return res;
+    }
+};
+
+template <typename T>
 class heap_object {
     std::unique_ptr<T> data = std::make_unique<T>();
 
@@ -172,8 +187,8 @@ public:
     heap_object(heap_object const& oth) {
         *data = *oth;
     }
-    heap_object(heap_object&& oth) {
-        *data = *oth;
+    heap_object(heap_object&& oth) noexcept(noexcept(*data = std::move(*oth))) {
+        *data = std::move(*oth);
     }
 
     template <typename T2>
@@ -181,15 +196,17 @@ public:
         *data = oth;
     }
     template <typename T2>
-    heap_object(T2&& oth) {
-        *data = oth;
+    heap_object(T2&& oth) noexcept(noexcept(*data = std::forward<T2>(oth))) {
+        *data = std::forward<T2>(oth);
     }
+
+    ~heap_object() = default;
 
     auto operator=(heap_object const& oth) -> heap_object& {
         *data = *oth;
         return *this;
     }
-    auto operator=(heap_object&& oth) -> heap_object& {
+    auto operator=(heap_object&& oth) noexcept(noexcept(*data = std::move(*oth))) -> heap_object& {
         *data = std::move(*oth);
         return *this;
     }
@@ -200,21 +217,21 @@ public:
         return *this;
     }
     template <typename T2>
-    auto operator=(T2&& oth) -> heap_object& {
-        *data = std::move(oth);
+    auto operator=(T2&& oth) noexcept(noexcept(*data = std::forward<T2>(oth))) -> heap_object& {
+        *data = std::forward<T2>(oth);
         return *this;
     }
 
-    auto operator->() -> T* {
+    auto operator->() noexcept(true) -> T* {
         return data.get();
     }
-    auto operator->() const -> T const* {
+    auto operator->() const noexcept(true) -> T const* {
         return data.get();
     }
-    auto operator*() -> T& {
+    auto operator*() noexcept(true) -> T& {
         return *data;
     }
-    auto operator*() const -> T const& {
+    auto operator*() const noexcept(true) -> T const& {
         return *data;
     }
 };
@@ -307,6 +324,15 @@ auto toYaml(std::vector<T> const& v) -> YAML::Node {
 }
 
 template <typename T>
+auto toYaml(std::map<std::string, T> const& v) -> YAML::Node {
+    auto n = YAML::Node(YAML::NodeType::Map);
+    for (auto const& [key, value] : v) {
+        n[key] = toYaml(value);
+    }
+    return n;
+}
+
+template <typename T>
 auto toYaml(T const& t) -> YAML::Node {
     if constexpr (std::is_enum_v<T>) {
         return toYaml(t);
@@ -328,6 +354,15 @@ void fromYaml(YAML::Node const& n, std::vector<T>& v){
     for (auto e : n) {
         v.emplace_back();
         fromYaml(e, v.back());
+    }
+}
+
+template <typename T>
+void fromYaml(YAML::Node const& n, std::map<std::string, T>& v){
+    if (!n.IsMap()) return;
+    for (auto e : n) {
+        auto key = e.first.as<std::string>();
+        fromYaml(e.second, v[key]);
     }
 }
 

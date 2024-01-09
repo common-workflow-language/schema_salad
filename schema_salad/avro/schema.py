@@ -21,6 +21,7 @@ A schema may be one of:
   A record, mapping field names to field value data;
   An enum, containing one of a small set of symbols;
   An array of values, all of the same schema;
+  A map of values, all of the same schema;
   A union of other schemas;
   A unicode string;
   A 32-bit signed int;
@@ -44,7 +45,7 @@ PRIMITIVE_TYPES = ("null", "boolean", "string", "int", "long", "float", "double"
 
 NAMED_TYPES = ("enum", "record")
 
-VALID_TYPES = PRIMITIVE_TYPES + NAMED_TYPES + ("array", "union")
+VALID_TYPES = PRIMITIVE_TYPES + NAMED_TYPES + ("array", "map", "union")
 
 SCHEMA_RESERVED_PROPS = (
     "type",
@@ -52,7 +53,9 @@ SCHEMA_RESERVED_PROPS = (
     "namespace",
     "fields",  # Record
     "items",  # Array
+    "names",  # Union
     "symbols",  # Enum
+    "values",  # Map
     "doc",
 )
 
@@ -71,6 +74,7 @@ PropsType = Dict[str, PropType]
 FIELD_RESERVED_PROPS = ("default", "name", "doc", "order", "type")
 
 VALID_FIELD_SORT_ORDERS = ("ascending", "descending", "ignore")
+
 
 #
 # Exceptions
@@ -141,6 +145,7 @@ class Name:
         @arg space_attr: namespace value read in schema or None.
         @ard default_space: the current default space or None.
         """
+
         # Ensure valid ctor args
 
         def validate(val: Optional[str], name: str) -> None:
@@ -389,8 +394,13 @@ class EnumSchema(NamedSchema):
 
 
 class ArraySchema(Schema):
+    """Avro array schema class."""
+
     def __init__(
-        self, items: JsonDataType, names: Names, other_props: Optional[PropsType] = None
+        self,
+        items: JsonDataType,
+        names: Names,
+        other_props: Optional[PropsType] = None,
     ) -> None:
         # Call parent ctor
         Schema.__init__(self, "array", other_props)
@@ -414,10 +424,116 @@ class ArraySchema(Schema):
     # read-only properties
     @property
     def items(self) -> Schema:
+        """Avro schema describing the array items' type."""
         return cast(Schema, self.get_prop("items"))
 
 
+class MapSchema(Schema):
+    """Avro map schema class."""
+
+    def __init__(
+        self,
+        values: JsonDataType,
+        names: Names,
+        other_props: Optional[PropsType] = None,
+    ) -> None:
+        """Create a MapSchema object."""
+        # Call parent ctor
+        Schema.__init__(self, "map", other_props)
+
+        # Add class members
+        if isinstance(values, str) and names.has_name(values, None):
+            values_schema = cast(Schema, names.get_name(values, None))
+        else:
+            try:
+                values_schema = make_avsc_object(values, names)
+            except SchemaParseException:
+                raise
+            except Exception as err:
+                raise SchemaParseException(
+                    f"Values schema ({values}) not a valid Avro schema: {err}. "
+                    f"Known names: {list(names.names.keys())})."
+                ) from err
+
+        self.set_prop("values", values_schema)
+
+    # read-only properties
+    @property
+    def values(self) -> Schema:
+        """Avro schema describing the map values' type."""
+        return cast(Schema, self.get_prop("values"))
+
+
+class NamedMapSchema(NamedSchema):
+    """Avro named map schema class."""
+
+    def __init__(
+        self,
+        values: JsonDataType,
+        names: Names,
+        name: str,
+        namespace: Optional[str] = None,
+        doc: Optional[Union[str, List[str]]] = None,
+        other_props: Optional[PropsType] = None,
+    ) -> None:
+        """Create a NamedMapSchema object."""
+        # Call parent ctor
+        NamedSchema.__init__(self, "map", name, namespace, names, other_props)
+
+        # Add class members
+        if isinstance(values, str) and names.has_name(values, None):
+            values_schema = cast(Schema, names.get_name(values, None))
+        else:
+            try:
+                values_schema = make_avsc_object(values, names)
+            except SchemaParseException:
+                raise
+            except Exception as err:
+                raise SchemaParseException(
+                    f"Values schema ({values}) not a valid Avro schema: {err}. "
+                    f"Known names: {list(names.names.keys())})."
+                ) from err
+
+        self.set_prop("values", values_schema)
+        if doc is not None:
+            self.set_prop("doc", doc)
+
+    # read-only properties
+    @property
+    def values(self) -> Schema:
+        """Avro schema describing the map values' type."""
+        return cast(Schema, self.get_prop("values"))
+
+
+def _build_schema_objects(schemas: List[JsonDataType], names: Names) -> List[Schema]:
+    schema_objects: List[Schema] = []
+    for schema in schemas:
+        if isinstance(schema, str) and names.has_name(schema, None):
+            new_schema = cast(Schema, names.get_name(schema, None))
+        else:
+            try:
+                new_schema = make_avsc_object(schema, names)
+            except Exception as err:
+                raise SchemaParseException(
+                    f"Union item must be a valid Avro schema: {err}; {schema},"
+                ) from err
+        # check the new schema
+        if (
+            new_schema.type in VALID_TYPES
+            and new_schema.type not in NAMED_TYPES
+            and new_schema.type in [schema.type for schema in schema_objects]
+        ):
+            raise SchemaParseException(f"{new_schema.type} type already in Union")
+        elif new_schema.type == "union" and new_schema.get_prop("name") is None:
+            raise SchemaParseException("Unions cannot contain other unions.")
+        else:
+            schema_objects.append(new_schema)
+    return schema_objects
+
+
 class UnionSchema(Schema):
+    """Avro union schema class."""
+
     def __init__(
         self,
         schemas: List[JsonDataType],
@@ -438,28 +554,44 @@ class UnionSchema(Schema):
         Schema.__init__(self, "union")
 
         # Add class members
-        schema_objects: List[Schema] = []
-        for schema in schemas:
-            if isinstance(schema, str) and names.has_name(schema, None):
-                new_schema = cast(Schema, names.get_name(schema, None))
-            else:
-                try:
-                    new_schema = make_avsc_object(schema, names)
-                except Exception as err:
-                    raise SchemaParseException(
-                        f"Union item must be a valid Avro schema: {err}; {schema},"
-                    ) from err
-            # check the new schema
-            if (
-                new_schema.type in VALID_TYPES
-                and new_schema.type not in NAMED_TYPES
-                and new_schema.type in [schema.type for schema in schema_objects]
-            ):
-                raise SchemaParseException(f"{new_schema.type} type already in Union")
-            if new_schema.type == "union":
-                raise SchemaParseException("Unions cannot contain other unions.")
-            schema_objects.append(new_schema)
-        self._schemas = schema_objects
+        self._schemas = _build_schema_objects(schemas, names)
+
+    # read-only properties
+    @property
+    def schemas(self) -> List[Schema]:
+        """Avro schemas composing the Union type."""
+        return self._schemas
+
+
+class NamedUnionSchema(NamedSchema):
+    """Avro named union schema class."""
+
+    def __init__(
+        self,
+        schemas: List[JsonDataType],
+        names: Names,
+        name: str,
+        namespace: Optional[str] = None,
+        doc: Optional[Union[str, List[str]]] = None,
+    ):
+        """
+        Initialize a new NamedUnionSchema.
+
+        :param names: a dictionary of schema objects
+        """
+        # Ensure valid ctor args
+        if names is None:
+            raise SchemaParseException("Must provide Names.")
+        if not isinstance(schemas, list):
+            raise SchemaParseException("Union schema requires a list of schemas.")
+
+        # Call parent ctor
+        NamedSchema.__init__(self, "union", name, namespace, names)
+
+        # Add class members
+        self._schemas = _build_schema_objects(schemas, names)
+        if doc is not None:
+            self.set_prop("doc", doc)
 
     # read-only properties
     @property
@@ -606,6 +738,28 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
             if atype == "array":
                 items = json_data.get("items")
                 return ArraySchema(items, names, other_props)
+            elif atype == "map":
+                values = json_data.get("values")
+                if "name" in json_data:
+                    name = json_data["name"]
+                    namespace = json_data.get("namespace", names.default_namespace)
+                    doc = json_data.get("doc")
+                    return NamedMapSchema(values, names, name, namespace, doc, other_props)
+                else:
+                    return MapSchema(values, names, other_props)
+            elif atype == "union":
+                schemas = json_data.get("names")
+                if not isinstance(schemas, list):
+                    raise SchemaParseException(
+                        f'"names" for type union must be a list of schemas: {json_data}'
+                    )
+                if "name" in json_data:
+                    name = json_data["name"]
+                    namespace = json_data.get("namespace", names.default_namespace)
+                    doc = json_data.get("doc")
+                    return NamedUnionSchema(schemas, names, name, namespace, doc)
+                else:
+                    return UnionSchema(schemas, names)
         if atype is None:
             raise SchemaParseException(f'No "type" property: {json_data}')
         raise SchemaParseException(f"Undefined type: {atype}")
@@ -636,11 +790,17 @@ def is_subtype(types: Dict[str, Any], existing: PropType, new: PropType) -> bool
         return is_subtype(types, types[existing], new)
     if isinstance(new, str) and new in types:
         return is_subtype(types, existing, types[new])
+    if isinstance(existing, dict) and existing.get("type") == "union":
+        return is_subtype(types, existing["names"], new)
+    if isinstance(new, dict) and new.get("type") == "union":
+        return is_subtype(types, existing, new["names"])
     if isinstance(existing, dict) and isinstance(new, dict):
         if "extends" in new and new["extends"] == existing.get("name"):
             return True
         if existing.get("type") == "array" and new.get("type") == "array":
             return is_subtype(types, existing["items"], new["items"])
+        if existing.get("type") == "map" and new.get("type") == "map":
+            return is_subtype(types, existing["values"], new["values"])
         if existing.get("type") == "enum" and new.get("type") == "enum":
             return is_subtype(types, existing["symbols"], new["symbols"])
         if existing.get("type") == "record" and new.get("type") == "record":

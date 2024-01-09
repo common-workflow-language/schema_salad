@@ -16,7 +16,8 @@ export class _ArrayLoader implements Loader {
     for (var val of doc) {
       try {
         const lf = await loadField(val, new _UnionLoader([this, ...this.items]), baseuri, loadingOptions)
-        if (Array.isArray(lf)) {
+        const flatten: boolean = loadingOptions.container != "@list"
+        if (flatten && Array.isArray(lf)) {
           r = r.concat(lf)
         } else {
           r.push(lf)

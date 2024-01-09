@@ -8,17 +8,24 @@ internal class UriLoader : ILoader<object>
     readonly bool scopedID;
     readonly bool vocabTerm;
     readonly int? scopedRef;
+    readonly bool? noLinkCheck;
 
-    public UriLoader(in ILoader inner, in bool scopedID, in bool vocabTerm, in int? scopedRef)
+    public UriLoader(in ILoader inner, in bool scopedID, in bool vocabTerm, in int? scopedRef, in bool? noLinkCheck)
     {
         this.inner = inner;
         this.scopedID = scopedID;
         this.vocabTerm = vocabTerm;
         this.scopedRef = scopedRef;
+        this.noLinkCheck = noLinkCheck;
     }
 
     public object Load(in object doc_, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot = null)
     {
+        LoadingOptions innerLoadingOptions = loadingOptions;
+        if (this.noLinkCheck != null)
+        {
+            innerLoadingOptions = new LoadingOptions(copyFrom: loadingOptions, noLinkCheck: this.noLinkCheck);
+        }
         object doc = doc_;
         if (doc is IList)
         {
@@ -28,7 +35,7 @@ internal class UriLoader : ILoader<object>
             {
                 if (val is string valString)
                 {
-                    docWithExpansion.Add(loadingOptions.ExpandUrl(valString, baseuri, scopedID, vocabTerm, scopedRef));
+                    docWithExpansion.Add(innerLoadingOptions.ExpandUrl(valString, baseuri, scopedID, vocabTerm, scopedRef));
                 }
                 else
                 {
@@ -40,10 +47,10 @@ internal class UriLoader : ILoader<object>
         }
         else if (doc is string docString)
         {
-            doc = loadingOptions.ExpandUrl(docString, baseuri, scopedID, vocabTerm, scopedRef);
+            doc = innerLoadingOptions.ExpandUrl(docString, baseuri, scopedID, vocabTerm, scopedRef);
         }
 
-        return (object)inner.Load(doc, baseuri, loadingOptions);
+        return (object)inner.Load(doc, baseuri, innerLoadingOptions);
     }
 
     object ILoader.Load(in object doc, in string baseuri, in LoadingOptions loadingOptions, in string? docRoot)

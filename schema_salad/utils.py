@@ -26,6 +26,18 @@ from ruamel.yaml.main import YAML
 if TYPE_CHECKING:
     from .fetcher import Fetcher
 
+if sys.version_info >= (3, 11):
+    from importlib.resources import as_file, files
+    from importlib.resources.abc import Traversable
+elif sys.version_info >= (3, 9):
+    from importlib.abc import Traversable
+    from importlib.resources import as_file, files
+else:
+    from importlib_resources import as_file, files
+    from importlib_resources.abc import Traversable
+
+__all__ = ["files", "as_file", "Traversable"]
+
 ContextType = Dict[str, Union[Dict[str, Any], str, Iterable[str]]]
 DocumentType = TypeVar("DocumentType", CommentedSeq, CommentedMap)
 DocumentOrStrType = TypeVar("DocumentOrStrType", CommentedSeq, CommentedMap, str)
@@ -40,7 +52,8 @@ FetcherCallableType = Callable[[CacheType, requests.sessions.Session], "Fetcher"
 AttachmentsType = Callable[[Union[CommentedMap, CommentedSeq]], bool]
 
 
-def add_dictlist(di, key, val):  # type: (Dict[Any, Any], Any, Any) -> None
+def add_dictlist(di: Dict[Any, Any], key: Any, val: Any) -> None:
+    """Manage element insertion in dicts of lists."""
     if key not in di:
         di[key] = []
     di[key].append(val)
@@ -57,8 +70,8 @@ def aslist(thing: Any) -> MutableSequence[Any]:
     return [thing]
 
 
-def flatten(thing, ltypes=(list, tuple)):
-    # type: (Any, Any) -> Any
+def flatten(thing: Any, ltypes: Any = (list, tuple)) -> Any:
+    """Flatten lists recursively."""
     # http://rightfootin.blogspot.com/2006/09/more-on-python-flatten.html
     if thing is None:
         return []
@@ -79,13 +92,13 @@ def flatten(thing, ltypes=(list, tuple)):
     return ltype(lst)
 
 
-# Check if we are on windows OS
-def onWindows():
-    # type: () -> (bool)
+def onWindows() -> bool:
+    """Check if Python is running on Windows OS."""
     return os.name == "nt"
 
 
-def convert_to_dict(j4):  # type: (Any) -> Any
+def convert_to_dict(j4: Any) -> Any:
+    """Convert generic Mapping objects to dicts recursively."""
     if isinstance(j4, Mapping):
         return {k: convert_to_dict(v) for k, v in j4.items()}
     if isinstance(j4, MutableSequence):
@@ -99,9 +112,9 @@ def json_dump(obj: Any, fp: IO[str], **kwargs: Any) -> None:
 
 
 def json_dumps(
-    obj,  # type: Any
-    **kwargs,  # type: Any
-):  # type: (...) -> str
+    obj: Any,
+    **kwargs: Any,
+) -> str:
     """Force use of unicode."""
     return json.dumps(convert_to_dict(obj), **kwargs)
 

@@ -61,6 +61,8 @@ primitives = {
     saladp + "enum": "enum",
     saladp + "array": "array",
     saladp + "record": "record",
+    saladp + "map": "map",
+    saladp + "union": "union",
 }
 
 
@@ -86,7 +88,8 @@ def avro_type_name(url: str) -> str:
     return ".".join(joined)
 
 
-def friendly(v):  # type: (Any) -> Any
+def friendly(v: Any) -> Any:
+    """Format an Avro schema into a pretty-printed representation."""
     if isinstance(v, avro.schema.NamedSchema):
         return avro_shortname(v.name)
     if isinstance(v, avro.schema.ArraySchema):
@@ -98,7 +101,8 @@ def friendly(v):  # type: (Any) -> Any
     return avro_shortname(v)
 
 
-def vpformat(datum):  # type: (Any) -> str
+def vpformat(datum: Any) -> str:
+    """Truncate a pretty-printed representation of a Python object to 160 characters."""
     a = pprint.pformat(datum)
     if len(a) > 160:
         a = a[0:160] + "[...]"
@@ -107,17 +111,16 @@ def vpformat(datum):  # type: (Any) -> str
 
 def validate_ex(
     expected_schema: Schema,
-    datum,  # type: Any
-    identifiers=None,  # type: Optional[List[str]]
-    strict=False,  # type: bool
-    foreign_properties=None,  # type: Optional[Set[str]]
-    raise_ex=True,  # type: bool
-    strict_foreign_properties=False,  # type: bool
-    logger=_logger,  # type: logging.Logger
-    skip_foreign_properties=False,  # type: bool
-    vocab=None,  # type: Optional[Mapping[str, str]]
-):
-    # type: (...) -> bool
+    datum: Any,
+    identifiers: Optional[List[str]] = None,
+    strict: bool = False,
+    foreign_properties: Optional[Set[str]] = None,
+    raise_ex: bool = True,
+    strict_foreign_properties: bool = False,
+    logger: logging.Logger = _logger,
+    skip_foreign_properties: bool = False,
+    vocab: Optional[Mapping[str, str]] = None,
+) -> bool:
     """Determine if a python datum is an instance of a schema."""
     debug = _logger.isEnabledFor(logging.DEBUG)
     if not identifiers:

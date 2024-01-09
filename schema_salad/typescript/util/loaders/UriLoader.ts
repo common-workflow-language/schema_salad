@@ -5,15 +5,20 @@ export class _URILoader implements Loader {
   scopedID: boolean
   vocabTerm: boolean
   scopedRef?: number
+  noLinkCheck?: boolean
 
-  constructor (inner: Loader, scopedID: boolean, vocabTerm: boolean, scopedRef?: number) {
+  constructor (inner: Loader, scopedID: boolean, vocabTerm: boolean, scopedRef?: number, noLinkCheck?: boolean) {
     this.inner = inner
     this.scopedID = scopedID
     this.vocabTerm = vocabTerm
     this.scopedRef = scopedRef
+    this.noLinkCheck = noLinkCheck
   }
 
   async load (doc: any, baseuri: string, loadingOptions: LoadingOptions, docRoot?: string): Promise<any> {
+    if (this.noLinkCheck !== undefined) {
+      loadingOptions = new LoadingOptions({ copyFrom: loadingOptions, noLinkCheck: this.noLinkCheck })
+    }
     if (Array.isArray(doc)) {
       const newDoc: any[] = []
       for (const val of doc) {

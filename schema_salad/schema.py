@@ -19,7 +19,6 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-from importlib_resources import files
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from schema_salad.utils import (
@@ -28,6 +27,7 @@ from schema_salad.utils import (
     add_dictlist,
     aslist,
     convert_to_dict,
+    files,
     flatten,
     json_dumps,
     yaml_no_ts,
@@ -102,6 +102,8 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
             "EnumSchema": saladp + "EnumSchema",
             "Enum_symbol": saladp + "EnumSchema/type/Enum_symbol",
             "JsonldPredicate": saladp + "JsonldPredicate",
+            "MapSchema": saladp + "MapSchema",
+            "Map_symbol": saladp + "MapSchema/type/Map_symbol",
             "NamedType": saladp + "NamedType",
             "PrimitiveType": saladp + "PrimitiveType",
             "RecordField": saladp + "RecordField",
@@ -112,6 +114,8 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
             "SaladRecordSchema": saladp + "SaladRecordSchema",
             "SchemaDefinedType": saladp + "SchemaDefinedType",
             "SpecializeDef": saladp + "SpecializeDef",
+            "UnionSchema": saladp + "UnionSchema",
+            "Union_symbol": saladp + "UnionSchema/type/Union_symbol",
             "_container": saladp + "JsonldPredicate/_container",
             "_id": {"@id": saladp + "_id", "@type": "@id", "identity": True},
             "_type": saladp + "JsonldPredicate/_type",
@@ -141,9 +145,11 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
             "items": {"@id": saladp + "items", "@type": "@vocab", "refScope": 2},
             "jsonldPredicate": "sld:jsonldPredicate",
             "long": "http://www.w3.org/2001/XMLSchema#long",
+            "map": saladp + "map",
             "mapPredicate": saladp + "JsonldPredicate/mapPredicate",
             "mapSubject": saladp + "JsonldPredicate/mapSubject",
             "name": "@id",
+            "names": {"@id": saladp + "names", "@type": "@vocab", "refScope": 2},
             "noLinkCheck": saladp + "JsonldPredicate/noLinkCheck",
             "null": saladp + "null",
             "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
@@ -176,6 +182,8 @@ def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
                 "typeDSL": True,
             },
             "typeDSL": saladp + "JsonldPredicate/typeDSL",
+            "union": saladp + "union",
+            "values": {"@id": saladp + "values", "@type": "@vocab", "refScope": 2},
             "xsd": "http://www.w3.org/2001/XMLSchema#",
         },
         salad_version="v1.3",
@@ -223,7 +231,7 @@ def add_namespaces(metadata: Mapping[str, Any], namespaces: MutableMapping[str, 
 
 def collect_namespaces(metadata: Mapping[str, Any]) -> Dict[str, str]:
     """Walk through the metadata object, collecting namespace declarations."""
-    namespaces = {}  # type: Dict[str, str]
+    namespaces: Dict[str, str] = {}
     if "$import_metadata" in metadata:
         for value in metadata["$import_metadata"].values():
             add_namespaces(collect_namespaces(value), namespaces)
@@ -447,7 +455,7 @@ def replace_type(
     """Go through and replace types in the 'spec' mapping."""
     if isinstance(items, MutableMapping):
         # recursively check these fields for types to replace
-        if items.get("type") in ("record", "enum") and items.get("name"):
+        if items.get("type") in ("record", "enum", "map", "union") and items.get("name"):
             if items["name"] in found:
                 return items["name"]
             found.add(items["name"])
@@ -458,7 +466,7 @@ def replace_type(
         items = copy.copy(items)
         if not items.get("name"):
             items["name"] = get_anon_name(items)
-        for name in ("type", "items", "fields"):
+        for name in ("type", "items", "fields", "values"):
             if name in items:
                 items[name] = replace_type(
                     items[name],
@@ -539,15 +547,20 @@ def make_valid_avro(
         if "type" in avro and avro["type"] in (
             saladp + "record",
             saladp + "enum",
+            saladp + "map",
+            saladp + "union",
             "record",
             "enum",
+            "map",
+            "union",
         ):
             if (hasattr(avro, "get") and avro.get("abstract")) or ("abstract" in avro):
                 return avro
-            if avro["name"] in found:
-                return cast(str, avro["name"])
-            found.add(avro["name"])
-        for field in ("type", "items", "values", "fields"):
+            if "name" in avro:
+                if avro["name"] in found:
+                    return cast(str, avro["name"])
+                found.add(avro["name"])
+        for field in ("type", "items", "names", "values", "fields"):
             if field in avro:
                 avro[field] = make_valid_avro(
                     avro[field],
@@ -593,19 +606,19 @@ def deepcopy_strip(item: Any) -> Any:
 def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[Dict[str, Any]]:
     """Apply 'extend' and 'specialize' to fully materialize derived record types."""
     items2 = deepcopy_strip(items)
-    types = {i["name"]: i for i in items2}  # type: Dict[str, Any]
+    types: Dict[str, Any] = {i["name"]: i for i in items2}
     types.update({k[len(saladp) :]: v for k, v in types.items() if k.startswith(saladp)})
     results = []
 
     for stype in items2:
         if "extends" in stype:
-            specs = {}  # type: Dict[str, str]
+            specs: Dict[str, str] = {}
             if "specialize" in stype:
                 for spec in aslist(stype["specialize"]):
                     specs[spec["specializeFrom"]] = spec["specializeTo"]
 
-            exfields = []  # type: List[Any]
-            exsym = []  # type: List[str]
+            exfields: List[Any] = []
+            exsym: List[str] = []
             for ex in aslist(stype["extends"]):
                 if ex not in types:
                     raise ValidationException(
@@ -669,7 +682,7 @@ def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[D
 
                 stype["fields"] = combined_fields
 
-                fieldnames = set()  # type: Set[str]
+                fieldnames: Set[str] = set()
                 for field in stype["fields"]:
                     if field["name"] in fieldnames:
                         raise ValidationException(
@@ -689,7 +702,7 @@ def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[D
     for result in results:
         ex_types[result["name"]] = result
 
-    extended_by = {}  # type: Dict[str, str]
+    extended_by: Dict[str, str] = {}
     for result in results:
         if "extends" in result:
             for ex in aslist(result["extends"]):
@@ -706,6 +719,8 @@ def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[D
     for result in results:
         if "fields" in result:
             result["fields"] = replace_type(result["fields"], extended_by, loader, set())
+        elif "values" in result:
+            result["values"] = replace_type(result["values"], extended_by, loader, set())
 
     return results
 
@@ -717,7 +732,7 @@ def make_avro(
 ) -> List[Any]:
     j = extend_and_specialize(i, loader)
 
-    name_dict = {}  # type: Dict[str, Dict[str, Any]]
+    name_dict: Dict[str, Dict[str, Any]] = {}
     for entry in j:
         name_dict[entry["name"]] = entry
 
@@ -803,7 +818,7 @@ def print_fieldrefs(doc: List[Dict[str, Any]], loader: Loader, stream: IO[Any]) 
         if entry["type"] == "record":
             label = shortname(entry["name"])
             for field in entry.get("fields", []):
-                found = set()  # type: Set[str]
+                found: Set[str] = set()
                 field_name = shortname(field["name"])
                 replace_type(field["type"], {}, loader, found, find_embeds=False)
                 for each_type in found:

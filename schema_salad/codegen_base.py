@@ -41,11 +41,30 @@ class TypeDef:  # pylint: disable=too-few-public-methods
         self.instance_type = instance_type
 
 
+class LazyInitDef:
+    """Lazy initialization logic."""
+
+    __slots__ = (
+        "name",
+        "init",
+    )
+
+    def __init__(
+        self,
+        name: str,
+        init: str,
+    ) -> None:
+        """Create a LazyInitDef object."""
+        self.name = name
+        self.init = init
+
+
 class CodeGenBase:
     """Abstract base class for schema salad code generators."""
 
     def __init__(self) -> None:
         self.collected_types: OrderedDict[str, TypeDef] = OrderedDict()
+        self.lazy_inits: OrderedDict[str, LazyInitDef] = OrderedDict()
         self.vocab: Dict[str, str] = {}
 
     def declare_type(self, declared_type: TypeDef) -> TypeDef:
@@ -53,6 +72,10 @@ class CodeGenBase:
         if declared_type not in self.collected_types.values():
             self.collected_types[declared_type.name] = declared_type
         return declared_type
+
+    def add_lazy_init(self, lazy_init: LazyInitDef) -> None:
+        """Add lazy initialization logic for a given type."""
+        self.lazy_inits[lazy_init.name] = lazy_init
 
     def add_vocab(self, name: str, uri: str) -> None:
         """Add the given name as an abbreviation for the given URI."""
@@ -84,7 +107,12 @@ class CodeGenBase:
         """Signal that we are done with this class."""
         raise NotImplementedError()
 
-    def type_loader(self, type_declaration: Union[List[Any], Dict[str, Any]]) -> TypeDef:
+    def type_loader(
+        self,
+        type_declaration: Union[List[Any], Dict[str, Any]],
+        container: Optional[str] = None,
+        no_link_check: Optional[bool] = None,
+    ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         raise NotImplementedError()
 
@@ -115,6 +143,7 @@ class CodeGenBase:
         scoped_id: bool,
         vocab_term: bool,
         ref_scope: Optional[int],
+        no_link_check: Optional[bool] = None,
     ) -> TypeDef:
         """Construct the TypeDef for the given URI loader."""
         raise NotImplementedError()

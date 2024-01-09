@@ -1,14 +1,13 @@
 [build-system]
 requires = [
-    "setuptools>=45",
+    "setuptools>=50",  # 50 is to match mypyc's minimum
     "setuptools_scm[toml]>=8.0.4,<9",
-    'mypy==1.6.0',  # update mypy-requirements as well
-    "black>=19.10b0",
-    "types-pkg_resources",
+    'mypy[mypyc]==1.8.0',  # update mypy-requirements as well
+    "black>=19.10b0,<23.12",
     "types-requests",
     "types-dataclasses",
-    "importlib_resources>=1.4",  # equivalent to Python 3.9
-    "ruamel.yaml>= 0.12.4, != 0.16.6, < 0.18",
+    "importlib_resources>=1.4;python_version<'3.9'",
+    "ruamel.yaml>=0.17.6, < 0.19",
     "types-setuptools"
 ]
 build-backend = "setuptools.build_meta"
@@ -21,9 +20,8 @@ before-build = "python -m pip install -r requirements.txt -r mypy-requirements.t
 test-command = "python -m pytest -n 2 --junitxml=/output/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad"
 test-requires = "-r test-requirements.txt"
 test-extras = "pycodegen"
-skip = "pp* cp312-*"
+skip = "pp*"
 #      ^ skip building wheels on PyPy (any version)
-#           ^ skip building wheels on 3.12 (not ready)
 build-verbosity = "1"
 
 [tool.black]

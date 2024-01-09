@@ -38,7 +38,8 @@ internal class ArrayLoader<T> : ILoader<List<T>>
             try
             {
                 dynamic loadedField = unionLoader.LoadField(e1, baseuri, loadingOptions);
-                if (loadedField is IList)
+                bool flatten = !String.Equals("@list", loadingOptions.container);
+                if (flatten && loadedField is IList)
                 {
                     returnValue.AddRange((List<T>)loadedField);
                 }
