@@ -2,7 +2,7 @@ diff_cover < 8.1
 pylint < 3.1
 pydocstyle < 6.4
 flake8 > 4
-flake8-bugbear < 23.13
+flake8-bugbear < 24.2
 tox < 3.29  # until tox-pyenv is updated for tox 4.x
 tox-pyenv < 1.2
 isort < 5.14
