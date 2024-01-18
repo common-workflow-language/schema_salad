@@ -45,7 +45,8 @@ _logger = logging.getLogger("salad")
 
 
 def escape_html(s: str) -> str:
-    return html.escape(html.unescape(s)).replace('&#x27;', "'")
+    """Escape HTML but otherwise preserve single quotes."""
+    return html.escape(html.unescape(s)).replace("&#x27;", "'")
 
 
 def vocab_type_name(url: str) -> str:
