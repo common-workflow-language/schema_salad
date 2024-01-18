@@ -8,35 +8,45 @@ import sys
 from io import StringIO, TextIOWrapper
 from typing import (
     IO,
-    TYPE_CHECKING,
     Any,
     Dict,
     List,
+    Literal,
     MutableMapping,
     MutableSequence,
     Optional,
     Set,
     Tuple,
     Union,
+    cast,
 )
 from urllib.parse import urldefrag
 
 from mistune import create_markdown
-from mistune.renderers import HTMLRenderer
-from mistune.util import escape_html
+from mistune.markdown import Markdown
+from mistune.renderers.html import HTMLRenderer
 
 from .exceptions import SchemaSaladException, ValidationException
 from .schema import avro_field_name, extend_and_specialize, get_metaschema
 from .utils import add_dictlist, aslist
 from .validate import avro_type_name
 
-if TYPE_CHECKING:
-    # avoid import error since typing stubs do not exist in actual package
-    from mistune import State
-    from mistune.markdown import Markdown
-    from mistune.plugins import PluginName
+PluginName = Literal[
+    "url",
+    "strikethrough",
+    "footnotes",
+    "table",
+    "task_lists",
+    "def_list",
+    "abbr",
+]
 
 _logger = logging.getLogger("salad")
+
+
+def escape_html(s: str) -> str:
+    """Escape HTML but otherwise preserve single quotes."""
+    return html.escape(html.unescape(s)).replace("&#x27;", "'")
 
 
 def vocab_type_name(url: str) -> str:
@@ -70,7 +80,7 @@ def linkto(item: str) -> str:
 class MyRenderer(HTMLRenderer):
     """Custom renderer with different representations of selected HTML tags."""
 
-    def heading(self, text: str, level: int) -> str:
+    def heading(self, text: str, level: int, **attrs: Any) -> str:
         """Override HTML heading creation with text IDs."""
         return """<h{} id="{}" class="section">{} <a href="#{}">&sect;</a></h{}>""".format(
             level, to_id(text), text, to_id(text), level
@@ -102,139 +112,6 @@ class MyRenderer(HTMLRenderer):
             lang = escape_html(lang)
             text += ' class="language-' + lang + '"'
         return text + ">" + html.escape(code, quote=self._escape) + "</code></pre>\n"
-
-
-def markdown_list_hook(
-    markdown: "Markdown[str, Any]", text: str, state: "State"
-) -> Tuple[str, "State"]:
-    """Patches problematic Markdown lists for later HTML generation.
-
-    When a Markdown list with paragraphs not indented with the list
-    markers (no spaces before following lines), ``mistune`` v2 does
-    not handle them correctly. This is however permitted as per
-    https://daringfireball.net/projects/markdown/syntax#list
-
-    For example:
-
-    ```markdown
-    * some list
-    * item with
-    paragraph
-    * other item
-    ```
-
-    Similarly, lists that are completely indented or that contains nested lists
-    produce incorrect HTML ``<p>``/``<li>`` tag combinations.
-
-    Because list parsing is deeply nested within ``mistune.block_parser.BlockParser``
-    and that there is no easy way to override utility functions it employs to adjust
-    patterns of list items without reimplementing it or a lot of monkey patching,
-    instead catch the problem cases before rendering and adjust them with a hook.
-
-    See https://github.com/lepture/mistune/issues/296
-    and https://github.com/common-workflow-language/schema_salad/pull/619
-    """
-    pattern = re.compile(
-        r"^"
-        r"(?P<before>\n*)"  # detect newline to start capture on bullet line
-        r"(?P<indent>\s*)"
-        r"(?P<bullet>[0-9]+[.)]?|[*-])"
-        r"(?P<spacing>\s+)"
-        r"(?P<first_line>.*)"
-        # if more than one empty line is found, end search (paragraph after list)
-        r"(?!\n\s*\n\s*)"
-        # otherwise, find all lines part of the same bullet item
-        # if this bullet item is indented (nested list), match indents to collect
-        # use negative lookahead to avoid over capturing following bullets
-        r"(?P<other_lines>(?:\n\s*(?![0-9]+[.)]+|[*-])(?P=indent).*"
-        r"(?!\n\s*\n\s*)"  # avoid match past list on last indented line
-        r")+)*"  # end 'other_lines'
-        # because of negative lookahead logic, there is sometimes a remaining
-        # trailing character to capture on the last list item line
-        r"(?P<remain>.*)",
-        re.MULTILINE,
-    )
-    matches = list(re.finditer(pattern, text))
-    if not matches:
-        return text, state
-    result = ""
-    begin = 0
-    for match in matches:
-        start, end = match.start(), match.end()
-        start += len(match.group("before"))
-        result += text[begin:start]  # add text in between matched lists
-
-        # process and indented list (de-indent, apply fixes, and re-indent)
-        indent_prefix = match.group("indent")
-        if indent_prefix:
-            intend_list = text[start:end]
-            intend_list = "\n".join(
-                [
-                    line.strip()
-                    for line in intend_list.split("\n")
-                    # mistune is having trouble understanding list items
-                    # if they are separated by an additional line in between
-                    # ignore empty lines to group items together,
-                    # avoiding split into distinct list after injecting <p> tags
-                    if line.strip()
-                ]
-            )
-            intend_list, _ = markdown_list_hook(markdown, intend_list, state)
-            # remove final newline from other if/else branch
-            intend_list = intend_list.rstrip()
-            intend_list = "\n".join([indent_prefix + line for line in intend_list.split("\n")])
-            result += intend_list + "\n"
-        # process a plain list
-        # pad extra spaces to multi-lines items contents after bullet
-        else:
-            item = match.group("indent") + match.group("bullet") + match.group("spacing")
-            result += item + match.group("first_line")
-            indent = (
-                "\n"
-                + match.group("indent").split("\n")[-1]
-                + (" " * len(match.group("bullet")))
-                + match.group("spacing")
-            )
-            other = match.group("other_lines")
-            if other:
-                other = indent.join(
-                    [
-                        line.strip()
-                        for line in other.split("\n")
-                        # mistune is having trouble understanding list items
-                        # if they are separated by an additional line in between
-                        # ignore empty lines to group items together,
-                        # avoiding split into distinct list after injecting <p> tags
-                        if line.strip()
-                    ]
-                )
-                # Add a single space to ensure words remain separated.
-                # If we use newline/indent like in other lines above, mistune
-                # splits the items into 2 lists. Although technically the Markdown
-                # will have an extra space, spacing will be patched when generating
-                # the HTML whether newline or space was used.
-                if (
-                    # only apply the extra space if items are actually
-                    # 2 words to avoid incorrect split of compound words
-                    # (e.g.: "key-value", not "key- value").
-                    re.match(r".*[^-]$", result[-2:], re.I)
-                    and re.match(r"^[^-].*", other[:2], re.I)
-                ):
-                    result += " "
-                result += other
-            result += match.group("remain") + "\n"
-
-        begin = end + 1
-    result += text[begin:]
-    # Because lists regexes are designed to detect line-by-line bullets/paragraphs,
-    # we cannot directly (or easily / with certainty) detect "list-like" encase in
-    # fenced code definitions that could be much above/below the "list-like" items.
-    # Instead, simply revert them after the fact with document-level matches of fenced codes.
-    _logger.debug("Original Markdown:\n\n%s\n\n", text)
-    _logger.debug("Modified Markdown:\n\n%s\n\n", result)
-    result = patch_fenced_code(text, result)
-    _logger.debug("Patched Markdown:\n\n%s\n\n", result)
-    return result, state
 
 
 def patch_fenced_code(original_markdown_text: str, modified_markdown_text: str) -> str:
@@ -583,7 +460,7 @@ class RenderType:
             f["doc"] = number_headings(self.toc, f["doc"])
 
         doc = doc + "\n\n" + f["doc"]
-        plugins: List["PluginName"] = [
+        plugins: List[PluginName] = [
             "strikethrough",
             "footnotes",
             "table",
@@ -592,13 +469,12 @@ class RenderType:
         # if escape active, wraps literal HTML into '<p> {HTML} </p>'
         # we must pass it to both since 'MyRenderer' is predefined
         escape = False
-        markdown2html: "Markdown[str, Any]" = create_markdown(
+        markdown2html: Markdown = create_markdown(
             renderer=MyRenderer(escape=escape),
             plugins=plugins,
             escape=escape,
         )
-        markdown2html.before_parse_hooks.append(markdown_list_hook)
-        doc = markdown2html(doc)
+        doc = cast(str, markdown2html(doc))
 
         if f["type"] == "record":
             doc += "<h3>Fields</h3>"

@@ -1,21 +1,10 @@
-from typing import Dict, Protocol
+from typing import Protocol, Union
 
-from mistune.inline_parser import RendererT
-from mistune.markdown import Markdown
-from mistune.renderers import DataT
-from typing_extensions import Literal
-
-PluginName = Literal[
-    "url",
-    "strikethrough",
-    "footnotes",
-    "table",
-    "task_lists",
-    "def_list",
-    "abbr",
-]
+from ..markdown import Markdown
 
 class Plugin(Protocol):
-    def __call__(self, markdown: Markdown[DataT, RendererT]) -> None: ...
+    def __call__(self, markdown: Markdown) -> None: ...
 
-PLUGINS: Dict[PluginName, Plugin]
+PluginRef = Union[str, Plugin]
+
+def import_plugin(name: PluginRef) -> Plugin: ...

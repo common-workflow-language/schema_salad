@@ -193,14 +193,14 @@ def test_multiline_list_entries_without_indention(metaschema_doc: str) -> None:
     # Some newlines in markdown are replaced by spaces purposely
     # to avoid invalid Markdown to HTML conversion as preserve words separated.
     assert (
-        "<li><p>At least one record definition object which defines valid fields that "  # purposely no \n
+        "<li><p>At least one record definition object which defines valid fields that\n"
         "make up a record type.  Record field definitions include the valid types\n"
         "that may be assigned to each field and annotations to indicate fields\n"
         'that represent identifiers and links, described below in "Semantic\n'
         'Annotations".</p>\n'
         "</li>\n"
         "<li><p>Any number of enumerated type objects which define a set of finite "
-        "set of symbols that are "  # purposely no \n
+        "set of symbols that are\n"
         "valid value of the type.</p>\n"
         "</li>\n"
         "<li><p>Any number of documentation objects which allow in-line "
@@ -239,5 +239,5 @@ def test_detect_changes_in_html(metaschema_doc: str, tmp_path: Path) -> None:
     with open(result, "w") as h:
         h.write(metaschema_doc)
     assert (
-        hasher.hexdigest() == "92730b4fd87186421b7e5f656f15280461beeb8d7bb853e405ae85238bb12580"
+        hasher.hexdigest() == "3218d5a66d13025a874c0c05e0ad9af26d6131a4e27c019589b4aa18aee3c73d"
     ), result

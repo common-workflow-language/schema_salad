@@ -1,76 +1,56 @@
 from typing import (
+    Any,
     ClassVar,
-    Generic,
-    Iterator,
+    Dict,
+    Iterable,
     List,
     Match,
+    MutableMapping,
     Optional,
     Pattern,
-    Tuple,
-    TypeVar,
-    Union,
 )
 
-from mistune._types import State
-from mistune.renderers import AstRenderer, DataT, HTMLRenderer
-from mistune.scanner import ScannerParser
-from mistune.util import ESCAPE_TEXT
-from typing_extensions import Literal
+from .core import InlineState as InlineState
+from .core import Parser as Parser
+from .helpers import HTML_ATTRIBUTES as HTML_ATTRIBUTES
+from .helpers import HTML_TAGNAME as HTML_TAGNAME
+from .helpers import PREVENT_BACKSLASH as PREVENT_BACKSLASH
+from .helpers import PUNCTUATION as PUNCTUATION
+from .helpers import parse_link as parse_link
+from .helpers import parse_link_label as parse_link_label
+from .helpers import parse_link_text as parse_link_text
+from .helpers import unescape_char as unescape_char
+from .util import escape as escape
+from .util import escape_url as escape_url
+from .util import unikey as unikey
 
-HTML_TAGNAME: str
-HTML_ATTRIBUTES: str
-ESCAPE_CHAR: Pattern[str]
-LINK_TEXT: str
-LINK_LABEL: str
+PAREN_END_RE: Pattern[str]
+AUTO_EMAIL: str
+INLINE_HTML: str
+EMPHASIS_END_RE: Dict[str, Pattern[str]]
 
-# Union[BaseRenderer[DataT], AstRenderer, HTMLRenderer]
-RendererT = TypeVar("RendererT", bound=Union[AstRenderer, HTMLRenderer])
-
-class InlineParser(ScannerParser, Generic[RendererT]):
-    ESCAPE: ClassVar[str] = ESCAPE_TEXT
-    AUTO_LINK: ClassVar[str]
-    STD_LINK: ClassVar[str]
-    REF_LINK: ClassVar[str]
-    REF_LINK2: ClassVar[str]
-    ASTERISK_EMPHASIS: ClassVar[str]
-    UNDERSCORE_EMPHASIS: ClassVar[str]
-    CODESPAN: ClassVar[str]
-    LINEBREAK: ClassVar[str]
-    INLINE_HTML: ClassVar[str]
-    RULE_NAMES: ClassVar[Tuple[str, ...]]
-
-    renderer: RendererT
-
-    def __init__(self, renderer: RendererT, hard_wrap: bool = False) -> None: ...
-    def parse_escape(self, m: Match[str], state: State) -> Tuple[Literal["text"], str]: ...
-    def parse_autolink(self, m: Match[str], state: State) -> Tuple[Literal["link"], str, str]: ...
-    def parse_std_link(
-        self, m: Match[str], state: State
-    ) -> Tuple[Literal["link"], str, str, str]: ...
-    def parse_ref_link(
-        self, m: Match[str], state: State
-    ) -> Tuple[Literal["link"], str, str, str]: ...
-    def parse_ref_link2(
-        self, m: Match[str], state: State
-    ) -> Tuple[Literal["link"], str, str, str]: ...
-    def tokenize_link(
-        self, line: str, link: str, text: str, title: str, state: State
-    ) -> Tuple[Literal["link"], str, str, str]: ...
-    def parse_asterisk_emphasis(
-        self, m: Match[str], state: State
-    ) -> Tuple[Literal["strong", "emphasis"], str]: ...
-    def parse_underscore_emphasis(
-        self, m: Match[str], state: State
-    ) -> Tuple[Literal["strong", "emphasis"], str]: ...
-    def tokenize_emphasis(self, m: Match[str], state: State) -> Tuple[str, str]: ...
-    def parse_codespan(self, m: Match[str], state: State) -> Tuple[Literal["codespan"], str]: ...
-    def parse_linebreak(self, m: Match[str], state: State) -> Tuple[Literal["linebreak"], str]: ...
-    def parse_inline_html(
-        self, m: Match[str], state: State
-    ) -> Tuple[Literal["inline_html"], str]: ...
-    def parse_text(self, text: str, state: State) -> Tuple[Literal["text"], str]: ...
-    def parse(self, s: str, state: State, rules: Optional[List[str]]) -> Iterator[DataT]: ...
-    def render(
-        self, s: str, state: State, rules: Optional[List[str]]
-    ) -> Union[DataT, List[DataT]]: ...
-    def __call__(self, s: str, state: State) -> Union[DataT, List[DataT]]: ...
+class InlineParser(Parser[InlineState]):
+    sc_flag: int
+    state_cls = InlineState
+    STD_LINEBREAK: str
+    HARD_LINEBREAK: str
+    SPECIFICATION: ClassVar[Dict[str, str]]
+    DEFAULT_RULES: ClassVar[Iterable[str]]
+    hard_wrap: bool
+    def __init__(self, hard_wrap: bool = False) -> None: ...
+    def parse_escape(self, m: Match[str], state: InlineState) -> int: ...
+    def parse_link(self, m: Match[str], state: InlineState) -> Optional[int]: ...
+    def parse_auto_link(self, m: Match[str], state: InlineState) -> int: ...
+    def parse_auto_email(self, m: Match[str], state: InlineState) -> int: ...
+    def parse_emphasis(self, m: Match[str], state: InlineState) -> int: ...
+    def parse_codespan(self, m: Match[str], state: InlineState) -> int: ...
+    def parse_linebreak(self, m: Match[str], state: InlineState) -> int: ...
+    def parse_softbreak(self, m: Match[str], state: InlineState) -> int: ...
+    def parse_inline_html(self, m: Match[str], state: InlineState) -> int: ...
+    def process_text(self, text: str, state: InlineState) -> None: ...
+    def parse(self, state: InlineState) -> List[Dict[str, Any]]: ...
+    def precedence_scan(
+        self, m: Match[str], state: InlineState, end_pos: int, rules: Optional[List[str]] = None
+    ) -> Optional[int]: ...
+    def render(self, state: InlineState) -> List[Dict[str, Any]]: ...
+    def __call__(self, s: str, env: MutableMapping[str, Any]) -> List[Dict[str, Any]]: ...

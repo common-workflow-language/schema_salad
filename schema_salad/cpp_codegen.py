@@ -940,7 +940,7 @@ public:
                         break
 
                 if not found:
-                    self.classDefinitions[key].fields.append(field)
+                    self.classDefinitions[key].fields.append(field)  # noqa: B038
 
         # write definitions
         for key in self.enumDefinitions:

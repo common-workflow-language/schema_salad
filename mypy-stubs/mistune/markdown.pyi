@@ -1,35 +1,33 @@
-from typing import Any, Callable, Dict, Generic, Iterable, List, Match, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
-from mistune._types import State
-from mistune.block_parser import BlockParser
-from mistune.inline_parser import InlineParser, RendererT
-from mistune.plugins import Plugin
-from mistune.renderers import BaseRenderer, DataT
+from _typeshed import Incomplete
 
-Tokens = List[Dict[str, Any]]
-ParseHook = Callable[[Markdown[DataT, RendererT], DataT, State], Tuple[str, State]]
-RenderHook = Callable[[Markdown[DataT, RendererT], Tokens, State], Tokens]
+from .block_parser import BlockParser as BlockParser
+from .core import BaseRenderer as BaseRenderer
+from .core import BlockState as BlockState
+from .inline_parser import InlineParser as InlineParser
+from .plugins import Plugin as Plugin
 
-class Markdown(Generic[DataT, RendererT]):
-    renderer: BaseRenderer[DataT]
-    inline: InlineParser[RendererT]
-    block: BlockParser
-    before_parse_hooks: List[ParseHook[DataT, RendererT]]
-    before_render_hooks: List[RenderHook[DataT, RendererT]]
-    after_render_hooks: List[RenderHook[DataT, RendererT]]
-
+class Markdown:
+    renderer: Incomplete
+    block: Incomplete
+    inline: Incomplete
+    before_parse_hooks: Incomplete
+    before_render_hooks: Incomplete
+    after_render_hooks: Incomplete
     def __init__(
         self,
-        renderer: BaseRenderer[DataT],
+        renderer: Optional[BaseRenderer] = None,
         block: Optional[BlockParser] = None,
-        inline: Optional[InlineParser[RendererT]] = None,
+        inline: Optional[InlineParser] = None,
         plugins: Optional[Iterable[Plugin]] = None,
     ) -> None: ...
-    def before_parse(self, s: str, state: State) -> Tuple[str, State]: ...
-    def before_render(self, tokens: Tokens, state: State) -> Tokens: ...
-    def after_render(self, tokens: Tokens, state: State) -> Tokens: ...
-    def parse(self, s: str, state: Optional[State] = None) -> str: ...
-    def read(self, filepath: str, state: Optional[State] = None) -> str: ...
-    def __call__(self, s: str) -> str: ...
-
-def preprocess(s: str, state: State) -> Tuple[str, State]: ...
+    def use(self, plugin: Plugin) -> None: ...
+    def render_state(self, state: BlockState) -> Union[str, List[Dict[str, Any]]]: ...
+    def parse(
+        self, s: str, state: Optional[BlockState] = None
+    ) -> Tuple[Union[str, List[Dict[str, Any]]], BlockState]: ...
+    def read(
+        self, filepath: str, encoding: str = "utf-8", state: Optional[BlockState] = None
+    ) -> Tuple[Union[str, List[Dict[str, Any]]], BlockState]: ...
+    def __call__(self, s: str) -> Union[str, List[Dict[str, Any]]]: ...
