@@ -1,0 +1,26 @@
+from typing import Iterable, Optional, Union, Any
+
+from mistune._types import *
+from mistune.markdown import Markdown
+from mistune.core import BaseRenderer
+from mistune.renderers.html import HTMLRenderer
+from typing_extensions import Literal
+
+html: Markdown
+
+RendererRef = Union[Literal["html", "ast"], BaseRenderer]
+
+def create_markdown(
+    escape: bool = False,
+    hard_wrap: bool = False,
+    renderer: Optional[RendererRef] = None,
+    plugins: Optional[Iterable[Any]] = None,
+) -> Markdown: ...
+def markdown(
+    text: str,
+    escape: bool = True,
+    renderer: Optional[BaseRenderer] = None,
+    plugins: Optional[Iterable[Any]] = None,
+) -> str: ...
+
+__version__: str

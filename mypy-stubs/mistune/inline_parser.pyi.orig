@@ -1,0 +1,29 @@
+from typing import (
+    ClassVar,
+    Generic,
+    Iterator,
+    List,
+    Match,
+    Optional,
+    Pattern,
+    Tuple,
+    TypeVar,
+    Union,
+)
+
+from mistune._types import State
+#from mistune.renderers import AstRenderer, DataT, HTMLRenderer
+from mistune.scanner import ScannerParser
+from mistune.util import ESCAPE_TEXT
+from typing_extensions import Literal
+
+HTML_TAGNAME: str
+HTML_ATTRIBUTES: str
+ESCAPE_CHAR: Pattern[str]
+LINK_TEXT: str
+LINK_LABEL: str
+
+# Union[BaseRenderer[DataT], AstRenderer, HTMLRenderer]
+# RendererT = TypeVar("RendererT", bound=Union[AstRenderer, HTMLRenderer])
+
+
