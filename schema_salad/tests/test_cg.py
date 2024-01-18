@@ -19,7 +19,7 @@ def test_load() -> None:
         "fields": [{"name": "hello", "doc": "Hello test case", "type": "string"}],
     }
     rs = cg_metaschema.RecordSchema.fromDoc(
-        doc, "http://example.com/", cg_metaschema.LoadingOptions()
+        doc, "http://example.com/", cg_metaschema.LoadingOptions(no_link_check=True)
     )
     assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
@@ -50,7 +50,7 @@ def test_include() -> None:
     rf = cg_metaschema.Documentation.fromDoc(
         doc,
         "http://example.com/",
-        cg_metaschema.LoadingOptions(fileuri=file_uri(path)),
+        cg_metaschema.LoadingOptions(fileuri=file_uri(path), no_link_check=True),
     )
     assert "http://example.com/#hello" == rf.name
     assert ["hello world!\n"] == rf.doc
@@ -127,7 +127,7 @@ def test_idmap() -> None:
         "fields": {"hello": {"doc": "Hello test case", "type": "string"}},
     }
     rs = cg_metaschema.RecordSchema.fromDoc(
-        doc, "http://example.com/", cg_metaschema.LoadingOptions()
+        doc, "http://example.com/", cg_metaschema.LoadingOptions(no_link_check=True)
     )
     assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
@@ -148,7 +148,7 @@ def test_idmap() -> None:
 def test_idmap2() -> None:
     doc = {"type": "record", "fields": {"hello": "string"}}
     rs = cg_metaschema.RecordSchema.fromDoc(
-        doc, "http://example.com/", cg_metaschema.LoadingOptions()
+        doc, "http://example.com/", cg_metaschema.LoadingOptions(no_link_check=True)
     )
     assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
@@ -163,7 +163,9 @@ def test_idmap2() -> None:
 def test_load_pt() -> None:
     path = get_data("tests/pt.yml")
     assert path
-    doc = cg_metaschema.load_document(file_uri(path), "", cg_metaschema.LoadingOptions())
+    doc = cg_metaschema.load_document(
+        file_uri(path), "", cg_metaschema.LoadingOptions(no_link_check=True)
+    )
     assert [
         "https://w3id.org/cwl/salad#null",
         "http://www.w3.org/2001/XMLSchema#boolean",
@@ -201,7 +203,7 @@ def test_load_metaschema(metaschema_pre: Any) -> None:
     doc = cg_metaschema.load_document(
         file_uri(path),
         "",
-        None,
+        cg_metaschema.LoadingOptions(no_link_check=True),
     )
     saved = [d.save(relative_uris=False) for d in doc]
     assert saved == JsonDiffMatcher(metaschema_pre)
@@ -228,7 +230,7 @@ def test_load_cwlschema() -> None:
     doc = cg_metaschema.load_document(
         file_uri(path),
         "",
-        cg_metaschema.LoadingOptions(),
+        cg_metaschema.LoadingOptions(no_link_check=True),
     )
     path2 = get_data("tests/cwl-pre.yml")
     assert path2
