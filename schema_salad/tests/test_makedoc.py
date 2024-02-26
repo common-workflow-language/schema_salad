@@ -11,6 +11,7 @@ Likewise, if the schema-salad metaschema changes and it is missing one or more
 of the features tested below, then please copy those old features to a new file
 and update the affected tests to use those new file(s).
 """
+
 import hashlib
 import inspect
 import json

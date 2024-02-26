@@ -1,4 +1,5 @@
 """Tests of helpful error messages."""
+
 import re
 
 import pytest

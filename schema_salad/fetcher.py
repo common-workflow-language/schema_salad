@@ -1,4 +1,5 @@
 """Resource fetching."""
+
 import logging
 import os
 import re
@@ -31,8 +32,7 @@ class Fetcher(ABC):
         """Check if the given resource exists."""
 
     @abstractmethod
-    def urljoin(self, base_url: str, url: str) -> str:
-        ...
+    def urljoin(self, base_url: str, url: str) -> str: ...
 
     schemes = ["file", "http", "https", "mailto"]
 

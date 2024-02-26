@@ -1,4 +1,5 @@
 """Template code used by python_codegen.py."""
+
 import copy
 import logging
 import os

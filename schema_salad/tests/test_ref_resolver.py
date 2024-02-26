@@ -1,6 +1,5 @@
 """Test the ref_resolver module."""
 
-
 import os
 import shutil
 import sys

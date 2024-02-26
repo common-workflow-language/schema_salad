@@ -398,14 +398,18 @@ def validate_ex(
                             err = ValidationException(
                                 "unrecognized extension field {!r}{}.{}".format(
                                     d,
-                                    " and strict_foreign_properties checking is enabled"
-                                    if strict_foreign_properties
-                                    else "",
-                                    "\nForeign properties from $schemas:\n  {}".format(
-                                        "\n  ".join(sorted(foreign_properties))
-                                    )
-                                    if len(foreign_properties) > 0
-                                    else "",
+                                    (
+                                        " and strict_foreign_properties checking is enabled"
+                                        if strict_foreign_properties
+                                        else ""
+                                    ),
+                                    (
+                                        "\nForeign properties from $schemas:\n  {}".format(
+                                            "\n  ".join(sorted(foreign_properties))
+                                        )
+                                        if len(foreign_properties) > 0
+                                        else ""
+                                    ),
                                 ),
                                 sl,
                             )

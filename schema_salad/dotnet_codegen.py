@@ -1,4 +1,5 @@
 """DotNet code generator for a given schema salad definition."""
+
 import os
 import shutil
 import string

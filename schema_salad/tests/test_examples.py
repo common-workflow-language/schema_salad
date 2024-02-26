@@ -1,4 +1,5 @@
 """Test examples."""
+
 import datetime
 import os
 from io import StringIO
