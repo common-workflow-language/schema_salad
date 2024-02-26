@@ -32,7 +32,8 @@ class Fetcher(ABC):
         """Check if the given resource exists."""
 
     @abstractmethod
-    def urljoin(self, base_url: str, url: str) -> str: ...
+    def urljoin(self, base_url: str, url: str) -> str:
+        """Construct a full (“absolute”) URL by combining a “base URL” with another URL."""
 
     schemes = ["file", "http", "https", "mailto"]
 
