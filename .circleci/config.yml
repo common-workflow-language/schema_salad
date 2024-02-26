@@ -15,7 +15,7 @@ jobs:
         type: string
 
     machine:
-      image: ubuntu-2204:2022.07.1
+      image: ubuntu-2204:current
     resource_class: arm.medium  # two vCPUs
 
     environment:
