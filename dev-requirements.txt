@@ -7,6 +7,6 @@ tox < 3.29  # until tox-pyenv is updated for tox 4.x
 tox-pyenv < 1.2
 isort > 5, < 5.14
 build < 1.0.4
-autoflake < 2.3
+autoflake < 2.4
 bandit < 1.7.8
 auto-walrus
