@@ -1,4 +1,5 @@
 """Resource fetching."""
+
 import logging
 import os
 import re
@@ -32,7 +33,7 @@ class Fetcher(ABC):
 
     @abstractmethod
     def urljoin(self, base_url: str, url: str) -> str:
-        ...
+        """Construct a full (“absolute”) URL by combining a “base URL” with another URL."""
 
     schemes = ["file", "http", "https", "mailto"]
 

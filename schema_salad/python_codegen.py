@@ -1,4 +1,5 @@
 """Python code generator for a given schema salad definition."""
+
 import textwrap
 from io import StringIO
 from typing import (

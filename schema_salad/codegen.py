@@ -1,4 +1,5 @@
 """Generate language specific loaders for a particular SALAD schema."""
+
 import sys
 from io import TextIOWrapper
 from typing import (
@@ -158,9 +159,11 @@ def codegen(
 
             sorted_fields = sorted(
                 rec.get("fields", []),
-                key=lambda i: FIELD_SORT_ORDER.index(i["name"].split("/")[-1])
-                if i["name"].split("/")[-1] in FIELD_SORT_ORDER
-                else 100,
+                key=lambda i: (
+                    FIELD_SORT_ORDER.index(i["name"].split("/")[-1])
+                    if i["name"].split("/")[-1] in FIELD_SORT_ORDER
+                    else 100
+                ),
             )
 
             for field in sorted_fields:

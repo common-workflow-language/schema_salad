@@ -1,4 +1,5 @@
 """Shared Exception classes."""
+
 from typing import List, Optional, Sequence, Tuple, Union
 
 from .sourceline import SourceLine, reflow_all, strip_duplicated_lineno

@@ -1,4 +1,5 @@
 """Java code generator for a given schema salad definition."""
+
 import os
 import re
 import shutil
@@ -492,9 +493,9 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                         "{container}, {no_link_check})".format(
                             clazz=fqclass,
                             ext="Impl" if not is_abstract else "",
-                            container=f"'{container}'"  # noqa: B907
-                            if container is not None
-                            else None,
+                            container=(
+                                f"'{container}'" if container is not None else None  # noqa: B907
+                            ),
                             no_link_check=self.to_java(no_link_check),
                         ),
                         loader_type=f"Loader<{fqclass}>",

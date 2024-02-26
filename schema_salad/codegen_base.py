@@ -1,4 +1,5 @@
 """Base class for the generation of loaders from schema-salad definitions."""
+
 from collections import OrderedDict
 from typing import Any, Dict, List, MutableSequence, Optional, Set, Union
 

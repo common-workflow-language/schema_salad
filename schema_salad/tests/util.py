@@ -1,4 +1,5 @@
 """Shared test functions and attributes."""
+
 import atexit
 import os
 from contextlib import ExitStack
