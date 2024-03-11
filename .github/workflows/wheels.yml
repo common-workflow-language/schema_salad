@@ -101,7 +101,7 @@ jobs:
     environment: pypi
     permissions:
       id-token: write
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: (github.event_name == 'release' && github.event.action == 'published') || (github.event_name == 'repository_dispatch' && github.event.client_payload.publish_wheel == true)
     steps:
       - uses: actions/download-artifact@v4
         with:
