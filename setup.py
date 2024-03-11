@@ -112,7 +112,7 @@ setup(
     long_description_content_type="text/x-rst",
     author="Common workflow language working group",
     author_email="common-workflow-language@googlegroups.com",
-    url="https://github.com/common-workflow-language/schema_salad",
+    url="https://schema-salad.readthedocs.io/",
     download_url="https://github.com/common-workflow-language/schema_salad/releases",
     ext_modules=ext_modules,
     license="Apache 2.0",
