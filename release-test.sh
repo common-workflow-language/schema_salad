@@ -17,7 +17,7 @@ else
     repo=https://github.com/common-workflow-language/schema_salad.git
     HEAD=$(git rev-parse HEAD)
 fi
-run_tests="bin/py.test --pyargs ${module}"
+run_tests="bin/py.test -n logical --dist worksteal --pyargs ${module}"
 pipver=23.1  # minimum required version of pip for Python 3.12
 setuptoolsver=67.6.1  # required for Python 3.12
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"

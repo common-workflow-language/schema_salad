@@ -1,5 +1,6 @@
 pytest >= 6.2, < 8.2
 pytest-cov
-pytest-xdist
+pytest-xdist>=3.2.0  # for "--dist worksteal"
+psutil  # enable "pytest -n logical" functionality in pytest-xdist plugin
 setuptools
 -rrequirements.txt
