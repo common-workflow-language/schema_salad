@@ -40,7 +40,6 @@ jobs:
           command: |
             python3 -m pip install --upgrade pip setuptools setuptools_scm[toml]
             python3 -m pip install -rcibw-requirements.txt
-            python3 ./setup.py --version
 
       - run:
           name: pip freeze
@@ -55,14 +54,7 @@ jobs:
       - run:
           name: cibuildwheel
           command: |
-            source .github/workflows/wheel-prep.sh
-            export CIBW_ENVIRONMENT="SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH=/project/mypy-stubs SETUPTOOLS_SCM_PRETEND_VERSION=${SETUPTOOLS_SCM_PRETEND_VERSION}"
             python3 -m cibuildwheel .
-            # "/project" is the project path inside the cibuildwheel container itself
-
-      - run:
-          name: move tests results out of the wheelhouse
-          command: mv wheelhouse/test-results ./
 
       - store_test_results:
           path: test-results/
