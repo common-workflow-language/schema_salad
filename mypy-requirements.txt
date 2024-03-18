@@ -1,5 +1,5 @@
 mypy[mypyc]==1.9.0  # update pyproject.toml as well
-black~=24.2
+black~=24.3
 types-requests
 types-dataclasses
 objgraph
