@@ -25,7 +25,7 @@ export class LoadingOptions {
     if (copyFrom != null) {
       this.idx = copyFrom.idx
       if (fetcher === undefined) {
-        this.fetcher = copyFrom.fetcher
+        fetcher = copyFrom.fetcher
       }
       if (fileUri === undefined) {
         this.fileUri = copyFrom.fileUri
