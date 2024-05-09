@@ -20,12 +20,10 @@ jobs:
     strategy:
       matrix:
         py-ver-major: [3]
-        py-ver-minor: [8, 9, 10, 11, 12]
-        step: [lint, unit, mypy, memleak]
+        py-ver-minor: [8, 9, 10, 11, 12, "13.0-rc.1"]
 
     env:
       py-semver: ${{ format('{0}.{1}', matrix.py-ver-major, matrix.py-ver-minor) }}
-      TOXENV: ${{ format('py{0}{1}-{2}', matrix.py-ver-major, matrix.py-ver-minor, matrix.step) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +45,6 @@ jobs:
           pip install 'tox<4' tox-gh-actions
 
       - name: MyPy cache
-        if: ${{ matrix.step == 'mypy' }}
         uses: actions/cache@v4
         with:
           path: .mypy_cache/${{ env.py-semver }}
@@ -57,7 +54,6 @@ jobs:
         run: tox
 
       - name: Upload coverage to Codecov
-        if: ${{ matrix.step == 'unit' }}
         uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true
@@ -75,7 +71,7 @@ jobs:
 
     env:
       py-semver: "3.12"
-      TOXENV: ${{ format('py312-{0}', matrix.step) }}
+      TOXENV: ${{ matrix.step }}
 
     steps:
       - uses: actions/checkout@v4
@@ -86,12 +82,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.py-semver }}
-
-      - name: Cache for pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.step }}-${{ hashFiles('requirements.txt') }}
+          cache: pip
 
       - name: Upgrade setuptools and install tox
         run: |
