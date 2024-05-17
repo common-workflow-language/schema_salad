@@ -405,7 +405,11 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                         f"mapOf{i.name}",
                         "new _MapLoader([{}], {}, {})".format(
                             i.name,
-                            f"'{container}'" if container is not None else None,  # noqa: B907
+                            (
+                                f"'{container}'"
+                                if container is not None
+                                else self.to_typescript(None)
+                            ),  # noqa: B907
                             self.to_typescript(no_link_check),
                         ),
                         instance_type=f"Dictionary<{i.instance_type}>",
@@ -423,7 +427,11 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                         self.safe_name(type_declaration["name"]) + "Loader",
                         "new _RecordLoader({}.fromDoc, {}, {})".format(
                             self.safe_name(type_declaration["name"]),
-                            f"'{container}'" if container is not None else None,  # noqa: B907
+                            (
+                                f"'{container}'"
+                                if container is not None
+                                else self.to_typescript(None)
+                            ),  # noqa: B907
                             self.to_typescript(no_link_check),
                         ),
                         instance_type="Internal." + self.safe_name(type_declaration["name"]),
