@@ -103,6 +103,40 @@ jobs:
       - name: Test with tox
         run: tox
 
+  typescript:
+    name: Confirm that codegen typescript passes tests with CWL
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            tox.ini
+      - name: Upgrade setuptools and install schema-salad
+        run: |
+          pip install -U pip setuptools wheel
+          pip install .
+      - name: Download valid CWL documents for testing
+        run: |
+          wget "https://github.com/common-workflow-lab/cwl-ts-auto/archive/refs/heads/main.zip"
+          unzip main.zip
+      - name: Generate cwl-ts-auto
+        run: |
+          schema-salad-tool --codegen typescript --codegen-examples cwl-ts-auto-main/src/test/data/examples \
+            --codegen-target cwl-ts-auto \
+            https://github.com/common-workflow-language/cwl-v1.2/raw/codegen/CommonWorkflowLanguage.yml
+      - name: run cwl-ts-auto tests
+        run: |
+          cd cwl-ts-auto
+          npm install
+          npm test
+
   release_test:
     name: Schema Salad release test
 
