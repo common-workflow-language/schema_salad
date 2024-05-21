@@ -293,9 +293,9 @@ def parse_errors(error_message: str) -> Tuple[str, str, str]:
             types.add(individual_vals[-1].strip("."))
         else:
             types.add(individual_vals[1].replace(",", ""))
-    types = set(val for val in types if val != "NoneType")
+    types = {val for val in types if val != "NoneType"}
     if "str" in types:
-        types = set(convert_typing(val) for val in types if "'" not in val)
+        types = {convert_typing(val) for val in types if "'" not in val}
     to_print = ""
     for val in types:
         if "'" in val:
@@ -463,9 +463,7 @@ class _PrimitiveLoader(_Loader):
         lc: Optional[List[Any]] = None,
     ) -> Any:
         if not isinstance(doc, self.tp):
-            raise ValidationException(
-                "Expected a {} but got {}".format(self.tp, doc.__class__.__name__)
-            )
+            raise ValidationException(f"Expected a {self.tp} but got {doc.__class__.__name__}")
         return doc
 
     def __repr__(self) -> str:
@@ -495,7 +493,7 @@ class _ArrayLoader(_Loader):
         for i in range(0, len(doc)):
             try:
                 lf = load_field(
-                    doc[i], _UnionLoader(([self, self.items])), baseuri, loadingOptions, lc=lc
+                    doc[i], _UnionLoader([self, self.items]), baseuri, loadingOptions, lc=lc
                 )
                 flatten = loadingOptions.container != "@list"
                 if flatten and isinstance(lf, MutableSequence):

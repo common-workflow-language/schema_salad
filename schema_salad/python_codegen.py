@@ -488,7 +488,7 @@ if _errors__:
             ):
                 # Declare the named loader to handle recursive union definitions
                 loader_name = self.safe_name(type_declaration["name"]) + "Loader"
-                loader_type = TypeDef(loader_name, "_UnionLoader((), '{}')".format(loader_name))
+                loader_type = TypeDef(loader_name, f"_UnionLoader((), '{loader_name}')")
                 self.declare_type(loader_type)
                 # Parse inner types
                 sub_names = list(
