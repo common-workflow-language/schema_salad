@@ -95,7 +95,7 @@ pydocstyle_report.txt: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 
 ## diff_pydocstyle_report : check Python docstring style for changed files only
 diff_pydocstyle_report: pydocstyle_report.txt
-	diff-quality --compare-branch=main --violations=pydocstyle --fail-under=100 $^
+	diff-quality --compare-branch=origin/main --violations=pydocstyle --fail-under=100 $^
 
 ## codespell              : check for common misspellings
 codespell:
@@ -109,16 +109,16 @@ format-check:
 	black --diff --check --force-exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
 
 ## pylint                 : run static code analysis on Python code
-pylint: $(PYSOURCES)
+pylint: FORCE
 	pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
                 $^ -j0|| true
 
-pylint_report.txt: $(PYSOURCES)
+pylint_report.txt: FORCE
 	pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
 		$^ -j0> $@ || true
 
 diff_pylint_report: pylint_report.txt
-	diff-quality --compare-branch=main --violations=pylint pylint_report.txt
+	diff-quality --compare-branch=origin/main --violations=pylint pylint_report.txt
 
 .coverage:
 	pytest --cov --cov-config=.coveragerc --cov-report= ${PYTEST_EXTRA}
@@ -148,10 +148,10 @@ coverage-report: .coverage
 	coverage report
 
 diff-cover: coverage.xml
-	diff-cover --compare-branch=main $^
+	diff-cover --compare-branch=origin/main $^
 
 diff-cover.html: coverage.xml
-	diff-cover --compare-branch=main $^ --html-report $@
+	diff-cover --compare-branch=origin/main $^ --html-report $@
 
 ## test                   : run the schema-salad test suite
 test: $(PYSOURCES)
@@ -199,6 +199,10 @@ compute-metaschema-hash:
 
 shellcheck: FORCE
 	shellcheck build-schema_salad-docker.sh release-test.sh
+
+## bandit                 : check for common security issues
+bandit:
+	bandit --recursive --exclude schema_salad/tests/ schema_salad
 
 pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 	pyupgrade --exit-zero-even-if-changed --py38-plus $^
