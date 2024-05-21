@@ -193,7 +193,7 @@ def load_document_by_uri(tmp_path: Path, path: Union[str, Path]) -> Any:
 
     loadingOptions = cwl_v1_0.LoadingOptions(fileuri=baseuri)
 
-    with open(path, "r") as file:
+    with open(path) as file:
         doc = file.read()
     # doc = loadingOptions.fetcher.fetch_text(urllib.parse.unquote(str(real_path)))
     yaml = yaml_no_ts()
