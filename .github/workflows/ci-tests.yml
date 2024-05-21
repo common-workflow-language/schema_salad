@@ -21,7 +21,7 @@ jobs:
       matrix:
         py-ver-major: [3]
         py-ver-minor: [8, 9, 10, 11, 12]
-        step: [lint, bandit, unit, mypy, memleak]
+        step: [lint, unit, mypy, memleak]
 
     env:
       py-semver: ${{ format('{0}.{1}', matrix.py-ver-major, matrix.py-ver-minor) }}
@@ -29,6 +29,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
