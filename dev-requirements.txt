@@ -1,4 +1,4 @@
-diff_cover < 9.1
+diff_cover < 9.2
 pylint < 3.3
 pydocstyle < 6.4
 flake8 > 4
