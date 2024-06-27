@@ -6,6 +6,7 @@ run individually as py.test -k test_cwl11
 
 import os
 import shutil
+import sys
 import tarfile
 from typing import Any, Dict, Generator, Tuple, Union
 
@@ -35,7 +36,10 @@ def cwl_v1_2_schema(
         stream=True,
     ).raw as specfileobj:
         tf = tarfile.open(fileobj=specfileobj)
-        tf.extractall(path=tmp_path)  # this becomes cwl-v1.2-1.2.0
+        if sys.version_info > (3, 12):
+            tf.extractall(path=tmp_path, filter="data")  # this becomes cwl-v1.2-1.2.0
+        else:
+            tf.extractall(path=tmp_path)  # this becomes cwl-v1.2-1.2.0
     path = str(tmp_path / "cwl-v1.2-1.2.0/CommonWorkflowLanguage.yml")
     yield load_schema(path)
     shutil.rmtree(os.path.join(tmp_path))
