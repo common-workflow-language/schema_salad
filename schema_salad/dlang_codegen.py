@@ -1,8 +1,9 @@
 """D code generator for a given schema salad definition."""
 
 import datetime
+import functools
 import textwrap
-from typing import IO, Any, Dict, List, Optional, Tuple, Union, cast
+from typing import IO, Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, TypeDef
@@ -158,10 +159,14 @@ unittest
 """
 
     def parse_record_field_type(
-        self, type_: Any, jsonld_pred: Union[None, str, Dict[str, Any]]
+        self,
+        type_: Any,
+        jsonld_pred: Union[None, str, Dict[str, Any]],
+        parent_has_idmap: bool = False,
     ) -> Tuple[str, str]:
         """Return an annotation string and a type string."""
         annotations: List[str] = []
+        has_idmap = False or parent_has_idmap
         if isinstance(jsonld_pred, str):
             if jsonld_pred == "@id":
                 annotations.append("@id")
@@ -172,6 +177,7 @@ unittest
                 annotations.append("@secondaryFilesDSL")
             if "mapSubject" in jsonld_pred:
                 subject = jsonld_pred["mapSubject"]
+                has_idmap = True
                 if "mapPredicate" in jsonld_pred:
                     predicate = jsonld_pred["mapPredicate"]
                     annotations.append(f'@idMap("{subject}", "{predicate}")')  # noqa: B907
@@ -196,11 +202,13 @@ unittest
             else:
                 type_str = stype
         elif isinstance(type_, list):
-            t_str = [self.parse_record_field_type(t, None)[1] for t in type_]
+            t_str = [self.parse_record_field_type(t, None, has_idmap)[1] for t in type_]
+            if are_dispatchable(type_, has_idmap):
+                t_str += ["Any"]
             union_types = ", ".join(t_str)
             type_str = f"Union!({union_types})"
         elif shortname(type_["type"]) == "array":
-            item_type = self.parse_record_field_type(type_["items"], None)[1]
+            item_type = self.parse_record_field_type(type_["items"], None, has_idmap)[1]
             type_str = f"{item_type}[]"
         elif shortname(type_["type"]) == "record":
             return annotate_str, shortname(type_.get("name", "record"))
@@ -214,18 +222,7 @@ unittest
         jsonld_pred = field.get("jsonldPredicate", None)
         doc_comment = self.to_doc_comment(field.get("doc", None))
         type_ = field["type"]
-        if (
-            (
-                (isinstance(type_, dict) and shortname(type_.get("type", "")) == "enum")
-                or (isinstance(type_, str) and shortname(type_) == "string")
-            )
-            and isinstance(jsonld_pred, dict)
-            and (
-                shortname(jsonld_pred.get("_id", "")) == "type"
-                or shortname(jsonld_pred.get("_id", "")) == "@type"
-            )
-            and jsonld_pred.get("_type", "") == "@vocab"
-        ):
+        if is_constant_field(field):
             # special case
             if isinstance(type_, dict):
                 # assert len(type["symbols"]) == 1
@@ -338,3 +335,35 @@ unittest
         self.epilogue(TypeDef("dummy", "data"))
 
         self.target.close()
+
+
+def is_constant_field(field: Dict[str, Any]) -> bool:
+    jsonld_pred = field.get("jsonldPredicate", None)
+    type_ = field["type"]
+    if (
+        (
+            (isinstance(type_, dict) and shortname(type_.get("type", "")) == "enum")
+            or (isinstance(type_, str) and shortname(type_) == "string")
+        )
+        and isinstance(jsonld_pred, dict)
+        and (
+            shortname(jsonld_pred.get("_id", "")) == "type"
+            or shortname(jsonld_pred.get("_id", "")) == "@type"
+        )
+        and jsonld_pred.get("_type", "") == "@vocab"
+    ):
+        return True
+    return False
+
+
+def constant_fields_of(type_: Any) -> Set[str]:
+    if isinstance(type_, dict):
+        return set(shortname(f["name"]) for f in type_.get("fields", []) if is_constant_field(f))
+    return set()
+
+
+def are_dispatchable(types: List[Any], parent_has_idmap: bool) -> bool:
+    if any(t for t in types if not isinstance(t, dict)):
+        return False
+    constants = (constant_fields_of(t) for t in types)
+    return len(functools.reduce(lambda lhs, rhs: lhs & rhs, constants)) > 0 and parent_has_idmap
