@@ -108,7 +108,11 @@ alias importFromURI = import_!DocumentRootType;
 @("Test for generated parser")
 unittest
 {{
-    import std : dirEntries, SpanMode;
+    import std : dirEntries, SpanMode, stdThreadLocalLog, NullLogger;
+
+    auto currentLogger = stdThreadLocalLog;
+    stdThreadLocalLog = new NullLogger;
+    scope(exit) stdThreadLocalLog = currentLogger;
 
     auto resourceDir = "{self.examples}";
     foreach (file; dirEntries(resourceDir, SpanMode.depth))
