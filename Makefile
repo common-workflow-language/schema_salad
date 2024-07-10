@@ -31,7 +31,7 @@ DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt
 COVBASE=coverage run --append
 PYTEST_EXTRA ?= -rs
 
-VERSION=8.5.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
+VERSION=8.6.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
 
 ## all                    : default task (install schema-salad in dev mode)
