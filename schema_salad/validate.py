@@ -96,7 +96,7 @@ def friendly(v: Any) -> Any:
         return f"array of <{friendly(v.items)}>"
     if isinstance(v, avro.schema.PrimitiveSchema):
         return v.type
-    if isinstance(v, avro.schema.UnionSchema):
+    if isinstance(v, (avro.schema.UnionSchema, avro.schema.NamedUnionSchema)):
         return " or ".join([friendly(s) for s in v.schemas])
     return avro_shortname(v)
 
@@ -235,7 +235,7 @@ def validate_ex(
                 f"expected list of {friendly(expected_schema.items)}"
             )
         return False
-    if isinstance(expected_schema, avro.schema.UnionSchema):
+    if isinstance(expected_schema, (avro.schema.UnionSchema, avro.schema.NamedUnionSchema)):
         for s in expected_schema.schemas:
             if validate_ex(
                 s,
