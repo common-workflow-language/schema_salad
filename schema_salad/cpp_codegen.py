@@ -875,7 +875,7 @@ public:
         *data = std::forward<T2>(oth);
     }
 
-    ~heap_object() = default;
+    ~heap_object();
 
     auto operator=(heap_object const& oth) -> heap_object& {
         *data = *oth;
@@ -952,6 +952,20 @@ public:
             self.mapDefinitions[key].writeDefinition(self.target, "    ")
         for key in self.unionDefinitions:
             self.unionDefinitions[key].writeDefinition(self.target, "    ")
+
+        # CPP23: std::unique_ptr in heap_object is constexpr.
+        # Hence, the compiler will try to instantiate the destructor on definition.
+        # If the destructor was defined inside heap_object, other classes would only
+        # be forward declared at this point.
+        # This results in an error, because the destructor cannot be generated for
+        # incomplete types.
+        # Therefore, the destructor is defined here, after all classes have been defined.
+        self.target.write(
+            """template <typename T>
+heap_object<T>::~heap_object() = default;
+
+"""
+        )
 
         # write implementations
         for key in self.classDefinitions:

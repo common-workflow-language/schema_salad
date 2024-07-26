@@ -200,7 +200,7 @@ public:
         *data = std::forward<T2>(oth);
     }
 
-    ~heap_object() = default;
+    ~heap_object();
 
     auto operator=(heap_object const& oth) -> heap_object& {
         *data = *oth;
@@ -245,6 +245,9 @@ struct MyRecord {
     virtual void fromYaml(YAML::Node const& n);
 };
 }
+
+template <typename T>
+heap_object<T>::~heap_object() = default;
 
 inline auto https___example_com_::MyRecord::toYaml() const -> YAML::Node {
     using ::toYaml;
