@@ -8,7 +8,8 @@ requires = [
     "types-dataclasses",
     "importlib_resources>=1.4;python_version<'3.9'",
     "ruamel.yaml>=0.17.6, < 0.19",
-    "types-setuptools"
+    "types-setuptools",
+    "CacheControl[filecache] >= 0.13.1, < 0.15"
 ]
 build-backend = "setuptools.build_meta"
 

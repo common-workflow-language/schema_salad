@@ -22,7 +22,7 @@ from typing import (
 )
 
 import requests
-from cachecontrol.caches import FileCache
+from cachecontrol.caches import SeparateBodyFileCache
 from cachecontrol.wrapper import CacheControl
 from rdflib.exceptions import ParserError
 from rdflib.graph import Graph
@@ -179,10 +179,12 @@ class Loader:
                 root = pathlib.Path(os.environ.get("HOME", tempfile.gettempdir()))
                 self.session = CacheControl(
                     requests.Session(),
-                    cache=FileCache(root / ".cache" / "salad"),
+                    cache=SeparateBodyFileCache(root / ".cache" / "salad"),
                 )
             elif isinstance(doc_cache, str):
-                self.session = CacheControl(requests.Session(), cache=FileCache(doc_cache))
+                self.session = CacheControl(
+                    requests.Session(), cache=SeparateBodyFileCache(doc_cache)
+                )
         else:
             self.session = session
 
