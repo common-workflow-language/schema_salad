@@ -136,13 +136,13 @@ class LoadingOptions:
             self.fetcher = copyfrom.fetcher
         else:
             import requests
-            from cachecontrol.caches import FileCache
+            from cachecontrol.caches import SeparateBodyFileCache
             from cachecontrol.wrapper import CacheControl
 
             root = pathlib.Path(os.environ.get("HOME", tempfile.gettempdir()))
             session = CacheControl(
                 requests.Session(),
-                cache=FileCache(root / ".cache" / "salad"),
+                cache=SeparateBodyFileCache(root / ".cache" / "salad"),
             )
             self.fetcher: Fetcher = DefaultFetcher({}, session)
 
