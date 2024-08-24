@@ -2,6 +2,7 @@
 
 import datetime
 import functools
+import json
 import textwrap
 from typing import IO, Any, Dict, List, Optional, Set, Tuple, Union, cast
 
@@ -65,7 +66,7 @@ class DlangCodeGen(CodeGenBase):
 import salad.meta.dumper : genDumper;
 import salad.meta.impl : genCtor_, genIdentifier, genOpEq;
 import salad.meta.parser : import_ = importFromURI;
-import salad.meta.uda : documentRoot, id, idMap, link, LinkResolver, secondaryFilesDSL, typeDSL;
+import salad.meta.uda : defaultValue, documentRoot, id, idMap, link, LinkResolver, secondaryFilesDSL, typeDSL;
 import salad.primitives : SchemaBase;
 import salad.type : None, Union;
 
@@ -167,6 +168,7 @@ unittest
         type_: Any,
         jsonld_pred: Union[None, str, Dict[str, Any]],
         parent_has_idmap: bool = False,
+        has_default: bool = False,
     ) -> Tuple[str, str]:
         """Return an annotation string and a type string."""
         annotations: List[str] = []
@@ -206,13 +208,18 @@ unittest
             else:
                 type_str = stype
         elif isinstance(type_, list):
-            t_str = [self.parse_record_field_type(t, None, has_idmap)[1] for t in type_]
-            if are_dispatchable(type_, has_idmap):
-                t_str += ["Any"]
-            union_types = ", ".join(t_str)
-            type_str = f"Union!({union_types})"
+            t_str = [self.parse_record_field_type(t, None, parent_has_idmap=has_idmap)[1] for t in type_]
+            if has_default:
+                t_str = [t for t in t_str if t != "None"]
+            if len(t_str) == 1:
+                type_str = t_str[0]
+            else:
+                if are_dispatchable(type_, has_idmap):
+                    t_str += ["Any"]
+                union_types = ", ".join(t_str)
+                type_str = f"Union!({union_types})"
         elif shortname(type_["type"]) == "array":
-            item_type = self.parse_record_field_type(type_["items"], None, has_idmap)[1]
+            item_type = self.parse_record_field_type(type_["items"], None, parent_has_idmap=has_idmap)[1]
             type_str = f"{item_type}[]"
         elif shortname(type_["type"]) == "record":
             return annotate_str, shortname(type_.get("name", "record"))
@@ -234,9 +241,15 @@ unittest
             else:
                 value = cast(str, parent_name)
             return f'{doc_comment}static immutable {fname} = "{value}";'  # noqa: B907
+        
+        if field.get("default", None):
+            default_value = json.dumps(field["default"])
+            default_str = f'@defaultValue(q"<{default_value}>") '
+        else:
+            default_str = ""
 
-        annotate_str, type_str = self.parse_record_field_type(type_, jsonld_pred)
-        return f"{doc_comment}{annotate_str}{type_str} {fname};"
+        annotate_str, type_str = self.parse_record_field_type(type_, jsonld_pred, has_default="default" in field)
+        return f"{doc_comment}{default_str}{annotate_str}{type_str} {fname};"
 
     def parse_record_schema(self, stype: Dict[str, Any]) -> str:
         """Return a declaration string for a given record schema."""
