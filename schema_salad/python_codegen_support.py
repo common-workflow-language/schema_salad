@@ -749,7 +749,7 @@ class _UnionLoader(_Loader):
                                 if "id" in lc:
                                     errors.append(
                                         ValidationException(
-                                            f"checking object `{id}`",
+                                            f"checking object `{id}` using `{t}`",
                                             SourceLine(lc, "id", str),
                                             [e],
                                         )
@@ -757,7 +757,7 @@ class _UnionLoader(_Loader):
                                 else:
                                     errors.append(
                                         ValidationException(
-                                            f"checking object `{id}`",
+                                            f"checking object `{id}` using `{t}`",
                                             SourceLine(lc, doc.get("id"), str),
                                             [e],
                                         )
