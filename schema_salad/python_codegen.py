@@ -621,13 +621,14 @@ if _errors__:
 {spc}                    )
 {spc}                )
 {spc}            else:
+{spc}                val = _doc.get("{fieldname}")
 {spc}                if error_message != str(e):
-{spc}                    val_type = convert_typing(extract_type(type(_doc.get("{fieldname}"))))
+{spc}                    val_type = convert_typing(extract_type(type(val)))
 {spc}                    _errors__.append(
 {spc}                        ValidationException(
 {spc}                            \"the `{fieldname}` field is not valid because:\",
 {spc}                            SourceLine(_doc, "{fieldname}", str),
-{spc}                            [ValidationException(f"Value is a {{val_type}}, "
+{spc}                            [ValidationException(f"Value `{{val}}` is a {{val_type}}, "
 {spc}                                                 f"but valid {{to_print}} for this field "
 {spc}                                                 f"{{verb_tensage}} {{error_message}}")],
 {spc}                        )
@@ -635,7 +636,7 @@ if _errors__:
 {spc}                else:
 {spc}                    _errors__.append(
 {spc}                        ValidationException(
-{spc}                            \"the `{fieldname}` field is not valid because:\",
+{spc}                            f"the `{fieldname}` field with value `{{val}}` is not valid because:\",
 {spc}                            SourceLine(_doc, "{fieldname}", str),
 {spc}                            [e],
 {spc}                        )
