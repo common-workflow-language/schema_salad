@@ -104,6 +104,7 @@ enhance code generation by representing CWL data types as specific Python object
 * Support for the Avro `map` schema
 * Add named versions of the `map` and `union` Avro types
 * Support for nested named `union` type definitions
+* Add description of `saladVersion`
 
 ## References to Other Specifications
 
@@ -196,6 +197,7 @@ It is a fatal error if the document is not valid YAML.
 
 A Salad document must consist only of either a single root object or an
 array of objects.
+Each document must declare the `saladVersion` of that document. Implementations must validate against the document's declared version.
 
 ## Document context
 
@@ -208,7 +210,7 @@ load the document.  It may be overridden by an explicit context.
 ### Explicit context
 
 If a document consists of a root object, this object may contain the
-fields `$base`, `$namespaces`, `$schemas`, and `$graph`:
+fields `$base`, `$namespaces`, `$schemas`, `$graph`, and `saladVersion`:
 
   * `$base`: Must be a string.  Set the base URI for the document used to
     resolve relative references.
