@@ -405,6 +405,7 @@ unittest
 
 
 def is_constant_field(field: Dict[str, Any]) -> bool:
+    """Return True if a given field only takes the specified string."""
     jsonld_pred = field.get("jsonldPredicate", None)
     type_ = field["type"]
     if (
@@ -424,12 +425,14 @@ def is_constant_field(field: Dict[str, Any]) -> bool:
 
 
 def constant_fields_of(type_: Any) -> Set[str]:
+    """Return a list of constant fields name from a given record schema."""
     if isinstance(type_, dict):
         return set(shortname(f["name"]) for f in type_.get("fields", []) if is_constant_field(f))
     return set()
 
 
 def are_dispatchable(types: List[Any], parent_has_idmap: bool) -> bool:
+    """Return True if a given list of types are dispatchable."""
     if any(t for t in types if not isinstance(t, dict)):
         return False
     constants = (constant_fields_of(t) for t in types)
