@@ -10,6 +10,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: wheels-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build_wheels:
     name: ${{ matrix.image }} wheels
@@ -42,7 +46,7 @@ jobs:
       #     platforms: all
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.17.0
+        uses: pypa/cibuildwheel@v2.20.0
         env:
           CIBW_BUILD: ${{ matrix.build }}
           CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/${{ matrix.image }}
@@ -98,7 +102,7 @@ jobs:
           ref: ${{ github.event.client_payload.ref }}
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.17.0
+        uses: pypa/cibuildwheel@v2.20.0
 
       - uses: actions/upload-artifact@v4
         with:

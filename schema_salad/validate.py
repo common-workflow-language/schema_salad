@@ -94,9 +94,11 @@ def friendly(v: Any) -> Any:
         return avro_shortname(v.name)
     if isinstance(v, avro.schema.ArraySchema):
         return f"array of <{friendly(v.items)}>"
+    if isinstance(v, (avro.schema.MapSchema, avro.schema.NamedMapSchema)):
+        return f"map of <{friendly(v.values)}>"
     if isinstance(v, avro.schema.PrimitiveSchema):
         return v.type
-    if isinstance(v, avro.schema.UnionSchema):
+    if isinstance(v, (avro.schema.UnionSchema, avro.schema.NamedUnionSchema)):
         return " or ".join([friendly(s) for s in v.schemas])
     return avro_shortname(v)
 
@@ -235,7 +237,7 @@ def validate_ex(
                 f"expected list of {friendly(expected_schema.items)}"
             )
         return False
-    if isinstance(expected_schema, avro.schema.UnionSchema):
+    if isinstance(expected_schema, (avro.schema.UnionSchema, avro.schema.NamedUnionSchema)):
         for s in expected_schema.schemas:
             if validate_ex(
                 s,
@@ -258,10 +260,18 @@ def validate_ex(
         for s in expected_schema.schemas:
             if isinstance(datum, MutableSequence) and not isinstance(s, avro.schema.ArraySchema):
                 continue
-            if isinstance(datum, MutableMapping) and not isinstance(s, avro.schema.RecordSchema):
+            if isinstance(datum, MutableMapping) and not isinstance(
+                s, (avro.schema.RecordSchema, avro.schema.MapSchema, avro.schema.NamedMapSchema)
+            ):
                 continue
             if isinstance(datum, (bool, int, float, str)) and isinstance(
-                s, (avro.schema.ArraySchema, avro.schema.RecordSchema)
+                s,
+                (
+                    avro.schema.ArraySchema,
+                    avro.schema.RecordSchema,
+                    avro.schema.MapSchema,
+                    avro.schema.NamedMapSchema,
+                ),
             ):
                 continue
             if datum is not None and s.type == "null":
@@ -437,6 +447,40 @@ def validate_ex(
                 raise ValidationException("", None, errors, "*")
             return False
         return True
+
+    if isinstance(expected_schema, (avro.schema.MapSchema, avro.schema.NamedMapSchema)):
+        if isinstance(datum, MutableMapping):
+            for key, val in datum.items():
+                if not isinstance(key, str):
+                    pass
+                try:
+                    sl = SourceLine(datum, key, ValidationException)
+                    if not validate_ex(
+                        expected_schema.values,
+                        val,
+                        identifiers,
+                        strict=strict,
+                        foreign_properties=foreign_properties,
+                        raise_ex=raise_ex,
+                        strict_foreign_properties=strict_foreign_properties,
+                        logger=logger,
+                        skip_foreign_properties=skip_foreign_properties,
+                        vocab=vocab,
+                    ):
+                        return False
+                except ValidationException as v:
+                    if raise_ex:
+                        source = v if debug else None
+                        raise ValidationException("item is invalid because", sl, [v]) from source
+                    return False
+            return True
+        if raise_ex:
+            raise ValidationException(
+                f"the value {vpformat(datum)} is not an object, "
+                f"expected object of {friendly(expected_schema.values)}"
+            )
+        return False
+
     if raise_ex:
         raise ValidationException(f"Unrecognized schema_type {schema_type}")
     return False

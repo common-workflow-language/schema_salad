@@ -8,7 +8,7 @@ export class _UnionLoader implements Loader {
   }
 
   addLoaders(loaders: Loader[]) {
-    this.alternates.concat(loaders);
+    this.alternates = this.alternates.concat(loaders);
   }
 
   async load (doc: any, baseuri: string, loadingOptions: LoadingOptions, docRoot?: string): Promise<Saveable> {

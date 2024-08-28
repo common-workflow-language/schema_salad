@@ -2,13 +2,14 @@
 requires = [
     "setuptools>=50",  # 50 is to match mypyc's minimum
     "setuptools_scm[toml]>=8.0.4,<9",
-    'mypy[mypyc]==1.9.0',  # update mypy-requirements as well
+    'mypy[mypyc]==1.11.2',  # update mypy-requirements as well
     "black>=19.10b0,<23.12",
     "types-requests",
     "types-dataclasses",
     "importlib_resources>=1.4;python_version<'3.9'",
     "ruamel.yaml>=0.17.6, < 0.19",
-    "types-setuptools"
+    "types-setuptools",
+    "CacheControl[filecache] >= 0.13.1, < 0.15"
 ]
 build-backend = "setuptools.build_meta"
 
