@@ -8,7 +8,7 @@ from typing import IO, Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, TypeDef
-from .cpp_codegen import isArray, isEnumSchema, isRecordSchema, pred
+from .cpp_codegen import isArray, isEnumSchema, isMapSchema, isRecordSchema, isUnionSchema, pred
 from .exceptions import SchemaException
 from .schema import shortname
 
@@ -63,11 +63,10 @@ class DlangCodeGen(CodeGenBase):
         self.target.write(
             f"""module {self.package};
 
-import salad.meta.dumper : genDumper;
-import salad.meta.impl : genCtor_, genIdentifier, genOpEq;
+import salad.meta.impl : genBody_;
 import salad.meta.parser : import_ = importFromURI;
 import salad.meta.uda : defaultValue, documentRoot, id, idMap, link, LinkResolver, secondaryFilesDSL, typeDSL;
-import salad.primitives : SchemaBase;
+import salad.primitives : EnumSchemaBase, MapSchemaBase, RecordSchemaBase, UnionSchemaBase;
 import salad.type : None, Union;
 
 """
@@ -83,9 +82,9 @@ enum parserInfo = "{self.parser_info}";
             f"""
 enum saladVersion = "{self.salad_version}";
 
-mixin template genCtor()
+mixin template genBody()
 {{
-    mixin genCtor_!saladVersion;
+    mixin genBody_!saladVersion;
 }}
 """  # noqa: B907
         )
@@ -225,6 +224,9 @@ unittest
             return annotate_str, shortname(type_.get("name", "record"))
         elif shortname(type_["type"]) == "enum":
             return annotate_str, "'not yet implemented'"
+        elif shortname(type_["type"]) == "map":
+            value_type = self.parse_record_field_type(type_["values"], None, parent_has_idmap=has_idmap, has_default=True)[1]
+            type_str = f"{value_type}[string]"
         return annotate_str, type_str
 
     def parse_record_field(self, field: Dict[str, Any], parent_name: Optional[str] = None) -> str:
@@ -242,7 +244,7 @@ unittest
                 value = cast(str, parent_name)
             return f'{doc_comment}static immutable {fname} = "{value}";'  # noqa: B907
         
-        if field.get("default", None):
+        if field.get("default", None) is not None:
             default_value = json.dumps(field["default"])
             default_str = f'@defaultValue(q"<{default_value}>") '
         else:
@@ -271,13 +273,11 @@ unittest
         doc_comment = self.to_doc_comment(stype.get("doc", None))
 
         return f"""
-{doc_comment}{doc_root_annotation}class {classname} : SchemaBase
+{doc_comment}{doc_root_annotation}class {classname} : RecordSchemaBase
 {{
 {decl_str}
 
-    mixin genCtor;
-    mixin genIdentifier;
-    mixin genDumper;
+    mixin genBody;
 }}"""
 
     def parse_enum(self, stype: Dict[str, Any]) -> str:
@@ -308,7 +308,7 @@ unittest
             doc_comment = ""
 
         return f"""
-{doc_comment}{doc_root_annotation}class {classname} : SchemaBase
+{doc_comment}{doc_root_annotation}class {classname} : EnumSchemaBase
 {{
     ///
     enum Symbol
@@ -318,9 +318,47 @@ unittest
 
     Symbol value;
 
-    mixin genCtor;
-    mixin genOpEq;
-    mixin genDumper;
+    mixin genBody;
+}}"""
+
+    def parse_union(self, stype: Dict[str, Any]) -> str:
+        """Return a declaration string for a given union schema."""
+        name = cast(str, stype["name"])
+        classname = self.safe_name(name)
+
+        types = self.parse_record_field_type(stype["names"], None)[1]
+
+        if "doc" in stype:
+            doc_comment = self.to_doc_comment(stype["doc"])
+        else:
+            doc_comment = ""
+
+        return f"""
+{doc_comment}class {classname} : UnionSchemaBase
+{{
+    {types} payload;
+
+    mixin genBody;
+}}"""
+
+    def parse_map(self, stype: Dict[str, Any]) -> str:
+        """Return a declaration string for a given map schema."""
+        name = cast(str, stype["name"])
+        classname = self.safe_name(name)
+
+        values = self.parse_record_field_type(stype["values"], None, has_default=True)[1]
+
+        if "doc" in stype:
+            doc_comment = self.to_doc_comment(stype["doc"])
+        else:
+            doc_comment = ""
+
+        return f"""
+{doc_comment}class {classname} : MapSchemaBase
+{{
+    {values}[string] payload;
+
+    mixin genBody;
 }}"""
 
     def parse(self, items: List[Dict[str, Any]]) -> None:
@@ -343,8 +381,12 @@ unittest
                 dlang_defs.append(self.parse_record_schema(stype))
             elif isEnumSchema(stype):
                 dlang_defs.append(self.parse_enum(stype))
+            elif isUnionSchema(stype):
+                dlang_defs.append(self.parse_union(stype))
+            elif isMapSchema(stype):
+                dlang_defs.append(self.parse_map(stype))
             else:
-                _logger.error("not parsed %s", stype)
+                _logger.error("not parsed %s", json.dumps(stype))
 
         self.target.write("\n".join(dlang_defs))
         self.target.write("\n")
