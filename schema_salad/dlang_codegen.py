@@ -207,7 +207,9 @@ unittest
             else:
                 type_str = stype
         elif isinstance(type_, list):
-            t_str = [self.parse_record_field_type(t, None, parent_has_idmap=has_idmap)[1] for t in type_]
+            t_str = [
+                self.parse_record_field_type(t, None, parent_has_idmap=has_idmap)[1] for t in type_
+            ]
             if has_default:
                 t_str = [t for t in t_str if t != "None"]
             if len(t_str) == 1:
@@ -218,14 +220,18 @@ unittest
                 union_types = ", ".join(t_str)
                 type_str = f"Union!({union_types})"
         elif shortname(type_["type"]) == "array":
-            item_type = self.parse_record_field_type(type_["items"], None, parent_has_idmap=has_idmap)[1]
+            item_type = self.parse_record_field_type(
+                type_["items"], None, parent_has_idmap=has_idmap
+            )[1]
             type_str = f"{item_type}[]"
         elif shortname(type_["type"]) == "record":
             return annotate_str, shortname(type_.get("name", "record"))
         elif shortname(type_["type"]) == "enum":
             return annotate_str, "'not yet implemented'"
         elif shortname(type_["type"]) == "map":
-            value_type = self.parse_record_field_type(type_["values"], None, parent_has_idmap=has_idmap, has_default=True)[1]
+            value_type = self.parse_record_field_type(
+                type_["values"], None, parent_has_idmap=has_idmap, has_default=True
+            )[1]
             type_str = f"{value_type}[string]"
         return annotate_str, type_str
 
@@ -243,14 +249,16 @@ unittest
             else:
                 value = cast(str, parent_name)
             return f'{doc_comment}static immutable {fname} = "{value}";'  # noqa: B907
-        
+
         if field.get("default", None) is not None:
             default_value = json.dumps(field["default"])
             default_str = f'@defaultValue(q"<{default_value}>") '
         else:
             default_str = ""
 
-        annotate_str, type_str = self.parse_record_field_type(type_, jsonld_pred, has_default="default" in field)
+        annotate_str, type_str = self.parse_record_field_type(
+            type_, jsonld_pred, has_default="default" in field
+        )
         return f"{doc_comment}{default_str}{annotate_str}{type_str} {fname};"
 
     def parse_record_schema(self, stype: Dict[str, Any]) -> str:
