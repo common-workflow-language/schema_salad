@@ -100,8 +100,7 @@ def test_error_message3() -> None:
     match = r"""
 ^.+test3\.cwl:6:1: checking field\s+'outputs'
 .+test3\.cwl:7:3:   checking object\s+'.+test3\.cwl#bar'
-\s+Field 'type'\s+references\s+unknown\s+identifier\s+'xstring',\s+tried
-\s+file://.+/tests/test_schema/test3\.cwl#xstring$"""[
+\s+Field 'type'\s+references\s+unknown\s+identifier\s+'xstring',\s+tried\s+file://.+/tests/test_schema/test3\.cwl#xstring$"""[  # noqa: B950
         1:
     ]
     with pytest.raises(ValidationException, match=match):
@@ -153,15 +152,15 @@ def test_error_message7() -> None:
 
     t = "test_schema/test7.cwl"
     match = (
-        r"""^.+test7\.cwl:2:1:\s+Object\s+'.+test7\.cwl'\s+is\s+not valid because
-\s+tried 'Workflow'\s+but
+        r"""^.+test7\.cwl:2:1:\s+Object\s+'.+test7\.cwl'\s+is\s+not\s+valid\s+because
+\s+tried\s+'Workflow'\s+but
 .+test7\.cwl:8:1:\s+the 'steps'\s+field\s+is\s+not\s+valid\s+because
-\s+tried array\s+of\s+<WorkflowStep>\s+but
+\s+tried\s+array\s+of\s+<WorkflowStep>\s+but
 .+test7\.cwl:9:3:\s+item is\s+invalid\s+because
 \s+\* missing\s+required\s+field\s+'run'
-.+test7\.cwl:10:5:\s+\* invalid\s+field\s+'scatter_method',\s+expected\s+one """
-        + r"""of:\s+'id',\s+'in', 'out',\s+'requirements',\s+'hints',\s+"""
-        + r"""'label',\s+'doc',\s+'run',\s+'scatter',\s+'scatterMethod'$"""
+.+test7\.cwl:10:5:\s+\* invalid\s+field\s+'scatter_method',\s+expected\s+one\s+"""
+        + r"of:\s+'id',\s+'in',\s+'out',\s+'requirements',\s+'hints',\s+"
+        + r"'label',\s+'doc',\s+'run',\s+'scatter',\s+'scatterMethod'$"
     )
     with pytest.raises(ValidationException, match=match):
         load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
@@ -254,17 +253,17 @@ def test_error_message15() -> None:
 
     t = "test_schema/test15.cwl"
     match = (
-        r"""^.+test15\.cwl:3:1:\s+Object\s+'.+test15\.cwl'\s+is not valid because
+        r"""^.+test15\.cwl:3:1:\s+Object\s+'.+test15\.cwl'\s+is\s+not\s+valid\s+because
 \s+tried\s+'CommandLineTool'\s+but
-.+test15\.cwl:6:1:\s+the 'inputs'\s+field\s+is\s+not valid\s+because
-.+test15\.cwl:7:3:\s+item is\s+invalid\s+because
+.+test15\.cwl:6:1:\s+the\s+'inputs'\s+field\s+is\s+not\s+valid\s+because
+.+test15\.cwl:7:3:\s+item\s+is\s+invalid\s+because
 .+test15\.cwl:9:5:\s+the\s+'inputBinding'\s+field\s+is\s+not\s+valid\s+because
 .+tried\s+CommandLineBinding\s+but
 .+test15\.cwl:11:7:             \*\s+invalid\s+field\s+'invalid_field',\s+expected\s+"""
         + r"""one\s+of:\s+'loadContents',\s+'position',\s+'prefix',\s+'separate',"""
         + r"""\s+'itemSeparator',\s+'valueFrom',\s+'shellQuote'
 .+test15\.cwl:12:7:             \*\s+invalid\s+field\s+'another_invalid_field',"""
-        + r"""\s+expected one\s+of:\s+'loadContents',\s+'position',\s+'prefix',"""
+        + r"""\s+expected\s+one\s+of:\s+'loadContents',\s+'position',\s+'prefix',"""
         + r"""\s+'separate',\s+'itemSeparator',\s+'valueFrom',\s+'shellQuote'$"""
     )
     with pytest.raises(ValidationException, match=match):

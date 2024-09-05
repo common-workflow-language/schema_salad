@@ -29,7 +29,7 @@ EXTRAS=[pycodegen]
 PYSOURCES=$(wildcard ${MODULE}/**.py ${MODULE}/avro/*.py ${MODULE}/tests/*.py) setup.py
 DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt -rlint-requirements.txt
 COVBASE=coverage run --append
-PYTEST_EXTRA ?= -rs
+PYTEST_EXTRA ?=
 
 VERSION=8.7.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
@@ -155,7 +155,7 @@ diff-cover.html: coverage.xml
 
 ## test                   : run the schema-salad test suite
 test: $(PYSOURCES)
-	python -m pytest -rs ${PYTEST_EXTRA}
+	python -m pytest -rsfE ${PYTEST_EXTRA}
 
 ## testcov                : run the schema-salad test suite and collect coverage
 testcov: $(PYSOURCES)

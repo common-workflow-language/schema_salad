@@ -8,7 +8,14 @@ from typing import IO, Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, TypeDef
-from .cpp_codegen import isArray, isEnumSchema, isMapSchema, isRecordSchema, isUnionSchema, pred
+from .cpp_codegen import (
+    isArray,
+    isEnumSchema,
+    isMapSchema,
+    isRecordSchema,
+    isUnionSchema,
+    pred,
+)
 from .exceptions import SchemaException
 from .schema import shortname
 
