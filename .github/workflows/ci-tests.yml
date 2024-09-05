@@ -21,6 +21,7 @@ jobs:
       matrix:
         py-ver-major: [3]
         py-ver-minor: [8, 9, 10, 11, 12, "13.0-rc.1"]
+      fail-fast: false
 
     env:
       py-semver: ${{ format('{0}.{1}', matrix.py-ver-major, matrix.py-ver-minor) }}
