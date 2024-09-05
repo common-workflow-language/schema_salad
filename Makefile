@@ -27,7 +27,7 @@ EXTRAS=[pycodegen]
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py ${MODULE}/avro/*.py ${MODULE}/tests/*.py) setup.py
-DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt
+DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt -rlint-requirements.txt
 COVBASE=coverage run --append
 PYTEST_EXTRA ?= -rs
 
