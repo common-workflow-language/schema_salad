@@ -15,7 +15,7 @@ jobs:
   tox:
     name: CI tests via Tox
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
@@ -64,7 +64,7 @@ jobs:
   tox-style:
     name: CI linters via Tox
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
@@ -99,7 +99,7 @@ jobs:
 
   typescript:
     name: Confirm that codegen typescript passes tests with CWL
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Set up Node
@@ -133,7 +133,7 @@ jobs:
 
   cpp:
     name: Confirm that codegen C++ passes tests with CWL
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Install C++ dependencies
         run: sudo apt-get install libyaml-cpp-dev
@@ -162,7 +162,7 @@ jobs:
   release_test:
     name: Schema Salad release test
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
@@ -189,10 +189,12 @@ jobs:
         run: ./release-test.sh
 
   build_test_container:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: record schema-salad version
-        run: pip install -U setuptools wheel && pip install setuptools_scm[toml] && python setup.py --version
+        run: |
+          python3 -m venv env
+          source env/bin/activate && pip install -U setuptools wheel && pip install setuptools_scm[toml] && python setup.py --version
       - name: build & test schema_salad container
         run: ./build-schema_salad-docker.sh

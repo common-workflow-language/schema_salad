@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build_wheels:
     name: ${{ matrix.image }} wheels
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         include:
@@ -63,7 +63,7 @@ jobs:
 
   build_sdist:
     name: Build source distribution
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         if: ${{ github.event_name != 'repository_dispatch' }}
@@ -111,7 +111,7 @@ jobs:
 
   upload_pypi:
     needs: [build_wheels, build_sdist]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: pypi
     permissions:
       id-token: write
