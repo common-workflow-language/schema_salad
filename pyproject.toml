@@ -20,8 +20,9 @@ write_to = "schema_salad/_version.py"
 test-command = "python -m pytest -n 2 --junitxml={project}/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad"
 test-requires = "-r test-requirements.txt"
 test-extras = "pycodegen"
-skip = "pp*"
+skip = "pp* cp313-*"
 #      ^ skip building wheels on PyPy (any version)
+#           ^ skip build python 3.13 wheels (mypyc isn't ready yet)
 build-verbosity = "1"
 environment = { SCHEMA_SALAD_USE_MYPYC="1", MYPYPATH="$(pwd)/mypy-stubs" }
 
