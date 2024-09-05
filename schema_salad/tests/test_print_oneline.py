@@ -177,7 +177,7 @@ def test_for_invalid_yaml2() -> None:
             assert (
                 msg.endswith("expected <block end>, but found ':'")
                 or msg.endswith("expected <block end>, but found u':'")
-                or re.search(r"mapping with\s+implicit\s+null key$", msg, re.M)
+                or re.search(r"mapping\s+with\s+implicit\s+null\s+key$", msg, re.M)
             )
             print("\n", e)
             raise

@@ -30,8 +30,7 @@ def test_error_message1(tmp_path: Path) -> None:
 
 def test_error_message2(tmp_path: Path) -> None:
     t = "test_schema/test2.cwl"
-    match = r"""^.*test2\.cwl:2:1:\s+Field\s+`class`\s+contains\s+undefined\s+reference\s+to
-\s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$"""
+    match = r"""^.*test2\.cwl:2:1:\s+Field\s+`class`\s+contains\s+undefined\s+reference\s+to\s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
@@ -100,8 +99,7 @@ def test_error_message8(tmp_path: Path) -> None:
 .*test8\.cwl:9:3:\s+checking\s+object\s+`.*test8\.cwl#step1`
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test8\.cwl:10:5:\s+\*\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
-\s+contains\s+undefined\s+reference\s+to
-\s+`file:///.*/tests/test_schema/abc`$"""
+\s+contains\s+undefined\s+reference\s+to\s+`file:///.*/tests/test_schema/abc`$"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
@@ -144,9 +142,7 @@ def test_error_message11(tmp_path: Path) -> None:
 .*test11\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
 \s+array\s+item\s+is\s+invalid\s+because
 .*test11\.cwl:9:3:\s+checking\s+object\s+`.*test11\.cwl#step1`
-.*test11\.cwl:10:5:\s+the\s+`run`\s+field\s+is\s+not\s+valid\s+because:
-\s+contains\s+undefined\s+reference\s+to
-\s+`file:///.*/tests/test_schema/blub\.cwl`$"""
+.*test11\.cwl:10:5:\s+the\s+`run`\s+field\s+is\s+not\s+valid\s+because:\s+contains\s+undefined\s+reference\s+to\s+`file:///.*/tests/test_schema/blub\.cwl`$"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
