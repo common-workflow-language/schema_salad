@@ -209,8 +209,9 @@ load the document.  It may be overridden by an explicit context.
 
 ### Explicit context
 
-If a document consists of a root object, this object may contain the
-fields `$base`, `$namespaces`, `$schemas`, `$graph`, and `saladVersion`:
+If a document consists of a root object, this object must contain the
+field `saladVersion` and may contain the fields `$base`, `$namespaces`,
+`$schemas`, and `$graph`:
 
   * `$base`: Must be a string.  Set the base URI for the document used to
     resolve relative references.
