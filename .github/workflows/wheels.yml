@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build_wheels:
     name: ${{ matrix.image }} wheels
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         include:
@@ -46,7 +46,7 @@ jobs:
       #     platforms: all
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.20.0
+        uses: pypa/cibuildwheel@v2.21.1
         env:
           CIBW_BUILD: ${{ matrix.build }}
           CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/${{ matrix.image }}
@@ -63,7 +63,7 @@ jobs:
 
   build_sdist:
     name: Build source distribution
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         if: ${{ github.event_name != 'repository_dispatch' }}
@@ -102,7 +102,7 @@ jobs:
           ref: ${{ github.event.client_payload.ref }}
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.20.0
+        uses: pypa/cibuildwheel@v2.21.1
 
       - uses: actions/upload-artifact@v4
         with:
@@ -111,7 +111,7 @@ jobs:
 
   upload_pypi:
     needs: [build_wheels, build_sdist]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: pypi
     permissions:
       id-token: write

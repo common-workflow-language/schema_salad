@@ -1,8 +1,9 @@
-from cachecontrol.cache import SeparateBodyBaseCache
 from datetime import datetime
-from filelock import BaseFileLock
 from pathlib import Path
 from typing import IO, ContextManager
+
+from cachecontrol.cache import SeparateBodyBaseCache
+from filelock import BaseFileLock
 
 class _LockClass:
     path: str
