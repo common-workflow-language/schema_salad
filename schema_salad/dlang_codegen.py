@@ -434,7 +434,7 @@ def is_constant_field(field: Dict[str, Any]) -> bool:
 def constant_fields_of(type_: Any) -> Set[str]:
     """Return a list of constant fields name from a given record schema."""
     if isinstance(type_, dict):
-        return set(shortname(f["name"]) for f in type_.get("fields", []) if is_constant_field(f))
+        return {shortname(f["name"]) for f in type_.get("fields", []) if is_constant_field(f)}
     return set()
 
 

@@ -700,7 +700,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
         atype = json_data.get("type")
         other_props = get_other_props(json_data, SCHEMA_RESERVED_PROPS)
         if atype in PRIMITIVE_TYPES:
-            primative_type = cast(str, atype)
+            primative_type = atype
             return PrimitiveSchema(primative_type, other_props)
         if atype in NAMED_TYPES:
             name = json_data.get("name")
