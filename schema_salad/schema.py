@@ -15,7 +15,6 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
-    cast,
 )
 from urllib.parse import urlparse
 
@@ -558,7 +557,7 @@ def make_valid_avro(
                 return avro
             if "name" in avro:
                 if avro["name"] in found:
-                    return cast(str, avro["name"])
+                    return avro["name"]
                 found.add(avro["name"])
         for field in ("type", "items", "names", "values", "fields"):
             if field in avro:
