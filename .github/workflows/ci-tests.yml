@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         py-ver-major: [3]
-        py-ver-minor: [8, 9, 10, 11, 12, "13.0-rc.1"]
+        py-ver-minor: [8, 9, 10, 11, 12, 13]
       fail-fast: false
 
     env:
@@ -35,6 +35,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.py-semver }}
+          allow-prereleases: true
           cache: pip
           cache-dependency-path: |
             requirements.txt
