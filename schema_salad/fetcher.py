@@ -65,6 +65,7 @@ class DefaultFetcher(MemoryCachingFetcher):
         self.session = session
 
     def fetch_text(self, url: str, content_types: Optional[list[str]] = None) -> str:
+        """Retrieve the given resource as a string."""
         result = self.cache.get(url, None)
         if isinstance(result, str):
             return result
