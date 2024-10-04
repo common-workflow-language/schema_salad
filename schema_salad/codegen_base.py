@@ -1,7 +1,8 @@
 """Base class for the generation of loaders from schema-salad definitions."""
 
 from collections import OrderedDict
-from typing import Any, Dict, List, MutableSequence, Optional, Set, Union
+from collections.abc import MutableSequence
+from typing import Any, Optional, Union
 
 
 class TypeDef:  # pylint: disable=too-few-public-methods
@@ -66,7 +67,7 @@ class CodeGenBase:
     def __init__(self) -> None:
         self.collected_types: OrderedDict[str, TypeDef] = OrderedDict()
         self.lazy_inits: OrderedDict[str, LazyInitDef] = OrderedDict()
-        self.vocab: Dict[str, str] = {}
+        self.vocab: dict[str, str] = {}
 
     def declare_type(self, declared_type: TypeDef) -> TypeDef:
         """Add this type to our collection, if needed."""
@@ -99,18 +100,18 @@ class CodeGenBase:
         abstract: bool,
         field_names: MutableSequence[str],
         idfield: str,
-        optional_fields: Set[str],
+        optional_fields: set[str],
     ) -> None:
         """Produce the header for the given class."""
         raise NotImplementedError()
 
-    def end_class(self, classname: str, field_names: List[str]) -> None:
+    def end_class(self, classname: str, field_names: list[str]) -> None:
         """Signal that we are done with this class."""
         raise NotImplementedError()
 
     def type_loader(
         self,
-        type_declaration: Union[List[Any], Dict[str, Any]],
+        type_declaration: Union[list[Any], dict[str, Any]],
         container: Optional[str] = None,
         no_link_check: Optional[bool] = None,
     ) -> TypeDef:

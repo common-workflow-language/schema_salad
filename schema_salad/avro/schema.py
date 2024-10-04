@@ -31,7 +31,7 @@ A schema may be one of:
   A boolean; or
   Null.
 """
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Optional, Union, cast
 
 from mypy_extensions import mypyc_attr
 
@@ -63,13 +63,13 @@ SCHEMA_RESERVED_PROPS = (
 # MappingDataType = Dict[str, Union[PropType, List[PropsType]]]
 # was: Union[str, MappingDataType, List[MappingDataType]]
 JsonDataType = Any
-AtomicPropType = Union[None, str, int, float, bool, "Schema", List[str], List["Field"]]
+AtomicPropType = Union[None, str, int, float, bool, "Schema", list[str], list["Field"]]
 PropType = Union[
     AtomicPropType,
-    Dict[str, AtomicPropType],
-    List[Dict[str, AtomicPropType]],
+    dict[str, AtomicPropType],
+    list[dict[str, AtomicPropType]],
 ]
-PropsType = Dict[str, PropType]
+PropsType = dict[str, PropType]
 
 FIELD_RESERVED_PROPS = ("default", "name", "doc", "order", "type")
 
@@ -189,7 +189,7 @@ class Names:
     """Track name set and default namespace during parsing."""
 
     def __init__(self, default_namespace: Optional[str] = None) -> None:
-        self.names: Dict[str, NamedSchema] = {}
+        self.names: dict[str, NamedSchema] = {}
         self.default_namespace = default_namespace
 
     def has_name(self, name_attr: str, space_attr: Optional[str]) -> bool:
@@ -281,7 +281,7 @@ class Field:
         default: Optional[Any] = None,
         order: Optional[str] = None,
         names: Optional[Names] = None,
-        doc: Optional[Union[str, List[str]]] = None,
+        doc: Optional[Union[str, list[str]]] = None,
         other_props: Optional[PropsType] = None,
     ) -> None:
         # Ensure valid ctor args
@@ -361,9 +361,9 @@ class EnumSchema(NamedSchema):
         self,
         name: str,
         namespace: Optional[str],
-        symbols: List[str],
+        symbols: list[str],
         names: Optional[Names] = None,
-        doc: Optional[Union[str, List[str]]] = None,
+        doc: Optional[Union[str, list[str]]] = None,
         other_props: Optional[PropsType] = None,
     ) -> None:
         # Ensure valid ctor args
@@ -384,8 +384,8 @@ class EnumSchema(NamedSchema):
 
     # read-only properties
     @property
-    def symbols(self) -> List[str]:
-        return cast(List[str], self.get_prop("symbols"))
+    def symbols(self) -> list[str]:
+        return cast(list[str], self.get_prop("symbols"))
 
 
 #
@@ -473,7 +473,7 @@ class NamedMapSchema(NamedSchema):
         names: Names,
         name: str,
         namespace: Optional[str] = None,
-        doc: Optional[Union[str, List[str]]] = None,
+        doc: Optional[Union[str, list[str]]] = None,
         other_props: Optional[PropsType] = None,
     ) -> None:
         """Create a NamedMapSchema object."""
@@ -505,8 +505,8 @@ class NamedMapSchema(NamedSchema):
         return cast(Schema, self.get_prop("values"))
 
 
-def _build_schema_objects(schemas: List[JsonDataType], names: Names) -> List[Schema]:
-    schema_objects: List[Schema] = []
+def _build_schema_objects(schemas: list[JsonDataType], names: Names) -> list[Schema]:
+    schema_objects: list[Schema] = []
     for schema in schemas:
         if isinstance(schema, str) and names.has_name(schema, None):
             new_schema = cast(Schema, names.get_name(schema, None))
@@ -536,7 +536,7 @@ class UnionSchema(Schema):
 
     def __init__(
         self,
-        schemas: List[JsonDataType],
+        schemas: list[JsonDataType],
         names: Names,
     ) -> None:
         """
@@ -558,7 +558,7 @@ class UnionSchema(Schema):
 
     # read-only properties
     @property
-    def schemas(self) -> List[Schema]:
+    def schemas(self) -> list[Schema]:
         """Avro schemas composing the Union type."""
         return self._schemas
 
@@ -568,11 +568,11 @@ class NamedUnionSchema(NamedSchema):
 
     def __init__(
         self,
-        schemas: List[JsonDataType],
+        schemas: list[JsonDataType],
         names: Names,
         name: str,
         namespace: Optional[str] = None,
-        doc: Optional[Union[str, List[str]]] = None,
+        doc: Optional[Union[str, list[str]]] = None,
     ):
         """
         Initialize a new NamedUnionSchema.
@@ -595,16 +595,16 @@ class NamedUnionSchema(NamedSchema):
 
     # read-only properties
     @property
-    def schemas(self) -> List[Schema]:
+    def schemas(self) -> list[Schema]:
         return self._schemas
 
 
 class RecordSchema(NamedSchema):
     @staticmethod
-    def make_field_objects(field_data: List[PropsType], names: Names) -> List[Field]:
+    def make_field_objects(field_data: list[PropsType], names: Names) -> list[Field]:
         """We're going to need to make message parameters too."""
-        field_objects: List[Field] = []
-        parsed_fields: Dict[str, PropsType] = {}
+        field_objects: list[Field] = []
+        parsed_fields: dict[str, PropsType] = {}
         for field in field_data:
             if hasattr(field, "get") and callable(field.get):
                 atype = field.get("type")
@@ -622,7 +622,7 @@ class RecordSchema(NamedSchema):
                 doc = field.get("doc")
                 if not (doc is None or isinstance(doc, (list, str))):
                     raise SchemaParseException('"doc" must be a string, list of strings, or None')
-                doc = cast(Union[str, List[str], None], doc)
+                doc = cast(Union[str, list[str], None], doc)
                 other_props = get_other_props(field, FIELD_RESERVED_PROPS)
                 new_field = Field(atype, name, has_default, default, order, names, doc, other_props)
                 parsed_fields[new_field.name] = field
@@ -635,10 +635,10 @@ class RecordSchema(NamedSchema):
         self,
         name: str,
         namespace: Optional[str],
-        fields: List[PropsType],
+        fields: list[PropsType],
         names: Names,
         schema_type: str = "record",
-        doc: Optional[Union[str, List[str]]] = None,
+        doc: Optional[Union[str, list[str]]] = None,
         other_props: Optional[PropsType] = None,
     ) -> None:
         # Ensure valid ctor args
@@ -663,14 +663,14 @@ class RecordSchema(NamedSchema):
 
     # read-only properties
     @property
-    def fields(self) -> List[Field]:
-        return cast(List[Field], self.get_prop("fields"))
+    def fields(self) -> list[Field]:
+        return cast(list[Field], self.get_prop("fields"))
 
 
 #
 # Module Methods
 #
-def get_other_props(all_props: PropsType, reserved_props: Tuple[str, ...]) -> Optional[PropsType]:
+def get_other_props(all_props: PropsType, reserved_props: tuple[str, ...]) -> Optional[PropsType]:
     """
     Retrieve the non-reserved properties from a dictionary of properties.
 
@@ -690,7 +690,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
     if names is None:
         names = Names()
 
-    if isinstance(json_data, Dict) and json_data.get("name") == "org.w3id.cwl.salad.Any":
+    if isinstance(json_data, dict) and json_data.get("name") == "org.w3id.cwl.salad.Any":
         del names.names["org.w3id.cwl.salad.Any"]
     elif not names.has_name("org.w3id.cwl.salad.Any", None):
         EnumSchema("org.w3id.cwl.salad.Any", None, ["Any"], names=names)
@@ -723,7 +723,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
                     raise SchemaParseException(
                         f'"symbols" for type enum must be a list of strings: {json_data}'
                     )
-                symbols = cast(List[str], symbols)
+                symbols = cast(list[str], symbols)
                 return EnumSchema(name, namespace, symbols, names, doc, other_props)
             if atype in ["record", "error"]:
                 fields = json_data.get("fields", [])
@@ -731,7 +731,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
                     raise SchemaParseException(
                         f'"fields" for type {atype} must be a list of mappings: {json_data}'
                     )
-                fields = cast(List[PropsType], fields)
+                fields = cast(list[PropsType], fields)
                 return RecordSchema(name, namespace, fields, names, atype, doc, other_props)
             raise SchemaParseException(f"Unknown Named Type: {atype}")
         if atype in VALID_TYPES:
@@ -774,7 +774,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
     raise SchemaParseException(fail_msg)
 
 
-def is_subtype(types: Dict[str, Any], existing: PropType, new: PropType) -> bool:
+def is_subtype(types: dict[str, Any], existing: PropType, new: PropType) -> bool:
     """Check if a new type specification is compatible with an existing type spec."""
     if existing == new:
         return True
@@ -804,9 +804,9 @@ def is_subtype(types: Dict[str, Any], existing: PropType, new: PropType) -> bool
         if existing.get("type") == "enum" and new.get("type") == "enum":
             return is_subtype(types, existing["symbols"], new["symbols"])
         if existing.get("type") == "record" and new.get("type") == "record":
-            for new_field in cast(List[Dict[str, Any]], new["fields"]):
+            for new_field in cast(list[dict[str, Any]], new["fields"]):
                 new_field_missing = True
-                for existing_field in cast(List[Dict[str, Any]], existing["fields"]):
+                for existing_field in cast(list[dict[str, Any]], existing["fields"]):
                     if new_field["name"] == existing_field["name"]:
                         if not is_subtype(types, existing_field["type"], new_field["type"]):
                             return False

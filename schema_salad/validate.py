@@ -1,6 +1,7 @@
 import logging
 import pprint
-from typing import Any, List, Mapping, MutableMapping, MutableSequence, Optional, Set
+from collections.abc import Mapping, MutableMapping, MutableSequence
+from typing import Any, Optional
 from urllib.parse import urlsplit
 
 from . import avro
@@ -18,9 +19,9 @@ _logger = logging.getLogger("salad")
 def validate(
     expected_schema: Schema,
     datum: Any,
-    identifiers: Optional[List[str]] = None,
+    identifiers: Optional[list[str]] = None,
     strict: bool = False,
-    foreign_properties: Optional[Set[str]] = None,
+    foreign_properties: Optional[set[str]] = None,
     vocab: Optional[Mapping[str, str]] = None,
 ) -> bool:
     if not identifiers:
@@ -114,9 +115,9 @@ def vpformat(datum: Any) -> str:
 def validate_ex(
     expected_schema: Schema,
     datum: Any,
-    identifiers: Optional[List[str]] = None,
+    identifiers: Optional[list[str]] = None,
     strict: bool = False,
-    foreign_properties: Optional[Set[str]] = None,
+    foreign_properties: Optional[set[str]] = None,
     raise_ex: bool = True,
     strict_foreign_properties: bool = False,
     logger: logging.Logger = _logger,
@@ -255,7 +256,7 @@ def validate_ex(
         if not raise_ex:
             return False
 
-        errors: List[SchemaSaladException] = []
+        errors: list[SchemaSaladException] = []
         checked = []
         for s in expected_schema.schemas:
             if isinstance(datum, MutableSequence) and not isinstance(s, avro.schema.ArraySchema):

@@ -4,7 +4,8 @@ import argparse
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Mapping, MutableSequence, Optional, Union, cast
+from collections.abc import Mapping, MutableSequence
+from typing import Any, Optional, Union, cast
 from urllib.parse import urlparse
 
 from rdflib import __version__ as rdflib_version
@@ -30,7 +31,7 @@ _logger = logging.getLogger("salad")
 def printrdf(
     workflow: str,
     wf: Union[CommentedMap, CommentedSeq],
-    ctx: Dict[str, Any],
+    ctx: dict[str, Any],
     sr: str,
 ) -> None:
     g = jsonld_context.makerdf(workflow, wf, ctx)
@@ -225,7 +226,7 @@ def arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argsl: Optional[List[str]] = None) -> int:
+def main(argsl: Optional[list[str]] = None) -> int:
     if argsl is None:
         argsl = sys.argv[1:]
 
@@ -325,7 +326,7 @@ def main(argsl: Optional[List[str]] = None) -> int:
     if args.codegen:
         codegen.codegen(
             args.codegen,
-            cast(List[Dict[str, Any]], schema_doc),
+            cast(list[dict[str, Any]], schema_doc),
             schema_metadata,
             document_loader,
             target=args.codegen_target,

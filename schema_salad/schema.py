@@ -2,21 +2,8 @@
 
 import copy
 import hashlib
-from typing import (
-    IO,
-    Any,
-    Dict,
-    List,
-    Mapping,
-    MutableMapping,
-    MutableSequence,
-    Optional,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from collections.abc import Mapping, MutableMapping, MutableSequence
+from typing import IO, Any, Optional, TypeVar, Union, cast
 from urllib.parse import urlparse
 
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
@@ -81,10 +68,10 @@ SALAD_FILES = (
 
 saladp = "https://w3id.org/cwl/salad#"
 
-cached_metaschema: Optional[Tuple[Names, List[Dict[str, str]], Loader]] = None
+cached_metaschema: Optional[tuple[Names, list[dict[str, str]], Loader]] = None
 
 
-def get_metaschema() -> Tuple[Names, List[Dict[str, str]], Loader]:
+def get_metaschema() -> tuple[Names, list[dict[str, str]], Loader]:
     """Instantiate the metaschema."""
     global cached_metaschema
     if cached_metaschema is not None:
@@ -229,9 +216,9 @@ def add_namespaces(metadata: Mapping[str, Any], namespaces: MutableMapping[str, 
             )
 
 
-def collect_namespaces(metadata: Mapping[str, Any]) -> Dict[str, str]:
+def collect_namespaces(metadata: Mapping[str, Any]) -> dict[str, str]:
     """Walk through the metadata object, collecting namespace declarations."""
-    namespaces: Dict[str, str] = {}
+    namespaces: dict[str, str] = {}
     if "$import_metadata" in metadata:
         for value in metadata["$import_metadata"].values():
             add_namespaces(collect_namespaces(value), namespaces)
@@ -240,7 +227,7 @@ def collect_namespaces(metadata: Mapping[str, Any]) -> Dict[str, str]:
     return namespaces
 
 
-schema_type = Tuple[Loader, Union[Names, SchemaParseException], Dict[str, Any], Loader]
+schema_type = tuple[Loader, Union[Names, SchemaParseException], dict[str, Any], Loader]
 
 
 def load_schema(
@@ -288,7 +275,7 @@ def load_and_validate(
     document: Union[CommentedMap, str],
     strict: bool,
     strict_foreign_properties: bool = False,
-) -> Tuple[Any, Dict[str, Any]]:
+) -> tuple[Any, dict[str, Any]]:
     """Load a document and validate it with the provided schema.
 
     return data, metadata
@@ -375,7 +362,7 @@ def validate_doc(
                 break
 
         if not success:
-            errors: List[SchemaSaladException] = []
+            errors: list[SchemaSaladException] = []
             for root in roots:
                 if hasattr(root, "get_prop"):
                     name = root.get_prop("name")
@@ -418,7 +405,7 @@ def validate_doc(
         raise ValidationException("", None, anyerrors, "*")
 
 
-def get_anon_name(rec: MutableMapping[str, Union[str, Dict[str, str], List[str]]]) -> str:
+def get_anon_name(rec: MutableMapping[str, Union[str, dict[str, str], list[str]]]) -> str:
     """Calculate a reproducible name for anonymous types."""
     if "name" in rec:
         name = rec["name"]
@@ -446,9 +433,9 @@ def get_anon_name(rec: MutableMapping[str, Union[str, Dict[str, str], List[str]]
 
 def replace_type(
     items: Any,
-    spec: Dict[str, Any],
+    spec: dict[str, Any],
     loader: Loader,
-    found: Set[str],
+    found: set[str],
     find_embeds: bool = True,
     deepen: bool = True,
 ) -> Any:
@@ -524,12 +511,12 @@ Avro = TypeVar("Avro", MutableMapping[str, Any], MutableSequence[Any], str)
 
 def make_valid_avro(
     items: Avro,
-    alltypes: Dict[str, Dict[str, Any]],
-    found: Set[str],
+    alltypes: dict[str, dict[str, Any]],
+    found: set[str],
     union: bool = False,
     fielddef: bool = False,
-    vocab: Optional[Dict[str, str]] = None,
-) -> Union[Avro, MutableMapping[str, str], str, List[Union[Any, MutableMapping[str, str], str]]]:
+    vocab: Optional[dict[str, str]] = None,
+) -> Union[Avro, MutableMapping[str, str], str, list[Union[Any, MutableMapping[str, str], str]]]:
     """Convert our schema to be more avro like."""
     if vocab is None:
         _, _, metaschema_loader = get_metaschema()
@@ -603,22 +590,22 @@ def deepcopy_strip(item: Any) -> Any:
     return item
 
 
-def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[Dict[str, Any]]:
+def extend_and_specialize(items: list[dict[str, Any]], loader: Loader) -> list[dict[str, Any]]:
     """Apply 'extend' and 'specialize' to fully materialize derived record types."""
     items2 = deepcopy_strip(items)
-    types: Dict[str, Any] = {i["name"]: i for i in items2}
+    types: dict[str, Any] = {i["name"]: i for i in items2}
     types.update({k[len(saladp) :]: v for k, v in types.items() if k.startswith(saladp)})
     results = []
 
     for stype in items2:
         if "extends" in stype:
-            specs: Dict[str, str] = {}
+            specs: dict[str, str] = {}
             if "specialize" in stype:
                 for spec in aslist(stype["specialize"]):
                     specs[spec["specializeFrom"]] = spec["specializeTo"]
 
-            exfields: List[Any] = []
-            exsym: List[str] = []
+            exfields: list[Any] = []
+            exsym: list[str] = []
             for ex in aslist(stype["extends"]):
                 if ex not in types:
                     raise ValidationException(
@@ -682,7 +669,7 @@ def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[D
 
                 stype["fields"] = combined_fields
 
-                fieldnames: Set[str] = set()
+                fieldnames: set[str] = set()
                 for field in stype["fields"]:
                     if field["name"] in fieldnames:
                         raise ValidationException(
@@ -702,7 +689,7 @@ def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[D
     for result in results:
         ex_types[result["name"]] = result
 
-    extended_by: Dict[str, str] = {}
+    extended_by: dict[str, str] = {}
     for result in results:
         if "extends" in result:
             for ex in aslist(result["extends"]):
@@ -726,13 +713,13 @@ def extend_and_specialize(items: List[Dict[str, Any]], loader: Loader) -> List[D
 
 
 def make_avro(
-    i: List[Dict[str, Any]],
+    i: list[dict[str, Any]],
     loader: Loader,
-    metaschema_vocab: Optional[Dict[str, str]] = None,
-) -> List[Any]:
+    metaschema_vocab: Optional[dict[str, str]] = None,
+) -> list[Any]:
     j = extend_and_specialize(i, loader)
 
-    name_dict: Dict[str, Dict[str, Any]] = {}
+    name_dict: dict[str, dict[str, Any]] = {}
     for entry in j:
         name_dict[entry["name"]] = entry
 
@@ -748,7 +735,7 @@ def make_avro(
 
 
 def make_avro_schema(
-    i: List[Any], loader: Loader, metaschema_vocab: Optional[Dict[str, str]] = None
+    i: list[Any], loader: Loader, metaschema_vocab: Optional[dict[str, str]] = None
 ) -> Names:
     """
     All in one convenience function.
@@ -762,7 +749,7 @@ def make_avro_schema(
     return names
 
 
-def make_avro_schema_from_avro(avro: List[Union[Avro, Dict[str, str], str]]) -> Names:
+def make_avro_schema_from_avro(avro: list[Union[Avro, dict[str, str], str]]) -> Names:
     names = Names()
     make_avsc_object(convert_to_dict(avro), names)
     return names
@@ -776,7 +763,7 @@ def shortname(inputid: str) -> str:
     return parsed_id.path.split("/")[-1]
 
 
-def print_inheritance(doc: List[Dict[str, Any]], stream: IO[Any]) -> None:
+def print_inheritance(doc: list[dict[str, Any]], stream: IO[Any]) -> None:
     """Write a Grapviz inheritance graph for the supplied document."""
     stream.write("digraph {\n")
     for entry in doc:
@@ -795,7 +782,7 @@ def print_inheritance(doc: List[Dict[str, Any]], stream: IO[Any]) -> None:
     stream.write("}\n")
 
 
-def print_fieldrefs(doc: List[Dict[str, Any]], loader: Loader, stream: IO[Any]) -> None:
+def print_fieldrefs(doc: list[dict[str, Any]], loader: Loader, stream: IO[Any]) -> None:
     """Write a GraphViz graph of the relationships between the fields."""
     obj = extend_and_specialize(doc, loader)
 
@@ -818,7 +805,7 @@ def print_fieldrefs(doc: List[Dict[str, Any]], loader: Loader, stream: IO[Any]) 
         if entry["type"] == "record":
             label = shortname(entry["name"])
             for field in entry.get("fields", []):
-                found: Set[str] = set()
+                found: set[str] = set()
                 field_name = shortname(field["name"])
                 replace_type(field["type"], {}, loader, found, find_embeds=False)
                 for each_type in found:

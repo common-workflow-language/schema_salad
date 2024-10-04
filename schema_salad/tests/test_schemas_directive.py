@@ -5,7 +5,7 @@ run individually as py.test -k tests/test_schemas_directive.py
 """
 
 import os
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 from schema_salad.avro.schema import Names, SchemaParseException
 from schema_salad.ref_resolver import Loader
@@ -21,7 +21,7 @@ class TestSchemasDirective:
 
     document_loader: Loader
     avsc_names: Union[Names, SchemaParseException, None] = None
-    schema_metadata: Optional[Dict[str, Any]] = None
+    schema_metadata: Optional[dict[str, Any]] = None
     metaschema_loader: Optional[Loader] = None
 
     @classmethod
@@ -35,7 +35,7 @@ class TestSchemasDirective:
             metaschema_loader,
         ) = load_schema(path)
 
-    def load_cwl(self, src: str) -> Tuple[Any, Dict[str, Any]]:
+    def load_cwl(self, src: str) -> tuple[Any, dict[str, Any]]:
         path = get_data(test_dir_name + src)
         assert path
         assert isinstance(self.avsc_names, Names)
