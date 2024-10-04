@@ -1,17 +1,7 @@
 import logging
 import unicodedata
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    MutableMapping,
-    MutableSequence,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from collections.abc import Iterable, MutableMapping, MutableSequence
+from typing import Any, Optional, Union, cast
 from urllib.parse import urldefrag, urlsplit
 
 import rdflib
@@ -27,13 +17,13 @@ _logger = logging.getLogger("salad")
 
 
 def pred(
-    datatype: MutableMapping[str, Union[Dict[str, str], str]],
-    field: Optional[Dict[str, Any]],
+    datatype: MutableMapping[str, Union[dict[str, str], str]],
+    field: Optional[dict[str, Any]],
     name: str,
     context: ContextType,
     defaultBase: str,
-    namespaces: Dict[str, rdflib.namespace.Namespace],
-) -> Union[Dict[str, Optional[str]], str]:
+    namespaces: dict[str, rdflib.namespace.Namespace],
+) -> Union[dict[str, Optional[str]], str]:
     split = urlsplit(name)
 
     vee: Optional[str] = None
@@ -46,7 +36,7 @@ def pred(
             vee = str(namespaces[ns[0:-1]][ln])
         _logger.debug("name, v %s %s", name, vee)
 
-    v: Optional[Union[Dict[str, Optional[str]], str]] = None
+    v: Optional[Union[dict[str, Optional[str]], str]] = None
 
     if field is not None and "jsonldPredicate" in field:
         if isinstance(field["jsonldPredicate"], MutableMapping):
@@ -90,7 +80,7 @@ def process_type(
     g: Graph,
     context: ContextType,
     defaultBase: str,
-    namespaces: Dict[str, rdflib.namespace.Namespace],
+    namespaces: dict[str, rdflib.namespace.Namespace],
     defaultPrefix: str,
 ) -> None:
     if t["type"] not in ("record", "enum"):
@@ -132,7 +122,7 @@ def process_type(
 
             _logger.debug("Processing field %s", i)
 
-            v: Union[Dict[Any, Any], str, None] = pred(
+            v: Union[dict[Any, Any], str, None] = pred(
                 t, i, fieldname, context, defaultPrefix, namespaces
             )
 
@@ -188,7 +178,7 @@ def process_type(
 
 def salad_to_jsonld_context(
     j: Iterable[MutableMapping[str, Any]], schema_ctx: MutableMapping[str, Any]
-) -> Tuple[ContextType, Graph]:
+) -> tuple[ContextType, Graph]:
     context: ContextType = {}
     namespaces = {}
     g = Graph()
@@ -213,7 +203,7 @@ def salad_to_jsonld_context(
     return (context, g)
 
 
-def fix_jsonld_ids(obj: Union[CommentedMap, float, str, CommentedSeq], ids: List[str]) -> None:
+def fix_jsonld_ids(obj: Union[CommentedMap, float, str, CommentedSeq], ids: list[str]) -> None:
     """Add missing identity entries."""
     if isinstance(obj, MutableMapping):
         for i in ids:

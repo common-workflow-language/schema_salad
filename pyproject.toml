@@ -6,7 +6,6 @@ requires = [
     "black>=19.10b0,<23.12",
     "types-requests",
     "types-dataclasses",
-    "importlib_resources>=1.4;python_version<'3.9'",
     "ruamel.yaml>=0.17.6, < 0.19",
     "types-setuptools",
     "CacheControl[filecache] >= 0.13.1, < 0.15"
@@ -28,4 +27,4 @@ environment = { SCHEMA_SALAD_USE_MYPYC="1", MYPYPATH="$(pwd)/mypy-stubs" }
 
 [tool.black]
 line-length = 100
-target-version = [ "py38" ]
+target-version = [ "py39" ]

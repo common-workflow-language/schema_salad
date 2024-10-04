@@ -7,19 +7,9 @@ import tempfile
 import traceback
 import urllib
 import xml.sax  # nosec
+from collections.abc import MutableMapping, MutableSequence
 from io import StringIO
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    MutableMapping,
-    MutableSequence,
-    Optional,
-    Set,
-    Union,
-    cast,
-)
+from typing import Any, Callable, Optional, Union, cast
 
 import requests
 from cachecontrol.caches import SeparateBodyFileCache
@@ -102,7 +92,7 @@ def to_validation_exception(e: MarkedYAMLError) -> ValidationException:
     return exc
 
 
-class NormDict(Dict[str, Union[CommentedMap, CommentedSeq, str, None]]):
+class NormDict(dict[str, Union[CommentedMap, CommentedSeq, str, None]]):
     """A Dict where all keys are normalized using the provided function."""
 
     def __init__(self, normalize: Callable[[str], str] = str) -> None:
@@ -149,13 +139,13 @@ class Loader:
         self,
         ctx: ContextType,
         schemagraph: Optional[Graph] = None,
-        foreign_properties: Optional[Set[str]] = None,
+        foreign_properties: Optional[set[str]] = None,
         idx: Optional[IdxType] = None,
         cache: Optional[CacheType] = None,
         session: Optional[requests.sessions.Session] = None,
         fetcher_constructor: Optional[FetcherCallableType] = None,
         skip_schemas: Optional[bool] = None,
-        url_fields: Optional[Set[str]] = None,
+        url_fields: Optional[set[str]] = None,
         allow_attachments: Optional[AttachmentsType] = None,
         doc_cache: Union[str, bool] = True,
         salad_version: Optional[str] = None,
@@ -194,20 +184,20 @@ class Loader:
         self.fetcher = self.fetcher_constructor(self.cache, self.session)
         self.fetch_text = self.fetcher.fetch_text
         self.check_exists = self.fetcher.check_exists
-        self.url_fields: Set[str] = set() if url_fields is None else set(url_fields)
-        self.scoped_ref_fields: Dict[str, int] = {}
-        self.vocab_fields: Set[str] = set()
-        self.identifiers: List[str] = []
-        self.identity_links: Set[str] = set()
-        self.standalone: Optional[Set[str]] = None
-        self.nolinkcheck: Set[str] = set()
-        self.vocab: Dict[str, str] = {}
-        self.rvocab: Dict[str, str] = {}
-        self.idmap: Dict[str, str] = {}
-        self.mapPredicate: Dict[str, str] = {}
-        self.type_dsl_fields: Set[str] = set()
-        self.subscopes: Dict[str, str] = {}
-        self.secondaryFile_dsl_fields: Set[str] = set()
+        self.url_fields: set[str] = set() if url_fields is None else set(url_fields)
+        self.scoped_ref_fields: dict[str, int] = {}
+        self.vocab_fields: set[str] = set()
+        self.identifiers: list[str] = []
+        self.identity_links: set[str] = set()
+        self.standalone: Optional[set[str]] = None
+        self.nolinkcheck: set[str] = set()
+        self.vocab: dict[str, str] = {}
+        self.rvocab: dict[str, str] = {}
+        self.idmap: dict[str, str] = {}
+        self.mapPredicate: dict[str, str] = {}
+        self.type_dsl_fields: set[str] = set()
+        self.subscopes: dict[str, str] = {}
+        self.secondaryFile_dsl_fields: set[str] = set()
         self.allow_attachments = allow_attachments
 
         if salad_version:
@@ -286,10 +276,10 @@ class Loader:
                 self.url_fields.add(str(s))
         self.foreign_properties.add(str(s))
 
-    def add_namespaces(self, ns: Dict[str, str]) -> None:
+    def add_namespaces(self, ns: dict[str, str]) -> None:
         self.vocab.update(ns)
 
-    def add_schemas(self, ns: Union[List[str], str], base_url: str) -> None:
+    def add_schemas(self, ns: Union[list[str], str], base_url: str) -> None:
         if self.skip_schemas:
             return
         for sch in aslist(ns):
@@ -422,7 +412,7 @@ class Loader:
         base_url: Optional[str] = None,
         checklinks: bool = True,
         strict_foreign_properties: bool = False,
-        content_types: Optional[List[str]] = None,  # Expected content-types
+        content_types: Optional[list[str]] = None,  # Expected content-types
     ) -> ResolvedRefType:
         lref = ref
         obj: Optional[CommentedMap] = None
@@ -739,7 +729,7 @@ class Loader:
                             datum2.append(self._apply_dsl(t, d, loader, LineCol(), ""))
                 if isinstance(datum2, CommentedSeq):
                     datum3 = CommentedSeq()
-                    seen: List[str] = []
+                    seen: list[str] = []
                     for i, item in enumerate(datum2):
                         if isinstance(item, CommentedSeq):
                             for j, v in enumerate(item):
@@ -778,7 +768,7 @@ class Loader:
 
     def _resolve_identity(
         self,
-        document: Dict[str, Union[str, MutableSequence[Union[str, CommentedMap]]]],
+        document: dict[str, Union[str, MutableSequence[Union[str, CommentedMap]]]],
         loader: "Loader",
         base_url: str,
     ) -> None:
@@ -806,7 +796,7 @@ class Loader:
 
     def _resolve_uris(
         self,
-        document: Dict[str, Union[str, MutableSequence[Union[str, CommentedMap]]]],
+        document: dict[str, Union[str, MutableSequence[Union[str, CommentedMap]]]],
         loader: "Loader",
         base_url: str,
     ) -> None:
@@ -988,7 +978,7 @@ class Loader:
                 ) from v
 
         if checklinks:
-            all_doc_ids: Dict[str, str] = {}
+            all_doc_ids: dict[str, str] = {}
             loader.validate_links(
                 document,
                 "",
@@ -1002,7 +992,7 @@ class Loader:
         self,
         url: str,
         inject_ids: bool = True,
-        content_types: Optional[List[str]] = None,
+        content_types: Optional[list[str]] = None,
     ) -> IdxResultType:
         if url in self.idx:
             return self.idx[url]
@@ -1066,7 +1056,7 @@ class Loader:
         # link also can be None, but that results in
         # mypyc "error: Local variable "link" has inferred type None; add an annotation"
         docid: str,
-        all_doc_ids: Dict[str, str],
+        all_doc_ids: dict[str, str],
     ) -> Union[str, CommentedSeq, CommentedMap]:
         if field in self.nolinkcheck:
             return link
@@ -1118,12 +1108,12 @@ class Loader:
         self,
         document: ResolveType,
         base_url: str,
-        all_doc_ids: Dict[str, str],
+        all_doc_ids: dict[str, str],
         strict_foreign_properties: bool = False,
     ) -> None:
         docid = self.getid(document) or base_url
 
-        errors: List[SchemaSaladException] = []
+        errors: list[SchemaSaladException] = []
         iterator: Any = None
         if isinstance(document, MutableSequence):
             iterator = enumerate(document)

@@ -7,7 +7,7 @@ import sys
 import urllib.parse
 import urllib.request
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Optional
 
 import requests
 from mypy_extensions import mypyc_attr
@@ -24,7 +24,7 @@ class Fetcher(ABC):
     """Fetch resources from URIs."""
 
     @abstractmethod
-    def fetch_text(self, url: str, content_types: Optional[List[str]] = None) -> str:
+    def fetch_text(self, url: str, content_types: Optional[list[str]] = None) -> str:
         """Retrieve the given resource as a string."""
 
     @abstractmethod
@@ -37,7 +37,7 @@ class Fetcher(ABC):
 
     schemes = ["file", "http", "https", "mailto"]
 
-    def supported_schemes(self) -> List[str]:
+    def supported_schemes(self) -> list[str]:
         """Return the list of supported URI schemes."""
         return self.schemes
 
@@ -64,7 +64,7 @@ class DefaultFetcher(MemoryCachingFetcher):
         super().__init__(cache)
         self.session = session
 
-    def fetch_text(self, url: str, content_types: Optional[List[str]] = None) -> str:
+    def fetch_text(self, url: str, content_types: Optional[list[str]] = None) -> str:
         result = self.cache.get(url, None)
         if isinstance(result, str):
             return result

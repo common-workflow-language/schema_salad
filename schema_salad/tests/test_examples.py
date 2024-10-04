@@ -3,7 +3,7 @@
 import datetime
 import os
 from io import StringIO
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 import pytest
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
@@ -485,7 +485,7 @@ def test_rdf_datetime() -> None:
 
 def test_yaml_datetime() -> None:
     """Affirm that yaml_no_ts prevents the creation of datetime objects."""
-    example: Dict[str, Any] = {
+    example: dict[str, Any] = {
         "id": "foo",
         "bar": {"id": "baz"},
     }
