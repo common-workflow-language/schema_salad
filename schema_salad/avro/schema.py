@@ -385,6 +385,7 @@ class EnumSchema(NamedSchema):
     # read-only properties
     @property
     def symbols(self) -> list[str]:
+        """Retrieve the list of symbols."""
         return cast(list[str], self.get_prop("symbols"))
 
 
@@ -596,6 +597,7 @@ class NamedUnionSchema(NamedSchema):
     # read-only properties
     @property
     def schemas(self) -> list[Schema]:
+        """Retrieve the list of schemas."""
         return self._schemas
 
 
@@ -664,6 +666,7 @@ class RecordSchema(NamedSchema):
     # read-only properties
     @property
     def fields(self) -> list[Field]:
+        """Retrieve the fields list."""
         return cast(list[Field], self.get_prop("fields"))
 
 

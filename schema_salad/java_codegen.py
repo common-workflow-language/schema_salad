@@ -580,6 +580,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
         return self.collected_types[self.safe_name(type_declaration)]
 
     def type_loader_enum(self, type_declaration: dict[str, Any]) -> TypeDef:
+        """Build an enum type loader for the given declaration."""
         symbols = [self.property_name(sym) for sym in type_declaration["symbols"]]
         for sym in symbols:
             self.add_vocab(shortname(sym), sym)
