@@ -43,6 +43,7 @@ def vocab_type_name(url: str) -> str:
 
 
 def has_types(items: Any) -> list[str]:
+    """Retrieve all the types of a record."""
     r: list[str] = []
     if isinstance(items, MutableMapping):
         if items["type"] == "https://w3id.org/cwl/salad#record":
@@ -225,6 +226,7 @@ def number_headings(toc: ToC, maindoc: str) -> str:
 
 
 def fix_doc(doc: Union[list[str], str]) -> str:
+    """Concatenate doc strings, replacing email addresses with mailto links."""
     docstr = "".join(doc) if isinstance(doc, MutableSequence) else doc
     return "\n".join(
         [re.sub(r"<([^>@]+@[^>]+)>", r"[\1](mailto:\1)", d) for d in docstr.splitlines()]
@@ -381,6 +383,7 @@ class RenderType:
         raise SchemaSaladException("We should not be here!")
 
     def render_type(self, f: dict[str, Any], depth: int) -> None:
+        """Render a type declaration."""
         if f["name"] in self.rendered or f["name"] in self.redirects:
             return
         self.rendered.add(f["name"])

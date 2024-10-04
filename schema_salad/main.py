@@ -227,6 +227,7 @@ def arg_parser() -> argparse.ArgumentParser:
 
 
 def main(argsl: Optional[list[str]] = None) -> int:
+    """Run the schema-salad-tool."""
     if argsl is None:
         argsl = sys.argv[1:]
 

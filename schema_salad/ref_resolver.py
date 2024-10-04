@@ -277,9 +277,11 @@ class Loader:
         self.foreign_properties.add(str(s))
 
     def add_namespaces(self, ns: dict[str, str]) -> None:
+        """Add the given namespace to our vocab list."""
         self.vocab.update(ns)
 
     def add_schemas(self, ns: Union[list[str], str], base_url: str) -> None:
+        """Fetch exernal schemas and add them to the graph."""
         if self.skip_schemas:
             return
         for sch in aslist(ns):

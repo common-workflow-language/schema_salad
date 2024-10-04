@@ -75,6 +75,7 @@ class SchemaSaladException(Exception):
         return self
 
     def leaves(self) -> list["SchemaSaladException"]:
+        """Return the list of all the exceptions at the tips of the tree."""
         if len(self.children) > 0:
             return sum((c.leaves() for c in self.children), [])
         if len(self.message):

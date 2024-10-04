@@ -750,6 +750,7 @@ def make_avro_schema(
 
 
 def make_avro_schema_from_avro(avro: list[Union[Avro, dict[str, str], str]]) -> Names:
+    """Create avro.schema.Names from the given definitions."""
     names = Names()
     make_avsc_object(convert_to_dict(avro), names)
     return names

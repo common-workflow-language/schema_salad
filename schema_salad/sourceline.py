@@ -88,6 +88,7 @@ def indent(v: str, nolead: bool = False, shift: str = "  ", bullet: str = "  ") 
 
 
 def bullets(textlist: list[str], bul: str) -> str:
+    """Indent using the specified number of bullets."""
     if len(textlist) == 1:
         return textlist[0]
     return "\n".join(indent(t, bullet=bul) for t in textlist)
@@ -245,6 +246,7 @@ class SourceLine:
         return None
 
     def start(self) -> Optional[tuple[int, int]]:
+        """Determine the starting location."""
         if self.file() is None:
             return None
         if self.key is None or self.item.lc.data is None or self.key not in self.item.lc.data:
@@ -255,6 +257,7 @@ class SourceLine:
         )
 
     def end(self) -> Optional[tuple[int, int]]:
+        """Empty, for now."""
         return None
 
     def makeLead(self) -> str:

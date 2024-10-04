@@ -502,6 +502,7 @@ public class {cls} : {current_interface}, ISaveable
         return self.collected_types[self.safe_name(type_declaration) + "Loader"]
 
     def type_loader_enum(self, type_declaration: dict[str, Any]) -> TypeDef:
+        """Build an enum type loader for the given declaration."""
         for sym in type_declaration["symbols"]:
             self.add_vocab(shortname(sym), sym)
         enum_name = self.safe_name(type_declaration["name"])
