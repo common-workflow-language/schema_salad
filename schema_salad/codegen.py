@@ -1,17 +1,9 @@
 """Generate language specific loaders for a particular SALAD schema."""
 
 import sys
+from collections.abc import MutableMapping, MutableSequence
 from io import TextIOWrapper
-from typing import (
-    Any,
-    Dict,
-    List,
-    MutableMapping,
-    MutableSequence,
-    Optional,
-    TextIO,
-    Union,
-)
+from typing import Any, Optional, TextIO, Union
 from urllib.parse import urlsplit
 
 from . import schema
@@ -32,14 +24,14 @@ FIELD_SORT_ORDER = ["id", "class", "name"]
 
 def codegen(
     lang: str,
-    i: List[Dict[str, str]],
-    schema_metadata: Dict[str, Any],
+    i: list[dict[str, str]],
+    schema_metadata: dict[str, Any],
     loader: Loader,
     target: Optional[str] = None,
     examples: Optional[str] = None,
     package: Optional[str] = None,
     copyright: Optional[str] = None,
-    spdx_copyright_text: Optional[List[str]] = None,
+    spdx_copyright_text: Optional[list[str]] = None,
     spdx_license_identifier: Optional[str] = None,
     parser_info: Optional[str] = None,
 ) -> None:

@@ -3,18 +3,10 @@
 import os
 import shutil
 import string
+from collections.abc import MutableMapping, MutableSequence
 from io import StringIO
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    List,
-    MutableMapping,
-    MutableSequence,
-    Optional,
-    Set,
-    Union,
-)
+from typing import Any, Optional, Union
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
@@ -96,8 +88,8 @@ class TypeScriptCodeGen(CodeGenBase):
         self.test_resources_dir = self.target_dir / "src" / "test" / "data"
         self.package = package
         self.base_uri = base
-        self.record_types: Set[str] = set()
-        self.modules: Set[str] = set()
+        self.record_types: set[str] = set()
+        self.modules: set[str] = set()
         self.id_field = ""
         self.examples = examples
 
@@ -137,7 +129,7 @@ class TypeScriptCodeGen(CodeGenBase):
         abstract: bool,
         field_names: MutableSequence[str],
         idfield: str,
-        optional_fields: Set[str],
+        optional_fields: set[str],
     ) -> None:
         """Produce the header for the given class."""
         self.current_interface = self.safe_name(classname) + "Properties"
@@ -152,7 +144,7 @@ class TypeScriptCodeGen(CodeGenBase):
         self.current_constructor_body = StringIO()
         self.current_loader = StringIO()
         self.current_serializer = StringIO()
-        self.current_fieldtypes: Dict[str, TypeDef] = {}
+        self.current_fieldtypes: dict[str, TypeDef] = {}
         self.idfield = idfield
 
         doc_string = f"""
@@ -277,7 +269,7 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
 """
         )
 
-    def end_class(self, classname: str, field_names: List[str]) -> None:
+    def end_class(self, classname: str, field_names: list[str]) -> None:
         """Signal that we are done with this class."""
         with open(self.current_interface_target_file, "a") as f:
             f.write("}")
@@ -364,15 +356,15 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
 
     def type_loader(
         self,
-        type_declaration: Union[List[Any], Dict[str, Any], str],
+        type_declaration: Union[list[Any], dict[str, Any], str],
         container: Optional[str] = None,
         no_link_check: Optional[bool] = None,
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
             sub_types = [self.type_loader(i) for i in type_declaration]
-            sub_names: List[str] = list(dict.fromkeys([i.name for i in sub_types]))
-            sub_instance_types: List[str] = list(
+            sub_names: list[str] = list(dict.fromkeys([i.name for i in sub_types]))
+            sub_instance_types: list[str] = list(
                 dict.fromkeys([i.instance_type for i in sub_types if i.instance_type is not None])
             )
             return self.declare_type(
@@ -478,7 +470,7 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
             )
         return self.collected_types[self.safe_name(type_declaration) + "Loader"]
 
-    def type_loader_enum(self, type_declaration: Dict[str, Any]) -> TypeDef:
+    def type_loader_enum(self, type_declaration: dict[str, Any]) -> TypeDef:
         for sym in type_declaration["symbols"]:
             self.add_vocab(shortname(sym), sym)
         enum_name = self.safe_name(type_declaration["name"])

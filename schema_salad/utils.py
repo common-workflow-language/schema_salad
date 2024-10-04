@@ -1,21 +1,9 @@
 import json
 import os
 import sys
+from collections.abc import Iterable, Mapping, MutableSequence
 from io import BufferedWriter
-from typing import (
-    IO,
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    Mapping,
-    MutableSequence,
-    Optional,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import IO, TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union
 
 import requests
 from rdflib.graph import Graph
@@ -29,30 +17,27 @@ if TYPE_CHECKING:
 if sys.version_info >= (3, 11):
     from importlib.resources import as_file, files
     from importlib.resources.abc import Traversable
-elif sys.version_info >= (3, 9):
+else:
     from importlib.abc import Traversable
     from importlib.resources import as_file, files
-else:
-    from importlib_resources import as_file, files
-    from importlib_resources.abc import Traversable
 
 __all__ = ["files", "as_file", "Traversable"]
 
-ContextType = Dict[str, Union[Dict[str, Any], str, Iterable[str]]]
+ContextType = dict[str, Union[dict[str, Any], str, Iterable[str]]]
 DocumentType = TypeVar("DocumentType", CommentedSeq, CommentedMap)
 DocumentOrStrType = TypeVar("DocumentOrStrType", CommentedSeq, CommentedMap, str)
 FieldType = TypeVar("FieldType", str, CommentedSeq, CommentedMap)
 MandatoryResolveType = Union[int, float, str, CommentedMap, CommentedSeq]
 ResolveType = Optional[MandatoryResolveType]
-ResolvedRefType = Tuple[ResolveType, CommentedMap]
+ResolvedRefType = tuple[ResolveType, CommentedMap]
 IdxResultType = Union[CommentedMap, CommentedSeq, str, None]
-IdxType = Dict[str, IdxResultType]
-CacheType = Dict[str, Union[str, Graph, bool]]
+IdxType = dict[str, IdxResultType]
+CacheType = dict[str, Union[str, Graph, bool]]
 FetcherCallableType = Callable[[CacheType, requests.sessions.Session], "Fetcher"]
 AttachmentsType = Callable[[Union[CommentedMap, CommentedSeq]], bool]
 
 
-def add_dictlist(di: Dict[Any, Any], key: Any, val: Any) -> None:
+def add_dictlist(di: dict[Any, Any], key: Any, val: Any) -> None:
     """Manage element insertion in dicts of lists."""
     if key not in di:
         di[key] = []

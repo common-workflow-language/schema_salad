@@ -1,16 +1,7 @@
 import os
 import re
-from typing import (
-    Any,
-    AnyStr,
-    Callable,
-    List,
-    MutableMapping,
-    MutableSequence,
-    Optional,
-    Tuple,
-    Union,
-)
+from collections.abc import MutableMapping, MutableSequence
+from typing import Any, AnyStr, Callable, Optional, Union
 
 import ruamel.yaml
 from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq
@@ -52,7 +43,7 @@ def reflow_all(text: str, maxline: Optional[int] = None) -> str:
         assert group is not None  # nosec
         maxno = max(maxno, len(group))
     maxno_text = maxline - maxno
-    msg: List[str] = []
+    msg: list[str] = []
     for line in text.splitlines():
         g = lineno_re.match(line)
         if not g:
@@ -96,7 +87,7 @@ def indent(v: str, nolead: bool = False, shift: str = "  ", bullet: str = "  ") 
     return "\n".join([lineno(i, line) for i, line in enumerate(v.splitlines())])
 
 
-def bullets(textlist: List[str], bul: str) -> str:
+def bullets(textlist: list[str], bul: str) -> str:
     if len(textlist) == 1:
         return textlist[0]
     return "\n".join(indent(t, bullet=bul) for t in textlist)
@@ -168,7 +159,7 @@ def strip_dup_lineno(text: str, maxline: Optional[int] = None) -> str:
 
 def cmap(
     d: Union[int, float, str, MutableMapping[str, Any], MutableSequence[Any], None],
-    lc: Optional[List[int]] = None,
+    lc: Optional[list[int]] = None,
     fn: Optional[str] = None,
 ) -> Union[int, float, str, CommentedMap, CommentedSeq, None]:
     if lc is None:
@@ -253,7 +244,7 @@ class SourceLine:
             return str(self.item.lc.filename)
         return None
 
-    def start(self) -> Optional[Tuple[int, int]]:
+    def start(self) -> Optional[tuple[int, int]]:
         if self.file() is None:
             return None
         if self.key is None or self.item.lc.data is None or self.key not in self.item.lc.data:
@@ -263,7 +254,7 @@ class SourceLine:
             (self.item.lc.data[self.key][1] or 0) + 1,
         )
 
-    def end(self) -> Optional[Tuple[int, int]]:
+    def end(self) -> Optional[tuple[int, int]]:
         return None
 
     def makeLead(self) -> str:

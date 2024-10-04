@@ -1,18 +1,9 @@
 """Python code generator for a given schema salad definition."""
 
 import textwrap
+from collections.abc import MutableMapping, MutableSequence
 from io import StringIO
-from typing import (
-    IO,
-    Any,
-    Dict,
-    List,
-    MutableMapping,
-    MutableSequence,
-    Optional,
-    Set,
-    Union,
-)
+from typing import IO, Any, Optional, Union
 
 try:
     import black
@@ -150,7 +141,7 @@ class PythonCodeGen(CodeGenBase):
         abstract: bool,
         field_names: MutableSequence[str],
         idfield: str,
-        optional_fields: Set[str],
+        optional_fields: set[str],
     ) -> None:
         classname = self.safe_name(classname)
 
@@ -175,7 +166,7 @@ class PythonCodeGen(CodeGenBase):
         required_field_names = [f for f in field_names if f not in optional_fields]
         optional_field_names = [f for f in field_names if f in optional_fields]
 
-        safe_inits: List[str] = ["        self,"]
+        safe_inits: list[str] = ["        self,"]
         safe_inits.extend(
             [f"        {self.safe_name(f)}: Any," for f in required_field_names if f != "class"]
         )
@@ -189,7 +180,7 @@ class PythonCodeGen(CodeGenBase):
         self.out.write(
             "    def __init__(\n"
             + "\n".join(safe_inits)
-            + "\n        extension_fields: Optional[Dict[str, Any]] = None,"
+            + "\n        extension_fields: Optional[dict[str, Any]] = None,"
             + "\n        loadingOptions: Optional[LoadingOptions] = None,"
             + "\n    ) -> None:\n"
             + """        if extension_fields:
@@ -273,8 +264,8 @@ class PythonCodeGen(CodeGenBase):
             """
     def save(
         self, top: bool = False, base_url: str = "", relative_uris: bool = True
-    ) -> Dict[str, Any]:
-        r: Dict[str, Any] = {}
+    ) -> dict[str, Any]:
+        r: dict[str, Any] = {}
 
         if relative_uris:
             for ef in self.extension_fields:
@@ -306,7 +297,7 @@ class PythonCodeGen(CodeGenBase):
                 )
             )
 
-    def end_class(self, classname: str, field_names: List[str]) -> None:
+    def end_class(self, classname: str, field_names: list[str]) -> None:
         """Signal that we are done with this class."""
         if self.current_class_is_abstract:
             return
@@ -314,7 +305,7 @@ class PythonCodeGen(CodeGenBase):
         self.out.write(
             fmt(
                 """
-extension_fields: Dict[str, Any] = {{}}
+extension_fields: dict[str, Any] = {{}}
 for k in _doc.keys():
     if k not in cls.attrs:
         if not k:
@@ -365,7 +356,7 @@ if _errors__:
             )
         )
 
-        safe_init_fields: List[str] = [self.safe_name(f) for f in field_names if f != "class"]
+        safe_init_fields: list[str] = [self.safe_name(f) for f in field_names if f != "class"]
 
         safe_inits = [f + "=" + f for f in safe_init_fields]
 
@@ -390,12 +381,12 @@ if _errors__:
 
     def type_loader(
         self,
-        type_declaration: Union[List[Any], Dict[str, Any], str],
+        type_declaration: Union[list[Any], dict[str, Any], str],
         container: Optional[str] = None,
         no_link_check: Optional[bool] = None,
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
-        sub_names: List[str]
+        sub_names: list[str]
         if isinstance(type_declaration, MutableSequence):
             sub_names = list(dict.fromkeys([self.type_loader(i).name for i in type_declaration]))
             return self.declare_type(

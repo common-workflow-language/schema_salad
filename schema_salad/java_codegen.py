@@ -4,18 +4,10 @@ import os
 import re
 import shutil
 import string
+from collections.abc import MutableMapping, MutableSequence
 from io import StringIO
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    List,
-    MutableMapping,
-    MutableSequence,
-    Optional,
-    Set,
-    Union,
-)
+from typing import Any, Optional, Union
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
@@ -180,13 +172,13 @@ class JavaCodeGen(CodeGenBase):
         abstract: bool,
         field_names: MutableSequence[str],
         idfield: str,
-        optional_fields: Set[str],
+        optional_fields: set[str],
     ) -> None:
         cls = self.interface_name(classname)
         self.current_class = cls
         self.current_class_is_abstract = abstract
         self.current_loader = StringIO()
-        self.current_fieldtypes: Dict[str, TypeDef] = {}
+        self.current_fieldtypes: dict[str, TypeDef] = {}
         self.current_fields = StringIO()
         interface_doc_str = f"* Auto-generated interface for <I>{classname}</I><BR>"
         if not abstract:
@@ -331,7 +323,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
             )
         )
 
-    def end_class(self, classname: str, field_names: List[str]) -> None:
+    def end_class(self, classname: str, field_names: list[str]) -> None:
         """Finish this class."""
         with open(self.main_src_dir / f"{self.current_class}.java", "a") as f:
             f.write(
@@ -375,7 +367,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
 
     def type_loader(
         self,
-        type_declaration: Union[List[Any], Dict[str, Any], str],
+        type_declaration: Union[list[Any], dict[str, Any], str],
         container: Optional[str] = None,
         no_link_check: Optional[bool] = None,
     ) -> TypeDef:
@@ -587,7 +579,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
             )
         return self.collected_types[self.safe_name(type_declaration)]
 
-    def type_loader_enum(self, type_declaration: Dict[str, Any]) -> TypeDef:
+    def type_loader_enum(self, type_declaration: dict[str, Any]) -> TypeDef:
         symbols = [self.property_name(sym) for sym in type_declaration["symbols"]]
         for sym in symbols:
             self.add_vocab(shortname(sym), sym)

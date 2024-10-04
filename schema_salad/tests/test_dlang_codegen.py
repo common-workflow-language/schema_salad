@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import Any, Dict, List, cast
+from typing import Any, cast
 
 from schema_salad import codegen
 from schema_salad.avro.schema import Names
@@ -29,7 +29,7 @@ def dlang_codegen(
     schema_doc, schema_metadata = metaschema_loader.resolve_all(schema_raw_doc, file_uri)
     codegen.codegen(
         "dlang",
-        cast(List[Dict[str, Any]], schema_doc),
+        cast(list[dict[str, Any]], schema_doc),
         schema_metadata,
         document_loader,
         target=str(target),

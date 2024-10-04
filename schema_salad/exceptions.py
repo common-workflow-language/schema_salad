@@ -1,6 +1,7 @@
 """Shared Exception classes."""
 
-from typing import List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 from .sourceline import SourceLine, reflow_all, strip_duplicated_lineno
 
@@ -18,15 +19,15 @@ class SchemaSaladException(Exception):
         super().__init__(msg)
         self.message = self.args[0]
         self.file: Optional[str] = None
-        self.start: Optional[Tuple[int, int]] = None
-        self.end: Optional[Tuple[int, int]] = None
+        self.start: Optional[tuple[int, int]] = None
+        self.end: Optional[tuple[int, int]] = None
 
         self.is_warning: bool = False
 
         # It will be set by its parent
         self.bullet: str = ""
 
-        def simplify(exc: "SchemaSaladException") -> List["SchemaSaladException"]:
+        def simplify(exc: "SchemaSaladException") -> list["SchemaSaladException"]:
             return [exc] if len(exc.message) else exc.children
 
         def with_bullet(exc: "SchemaSaladException", bullet: str) -> "SchemaSaladException":
@@ -35,7 +36,7 @@ class SchemaSaladException(Exception):
             return exc
 
         if children is None:
-            self.children: List["SchemaSaladException"] = []
+            self.children: list["SchemaSaladException"] = []
         elif len(children) <= 1:
             self.children = sum((simplify(c) for c in children), [])
         else:
@@ -73,7 +74,7 @@ class SchemaSaladException(Exception):
             self.end = None
         return self
 
-    def leaves(self) -> List["SchemaSaladException"]:
+    def leaves(self) -> list["SchemaSaladException"]:
         if len(self.children) > 0:
             return sum((c.leaves() for c in self.children), [])
         if len(self.message):

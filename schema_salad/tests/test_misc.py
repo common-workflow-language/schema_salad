@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
 from rdflib.graph import Graph
 
@@ -22,7 +22,7 @@ def test_load_schema_cache() -> None:
     assert path1
 
     with open(path1) as f:
-        cache1: Optional[Dict[str, Union[str, Graph, bool]]] = {schemaid: f.read()}
+        cache1: Optional[dict[str, Union[str, Graph, bool]]] = {schemaid: f.read()}
 
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
         schemaid, cache=cache1
@@ -34,7 +34,7 @@ def test_load_schema_cache() -> None:
     assert path2
 
     with open(path2) as f:
-        cache2: Optional[Dict[str, Union[str, Graph, bool]]] = {schemaid: f.read()}
+        cache2: Optional[dict[str, Union[str, Graph, bool]]] = {schemaid: f.read()}
 
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
         schemaid, cache=cache2

@@ -1,5 +1,5 @@
 import os
-from typing import List, Optional
+from typing import Optional
 from urllib.parse import urljoin, urlsplit
 
 import pytest
@@ -18,7 +18,7 @@ class testFetcher(Fetcher):
     ) -> None:
         pass
 
-    def fetch_text(self, url: str, content_types: Optional[List[str]] = None) -> str:
+    def fetch_text(self, url: str, content_types: Optional[list[str]] = None) -> str:
         if url == "keep:abc+123/foo.txt":
             return "hello: keepfoo"
         if url.endswith("foo.txt"):
@@ -51,7 +51,7 @@ class CWLTestFetcher(Fetcher):
     ) -> None:
         pass
 
-    def fetch_text(self, url: str, content_types: Optional[List[str]] = None) -> str:
+    def fetch_text(self, url: str, content_types: Optional[list[str]] = None) -> str:
         if url == "baz:bar/foo.cwl":
             return """
 cwlVersion: v1.0

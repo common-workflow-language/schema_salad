@@ -1,8 +1,9 @@
 """Tests of helpful error messages."""
 
 import importlib
+from collections.abc import MutableSequence
 from pathlib import Path
-from typing import Any, Dict, List, MutableSequence, Optional, Union, cast
+from typing import Any, Optional, Union, cast
 from urllib.parse import urlparse
 
 import pytest
@@ -219,7 +220,7 @@ def python_codegen(
     schema_doc, schema_metadata = metaschema_loader.resolve_all(schema_raw_doc, file_uri)
     codegen.codegen(
         "python",
-        cast(List[Dict[str, Any]], schema_doc),
+        cast(list[dict[str, Any]], schema_doc),
         schema_metadata,
         document_loader,
         target=str(target),
