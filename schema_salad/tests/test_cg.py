@@ -86,9 +86,6 @@ def test_import() -> None:
     } == rs.save()
 
 
-maxDiff = None
-
-
 def test_import2() -> None:
     path = get_data("tests/docimp/d1.yml")
     assert path
