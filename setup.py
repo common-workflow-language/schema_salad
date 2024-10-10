@@ -2,7 +2,6 @@
 
 import os
 import sys
-from typing import List
 
 from setuptools import setup
 
@@ -10,7 +9,7 @@ SETUP_DIR = os.path.dirname(__file__)
 README = os.path.join(SETUP_DIR, "README.rst")
 
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
-pytest_runner: List[str] = ["pytest < 9", "pytest-runner"] if needs_pytest else []
+pytest_runner: list[str] = ["pytest < 9", "pytest-runner"] if needs_pytest else []
 
 USE_MYPYC = False
 # To compile with mypyc, a mypyc checkout must be present on the PYTHONPATH
@@ -90,7 +89,6 @@ install_requires = [
     "mistune>=3,<3.1",
     "CacheControl[filecache] >= 0.13.1, < 0.15",
     "mypy_extensions",
-    "importlib_resources>=1.4;python_version<'3.9'",
 ]
 
 extras_require = {
@@ -116,7 +114,7 @@ setup(
     download_url="https://github.com/common-workflow-language/schema_salad/releases",
     ext_modules=ext_modules,
     license="Apache 2.0",
-    python_requires=">=3.8,<3.14",
+    python_requires=">=3.9,<3.14",
     use_scm_version=True,
     setup_requires=pytest_runner + ["setuptools_scm>=8.0.4,<9"],
     packages=["schema_salad", "schema_salad.tests", "schema_salad.avro"],
@@ -166,11 +164,11 @@ setup(
         "Operating System :: POSIX",
         "Operating System :: MacOS :: MacOS X",
         "Development Status :: 5 - Production/Stable",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Typing :: Typed",
     ],
 )

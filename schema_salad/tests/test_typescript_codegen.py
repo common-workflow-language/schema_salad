@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Optional, cast
 
 from schema_salad import codegen, ref_resolver
 from schema_salad.schema import load_schema
@@ -89,7 +89,7 @@ def typescript_codegen(file_uri: str, target: Path, examples: Optional[Path] = N
     schema_doc, schema_metadata = metaschema_loader.resolve_all(schema_raw_doc, file_uri)
     codegen.codegen(
         "typescript",
-        cast(List[Dict[str, Any]], schema_doc),
+        cast(list[dict[str, Any]], schema_doc),
         schema_metadata,
         document_loader,
         target=str(target),

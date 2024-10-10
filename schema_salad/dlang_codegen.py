@@ -4,7 +4,7 @@ import datetime
 import functools
 import json
 import textwrap
-from typing import IO, Any, Dict, List, Optional, Set, Tuple, Union, cast
+from typing import IO, Any, Optional, Union, cast
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, TypeDef
@@ -42,7 +42,7 @@ class DlangCodeGen(CodeGenBase):
         self.copyright = copyright_
         self.parser_info = parser_info
         self.salad_version = salad_version
-        self.doc_root_types: List[str] = []
+        self.doc_root_types: list[str] = []
 
     def prologue(self) -> None:
         """Trigger to generate the prolouge code."""
@@ -148,7 +148,7 @@ unittest
             avn = avn[5:]
         return avn
 
-    def to_doc_comment(self, doc: Union[None, str, List[str]]) -> str:
+    def to_doc_comment(self, doc: Union[None, str, list[str]]) -> str:
         """Return an embedded documentation comments for a given string."""
         if doc is None:
             return "///\n"
@@ -172,12 +172,12 @@ unittest
     def parse_record_field_type(
         self,
         type_: Any,
-        jsonld_pred: Union[None, str, Dict[str, Any]],
+        jsonld_pred: Union[None, str, dict[str, Any]],
         parent_has_idmap: bool = False,
         has_default: bool = False,
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """Return an annotation string and a type string."""
-        annotations: List[str] = []
+        annotations: list[str] = []
         has_idmap = False or parent_has_idmap
         if isinstance(jsonld_pred, str):
             if jsonld_pred == "@id":
@@ -242,7 +242,7 @@ unittest
             type_str = f"{value_type}[string]"
         return annotate_str, type_str
 
-    def parse_record_field(self, field: Dict[str, Any], parent_name: Optional[str] = None) -> str:
+    def parse_record_field(self, field: dict[str, Any], parent_name: Optional[str] = None) -> str:
         """Return a declaration string for a given record field."""
         fname = shortname(field["name"]) + "_"
         jsonld_pred = field.get("jsonldPredicate", None)
@@ -268,7 +268,7 @@ unittest
         )
         return f"{doc_comment}{default_str}{annotate_str}{type_str} {fname};"
 
-    def parse_record_schema(self, stype: Dict[str, Any]) -> str:
+    def parse_record_schema(self, stype: dict[str, Any]) -> str:
         """Return a declaration string for a given record schema."""
         name = cast(str, stype["name"])
         classname = self.safe_name(name)
@@ -295,7 +295,7 @@ unittest
     mixin genBody;
 }}"""
 
-    def parse_enum(self, stype: Dict[str, Any]) -> str:
+    def parse_enum(self, stype: dict[str, Any]) -> str:
         """Return a declaration string for a given enum schema."""
         name = cast(str, stype["name"])
         if shortname(name) == "Any":
@@ -336,7 +336,7 @@ unittest
     mixin genBody;
 }}"""
 
-    def parse_union(self, stype: Dict[str, Any]) -> str:
+    def parse_union(self, stype: dict[str, Any]) -> str:
         """Return a declaration string for a given union schema."""
         name = cast(str, stype["name"])
         classname = self.safe_name(name)
@@ -356,7 +356,7 @@ unittest
     mixin genBody;
 }}"""
 
-    def parse_map(self, stype: Dict[str, Any]) -> str:
+    def parse_map(self, stype: dict[str, Any]) -> str:
         """Return a declaration string for a given map schema."""
         name = cast(str, stype["name"])
         classname = self.safe_name(name)
@@ -376,7 +376,7 @@ unittest
     mixin genBody;
 }}"""
 
-    def parse(self, items: List[Dict[str, Any]]) -> None:
+    def parse(self, items: list[dict[str, Any]]) -> None:
         """Generate D code from items and write it to target."""
         dlang_defs = []
 
@@ -411,7 +411,7 @@ unittest
         self.target.close()
 
 
-def is_constant_field(field: Dict[str, Any]) -> bool:
+def is_constant_field(field: dict[str, Any]) -> bool:
     """Return True if a given field only takes the specified string."""
     jsonld_pred = field.get("jsonldPredicate", None)
     type_ = field["type"]
@@ -431,14 +431,14 @@ def is_constant_field(field: Dict[str, Any]) -> bool:
     return False
 
 
-def constant_fields_of(type_: Any) -> Set[str]:
+def constant_fields_of(type_: Any) -> set[str]:
     """Return a list of constant fields name from a given record schema."""
     if isinstance(type_, dict):
         return {shortname(f["name"]) for f in type_.get("fields", []) if is_constant_field(f)}
     return set()
 
 
-def are_dispatchable(types: List[Any], parent_has_idmap: bool) -> bool:
+def are_dispatchable(types: list[Any], parent_has_idmap: bool) -> bool:
     """Return True if a given list of types are dispatchable."""
     if any(t for t in types if not isinstance(t, dict)):
         return False

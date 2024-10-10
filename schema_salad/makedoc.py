@@ -5,21 +5,9 @@ import logging
 import os
 import re
 import sys
+from collections.abc import MutableMapping, MutableSequence
 from io import StringIO, TextIOWrapper
-from typing import (
-    IO,
-    Any,
-    Dict,
-    List,
-    Literal,
-    MutableMapping,
-    MutableSequence,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import IO, Any, Literal, Optional, Union, cast
 from urllib.parse import urldefrag
 
 from mistune import create_markdown
@@ -54,8 +42,9 @@ def vocab_type_name(url: str) -> str:
     return avro_type_name(url).split(".")[-1]
 
 
-def has_types(items: Any) -> List[str]:
-    r: List[str] = []
+def has_types(items: Any) -> list[str]:
+    """Retrieve all the types of a record."""
+    r: list[str] = []
     if isinstance(items, MutableMapping):
         if items["type"] == "https://w3id.org/cwl/salad#record":
             return [items["name"]]
@@ -236,7 +225,8 @@ def number_headings(toc: ToC, maindoc: str) -> str:
     return maindoc
 
 
-def fix_doc(doc: Union[List[str], str]) -> str:
+def fix_doc(doc: Union[list[str], str]) -> str:
+    """Concatenate doc strings, replacing email addresses with mailto links."""
     docstr = "".join(doc) if isinstance(doc, MutableSequence) else doc
     return "\n".join(
         [re.sub(r"<([^>@]+@[^>]+)>", r"[\1](mailto:\1)", d) for d in docstr.splitlines()]
@@ -247,17 +237,17 @@ class RenderType:
     def __init__(
         self,
         toc: ToC,
-        j: List[Dict[str, Any]],
-        renderlist: List[str],
-        redirects: Dict[str, str],
+        j: list[dict[str, Any]],
+        renderlist: list[str],
+        redirects: dict[str, str],
         primitiveType: str,
     ) -> None:
         self.typedoc = StringIO()
         self.toc = toc
-        self.subs: Dict[str, str] = {}
-        self.docParent: Dict[str, List[str]] = {}
-        self.docAfter: Dict[str, List[str]] = {}
-        self.rendered: Set[str] = set()
+        self.subs: dict[str, str] = {}
+        self.docParent: dict[str, list[str]] = {}
+        self.docAfter: dict[str, list[str]] = {}
+        self.rendered: set[str] = set()
         self.redirects = redirects
         self.title: Optional[str] = None
         self.primitiveType = primitiveType
@@ -282,15 +272,15 @@ class RenderType:
         metaschema_loader = get_metaschema()[2]
         alltypes = extend_and_specialize(j, metaschema_loader)
 
-        self.typemap: Dict[str, Dict[str, str]] = {}
-        self.uses: Dict[str, List[Tuple[str, str]]] = {}
-        self.record_refs: Dict[str, List[str]] = {}
+        self.typemap: dict[str, dict[str, str]] = {}
+        self.uses: dict[str, list[tuple[str, str]]] = {}
+        self.record_refs: dict[str, list[str]] = {}
         for entry in alltypes:
             self.typemap[entry["name"]] = entry
             try:
                 if entry["type"] == "record":
                     self.record_refs[entry["name"]] = []
-                    fields: Union[str, List[Dict[str, str]]] = entry.get("fields", [])
+                    fields: Union[str, list[dict[str, str]]] = entry.get("fields", [])
                     if isinstance(fields, str):
                         raise KeyError("record fields must be a list of mappings")
                     else:
@@ -325,9 +315,9 @@ class RenderType:
     def typefmt(
         self,
         tp: Any,
-        redirects: Dict[str, str],
+        redirects: dict[str, str],
         nbsp: bool = False,
-        jsonldPredicate: Optional[Union[Dict[str, str], str]] = None,
+        jsonldPredicate: Optional[Union[dict[str, str], str]] = None,
     ) -> str:
         if isinstance(tp, MutableSequence):
             if nbsp and len(tp) <= 3:
@@ -392,7 +382,8 @@ class RenderType:
             return f"""<a href="#{to_id(tp)}">{tp}</a>"""
         raise SchemaSaladException("We should not be here!")
 
-    def render_type(self, f: Dict[str, Any], depth: int) -> None:
+    def render_type(self, f: dict[str, Any], depth: int) -> None:
+        """Render a type declaration."""
         if f["name"] in self.rendered or f["name"] in self.redirects:
             return
         self.rendered.add(f["name"])
@@ -410,7 +401,7 @@ class RenderType:
         if "doc" not in f:
             f["doc"] = ""
 
-        def extendsfrom(item: Dict[str, Any], ex: List[Dict[str, Any]]) -> None:
+        def extendsfrom(item: dict[str, Any], ex: list[dict[str, Any]]) -> None:
             if "extends" in item:
                 for e in aslist(item["extends"]):
                     ex.insert(0, self.typemap[e])
@@ -460,7 +451,7 @@ class RenderType:
             f["doc"] = number_headings(self.toc, f["doc"])
 
         doc = doc + "\n\n" + f["doc"]
-        plugins: List[PluginName] = [
+        plugins: list[PluginName] = [
             "strikethrough",
             "footnotes",
             "table",
@@ -547,10 +538,10 @@ class RenderType:
 
 
 def avrold_doc(
-    j: List[Dict[str, Any]],
+    j: list[dict[str, Any]],
     outdoc: IO[Any],
-    renderlist: List[str],
-    redirects: Dict[str, str],
+    renderlist: list[str],
+    redirects: dict[str, str],
     brand: str,
     brandlink: str,
     primtype: str,
@@ -788,8 +779,8 @@ def main() -> None:
 def makedoc(
     stdout: IO[Any],
     schema: str,
-    redirects: Optional[List[str]] = None,
-    only: Optional[List[str]] = None,
+    redirects: Optional[list[str]] = None,
+    only: Optional[list[str]] = None,
     brand: Optional[str] = None,
     brandlink: Optional[str] = None,
     primtype: Optional[str] = None,
@@ -797,7 +788,7 @@ def makedoc(
     brandinverse: Optional[bool] = False,
 ) -> None:
     """Emit HTML representation of a given schema."""
-    s: List[Dict[str, Any]] = []
+    s: list[dict[str, Any]] = []
     with open(schema, encoding="utf-8") as f:
         if schema.endswith("md"):
             s.append(

@@ -1,5 +1,5 @@
 Style guide:
-- Python 3.8+ compatible code
+- Python 3.9+ compatible code
 - PEP-484 type hints
 - Prefer new style format strings https://pyformat.info/
 - Use ``make format`` to format your code
@@ -19,6 +19,6 @@ Here's a rough guide (improvements are welcome!)
 - Check the version which might be different from the version installed in general on any system: ``schema-salad-tool --version``
 - After you've made the changes, you can the complete test suite via tox: ``tox``
 	- If you want to run specific tests, say ``unit tests`` in Python 3.5, then: ``tox -e py35-unit``.
-	- Look at ``tox.ini`` for all available tests and runtimes
+	- Look at ``tox -l`` for all available tests and runtimes
 - If tests are passing, you can simply commit and create a PR on ``schema_salad`` repo:
 - After you're done working, you can deactivate the virtual environment: ``deactivate``
