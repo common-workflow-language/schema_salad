@@ -3,7 +3,7 @@ requires = [
     "setuptools>=50",  # 50 is to match mypyc's minimum
     "setuptools_scm[toml]>=8.0.4,<9",
     'mypy[mypyc]==1.12.1',  # update mypy-requirements as well
-    "black>=19.10b0,<23.12",
+    "black>=19.10b0,<24.11",
     "types-requests",
     "types-dataclasses",
     "ruamel.yaml>=0.17.6, < 0.19",
