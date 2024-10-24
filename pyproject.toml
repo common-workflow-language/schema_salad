@@ -24,6 +24,10 @@ skip = "pp*"
 build-verbosity = "1"
 environment = { SCHEMA_SALAD_USE_MYPYC="1", MYPYPATH="$(pwd)/mypy-stubs" }
 
+[tool.cibuildwheel.windows]
+test-command = "python -m pytest -n 2 --junitxml={project}/test-results/junit_windows.xml --pyargs schema_salad"
+environment = { SCHEMA_SALAD_USE_MYPYC="1", MYPYPATH="%{CD}\\mypy-stubs" }
+
 [tool.black]
 line-length = 100
 target-version = [ "py39" ]

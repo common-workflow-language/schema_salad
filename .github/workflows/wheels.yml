@@ -83,13 +83,13 @@ jobs:
           name: artifact-source
           path: dist/*.tar.gz
 
-  build_wheels_macos:
+  build_wheels_nonlinux:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         # macos-13 is an intel runner, macos-14 is apple silicon
-        os: [macos-13, macos-14]
+        os: [macos-13, macos-14, windows-latest]
     steps:
       - uses: actions/checkout@v4
         if: ${{ github.event_name != 'repository_dispatch' }}
