@@ -43,9 +43,9 @@ def test_error_message4(tmp_path: Path) -> None:
     match = r"""^.*test4.cwl:2:1:\s+Object\s+`.*test4.cwl`\s+is\s+not\s+valid\s+because:
 .*test4\.cwl:6:1:\s+the\s+`outputs`\s+field\s+is\s+not\s+valid\s+because:
 \s+array\s+item\s+is\s+invalid\s+because
-.*test4\.cwl:7:3:\s+checking\s+object\s+`.*test4\.cwl#bar`
+.*test4\.cwl:7:3:\s+checking\s+object\s+`.*test4\.cwl#bar`\s+using\s+`WorkflowOutputParameter`
 \s+the\s+`type`\s+field\s+is\s+not\s+valid\s+because:
-\s+Value\s+is\s+a\s+int,\s+but\s+valid\s+types\s+for\s+this\s+field\s+are\s+\((str|object),\s+(str|object)\)"""
+\s+Value\s+`12`\s+is\s+a\s+int,\s+but\s+valid\s+types\s+for\s+this\s+field\s+are\s+\((str|object),\s+(str|object)\)"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
@@ -83,7 +83,7 @@ def test_error_message7(tmp_path: Path) -> None:
     match = r"""^.*test7\.cwl:2:1:\s+Object\s+`.*test7\.cwl`\s+is\s+not\s+valid\s+because:
 .*test7\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
 \s+array\s+item\s+is\s+invalid\s+because
-.*test7\.cwl:9:3:\s+checking\s+object\s+`.*test7.cwl#step1`
+.*test7\.cwl:9:3:\s+checking\s+object\s+`.*test7.cwl#step1`\s+using\s+`WorkflowStep`
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test7\.cwl:10:5:\s+\*\s+invalid\s+field\s+`scatter_method`,\s+expected\s+one\s+of:\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*$"""
     path = get_data("tests/" + t)
@@ -97,7 +97,7 @@ def test_error_message8(tmp_path: Path) -> None:
     match = r"""^.*test8.cwl:2:1:\s+Object\s+`.*test8.cwl`\s+is\s+not\s+valid\s+because:
 .*test8\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
 \s+array\s+item\s+is\s+invalid\s+because
-.*test8\.cwl:9:3:\s+checking\s+object\s+`.*test8\.cwl#step1`
+.*test8\.cwl:9:3:\s+checking\s+object\s+`.*test8\.cwl#step1`\s+using\s+`WorkflowStep`
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test8\.cwl:10:5:\s+\*\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
 \s+contains\s+undefined\s+reference\s+to\s+`file:///.*/tests/test_schema/abc`$"""
@@ -112,10 +112,10 @@ def test_error_message9(tmp_path: Path) -> None:
     match = r"""^.*test9.cwl:2:1:\s+Object\s+`.*test9.cwl`\s+is\s+not\s+valid\s+because:
 .*test9\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
 \s+array\s+item\s+is\s+invalid\s+because
-.*test9\.cwl:9:3:\s+checking\s+object\s+`.*test9\.cwl#step1`
+.*test9\.cwl:9:3:\s+checking\s+object\s+`.*test9\.cwl#step1`\s+using\s+`WorkflowStep`
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test9\.cwl:10:5:\s+\*\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
-\s+Value\s+is\s+a\s+int,\s+but\s+valid\s+values\s+for\s+this\s+field\s+are\s+\("(dotproduct|nested_crossproduct|flat_crossproduct)",\s+"(dotproduct|nested_crossproduct|flat_crossproduct)",\s+"(dotproduct|nested_crossproduct|flat_crossproduct)"\)"""
+\s+Value\s+`12`\s+is\s+a\s+int,\s+but\s+valid\s+values\s+for\s+this\s+field\s+are\s+\("(dotproduct|nested_crossproduct|flat_crossproduct)",\s+"(dotproduct|nested_crossproduct|flat_crossproduct)",\s+"(dotproduct|nested_crossproduct|flat_crossproduct)"\)"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):
@@ -142,7 +142,7 @@ def test_error_message11(tmp_path: Path) -> None:
     match = r"""^.*test11\.cwl:2:1:\s+Object\s+`.*test11.cwl`\s+is\s+not\s+valid\s+because:
 .*test11\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
 \s+array\s+item\s+is\s+invalid\s+because
-.*test11\.cwl:9:3:\s+checking\s+object\s+`.*test11\.cwl#step1`
+.*test11\.cwl:9:3:\s+checking\s+object\s+`.*test11\.cwl#step1`\s+using\s+`WorkflowStep`
 .*test11\.cwl:10:5:\s+the\s+`run`\s+field\s+is\s+not\s+valid\s+because:\s+contains\s+undefined\s+reference\s+to\s+`file:///.*/tests/test_schema/blub\.cwl`$"""
     path = get_data("tests/" + t)
     assert path
@@ -156,7 +156,7 @@ def test_error_message15(tmp_path: Path) -> None:
     match = r"""^.*test15\.cwl:3:1:\s+Object\s+`.*test15\.cwl`\s+is\s+not\s+valid\s+because:
 .*test15\.cwl:6:1:\s+the\s+`inputs`\s+field\s+is\s+not\s+valid\s+because:
 \s+array\s+item\s+is\s+invalid\s+because
-.*test15\.cwl:7:3:\s+checking\s+object\s+`.*test15\.cwl#message`
+.*test15\.cwl:7:3:\s+checking\s+object\s+`.*test15\.cwl#message`\s+using\s+`CommandInputParameter`
 .*test15\.cwl:9:5:\s+the\s+`inputBinding`\s+field\s+is\s+not\s+valid\s+because:
 \s+tried\s+`CommandLineBinding`\s+but
 .*test15\.cwl:11:7:\s+\*\s+invalid\s+field\s+`invalid_field`,\s+expected\s+one\s+of:\s+`loadContents`,\s+`position`,\s+`prefix`,\s+`separate`,\s+`itemSeparator`,\s+`valueFrom`,\s+`shellQuote`

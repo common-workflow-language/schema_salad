@@ -1237,7 +1237,10 @@ class RecordField(Documented):
                             ValidationException(
                                 "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -1245,9 +1248,11 @@ class RecordField(Documented):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `name` field with value `{val}` is not valid because:",
+                                "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
                                 [e],
+                                detailed_message=f"the `name` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
 
@@ -1288,7 +1293,10 @@ class RecordField(Documented):
                             ValidationException(
                                 "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -1296,9 +1304,11 @@ class RecordField(Documented):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `doc` field with value `{val}` is not valid because:",
+                                "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
                                 [e],
+                                detailed_message=f"the `doc` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         try:
@@ -1331,7 +1341,10 @@ class RecordField(Documented):
                         ValidationException(
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -1339,9 +1352,11 @@ class RecordField(Documented):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `type` field with value `{val}` is not valid because:",
+                            "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [e],
+                            detailed_message=f"the `type` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         extension_fields: dict[str, Any] = {}
@@ -1482,7 +1497,10 @@ class RecordSchema(Saveable):
                             ValidationException(
                                 "the `fields` field is not valid because:",
                                 SourceLine(_doc, "fields", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -1490,9 +1508,11 @@ class RecordSchema(Saveable):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `fields` field with value `{val}` is not valid because:",
+                                "the `fields` field is not valid because:",
                                 SourceLine(_doc, "fields", str),
                                 [e],
+                                detailed_message=f"the `fields` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         try:
@@ -1525,7 +1545,10 @@ class RecordSchema(Saveable):
                         ValidationException(
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -1533,9 +1556,11 @@ class RecordSchema(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `type` field with value `{val}` is not valid because:",
+                            "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [e],
+                            detailed_message=f"the `type` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         extension_fields: dict[str, Any] = {}
@@ -1682,7 +1707,10 @@ class EnumSchema(Saveable):
                             ValidationException(
                                 "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -1690,9 +1718,11 @@ class EnumSchema(Saveable):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `name` field with value `{val}` is not valid because:",
+                                "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
                                 [e],
+                                detailed_message=f"the `name` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
 
@@ -1734,7 +1764,10 @@ class EnumSchema(Saveable):
                         ValidationException(
                             "the `symbols` field is not valid because:",
                             SourceLine(_doc, "symbols", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -1742,9 +1775,11 @@ class EnumSchema(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `symbols` field with value `{val}` is not valid because:",
+                            "the `symbols` field is not valid because:",
                             SourceLine(_doc, "symbols", str),
                             [e],
+                            detailed_message=f"the `symbols` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         try:
@@ -1777,7 +1812,10 @@ class EnumSchema(Saveable):
                         ValidationException(
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -1785,9 +1823,11 @@ class EnumSchema(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `type` field with value `{val}` is not valid because:",
+                            "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [e],
+                            detailed_message=f"the `type` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         extension_fields: dict[str, Any] = {}
@@ -1928,7 +1968,10 @@ class ArraySchema(Saveable):
                         ValidationException(
                             "the `items` field is not valid because:",
                             SourceLine(_doc, "items", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -1936,9 +1979,11 @@ class ArraySchema(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `items` field with value `{val}` is not valid because:",
+                            "the `items` field is not valid because:",
                             SourceLine(_doc, "items", str),
                             [e],
+                            detailed_message=f"the `items` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         try:
@@ -1971,7 +2016,10 @@ class ArraySchema(Saveable):
                         ValidationException(
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -1979,9 +2027,11 @@ class ArraySchema(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `type` field with value `{val}` is not valid because:",
+                            "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [e],
+                            detailed_message=f"the `type` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         extension_fields: dict[str, Any] = {}
@@ -2117,7 +2167,10 @@ class MapSchema(Saveable):
                         ValidationException(
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -2125,9 +2178,11 @@ class MapSchema(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `type` field with value `{val}` is not valid because:",
+                            "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [e],
+                            detailed_message=f"the `type` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         try:
@@ -2160,7 +2215,10 @@ class MapSchema(Saveable):
                         ValidationException(
                             "the `values` field is not valid because:",
                             SourceLine(_doc, "values", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -2168,9 +2226,11 @@ class MapSchema(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `values` field with value `{val}` is not valid because:",
+                            "the `values` field is not valid because:",
                             SourceLine(_doc, "values", str),
                             [e],
+                            detailed_message=f"the `values` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         extension_fields: dict[str, Any] = {}
@@ -2306,7 +2366,10 @@ class UnionSchema(Saveable):
                         ValidationException(
                             "the `names` field is not valid because:",
                             SourceLine(_doc, "names", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -2314,9 +2377,11 @@ class UnionSchema(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `names` field with value `{val}` is not valid because:",
+                            "the `names` field is not valid because:",
                             SourceLine(_doc, "names", str),
                             [e],
+                            detailed_message=f"the `names` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         try:
@@ -2349,7 +2414,10 @@ class UnionSchema(Saveable):
                         ValidationException(
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -2357,9 +2425,11 @@ class UnionSchema(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `type` field with value `{val}` is not valid because:",
+                            "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [e],
+                            detailed_message=f"the `type` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         extension_fields: dict[str, Any] = {}
@@ -2544,7 +2614,10 @@ class JsonldPredicate(Saveable):
                             ValidationException(
                                 "the `_id` field is not valid because:",
                                 SourceLine(_doc, "_id", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -2552,9 +2625,11 @@ class JsonldPredicate(Saveable):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `_id` field with value `{val}` is not valid because:",
+                                "the `_id` field is not valid because:",
                                 SourceLine(_doc, "_id", str),
                                 [e],
+                                detailed_message=f"the `_id` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         _type = None
@@ -2586,7 +2661,10 @@ class JsonldPredicate(Saveable):
                             ValidationException(
                                 "the `_type` field is not valid because:",
                                 SourceLine(_doc, "_type", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -2594,9 +2672,11 @@ class JsonldPredicate(Saveable):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `_type` field with value `{val}` is not valid because:",
+                                "the `_type` field is not valid because:",
                                 SourceLine(_doc, "_type", str),
                                 [e],
+                                detailed_message=f"the `_type` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         _container = None
@@ -2628,7 +2708,10 @@ class JsonldPredicate(Saveable):
                             ValidationException(
                                 "the `_container` field is not valid because:",
                                 SourceLine(_doc, "_container", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -2636,9 +2719,11 @@ class JsonldPredicate(Saveable):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `_container` field with value `{val}` is not valid because:",
+                                "the `_container` field is not valid because:",
                                 SourceLine(_doc, "_container", str),
                                 [e],
+                                detailed_message=f"the `_container` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         identity = None
@@ -2670,7 +2755,10 @@ class JsonldPredicate(Saveable):
                             ValidationException(
                                 "the `identity` field is not valid because:",
                                 SourceLine(_doc, "identity", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -2678,9 +2766,11 @@ class JsonldPredicate(Saveable):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `identity` field with value `{val}` is not valid because:",
+                                "the `identity` field is not valid because:",
                                 SourceLine(_doc, "identity", str),
                                 [e],
+                                detailed_message=f"the `identity` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         noLinkCheck = None
@@ -2712,7 +2802,10 @@ class JsonldPredicate(Saveable):
                             ValidationException(
                                 "the `noLinkCheck` field is not valid because:",
                                 SourceLine(_doc, "noLinkCheck", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -2720,9 +2813,11 @@ class JsonldPredicate(Saveable):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `noLinkCheck` field with value `{val}` is not valid because:",
+                                "the `noLinkCheck` field is not valid because:",
                                 SourceLine(_doc, "noLinkCheck", str),
                                 [e],
+                                detailed_message=f"the `noLinkCheck` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         mapSubject = None
@@ -2754,7 +2849,10 @@ class JsonldPredicate(Saveable):
                             ValidationException(
                                 "the `mapSubject` field is not valid because:",
                                 SourceLine(_doc, "mapSubject", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -2762,9 +2860,11 @@ class JsonldPredicate(Saveable):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `mapSubject` field with value `{val}` is not valid because:",
+                                "the `mapSubject` field is not valid because:",
                                 SourceLine(_doc, "mapSubject", str),
                                 [e],
+                                detailed_message=f"the `mapSubject` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         mapPredicate = None
@@ -2796,7 +2896,10 @@ class JsonldPredicate(Saveable):
                             ValidationException(
                                 "the `mapPredicate` field is not valid because:",
                                 SourceLine(_doc, "mapPredicate", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -2804,9 +2907,11 @@ class JsonldPredicate(Saveable):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `mapPredicate` field with value `{val}` is not valid because:",
+                                "the `mapPredicate` field is not valid because:",
                                 SourceLine(_doc, "mapPredicate", str),
                                 [e],
+                                detailed_message=f"the `mapPredicate` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         refScope = None
@@ -2838,7 +2943,10 @@ class JsonldPredicate(Saveable):
                             ValidationException(
                                 "the `refScope` field is not valid because:",
                                 SourceLine(_doc, "refScope", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -2846,9 +2954,11 @@ class JsonldPredicate(Saveable):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `refScope` field with value `{val}` is not valid because:",
+                                "the `refScope` field is not valid because:",
                                 SourceLine(_doc, "refScope", str),
                                 [e],
+                                detailed_message=f"the `refScope` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         typeDSL = None
@@ -2880,7 +2990,10 @@ class JsonldPredicate(Saveable):
                             ValidationException(
                                 "the `typeDSL` field is not valid because:",
                                 SourceLine(_doc, "typeDSL", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -2888,9 +3001,11 @@ class JsonldPredicate(Saveable):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `typeDSL` field with value `{val}` is not valid because:",
+                                "the `typeDSL` field is not valid because:",
                                 SourceLine(_doc, "typeDSL", str),
                                 [e],
+                                detailed_message=f"the `typeDSL` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         secondaryFilesDSL = None
@@ -2922,7 +3037,10 @@ class JsonldPredicate(Saveable):
                             ValidationException(
                                 "the `secondaryFilesDSL` field is not valid because:",
                                 SourceLine(_doc, "secondaryFilesDSL", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -2930,9 +3048,11 @@ class JsonldPredicate(Saveable):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `secondaryFilesDSL` field with value `{val}` is not valid because:",
+                                "the `secondaryFilesDSL` field is not valid because:",
                                 SourceLine(_doc, "secondaryFilesDSL", str),
                                 [e],
+                                detailed_message=f"the `secondaryFilesDSL` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         subscope = None
@@ -2964,7 +3084,10 @@ class JsonldPredicate(Saveable):
                             ValidationException(
                                 "the `subscope` field is not valid because:",
                                 SourceLine(_doc, "subscope", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -2972,9 +3095,11 @@ class JsonldPredicate(Saveable):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `subscope` field with value `{val}` is not valid because:",
+                                "the `subscope` field is not valid because:",
                                 SourceLine(_doc, "subscope", str),
                                 [e],
+                                detailed_message=f"the `subscope` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         extension_fields: dict[str, Any] = {}
@@ -3187,7 +3312,10 @@ class SpecializeDef(Saveable):
                         ValidationException(
                             "the `specializeFrom` field is not valid because:",
                             SourceLine(_doc, "specializeFrom", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -3195,9 +3323,11 @@ class SpecializeDef(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `specializeFrom` field with value `{val}` is not valid because:",
+                            "the `specializeFrom` field is not valid because:",
                             SourceLine(_doc, "specializeFrom", str),
                             [e],
+                            detailed_message=f"the `specializeFrom` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         try:
@@ -3230,7 +3360,10 @@ class SpecializeDef(Saveable):
                         ValidationException(
                             "the `specializeTo` field is not valid because:",
                             SourceLine(_doc, "specializeTo", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -3238,9 +3371,11 @@ class SpecializeDef(Saveable):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `specializeTo` field with value `{val}` is not valid because:",
+                            "the `specializeTo` field is not valid because:",
                             SourceLine(_doc, "specializeTo", str),
                             [e],
+                            detailed_message=f"the `specializeTo` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         extension_fields: dict[str, Any] = {}
@@ -3411,7 +3546,10 @@ class SaladRecordField(RecordField):
                             ValidationException(
                                 "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -3419,9 +3557,11 @@ class SaladRecordField(RecordField):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `name` field with value `{val}` is not valid because:",
+                                "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
                                 [e],
+                                detailed_message=f"the `name` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
 
@@ -3462,7 +3602,10 @@ class SaladRecordField(RecordField):
                             ValidationException(
                                 "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -3470,9 +3613,11 @@ class SaladRecordField(RecordField):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `doc` field with value `{val}` is not valid because:",
+                                "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
                                 [e],
+                                detailed_message=f"the `doc` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         try:
@@ -3505,7 +3650,10 @@ class SaladRecordField(RecordField):
                         ValidationException(
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -3513,9 +3661,11 @@ class SaladRecordField(RecordField):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `type` field with value `{val}` is not valid because:",
+                            "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [e],
+                            detailed_message=f"the `type` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         jsonldPredicate = None
@@ -3547,7 +3697,10 @@ class SaladRecordField(RecordField):
                             ValidationException(
                                 "the `jsonldPredicate` field is not valid because:",
                                 SourceLine(_doc, "jsonldPredicate", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -3555,9 +3708,11 @@ class SaladRecordField(RecordField):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `jsonldPredicate` field with value `{val}` is not valid because:",
+                                "the `jsonldPredicate` field is not valid because:",
                                 SourceLine(_doc, "jsonldPredicate", str),
                                 [e],
+                                detailed_message=f"the `jsonldPredicate` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         default = None
@@ -3589,7 +3744,10 @@ class SaladRecordField(RecordField):
                             ValidationException(
                                 "the `default` field is not valid because:",
                                 SourceLine(_doc, "default", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -3597,9 +3755,11 @@ class SaladRecordField(RecordField):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `default` field with value `{val}` is not valid because:",
+                                "the `default` field is not valid because:",
                                 SourceLine(_doc, "default", str),
                                 [e],
+                                detailed_message=f"the `default` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         extension_fields: dict[str, Any] = {}
@@ -3805,7 +3965,10 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -3813,9 +3976,11 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `name` field with value `{val}` is not valid because:",
+                                "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
                                 [e],
+                                detailed_message=f"the `name` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
 
@@ -3856,7 +4021,10 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `inVocab` field is not valid because:",
                                 SourceLine(_doc, "inVocab", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -3864,9 +4032,11 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `inVocab` field with value `{val}` is not valid because:",
+                                "the `inVocab` field is not valid because:",
                                 SourceLine(_doc, "inVocab", str),
                                 [e],
+                                detailed_message=f"the `inVocab` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         fields = None
@@ -3898,7 +4068,10 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `fields` field is not valid because:",
                                 SourceLine(_doc, "fields", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -3906,9 +4079,11 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `fields` field with value `{val}` is not valid because:",
+                                "the `fields` field is not valid because:",
                                 SourceLine(_doc, "fields", str),
                                 [e],
+                                detailed_message=f"the `fields` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         try:
@@ -3941,7 +4116,10 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                         ValidationException(
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -3949,9 +4127,11 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `type` field with value `{val}` is not valid because:",
+                            "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [e],
+                            detailed_message=f"the `type` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         doc = None
@@ -3983,7 +4163,10 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -3991,9 +4174,11 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `doc` field with value `{val}` is not valid because:",
+                                "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
                                 [e],
+                                detailed_message=f"the `doc` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         docParent = None
@@ -4025,7 +4210,10 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `docParent` field is not valid because:",
                                 SourceLine(_doc, "docParent", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -4033,9 +4221,11 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `docParent` field with value `{val}` is not valid because:",
+                                "the `docParent` field is not valid because:",
                                 SourceLine(_doc, "docParent", str),
                                 [e],
+                                detailed_message=f"the `docParent` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         docChild = None
@@ -4067,7 +4257,10 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `docChild` field is not valid because:",
                                 SourceLine(_doc, "docChild", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -4075,9 +4268,11 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `docChild` field with value `{val}` is not valid because:",
+                                "the `docChild` field is not valid because:",
                                 SourceLine(_doc, "docChild", str),
                                 [e],
+                                detailed_message=f"the `docChild` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         docAfter = None
@@ -4109,7 +4304,10 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `docAfter` field is not valid because:",
                                 SourceLine(_doc, "docAfter", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -4117,9 +4315,11 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `docAfter` field with value `{val}` is not valid because:",
+                                "the `docAfter` field is not valid because:",
                                 SourceLine(_doc, "docAfter", str),
                                 [e],
+                                detailed_message=f"the `docAfter` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         jsonldPredicate = None
@@ -4151,7 +4351,10 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `jsonldPredicate` field is not valid because:",
                                 SourceLine(_doc, "jsonldPredicate", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -4159,9 +4362,11 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `jsonldPredicate` field with value `{val}` is not valid because:",
+                                "the `jsonldPredicate` field is not valid because:",
                                 SourceLine(_doc, "jsonldPredicate", str),
                                 [e],
+                                detailed_message=f"the `jsonldPredicate` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         documentRoot = None
@@ -4193,7 +4398,10 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `documentRoot` field is not valid because:",
                                 SourceLine(_doc, "documentRoot", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -4201,9 +4409,11 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `documentRoot` field with value `{val}` is not valid because:",
+                                "the `documentRoot` field is not valid because:",
                                 SourceLine(_doc, "documentRoot", str),
                                 [e],
+                                detailed_message=f"the `documentRoot` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         abstract = None
@@ -4235,7 +4445,10 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `abstract` field is not valid because:",
                                 SourceLine(_doc, "abstract", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -4243,9 +4456,11 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `abstract` field with value `{val}` is not valid because:",
+                                "the `abstract` field is not valid because:",
                                 SourceLine(_doc, "abstract", str),
                                 [e],
+                                detailed_message=f"the `abstract` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         extends = None
@@ -4277,7 +4492,10 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `extends` field is not valid because:",
                                 SourceLine(_doc, "extends", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -4285,9 +4503,11 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `extends` field with value `{val}` is not valid because:",
+                                "the `extends` field is not valid because:",
                                 SourceLine(_doc, "extends", str),
                                 [e],
+                                detailed_message=f"the `extends` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         specialize = None
@@ -4319,7 +4539,10 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `specialize` field is not valid because:",
                                 SourceLine(_doc, "specialize", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -4327,9 +4550,11 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `specialize` field with value `{val}` is not valid because:",
+                                "the `specialize` field is not valid because:",
                                 SourceLine(_doc, "specialize", str),
                                 [e],
+                                detailed_message=f"the `specialize` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         extension_fields: dict[str, Any] = {}
@@ -4593,7 +4818,10 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -4601,9 +4829,11 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `name` field with value `{val}` is not valid because:",
+                                "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
                                 [e],
+                                detailed_message=f"the `name` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
 
@@ -4644,7 +4874,10 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `inVocab` field is not valid because:",
                                 SourceLine(_doc, "inVocab", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -4652,9 +4885,11 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `inVocab` field with value `{val}` is not valid because:",
+                                "the `inVocab` field is not valid because:",
                                 SourceLine(_doc, "inVocab", str),
                                 [e],
+                                detailed_message=f"the `inVocab` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         try:
@@ -4687,7 +4922,10 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                         ValidationException(
                             "the `symbols` field is not valid because:",
                             SourceLine(_doc, "symbols", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -4695,9 +4933,11 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `symbols` field with value `{val}` is not valid because:",
+                            "the `symbols` field is not valid because:",
                             SourceLine(_doc, "symbols", str),
                             [e],
+                            detailed_message=f"the `symbols` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         try:
@@ -4730,7 +4970,10 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                         ValidationException(
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -4738,9 +4981,11 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `type` field with value `{val}` is not valid because:",
+                            "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [e],
+                            detailed_message=f"the `type` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         doc = None
@@ -4772,7 +5017,10 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -4780,9 +5028,11 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `doc` field with value `{val}` is not valid because:",
+                                "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
                                 [e],
+                                detailed_message=f"the `doc` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         docParent = None
@@ -4814,7 +5064,10 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `docParent` field is not valid because:",
                                 SourceLine(_doc, "docParent", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -4822,9 +5075,11 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `docParent` field with value `{val}` is not valid because:",
+                                "the `docParent` field is not valid because:",
                                 SourceLine(_doc, "docParent", str),
                                 [e],
+                                detailed_message=f"the `docParent` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         docChild = None
@@ -4856,7 +5111,10 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `docChild` field is not valid because:",
                                 SourceLine(_doc, "docChild", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -4864,9 +5122,11 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `docChild` field with value `{val}` is not valid because:",
+                                "the `docChild` field is not valid because:",
                                 SourceLine(_doc, "docChild", str),
                                 [e],
+                                detailed_message=f"the `docChild` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         docAfter = None
@@ -4898,7 +5158,10 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `docAfter` field is not valid because:",
                                 SourceLine(_doc, "docAfter", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -4906,9 +5169,11 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `docAfter` field with value `{val}` is not valid because:",
+                                "the `docAfter` field is not valid because:",
                                 SourceLine(_doc, "docAfter", str),
                                 [e],
+                                detailed_message=f"the `docAfter` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         jsonldPredicate = None
@@ -4940,7 +5205,10 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `jsonldPredicate` field is not valid because:",
                                 SourceLine(_doc, "jsonldPredicate", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -4948,9 +5216,11 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `jsonldPredicate` field with value `{val}` is not valid because:",
+                                "the `jsonldPredicate` field is not valid because:",
                                 SourceLine(_doc, "jsonldPredicate", str),
                                 [e],
+                                detailed_message=f"the `jsonldPredicate` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         documentRoot = None
@@ -4982,7 +5252,10 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `documentRoot` field is not valid because:",
                                 SourceLine(_doc, "documentRoot", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -4990,9 +5263,11 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `documentRoot` field with value `{val}` is not valid because:",
+                                "the `documentRoot` field is not valid because:",
                                 SourceLine(_doc, "documentRoot", str),
                                 [e],
+                                detailed_message=f"the `documentRoot` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         extends = None
@@ -5024,7 +5299,10 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `extends` field is not valid because:",
                                 SourceLine(_doc, "extends", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -5032,9 +5310,11 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `extends` field with value `{val}` is not valid because:",
+                                "the `extends` field is not valid because:",
                                 SourceLine(_doc, "extends", str),
                                 [e],
+                                detailed_message=f"the `extends` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         extension_fields: dict[str, Any] = {}
@@ -5275,7 +5555,10 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -5283,9 +5566,11 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `name` field with value `{val}` is not valid because:",
+                                "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
                                 [e],
+                                detailed_message=f"the `name` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
 
@@ -5326,7 +5611,10 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `inVocab` field is not valid because:",
                                 SourceLine(_doc, "inVocab", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -5334,9 +5622,11 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `inVocab` field with value `{val}` is not valid because:",
+                                "the `inVocab` field is not valid because:",
                                 SourceLine(_doc, "inVocab", str),
                                 [e],
+                                detailed_message=f"the `inVocab` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         try:
@@ -5369,7 +5659,10 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                         ValidationException(
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -5377,9 +5670,11 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `type` field with value `{val}` is not valid because:",
+                            "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [e],
+                            detailed_message=f"the `type` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         try:
@@ -5412,7 +5707,10 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                         ValidationException(
                             "the `values` field is not valid because:",
                             SourceLine(_doc, "values", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -5420,9 +5718,11 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `values` field with value `{val}` is not valid because:",
+                            "the `values` field is not valid because:",
                             SourceLine(_doc, "values", str),
                             [e],
+                            detailed_message=f"the `values` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         doc = None
@@ -5454,7 +5754,10 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -5462,9 +5765,11 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `doc` field with value `{val}` is not valid because:",
+                                "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
                                 [e],
+                                detailed_message=f"the `doc` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         docParent = None
@@ -5496,7 +5801,10 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `docParent` field is not valid because:",
                                 SourceLine(_doc, "docParent", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -5504,9 +5812,11 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `docParent` field with value `{val}` is not valid because:",
+                                "the `docParent` field is not valid because:",
                                 SourceLine(_doc, "docParent", str),
                                 [e],
+                                detailed_message=f"the `docParent` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         docChild = None
@@ -5538,7 +5848,10 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `docChild` field is not valid because:",
                                 SourceLine(_doc, "docChild", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -5546,9 +5859,11 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `docChild` field with value `{val}` is not valid because:",
+                                "the `docChild` field is not valid because:",
                                 SourceLine(_doc, "docChild", str),
                                 [e],
+                                detailed_message=f"the `docChild` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         docAfter = None
@@ -5580,7 +5895,10 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `docAfter` field is not valid because:",
                                 SourceLine(_doc, "docAfter", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -5588,9 +5906,11 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `docAfter` field with value `{val}` is not valid because:",
+                                "the `docAfter` field is not valid because:",
                                 SourceLine(_doc, "docAfter", str),
                                 [e],
+                                detailed_message=f"the `docAfter` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         jsonldPredicate = None
@@ -5622,7 +5942,10 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `jsonldPredicate` field is not valid because:",
                                 SourceLine(_doc, "jsonldPredicate", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -5630,9 +5953,11 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `jsonldPredicate` field with value `{val}` is not valid because:",
+                                "the `jsonldPredicate` field is not valid because:",
                                 SourceLine(_doc, "jsonldPredicate", str),
                                 [e],
+                                detailed_message=f"the `jsonldPredicate` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         documentRoot = None
@@ -5664,7 +5989,10 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                             ValidationException(
                                 "the `documentRoot` field is not valid because:",
                                 SourceLine(_doc, "documentRoot", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -5672,9 +6000,11 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `documentRoot` field with value `{val}` is not valid because:",
+                                "the `documentRoot` field is not valid because:",
                                 SourceLine(_doc, "documentRoot", str),
                                 [e],
+                                detailed_message=f"the `documentRoot` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         extension_fields: dict[str, Any] = {}
@@ -5906,7 +6236,10 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                             ValidationException(
                                 "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -5914,9 +6247,11 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `name` field with value `{val}` is not valid because:",
+                                "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
                                 [e],
+                                detailed_message=f"the `name` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
 
@@ -5957,7 +6292,10 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                             ValidationException(
                                 "the `inVocab` field is not valid because:",
                                 SourceLine(_doc, "inVocab", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -5965,9 +6303,11 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `inVocab` field with value `{val}` is not valid because:",
+                                "the `inVocab` field is not valid because:",
                                 SourceLine(_doc, "inVocab", str),
                                 [e],
+                                detailed_message=f"the `inVocab` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         try:
@@ -6000,7 +6340,10 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                         ValidationException(
                             "the `names` field is not valid because:",
                             SourceLine(_doc, "names", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -6008,9 +6351,11 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `names` field with value `{val}` is not valid because:",
+                            "the `names` field is not valid because:",
                             SourceLine(_doc, "names", str),
                             [e],
+                            detailed_message=f"the `names` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         try:
@@ -6043,7 +6388,10 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                         ValidationException(
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -6051,9 +6399,11 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `type` field with value `{val}` is not valid because:",
+                            "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [e],
+                            detailed_message=f"the `type` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         doc = None
@@ -6085,7 +6435,10 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                             ValidationException(
                                 "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -6093,9 +6446,11 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `doc` field with value `{val}` is not valid because:",
+                                "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
                                 [e],
+                                detailed_message=f"the `doc` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         docParent = None
@@ -6127,7 +6482,10 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                             ValidationException(
                                 "the `docParent` field is not valid because:",
                                 SourceLine(_doc, "docParent", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -6135,9 +6493,11 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `docParent` field with value `{val}` is not valid because:",
+                                "the `docParent` field is not valid because:",
                                 SourceLine(_doc, "docParent", str),
                                 [e],
+                                detailed_message=f"the `docParent` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         docChild = None
@@ -6169,7 +6529,10 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                             ValidationException(
                                 "the `docChild` field is not valid because:",
                                 SourceLine(_doc, "docChild", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -6177,9 +6540,11 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `docChild` field with value `{val}` is not valid because:",
+                                "the `docChild` field is not valid because:",
                                 SourceLine(_doc, "docChild", str),
                                 [e],
+                                detailed_message=f"the `docChild` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         docAfter = None
@@ -6211,7 +6576,10 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                             ValidationException(
                                 "the `docAfter` field is not valid because:",
                                 SourceLine(_doc, "docAfter", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -6219,9 +6587,11 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `docAfter` field with value `{val}` is not valid because:",
+                                "the `docAfter` field is not valid because:",
                                 SourceLine(_doc, "docAfter", str),
                                 [e],
+                                detailed_message=f"the `docAfter` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         documentRoot = None
@@ -6253,7 +6623,10 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                             ValidationException(
                                 "the `documentRoot` field is not valid because:",
                                 SourceLine(_doc, "documentRoot", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -6261,9 +6634,11 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `documentRoot` field with value `{val}` is not valid because:",
+                                "the `documentRoot` field is not valid because:",
                                 SourceLine(_doc, "documentRoot", str),
                                 [e],
+                                detailed_message=f"the `documentRoot` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         extension_fields: dict[str, Any] = {}
@@ -6479,7 +6854,10 @@ class Documentation(NamedType, DocType):
                             ValidationException(
                                 "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -6487,9 +6865,11 @@ class Documentation(NamedType, DocType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `name` field with value `{val}` is not valid because:",
+                                "the `name` field is not valid because:",
                                 SourceLine(_doc, "name", str),
                                 [e],
+                                detailed_message=f"the `name` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
 
@@ -6530,7 +6910,10 @@ class Documentation(NamedType, DocType):
                             ValidationException(
                                 "the `inVocab` field is not valid because:",
                                 SourceLine(_doc, "inVocab", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -6538,9 +6921,11 @@ class Documentation(NamedType, DocType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `inVocab` field with value `{val}` is not valid because:",
+                                "the `inVocab` field is not valid because:",
                                 SourceLine(_doc, "inVocab", str),
                                 [e],
+                                detailed_message=f"the `inVocab` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         doc = None
@@ -6572,7 +6957,10 @@ class Documentation(NamedType, DocType):
                             ValidationException(
                                 "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -6580,9 +6968,11 @@ class Documentation(NamedType, DocType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `doc` field with value `{val}` is not valid because:",
+                                "the `doc` field is not valid because:",
                                 SourceLine(_doc, "doc", str),
                                 [e],
+                                detailed_message=f"the `doc` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         docParent = None
@@ -6614,7 +7004,10 @@ class Documentation(NamedType, DocType):
                             ValidationException(
                                 "the `docParent` field is not valid because:",
                                 SourceLine(_doc, "docParent", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -6622,9 +7015,11 @@ class Documentation(NamedType, DocType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `docParent` field with value `{val}` is not valid because:",
+                                "the `docParent` field is not valid because:",
                                 SourceLine(_doc, "docParent", str),
                                 [e],
+                                detailed_message=f"the `docParent` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         docChild = None
@@ -6656,7 +7051,10 @@ class Documentation(NamedType, DocType):
                             ValidationException(
                                 "the `docChild` field is not valid because:",
                                 SourceLine(_doc, "docChild", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -6664,9 +7062,11 @@ class Documentation(NamedType, DocType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `docChild` field with value `{val}` is not valid because:",
+                                "the `docChild` field is not valid because:",
                                 SourceLine(_doc, "docChild", str),
                                 [e],
+                                detailed_message=f"the `docChild` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         docAfter = None
@@ -6698,7 +7098,10 @@ class Documentation(NamedType, DocType):
                             ValidationException(
                                 "the `docAfter` field is not valid because:",
                                 SourceLine(_doc, "docAfter", str),
-                                [ValidationException(f"Value `{val}` is a {val_type}, "
+                                [ValidationException(f"Value is a {val_type}, "
+                                                     f"but valid {to_print} for this field "
+                                                     f"{verb_tensage} {error_message}",
+                                                     detailed_message=f"Value `{val}` is a {val_type}, "
                                                      f"but valid {to_print} for this field "
                                                      f"{verb_tensage} {error_message}")],
                             )
@@ -6706,9 +7109,11 @@ class Documentation(NamedType, DocType):
                     else:
                         _errors__.append(
                             ValidationException(
-                                f"the `docAfter` field with value `{val}` is not valid because:",
+                                "the `docAfter` field is not valid because:",
                                 SourceLine(_doc, "docAfter", str),
                                 [e],
+                                detailed_message=f"the `docAfter` field with value `{val}` "
+                                "is not valid because:",
                             )
                         )
         try:
@@ -6741,7 +7146,10 @@ class Documentation(NamedType, DocType):
                         ValidationException(
                             "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
-                            [ValidationException(f"Value `{val}` is a {val_type}, "
+                            [ValidationException(f"Value is a {val_type}, "
+                                                 f"but valid {to_print} for this field "
+                                                 f"{verb_tensage} {error_message}",
+                                                 detailed_message=f"Value `{val}` is a {val_type}, "
                                                  f"but valid {to_print} for this field "
                                                  f"{verb_tensage} {error_message}")],
                         )
@@ -6749,9 +7157,11 @@ class Documentation(NamedType, DocType):
                 else:
                     _errors__.append(
                         ValidationException(
-                            f"the `type` field with value `{val}` is not valid because:",
+                            "the `type` field is not valid because:",
                             SourceLine(_doc, "type", str),
                             [e],
+                            detailed_message=f"the `type` field with value `{val}` "
+                            "is not valid because:",
                         )
                     )
         extension_fields: dict[str, Any] = {}
