@@ -628,7 +628,10 @@ if _errors__:
 {spc}                        ValidationException(
 {spc}                            \"the `{fieldname}` field is not valid because:\",
 {spc}                            SourceLine(_doc, "{fieldname}", str),
-{spc}                            [ValidationException(f"Value `{{val}}` is a {{val_type}}, "
+{spc}                            [ValidationException(f"Value is a {{val_type}}, "
+{spc}                                                 f"but valid {{to_print}} for this field "
+{spc}                                                 f"{{verb_tensage}} {{error_message}}",
+{spc}                                                 detailed_message=f"Value `{{val}}` is a {{val_type}}, "
 {spc}                                                 f"but valid {{to_print}} for this field "
 {spc}                                                 f"{{verb_tensage}} {{error_message}}")],
 {spc}                        )
@@ -636,9 +639,11 @@ if _errors__:
 {spc}                else:
 {spc}                    _errors__.append(
 {spc}                        ValidationException(
-{spc}                            f"the `{fieldname}` field with value `{{val}}` is not valid because:\",
+{spc}                            "the `{fieldname}` field is not valid because:",
 {spc}                            SourceLine(_doc, "{fieldname}", str),
 {spc}                            [e],
+{spc}                            detailed_message=f"the `{fieldname}` field with value `{{val}}` "
+{spc}                            "is not valid because:\",
 {spc}                        )
 {spc}                    )
 """.format(
