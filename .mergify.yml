@@ -1,26 +1,30 @@
 queue_rules:
+  - name: duplicated default from Automatic merge on approval and when GitHub branch
+      protection passes on main
+    queue_conditions:
+      - "#approved-reviews-by>=1"
+      - "#changes-requested-reviews-by=0"
+      - base=main
+    merge_conditions:
+      - base=main
+    merge_method: merge
+  - name: duplicated default from Automatic merge for leadership team members when
+      there are no reviewers
+    queue_conditions:
+      - "#review-requested=0"
+      - base=main
+      - author=@leadership
+      - label=ready_for_merge
+    merge_conditions:
+      - base=main
+    merge_method: merge
   - name: default
     conditions:
       - base=main
 
 pull_request_rules:
-  - name: Automatic merge on approval and when GitHub branch protection passes on main
-    conditions:
-      - "#approved-reviews-by>=1"
-      - "#changes-requested-reviews-by=0"
-      - base=main
-    actions:
-      queue:
-        method: merge
-        name: default
-
   - name: Automatic merge for leadership team members when there are no reviewers
-    conditions:
-      - "#review-requested=0"
-      - base=main
-      - author=@leadership
-      - label=ready_for_merge
+      + Automatic merge on approval and when GitHub branch protection passes on main
+    conditions: []
     actions:
       queue:
-        method: merge
-        name: default
