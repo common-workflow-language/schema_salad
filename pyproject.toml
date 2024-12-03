@@ -8,7 +8,7 @@ requires = [
     "types-dataclasses",
     "ruamel.yaml>=0.17.6, < 0.19",
     "types-setuptools",
-    "CacheControl[filecache] >= 0.13.1, < 0.15"
+    "CacheControl[filecache] >= 0.14.0, < 0.15"
 ]
 build-backend = "setuptools.build_meta"
 
