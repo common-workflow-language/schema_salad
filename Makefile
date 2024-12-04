@@ -228,6 +228,11 @@ flake8: FORCE
 schema_salad/metaschema.py: schema_salad/codegen_base.py schema_salad/python_codegen_support.py schema_salad/python_codegen.py schema_salad/metaschema/*.yml
 	schema-salad-tool --codegen python schema_salad/metaschema/metaschema.yml > $@
 
+vpath %.yml schema_salad/tests/cpp_tests
+
+schema_salad/tests/cpp_tests/%.h: %.yml
+	schema-salad-tool --codegen cpp --codegen-target $@ $<
+
 FORCE:
 
 # Use this to print the value of a Makefile variable

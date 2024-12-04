@@ -25,29 +25,50 @@ inline auto mergeYaml(YAML::Node n1, YAML::Node n2) {
 }
 
 // declaring toYaml
-inline auto toYaml(bool v) {
-    return YAML::Node{v};
-}
-inline auto toYaml(float v) {
-    return YAML::Node{v};
-}
-inline auto toYaml(double v) {
-    return YAML::Node{v};
-}
-inline auto toYaml(int32_t v) {
-    return YAML::Node{v};
-}
-inline auto toYaml(int64_t v) {
-    return YAML::Node{v};
-}
-inline auto toYaml(std::any const&) {
-    return YAML::Node{};
-}
+inline auto toYaml(bool v) { return YAML::Node{v}; }
+inline auto toYaml(float v) { return YAML::Node{v}; }
+inline auto toYaml(double v) { return YAML::Node{v}; }
+inline auto toYaml(char v) { return YAML::Node{v}; }
+inline auto toYaml(int8_t v) { return YAML::Node{v}; }
+inline auto toYaml(uint8_t v) { return YAML::Node{v}; }
+inline auto toYaml(int16_t v) { return YAML::Node{v}; }
+inline auto toYaml(uint16_t v) { return YAML::Node{v}; }
+inline auto toYaml(int32_t v) { return YAML::Node{v}; }
+inline auto toYaml(uint32_t v) { return YAML::Node{v}; }
+inline auto toYaml(int64_t v) { return YAML::Node{v}; }
+inline auto toYaml(uint64_t v) { return YAML::Node{v}; }
 inline auto toYaml(std::monostate const&) {
     return YAML::Node(YAML::NodeType::Undefined);
 }
 inline auto toYaml(std::string const& v) {
     return YAML::Node{v};
+}
+
+template <typename T, typename ...Args>
+auto anyToYaml_impl(std::any const& a) {
+    if (auto v = std::any_cast<T const>(&a)) {
+        return toYaml(*v);
+    }
+    if constexpr (sizeof...(Args) > 0) {
+        return anyToYaml_impl<Args...>(a);
+    }
+    return toYaml(std::monostate{});
+}
+
+inline auto toYaml(std::any const& a) {
+    return anyToYaml_impl<bool,
+                          float,
+                          double,
+                          char,
+                          int8_t,
+                          uint8_t,
+                          int16_t,
+                          uint16_t,
+                          int32_t,
+                          uint32_t,
+                          int64_t,
+                          uint64_t,
+                          std::string>(a);
 }
 
 // declaring fromYaml
