@@ -1162,6 +1162,8 @@ class RecordField(Documented):
     A field of a record.
     """
 
+    class_uri = "https://w3id.org/cwl/salad#RecordField"
+
     def __init__(
         self,
         name: Any,
@@ -1428,6 +1430,8 @@ class RecordField(Documented):
 
 
 class RecordSchema(Saveable):
+    class_uri = "https://w3id.org/cwl/salad#RecordSchema"
+
     def __init__(
         self,
         type_: Any,
@@ -1631,6 +1635,8 @@ class EnumSchema(Saveable):
     Define an enumerated type.
 
     """
+
+    class_uri = "https://w3id.org/cwl/salad#EnumSchema"
 
     def __init__(
         self,
@@ -1898,6 +1904,8 @@ class EnumSchema(Saveable):
 
 
 class ArraySchema(Saveable):
+    class_uri = "https://w3id.org/cwl/salad#ArraySchema"
+
     def __init__(
         self,
         items: Any,
@@ -2097,6 +2105,8 @@ class ArraySchema(Saveable):
 
 
 class MapSchema(Saveable):
+    class_uri = "https://w3id.org/cwl/salad#MapSchema"
+
     def __init__(
         self,
         type_: Any,
@@ -2296,6 +2306,8 @@ class MapSchema(Saveable):
 
 
 class UnionSchema(Saveable):
+    class_uri = "https://w3id.org/cwl/salad#UnionSchema"
+
     def __init__(
         self,
         names: Any,
@@ -2500,6 +2512,8 @@ class JsonldPredicate(Saveable):
     URI resolution and JSON-LD context generation.
 
     """
+
+    class_uri = "https://w3id.org/cwl/salad#JsonldPredicate"
 
     def __init__(
         self,
@@ -3239,6 +3253,8 @@ class JsonldPredicate(Saveable):
 
 
 class SpecializeDef(Saveable):
+    class_uri = "https://w3id.org/cwl/salad#SpecializeDef"
+
     def __init__(
         self,
         specializeFrom: Any,
@@ -3462,6 +3478,8 @@ class SaladRecordField(RecordField):
     """
     A field of a record.
     """
+
+    class_uri = "https://w3id.org/cwl/salad#SaladRecordField"
 
     def __init__(
         self,
@@ -3844,6 +3862,8 @@ class SaladRecordField(RecordField):
 
 
 class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
+    class_uri = "https://w3id.org/cwl/salad#SaladRecordSchema"
+
     def __init__(
         self,
         name: Any,
@@ -4705,6 +4725,8 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
 
     """
 
+    class_uri = "https://w3id.org/cwl/salad#SaladEnumSchema"
+
     def __init__(
         self,
         symbols: Any,
@@ -5446,6 +5468,8 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
 
     """
 
+    class_uri = "https://w3id.org/cwl/salad#SaladMapSchema"
+
     def __init__(
         self,
         name: Any,
@@ -6131,6 +6155,8 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
 
     """
 
+    class_uri = "https://w3id.org/cwl/salad#SaladUnionSchema"
+
     def __init__(
         self,
         name: Any,
@@ -6756,6 +6782,8 @@ class Documentation(NamedType, DocType):
     schemas but has no role in formal validation.
 
     """
+
+    class_uri = "https://w3id.org/cwl/salad#Documentation"
 
     def __init__(
         self,

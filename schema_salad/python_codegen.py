@@ -143,6 +143,7 @@ class PythonCodeGen(CodeGenBase):
         idfield: str,
         optional_fields: set[str],
     ) -> None:
+        class_uri = classname
         classname = self.safe_name(classname)
 
         if extends:
@@ -162,6 +163,8 @@ class PythonCodeGen(CodeGenBase):
         if self.current_class_is_abstract:
             self.out.write("    pass\n\n\n")
             return
+
+        self.out.write(f'    class_uri = "{class_uri}"\n\n')
 
         required_field_names = [f for f in field_names if f not in optional_fields]
         optional_field_names = [f for f in field_names if f in optional_fields]
@@ -275,27 +278,6 @@ class PythonCodeGen(CodeGenBase):
                 r[ef] = self.extension_fields[ef]
 """
         )
-
-        if "class" in field_names:
-            self.out.write(
-                """
-        if "class" not in _doc:
-            raise ValidationException("Missing 'class' field")
-        if _doc.get("class") != "{class_}":
-            raise ValidationException("tried `{class_}` but")
-
-""".format(
-                    class_=classname
-                )
-            )
-
-            self.serializer.write(
-                """
-        r["class"] = "{class_}"
-""".format(
-                    class_=classname
-                )
-            )
 
     def end_class(self, classname: str, field_names: list[str]) -> None:
         """Signal that we are done with this class."""
@@ -554,9 +536,6 @@ if _errors__:
         if self.current_class_is_abstract:
             return
 
-        if shortname(name) == "class":
-            return
-
         if optional:
             self.out.write(f"""        {self.safe_name(name)} = None\n""")
             self.out.write(f"""        if "{shortname(name)}" in _doc:\n""")  # noqa: B907
@@ -608,8 +587,22 @@ if _errors__:
                 spc=spc,
             )
         )
-        self.out.write(
-            """
+
+        if shortname(name) == "class":
+            self.out.write(
+                """{spc}            if {safename} != cls.__name__ and {safename} != cls.class_uri:
+{spc}               raise ValidationException(f"tried `{{cls.__name__}}` but")
+{spc}        except ValidationException as e:
+{spc}               raise e
+""".format(
+                    safename=self.safe_name(name),
+                    spc=spc,
+                )
+            )
+
+        else:
+            self.out.write(
+                """
 {spc}        except ValidationException as e:
 {spc}            error_message, to_print, verb_tensage = parse_errors(str(e))
 
@@ -647,10 +640,10 @@ if _errors__:
 {spc}                        )
 {spc}                    )
 """.format(
-                fieldname=shortname(name),
-                spc=spc,
+                    fieldname=shortname(name),
+                    spc=spc,
+                )
             )
-        )
 
         if name == self.idfield or not self.idfield:
             baseurl = "base_url"
