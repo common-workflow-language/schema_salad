@@ -67,11 +67,11 @@ def test_error_message5(tmp_path: Path) -> None:
 def test_error_message6(tmp_path: Path) -> None:
     t = "test_schema/test6.cwl"
     match = r"""\*\s+tried\s+`CommandLineTool`\s+but
-\s+Missing\s+'class'\s+field
+\s+missing\s+required\s+field\s+`class`
 +\*\s+tried\s+`ExpressionTool`\s+but
-\s+Missing\s+'class'\s+field
+\s+missing\s+required\s+field\s+`class`
 +\*\s+tried\s+`Workflow`\s+but
-\s+Missing\s+'class'\s+field"""
+\s+missing\s+required\s+field\s+`class`"""
     path = get_data("tests/" + t)
     assert path
     with pytest.raises(ValidationException, match=match):

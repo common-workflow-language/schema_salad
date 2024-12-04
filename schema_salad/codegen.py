@@ -19,7 +19,7 @@ from .schema import shortname
 from .typescript_codegen import TypeScriptCodeGen
 from .utils import aslist
 
-FIELD_SORT_ORDER = ["id", "class", "name"]
+FIELD_SORT_ORDER = ["class", "id", "name"]
 
 
 def codegen(
