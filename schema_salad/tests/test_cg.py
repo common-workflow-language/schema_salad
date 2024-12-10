@@ -203,6 +203,8 @@ def test_load_metaschema(metaschema_pre: Any) -> None:
         cg_metaschema.LoadingOptions(no_link_check=True),
     )
     saved = [d.save(relative_uris=False) for d in doc]
+    # with open(get_data("tests/metaschema-pre.yml"), "w") as fh
+    #    json.dump(saved, fh, indent=4)
     assert saved == JsonDiffMatcher(metaschema_pre)
 
 
@@ -231,7 +233,9 @@ def test_load_cwlschema() -> None:
     )
     path2 = get_data("tests/cwl-pre.yml")
     assert path2
+    saved = [d.save(relative_uris=False) for d in doc]
+    # with open(path2, "w") as f:
+    #     json.dump(saved, f, indent=2)
     with open(path2) as f:
         pre = json.load(f)
-    saved = [d.save(relative_uris=False) for d in doc]
     assert saved == JsonDiffMatcher(pre)

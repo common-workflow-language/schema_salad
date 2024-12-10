@@ -22,7 +22,7 @@ internal class IdMapLoader : ILoader<object>
         {
             List<object> r = new();
             Dictionary<string, object> d = docDict.Cast<dynamic>().ToDictionary(entry => (string)entry.Key, entry => entry.Value);
-            foreach (string? k in d.Keys.OrderBy(p => p))
+            foreach (string? k in d.Keys)
             {
                 object val = d[k];
                 if (val is IDictionary dictionary)

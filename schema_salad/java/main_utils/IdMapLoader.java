@@ -27,9 +27,7 @@ public class IdMapLoader<T> implements Loader<T> {
     if (doc instanceof Map) {
       final Map<String, Object> docMap = (Map<String, Object>) doc;
       final List<Object> asList = new ArrayList();
-      final TreeSet<String> sortedKeys = new TreeSet<String>();
-      sortedKeys.addAll(docMap.keySet());
-      for (final String key : sortedKeys) {
+      for (final String key : docMap.keySet()) {
         final Object el = docMap.get(key);
         if (el instanceof Map) {
           final Map<String, Object> v2 = new HashMap<String, Object>((Map<String, Object>) el);
