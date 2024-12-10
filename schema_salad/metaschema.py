@@ -950,7 +950,7 @@ class _IdMapLoader(_Loader):
     ) -> Any:
         if isinstance(doc, MutableMapping):
             r: list[Any] = []
-            for k in sorted(doc.keys()):
+            for k in doc.keys():
                 val = doc[k]
                 if isinstance(val, CommentedMap):
                     v = copy.copy(val)

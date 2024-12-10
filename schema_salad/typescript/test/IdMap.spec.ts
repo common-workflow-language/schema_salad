@@ -20,8 +20,8 @@ describe('Test IdMapLoader', () => {
         velma: ['fred', 'candy']
       }
       assert.deepEqual(await loader.load(doc, '', new LoadingOptions({})), [
-        { value: 'daphne', key: 'fred' },
         { value: 'scooby', key: 'shaggy' },
+        { value: 'daphne', key: 'fred' },
         { value: ['fred', 'candy'], key: 'velma' }
       ])
     })

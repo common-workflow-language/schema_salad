@@ -14,7 +14,7 @@ export class _IdMapLoader implements Loader {
   async load (doc: any, baseuri: string, loadingOptions: LoadingOptions, docRoot?: string): Promise<any> {
     if (TypeGuards.isDictionary(doc)) {
       const r: any[] = []
-      for (var k of Object.keys(doc).sort(undefined)) {
+      for (var k of Object.keys(doc)) {
         const val = doc[k]
         if (TypeGuards.isDictionary(val)) {
           const v2 = Object.assign({}, val)
