@@ -151,10 +151,9 @@ class ClassDefinition:
 
         # Write toYaml function
         target.write(
-            f"""{fullInd}inline auto {self.namespace}::{self.classname}::toYaml() const -> YAML::Node {{
-{fullInd}{ind}using ::toYaml;
-{fullInd}{ind}auto n = YAML::Node{{}};
-"""
+            f"{fullInd}inline auto {self.namespace}::{self.classname}::toYaml() const -> YAML::Node {{\n"
+            f"{fullInd}{ind}using ::toYaml;\n"
+            f"{fullInd}{ind}auto n = YAML::Node{{}};\n"
         )
         for e in extends:
             target.write(f"{fullInd}{ind}n = mergeYaml(n, {e}::toYaml());\n")
@@ -163,8 +162,8 @@ class ClassDefinition:
             fieldname = safename(field.name)
             if field.remap != "":
                 target.write(
-                    f"""{fullInd}{ind}addYamlField(n, {q(field.name)},
-{fullInd}{ind}{ind}convertListToMap(toYaml(*{fieldname}), {q(field.remap)}));\n"""
+                    f"{fullInd}{ind}addYamlField(n, {q(field.name)}, "
+                    f"convertListToMap(toYaml(*{fieldname}), {q(field.mapSubject)}));\n"
                 )
             else:
                 target.write(
@@ -176,9 +175,8 @@ class ClassDefinition:
         # Write fromYaml function
         functionname = f"{self.namespace}::{self.classname}::fromYaml"
         target.write(
-            f"""{fullInd}inline void {functionname}([[maybe_unused]] YAML::Node const& n) {{
-{fullInd}{ind}using ::fromYaml;
-"""
+            f"{fullInd}inline void {functionname}([[maybe_unused]] YAML::Node const& n) {{\n"
+            f"{fullInd}{ind}using ::fromYaml;\n"
         )
         for e in extends:
             target.write(f"{fullInd}{ind}{e}::fromYaml(n);\n")
@@ -187,9 +185,8 @@ class ClassDefinition:
             fieldname = safename(field.name)
             if field.remap != "":
                 target.write(
-                    f"""
-                    {fullInd}{ind}fromYaml(convertMapToList(n[{q(field.name)}],
-{q(field.remap)}), *{fieldname});\n"""
+                    f"{fullInd}{ind}fromYaml(convertMapToList(n[{q(field.name)}],"
+                    f"{q(field.mapSubject)}), *{fieldname});\n"
                 )
             else:
                 target.write(f"{fullInd}{ind}fromYaml(n[{q(field.name)}], *{fieldname});\n")
@@ -200,32 +197,26 @@ class ClassDefinition:
         if not self.abstract:
             e = f"{self.namespace}::{self.classname}"
             target.write(
-                f"""
-template <>
-struct DetectAndExtractFromYaml<{e}> {{
-    auto operator()(YAML::Node const& n) const -> std::optional<{e}> {{
-        if (!n.IsDefined()) return std::nullopt;
-        if (!n.IsMap()) return std::nullopt;
-        auto res = {e}{{}};
-"""
+                f"template <>\n"
+                f"struct DetectAndExtractFromYaml<{e}> {{\n"
+                f"    auto operator()(YAML::Node const& n) const -> std::optional<{e}> {{\n"
+                f"        if (!n.IsDefined()) return std::nullopt;\n"
+                f"        if (!n.IsMap()) return std::nullopt;\n"
+                f"        auto res = {e}{{}};\n"
             )
             for field in self.fields:
                 fieldname = safename(field.name)
                 target.write(
-                    f"""
-        if constexpr (IsConstant<decltype(res.{fieldname})::value_t>::value) try {{
-            fromYaml(n[{q(field.name)}], *res.{fieldname});
-            fromYaml(n, res);
-            return res;
-        }} catch(...) {{}}
-"""
+                    f"        if constexpr (IsConstant<decltype(res.{fieldname})::value_t>::value) try {{\n"
+                    f"            fromYaml(n[{q(field.name)}], *res.{fieldname});\n"
+                    f"            fromYaml(n, res);\n"
+                    f"            return res;\n"
+                    f"        }} catch(...) {{}}\n"
                 )
             target.write(
-                """
-        return std::nullopt;
-    }
-};
-"""
+                f"        return std::nullopt;\n"
+                f"    }}\n"
+                f"}};\n"
             )
 
 
@@ -286,19 +277,19 @@ class MapDefinition:
         # Write toYaml function
         functionname = f"{self.namespace}::{self.classname}::toYaml"
         target.write(
-            f"""{fullInd}inline auto {functionname}() const -> YAML::Node {{
-{fullInd}{ind}using ::toYaml;
-{fullInd}{ind}return toYaml(*value);\n{fullInd}}}\n
-"""
+            f"{fullInd}inline auto {functionname}() const -> YAML::Node {{\n"
+            f"{fullInd}{ind}using ::toYaml;\n"
+            f"{fullInd}{ind}return toYaml(*value);\n"
+            f"{fullInd}}}\n"
         )
 
         # Write fromYaml function
         functionname = f"{self.namespace}::{self.classname}::fromYaml"
         target.write(
-            f"""{fullInd}inline void {functionname}([[maybe_unused]] YAML::Node const& n) {{
-{fullInd}{ind}using ::fromYaml;
-{fullInd}{ind}fromYaml(n, *value);\n{fullInd}}}\n
-"""
+            f"{fullInd}inline void {functionname}([[maybe_unused]] YAML::Node const& n) {{\n"
+            f"{fullInd}{ind}using ::fromYaml;\n"
+            f"{fullInd}{ind}fromYaml(n, *value);\n"
+            f"{fullInd}}}\n"
         )
 
 
@@ -340,39 +331,38 @@ class UnionDefinition:
         # Write constructor
         functionname = f"{self.namespace}::{self.classname}::{self.classname}"
         target.write(
-            f"""{fullInd}{functionname}() {{
-{fullInd}{ind}value = new {self.types}();\n{fullInd}}}\n
-"""
+            f"{fullInd}{functionname}() {{\n"
+            f"{fullInd}{ind}value = new {self.types}();\n"
+            f"{fullInd}}}\n"
         )
 
         # Write destructor
         functionname = f"{self.namespace}::{self.classname}::~{self.classname}"
         target.write(
-            f"""{fullInd}{functionname}() {{
-{fullInd}{ind}if (value != nullptr) {{
-{fullInd}{ind}{ind}delete value;
-{fullInd}{ind}{ind}value = nullptr;
-{fullInd}{ind}}}
-{fullInd}}}\n
-"""
+            f"{fullInd}{functionname}() {{\n"
+            f"{fullInd}{ind}if (value != nullptr) {{\n"
+            f"{fullInd}{ind}{ind}delete value;\n"
+            f"{fullInd}{ind}{ind}value = nullptr;\n"
+            f"{fullInd}{ind}}}\n"
+            f"{fullInd}}}\n"
         )
 
         # Write toYaml function
         functionname = f"{self.namespace}::{self.classname}::toYaml"
         target.write(
-            f"""{fullInd}inline auto {functionname}() const -> YAML::Node {{
-{fullInd}{ind}using ::toYaml;
-{fullInd}{ind}return toYaml(*value);\n{fullInd}}}\n
-"""
+            f"{fullInd}inline auto {functionname}() const -> YAML::Node {{\n"
+            f"{fullInd}{ind}using ::toYaml;\n"
+            f"{fullInd}{ind}return toYaml(*value);\n"
+            f"{fullInd}}}\n"
         )
 
         # Write fromYaml function
         functionname = f"{self.namespace}::{self.classname}::fromYaml"
         target.write(
-            f"""{fullInd}inline void {functionname}([[maybe_unused]] YAML::Node const& n) {{
-{fullInd}{ind}using ::fromYaml;
-{fullInd}{ind}fromYaml(n, *value);\n{fullInd}}}\n
-"""
+            f"{fullInd}inline void {functionname}([[maybe_unused]] YAML::Node const& n) {{\n"
+            f"{fullInd}{ind}using ::fromYaml;\n"
+            f"{fullInd}{ind}fromYaml(n, *value);\n"
+            f"{fullInd}}}\n"
         )
 
 
