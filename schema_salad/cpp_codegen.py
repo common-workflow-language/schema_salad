@@ -580,6 +580,8 @@ class CppCodeGen(CodeGenBase):
                 return "bool"
             elif type_declaration[0] == "https://w3id.org/cwl/salad#Any":
                 return "std::any"
+            elif type_declaration[0] == "https://w3id.org/cwl/cwl#Expression":
+                return "cwl_expression_string"
             elif type_declaration[0] in (
                 "PrimitiveType",
                 "https://w3id.org/cwl/salad#PrimitiveType",
@@ -815,6 +817,19 @@ struct DetectAndExtractFromYaml {
         return std::nullopt;
     }
 };
+
+// special cwl expression string
+struct cwl_expression_string {
+    std::string s;
+
+    auto toYaml() const {
+        return YAML::Node{s};
+    }
+    void fromYaml(YAML::Node const& n) {
+        s = n.as<std::string>();
+    }
+};
+
 
 template <>
 struct DetectAndExtractFromYaml<std::monostate> {
