@@ -160,15 +160,13 @@ class ClassDefinition:
 
         for field in self.fields:
             fieldname = safename(field.name)
-            if field.remap != "":
-                target.write(
-                    f"{fullInd}{ind}addYamlField(n, {q(field.name)}, "
-                    f"convertListToMap(toYaml(*{fieldname}), {q(field.mapSubject)}));\n"
-                )
-            else:
-                target.write(
-                    f"{fullInd}{ind}addYamlField(n, {q(field.name)}, toYaml(*{fieldname}));\n"
-                )
+            simplifyType = ""
+            if field.typeDSL:
+                simplifyType = "simplifyType"
+            target.write(
+                f"{fullInd}{ind}addYamlField(n, {q(field.name)}, "
+                f"convertListToMap({simplifyType}(toYaml(*{fieldname})), {q(field.mapSubject)}, {q(field.mapPredicate)}));\n"
+            )
 
         target.write(f"{fullInd}{ind}return n;\n{fullInd}}}\n")
 
@@ -183,13 +181,17 @@ class ClassDefinition:
 
         for field in self.fields:
             fieldname = safename(field.name)
-            if field.remap != "":
-                target.write(
-                    f"{fullInd}{ind}fromYaml(convertMapToList(n[{q(field.name)}],"
-                    f"{q(field.mapSubject)}), *{fieldname});\n"
-                )
-            else:
-                target.write(f"{fullInd}{ind}fromYaml(n[{q(field.name)}], *{fieldname});\n")
+            expandType = ""
+            if field.typeDSL:
+                expandType = "expandType"
+
+            target.write(
+                f"{fullInd}{ind}{{\n"
+                f"{fullInd}{ind}{ind}auto nodeAsList = convertMapToList(n[{q(field.name)}], {q(field.mapSubject)}, {q(field.mapPredicate)});\n"
+                f"{fullInd}{ind}{ind}auto expandedNode = {expandType}(nodeAsList);\n"
+                f"{fullInd}{ind}{ind}fromYaml(expandedNode, *{fieldname});\n"
+                f"{fullInd}{ind}}}\n"
+            )
 
         target.write(f"{fullInd}}}\n")
 
@@ -202,7 +204,7 @@ class ClassDefinition:
                 f"    auto operator()(YAML::Node const& n) const -> std::optional<{e}> {{\n"
                 f"        if (!n.IsDefined()) return std::nullopt;\n"
                 f"        if (!n.IsMap()) return std::nullopt;\n"
-                f"        auto res = {e}{{}};\n"
+                f"        auto res = {e}{{}};\n\n"
             )
             for field in self.fields:
                 fieldname = safename(field.name)
@@ -211,19 +213,23 @@ class ClassDefinition:
                     f"            fromYaml(n[{q(field.name)}], *res.{fieldname});\n"
                     f"            fromYaml(n, res);\n"
                     f"            return res;\n"
-                    f"        }} catch(...) {{}}\n"
+                    f"        }} catch(...) {{}}\n\n"
                 )
-            target.write(
-                f"        return std::nullopt;\n"
-                f"    }}\n"
-                f"}};\n"
-            )
+            target.write(f"        return std::nullopt;\n" f"    }}\n" f"}};\n")
 
 
 class FieldDefinition:
     """Prototype of a single field from a class definition."""
 
-    def __init__(self, name: str, typeStr: str, optional: bool, remap: str):
+    def __init__(
+        self,
+        name: str,
+        typeStr: str,
+        optional: bool,
+        mapSubject: str,
+        mapPredicate: str,
+        typeDSL: bool,
+    ):
         """Initialize field definition.
 
         Creates a new field with name, its type, optional and which field to use to convert
@@ -232,7 +238,9 @@ class FieldDefinition:
         self.name = name
         self.typeStr = typeStr
         self.optional = optional
-        self.remap = remap
+        self.mapSubject = mapSubject
+        self.mapPredicate = mapPredicate
+        self.typeDSL = typeDSL
 
     def writeDefinition(self, target: IO[Any], fullInd: str, ind: str, namespace: str) -> None:
         """Write a C++ definition for the class field."""
@@ -684,6 +692,75 @@ class CppCodeGen(CodeGenBase):
 #include <vector>
 #include <yaml-cpp/yaml.h>
 
+inline auto simplifyType(YAML::Node type) -> YAML::Node {
+    auto is_optional = [](YAML::Node const & node) {
+        return node.IsSequence() && node.size() == 2u && node[0].Scalar() == "null";
+    };
+
+    auto is_array = [](YAML::Node const & node) {
+        return node.IsMap() && node["type"].Scalar() == "array" && node["items"].IsScalar();
+    };
+
+    // 1. Collapsing optional scalar types into one option
+    if (is_optional(type) && type[1].IsScalar()) {
+        type = type[1].as<std::string>() + "?";
+    }
+
+    // 2. Collapsing array types into one option
+    if (is_array(type)) {
+        type = type["items"].as<std::string>() + "[]";
+    }
+
+    // 3. Collapsing optional array types into one option
+    if (is_optional(type) && is_array(type[1])) {
+        type = type[1]["items"].as<std::string>() + "[]?";
+    }
+
+    return type;
+}
+
+inline auto expandType(YAML::Node type) -> YAML::Node {
+    auto ends_with = [](std::string str, std::string suffix) {
+        if (str.size() < suffix.size()) return false;
+        auto str_suffix = str.substr(str.size()-suffix.size(), suffix.size());
+        return str_suffix == suffix;
+    };
+
+    // 0. If not a scalar type, nothing to do
+    if (!type.IsDefined() || !type.IsScalar()) {
+        return type;
+    }
+
+    auto str = type.as<std::string>();
+    // 1. Check if optional array type and expand
+    if (ends_with(str, "[]?")) {
+        auto result = YAML::Node{};
+        result.push_back(YAML::Node{"null"});
+        auto array = YAML::Node{};
+        array["type"] = "array";
+        array["items"] = expandType(YAML::Node(str.substr(0, str.size()-3)));
+        result.push_back(array);
+        return result;
+    }
+
+    // 2. Expand array
+    if (ends_with(str, "[]")) {
+        auto array = YAML::Node{};
+        array["type"] = "array";
+        array["items"] = expandType(YAML::Node(str.substr(0, str.size()-2)));
+        return array;
+    }
+
+    // 3. Expand optional scalar type
+    if (ends_with(str, "?")) {
+        auto result = YAML::Node{};
+        result.push_back(YAML::Node{"null"});
+        result.push_back(expandType(YAML::Node(str.substr(0, str.size()-1))));
+        return result;
+    }
+    return type;
+}
+
 inline auto mergeYaml(YAML::Node n1, YAML::Node n2) {
     for (auto const& e : n1) {
         n2[e.first.as<std::string>()] = e.second;
@@ -768,23 +845,36 @@ inline void addYamlField(YAML::Node& node, std::string const& key, YAML::Node va
     }
 }
 
-inline auto convertListToMap(YAML::Node list, std::string const& key_name) {
+inline auto convertListToMap(YAML::Node list, std::string const& mapSubject, std::string const& mapPredicate) {
+    if (mapSubject.empty()) return list;
     if (list.size() == 0) return list;
     auto map = YAML::Node{};
     for (YAML::Node n : list) {
-        auto key = n[key_name].as<std::string>();
-        n.remove(key_name);
-        map[key] = n;
+        auto key = n[mapSubject].as<std::string>();
+        if (mapPredicate.empty()|| n[mapPredicate].IsMap()) {
+            n.remove(mapSubject);
+            map[key] = n;
+        } else {
+            map[key] = n[mapPredicate];
+        }
     }
     return map;
 }
-inline auto convertMapToList(YAML::Node map, std::string const& key_name) {
+inline auto convertMapToList(YAML::Node map, std::string const& mapSubject, std::string const& mapPredicate) {
+    if (mapSubject.empty()) return map;
     if (!map.IsDefined()) return map;
     if (!map.IsMap()) return map;
     auto list = YAML::Node{};
     for (auto n : map) {
-        n.second[key_name] = n.first;
-        list.push_back(n.second);
+        if (mapPredicate.empty() || n.second.IsMap()) {
+            n.second[mapSubject] = n.first;
+            list.push_back(n.second);
+        } else {
+            auto n2 = YAML::Node{};
+            n2[mapSubject] = n.first;
+            n2[mapPredicate] = n.second;
+            list.push_back(n2);
+        }
     }
     return list;
 }
@@ -1101,10 +1191,16 @@ void fromYaml(YAML::Node const& n, std::variant<Args...>& v){
     def parseRecordField(self, field: dict[str, Any]) -> FieldDefinition:
         """Parse a record field."""
         (namespace, classname, fieldname) = split_field(field["name"])
-        remap = ""
+        mapSubject = ""
+        mapPredicate = ""
+        typeDSL = False
         if "jsonldPredicate" in field:
             if "mapSubject" in field["jsonldPredicate"]:
-                remap = field["jsonldPredicate"]["mapSubject"]
+                mapSubject = field["jsonldPredicate"]["mapSubject"]
+            if "mapPredicate" in field["jsonldPredicate"]:
+                mapPredicate = field["jsonldPredicate"]["mapPredicate"]
+            if "typeDSL" in field["jsonldPredicate"]:
+                typeDSL = field["jsonldPredicate"]["typeDSL"]
 
         if isinstance(field["type"], dict):
             if field["type"]["type"] == "enum":
@@ -1115,7 +1211,14 @@ void fromYaml(YAML::Node const& n, std::variant<Args...>& v){
         else:
             fieldtype = self.convertTypeToCpp(field["type"])
 
-        return FieldDefinition(name=fieldname, typeStr=fieldtype, optional=False, remap=remap)
+        return FieldDefinition(
+            name=fieldname,
+            typeStr=fieldtype,
+            optional=False,
+            mapSubject=mapSubject,
+            mapPredicate=mapPredicate,
+            typeDSL=typeDSL,
+        )
 
     def parseRecordSchema(self, stype: dict[str, Any]) -> None:
         """Parse a record schema."""
