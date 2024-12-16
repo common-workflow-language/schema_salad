@@ -134,7 +134,9 @@ class ClassDefinition:
         else:
             target.write(f"{fullInd}{ind}{virtual}~{self.classname}(){override} = default;\n")
 
-        target.write(f"{fullInd}{ind}{virtual}auto toYaml([[maybe_unused]] store_config const& config) const -> YAML::Node{override};\n")
+        target.write(
+            f"{fullInd}{ind}{virtual}auto toYaml([[maybe_unused]] store_config const& config) const -> YAML::Node{override};\n"
+        )
         target.write(f"{fullInd}{ind}{virtual}void fromYaml(YAML::Node const& n){override};\n")
         target.write(f"{fullInd}}};\n")
         target.write(f"{fullInd}}}\n\n")
@@ -155,7 +157,7 @@ class ClassDefinition:
             f"{fullInd}{ind}using ::cpp_gen::toYaml;\n"
             f"{fullInd}{ind}auto n = YAML::Node{{}};\n"
             f"{fullInd}{ind}if (config.generateTags) {{\n"
-            f"{fullInd}{ind}{ind}n.SetTag(\"{self.classname}\");\n"
+            f'{fullInd}{ind}{ind}n.SetTag("{self.classname}");\n'
             f"{fullInd}{ind}}}\n"
         )
         for e in extends:
@@ -164,13 +166,15 @@ class ClassDefinition:
         for field in self.fields:
             fieldname = safename(field.name)
 
-            target.write(f"{fullInd}{ind}{{\n");
-            target.write(f"{fullInd}{ind}{ind} auto member = toYaml(*{fieldname}, config);\n");
+            target.write(f"{fullInd}{ind}{{\n")
+            target.write(f"{fullInd}{ind}{ind} auto member = toYaml(*{fieldname}, config);\n")
             if field.typeDSL:
-                target.write(f"{fullInd}{ind}{ind} member = simplifyType(member, config);\n");
-            target.write(f"{fullInd}{ind}{ind} member = convertListToMap(member, {q(field.mapSubject)}, {q(field.mapPredicate)}, config);\n");
-            target.write(f"{fullInd}{ind}{ind}addYamlField(n, {q(field.name)}, member);\n");
-            target.write(f"{fullInd}{ind}}}\n");
+                target.write(f"{fullInd}{ind}{ind} member = simplifyType(member, config);\n")
+            target.write(
+                f"{fullInd}{ind}{ind} member = convertListToMap(member, {q(field.mapSubject)}, {q(field.mapPredicate)}, config);\n"
+            )
+            target.write(f"{fullInd}{ind}{ind}addYamlField(n, {q(field.name)}, member);\n")
+            target.write(f"{fullInd}{ind}}}\n")
 
         target.write(f"{fullInd}{ind}return n;\n{fullInd}}}\n")
 
@@ -279,7 +283,9 @@ class MapDefinition:
             valueType = f"std::variant<{', '.join(self._remove_namespace(v) for v in self.values)}>"
         target.write(f"struct {self.classname} {{\n")
         target.write(f"{ind}heap_object<std::map<std::string, {valueType}>> value;\n")
-        target.write(f"{ind}auto toYaml([[maybe_unused]] store_config const& config) const -> YAML::Node;\n")
+        target.write(
+            f"{ind}auto toYaml([[maybe_unused]] store_config const& config) const -> YAML::Node;\n"
+        )
         target.write(f"{ind}void fromYaml(YAML::Node const& n);\n")
         target.write("};\n")
         target.write("}\n\n")
@@ -333,7 +339,9 @@ class UnionDefinition:
         target.write(f"{ind}{self.types} *value = nullptr;\n")
         target.write(f"{ind}{self.classname}();\n")
         target.write(f"{ind}~{self.classname}();\n")
-        target.write(f"{ind}auto toYaml([[maybe_unused]] store_config const& config) const -> YAML::Node;\n")
+        target.write(
+            f"{ind}auto toYaml([[maybe_unused]] store_config const& config) const -> YAML::Node;\n"
+        )
         target.write(f"{ind}void fromYaml(YAML::Node const& n);\n")
         target.write("};\n")
         target.write("}\n\n")
@@ -423,9 +431,11 @@ class EnumDefinition:
         target.write(f"{ind}out = iter->second;\n}}\n")
 
         # Write toYaml function
-        target.write(f"inline auto toYaml({name} v, [[maybe_unused]] store_config const& config) {{\n")
+        target.write(
+            f"inline auto toYaml({name} v, [[maybe_unused]] store_config const& config) {{\n"
+        )
         target.write(f"{ind}auto n = YAML::Node{{std::string{{to_string(v)}}}};\n")
-        target.write(f"{ind}if (config.generateTags) n.SetTag(\"{name}\");\n")
+        target.write(f'{ind}if (config.generateTags) n.SetTag("{name}");\n')
         target.write(f"{ind}return n;\n}}\n")
 
         # Write fromYaml function
@@ -1215,11 +1225,9 @@ void fromYaml(YAML::Node const& n, std::variant<Args...>& v){
             rootTypes.append(f"{cd.namespace}::{cd.classname}")
         documentRootType = f", ".join(rootTypes)
 
-
-#      self.documentRootTypes.append(cd)
-
         self.target.write(f"using DocumentRootType = std::variant<{documentRootType}>;")
-        self.target.write("""
+        self.target.write(
+            """
 auto load_document_from_yaml(YAML::Node n) -> DocumentRootType {
     DocumentRootType root;
     fromYaml(n, root);
@@ -1248,7 +1256,8 @@ auto store_document_as_string(DocumentRootType const& root, store_config config=
     return ss.str();
 }
 
-}""")
+}"""
+        )
 
     def parseRecordField(self, field: dict[str, Any]) -> FieldDefinition:
         """Parse a record field."""
