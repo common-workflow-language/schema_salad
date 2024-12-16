@@ -880,7 +880,7 @@ inline auto convertListToMap(YAML::Node list, std::string const& mapSubject, std
     auto map = YAML::Node{};
     for (YAML::Node n : list) {
         auto key = n[mapSubject].as<std::string>();
-        if (mapPredicate.empty()|| n[mapPredicate].IsMap()) {
+        if (mapPredicate.empty() || n[mapPredicate].IsMap() || n.size() > 2) {
             n.remove(mapSubject);
             map[key] = n;
         } else {
