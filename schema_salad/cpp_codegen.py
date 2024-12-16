@@ -1244,7 +1244,7 @@ void store_document(DocumentRootType const& root, std::ostream& ostream, store_c
 
     YAML::Emitter out;
     out << y;
-    ostream << out.c_str();
+    ostream << out.c_str() << std::endl;
 }
 void store_document(DocumentRootType const& root, std::filesystem::path const& path, store_config config={}) {
     auto ofs = std::ofstream{path};
