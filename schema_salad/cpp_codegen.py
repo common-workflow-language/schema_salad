@@ -225,10 +225,11 @@ class ClassDefinition:
 
         # write type detection function
         if not self.abstract:
-            e = f"{self.namespace}::{self.classname}"
+            e = f"::{self.namespace}::{self.classname}"
             target.write(
+                f"namespace {common_namespace} {{\n"
                 f"template <>\n"
-                f"struct {common_namespace}::DetectAndExtractFromYaml<{e}> {{\n"
+                f"struct DetectAndExtractFromYaml<{e}> {{\n"
                 f"    auto operator()(YAML::Node const& n) const -> std::optional<{e}> {{\n"
                 f"        if (!n.IsDefined()) return std::nullopt;\n"
                 f"        if (!n.IsMap()) return std::nullopt;\n"
@@ -244,7 +245,7 @@ class ClassDefinition:
                     "            return res;\n"
                     f"        }} catch(...) {{}}\n\n"
                 )
-            target.write("        return std::nullopt;\n    }\n};\n")
+            target.write("        return std::nullopt;\n    }\n};\n}\n")
 
 
 class FieldDefinition:
@@ -1167,10 +1168,8 @@ public:
         # incomplete types.
         # Therefore, the destructor is defined here, after all classes have been defined.
         self.target.write(
-            f"""template <typename T>
-{common_namespace}::heap_object<T>::~heap_object() = default;
-
-"""
+            f"namespace {common_namespace} {{\n"
+            f"template <typename T> heap_object<T>::~heap_object() = default;\n}}\n\n"
         )
 
         # write implementations
@@ -1299,7 +1298,7 @@ auto load_document_from_string(std::string document) -> DocumentRootType {
     return load_document_from_yaml(YAML::Load(document));
 }
 auto load_document(std::filesystem::path path) -> DocumentRootType {
-    return load_document_from_yaml(YAML::LoadFile(path));
+    return load_document_from_yaml(YAML::LoadFile(path.string()));
 }
 void store_document(DocumentRootType const& root, std::ostream& ostream, store_config config={}) {
     auto y = toYaml(root, config);
