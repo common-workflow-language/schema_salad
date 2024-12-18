@@ -181,7 +181,8 @@ inline void addYamlField(YAML::Node& node, std::string const& key, YAML::Node va
     }
 }
 
-inline auto convertListToMap(YAML::Node list, std::string const& mapSubject, std::string const& mapPredicate, store_config const& config) {
+inline auto convertListToMap(YAML::Node list, std::string const& mapSubject,
+                             std::string const& mapPredicate, store_config const& config) {
     if (!config.transformListsToMaps) return list;
     if (mapSubject.empty()) return list;
     if (list.size() == 0) return list;
@@ -197,7 +198,8 @@ inline auto convertListToMap(YAML::Node list, std::string const& mapSubject, std
     }
     return map;
 }
-inline auto convertMapToList(YAML::Node map, std::string const& mapSubject, std::string const& mapPredicate) {
+inline auto convertMapToList(YAML::Node map, std::string const& mapSubject,
+                             std::string const& mapPredicate) {
     if (mapSubject.empty()) return map;
     if (!map.IsDefined()) return map;
     if (!map.IsMap()) return map;
