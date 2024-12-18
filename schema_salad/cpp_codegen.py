@@ -20,6 +20,7 @@ which can be combined with the CWL V1.0 schema as shown below::
 """
 
 import re
+import os
 from typing import IO, Any, Optional, Union, cast
 
 from . import _logger
@@ -58,11 +59,20 @@ def safename(name: str) -> str:
     classname = re.sub("[^a-zA-Z0-9]", "_", name)
     return replaceKeywords(classname)
 
+def safenamespacename(name: str) -> str:
+    """Create a C++ safe name for namespaces"""
+    name = re.sub("^[a-zA-Z0-9]+://", "", name) # remove protocol
+    name = re.sub("//+", "", name) # remove duplicate slashes
+    name = re.sub("/$", "", name) # remove trailing slashes
+    name = re.sub("[^a-zA-Z0-9/]", "_", name)
+    name = re.sub("[/]", "::", name)
+
+    return name
 
 # TODO: this should be somehow not really exists
 def safename2(name: dict[str, str]) -> str:
     """Create a namespaced safename."""
-    return safename(name["namespace"]) + "::" + safename(name["classname"])
+    return safenamespacename(name["namespace"]) + "::" + safename(name["classname"])
 
 
 def split_name(s: str) -> tuple[str, str]:
@@ -105,14 +115,14 @@ class ClassDefinition:
         self.fields: list[FieldDefinition] = []
         self.abstract = False
         (self.namespace, self.classname) = split_name(name)
-        self.namespace = safename(self.namespace)
+        self.namespace = safenamespacename(self.namespace)
         self.classname = safename(self.classname)
 
     def writeFwdDeclaration(self, target: IO[str], fullInd: str, ind: str) -> None:
         """Write forward declaration."""
         target.write(f"{fullInd}namespace {self.namespace} {{ struct {self.classname}; }}\n")
 
-    def writeDefinition(self, target: IO[Any], fullInd: str, ind: str) -> None:
+    def writeDefinition(self, target: IO[Any], fullInd: str, ind: str, common_namespace: str) -> None:
         """Write definition of the class."""
         target.write(f"{fullInd}namespace {self.namespace} {{\n")
         target.write(f"{fullInd}struct {self.classname}")
@@ -135,13 +145,13 @@ class ClassDefinition:
             target.write(f"{fullInd}{ind}{virtual}~{self.classname}(){override} = default;\n")
 
         target.write(
-            f"{fullInd}{ind}{virtual}auto toYaml([[maybe_unused]] store_config const& config) const -> YAML::Node{override};\n"
+            f"{fullInd}{ind}{virtual}auto toYaml([[maybe_unused]] {common_namespace}::store_config const& config) const -> YAML::Node{override};\n"
         )
         target.write(f"{fullInd}{ind}{virtual}void fromYaml(YAML::Node const& n){override};\n")
         target.write(f"{fullInd}}};\n")
         target.write(f"{fullInd}}}\n\n")
 
-    def writeImplDefinition(self, target: IO[str], fullInd: str, ind: str) -> None:
+    def writeImplDefinition(self, target: IO[str], fullInd: str, ind: str, common_namespace: str) -> None:
         """Write definition with implementation."""
         extends = list(map(safename2, self.extends))
 
@@ -153,8 +163,8 @@ class ClassDefinition:
 
         # Write toYaml function
         target.write(
-            f"{fullInd}inline auto {self.namespace}::{self.classname}::toYaml([[maybe_unused]] store_config const& config) const -> YAML::Node {{\n"
-            f"{fullInd}{ind}using ::cpp_gen::toYaml;\n"
+            f"{fullInd}inline auto {self.namespace}::{self.classname}::toYaml([[maybe_unused]] ::{common_namespace}::store_config const& config) const -> YAML::Node {{\n"
+            f"{fullInd}{ind}using ::{common_namespace}::toYaml;\n"
             f"{fullInd}{ind}auto n = YAML::Node{{}};\n"
             f"{fullInd}{ind}if (config.generateTags) {{\n"
             f'{fullInd}{ind}{ind}n.SetTag("{self.classname}");\n'
@@ -182,7 +192,7 @@ class ClassDefinition:
         functionname = f"{self.namespace}::{self.classname}::fromYaml"
         target.write(
             f"{fullInd}inline void {functionname}([[maybe_unused]] YAML::Node const& n) {{\n"
-            f"{fullInd}{ind}using ::cpp_gen::fromYaml;\n"
+            f"{fullInd}{ind}using ::{common_namespace}::fromYaml;\n"
         )
         for e in extends:
             target.write(f"{fullInd}{ind}{e}::fromYaml(n);\n")
@@ -208,7 +218,7 @@ class ClassDefinition:
             e = f"{self.namespace}::{self.classname}"
             target.write(
                 f"template <>\n"
-                f"struct DetectAndExtractFromYaml<{e}> {{\n"
+                f"struct {common_namespace}::DetectAndExtractFromYaml<{e}> {{\n"
                 f"    auto operator()(YAML::Node const& n) const -> std::optional<{e}> {{\n"
                 f"        if (!n.IsDefined()) return std::nullopt;\n"
                 f"        if (!n.IsMap()) return std::nullopt;\n"
@@ -217,7 +227,7 @@ class ClassDefinition:
             for field in self.fields:
                 fieldname = safename(field.name)
                 target.write(
-                    f"        if constexpr (IsConstant<decltype(res.{fieldname})::value_t>::value) try {{\n"
+                    f"        if constexpr (::{common_namespace}::IsConstant<decltype(res.{fieldname})::value_t>::value) try {{\n"
                     f"            fromYaml(n[{q(field.name)}], *res.{fieldname});\n"
                     f"            fromYaml(n, res);\n"
                     f"            return res;\n"
@@ -264,7 +274,7 @@ class MapDefinition:
         """Initialize union definition with a name and possible values."""
         self.values = values
         (self.namespace, self.classname) = split_name(name)
-        self.namespace = safename(self.namespace)
+        self.namespace = safenamespacename(self.namespace)
         self.classname = safename(self.classname)
 
     def _remove_namespace(self, typeStr: str) -> str:
@@ -274,7 +284,7 @@ class MapDefinition:
         """Write forward declaration."""
         target.write(f"{fullInd}namespace {self.namespace} {{ struct {self.classname}; }}\n")
 
-    def writeDefinition(self, target: IO[str], ind: str) -> None:
+    def writeDefinition(self, target: IO[str], ind: str, common_namespace: str) -> None:
         """Write map definition to output."""
         target.write(f"namespace {self.namespace} {{\n")
         if len(self.values) == 1:
@@ -284,19 +294,19 @@ class MapDefinition:
         target.write(f"struct {self.classname} {{\n")
         target.write(f"{ind}heap_object<std::map<std::string, {valueType}>> value;\n")
         target.write(
-            f"{ind}auto toYaml([[maybe_unused]] store_config const& config) const -> YAML::Node;\n"
+            f"{ind}auto toYaml([[maybe_unused]] ::{common_namespace}::store_config const& config) const -> YAML::Node;\n"
         )
         target.write(f"{ind}void fromYaml(YAML::Node const& n);\n")
         target.write("};\n")
         target.write("}\n\n")
 
-    def writeImplDefinition(self, target: IO[str], fullInd: str, ind: str) -> None:
+    def writeImplDefinition(self, target: IO[str], fullInd: str, ind: str, common_namespace: str) -> None:
         """Write definition with implementation."""
         # Write toYaml function
         functionname = f"{self.namespace}::{self.classname}::toYaml"
         target.write(
-            f"{fullInd}inline auto {functionname}([[maybe_unused]] store_config const& config) const -> YAML::Node {{\n"
-            f"{fullInd}{ind}using ::cpp_gen::toYaml;\n"
+            f"{fullInd}inline auto {functionname}([[maybe_unused]] ::{common_namespace}::store_config const& config) const -> YAML::Node {{\n"
+            f"{fullInd}{ind}using ::{common_namespace}::toYaml;\n"
             f"{fullInd}{ind}return toYaml(*value, config);\n"
             f"{fullInd}}}\n"
         )
@@ -305,7 +315,7 @@ class MapDefinition:
         functionname = f"{self.namespace}::{self.classname}::fromYaml"
         target.write(
             f"{fullInd}inline void {functionname}([[maybe_unused]] YAML::Node const& n) {{\n"
-            f"{fullInd}{ind}using ::cpp_gen::fromYaml;\n"
+            f"{fullInd}{ind}using ::{common_namespace}::fromYaml;\n"
             f"{fullInd}{ind}fromYaml(n, *value);\n"
             f"{fullInd}}}\n"
         )
@@ -317,7 +327,7 @@ class UnionDefinition:
     def __init__(self, name: str, types: list[str]):
         """Initialize union definition with a name and possible types."""
         (self.namespace, self.classname) = split_name(name)
-        self.namespace = safename(self.namespace)
+        self.namespace = safenamespacename(self.namespace)
         self.classname = safename(self.classname)
         self.types = (
             self._remove_namespace(types[0])
@@ -332,7 +342,7 @@ class UnionDefinition:
         """Write forward declaration."""
         target.write(f"{fullInd}namespace {self.namespace} {{ struct {self.classname}; }}\n")
 
-    def writeDefinition(self, target: IO[str], ind: str) -> None:
+    def writeDefinition(self, target: IO[str], ind: str, common_namespace: str) -> None:
         """Write union definition to output."""
         target.write(f"namespace {self.namespace} {{\n")
         target.write(f"struct {self.classname} {{\n")
@@ -340,13 +350,13 @@ class UnionDefinition:
         target.write(f"{ind}{self.classname}();\n")
         target.write(f"{ind}~{self.classname}();\n")
         target.write(
-            f"{ind}auto toYaml([[maybe_unused]] store_config const& config) const -> YAML::Node;\n"
+            f"{ind}auto toYaml([[maybe_unused]] ::{common_namespace}::store_config const& config) const -> YAML::Node;\n"
         )
         target.write(f"{ind}void fromYaml(YAML::Node const& n);\n")
         target.write("};\n")
         target.write("}\n\n")
 
-    def writeImplDefinition(self, target: IO[str], fullInd: str, ind: str) -> None:
+    def writeImplDefinition(self, target: IO[str], fullInd: str, ind: str, common_namespace: str) -> None:
         """Write definition with implementation."""
         # Write constructor
         functionname = f"{self.namespace}::{self.classname}::{self.classname}"
@@ -370,8 +380,8 @@ class UnionDefinition:
         # Write toYaml function
         functionname = f"{self.namespace}::{self.classname}::toYaml"
         target.write(
-            f"{fullInd}inline auto {functionname}([[maybe_unused]] store_config const& config) const -> YAML::Node {{\n"
-            f"{fullInd}{ind}using ::cpp_gen::toYaml;\n"
+            f"{fullInd}inline auto {functionname}([[maybe_unused]] ::{common_namespace}::store_config const& config) const -> YAML::Node {{\n"
+            f"{fullInd}{ind}using ::{common_namespace}::toYaml;\n"
             f"{fullInd}{ind}return toYaml(*value, config);\n"
             f"{fullInd}}}\n"
         )
@@ -380,7 +390,7 @@ class UnionDefinition:
         functionname = f"{self.namespace}::{self.classname}::fromYaml"
         target.write(
             f"{fullInd}inline void {functionname}([[maybe_unused]] YAML::Node const& n) {{\n"
-            f"{fullInd}{ind}using ::cpp_gen::fromYaml;\n"
+            f"{fullInd}{ind}using ::{common_namespace}::fromYaml;\n"
             f"{fullInd}{ind}fromYaml(n, *value);\n"
             f"{fullInd}}}\n"
         )
@@ -394,13 +404,18 @@ class EnumDefinition:
         self.name = name
         self.values = values
 
-    def writeDefinition(self, target: IO[str], ind: str) -> None:
+        (self.namespace, self.classname) = split_name(name)
+        self.namespace = safenamespacename(self.namespace)
+        self.classname = safename(self.classname)
+
+    def writeDefinition(self, target: IO[str], ind: str, common_namespace: str) -> None:
         """Write enum definition to output."""
         namespace = ""
         if len(self.name.split("#")) == 2:
             (namespace, classname) = split_name(self.name)
-            namespace = safename(namespace)
+            namespace = safenamespacename(namespace)
             classname = safename(classname)
+
             name = namespace + "::" + classname
         else:
             name = safename(self.name)
@@ -431,8 +446,9 @@ class EnumDefinition:
         target.write(f"{ind}out = iter->second;\n}}\n")
 
         # Write toYaml function
+        target.write(f"namespace {common_namespace} {{\n")
         target.write(
-            f"inline auto toYaml({name} v, [[maybe_unused]] store_config const& config) {{\n"
+            f"inline auto toYaml({name} v, [[maybe_unused]] ::{common_namespace}::store_config const& config) {{\n"
         )
         target.write(f"{ind}auto n = YAML::Node{{std::string{{to_string(v)}}}};\n")
         target.write(f'{ind}if (config.generateTags) n.SetTag("{name}");\n')
@@ -444,6 +460,8 @@ class EnumDefinition:
 
         if len(self.values):
             target.write(f"template <> struct IsConstant<{name}> : std::true_type {{}};\n")
+
+        target.write("}\n")
 
         target.write("\n")
 
@@ -626,7 +644,7 @@ class CppCodeGen(CodeGenBase):
                     if len(name.split("#")) != 2:
                         return safename(name)
                     (namespace, classname) = name.split("#")
-                    return safename(namespace) + "::" + safename(classname)
+                    return safenamespacename(namespace) + "::" + safename(classname)
                 elif "type" in type_declaration[0] and type_declaration[0]["type"] in (
                     "array",
                     "https://w3id.org/cwl/salad#array",
@@ -657,24 +675,29 @@ class CppCodeGen(CodeGenBase):
                 ):
                     n = type_declaration[0]["name"]
                     (namespace, classname) = split_name(n)
-                    return safename(namespace) + "::" + safename(classname)
+                    return safenamespacename(namespace) + "::" + safename(classname)
 
                 n = type_declaration[0]["type"]
                 (namespace, classname) = split_name(n)
-                return safename(namespace) + "::" + safename(classname)
+                return safenamespacename(namespace) + "::" + safename(classname)
 
             if len(type_declaration[0].split("#")) != 2:
                 _logger.debug(f"// something weird2 about {type_declaration[0]}")
                 return cast(str, type_declaration[0])
 
             (namespace, classname) = split_name(type_declaration[0])
-            return safename(namespace) + "::" + safename(classname)
+            return safenamespacename(namespace) + "::" + safename(classname)
 
         type_declaration = list(map(self.convertTypeToCpp, type_declaration))
         type_declaration = ", ".join(type_declaration)
         return f"std::variant<{type_declaration}>"
 
     def epilogue(self, root_loader: Optional[TypeDef]) -> None:
+        # find common namespace
+
+        common_namespace = os.path.commonprefix(list(map(lambda x: x.namespace, list(self.classDefinitions.values()) + list(self.enumDefinitions.values()))))
+        common_namespace = re.sub("(::)+$", "", common_namespace)
+
         """Generate final part of our cpp file."""
         if self.spdx_copyright_text:
             for text in self.spdx_copyright_text:
@@ -711,8 +734,11 @@ class CppCodeGen(CodeGenBase):
 #include <vector>
 #include <yaml-cpp/yaml.h>
 
-namespace cpp_gen {
+"""
+        )
 
+        self.target.write(f"namespace {common_namespace} {{\n")
+        self.target.write("""
 struct store_config {
     bool simplifyTypes = true;
     bool transformListsToMaps = true;
@@ -1060,6 +1086,7 @@ public:
     }
 };
 
+}
 """
         )
         # main body, printing fwd declaration, class definitions, and then implementations
@@ -1094,13 +1121,13 @@ public:
 
         # write definitions
         for key in self.enumDefinitions:
-            self.enumDefinitions[key].writeDefinition(self.target, "    ")
+            self.enumDefinitions[key].writeDefinition(self.target, "    ", common_namespace)
         for key in self.classDefinitions:
-            self.classDefinitions[key].writeDefinition(self.target, "", "    ")
+            self.classDefinitions[key].writeDefinition(self.target, "", "    ", common_namespace)
         for key in self.mapDefinitions:
-            self.mapDefinitions[key].writeDefinition(self.target, "    ")
+            self.mapDefinitions[key].writeDefinition(self.target, "    ", common_namespace)
         for key in self.unionDefinitions:
-            self.unionDefinitions[key].writeDefinition(self.target, "    ")
+            self.unionDefinitions[key].writeDefinition(self.target, "    ", common_namespace)
 
         # CPP23: std::unique_ptr in heap_object is constexpr.
         # Hence, the compiler will try to instantiate the destructor on definition.
@@ -1110,20 +1137,22 @@ public:
         # incomplete types.
         # Therefore, the destructor is defined here, after all classes have been defined.
         self.target.write(
-            """template <typename T>
-heap_object<T>::~heap_object() = default;
+            f"""template <typename T>
+{common_namespace}::heap_object<T>::~heap_object() = default;
 
 """
         )
 
         # write implementations
         for key in self.classDefinitions:
-            self.classDefinitions[key].writeImplDefinition(self.target, "", "    ")
+            self.classDefinitions[key].writeImplDefinition(self.target, "", "    ", common_namespace)
         for key in self.mapDefinitions:
-            self.mapDefinitions[key].writeImplDefinition(self.target, "", "    ")
+            self.mapDefinitions[key].writeImplDefinition(self.target, "", "    ", common_namespace)
         for key in self.unionDefinitions:
-            self.unionDefinitions[key].writeImplDefinition(self.target, "", "    ")
+            self.unionDefinitions[key].writeImplDefinition(self.target, "", "    ", common_namespace)
 
+
+        self.target.write(f"namespace {common_namespace} {{\n")
         self.target.write(
             """
 template <typename T>
