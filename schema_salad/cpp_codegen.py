@@ -59,15 +59,17 @@ def safename(name: str) -> str:
     classname = re.sub("[^a-zA-Z0-9]", "_", name)
     return replaceKeywords(classname)
 
+
 def safenamespacename(name: str) -> str:
     """Create a C++ safe name for namespaces"""
-    name = re.sub("^[a-zA-Z0-9]+://", "", name) # remove protocol
-    name = re.sub("//+", "", name) # remove duplicate slashes
-    name = re.sub("/$", "", name) # remove trailing slashes
+    name = re.sub("^[a-zA-Z0-9]+://", "", name)  # remove protocol
+    name = re.sub("//+", "", name)  # remove duplicate slashes
+    name = re.sub("/$", "", name)  # remove trailing slashes
     name = re.sub("[^a-zA-Z0-9/]", "_", name)
     name = re.sub("[/]", "::", name)
 
     return name
+
 
 # TODO: this should be somehow not really exists
 def safename2(name: dict[str, str]) -> str:
@@ -122,7 +124,9 @@ class ClassDefinition:
         """Write forward declaration."""
         target.write(f"{fullInd}namespace {self.namespace} {{ struct {self.classname}; }}\n")
 
-    def writeDefinition(self, target: IO[Any], fullInd: str, ind: str, common_namespace: str) -> None:
+    def writeDefinition(
+        self, target: IO[Any], fullInd: str, ind: str, common_namespace: str
+    ) -> None:
         """Write definition of the class."""
         target.write(f"{fullInd}namespace {self.namespace} {{\n")
         target.write(f"{fullInd}struct {self.classname}")
@@ -151,7 +155,9 @@ class ClassDefinition:
         target.write(f"{fullInd}}};\n")
         target.write(f"{fullInd}}}\n\n")
 
-    def writeImplDefinition(self, target: IO[str], fullInd: str, ind: str, common_namespace: str) -> None:
+    def writeImplDefinition(
+        self, target: IO[str], fullInd: str, ind: str, common_namespace: str
+    ) -> None:
         """Write definition with implementation."""
         extends = list(map(safename2, self.extends))
 
@@ -300,7 +306,9 @@ class MapDefinition:
         target.write("};\n")
         target.write("}\n\n")
 
-    def writeImplDefinition(self, target: IO[str], fullInd: str, ind: str, common_namespace: str) -> None:
+    def writeImplDefinition(
+        self, target: IO[str], fullInd: str, ind: str, common_namespace: str
+    ) -> None:
         """Write definition with implementation."""
         # Write toYaml function
         functionname = f"{self.namespace}::{self.classname}::toYaml"
@@ -356,7 +364,9 @@ class UnionDefinition:
         target.write("};\n")
         target.write("}\n\n")
 
-    def writeImplDefinition(self, target: IO[str], fullInd: str, ind: str, common_namespace: str) -> None:
+    def writeImplDefinition(
+        self, target: IO[str], fullInd: str, ind: str, common_namespace: str
+    ) -> None:
         """Write definition with implementation."""
         # Write constructor
         functionname = f"{self.namespace}::{self.classname}::{self.classname}"
@@ -695,7 +705,14 @@ class CppCodeGen(CodeGenBase):
     def epilogue(self, root_loader: Optional[TypeDef]) -> None:
         # find common namespace
 
-        common_namespace = os.path.commonprefix(list(map(lambda x: x.namespace, list(self.classDefinitions.values()) + list(self.enumDefinitions.values()))))
+        common_namespace = os.path.commonprefix(
+            list(
+                map(
+                    lambda x: x.namespace,
+                    list(self.classDefinitions.values()) + list(self.enumDefinitions.values()),
+                )
+            )
+        )
         common_namespace = re.sub("(::)+$", "", common_namespace)
 
         """Generate final part of our cpp file."""
@@ -738,7 +755,8 @@ class CppCodeGen(CodeGenBase):
         )
 
         self.target.write(f"namespace {common_namespace} {{\n")
-        self.target.write("""
+        self.target.write(
+            """
 struct store_config {
     bool simplifyTypes = true;
     bool transformListsToMaps = true;
@@ -1145,12 +1163,15 @@ public:
 
         # write implementations
         for key in self.classDefinitions:
-            self.classDefinitions[key].writeImplDefinition(self.target, "", "    ", common_namespace)
+            self.classDefinitions[key].writeImplDefinition(
+                self.target, "", "    ", common_namespace
+            )
         for key in self.mapDefinitions:
             self.mapDefinitions[key].writeImplDefinition(self.target, "", "    ", common_namespace)
         for key in self.unionDefinitions:
-            self.unionDefinitions[key].writeImplDefinition(self.target, "", "    ", common_namespace)
-
+            self.unionDefinitions[key].writeImplDefinition(
+                self.target, "", "    ", common_namespace
+            )
 
         self.target.write(f"namespace {common_namespace} {{\n")
         self.target.write(
