@@ -392,8 +392,9 @@ struct MyRecordTwo
 };
 }
 
-template <typename T>
-example_com::heap_object<T>::~heap_object() = default;
+namespace example_com {
+template <typename T> heap_object<T>::~heap_object() = default;
+}
 
 inline auto example_com::MyRecordOne::toYaml([[maybe_unused]] ::example_com::store_config const& config) const -> YAML::Node {
     using ::example_com::toYaml;
@@ -416,12 +417,13 @@ inline void example_com::MyRecordOne::fromYaml([[maybe_unused]] YAML::Node const
         fromYaml(expandedNode, *name);
     }
 }
+namespace example_com {
 template <>
-struct example_com::DetectAndExtractFromYaml<example_com::MyRecordOne> {
-    auto operator()(YAML::Node const& n) const -> std::optional<example_com::MyRecordOne> {
+struct DetectAndExtractFromYaml<::example_com::MyRecordOne> {
+    auto operator()(YAML::Node const& n) const -> std::optional<::example_com::MyRecordOne> {
         if (!n.IsDefined()) return std::nullopt;
         if (!n.IsMap()) return std::nullopt;
-        auto res = example_com::MyRecordOne{};
+        auto res = ::example_com::MyRecordOne{};
 
         if constexpr (::example_com::IsConstant<decltype(res.name)::value_t>::value) try {
             fromYaml(n["name"], *res.name);
@@ -432,6 +434,7 @@ struct example_com::DetectAndExtractFromYaml<example_com::MyRecordOne> {
         return std::nullopt;
     }
 };
+}
 inline auto example_com::MyRecordTwo::toYaml([[maybe_unused]] ::example_com::store_config const& config) const -> YAML::Node {
     using ::example_com::toYaml;
     auto n = YAML::Node{};
@@ -455,12 +458,13 @@ inline void example_com::MyRecordTwo::fromYaml([[maybe_unused]] YAML::Node const
         fromYaml(expandedNode, *value);
     }
 }
+namespace example_com {
 template <>
-struct example_com::DetectAndExtractFromYaml<example_com::MyRecordTwo> {
-    auto operator()(YAML::Node const& n) const -> std::optional<example_com::MyRecordTwo> {
+struct DetectAndExtractFromYaml<::example_com::MyRecordTwo> {
+    auto operator()(YAML::Node const& n) const -> std::optional<::example_com::MyRecordTwo> {
         if (!n.IsDefined()) return std::nullopt;
         if (!n.IsMap()) return std::nullopt;
-        auto res = example_com::MyRecordTwo{};
+        auto res = ::example_com::MyRecordTwo{};
 
         if constexpr (::example_com::IsConstant<decltype(res.value)::value_t>::value) try {
             fromYaml(n["value"], *res.value);
@@ -471,6 +475,7 @@ struct example_com::DetectAndExtractFromYaml<example_com::MyRecordTwo> {
         return std::nullopt;
     }
 };
+}
 namespace example_com {
 
 template <typename T>
@@ -575,7 +580,7 @@ auto load_document_from_string(std::string document) -> DocumentRootType {
     return load_document_from_yaml(YAML::Load(document));
 }
 auto load_document(std::filesystem::path path) -> DocumentRootType {
-    return load_document_from_yaml(YAML::LoadFile(path));
+    return load_document_from_yaml(YAML::LoadFile(path.string()));
 }
 void store_document(DocumentRootType const& root, std::ostream& ostream, store_config config={}) {
     auto y = toYaml(root, config);
