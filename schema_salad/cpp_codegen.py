@@ -550,6 +550,7 @@ class CppCodeGen(CodeGenBase):
         self.enumDefinitions: dict[str, EnumDefinition] = {}
         self.mapDefinitions: dict[str, MapDefinition] = {}
         self.unionDefinitions: dict[str, UnionDefinition] = {}
+        self.documentRootTypes: list[ClassDefinition] = []
 
     def convertTypeToCpp(self, type_declaration: Union[list[Any], dict[str, Any], str]) -> str:
         """Convert a Schema Salad type to a C++ type."""
@@ -684,6 +685,8 @@ class CppCodeGen(CodeGenBase):
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <map>
 #include <optional>
 #include <string>
@@ -1187,6 +1190,43 @@ void fromYaml(YAML::Node const& n, std::variant<Args...>& v){
 }
 """
         )
+        rootTypes = []
+        for cd in self.documentRootTypes:
+            rootTypes.append(f"{cd.namespace}::{cd.classname}")
+        documentRootType = f", ".join(rootTypes)
+
+
+#      self.documentRootTypes.append(cd)
+
+        self.target.write(f"using DocumentRootType = std::variant<{documentRootType}>;")
+        self.target.write("""
+auto load_document_from_yaml(YAML::Node n) -> DocumentRootType {
+    DocumentRootType root;
+    fromYaml(n, root);
+    return root;
+}
+auto load_document_from_string(std::string document) -> DocumentRootType {
+    return load_document_from_yaml(YAML::Load(document));
+}
+auto load_document(std::filesystem::path path) -> DocumentRootType {
+    return load_document_from_yaml(YAML::LoadFile(path));
+}
+void store_document(DocumentRootType const& root, std::ostream& ostream) {
+    auto y = toYaml(root);
+
+    YAML::Emitter out;
+    out << y;
+    ostream << out.c_str();
+}
+void store_document(DocumentRootType const& root, std::filesystem::path const& path) {
+    auto ofs = std::ofstream{path};
+    store_document(root, ofs);
+}
+auto store_document_as_string(DocumentRootType const& root) -> std::string {
+    auto ss = std::stringstream{};
+    store_document(root, ss);
+    return ss.str();
+}""")
 
     def parseRecordField(self, field: dict[str, Any]) -> FieldDefinition:
         """Parse a record field."""
@@ -1240,6 +1280,9 @@ void fromYaml(YAML::Node const& n, std::variant<Args...>& v){
                 cd.allfields.append(self.parseRecordField(field))
 
         self.classDefinitions[stype["name"]] = cd
+
+        if stype.get("documentRoot", False):
+            self.documentRootTypes.append(cd)
 
     def parseMapSchema(self, stype: dict[str, Any]) -> str:
         """Parse a map schema."""
