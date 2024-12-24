@@ -152,7 +152,7 @@ class ClassDefinition:
         # Write toYaml function
         target.write(
             f"{fullInd}inline auto {self.namespace}::{self.classname}::toYaml([[maybe_unused]] store_config const& config) const -> YAML::Node {{\n"
-            f"{fullInd}{ind}using ::toYaml;\n"
+            f"{fullInd}{ind}using ::cpp_gen::toYaml;\n"
             f"{fullInd}{ind}auto n = YAML::Node{{}};\n"
             f"{fullInd}{ind}if (config.generateTags) {{\n"
             f"{fullInd}{ind}{ind}n.SetTag(\"{self.classname}\");\n"
@@ -178,7 +178,7 @@ class ClassDefinition:
         functionname = f"{self.namespace}::{self.classname}::fromYaml"
         target.write(
             f"{fullInd}inline void {functionname}([[maybe_unused]] YAML::Node const& n) {{\n"
-            f"{fullInd}{ind}using ::fromYaml;\n"
+            f"{fullInd}{ind}using ::cpp_gen::fromYaml;\n"
         )
         for e in extends:
             target.write(f"{fullInd}{ind}{e}::fromYaml(n);\n")
@@ -290,7 +290,7 @@ class MapDefinition:
         functionname = f"{self.namespace}::{self.classname}::toYaml"
         target.write(
             f"{fullInd}inline auto {functionname}([[maybe_unused]] store_config const& config) const -> YAML::Node {{\n"
-            f"{fullInd}{ind}using ::toYaml;\n"
+            f"{fullInd}{ind}using ::cpp_gen::toYaml;\n"
             f"{fullInd}{ind}return toYaml(*value, config);\n"
             f"{fullInd}}}\n"
         )
@@ -299,7 +299,7 @@ class MapDefinition:
         functionname = f"{self.namespace}::{self.classname}::fromYaml"
         target.write(
             f"{fullInd}inline void {functionname}([[maybe_unused]] YAML::Node const& n) {{\n"
-            f"{fullInd}{ind}using ::fromYaml;\n"
+            f"{fullInd}{ind}using ::cpp_gen::fromYaml;\n"
             f"{fullInd}{ind}fromYaml(n, *value);\n"
             f"{fullInd}}}\n"
         )
@@ -363,7 +363,7 @@ class UnionDefinition:
         functionname = f"{self.namespace}::{self.classname}::toYaml"
         target.write(
             f"{fullInd}inline auto {functionname}([[maybe_unused]] store_config const& config) const -> YAML::Node {{\n"
-            f"{fullInd}{ind}using ::toYaml;\n"
+            f"{fullInd}{ind}using ::cpp_gen::toYaml;\n"
             f"{fullInd}{ind}return toYaml(*value, config);\n"
             f"{fullInd}}}\n"
         )
@@ -372,7 +372,7 @@ class UnionDefinition:
         functionname = f"{self.namespace}::{self.classname}::fromYaml"
         target.write(
             f"{fullInd}inline void {functionname}([[maybe_unused]] YAML::Node const& n) {{\n"
-            f"{fullInd}{ind}using ::fromYaml;\n"
+            f"{fullInd}{ind}using ::cpp_gen::fromYaml;\n"
             f"{fullInd}{ind}fromYaml(n, *value);\n"
             f"{fullInd}}}\n"
         )
@@ -700,6 +700,8 @@ class CppCodeGen(CodeGenBase):
 #include <variant>
 #include <vector>
 #include <yaml-cpp/yaml.h>
+
+namespace cpp_gen {
 
 struct store_config {
     bool simplifyTypes = true;
@@ -1244,6 +1246,8 @@ auto store_document_as_string(DocumentRootType const& root, store_config config=
     auto ss = std::stringstream{};
     store_document(root, ss, config);
     return ss.str();
+}
+
 }""")
 
     def parseRecordField(self, field: dict[str, Any]) -> FieldDefinition:
