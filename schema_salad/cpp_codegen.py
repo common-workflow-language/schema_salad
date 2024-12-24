@@ -134,7 +134,7 @@ class ClassDefinition:
         else:
             target.write(f"{fullInd}{ind}{virtual}~{self.classname}(){override} = default;\n")
 
-        target.write(f"{fullInd}{ind}{virtual}auto toYaml() const -> YAML::Node{override};\n")
+        target.write(f"{fullInd}{ind}{virtual}auto toYaml([[maybe_unused]] store_config const& config) const -> YAML::Node{override};\n")
         target.write(f"{fullInd}{ind}{virtual}void fromYaml(YAML::Node const& n){override};\n")
         target.write(f"{fullInd}}};\n")
         target.write(f"{fullInd}}}\n\n")
@@ -151,22 +151,26 @@ class ClassDefinition:
 
         # Write toYaml function
         target.write(
-            f"{fullInd}inline auto {self.namespace}::{self.classname}::toYaml() const -> YAML::Node {{\n"
+            f"{fullInd}inline auto {self.namespace}::{self.classname}::toYaml([[maybe_unused]] store_config const& config) const -> YAML::Node {{\n"
             f"{fullInd}{ind}using ::toYaml;\n"
             f"{fullInd}{ind}auto n = YAML::Node{{}};\n"
+            f"{fullInd}{ind}if (config.generateTags) {{\n"
+            f"{fullInd}{ind}{ind}n.SetTag(\"{self.classname}\");\n"
+            f"{fullInd}{ind}}}\n"
         )
         for e in extends:
-            target.write(f"{fullInd}{ind}n = mergeYaml(n, {e}::toYaml());\n")
+            target.write(f"{fullInd}{ind}n = mergeYaml(n, {e}::toYaml(config));\n")
 
         for field in self.fields:
             fieldname = safename(field.name)
-            simplifyType = ""
+
+            target.write(f"{fullInd}{ind}{{\n");
+            target.write(f"{fullInd}{ind}{ind} auto member = toYaml(*{fieldname}, config);\n");
             if field.typeDSL:
-                simplifyType = "simplifyType"
-            target.write(
-                f"{fullInd}{ind}addYamlField(n, {q(field.name)}, "
-                f"convertListToMap({simplifyType}(toYaml(*{fieldname})), {q(field.mapSubject)}, {q(field.mapPredicate)}));\n"
-            )
+                target.write(f"{fullInd}{ind}{ind} member = simplifyType(member, config);\n");
+            target.write(f"{fullInd}{ind}{ind} member = convertListToMap(member, {q(field.mapSubject)}, {q(field.mapPredicate)}, config);\n");
+            target.write(f"{fullInd}{ind}{ind}addYamlField(n, {q(field.name)}, member);\n");
+            target.write(f"{fullInd}{ind}}}\n");
 
         target.write(f"{fullInd}{ind}return n;\n{fullInd}}}\n")
 
@@ -275,7 +279,7 @@ class MapDefinition:
             valueType = f"std::variant<{', '.join(self._remove_namespace(v) for v in self.values)}>"
         target.write(f"struct {self.classname} {{\n")
         target.write(f"{ind}heap_object<std::map<std::string, {valueType}>> value;\n")
-        target.write(f"{ind}auto toYaml() const -> YAML::Node;\n")
+        target.write(f"{ind}auto toYaml([[maybe_unused]] store_config const& config) const -> YAML::Node;\n")
         target.write(f"{ind}void fromYaml(YAML::Node const& n);\n")
         target.write("};\n")
         target.write("}\n\n")
@@ -285,9 +289,9 @@ class MapDefinition:
         # Write toYaml function
         functionname = f"{self.namespace}::{self.classname}::toYaml"
         target.write(
-            f"{fullInd}inline auto {functionname}() const -> YAML::Node {{\n"
+            f"{fullInd}inline auto {functionname}([[maybe_unused]] store_config const& config) const -> YAML::Node {{\n"
             f"{fullInd}{ind}using ::toYaml;\n"
-            f"{fullInd}{ind}return toYaml(*value);\n"
+            f"{fullInd}{ind}return toYaml(*value, config);\n"
             f"{fullInd}}}\n"
         )
 
@@ -329,7 +333,7 @@ class UnionDefinition:
         target.write(f"{ind}{self.types} *value = nullptr;\n")
         target.write(f"{ind}{self.classname}();\n")
         target.write(f"{ind}~{self.classname}();\n")
-        target.write(f"{ind}auto toYaml() const -> YAML::Node;\n")
+        target.write(f"{ind}auto toYaml([[maybe_unused]] store_config const& config) const -> YAML::Node;\n")
         target.write(f"{ind}void fromYaml(YAML::Node const& n);\n")
         target.write("};\n")
         target.write("}\n\n")
@@ -358,9 +362,9 @@ class UnionDefinition:
         # Write toYaml function
         functionname = f"{self.namespace}::{self.classname}::toYaml"
         target.write(
-            f"{fullInd}inline auto {functionname}() const -> YAML::Node {{\n"
+            f"{fullInd}inline auto {functionname}([[maybe_unused]] store_config const& config) const -> YAML::Node {{\n"
             f"{fullInd}{ind}using ::toYaml;\n"
-            f"{fullInd}{ind}return toYaml(*value);\n"
+            f"{fullInd}{ind}return toYaml(*value, config);\n"
             f"{fullInd}}}\n"
         )
 
@@ -419,8 +423,10 @@ class EnumDefinition:
         target.write(f"{ind}out = iter->second;\n}}\n")
 
         # Write toYaml function
-        target.write(f"inline auto toYaml({name} v) {{\n")
-        target.write(f"{ind}return YAML::Node{{std::string{{to_string(v)}}}};\n}}\n")
+        target.write(f"inline auto toYaml({name} v, [[maybe_unused]] store_config const& config) {{\n")
+        target.write(f"{ind}auto n = YAML::Node{{std::string{{to_string(v)}}}};\n")
+        target.write(f"{ind}if (config.generateTags) n.SetTag(\"{name}\");\n")
+        target.write(f"{ind}return n;\n}}\n")
 
         # Write fromYaml function
         target.write(f"inline void fromYaml(YAML::Node n, {name}& out) {{\n")
@@ -695,7 +701,14 @@ class CppCodeGen(CodeGenBase):
 #include <vector>
 #include <yaml-cpp/yaml.h>
 
-inline auto simplifyType(YAML::Node type) -> YAML::Node {
+struct store_config {
+    bool simplifyTypes = true;
+    bool transformListsToMaps = true;
+    bool generateTags = false;
+};
+
+inline auto simplifyType(YAML::Node type, store_config const& config) -> YAML::Node {
+    if (!config.simplifyTypes) return type;
     auto is_optional = [](YAML::Node const & node) {
         return node.IsSequence() && node.size() == 2u && node[0].Scalar() == "null";
     };
@@ -772,37 +785,37 @@ inline auto mergeYaml(YAML::Node n1, YAML::Node n2) {
 }
 
 // declaring toYaml
-inline auto toYaml(bool v) { return YAML::Node{v}; }
-inline auto toYaml(float v) { return YAML::Node{v}; }
-inline auto toYaml(double v) { return YAML::Node{v}; }
-inline auto toYaml(char v) { return YAML::Node{v}; }
-inline auto toYaml(int8_t v) { return YAML::Node{v}; }
-inline auto toYaml(uint8_t v) { return YAML::Node{v}; }
-inline auto toYaml(int16_t v) { return YAML::Node{v}; }
-inline auto toYaml(uint16_t v) { return YAML::Node{v}; }
-inline auto toYaml(int32_t v) { return YAML::Node{v}; }
-inline auto toYaml(uint32_t v) { return YAML::Node{v}; }
-inline auto toYaml(int64_t v) { return YAML::Node{v}; }
-inline auto toYaml(uint64_t v) { return YAML::Node{v}; }
-inline auto toYaml(std::monostate const&) {
+inline auto toYaml(bool v, [[maybe_unused]] store_config const&) { return YAML::Node{v}; }
+inline auto toYaml(float v, [[maybe_unused]] store_config const&) { return YAML::Node{v}; }
+inline auto toYaml(double v, [[maybe_unused]] store_config const&) { return YAML::Node{v}; }
+inline auto toYaml(char v, [[maybe_unused]] store_config const&) { return YAML::Node{v}; }
+inline auto toYaml(int8_t v, [[maybe_unused]] store_config const&) { return YAML::Node{v}; }
+inline auto toYaml(uint8_t v, [[maybe_unused]] store_config const&) { return YAML::Node{v}; }
+inline auto toYaml(int16_t v, [[maybe_unused]] store_config const&) { return YAML::Node{v}; }
+inline auto toYaml(uint16_t v, [[maybe_unused]] store_config const&) { return YAML::Node{v}; }
+inline auto toYaml(int32_t v, [[maybe_unused]] store_config const&) { return YAML::Node{v}; }
+inline auto toYaml(uint32_t v, [[maybe_unused]] store_config const&) { return YAML::Node{v}; }
+inline auto toYaml(int64_t v, [[maybe_unused]] store_config const&) { return YAML::Node{v}; }
+inline auto toYaml(uint64_t v, [[maybe_unused]] store_config const&) { return YAML::Node{v}; }
+inline auto toYaml(std::monostate const&, [[maybe_unused]] store_config const&) {
     return YAML::Node(YAML::NodeType::Undefined);
 }
-inline auto toYaml(std::string const& v) {
+inline auto toYaml(std::string const& v, [[maybe_unused]] store_config const&) {
     return YAML::Node{v};
 }
 
 template <typename T, typename ...Args>
-auto anyToYaml_impl(std::any const& a) {
+auto anyToYaml_impl(std::any const& a, [[maybe_unused]] store_config const& config) {
     if (auto v = std::any_cast<T const>(&a)) {
-        return toYaml(*v);
+        return toYaml(*v, config);
     }
     if constexpr (sizeof...(Args) > 0) {
-        return anyToYaml_impl<Args...>(a);
+        return anyToYaml_impl<Args...>(a, config);
     }
-    return toYaml(std::monostate{});
+    return toYaml(std::monostate{}, config);
 }
 
-inline auto toYaml(std::any const& a) {
+inline auto toYaml(std::any const& a, [[maybe_unused]] store_config const& config) {
     return anyToYaml_impl<bool,
                           float,
                           double,
@@ -815,7 +828,7 @@ inline auto toYaml(std::any const& a) {
                           uint32_t,
                           int64_t,
                           uint64_t,
-                          std::string>(a);
+                          std::string>(a, config);
 }
 
 // declaring fromYaml
@@ -848,7 +861,8 @@ inline void addYamlField(YAML::Node& node, std::string const& key, YAML::Node va
     }
 }
 
-inline auto convertListToMap(YAML::Node list, std::string const& mapSubject, std::string const& mapPredicate) {
+inline auto convertListToMap(YAML::Node list, std::string const& mapSubject, std::string const& mapPredicate, store_config const& config) {
+    if (!config.transformListsToMaps) return list;
     if (mapSubject.empty()) return list;
     if (list.size() == 0) return list;
     auto map = YAML::Node{};
@@ -886,13 +900,13 @@ template <typename T> struct IsConstant : std::false_type {};
 
 // fwd declaring toYaml
 template <typename T>
-auto toYaml(std::vector<T> const& v) -> YAML::Node;
+auto toYaml(std::vector<T> const& v, [[maybe_unused]] store_config const& config) -> YAML::Node;
 template <typename T>
-auto toYaml(std::map<std::string, T> const& v) -> YAML::Node;
+auto toYaml(std::map<std::string, T> const& v, [[maybe_unused]] store_config const& config) -> YAML::Node;
 template <typename T>
-auto toYaml(T const& t) -> YAML::Node;
+auto toYaml(T const& t, [[maybe_unused]] store_config const& config) -> YAML::Node;
 template <typename ...Args>
-auto toYaml(std::variant<Args...> const& t) -> YAML::Node;
+auto toYaml(std::variant<Args...> const& t, [[maybe_unused]] store_config const& config) -> YAML::Node;
 
 // fwd declaring fromYaml
 template <typename T>
@@ -915,8 +929,12 @@ struct DetectAndExtractFromYaml {
 struct cwl_expression_string {
     std::string s;
 
-    auto toYaml() const {
-        return YAML::Node{s};
+    auto toYaml([[maybe_unused]] store_config const& config) const {
+        auto n = YAML::Node{s};
+        if (config.generateTags) {
+            n.SetTag("Expression");
+        }
+        return n;
     }
     void fromYaml(YAML::Node const& n) {
         s = n.as<std::string>();
@@ -1097,36 +1115,36 @@ heap_object<T>::~heap_object() = default;
         self.target.write(
             """
 template <typename T>
-auto toYaml(std::vector<T> const& v) -> YAML::Node {
+auto toYaml(std::vector<T> const& v, [[maybe_unused]] store_config const& config) -> YAML::Node {
     auto n = YAML::Node(YAML::NodeType::Sequence);
     for (auto const& e : v) {
-        n.push_back(toYaml(e));
+        n.push_back(toYaml(e, config));
     }
     return n;
 }
 
 template <typename T>
-auto toYaml(std::map<std::string, T> const& v) -> YAML::Node {
+auto toYaml(std::map<std::string, T> const& v, [[maybe_unused]] store_config const& config) -> YAML::Node {
     auto n = YAML::Node(YAML::NodeType::Map);
     for (auto const& [key, value] : v) {
-        n[key] = toYaml(value);
+        n[key] = toYaml(value, config);
     }
     return n;
 }
 
 template <typename T>
-auto toYaml(T const& t) -> YAML::Node {
+auto toYaml(T const& t, [[maybe_unused]] store_config const& config) -> YAML::Node {
     if constexpr (std::is_enum_v<T>) {
-        return toYaml(t);
+        return toYaml(t, config);
     } else {
-        return t.toYaml();
+        return t.toYaml(config);
     }
 }
 
 template <typename ...Args>
-auto toYaml(std::variant<Args...> const& t) -> YAML::Node {
-    return std::visit([](auto const& e) {
-        return toYaml(e);
+auto toYaml(std::variant<Args...> const& t, store_config const& config) -> YAML::Node {
+    return std::visit([config](auto const& e) {
+        return toYaml(e, config);
     }, t);
 }
 
@@ -1211,20 +1229,20 @@ auto load_document_from_string(std::string document) -> DocumentRootType {
 auto load_document(std::filesystem::path path) -> DocumentRootType {
     return load_document_from_yaml(YAML::LoadFile(path));
 }
-void store_document(DocumentRootType const& root, std::ostream& ostream) {
-    auto y = toYaml(root);
+void store_document(DocumentRootType const& root, std::ostream& ostream, store_config config={}) {
+    auto y = toYaml(root, config);
 
     YAML::Emitter out;
     out << y;
     ostream << out.c_str();
 }
-void store_document(DocumentRootType const& root, std::filesystem::path const& path) {
+void store_document(DocumentRootType const& root, std::filesystem::path const& path, store_config config={}) {
     auto ofs = std::ofstream{path};
-    store_document(root, ofs);
+    store_document(root, ofs, config);
 }
-auto store_document_as_string(DocumentRootType const& root) -> std::string {
+auto store_document_as_string(DocumentRootType const& root, store_config config={}) -> std::string {
     auto ss = std::stringstream{};
-    store_document(root, ss);
+    store_document(root, ss, config);
     return ss.str();
 }""")
 
