@@ -432,7 +432,7 @@ class EnumDefinition:
         target.write("\n")
 
 
-# !TODO way tot many functions, most of these shouldn't exists
+# !TODO way to many functions, most of these shouldn't exists
 def isPrimitiveType(v: Any) -> bool:
     """Check if v is a primitve type."""
     if not isinstance(v, str):
@@ -762,10 +762,10 @@ inline auto expandType(YAML::Node type) -> YAML::Node {
 }
 
 inline auto mergeYaml(YAML::Node n1, YAML::Node n2) {
-    for (auto const& e : n1) {
-        n2[e.first.as<std::string>()] = e.second;
+    for (auto const& e : n2) {
+        n1[e.first.as<std::string>()] = e.second;
     }
-    return n2;
+    return n1;
 }
 
 // declaring toYaml
