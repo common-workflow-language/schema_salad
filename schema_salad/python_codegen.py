@@ -164,6 +164,9 @@ class PythonCodeGen(CodeGenBase):
             self.out.write("    pass\n\n\n")
             return
 
+        idfield_safe_name = self.safe_name(idfield) if idfield != "" else None
+        if idfield_safe_name is not None:
+            self.out.write(f"    {idfield_safe_name}: str\n")
         self.out.write(f'    class_uri = "{class_uri}"\n\n')
 
         required_field_names = [f for f in field_names if f not in optional_fields]
@@ -202,6 +205,11 @@ class PythonCodeGen(CodeGenBase):
                 field_inits += """        self.class_ = "{}"
 """.format(
                     classname
+                )
+            elif name == idfield_safe_name:
+                field_inits += """        self.{0} = {0} if {0} is not None else "_:" + str(_uuid__.uuid4())
+""".format(
+                    self.safe_name(name)
                 )
             else:
                 field_inits += """        self.{0} = {0}

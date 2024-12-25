@@ -1162,6 +1162,7 @@ class RecordField(Documented):
     A field of a record.
     """
 
+    name: str
     class_uri = "https://w3id.org/cwl/salad#RecordField"
 
     def __init__(
@@ -1181,7 +1182,7 @@ class RecordField(Documented):
         else:
             self.loadingOptions = LoadingOptions()
         self.doc = doc
-        self.name = name
+        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
         self.type_ = type_
 
     def __eq__(self, other: Any) -> bool:
@@ -1636,6 +1637,7 @@ class EnumSchema(Saveable):
 
     """
 
+    name: str
     class_uri = "https://w3id.org/cwl/salad#EnumSchema"
 
     def __init__(
@@ -1654,7 +1656,7 @@ class EnumSchema(Saveable):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.name = name
+        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
         self.symbols = symbols
         self.type_ = type_
 
@@ -3479,6 +3481,7 @@ class SaladRecordField(RecordField):
     A field of a record.
     """
 
+    name: str
     class_uri = "https://w3id.org/cwl/salad#SaladRecordField"
 
     def __init__(
@@ -3500,7 +3503,7 @@ class SaladRecordField(RecordField):
         else:
             self.loadingOptions = LoadingOptions()
         self.doc = doc
-        self.name = name
+        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
         self.type_ = type_
         self.jsonldPredicate = jsonldPredicate
         self.default = default
@@ -3862,6 +3865,7 @@ class SaladRecordField(RecordField):
 
 
 class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
+    name: str
     class_uri = "https://w3id.org/cwl/salad#SaladRecordSchema"
 
     def __init__(
@@ -3890,7 +3894,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.name = name
+        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
         self.inVocab = inVocab
         self.fields = fields
         self.type_ = type_
@@ -4725,6 +4729,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
 
     """
 
+    name: str
     class_uri = "https://w3id.org/cwl/salad#SaladEnumSchema"
 
     def __init__(
@@ -4751,7 +4756,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.name = name
+        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
         self.inVocab = inVocab
         self.symbols = symbols
         self.type_ = type_
@@ -5468,6 +5473,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
 
     """
 
+    name: str
     class_uri = "https://w3id.org/cwl/salad#SaladMapSchema"
 
     def __init__(
@@ -5493,7 +5499,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.name = name
+        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
         self.inVocab = inVocab
         self.type_ = type_
         self.values = values
@@ -6155,6 +6161,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
 
     """
 
+    name: str
     class_uri = "https://w3id.org/cwl/salad#SaladUnionSchema"
 
     def __init__(
@@ -6179,7 +6186,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.name = name
+        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
         self.inVocab = inVocab
         self.names = names
         self.type_ = type_
@@ -6783,6 +6790,7 @@ class Documentation(NamedType, DocType):
 
     """
 
+    name: str
     class_uri = "https://w3id.org/cwl/salad#Documentation"
 
     def __init__(
@@ -6805,7 +6813,7 @@ class Documentation(NamedType, DocType):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.name = name
+        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
         self.inVocab = inVocab
         self.doc = doc
         self.docParent = docParent
