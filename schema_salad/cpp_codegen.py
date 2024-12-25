@@ -19,8 +19,8 @@ which can be combined with the CWL V1.0 schema as shown below::
   # g++ versions older than version 10 may need "--std=c++2a" instead of "--std=c++20"
 """
 
-import re
 import os
+import re
 from typing import IO, Any, Optional, Union, cast
 
 from . import _logger
