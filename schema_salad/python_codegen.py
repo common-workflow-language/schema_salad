@@ -143,7 +143,6 @@ class PythonCodeGen(CodeGenBase):
         idfield: str,
         optional_fields: set[str],
     ) -> None:
-        class_uri = classname
         classname = self.safe_name(classname)
 
         if extends:
@@ -166,12 +165,7 @@ class PythonCodeGen(CodeGenBase):
 
         idfield_safe_name = self.safe_name(idfield) if idfield != "" else None
         if idfield_safe_name is not None:
-            self.out.write(f"    {idfield_safe_name}: str\n")
-            if "class" not in field_names:
-                self.out.write("\n")
-
-        if "class" in field_names:
-            self.out.write(f'    class_uri = "{class_uri}"\n\n')
+            self.out.write(f"    {idfield_safe_name}: str\n\n")
 
         required_field_names = [f for f in field_names if f not in optional_fields]
         optional_field_names = [f for f in field_names if f in optional_fields]
@@ -602,7 +596,8 @@ if _errors__:
 
         if shortname(name) == "class":
             self.out.write(
-                """{spc}            if {safename} != cls.__name__ and {safename} != cls.class_uri:
+                """
+{spc}            if {safename} not in (cls.__name__, loadingOptions.vocab.get(cls.__name__)):
 {spc}               raise ValidationException(f"tried `{{cls.__name__}}` but")
 {spc}        except ValidationException as e:
 {spc}               raise e
@@ -667,7 +662,8 @@ if _errors__:
                 fmt(
                     """
 if self.{safename} is not None:
-    if p := self.loadingOptions.rvocab.get(self.class_uri[:-len(self.{safename})]):
+    uri = self.loadingOptions.vocab[self.{safename}]
+    if p := self.loadingOptions.rvocab.get(uri[:-len(self.{safename})]):
         uri = f"{{p}}:{{self.{safename}}}"
     else:
         uri = self.{safename}
