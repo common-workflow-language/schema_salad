@@ -167,7 +167,11 @@ class PythonCodeGen(CodeGenBase):
         idfield_safe_name = self.safe_name(idfield) if idfield != "" else None
         if idfield_safe_name is not None:
             self.out.write(f"    {idfield_safe_name}: str\n")
-        self.out.write(f'    class_uri = "{class_uri}"\n\n')
+            if "class" not in field_names:
+                self.out.write("\n")
+
+        if "class" in field_names:
+            self.out.write(f'    class_uri = "{class_uri}"\n\n')
 
         required_field_names = [f for f in field_names if f not in optional_fields]
         optional_field_names = [f for f in field_names if f in optional_fields]
@@ -658,7 +662,28 @@ if _errors__:
         else:
             baseurl = f"self.{self.safe_name(self.idfield)}"
 
-        if fieldtype.is_uri:
+        if shortname(name) == "class":
+            self.serializer.write(
+                fmt(
+                    """
+if self.{safename} is not None:
+    if p := self.loadingOptions.rvocab.get(self.class_uri[:-len(self.{safename})]):
+        uri = f"{{p}}:{{self.{safename}}}"
+    else:
+        uri = self.{safename}
+    u = save_relative_uri(uri, {baseurl}, {scoped_id}, {ref_scope}, relative_uris)
+    r["{fieldname}"] = u
+""".format(
+                        safename=self.safe_name(name),
+                        fieldname=shortname(name).strip(),
+                        baseurl=baseurl,
+                        scoped_id=fieldtype.scoped_id,
+                        ref_scope=fieldtype.ref_scope,
+                    ),
+                    8,
+                )
+            )
+        elif fieldtype.is_uri:
             self.serializer.write(
                 fmt(
                     """
