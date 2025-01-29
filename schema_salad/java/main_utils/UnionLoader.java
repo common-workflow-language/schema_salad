@@ -5,10 +5,10 @@ import java.util.Arrays;
 import java.util.List;
 
 public class UnionLoader implements Loader<Object> {
-  private final List<Loader> alternates;
+  private final ArrayList<Loader> alternates;
 
   public UnionLoader(List<Loader> alternates) {
-    this.alternates = alternates;
+    this.alternates = new ArrayList<Loader>(alternates);
   }
 
   public UnionLoader(Loader[] alternates) {
@@ -19,7 +19,7 @@ public class UnionLoader implements Loader<Object> {
     this.alternates.addAll(loaders);
   }
 
-   public void addLoaders(Loader[] loaders) {
+  public void addLoaders(Loader[] loaders) {
     this.addLoaders(Arrays.asList(loaders));
   }
 
