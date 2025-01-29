@@ -464,7 +464,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                         init="new MapLoader({}, {}, {})".format(
                             i.name,
                             (
-                                f"'{container}'" if container is not None else self.to_java(None)
+                                f'"{container}"' if container is not None else self.to_java(None)
                             ),  # noqa: B907
                             self.to_java(no_link_check),
                         ),
@@ -488,7 +488,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                             clazz=fqclass,
                             ext="Impl" if not is_abstract else "",
                             container=(
-                                f"'{container}'"
+                                f'"{container}"'
                                 if container is not None
                                 else self.to_java(None)  # noqa: B907
                             ),
