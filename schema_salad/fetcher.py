@@ -113,7 +113,10 @@ class DefaultFetcher(MemoryCachingFetcher):
         raise ValidationException(f"Unsupported scheme in url: {url}")
 
     def check_exists(self, url: str) -> bool:
-        if url in self.cache:
+        entry = self.cache.get(url)
+        if entry is False:
+            return False
+        elif entry is not None:
             return True
 
         split = urllib.parse.urlsplit(url)
@@ -126,6 +129,7 @@ class DefaultFetcher(MemoryCachingFetcher):
                 resp = self.session.head(url, allow_redirects=True)
                 resp.raise_for_status()
             except Exception:
+                self.cache[url] = False
                 return False
             self.cache[url] = True
             return True
