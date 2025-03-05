@@ -1,0 +1,13 @@
+[package]
+name = "{package_name}"
+version = "{package_version}"
+publish = false
+edition = "2021"
+
+[features]
+# TBD ...
+
+[dependencies]
+# This is supposed to be imported from `crates.io`
+salad-core = { path = "salad-core" }
+
