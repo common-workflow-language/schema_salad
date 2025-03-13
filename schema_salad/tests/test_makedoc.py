@@ -30,7 +30,6 @@ from .util import get_data
 def test_schema_salad_inherit_docs() -> None:
     """Test schema-salad-doc when types inherit and override values from parent types."""
     schema_path = get_data("tests/inherited-attributes.yml")
-    assert schema_path
     stdout = StringIO()
     makedoc(stdout, schema_path)
 
@@ -49,7 +48,6 @@ def generate_doc(schema_data: Optional[str] = None) -> str:
             makedoc(stdout, tmp_file.name)
     else:
         schema_path = get_data("metaschema/metaschema.yml")
-        assert schema_path
         makedoc(stdout, schema_path)
     return stdout.getvalue()
 
@@ -168,7 +166,6 @@ def test_plain_links_autolinked(metaschema_doc: str) -> None:
 def test_embedded_html_unescaped() -> None:
     """Raw HTML shouldn't get escaped."""
     schema_path = get_data("tests/inherited-attributes.yml")
-    assert schema_path
     stdout = StringIO()
     makedoc(stdout, schema_path)
     html = stdout.getvalue()

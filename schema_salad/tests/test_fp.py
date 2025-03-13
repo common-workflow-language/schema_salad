@@ -9,7 +9,6 @@ from .util import get_data
 
 def test_fp() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
     for t in (
@@ -22,7 +21,6 @@ def test_fp() -> None:
         "foreign/foreign_prop7.cwl",
     ):
         path2 = get_data("tests/" + t)
-        assert path2
         load_and_validate(
             document_loader,
             avsc_names,
@@ -38,7 +36,6 @@ def test_fp() -> None:
         "foreign/foreign_prop5.cwl",
     ):
         path3 = get_data("tests/" + t)
-        assert path3
         with pytest.raises(ValidationException):
             try:
                 print(t)

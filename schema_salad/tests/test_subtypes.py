@@ -91,7 +91,6 @@ def test_subtypes(old: schema.PropType, new: schema.PropType, result: bool) -> N
 def test_avro_loading_subtype() -> None:
     """Confirm conversion of SALAD style names to avro when overriding."""
     path = get_data("tests/test_schema/avro_subtype.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
     assert avsc_names.get_name("com.example.derived_schema.ExtendedThing", None)
@@ -100,7 +99,6 @@ def test_avro_loading_subtype() -> None:
 def test_avro_loading_subtype_bad() -> None:
     """Confirm subtype error when overriding incorrectly."""
     path = get_data("tests/test_schema/avro_subtype_bad.yml")
-    assert path
     target_error = (
         r"Field name .*\/override_me already in use with incompatible type. "
         r"Any vs \['string', 'int'\]\."
@@ -112,7 +110,6 @@ def test_avro_loading_subtype_bad() -> None:
 def test_subtypes_nested() -> None:
     """Confirm correct subtype handling on a nested type definition."""
     path = get_data("tests/test_schema/avro_subtype_nested.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
     assert avsc_names.get_name("com.example.nested_schema.ExtendedContainer", None)
@@ -121,7 +118,6 @@ def test_subtypes_nested() -> None:
 def test_subtypes_nested_bad() -> None:
     """Confirm subtype error when overriding incorrectly in nested types."""
     path = get_data("tests/test_schema/avro_subtype_nested_bad.yml")
-    assert path
     target_error = (
         r"Field name .*\/override_me already in use with incompatible type. "
         r"Any vs \['string', 'int'\]\."
@@ -133,7 +129,6 @@ def test_subtypes_nested_bad() -> None:
 def test_subtypes_recursive() -> None:
     """Confirm correct subtype handling on a recursive type definition."""
     path = get_data("tests/test_schema/avro_subtype_recursive.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
     assert avsc_names.get_name("com.example.recursive_schema.RecursiveThing", None)
@@ -142,7 +137,6 @@ def test_subtypes_recursive() -> None:
 def test_subtypes_union() -> None:
     """Confirm correct subtype handling on an union type definition."""
     path = get_data("tests/test_schema/avro_subtype_union.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
     assert avsc_names.get_name("com.example.union_schema.ExtendedContainer", None)
@@ -151,7 +145,6 @@ def test_subtypes_union() -> None:
 def test_subtypes_union_bad() -> None:
     """Confirm subtype error when overriding incorrectly in array types."""
     path = get_data("tests/test_schema/avro_subtype_union_bad.yml")
-    assert path
     target_error = (
         r"Field name .*\/override_me already in use with incompatible type. "
         r"Any vs \['string', 'int'\]\."

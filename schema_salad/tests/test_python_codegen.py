@@ -1,6 +1,5 @@
 import inspect
 import os
-import pathlib
 from pathlib import Path
 from typing import Any, Optional, cast
 
@@ -16,7 +15,7 @@ from schema_salad.python_codegen import PythonCodeGen
 from schema_salad.python_codegen_support import LoadingOptions
 from schema_salad.schema import load_schema
 
-from .util import basket_file_uri, cwl_file_uri, get_data, metaschema_file_uri
+from .util import basket_file_uri, cwl_file_uri, get_data, get_path, metaschema_file_uri
 
 
 def test_safe_identifiers() -> None:
@@ -103,19 +102,19 @@ def test_use_of_package_for_parser_info(tmp_path: Path) -> None:
 
 def test_graph_property() -> None:
     """Test the RDFLib Graph representation of the `$schemas` directive."""
-    schema = cast(str, get_data("tests/EDAM.owl"))
+    schema = get_path("tests/EDAM.owl")
     fetcher = DefaultFetcher({}, Session())
-    fetchurl = pathlib.Path(schema).resolve().as_uri()
+    fetchurl = schema.as_uri()
     content = fetcher.fetch_text(fetchurl)
     graph = Graph()
     graph.parse(data=content, format="xml", publicID=fetchurl)
-    loading_options = LoadingOptions(schemas=[schema])
+    loading_options = LoadingOptions(schemas=[str(schema)])
     assert to_isomorphic(graph) == to_isomorphic(loading_options.graph)
 
 
 def test_graph_property_cache() -> None:
     """Test that LoadingOptions properly cache the `$schemas` RDFLib Graph representations."""
-    schema = cast(str, get_data("tests/EDAM.owl"))
+    schema = get_data("tests/EDAM.owl")
     loading_options = LoadingOptions(schemas=[schema])
     graph1 = loading_options.graph
     graph2 = loading_options.graph

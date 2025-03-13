@@ -4,6 +4,7 @@ import os
 import shutil
 import sys
 import tempfile
+from pathlib import Path
 from typing import Any, Union
 
 import pytest
@@ -14,12 +15,12 @@ from ruamel.yaml.comments import CommentedMap, CommentedSeq
 import schema_salad.main
 from schema_salad.exceptions import ValidationException
 from schema_salad.fetcher import DefaultFetcher
-from schema_salad.ref_resolver import Loader, file_uri
-from schema_salad.tests.util import get_data
+from schema_salad.ref_resolver import Loader
+from schema_salad.tests.util import get_data, get_data_uri, get_path
 
 
 def is_fs_case_sensitive(
-    path: str,
+    path: Path,
 ) -> bool:  # https://stackoverflow.com/a/36612604/1585509
     with tempfile.NamedTemporaryFile(prefix="TmP", dir=path) as tmp_file:
         return not os.path.exists(tmp_file.name.lower())
@@ -176,9 +177,8 @@ def test_import_list() -> None:
 
 
 def test_fetch_inject_id() -> None:
-    path = get_data("tests/inject-id1.yml")
-    assert path
-    if is_fs_case_sensitive(os.path.dirname(path)):
+    path = get_path("tests/inject-id1.yml")
+    if is_fs_case_sensitive(path.parent):
 
         def lower(item: str) -> str:
             return item
@@ -189,37 +189,33 @@ def test_fetch_inject_id() -> None:
             return item.lower()
 
     l1 = Loader({"id": "@id"})
-    furi1 = file_uri(path)
+    furi1 = path.as_uri()
     r1, _ = l1.resolve_ref(furi1)
     assert {"id": furi1 + "#foo", "bar": "baz"} == r1
     assert [lower(furi1), lower(furi1 + "#foo")] == sorted(list(lower(k) for k in l1.idx.keys()))
 
     l2 = Loader({"id": "@id"})
-    path2 = get_data("tests/inject-id2.yml")
-    assert path2
-    furi2 = file_uri(path2)
-    r2, _ = l2.resolve_ref(furi2)
-    assert {"id": furi2, "bar": "baz"} == r2
-    assert [lower(furi2)] == sorted(list(lower(k) for k in l2.idx.keys()))
+    path2_uri = get_data_uri("tests/inject-id2.yml")
+    r2, _ = l2.resolve_ref(path2_uri)
+    assert {"id": path2_uri, "bar": "baz"} == r2
+    assert [lower(path2_uri)] == sorted(list(lower(k) for k in l2.idx.keys()))
 
     l3 = Loader({"id": "@id"})
-    path3 = get_data("tests/inject-id3.yml")
-    assert path3
-    furi3 = file_uri(path3)
-    r3, _ = l3.resolve_ref(furi3)
+    path3_uri = get_data_uri("tests/inject-id3.yml")
+    r3, _ = l3.resolve_ref(path3_uri)
     assert {"id": "http://example.com", "bar": "baz"} == r3
-    assert [lower(furi3), "http://example.com"] == sorted(list(lower(k) for k in l3.idx.keys()))
+    assert [lower(path3_uri), "http://example.com"] == sorted(list(lower(k) for k in l3.idx.keys()))
 
 
 def test_attachments() -> None:
-    path = get_data("tests/multidoc.yml")
-    assert path
-    furi = file_uri(path)
+    path = get_path("tests/multidoc.yml")
+
+    furi = path.as_uri()
 
     l1 = Loader({})
     r1, _ = l1.resolve_ref(furi)
-    with open(path) as f:
-        content = f.read()
+    with path.open() as f1:
+        content = f1.read()
         assert {"foo": "bar", "baz": content, "quux": content} == r1
 
     def aa1(item: Union[CommentedMap, CommentedSeq]) -> bool:
@@ -238,8 +234,8 @@ def test_attachments() -> None:
 
     l3 = Loader({}, allow_attachments=aa2)
     r3, _ = l3.resolve_ref(furi)
-    with open(path) as f:
-        content = f.read()
+    with path.open() as f2:
+        content = f2.read()
         assert {"foo": "bar", "baz": content, "quux": content} == r3
 
 
@@ -259,7 +255,5 @@ def test_resolve_missing_step_id(caplog: Any) -> None:
     the SourceLine data."""
     schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     document_path = get_data("tests/missing_step_name.cwl")
-    if not schema_path or not document_path:
-        pytest.fail("Could not get data for the test")
     assert 1 == schema_salad.main.main(argsl=["--print-rdf", schema_path, document_path])
     assert "missing_step_name.cwl:13:1" in "\n".join(caplog.messages)

@@ -3,8 +3,7 @@
 import importlib
 from collections.abc import MutableSequence
 from pathlib import Path
-from typing import Any, Optional, Union, cast
-from urllib.parse import urlparse
+from typing import Any, Optional, cast
 
 import pytest
 
@@ -14,7 +13,7 @@ from schema_salad.exceptions import ValidationException
 from schema_salad.schema import load_schema
 from schema_salad.utils import yaml_no_ts
 
-from .util import cwl_file_uri, get_data
+from .util import cwl_file_uri, get_path
 
 
 def test_error_message1(tmp_path: Path) -> None:
@@ -23,8 +22,8 @@ def test_error_message1(tmp_path: Path) -> None:
 \s+\*\s+missing\s+required\s+field\s+`inputs`
 \s+\*\s+missing\s+required\s+field\s+`outputs`
 \s+\*\s+missing\s+required\s+field\s+`steps`"""
-    path = get_data("tests/" + t)
-    assert path
+    path = get_path("tests/" + t)
+    assert path.exists()
     with pytest.raises(ValidationException, match=match):
         load_document_by_uri(tmp_path, path)
 
@@ -32,8 +31,8 @@ def test_error_message1(tmp_path: Path) -> None:
 def test_error_message2(tmp_path: Path) -> None:
     t = "test_schema/test2.cwl"
     match = r"""^.*test2\.cwl:2:1:\s+Field\s+`class`\s+contains\s+undefined\s+reference\s+to\s+`file://.+/schema_salad/tests/test_schema/xWorkflow`$"""
-    path = get_data("tests/" + t)
-    assert path
+    path = get_path("tests/" + t)
+    assert path.exists()
     with pytest.raises(ValidationException, match=match):
         load_document_by_uri(tmp_path, path)
 
@@ -46,8 +45,8 @@ def test_error_message4(tmp_path: Path) -> None:
 .*test4\.cwl:7:3:\s+checking\s+object\s+`.*test4\.cwl#bar`\s+using\s+`WorkflowOutputParameter`
 \s+the\s+`type`\s+field\s+is\s+not\s+valid\s+because:
 \s+Value\s+`12`\s+is\s+a\s+int,\s+but\s+valid\s+types\s+for\s+this\s+field\s+are\s+\((str|object),\s+(str|object)\)"""
-    path = get_data("tests/" + t)
-    assert path
+    path = get_path("tests/" + t)
+    assert path.exists()
     with pytest.raises(ValidationException, match=match):
         load_document_by_uri(tmp_path, path)
 
@@ -58,8 +57,8 @@ def test_error_message5(tmp_path: Path) -> None:
 .+test5\.cwl:8:1:\s+the\s+`steps`\s+field\s+is\s+not\s+valid\s+because:
 .+test5\.cwl:8:9:\s+array\s+item\s+is\s+invalid\s+because
 \s+Value\s+is\s+a\s+int,\s+but\s+valid\s+type\s+for\s+this\s+field\s+is\s+an\s+object"""
-    path = get_data("tests/" + t)
-    assert path
+    path = get_path("tests/" + t)
+    assert path.exists()
     with pytest.raises(ValidationException, match=match):
         load_document_by_uri(tmp_path, path)
 
@@ -72,8 +71,8 @@ def test_error_message6(tmp_path: Path) -> None:
 \s+missing\s+required\s+field\s+`class`
 +\*\s+tried\s+`Workflow`\s+but
 \s+missing\s+required\s+field\s+`class`"""
-    path = get_data("tests/" + t)
-    assert path
+    path = get_path("tests/" + t)
+    assert path.exists()
     with pytest.raises(ValidationException, match=match):
         load_document_by_uri(tmp_path, path)
 
@@ -86,8 +85,8 @@ def test_error_message7(tmp_path: Path) -> None:
 .*test7\.cwl:9:3:\s+checking\s+object\s+`.*test7.cwl#step1`\s+using\s+`WorkflowStep`
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test7\.cwl:10:5:\s+\*\s+invalid\s+field\s+`scatter_method`,\s+expected\s+one\s+of:\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*\s+.*$"""
-    path = get_data("tests/" + t)
-    assert path
+    path = get_path("tests/" + t)
+    assert path.exists()
     with pytest.raises(ValidationException, match=match):
         load_document_by_uri(tmp_path, path)
 
@@ -101,8 +100,8 @@ def test_error_message8(tmp_path: Path) -> None:
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test8\.cwl:10:5:\s+\*\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
 \s+contains\s+undefined\s+reference\s+to\s+`file:///.*/tests/test_schema/abc`$"""
-    path = get_data("tests/" + t)
-    assert path
+    path = get_path("tests/" + t)
+    assert path.exists()
     with pytest.raises(ValidationException, match=match):
         load_document_by_uri(tmp_path, path)
 
@@ -116,8 +115,8 @@ def test_error_message9(tmp_path: Path) -> None:
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test9\.cwl:10:5:\s+\*\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
 \s+Value\s+`12`\s+is\s+a\s+int,\s+but\s+valid\s+values\s+for\s+this\s+field\s+are\s+\("(dotproduct|nested_crossproduct|flat_crossproduct)",\s+"(dotproduct|nested_crossproduct|flat_crossproduct)",\s+"(dotproduct|nested_crossproduct|flat_crossproduct)"\)"""
-    path = get_data("tests/" + t)
-    assert path
+    path = get_path("tests/" + t)
+    assert path.exists()
     with pytest.raises(ValidationException, match=match):
         load_document_by_uri(tmp_path, path)
 
@@ -131,8 +130,8 @@ def test_error_message10(tmp_path: Path) -> None:
 \s+\*\s+missing\s+required\s+field\s+`run`
 .*test10\.cwl:10:5:\s+\*\s+the\s+`scatterMethod`\s+field\s+is\s+not\s+valid\s+because:
 \s+Value\s+is\s+a\s+array,\s+but\s+valid\s+types\s+for\s+this\s+field\s+are\s+\("dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct",\s+"dotproduct|nested_crossproduct|flat_crossproduct"\)"""
-    path = get_data("tests/" + t)
-    assert path
+    path = get_path("tests/" + t)
+    assert path.exists()
     with pytest.raises(ValidationException, match=match):
         load_document_by_uri(tmp_path, path)
 
@@ -144,8 +143,8 @@ def test_error_message11(tmp_path: Path) -> None:
 \s+array\s+item\s+is\s+invalid\s+because
 .*test11\.cwl:9:3:\s+checking\s+object\s+`.*test11\.cwl#step1`\s+using\s+`WorkflowStep`
 .*test11\.cwl:10:5:\s+the\s+`run`\s+field\s+is\s+not\s+valid\s+because:\s+contains\s+undefined\s+reference\s+to\s+`file:///.*/tests/test_schema/blub\.cwl`$"""
-    path = get_data("tests/" + t)
-    assert path
+    path = get_path("tests/" + t)
+    assert path.exists()
     with pytest.raises(ValidationException, match=match):
         load_document_by_uri(tmp_path, path)
 
@@ -161,13 +160,13 @@ def test_error_message15(tmp_path: Path) -> None:
 \s+tried\s+`CommandLineBinding`\s+but
 .*test15\.cwl:11:7:\s+\*\s+invalid\s+field\s+`invalid_field`,\s+expected\s+one\s+of:\s+`loadContents`,\s+`position`,\s+`prefix`,\s+`separate`,\s+`itemSeparator`,\s+`valueFrom`,\s+`shellQuote`
 .*test15\.cwl:12:7:\s+\*\s+invalid\s+field\s+`another_invalid_field`,\s+expected one\s+of:\s+`loadContents`,\s+`position`,\s+`prefix`,\s+`separate`,\s+`itemSeparator`,\s+`valueFrom`,\s+`shellQuote`$"""
-    path = get_data("tests/" + t)
-    assert path
+    path = get_path("tests/" + t)
+    assert path.exists()
     with pytest.raises(ValidationException, match=match):
         load_document_by_uri(tmp_path, path)
 
 
-def load_document_by_uri(tmp_path: Path, path: Union[str, Path]) -> Any:
+def load_document_by_uri(tmp_path: Path, path: Path) -> Any:
     src_target = tmp_path / "cwl_v1_0.py"
     python_codegen(cwl_file_uri, src_target)
     spec = importlib.util.spec_from_file_location("cwl_v1_0", src_target)
@@ -177,22 +176,15 @@ def load_document_by_uri(tmp_path: Path, path: Union[str, Path]) -> Any:
     spec.loader.exec_module(temp_cwl_v1_0)
     cwl_v1_0: Any = temp_cwl_v1_0
 
-    if isinstance(path, str):
-        uri = urlparse(path)
-        if not uri.scheme or uri.scheme == "file":
-            real_path = Path(uri.path).resolve().as_uri()
-        else:
-            real_path = path
-    else:
-        real_path = path.resolve().as_uri()
+    path_uri = path.resolve().as_uri()
 
-    baseuri = str(real_path)
+    baseuri = path_uri
 
     loadingOptions = cwl_v1_0.LoadingOptions(fileuri=baseuri)
 
     with open(path) as file:
         doc = file.read()
-    # doc = loadingOptions.fetcher.fetch_text(urllib.parse.unquote(str(real_path)))
+    # doc = loadingOptions.fetcher.fetch_text(urllib.parse.unquote(path_uri))
     yaml = yaml_no_ts()
     doc = yaml.load(doc)
 

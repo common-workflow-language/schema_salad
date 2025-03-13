@@ -8,16 +8,15 @@ import schema_salad
 import schema_salad.main
 from schema_salad.avro.schema import Names
 from schema_salad.exceptions import ValidationException
-from schema_salad.ref_resolver import Loader, file_uri
+from schema_salad.ref_resolver import Loader
 from schema_salad.schema import load_and_validate, load_schema
 from schema_salad.sourceline import cmap
 
-from .util import get_data
+from .util import get_data, get_data_uri
 
 
 def test_errors() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
 
@@ -36,7 +35,6 @@ def test_errors() -> None:
         "test_schema/test15.cwl",
     ):
         path2 = get_data("tests/" + t)
-        assert path2
         with pytest.raises(ValidationException):
             try:
                 load_and_validate(
@@ -52,7 +50,6 @@ def test_errors() -> None:
 
 def test_error_message1() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
 
@@ -65,14 +62,12 @@ def test_error_message1() -> None:
 \s+\* missing\s+required\s+field\s+'steps'$"""
     )
     path2 = get_data("tests/" + t)
-    assert path2
     with pytest.raises(ValidationException, match=match):
         load_and_validate(document_loader, avsc_names, path2, True)
 
 
 def test_error_message2() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
 
@@ -85,14 +80,12 @@ def test_error_message2() -> None:
         ]
     )
     path2 = get_data("tests/" + t)
-    assert path2
     with pytest.raises(ValidationException, match=match):
         load_and_validate(document_loader, avsc_names, path2, True)
 
 
 def test_error_message3() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
 
@@ -104,12 +97,11 @@ def test_error_message3() -> None:
         1:
     ]
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
+        load_and_validate(document_loader, avsc_names, get_data("tests/" + t), True)
 
 
 def test_error_message4() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
 
@@ -121,12 +113,11 @@ def test_error_message4() -> None:
         1:
     ]
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
+        load_and_validate(document_loader, avsc_names, get_data("tests/" + t), True)
 
 
 def test_error_message5() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
 
@@ -141,12 +132,11 @@ def test_error_message5() -> None:
         1:
     ]
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
+        load_and_validate(document_loader, avsc_names, get_data("tests/" + t), True)
 
 
 def test_error_message7() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
 
@@ -163,12 +153,11 @@ def test_error_message7() -> None:
         + r"'label',\s+'doc',\s+'run',\s+'scatter',\s+'scatterMethod'$"
     )
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
+        load_and_validate(document_loader, avsc_names, get_data("tests/" + t), True)
 
 
 def test_error_message8() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
 
@@ -183,12 +172,11 @@ def test_error_message8() -> None:
         ]
     )
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
+        load_and_validate(document_loader, avsc_names, get_data("tests/" + t), True)
 
 
 def test_error_message9() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
 
@@ -200,12 +188,11 @@ def test_error_message9() -> None:
         + r"""int,\s+expected\s+string,\s+list,\s+or a\s+dict.$"""
     )
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
+        load_and_validate(document_loader, avsc_names, get_data("tests/" + t), True)
 
 
 def test_error_message10() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
 
@@ -222,12 +209,11 @@ def test_error_message10() -> None:
         1:
     ]
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
+        load_and_validate(document_loader, avsc_names, get_data("tests/" + t), True)
 
 
 def test_error_message11() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
 
@@ -242,12 +228,11 @@ def test_error_message11() -> None:
         ]
     )
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
+        load_and_validate(document_loader, avsc_names, get_data("tests/" + t), True)
 
 
 def test_error_message15() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
 
@@ -267,7 +252,7 @@ def test_error_message15() -> None:
         + r"""\s+'separate',\s+'itemSeparator',\s+'valueFrom',\s+'shellQuote'$"""
     )
     with pytest.raises(ValidationException, match=match):
-        load_and_validate(document_loader, avsc_names, str(get_data("tests/" + t)), True)
+        load_and_validate(document_loader, avsc_names, get_data("tests/" + t), True)
 
 
 @pytest.mark.skip(
@@ -275,7 +260,6 @@ def test_error_message15() -> None:
 )
 def test_errors_previously_defined_dict_key() -> None:
     path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
 
@@ -289,7 +273,7 @@ def test_errors_previously_defined_dict_key() -> None:
                 load_and_validate(
                     document_loader,
                     avsc_names,
-                    str(get_data("tests/" + t)),
+                    get_data("tests/" + t),
                     True,
                 )
             except ValidationException as e:
@@ -299,16 +283,13 @@ def test_errors_previously_defined_dict_key() -> None:
 
 def test_bad_schema() -> None:
     path = get_data("tests/bad_schema.yml")
-    assert path
     assert 1 == schema_salad.main.main(argsl=[path])
     path2 = get_data("tests/bad_schema.yml")
-    assert path2
     assert 1 == schema_salad.main.main(argsl=["--print-avro", path2])
 
 
 def test_bad_schema2() -> None:
     path = get_data("tests/bad_schema2.yml")
-    assert path
     assert 1 == schema_salad.main.main(argsl=[path])
 
 
@@ -431,8 +412,7 @@ def test_not_a_namespace3(caplog: pytest.LogCaptureFixture) -> None:
 
 def test_schemas_type() -> None:
     """Confirm helpful error message when $schemas is the wrong type."""
-    path = get_data("tests/EDAM.owl")
-    assert path
+    path_uri = get_data_uri("tests/EDAM.owl")
     with pytest.raises(
         ValidationException,
         match=re.escape("test:1:1: $schemas must be a string or a list of string"),
@@ -440,7 +420,7 @@ def test_schemas_type() -> None:
         ra, _ = Loader({}).resolve_all(
             cmap(
                 {
-                    "$schemas": {"wrong": file_uri(path)},
+                    "$schemas": {"wrong": path_uri},
                     "edam:has_format": "edam:format_1915",
                 }
             ),

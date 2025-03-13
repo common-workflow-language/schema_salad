@@ -14,12 +14,12 @@ from ruamel.yaml.main import YAML
 if TYPE_CHECKING:
     from .fetcher import Fetcher
 
+from importlib.resources import as_file, files
+
 if sys.version_info >= (3, 11):
-    from importlib.resources import as_file, files
     from importlib.resources.abc import Traversable
 else:
     from importlib.abc import Traversable
-    from importlib.resources import as_file, files
 
 __all__ = ["files", "as_file", "Traversable"]
 

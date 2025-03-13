@@ -11,15 +11,13 @@ from schema_salad import codegen
 from schema_salad.avro.schema import Names
 from schema_salad.schema import load_schema
 
-from .util import cwl_file_uri, get_data
+from .util import cwl_file_uri, get_data_uri, get_path
 
 
 def test_cwl_cpp_gen(tmp_path: Path) -> None:
     """End to end test of C++ generator using the CWL v1.0 schema."""
     src_target = tmp_path / "cwl_v1_0.h"
     cpp_codegen(cwl_file_uri, src_target)
-    source = get_data("tests/codegen/cwl.cpp")
-    assert source
     assert os.path.exists(src_target)
 
 
@@ -36,7 +34,7 @@ def test_cwl_cpp_gen(tmp_path: Path) -> None:
 def test_cwl_cpp_generations(tmp_path: Path, filename: str) -> None:
     """End to end test of C++ generator using small scenarios."""
 
-    file = Path(cast(str, get_data(f"cpp_tests/{filename}")))
+    file = get_path(f"cpp_tests/{filename}")
 
     # file with generated cpp output
     src_target = tmp_path / "test.h"
@@ -55,18 +53,18 @@ def test_cwl_cpp_generations_with_spdx(tmp_path: Path) -> None:
 
     src_target = tmp_path / "test.h"
 
-    input_file = cast(str, get_data("cpp_tests/01_single_record.yml"))
+    input_file_uri = get_data_uri("cpp_tests/01_single_record.yml")
 
     """Generating different combinations of license headers"""
     """Generate License Identifier"""
-    cpp_codegen("file://" + input_file, src_target, spdx_license_identifier="Apache-2.0")
+    cpp_codegen(input_file_uri, src_target, spdx_license_identifier="Apache-2.0")
     lines = open(src_target).readlines()[0:2]
     assert lines[0] == "// SPDX-License-Identifier: Apache-2.0\n"
     assert lines[1] == "#pragma once\n"
 
     """Generate single CopyrightText"""
     cpp_codegen(
-        "file://" + input_file,
+        input_file_uri,
         src_target,
         spdx_copyright_text=["Copyright 2016 Some People <email@example.com>"],
     )
@@ -76,7 +74,7 @@ def test_cwl_cpp_generations_with_spdx(tmp_path: Path) -> None:
 
     """Generate two CopyrightText entries"""
     cpp_codegen(
-        "file://" + input_file,
+        input_file_uri,
         src_target,
         spdx_copyright_text=[
             "Copyright 2016 Person A <person_a@example.com>",
@@ -90,7 +88,7 @@ def test_cwl_cpp_generations_with_spdx(tmp_path: Path) -> None:
 
     """Generate CopyrightText and License Identifier"""
     cpp_codegen(
-        "file://" + input_file,
+        input_file_uri,
         src_target,
         spdx_license_identifier="Apache-2.0",
         spdx_copyright_text=[
