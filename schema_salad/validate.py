@@ -93,7 +93,7 @@ def friendly(v: Any) -> Any:
     """Format an Avro schema into a pretty-printed representation."""
     if isinstance(v, avro.schema.NamedSchema):
         return avro_shortname(v.name)
-    if isinstance(v, avro.schema.ArraySchema):
+    if isinstance(v, (avro.schema.ArraySchema, avro.schema.NamedArraySchema)):
         return f"array of <{friendly(v.items)}>"
     if isinstance(v, (avro.schema.MapSchema, avro.schema.NamedMapSchema)):
         return f"map of <{friendly(v.values)}>"
@@ -208,7 +208,7 @@ def validate_ex(
                 )
             )
         return False
-    if isinstance(expected_schema, avro.schema.ArraySchema):
+    if isinstance(expected_schema, (avro.schema.ArraySchema, avro.schema.NamedArraySchema)):
         if isinstance(datum, MutableSequence):
             for i, d in enumerate(datum):
                 try:
@@ -259,7 +259,7 @@ def validate_ex(
         errors: list[SchemaSaladException] = []
         checked = []
         for s in expected_schema.schemas:
-            if isinstance(datum, MutableSequence) and not isinstance(s, avro.schema.ArraySchema):
+            if isinstance(datum, MutableSequence) and not isinstance(s, (avro.schema.ArraySchema, avro.schema.NamedArraySchema)):
                 continue
             if isinstance(datum, MutableMapping) and not isinstance(
                 s, (avro.schema.RecordSchema, avro.schema.MapSchema, avro.schema.NamedMapSchema)
@@ -269,6 +269,7 @@ def validate_ex(
                 s,
                 (
                     avro.schema.ArraySchema,
+                    avro.schema.NamedArraySchema,
                     avro.schema.RecordSchema,
                     avro.schema.MapSchema,
                     avro.schema.NamedMapSchema,
