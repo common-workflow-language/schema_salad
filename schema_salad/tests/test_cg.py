@@ -1,16 +1,14 @@
 import json
-import os
 from typing import Any
 
 import pytest
 
 import schema_salad.metaschema as cg_metaschema
 from schema_salad.exceptions import ValidationException
-from schema_salad.ref_resolver import file_uri
 from schema_salad.utils import yaml_no_ts
 
 from .matcher import JsonDiffMatcher
-from .util import get_data
+from .util import get_data_uri, get_path
 
 
 def test_load() -> None:
@@ -45,12 +43,11 @@ def test_err() -> None:
 
 def test_include() -> None:
     doc = {"name": "hello", "doc": [{"$include": "hello.txt"}], "type": "documentation"}
-    path = get_data("tests/_")
-    assert path
+    path_uri = get_data_uri("tests") + "/_"
     rf = cg_metaschema.Documentation.fromDoc(
         doc,
         "http://example.com/",
-        cg_metaschema.LoadingOptions(fileuri=file_uri(path), no_link_check=True),
+        cg_metaschema.LoadingOptions(fileuri=path_uri, no_link_check=True),
     )
     assert "http://example.com/#hello" == rf.name
     assert ["hello world!\n"] == rf.doc
@@ -64,9 +61,7 @@ def test_include() -> None:
 
 def test_import() -> None:
     doc = {"type": "record", "fields": [{"$import": "hellofield.yml"}]}
-    tests_path = get_data("tests")
-    assert tests_path
-    lead = file_uri(os.path.normpath(tests_path))
+    lead = get_data_uri("tests")
     rs = cg_metaschema.RecordSchema.fromDoc(
         doc, "http://example.com/", cg_metaschema.LoadingOptions(fileuri=lead + "/_")
     )
@@ -87,11 +82,9 @@ def test_import() -> None:
 
 
 def test_import2() -> None:
-    path = get_data("tests/docimp/d1.yml")
-    assert path
-    rs = cg_metaschema.load_document(file_uri(path), "", cg_metaschema.LoadingOptions())
-    path2 = get_data("tests/docimp/d1.yml")
-    assert path2
+    path_uri = get_data_uri("tests/docimp/d1.yml")
+    rs = cg_metaschema.load_document(path_uri, "", cg_metaschema.LoadingOptions())
+    path2_uri = get_data_uri("tests/docimp/d1.yml")
     assert [
         {
             "doc": [
@@ -104,7 +97,7 @@ def test_import2() -> None:
                 "hello 5",
             ],
             "type": "documentation",
-            "name": file_uri(path2) + "#Semantic_Annotations_for_Linked_Avro_Data",
+            "name": path2_uri + "#Semantic_Annotations_for_Linked_Avro_Data",
         }
     ] == [r.save() for r in rs]
 
@@ -158,10 +151,9 @@ def test_idmap2() -> None:
 
 
 def test_load_pt() -> None:
-    path = get_data("tests/pt.yml")
-    assert path
+    path_uri = get_data_uri("tests/pt.yml")
     doc = cg_metaschema.load_document(
-        file_uri(path), "", cg_metaschema.LoadingOptions(no_link_check=True)
+        path_uri, "", cg_metaschema.LoadingOptions(no_link_check=True)
     )
     assert [
         "https://w3id.org/cwl/salad#null",
@@ -187,18 +179,15 @@ def test_shortname() -> None:
 @pytest.fixture
 def metaschema_pre() -> Any:
     """Prep-parsed schema for testing."""
-    path2 = get_data("tests/metaschema-pre.yml")
-    assert path2
-    with open(path2) as f:
+    with get_path("tests/metaschema-pre.yml").open() as f:
         pre = json.load(f)
     return pre
 
 
 def test_load_metaschema(metaschema_pre: Any) -> None:
-    path = get_data("metaschema/metaschema.yml")
-    assert path
+    path_uri = get_data_uri("metaschema/metaschema.yml")
     doc = cg_metaschema.load_document(
-        file_uri(path),
+        path_uri,
         "",
         cg_metaschema.LoadingOptions(no_link_check=True),
     )
@@ -209,14 +198,13 @@ def test_load_metaschema(metaschema_pre: Any) -> None:
 
 
 def test_load_by_yaml_metaschema(metaschema_pre: Any) -> None:
-    path = get_data("metaschema/metaschema.yml")
-    assert path
-    with open(path) as path_handle:
+    path = get_path("metaschema/metaschema.yml")
+    with path.open() as path_handle:
         yaml = yaml_no_ts()
         yaml_doc = yaml.load(path_handle)
     doc = cg_metaschema.load_document_by_yaml(
         yaml_doc,
-        file_uri(path),
+        path.as_uri(),
         None,
     )
     saved = [d.save(relative_uris=False) for d in doc]
@@ -224,18 +212,16 @@ def test_load_by_yaml_metaschema(metaschema_pre: Any) -> None:
 
 
 def test_load_cwlschema() -> None:
-    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
+    path_uri = get_data_uri("tests/test_schema/CommonWorkflowLanguage.yml")
     doc = cg_metaschema.load_document(
-        file_uri(path),
+        path_uri,
         "",
         cg_metaschema.LoadingOptions(no_link_check=True),
     )
-    path2 = get_data("tests/cwl-pre.yml")
-    assert path2
+    path2 = get_path("tests/cwl-pre.yml")
     saved = [d.save(relative_uris=False) for d in doc]
-    # with open(path2, "w") as f:
+    # with path2.open("w") as f:
     #     json.dump(saved, f, indent=2)
-    with open(path2) as f:
+    with path2.open() as f:
         pre = json.load(f)
     assert saved == JsonDiffMatcher(pre)

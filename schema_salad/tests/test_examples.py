@@ -16,18 +16,17 @@ from schema_salad.ref_resolver import Loader, file_uri, uri_file_path
 from schema_salad.sourceline import SourceLine, cmap
 from schema_salad.utils import ContextType, stdout, yaml_no_ts
 
-from .util import get_data
+from .util import get_data, get_data_uri, get_path
 
 
 def test_schemas() -> None:
     loader = Loader({})
 
-    path = get_data("tests/EDAM.owl")
-    assert path
+    path_uri = get_data_uri("tests/EDAM.owl")
     ra, _ = loader.resolve_all(
         cmap(
             {
-                "$schemas": [file_uri(path)],
+                "$schemas": [path_uri],
                 "$namespaces": {"edam": "http://edamontology.org/"},
                 "edam:has_format": "edam:format_1915",
             }
@@ -36,7 +35,7 @@ def test_schemas() -> None:
     )
 
     assert {
-        "$schemas": [file_uri(path)],
+        "$schemas": [path_uri],
         "$namespaces": {"edam": "http://edamontology.org/"},
         "http://edamontology.org/has_format": "http://edamontology.org/format_1915",
     } == ra
@@ -46,7 +45,6 @@ def test_bad_schemas(caplog: pytest.LogCaptureFixture) -> None:
     """Test that bad $schemas refs don't stop parsing."""
     schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     document_path = get_data("tests/revtool_bad_schema.cwl")
-    assert schema_path and document_path
     assert 0 == schema_salad.main.main(
         argsl=["--print-rdf", schema_path, document_path],
     )
@@ -68,7 +66,6 @@ def test_skip_bad_schemas(caplog: pytest.LogCaptureFixture) -> None:
     """Test that (bad) $schemas refs are properly skipped."""
     schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     document_path = get_data("tests/revtool_bad_schema.cwl")
-    assert schema_path and document_path
     assert 0 == schema_salad.main.main(
         argsl=["--print-rdf", "--skip-schemas", schema_path, document_path],
     )
@@ -89,7 +86,6 @@ def test_skip_bad_schemas(caplog: pytest.LogCaptureFixture) -> None:
 
 def test_self_validate() -> None:
     path = get_data("metaschema/metaschema.yml")
-    assert path
     assert 0 == schema_salad.main.main(argsl=[path])
     assert 0 == schema_salad.main.main(argsl=[path, path])
 
@@ -98,7 +94,6 @@ def test_print_rdf() -> None:
     """Test --print-rdf."""
     schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     document_path = get_data("tests/test_real_cwl/bio-cwl-tools/bamtools_stats.cwl")
-    assert schema_path and document_path
     assert 0 == schema_salad.main.main(argsl=["--print-rdf", schema_path, document_path])
 
 
@@ -108,14 +103,12 @@ def test_print_rdf_invalid_external_ref() -> None:
     document_path = get_data(
         "tests/test_real_cwl/bio-cwl-tools/bamtools_stats_invalid_schema_ref.cwl"
     )
-    assert schema_path and document_path
     assert 0 == schema_salad.main.main(argsl=["--print-rdf", schema_path, document_path])
 
 
 def test_print_pre_schema() -> None:
     """Test --print-pre only schema."""
     schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert schema_path
     assert 0 == schema_salad.main.main(argsl=["--print-pre", schema_path])
 
 
@@ -123,14 +116,12 @@ def test_print_pre() -> None:
     """Test --print-pre."""
     schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     document_path = get_data("tests/test_real_cwl/bio-cwl-tools/bamtools_stats.cwl")
-    assert schema_path and document_path
     assert 0 == schema_salad.main.main(argsl=["--print-pre", schema_path, document_path])
 
 
 def test_print_schema_index() -> None:
     """Test --print-index only with a schema."""
     schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert schema_path
     assert 0 == schema_salad.main.main(argsl=["--print-index", schema_path])
 
 
@@ -138,14 +129,12 @@ def test_print_index() -> None:
     """Test --print-index."""
     schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     document_path = get_data("tests/test_real_cwl/bio-cwl-tools/bamtools_stats.cwl")
-    assert schema_path and document_path
     assert 0 == schema_salad.main.main(argsl=["--print-index", schema_path, document_path])
 
 
 def test_print_schema_metadata() -> None:
     """Test --print-metadata only for a schema."""
     schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert schema_path
     assert 0 == schema_salad.main.main(argsl=["--print-metadata", schema_path])
 
 
@@ -153,14 +142,12 @@ def test_print_metadata() -> None:
     """Test --print-metadata."""
     schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
     document_path = get_data("tests/test_real_cwl/bio-cwl-tools/bamtools_stats.cwl")
-    assert schema_path and document_path
     assert 0 == schema_salad.main.main(argsl=["--print-metadata", schema_path, document_path])
 
 
 def test_schema_salad_doc_oneline_doc() -> None:
     """Test schema-salad-doc when the 1st type has only a single doc line."""
     schema_path = get_data("tests/test_schema/one_line_primary_doc.yml")
-    assert schema_path
     stdout = StringIO()
     schema_salad.makedoc.makedoc(stdout, schema_path)
     assert "<title>Schema</title>" in stdout.getvalue()
@@ -168,7 +155,6 @@ def test_schema_salad_doc_oneline_doc() -> None:
 
 def test_avro_regression() -> None:
     path = get_data("tests/Process.yml")
-    assert path
     assert 0 == schema_salad.main.main(argsl=[path])
 
 
@@ -316,16 +302,13 @@ def test_scoped_ref() -> None:
 def test_examples() -> None:
     for a in ["field_name", "ident_res", "link_res", "vocab_res"]:
         path = get_data(f"metaschema/{a}_schema.yml")
-        assert path
         ldr, _, _, _ = schema_salad.schema.load_schema(path)
-        path2 = get_data(f"metaschema/{a}_src.yml")
-        assert path2
+        path2 = get_path(f"metaschema/{a}_src.yml")
         yaml = yaml_no_ts()
-        with open(path2) as src_fp:
+        with path2.open() as src_fp:
             src = ldr.resolve_all(yaml.load(src_fp), "", checklinks=False)[0]
-        path3 = get_data(f"metaschema/{a}_proc.yml")
-        assert path3
-        with open(path3) as src_proc:
+        path3 = get_path(f"metaschema/{a}_proc.yml")
+        with path3.open() as src_proc:
             proc = yaml.load(src_proc)
         assert proc == src
 
@@ -517,7 +500,6 @@ def test_mixin() -> None:
     base_url = file_uri(os.path.join(os.getcwd(), "tests"))
     ldr = Loader({})
     path = get_data("tests/mixin.yml")
-    assert path
     ra = ldr.resolve_ref(cmap({"$mixin": path, "one": "five"}), base_url=base_url)
     assert {"id": "four", "one": "five"} == ra[0]
     ldr = Loader({"id": "@id"})
@@ -535,7 +517,6 @@ def test_mixin() -> None:
 def test_fragment() -> None:
     ldr = Loader({"id": "@id"})
     path = get_data("tests/frag.yml#foo2")
-    assert path
     b = ldr.resolve_ref(path)[0]
     assert isinstance(b, CommentedMap)
     assert {"id": b["id"], "bar": "b2"} == b
@@ -558,7 +539,6 @@ def test_file_uri() -> None:
 def test_sourceline() -> None:
     ldr = Loader({"id": "@id"})
     path = get_data("tests/frag.yml")
-    assert path
     b, _ = ldr.resolve_ref(path)
 
     class TestExp(Exception):
@@ -597,7 +577,6 @@ def test_blank_node_id() -> None:
 def test_can_use_Any() -> None:
     """Test that 'type: Any' can be used"""
     path = get_data("tests/test_schema/cwltest-schema.yml")
-    assert path
     (
         document_loader,
         avsc_names,

@@ -5,12 +5,11 @@ from typing import Any, Optional, cast
 from schema_salad import codegen
 from schema_salad.schema import load_schema
 
-from .util import cwl_file_uri, get_data, metaschema_file_uri
+from .util import cwl_file_uri, get_path, metaschema_file_uri
 
 
 def test_cwl_gen(tmp_path: Path) -> None:
-    topmed_example_path = get_data("tests/test_real_cwl/topmed/topmed_variant_calling_pipeline.cwl")
-    assert topmed_example_path
+    topmed_example_path = get_path("tests/test_real_cwl/topmed/topmed_variant_calling_pipeline.cwl")
     target_dir = tmp_path / "target"
     examples_dir = tmp_path / "examples"
 
