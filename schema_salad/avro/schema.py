@@ -429,6 +429,47 @@ class ArraySchema(Schema):
         return cast(Schema, self.get_prop("items"))
 
 
+class NamedArraySchema(NamedSchema):
+    """Avro named array schema class."""
+
+    def __init__(
+        self,
+        items: JsonDataType,
+        names: Names,
+        name: str,
+        namespace: Optional[str] = None,
+        doc: Optional[Union[str, list[str]]] = None,
+        other_props: Optional[PropsType] = None,
+    ) -> None:
+        """Create a NamedArraySchema object."""
+        # Call parent ctor
+        NamedSchema.__init__(self, "array", name, namespace, names, other_props)
+        # Add class members
+
+        if names is None:
+            raise SchemaParseException("Must provide Names.")
+        if isinstance(items, str) and names.has_name(items, None):
+            items_schema = cast(Schema, names.get_name(items, None))
+        else:
+            try:
+                items_schema = make_avsc_object(items, names)
+            except Exception as err:
+                raise SchemaParseException(
+                    f"Items schema ({items}) not a valid Avro schema: {err}. "
+                    f"Known names: {list(names.names.keys())})."
+                ) from err
+
+        self.set_prop("items", items_schema)
+        if doc is not None:
+            self.set_prop("doc", doc)
+
+    # read-only properties
+    @property
+    def items(self) -> Schema:
+        """Avro schema describing the array items' type."""
+        return cast(Schema, self.get_prop("items"))
+
+
 class MapSchema(Schema):
     """Avro map schema class."""
 
@@ -740,6 +781,11 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
         if atype in VALID_TYPES:
             if atype == "array":
                 items = json_data.get("items")
+                if "name" in json_data and json_data["name"]:
+                    name = json_data["name"]
+                    namespace = json_data.get("namespace", names.default_namespace)
+                    doc = json_data.get("doc")
+                    return NamedArraySchema(items, names, name, namespace, doc, other_props)
                 return ArraySchema(items, names, other_props)
             elif atype == "map":
                 values = json_data.get("values")
@@ -748,8 +794,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
                     namespace = json_data.get("namespace", names.default_namespace)
                     doc = json_data.get("doc")
                     return NamedMapSchema(values, names, name, namespace, doc, other_props)
-                else:
-                    return MapSchema(values, names, other_props)
+                return MapSchema(values, names, other_props)
             elif atype == "union":
                 schemas = json_data.get("names")
                 if not isinstance(schemas, list):
@@ -761,8 +806,7 @@ def make_avsc_object(json_data: JsonDataType, names: Optional[Names] = None) -> 
                     namespace = json_data.get("namespace", names.default_namespace)
                     doc = json_data.get("doc")
                     return NamedUnionSchema(schemas, names, name, namespace, doc)
-                else:
-                    return UnionSchema(schemas, names)
+                return UnionSchema(schemas, names)
         if atype is None:
             raise SchemaParseException(f'No "type" property: {json_data}')
         raise SchemaParseException(f"Undefined type: {atype}")
