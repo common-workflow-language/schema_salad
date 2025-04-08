@@ -14,6 +14,7 @@ from typing import Any, Callable, Optional, Union, cast
 import requests
 from cachecontrol.caches import SeparateBodyFileCache
 from cachecontrol.wrapper import CacheControl
+from mypy_extensions import mypyc_attr
 from rdflib.exceptions import ParserError
 from rdflib.graph import Graph
 from rdflib.namespace import OWL, RDF, RDFS
@@ -134,6 +135,11 @@ def SubLoader(loader: "Loader") -> "Loader":
     )
 
 
+def _url_norm(url: str) -> str:
+    return urllib.parse.urlsplit(url).geturl()
+
+
+@mypyc_attr(allow_interpreted_subclasses=True)
 class Loader:
     def __init__(
         self,
@@ -150,9 +156,7 @@ class Loader:
         doc_cache: Union[str, bool] = True,
         salad_version: Optional[str] = None,
     ) -> None:
-        self.idx: IdxType = (
-            NormDict(lambda url: urllib.parse.urlsplit(url).geturl()) if idx is None else idx
-        )
+        self.idx: IdxType = NormDict(_url_norm) if idx is None else idx
 
         self.ctx: ContextType = {}
         self.graph = schemagraph if schemagraph is not None else Graph()
