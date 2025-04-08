@@ -7,7 +7,7 @@ See https://mypyc.readthedocs.io/en/latest/differences_from_python.html#pickling
 import pickle
 from pathlib import Path
 
-from schema_salad import schema
+from schema_salad import ref_resolver, schema
 from schema_salad.avro.schema import Names, RecordSchema
 
 from .util import get_data_uri
@@ -18,6 +18,14 @@ def test_recordschema_pickle() -> None:
     s = RecordSchema("one", None, [], Names())
     print(s)
     d = pickle.dumps(s)
+    print(pickle.loads(d))
+
+
+def test_loader_pickle() -> None:
+    """Pickle a Loader."""
+    loader = ref_resolver.Loader({})
+    print(loader)
+    d = pickle.dumps(loader)
     print(pickle.loads(d))
 
 
