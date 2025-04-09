@@ -12,6 +12,7 @@ compact_str = { version = "0.9" }
 fxhash = { version = "0.2" }
 proc-macro2 = { version = "1.0" }
 quote = { version = "1.0" }
+salad-serde = { path = "crates/serde" }
 salad-types = { path = "crates/types" }
 serde = { version = "1.0" }
 serde_yaml_ng = { version = "0.10" }
@@ -30,5 +31,5 @@ name = "salad_core"
 path = "src/lib.rs"
 
 [dependencies]
+salad-serde.workspace = true
 salad-types.workspace = true
-
