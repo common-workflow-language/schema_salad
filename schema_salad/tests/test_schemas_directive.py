@@ -27,7 +27,6 @@ class TestSchemasDirective:
     @classmethod
     def setup_class(cls) -> None:
         path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-        assert path
         (
             cls.document_loader,
             cls.avsc_names,
@@ -37,7 +36,6 @@ class TestSchemasDirective:
 
     def load_cwl(self, src: str) -> tuple[Any, dict[str, Any]]:
         path = get_data(test_dir_name + src)
-        assert path
         assert isinstance(self.avsc_names, Names)
         res = load_and_validate(self.document_loader, self.avsc_names, path, True)
         return res

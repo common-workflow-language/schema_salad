@@ -12,20 +12,18 @@ from .util import get_data
 
 def test_print_oneline() -> None:
     # Issue #135
-    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    path1 = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path1)
     assert isinstance(avsc_names, Names)
 
     src = "test15.cwl"
-    path = get_data("tests/test_schema/" + src)
-    assert path
+    path2 = get_data("tests/test_schema/" + src)
     with pytest.raises(ValidationException):
         try:
             load_and_validate(
                 document_loader,
                 avsc_names,
-                path,
+                path2,
                 True,
             )
         except ValidationException as e:
@@ -47,20 +45,18 @@ def test_print_oneline() -> None:
 
 def test_print_oneline_for_invalid_yaml() -> None:
     # Issue #137
-    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    path1 = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path1)
     assert isinstance(avsc_names, Names)
 
     src = "test16.cwl"
-    path = get_data("tests/test_schema/" + src)
-    assert path
+    path2 = get_data("tests/test_schema/" + src)
     with pytest.raises(ValidationException):
         try:
             load_and_validate(
                 document_loader,
                 avsc_names,
-                path,
+                path2,
                 True,
             )
         except ValidationException as e:
@@ -72,20 +68,18 @@ def test_print_oneline_for_invalid_yaml() -> None:
 
 def test_print_oneline_for_errors_in_the_same_line() -> None:
     # Issue #136
-    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    path1 = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path1)
     assert isinstance(avsc_names, Names)
 
     src = "test17.cwl"
-    path = get_data("tests/test_schema/" + src)
-    assert path
+    path2 = get_data("tests/test_schema/" + src)
     with pytest.raises(ValidationException):
         try:
             load_and_validate(
                 document_loader,
                 avsc_names,
-                path,
+                path2,
                 True,
             )
         except ValidationException as e:
@@ -103,15 +97,13 @@ def test_print_oneline_for_errors_in_the_same_line() -> None:
 
 def test_print_oneline_for_errors_in_resolve_ref() -> None:
     # Issue #141
-    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    path1 = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path1)
     assert isinstance(avsc_names, Names)
 
     src = "test18.cwl"
-    path = get_data("tests/test_schema/" + src)
-    assert path
-    fullpath = normpath(path)
+    path2 = get_data("tests/test_schema/" + src)
+    fullpath = normpath(path2)
     with pytest.raises(ValidationException):
         try:
             load_and_validate(document_loader, avsc_names, str(fullpath), True)
@@ -130,20 +122,18 @@ def test_print_oneline_for_errors_in_resolve_ref() -> None:
 
 def test_for_invalid_yaml1() -> None:
     # Issue 143
-    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    path1 = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path1)
     assert isinstance(avsc_names, Names)
 
     src = "test16.cwl"
-    path = get_data("tests/test_schema/" + src)
-    assert path
+    path2 = get_data("tests/test_schema/" + src)
     with pytest.raises(ValidationException):
         try:
             load_and_validate(
                 document_loader,
                 avsc_names,
-                path,
+                path2,
                 True,
             )
         except ValidationException as e:
@@ -156,20 +146,18 @@ def test_for_invalid_yaml1() -> None:
 
 def test_for_invalid_yaml2() -> None:
     # Issue 143
-    path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
-    assert path
-    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
+    path1 = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
+    document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path1)
     assert isinstance(avsc_names, Names)
 
     src = "test19.cwl"
-    path = get_data("tests/test_schema/" + src)
-    assert path
+    path2 = get_data("tests/test_schema/" + src)
     with pytest.raises(ValidationException):
         try:
             load_and_validate(
                 document_loader,
                 avsc_names,
-                path,
+                path2,
                 True,
             )
         except ValidationException as e:

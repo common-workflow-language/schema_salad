@@ -2,15 +2,14 @@ import shutil
 from pathlib import Path
 from typing import Any, Optional, cast
 
-from schema_salad import codegen, ref_resolver
+from schema_salad import codegen
 from schema_salad.schema import load_schema
 
-from .util import get_data
+from .util import cwl_file_uri, get_data_uri, get_path, metaschema_file_uri
 
 
 def test_cwl_gen(tmp_path: Path) -> None:
-    topmed_example_path = get_data("tests/test_real_cwl/topmed/topmed_variant_calling_pipeline.cwl")
-    assert topmed_example_path
+    topmed_example_path = get_path("tests/test_real_cwl/topmed/topmed_variant_calling_pipeline.cwl")
     target_dir = tmp_path / "target"
     examples_dir = tmp_path / "examples"
 
@@ -69,16 +68,6 @@ def test_class_field(tmp_path: Path) -> None:
             + " Dictionary<object, object>? extensionFields = null)\n    {\n"
             in f.read()
         )
-
-
-def get_data_uri(resource_path: str) -> str:
-    path = get_data(resource_path)
-    assert path
-    return ref_resolver.file_uri(path)
-
-
-cwl_file_uri = get_data_uri("tests/test_schema/CommonWorkflowLanguage.yml")
-metaschema_file_uri = get_data_uri("metaschema/metaschema.yml")
 
 
 def dotnet_codegen(file_uri: str, target: Path, examples: Optional[Path] = None) -> None:

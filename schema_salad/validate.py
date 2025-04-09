@@ -76,7 +76,6 @@ def avro_type_name(url: str) -> str:
     Extract either the last part of the URL fragment past the slash, otherwise
     the whole fragment.
     """
-    global primitives
 
     if url in primitives:
         return primitives[url]

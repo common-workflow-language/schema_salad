@@ -4,13 +4,11 @@ import atexit
 import os
 from contextlib import ExitStack
 from pathlib import Path
-from typing import Optional
 
-from schema_salad import ref_resolver
 from schema_salad.utils import as_file, files
 
 
-def get_data(filename: str) -> Optional[str]:
+def get_path(filename: str) -> Path:
     """Get the file path for a given schema file name.
 
     It is able to find file names in the ``schema_salad`` namespace, but
@@ -26,7 +24,7 @@ def get_data(filename: str) -> Optional[str]:
         filepath = file_manager.enter_context(as_file(traversable))
     except ModuleNotFoundError:
         pass
-    if not filepath or not os.path.isfile(filepath):
+    if not filepath or not filepath.is_file():
         # First try to load it from the local directory, probably ``./tests/``.
         filepath = Path(os.path.dirname(__file__)) / filename
         if not filepath.is_file():
@@ -34,14 +32,21 @@ def get_data(filename: str) -> Optional[str]:
             # note that we return the parent as it is expected that __file__
             # is a test file.
             filepath = Path(os.path.dirname(__file__)) / ".." / filename
-    return str(filepath.resolve())
+    return filepath.resolve()
+
+
+def get_data(filename: str) -> str:
+    """Get the file path for a given schema file name.
+
+    It is able to find file names in the ``schema_salad`` namespace, but
+    also able to load schema files from the ``tests`` directory.
+    """
+    return str(get_path(filename))
 
 
 def get_data_uri(resource_path: str) -> str:
     """Get the file URI for tests."""
-    path = get_data(resource_path)
-    assert path
-    return ref_resolver.file_uri(path)
+    return get_path(resource_path).as_uri()
 
 
 # Schemas used in tests

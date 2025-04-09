@@ -5,12 +5,11 @@ from rdflib.graph import Graph
 from schema_salad.avro.schema import Names
 from schema_salad.schema import load_schema
 
-from .util import get_data
+from .util import get_data, get_path
 
 
 def test_misc() -> None:
     path = get_data("tests/test_schema/no_field_schema.yml")
-    assert path
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(path)
     assert isinstance(avsc_names, Names)
 
@@ -18,10 +17,9 @@ def test_misc() -> None:
 def test_load_schema_cache() -> None:
     schemaid = "http://commonwl.org/schema_salad/test/schema.yml"
 
-    path1 = get_data("tests/test_schema/misc_schema_v1.yml")
-    assert path1
+    path1 = get_path("tests/test_schema/misc_schema_v1.yml")
 
-    with open(path1) as f:
+    with path1.open() as f:
         cache1: Optional[dict[str, Union[str, Graph, bool]]] = {schemaid: f.read()}
 
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
@@ -30,10 +28,9 @@ def test_load_schema_cache() -> None:
     assert isinstance(avsc_names, Names)
     assert "EmptyType" not in document_loader.vocab
 
-    path2 = get_data("tests/test_schema/misc_schema_v2.yml")
-    assert path2
+    path2 = get_path("tests/test_schema/misc_schema_v2.yml")
 
-    with open(path2) as f:
+    with path2.open() as f:
         cache2: Optional[dict[str, Union[str, Graph, bool]]] = {schemaid: f.read()}
 
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
