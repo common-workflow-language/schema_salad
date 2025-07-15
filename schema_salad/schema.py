@@ -3,7 +3,7 @@
 import copy
 import hashlib
 from collections.abc import Mapping, MutableMapping, MutableSequence
-from typing import IO, Any, Optional, TypeVar, Union, cast
+from typing import IO, Any, Optional, Union, cast
 from urllib.parse import urlparse
 
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
@@ -506,7 +506,7 @@ def avro_field_name(url: str) -> str:
     return d.path.split("/")[-1]
 
 
-Avro = TypeVar("Avro", MutableMapping[str, Any], MutableSequence[Any], str)
+Avro = Union[MutableMapping[str, Any], MutableSequence[Any], str]
 
 
 def make_valid_avro(
