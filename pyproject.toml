@@ -2,7 +2,7 @@
 requires = [
     "setuptools>=50",  # 50 is to match mypyc's minimum
     "setuptools_scm[toml]>=8.0.4,<9",
-    'mypy[mypyc]==1.17.0',  # update mypy-requirements as well
+    'mypy[mypyc]==1.17.1',  # update mypy-requirements as well
     "black>=19.10b0,<24.11",
     "types-requests",
     "types-dataclasses",
