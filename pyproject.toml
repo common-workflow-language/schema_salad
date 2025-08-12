@@ -2,7 +2,7 @@
 requires = [
     "setuptools>=50",  # 50 is to match mypyc's minimum
     "setuptools_scm[toml]>=8.0.4,<9",
-    'mypy[mypyc]==1.15.0',  # update mypy-requirements as well
+    'mypy[mypyc]==1.17.1',  # update mypy-requirements as well
     "black>=19.10b0,<24.11",
     "types-requests",
     "types-dataclasses",
@@ -19,9 +19,10 @@ write_to = "schema_salad/_version.py"
 test-command = "python -m pytest -n 2 --junitxml={project}/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad"
 test-requires = "-r test-requirements.txt"
 test-extras = "pycodegen"
-skip = "pp*"
+skip = ["pp*", "cp31?t-*"]
 #      ^ skip building wheels on PyPy (any version)
-build-verbosity = "1"
+#              ^ https://mypy.readthedocs.io/en/stable/changelog.html#mypyc-partial-unsafe-support-for-free-threading
+build-verbosity = 1
 environment = { SCHEMA_SALAD_USE_MYPYC="1", MYPYPATH="$(pwd)/mypy-stubs" }
 
 [tool.black]
