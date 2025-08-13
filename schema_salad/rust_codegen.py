@@ -81,7 +81,7 @@ def rust_sanitize_type_ident(value: str) -> str:
 
 
 def rust_sanitize_doc_iter(value: Union[Sequence[str], str]) -> Iterator[str]:
-    """Sanitize Markdown doc-strings by splitting lines and wrapping non-hyperlinked URLs in angle brackets."""
+    """Sanitize Markdown doc-strings by splitting lines and wrapping non-hyperlinked URLs."""
     return map(
         lambda v: re.sub(__MD_NON_HYPERLINK_REX, lambda m: f"<{str(m.group())}>", v),
         itertools.chain.from_iterable(map(  # flat_map
