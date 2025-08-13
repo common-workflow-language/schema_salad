@@ -175,11 +175,14 @@ class RustMeta(ABC):
     pass
 
 
-@dataclass(unsafe_hash=True)  # ASSERT: Immutable class
+@dataclass  # ASSERT: Immutable class
 class RustAttribute:
     """Represents a Rust attribute (e.g., `#[derive(Debug)]`)."""
 
     meta: RustMeta
+
+    def __hash__(self) -> int:
+        return hash(self.meta)
 
     def __str__(self) -> str:
         return f"#[{str(self.meta)}]"
@@ -193,12 +196,15 @@ RustGenerics = Sequence[Union[RustLifetime, "RustPath"]]  # alias
 RustGenericsMut = MutableSequence[Union[RustLifetime, "RustPath"]]  # alias
 
 
-@dataclass(unsafe_hash=True)  # ASSERT: Immutable class
+@dataclass  # ASSERT: Immutable class
 class RustPathSegment:
     """Represents a segment in a Rust path with optional generics."""
 
     ident: RustIdent
     generics: RustGenerics = dataclasses.field(default_factory=tuple)
+
+    def __hash__(self) -> int:
+        return hash((self.ident, self.generics))
 
     REX: ClassVar[Pattern[str]] = re.compile(
         r"^([a-zA-Z_]\w*)(?:<([ \w\t,'<>]+)>)?$"
@@ -256,13 +262,16 @@ RustPathSegments = Sequence[RustPathSegment]  # alias
 RustPathSegmentsMut = MutableSequence[RustPathSegment]  # alias
 
 
-@dataclass(unsafe_hash=True)  # ASSERT: Immutable class
+@dataclass  # ASSERT: Immutable class
 class RustPath(RustMeta):
     """Represents a complete Rust path (e.g., `::std::vec::Vec<T>`)."""
 
     # ASSERT: Never initialized with an empty sequence
     segments: RustPathSegments
     leading_colon: bool = False
+
+    def __hash__(self) -> int:
+        return hash((self.segments, self.leading_colon))
 
     def __truediv__(self, other: Union["RustPath", RustPathSegment]) -> "RustPath":
         if self.segments[-1].generics:
@@ -304,12 +313,15 @@ class RustPath(RustMeta):
         return cls(segments=tuple(segments), leading_colon=leading_colon)
 
 
-@dataclass(unsafe_hash=True)  # ASSERT: Immutable class
+@dataclass  # ASSERT: Immutable class
 class RustTypeTuple(RustType):
     """Represents a Rust tuple type (e.g., `(T, U)`)."""
 
     # ASSERT: Never initialized with an empty sequence
     types: Sequence[RustPath]
+
+    def __hash__(self) -> int:
+        return hash(self.types)
 
     def __str__(self) -> str:
         types_str = ", ".join(str(ty) for ty in self.types)
