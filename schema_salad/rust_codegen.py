@@ -2,7 +2,6 @@
 
 __all__ = ["RustCodeGen"]
 
-import dataclasses
 import functools
 import itertools
 import json
@@ -11,7 +10,6 @@ import shutil
 import sys
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, MutableMapping, MutableSequence, Sequence
-from dataclasses import dataclass
 from importlib.resources import files as resource_files
 from io import StringIO
 from pathlib import Path
@@ -150,11 +148,13 @@ def make_avro(items: MutableSequence[JsonDataType]) -> MutableSequence[NamedSche
 RustIdent = str  # alias
 
 
-@dataclass  # ASSERT: Immutable class
 class RustLifetime:
     """Represents a Rust lifetime parameter (e.g., `'a`)."""
 
-    ident: RustIdent
+    __slots__ = ("ident",)
+
+    def __init__(self, ident: RustIdent):
+        self.ident = ident
 
     def __hash__(self) -> int:
         return hash(self.ident)
@@ -175,11 +175,16 @@ class RustMeta(ABC):
     pass
 
 
-@dataclass(unsafe_hash=True)  # ASSERT: Immutable class
 class RustAttribute:
     """Represents a Rust attribute (e.g., `#[derive(Debug)]`)."""
 
-    meta: RustMeta
+    __slots__ = ("meta",)
+
+    def __init__(self, meta: RustMeta):
+        self.meta = meta
+
+    def __hash__(self) -> int:
+        return hash(self.meta)
 
     def __str__(self) -> str:
         return f"#[{str(self.meta)}]"
@@ -193,16 +198,21 @@ RustGenerics = Sequence[Union[RustLifetime, "RustPath"]]  # alias
 RustGenericsMut = MutableSequence[Union[RustLifetime, "RustPath"]]  # alias
 
 
-@dataclass(unsafe_hash=True)  # ASSERT: Immutable class
 class RustPathSegment:
     """Represents a segment in a Rust path with optional generics."""
 
-    ident: RustIdent
-    generics: RustGenerics = dataclasses.field(default_factory=tuple)
+    __slots__ = ("ident", "generics")
 
     REX: ClassVar[Pattern[str]] = re.compile(
         r"^([a-zA-Z_]\w*)(?:<([ \w\t,'<>]+)>)?$"
     )  # Using `re.Pattern[str]` raise CI build errors
+
+    def __init__(self, ident: RustIdent, generics: Optional[RustGenerics] = None):
+        self.ident = ident
+        self.generics = () if generics is None else generics
+
+    def __hash__(self) -> int:
+        return hash((self.ident, self.generics))
 
     def __str__(self) -> str:
         if not self.generics:
@@ -256,13 +266,18 @@ RustPathSegments = Sequence[RustPathSegment]  # alias
 RustPathSegmentsMut = MutableSequence[RustPathSegment]  # alias
 
 
-@dataclass(unsafe_hash=True)  # ASSERT: Immutable class
 class RustPath(RustMeta):
     """Represents a complete Rust path (e.g., `::std::vec::Vec<T>`)."""
 
+    __slots__ = ("segments", "leading_colon")
+
     # ASSERT: Never initialized with an empty sequence
-    segments: RustPathSegments
-    leading_colon: bool = False
+    def __init__(self, segments: RustPathSegments, leading_colon: bool = False):
+        self.segments = segments
+        self.leading_colon = leading_colon
+
+    def __hash__(self) -> int:
+        return hash((self.segments, self.leading_colon))
 
     def __truediv__(self, other: Union["RustPath", RustPathSegment]) -> "RustPath":
         if self.segments[-1].generics:
@@ -304,24 +319,31 @@ class RustPath(RustMeta):
         return cls(segments=tuple(segments), leading_colon=leading_colon)
 
 
-@dataclass(unsafe_hash=True)  # ASSERT: Immutable class
 class RustTypeTuple(RustType):
     """Represents a Rust tuple type (e.g., `(T, U)`)."""
 
+    __slots__ = ("types",)
+
     # ASSERT: Never initialized with an empty sequence
-    types: Sequence[RustPath]
+    def __init__(self, types: Sequence[RustPath]):
+        self.types = types
+
+    def __hash__(self) -> int:
+        return hash(self.types)
 
     def __str__(self) -> str:
         types_str = ", ".join(str(ty) for ty in self.types)
         return f"({types_str})"
 
 
-@dataclass  # ASSERT: Immutable class
 class RustMetaList(RustMeta):
     """Represents attribute meta list information (e.g., `derive(Debug, Clone)`).."""
 
-    path: RustPath
-    metas: Sequence[RustMeta] = tuple()
+    __slots__ = ("path", "metas")
+
+    def __init__(self, path: RustPath, metas: Optional[Sequence[RustMeta]] = None):
+        self.path = path
+        self.metas = () if metas is None else metas
 
     def __hash__(self) -> int:
         return hash(self.path)
@@ -331,12 +353,14 @@ class RustMetaList(RustMeta):
         return f"{str(self.path)}(" + meta_str + ")"
 
 
-@dataclass  # ASSERT: Immutable class
 class RustMetaNameValue(RustMeta):
     """Represents attribute meta name-value information (e.g., `key = value`)."""
 
-    path: RustPath
-    value: Any = True
+    __slots__ = ("path", "value")
+
+    def __init__(self, path: RustPath, value: Any = True):
+        self.path = path
+        self.value = value
 
     def __hash__(self) -> int:
         return hash(self.path)
@@ -350,13 +374,17 @@ class RustMetaNameValue(RustMeta):
 #
 
 
-@dataclass
 class RustNamedType(ABC):  # ABC class
     """Abstract class for Rust struct and enum types."""
 
-    ident: RustIdent
-    attrs: RustAttributes = dataclasses.field(default_factory=list)
-    visibility: str = "pub"
+    __slots__ = ("ident", "attrs", "visibility")
+
+    def __init__(
+        self, ident: RustIdent, attrs: Optional[RustAttributes] = None, visibility: str = "pub"
+    ):
+        self.ident = ident
+        self.attrs = () if attrs is None else attrs
+        self.visibility = visibility
 
     def __hash__(self) -> int:
         return hash(self.ident)
@@ -371,13 +399,15 @@ class RustNamedType(ABC):  # ABC class
         return output.getvalue()
 
 
-@dataclass  # ASSERT: Immutable class
 class RustField:
     """Represents a field in a Rust struct."""
 
-    ident: RustIdent
-    type: RustPath
-    attrs: RustAttributes = dataclasses.field(default_factory=list)
+    __slots__ = ("ident", "type", "attrs")
+
+    def __init__(self, ident: RustIdent, type: RustPath, attrs: Optional[RustAttributes] = None):
+        self.ident = ident
+        self.type = type
+        self.attrs = () if attrs is None else attrs
 
     def __hash__(self) -> int:
         return hash(self.ident)
@@ -394,11 +424,21 @@ RustFields = Union[Sequence[RustField], RustTypeTuple]  # alias
 RustFieldsMut = Union[MutableSequence[RustField], RustTypeTuple]  # alias
 
 
-@dataclass
 class RustStruct(RustNamedType):
     """Represents a Rust struct definition."""
 
-    fields: Optional[RustFields] = None
+    __slots__ = ("fields",)
+
+    def __init__(
+        self,
+        ident: RustIdent,
+        fields: Optional[RustFields] = None,
+        attrs: Optional[RustAttributes] = None,
+        visibility: str = "pub",
+    ):
+        _attrs = () if attrs is None else attrs
+        super().__init__(ident, _attrs, visibility)
+        self.fields = fields
 
     def write_to(self, writer: IO[str], depth: int = 0) -> None:
         indent = "    " * depth
@@ -419,13 +459,20 @@ class RustStruct(RustNamedType):
             writer.write(f"{indent}}}\n")
 
 
-@dataclass  # ASSERT: Immutable class
 class RustVariant:
     """Represents a variant in a Rust enum."""
 
-    ident: RustIdent
-    tuple: Optional[RustTypeTuple] = None
-    attrs: RustAttributes = dataclasses.field(default_factory=list)
+    __slots__ = ("ident", "tuple", "attrs")
+
+    def __init__(
+        self,
+        ident: RustIdent,
+        tuple: Optional[RustTypeTuple] = None,
+        attrs: Optional[RustAttributes] = None,
+    ):
+        self.ident = ident
+        self.tuple = tuple
+        self.attrs = () if attrs is None else attrs
 
     def __hash__(self) -> int:
         return hash(self.ident)
@@ -435,7 +482,6 @@ class RustVariant:
 
         if self.attrs:
             writer.write("\n".join(f"{indent}{str(attr)}" for attr in self.attrs) + "\n")
-
         writer.write(f"{indent}{self.ident}")
         if self.tuple:
             writer.write(str(self.tuple))
@@ -462,11 +508,21 @@ RustVariants = Sequence[RustVariant]  # alias
 RustVariantsMut = MutableSequence[RustVariant]  # alias
 
 
-@dataclass
 class RustEnum(RustNamedType):
     """Represents a Rust enum definition."""
 
-    variants: RustVariants = dataclasses.field(default_factory=tuple)
+    __slots__ = ("variants",)
+
+    def __init__(
+        self,
+        ident: RustIdent,
+        variants: Optional[RustVariants] = None,
+        attrs: Optional[RustAttributes] = None,
+        visibility: str = "pub",
+    ):
+        _attrs = () if attrs is None else attrs
+        super().__init__(ident, _attrs, visibility)
+        self.variants = () if variants is None else variants
 
     def write_to(self, writer: IO[str], depth: int = 0) -> None:
         indent = "    " * depth
@@ -495,16 +551,22 @@ def salad_macro_write_to(ty: RustNamedType, writer: IO[str], depth: int = 0) -> 
 #
 
 
-@dataclass
 class RustModuleTree:
     """Represents a Rust module with submodules and named types."""
 
-    ident: RustIdent  # ASSERT: Immutable field
-    parent: Optional["RustModuleTree"]  # ASSERT: Immutable field
-    named_types: MutableMapping[RustIdent, RustNamedType] = dataclasses.field(default_factory=dict)
-    submodules: MutableMapping[RustIdent, "RustModuleTree"] = dataclasses.field(
-        default_factory=dict
-    )
+    __slots__ = ("ident", "parent", "named_types", "submodules")
+
+    def __init__(
+        self,
+        ident: RustIdent,  # ASSERT: Immutable field
+        parent: Optional["RustModuleTree"] = None,  # ASSERT: Immutable field
+        named_types: Optional[MutableMapping[RustIdent, RustNamedType]] = None,
+        submodules: Optional[MutableMapping[RustIdent, "RustModuleTree"]] = None,
+    ):
+        self.ident = ident
+        self.parent = parent
+        self.named_types = {} if named_types is None else named_types
+        self.submodules = {} if submodules is None else submodules
 
     def __hash__(self) -> int:
         return hash((self.ident, self.parent))
