@@ -117,7 +117,6 @@ def to_rust_literal(value: Any) -> str:
 
 def make_avro(items: MutableSequence[JsonDataType]) -> MutableSequence[NamedSchema]:
     """Process a list of dictionaries to generate a list of Avro schemas."""
-
     # Same as `from .utils import convert_to_dict`, which, however, is not public
     def convert_to_dict(j4: Any) -> Any:
         """Convert generic Mapping objects to dicts recursively."""
