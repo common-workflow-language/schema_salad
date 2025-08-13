@@ -817,15 +817,16 @@ class RustCodeGen(CodeGenBase):
         ident = rust_sanitize_type_ident(avro_shortname(record.name))
         attrs, _ = self.__parse_named_schema_attrs(record)
         fields = set(self.__parse_record_field(f, record) for f in record.fields)
+        is_doc_root = record.get_prop("documentRoot") or False
 
-        if record.get_prop("documentRoot"):
+        if is_doc_root:
             attrs = [*attrs, self.document_root_attr]
 
         rust_path = self.__module_tree \
             .add_submodule(self.__get_submodule_path(record)) \
             .add_named_type(RustStruct(ident=ident, attrs=attrs, fields=fields))  # fmt: skip
 
-        if record.get_prop("documentRoot"):
+        if is_doc_root:
             self.__document_root_paths.append(rust_path)
         return rust_path
 
