@@ -230,13 +230,12 @@ class RustPathSegment:
         """
 
         def parse_generics_string(value_generics: str) -> RustGenerics:
-            generics_sequence: Union[MutableSequence[str], RustGenerics] = []
-            current: list[str] = []
+            generics_sequence: MutableSequence[str] = []
+            current: MutableSequence[str] = []
             deep = 0
             for char in value_generics:
                 deep += (char == "<") - (char == ">")
                 if deep == 0 and char == ",":
-                    assert isinstance(generics_sequence, list)
                     generics_sequence.append("".join(current).strip())
                     current = []
                 elif deep < 0:
@@ -245,7 +244,6 @@ class RustPathSegment:
                     current.append(char)
             if deep > 0:
                 raise ValueError(f"Poorly formatted Rust path generics: '{value}'.")
-            assert isinstance(generics_sequence, list)
             generics_sequence.append("".join(current).strip())
             return tuple([
                 RustLifetime(ident=g[1:]) if g.startswith("'") else RustPath.from_str(g)
@@ -444,7 +442,7 @@ class RustStruct(RustNamedType):
         indent = "    " * depth
 
         if self.attrs:
-            writer.write("\n".join(f"{indent}{str(attr)}" for attr in self.attrs) + "\n")
+            writer.write("\n".join([f"{indent}{str(attr)}" for attr in self.attrs]) + "\n")
 
         writer.write(f"{indent}{self.visibility} struct {self.ident}")
         if self.fields is None:
@@ -573,7 +571,7 @@ class RustModuleTree:
 
     def get_rust_path(self) -> RustPath:
         """Return the complete Rust path from root to this module."""
-        segments: list[RustPathSegment] = []
+        segments: MutableSequence[RustPathSegment] = []
         current: Optional["RustModuleTree"] = self
 
         while current:
@@ -646,7 +644,7 @@ class RustModuleTree:
         if not self.parent:
             path.mkdir(mode=0o755, parents=True, exist_ok=True)
             write_module_file(module=self, path=path / "lib.rs", mode="at")
-            traversing_stack.extend((path, sub_mod) for sub_mod in self.submodules.values())
+            traversing_stack.extend([(path, sub_mod) for sub_mod in self.submodules.values()])
         else:
             traversing_stack.append((path, self))
 
@@ -663,7 +661,7 @@ class RustModuleTree:
             path_module.mkdir(mode=0o755, parents=True, exist_ok=True)
             write_module_file(module=module, path=path_module / "mod.rs")
             traversing_stack.extend(
-                (path_module, sub_mod) for sub_mod in module.submodules.values()
+                [(path_module, sub_mod) for sub_mod in module.submodules.values()]
             )
 
 
@@ -1014,12 +1012,13 @@ class RustCodeGen(CodeGenBase):
     #
     @staticmethod
     def __parse_named_schema_attrs(schema: NamedSchema) -> tuple[RustAttributes, int]:
-        attrs: list[RustAttribute] = []
+        attrs: MutableSequence[RustAttribute] = []
         docs_count = 0
 
         if docs := schema.get_prop("doc"):
             if isinstance(docs, str):
-                assert isinstance(docs, str)
+                # assert isinstance(docs, str)
+                docs = docs
             elif isinstance(docs, list) and all(isinstance(d, str) for d in docs):
                 docs = cast(list[str], docs)
             else:
@@ -1052,12 +1051,13 @@ class RustCodeGen(CodeGenBase):
 
     @staticmethod
     def __parse_field_schema_attrs(schema: SaladField) -> tuple[RustAttributes, int]:
-        attrs: list[RustAttribute] = []
+        attrs: MutableSequence[RustAttribute] = []
         docs_count = 0
 
         if docs := schema.get_prop("doc"):
             if isinstance(docs, str):
-                assert isinstance(docs, str)
+                # assert isinstance(docs, str)
+                docs = docs
             elif isinstance(docs, list) and all(isinstance(d, str) for d in docs):
                 docs = cast(list[str], docs)
             else:
@@ -1074,7 +1074,7 @@ class RustCodeGen(CodeGenBase):
             )
             docs_count = len(attrs)
 
-        metas: list[RustMeta] = []
+        metas: MutableSequence[RustMeta] = []
         if default := schema.get_prop("default"):
             metas.append(RustMetaNameValue(path=RustPath.from_str("default"), value=default))
         if jsonld_predicate := schema.get_prop("jsonldPredicate"):
