@@ -275,7 +275,7 @@ RustPathSegmentsMut = MutableSequence[RustPathSegment]  # alias
 
 
 @dataclass(unsafe_hash=True)  # ASSERT: Immutable class
-class RustPath:
+class RustPath(RustMeta):
     """
     Represents a complete Rust path (e.g., `::std::vec::Vec<T>`).
     """
@@ -354,7 +354,7 @@ class RustMetaList(RustMeta):
     """
 
     path: RustPath
-    metas: Sequence[Union[RustMeta, RustPath]] = tuple()
+    metas: Sequence[RustMeta] = tuple()
 
     def __hash__(self) -> int:
         return hash(self.path)
@@ -1082,7 +1082,7 @@ class RustCodeGen(CodeGenBase):
             )
             docs_count = len(attrs)
 
-        metas = []
+        metas: list[RustMeta] = []
         if default := schema.get_prop("default"):
             metas.append(RustMetaNameValue(path=RustPath.from_str("default"), value=default))
         if jsonld_predicate := schema.get_prop("jsonldPredicate"):
