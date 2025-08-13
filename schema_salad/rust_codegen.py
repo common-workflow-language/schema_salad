@@ -16,7 +16,7 @@ from importlib.resources import files as resource_files
 from io import StringIO
 from pathlib import Path
 from time import sleep
-from typing import IO, Any, ClassVar, Optional, Union, cast
+from typing import IO, Any, ClassVar, Optional, Pattern, Union, cast
 
 from . import _logger
 from .avro.schema import ArraySchema, EnumSchema
@@ -117,6 +117,7 @@ def to_rust_literal(value: Any) -> str:
 
 def make_avro(items: MutableSequence[JsonDataType]) -> MutableSequence[NamedSchema]:
     """Process a list of dictionaries to generate a list of Avro schemas."""
+
     # Same as `from .utils import convert_to_dict`, which, however, is not public
     def convert_to_dict(j4: Any) -> Any:
         """Convert generic Mapping objects to dicts recursively."""
@@ -200,7 +201,9 @@ class RustPathSegment:
     ident: RustIdent
     generics: RustGenerics = dataclasses.field(default_factory=tuple)
 
-    REX: ClassVar[re.Pattern[str]] = re.compile(r"^([a-zA-Z_]\w*)(?:<([ \w\t,'<>]+)>)?$")
+    REX: ClassVar[Pattern[str]] = re.compile(
+        r"^([a-zA-Z_]\w*)(?:<([ \w\t,'<>]+)>)?$"
+    )  # Using `re.Pattern[str]` raise CI build errors
 
     def __str__(self) -> str:
         if not self.generics:
