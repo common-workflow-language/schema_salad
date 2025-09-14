@@ -1,4 +1,4 @@
-""" test different sets of command line arguments"""
+"""test different sets of command line arguments"""
 
 import sys  # for capturing print() output
 from collections.abc import Iterator
