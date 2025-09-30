@@ -3,9 +3,8 @@
 import atexit
 import os
 from contextlib import ExitStack
+from importlib.resources import as_file, files
 from pathlib import Path
-
-from schema_salad.utils import as_file, files
 
 
 def get_path(filename: str) -> Path:
