@@ -4,6 +4,7 @@ import os
 import shutil
 import string
 from collections.abc import MutableMapping, MutableSequence
+from importlib.resources import files
 from io import StringIO
 from pathlib import Path
 from typing import Any, Optional, Union
@@ -13,7 +14,7 @@ from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
 from .exceptions import SchemaException
 from .java_codegen import _ensure_directory_and_write, _safe_makedirs
 from .schema import shortname
-from .utils import Traversable, files
+from .utils import Traversable
 
 
 def doc_to_doc_string(doc: Optional[str], indent_level: int = 0) -> str:

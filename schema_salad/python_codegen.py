@@ -10,11 +10,12 @@ try:
 except ModuleNotFoundError:
     black = None  # type: ignore[assignment]
 
+from importlib.resources import files
+
 from . import schema
 from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
-from .utils import files
 
 _string_type_def = TypeDef("strtype", "_PrimitiveLoader(str)")
 _int_type_def = TypeDef("inttype", "_PrimitiveLoader(int)")

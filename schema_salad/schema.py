@@ -3,6 +3,7 @@
 import copy
 import hashlib
 from collections.abc import Mapping, MutableMapping, MutableSequence
+from importlib.resources import files
 from typing import IO, Any, Optional, Union, cast
 from urllib.parse import urlparse
 
@@ -14,7 +15,6 @@ from schema_salad.utils import (
     add_dictlist,
     aslist,
     convert_to_dict,
-    files,
     flatten,
     json_dumps,
     yaml_no_ts,

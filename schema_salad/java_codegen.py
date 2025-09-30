@@ -5,6 +5,7 @@ import re
 import shutil
 import string
 from collections.abc import MutableMapping, MutableSequence
+from importlib.resources import files
 from io import StringIO
 from pathlib import Path
 from typing import Any, Optional, Union
@@ -13,7 +14,7 @@ from . import _logger, schema
 from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
-from .utils import Traversable, files
+from .utils import Traversable
 
 # experiment at providing more typed objects building a optional type that allows
 # referencing one or a list of objects. It is useful for improving the RootLoader
