@@ -1,7 +1,7 @@
 """Shared Exception classes."""
 
 from collections.abc import Sequence
-from typing import Final, Optional, Union
+from typing import Final
 
 from .sourceline import SourceLine, reflow_all, strip_duplicated_lineno
 
@@ -22,17 +22,17 @@ class SchemaSaladException(Exception):
     def __init__(
         self,
         msg: str,
-        sl: Optional[SourceLine] = None,
-        children: Optional[Sequence["SchemaSaladException"]] = None,
+        sl: SourceLine | None = None,
+        children: Sequence["SchemaSaladException"] | None = None,
         bullet_for_children: str = "",
-        detailed_message: Optional[str] = None,
+        detailed_message: str | None = None,
     ) -> None:
         super().__init__(msg)
         self.message: Final = self.args[0]
         self.detailed_message: Final = detailed_message
-        self.file: Optional[str] = None
-        self.start: Optional[tuple[int, int]] = None
-        self.end: Optional[tuple[int, int]] = None
+        self.file: str | None = None
+        self.start: tuple[int, int] | None = None
+        self.end: tuple[int, int] | None = None
 
         self.is_warning: bool = False
 
@@ -67,7 +67,7 @@ class SchemaSaladException(Exception):
             c.as_warning()
         return self
 
-    def with_sourceline(self, sl: Optional[SourceLine]) -> "SchemaSaladException":
+    def with_sourceline(self, sl: SourceLine | None) -> "SchemaSaladException":
         """Use the provided SourceLine to set the causal location."""
         if sl and sl.file():
             self.file = sl.file()
@@ -90,8 +90,8 @@ class SchemaSaladException(Exception):
     def prefix(self) -> str:
         pre: str = ""
         if self.file:
-            linecol0: Union[int, str] = ""
-            linecol1: Union[int, str] = ""
+            linecol0: int | str = ""
+            linecol1: int | str = ""
             if self.start:
                 linecol0, linecol1 = self.start
             pre = f"{self.file}:{linecol0}:{linecol1}: "

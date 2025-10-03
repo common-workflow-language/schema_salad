@@ -7,7 +7,7 @@ import re
 import sys
 from collections.abc import MutableMapping, MutableSequence
 from io import StringIO, TextIOWrapper
-from typing import IO, Any, Final, Literal, Optional, Union, cast
+from typing import IO, Any, Final, Literal, cast
 from urllib.parse import urldefrag
 
 from mistune import create_markdown
@@ -99,7 +99,7 @@ class MyRenderer(HTMLRenderer):
         """Don't escape characters nor wrap predefined HTML within paragraph tags."""
         return html + "\n"
 
-    def block_code(self, code: str, info: Optional[str] = None) -> str:
+    def block_code(self, code: str, info: str | None = None) -> str:
         """Don't escape quotation marks."""
         text = "<pre><code"
         if info is not None:
@@ -225,7 +225,7 @@ def number_headings(toc: ToC, maindoc: str) -> str:
     return "\n".join(mdlines)
 
 
-def fix_doc(doc: Union[list[str], str]) -> str:
+def fix_doc(doc: list[str] | str) -> str:
     """Concatenate doc strings, replacing email addresses with mailto links."""
     docstr: Final = "".join(doc) if isinstance(doc, MutableSequence) else doc
     return "\n".join(
@@ -258,7 +258,7 @@ class RenderType:
         self.docAfter: Final[dict[str, list[str]]] = {}
         self.rendered: Final[set[str]] = set()
         self.redirects: Final = redirects
-        self.title: Optional[str] = None
+        self.title: str | None = None
         self.primitiveType: Final = primitiveType
 
         for t in j:
@@ -289,7 +289,7 @@ class RenderType:
             try:
                 if entry["type"] == "record":
                     self.record_refs[entry["name"]] = []
-                    fields: Union[str, list[dict[str, str]]] = entry.get("fields", [])
+                    fields: str | list[dict[str, str]] = entry.get("fields", [])
                     if isinstance(fields, str):
                         raise KeyError("record fields must be a list of mappings")
                     else:
@@ -326,7 +326,7 @@ class RenderType:
         tp: Any,
         redirects: dict[str, str],
         nbsp: bool = False,
-        jsonldPredicate: Optional[Union[dict[str, str], str]] = None,
+        jsonldPredicate: dict[str, str] | str | None = None,
     ) -> str:
         if isinstance(tp, MutableSequence):
             if nbsp and len(tp) <= 3:
@@ -548,8 +548,8 @@ def avrold_doc(
     brand: str,
     brandlink: str,
     primtype: str,
-    brandstyle: Optional[str] = None,
-    brandinverse: Optional[bool] = False,
+    brandstyle: str | None = None,
+    brandinverse: bool | None = False,
 ) -> None:
     toc: Final = ToC()
     toc.start_numbering = False
@@ -784,13 +784,13 @@ def main() -> None:
 def makedoc(
     stdout: IO[Any],
     schema: str,
-    redirects: Optional[list[str]] = None,
-    only: Optional[list[str]] = None,
-    brand: Optional[str] = None,
-    brandlink: Optional[str] = None,
-    primtype: Optional[str] = None,
-    brandstyle: Optional[str] = None,
-    brandinverse: Optional[bool] = False,
+    redirects: list[str] | None = None,
+    only: list[str] | None = None,
+    brand: str | None = None,
+    brandlink: str | None = None,
+    primtype: str | None = None,
+    brandstyle: str | None = None,
+    brandinverse: bool | None = False,
 ) -> None:
     """Emit HTML representation of a given schema."""
     s: Final[list[dict[str, Any]]] = []
