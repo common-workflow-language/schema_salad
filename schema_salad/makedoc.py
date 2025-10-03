@@ -14,7 +14,7 @@ from mistune import create_markdown
 from mistune.markdown import Markdown
 from mistune.renderers.html import HTMLRenderer
 
-from .exceptions import SchemaSaladException, ValidationException
+from .exceptions import ValidationException
 from .schema import avro_field_name, extend_and_specialize, get_metaschema
 from .utils import add_dictlist, aslist
 from .validate import avro_type_name
@@ -319,17 +319,17 @@ class RenderType:
         nbsp: bool = False,
         jsonldPredicate: dict[str, str] | str | None = None,
     ) -> str:
-        if isinstance(tp, MutableSequence):
-            if nbsp and len(tp) <= 3:
-                return "&nbsp;|&nbsp;".join(
-                    [self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp]
+        match tp:
+            case MutableSequence() as seq:
+                if nbsp and len(seq) <= 3:
+                    return "&nbsp;|&nbsp;".join(
+                        [self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in seq]
+                    )
+                return " | ".join(
+                    [self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in seq]
                 )
-            return " | ".join(
-                [self.typefmt(n, redirects, jsonldPredicate=jsonldPredicate) for n in tp]
-            )
-        if isinstance(tp, MutableMapping):
-            if tp["type"] == "https://w3id.org/cwl/salad#array":
-                ar = "array&lt;{}&gt;".format(self.typefmt(tp["items"], redirects, nbsp=True))
+            case {"type": "https://w3id.org/cwl/salad#array", "items": items}:
+                ar = "array&lt;{}&gt;".format(self.typefmt(items, redirects, nbsp=True))
                 if isinstance(jsonldPredicate, dict) and "mapSubject" in jsonldPredicate:
                     if "mapPredicate" in jsonldPredicate:
                         ar += " | "
@@ -341,7 +341,7 @@ class RenderType:
                             ",&nbsp;<code>{}</code> | {}&gt".format(
                                 jsonldPredicate["mapSubject"],
                                 jsonldPredicate["mapPredicate"],
-                                self.typefmt(tp["items"], redirects),
+                                self.typefmt(items, redirects),
                             )
                         )
                     else:
@@ -350,37 +350,36 @@ class RenderType:
                             ar += "<br>"
                         ar += "<a href='#map'>map</a>&lt;<code>{}</code>,&nbsp;{}&gt".format(
                             jsonldPredicate["mapSubject"],
-                            self.typefmt(tp["items"], redirects),
+                            self.typefmt(items, redirects),
                         )
                 return ar
-            if tp["type"] in (
-                "https://w3id.org/cwl/salad#record",
-                "https://w3id.org/cwl/salad#enum",
-            ):
-                frg = vocab_type_name(tp["name"])
-                if tp["name"] in redirects:
-                    return """<a href="{}">{}</a>""".format(redirects[tp["name"]], frg)
-                if tp["name"] in self.typemap:
+            case {"type": "https://w3id.org/cwl/salad#record", "name": name}:
+                frg = vocab_type_name(name)
+                if name in redirects:
+                    return """<a href="{}">{}</a>""".format(redirects[name], frg)
+                if name in self.typemap:
                     return f"""<a href="#{to_id(frg)}">{frg}</a>"""
-                if tp["type"] == "https://w3id.org/cwl/salad#enum" and len(tp["symbols"]) == 1:
-                    return "constant value <code>{}</code>".format(
-                        avro_field_name(tp["symbols"][0])
-                    )
                 return frg
-            if isinstance(tp["type"], MutableMapping):
-                return self.typefmt(tp["type"], redirects)
-        else:
-            if str(tp) in redirects:
+            case {"type": "https://w3id.org/cwl/salad#enum", "name": name, "symbols": symbols}:
+                frg = vocab_type_name(name)
+                if name in redirects:
+                    return """<a href="{}">{}</a>""".format(redirects[name], frg)
+                if name in self.typemap:
+                    return f"""<a href="#{to_id(frg)}">{frg}</a>"""
+                if len(symbols) == 1:
+                    return "constant value <code>{}</code>".format(avro_field_name(symbols[0]))
+                return frg
+            case {"type": type_decl}:
+                return self.typefmt(type_decl, redirects)
+            case str(tp) if tp in redirects:
                 return f"""<a href="{redirects[tp]}">{redirects[tp]}</a>"""  # noqa: B907
-            if str(tp) in basicTypes:
-                return """<a href="{}">{}</a>""".format(
-                    self.primitiveType, vocab_type_name(str(tp))
-                )
-            frg2 = urldefrag(tp)[1]
-            if frg2 != "":
-                tp = frg2
-            return f"""<a href="#{to_id(tp)}">{tp}</a>"""
-        raise SchemaSaladException("We should not be here!")
+            case str(tp) if tp in basicTypes:
+                return """<a href="{}">{}</a>""".format(self.primitiveType, vocab_type_name(tp))
+            case _ as tp:
+                frg2 = urldefrag(tp)[1]
+                if frg2 != "":
+                    tp = frg2
+                return f"""<a href="#{to_id(tp)}">{tp}</a>"""
 
     def render_type(self, f: dict[str, Any], depth: int) -> None:
         """Render a type declaration."""

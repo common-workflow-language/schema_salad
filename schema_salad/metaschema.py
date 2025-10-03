@@ -238,7 +238,9 @@ def load_field(
     return fieldtype.load(val, baseuri, loadingOptions, lc=lc)
 
 
-save_type: TypeAlias = None | MutableMapping[str, Any] | MutableSequence[Any] | int | float | bool | str
+save_type: TypeAlias = (
+    None | MutableMapping[str, Any] | MutableSequence[Any] | int | float | bool | str
+)
 
 
 def extract_type(val_type: type[Any]) -> str:
@@ -593,62 +595,63 @@ class _SecondaryDSLLoader(_Loader):
         lc: list[Any] | None = None,
     ) -> Any:
         r: list[dict[str, Any]] = []
-        if isinstance(doc, MutableSequence):
-            for d in doc:
-                if isinstance(d, str):
-                    if d.endswith("?"):
-                        r.append({"pattern": d[:-1], "required": False})
-                    else:
-                        r.append({"pattern": d})
-                elif isinstance(d, dict):
-                    new_dict: dict[str, Any] = {}
-                    dict_copy = copy.deepcopy(d)
-                    if "pattern" in dict_copy:
-                        new_dict["pattern"] = dict_copy.pop("pattern")
-                    else:
-                        raise ValidationException(
-                            f"Missing pattern in secondaryFiles specification entry: {d}"
-                        )
-                    new_dict["required"] = (
-                        dict_copy.pop("required") if "required" in dict_copy else None
-                    )
-
-                    if len(dict_copy):
-                        raise ValidationException(
-                            "Unallowed values in secondaryFiles specification entry: {}".format(
-                                dict_copy
+        match doc:
+            case MutableSequence() as dlist:
+                for d in dlist:
+                    if isinstance(d, str):
+                        if d.endswith("?"):
+                            r.append({"pattern": d[:-1], "required": False})
+                        else:
+                            r.append({"pattern": d})
+                    elif isinstance(d, dict):
+                        new_dict: dict[str, Any] = {}
+                        dict_copy = copy.deepcopy(d)
+                        if "pattern" in dict_copy:
+                            new_dict["pattern"] = dict_copy.pop("pattern")
+                        else:
+                            raise ValidationException(
+                                f"Missing pattern in secondaryFiles specification entry: {d}"
                             )
+                        new_dict["required"] = (
+                            dict_copy.pop("required") if "required" in dict_copy else None
                         )
-                    r.append(new_dict)
 
+                        if len(dict_copy):
+                            raise ValidationException(
+                                "Unallowed values in secondaryFiles specification entry: {}".format(
+                                    dict_copy
+                                )
+                            )
+                        r.append(new_dict)
+
+                    else:
+                        raise ValidationException(
+                            "Expected a string or sequence of (strings or mappings)."
+                        )
+            case MutableMapping() as decl:
+                new_dict = {}
+                doc_copy = copy.deepcopy(decl)
+                if "pattern" in doc_copy:
+                    new_dict["pattern"] = doc_copy.pop("pattern")
                 else:
                     raise ValidationException(
-                        "Expected a string or sequence of (strings or mappings)."
+                        f"Missing pattern in secondaryFiles specification entry: {decl}"
                     )
-        elif isinstance(doc, MutableMapping):
-            new_dict = {}
-            doc_copy = copy.deepcopy(doc)
-            if "pattern" in doc_copy:
-                new_dict["pattern"] = doc_copy.pop("pattern")
-            else:
-                raise ValidationException(
-                    f"Missing pattern in secondaryFiles specification entry: {doc}"
-                )
-            new_dict["required"] = doc_copy.pop("required") if "required" in doc_copy else None
+                new_dict["required"] = doc_copy.pop("required") if "required" in doc_copy else None
 
-            if len(doc_copy):
-                raise ValidationException(
-                    f"Unallowed values in secondaryFiles specification entry: {doc_copy}"
-                )
-            r.append(new_dict)
+                if len(doc_copy):
+                    raise ValidationException(
+                        f"Unallowed values in secondaryFiles specification entry: {doc_copy}"
+                    )
+                r.append(new_dict)
 
-        elif isinstance(doc, str):
-            if doc.endswith("?"):
-                r.append({"pattern": doc[:-1], "required": False})
-            else:
-                r.append({"pattern": doc})
-        else:
-            raise ValidationException("Expected str or sequence of str")
+            case str(decl):
+                if decl.endswith("?"):
+                    r.append({"pattern": decl[:-1], "required": False})
+                else:
+                    r.append({"pattern": decl})
+            case _:
+                raise ValidationException("Expected str or sequence of str")
         return self.inner.load(r, baseuri, loadingOptions, docRoot, lc=lc)
 
 
@@ -823,32 +826,33 @@ class _URILoader(_Loader):
             loadingOptions = LoadingOptions(
                 copyfrom=loadingOptions, no_link_check=self.no_link_check
             )
-        if isinstance(doc, MutableSequence):
-            newdoc = []
-            for i in doc:
-                if isinstance(i, str):
-                    newdoc.append(
-                        expand_url(
-                            i,
-                            baseuri,
-                            loadingOptions,
-                            self.scoped_id,
-                            self.vocab_term,
-                            self.scoped_ref,
+        match doc:
+            case MutableSequence() as decl:
+                newdoc = []
+                for i in decl:
+                    if isinstance(i, str):
+                        newdoc.append(
+                            expand_url(
+                                i,
+                                baseuri,
+                                loadingOptions,
+                                self.scoped_id,
+                                self.vocab_term,
+                                self.scoped_ref,
+                            )
                         )
-                    )
-                else:
-                    newdoc.append(i)
-            doc = newdoc
-        elif isinstance(doc, str):
-            doc = expand_url(
-                doc,
-                baseuri,
-                loadingOptions,
-                self.scoped_id,
-                self.vocab_term,
-                self.scoped_ref,
-            )
+                    else:
+                        newdoc.append(i)
+                doc = newdoc
+            case str(decl):
+                doc = expand_url(
+                    decl,
+                    baseuri,
+                    loadingOptions,
+                    self.scoped_id,
+                    self.vocab_term,
+                    self.scoped_ref,
+                )
         if isinstance(doc, str):
             if not loadingOptions.no_link_check:
                 errors = []
