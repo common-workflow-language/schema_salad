@@ -14,7 +14,7 @@ from abc import ABC, abstractmethod
 from collections.abc import MutableMapping, MutableSequence, Sequence
 from io import StringIO
 from itertools import chain
-from typing import Any, Final, Optional, Union, cast
+from typing import Any, Final, Optional, TypeAlias, cast
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
@@ -55,19 +55,19 @@ class LoadingOptions:
 
     def __init__(
         self,
-        fetcher: Optional[Fetcher] = None,
-        namespaces: Optional[dict[str, str]] = None,
-        schemas: Optional[list[str]] = None,
-        fileuri: Optional[str] = None,
+        fetcher: Fetcher | None = None,
+        namespaces: dict[str, str] | None = None,
+        schemas: list[str] | None = None,
+        fileuri: str | None = None,
         copyfrom: Optional["LoadingOptions"] = None,
-        original_doc: Optional[Any] = None,
-        addl_metadata: Optional[dict[str, str]] = None,
-        baseuri: Optional[str] = None,
-        idx: Optional[IdxType] = None,
-        imports: Optional[list[str]] = None,
-        includes: Optional[list[str]] = None,
-        no_link_check: Optional[bool] = None,
-        container: Optional[str] = None,
+        original_doc: Any | None = None,
+        addl_metadata: dict[str, str] | None = None,
+        baseuri: str | None = None,
+        idx: IdxType | None = None,
+        imports: list[str] | None = None,
+        includes: list[str] | None = None,
+        no_link_check: bool | None = None,
+        container: str | None = None,
     ) -> None:
         """Create a LoadingOptions object."""
         self.original_doc = original_doc
@@ -211,7 +211,7 @@ class Saveable(ABC):
         _doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
+        docRoot: str | None = None,
     ) -> "Saveable":
         """Construct this object from the result of yaml.load()."""
 
@@ -223,11 +223,11 @@ class Saveable(ABC):
 
 
 def load_field(
-    val: Union[str, dict[str, str]],
+    val: str | dict[str, str],
     fieldtype: "_Loader",
     baseuri: str,
     loadingOptions: LoadingOptions,
-    lc: Optional[list[Any]] = None,
+    lc: list[Any] | None = None,
 ) -> Any:
     """Load field."""
     if isinstance(val, MutableMapping):
@@ -251,7 +251,9 @@ def load_field(
     return fieldtype.load(val, baseuri, loadingOptions, lc=lc)
 
 
-save_type = Optional[Union[MutableMapping[str, Any], MutableSequence[Any], int, float, bool, str]]
+save_type: TypeAlias = (
+    None | MutableMapping[str, Any] | MutableSequence[Any] | int | float | bool | str
+)
 
 
 def extract_type(val_type: type[Any]) -> str:
@@ -367,7 +369,7 @@ def expand_url(
     loadingOptions: LoadingOptions,
     scoped_id: bool = False,
     vocab_term: bool = False,
-    scoped_ref: Optional[int] = None,
+    scoped_ref: int | None = None,
 ) -> str:
     if url in ("@id", "@type"):
         return url
@@ -434,8 +436,8 @@ class _Loader:
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
-        lc: Optional[list[Any]] = None,
+        docRoot: str | None = None,
+        lc: list[Any] | None = None,
     ) -> Any:
         pass
 
@@ -446,8 +448,8 @@ class _AnyLoader(_Loader):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
-        lc: Optional[list[Any]] = None,
+        docRoot: str | None = None,
+        lc: list[Any] | None = None,
     ) -> Any:
         if doc is not None:
             return doc
@@ -455,7 +457,7 @@ class _AnyLoader(_Loader):
 
 
 class _PrimitiveLoader(_Loader):
-    def __init__(self, tp: Union[type, tuple[type[str], type[str]]]) -> None:
+    def __init__(self, tp: type | tuple[type[str], type[str]]) -> None:
         self.tp: Final = tp
 
     def load(
@@ -463,8 +465,8 @@ class _PrimitiveLoader(_Loader):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
-        lc: Optional[list[Any]] = None,
+        docRoot: str | None = None,
+        lc: list[Any] | None = None,
     ) -> Any:
         if not isinstance(doc, self.tp):
             raise ValidationException(f"Expected a {self.tp} but got {doc.__class__.__name__}")
@@ -483,8 +485,8 @@ class _ArrayLoader(_Loader):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
-        lc: Optional[list[Any]] = None,
+        docRoot: str | None = None,
+        lc: list[Any] | None = None,
     ) -> Any:
         if not isinstance(doc, MutableSequence):
             raise ValidationException(
@@ -535,9 +537,9 @@ class _MapLoader(_Loader):
     def __init__(
         self,
         values: _Loader,
-        name: Optional[str] = None,
-        container: Optional[str] = None,
-        no_link_check: Optional[bool] = None,
+        name: str | None = None,
+        container: str | None = None,
+        no_link_check: bool | None = None,
     ) -> None:
         self.values: Final = values
         self.name: Final = name
@@ -549,8 +551,8 @@ class _MapLoader(_Loader):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
-        lc: Optional[list[Any]] = None,
+        docRoot: str | None = None,
+        lc: list[Any] | None = None,
     ) -> Any:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(f"Expected a map, was {type(doc)}")
@@ -584,8 +586,8 @@ class _EnumLoader(_Loader):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
-        lc: Optional[list[Any]] = None,
+        docRoot: str | None = None,
+        lc: list[Any] | None = None,
     ) -> Any:
         if doc in self.symbols:
             return doc
@@ -604,8 +606,8 @@ class _SecondaryDSLLoader(_Loader):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
-        lc: Optional[list[Any]] = None,
+        docRoot: str | None = None,
+        lc: list[Any] | None = None,
     ) -> Any:
         r: Final[list[dict[str, Any]]] = []
         if isinstance(doc, MutableSequence):
@@ -671,8 +673,8 @@ class _RecordLoader(_Loader):
     def __init__(
         self,
         classtype: type[Saveable],
-        container: Optional[str] = None,
-        no_link_check: Optional[bool] = None,
+        container: str | None = None,
+        no_link_check: bool | None = None,
     ) -> None:
         self.classtype: Final = classtype
         self.container: Final = container
@@ -683,8 +685,8 @@ class _RecordLoader(_Loader):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
-        lc: Optional[list[Any]] = None,
+        docRoot: str | None = None,
+        lc: list[Any] | None = None,
     ) -> Any:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(
@@ -710,8 +712,8 @@ class _ExpressionLoader(_Loader):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
-        lc: Optional[list[Any]] = None,
+        docRoot: str | None = None,
+        lc: list[Any] | None = None,
     ) -> Any:
         if not isinstance(doc, str):
             raise ValidationException(
@@ -722,7 +724,7 @@ class _ExpressionLoader(_Loader):
 
 
 class _UnionLoader(_Loader):
-    def __init__(self, alternates: Sequence[_Loader], name: Optional[str] = None) -> None:
+    def __init__(self, alternates: Sequence[_Loader], name: str | None = None) -> None:
         self.alternates = alternates
         self.name: Final = name
 
@@ -734,8 +736,8 @@ class _UnionLoader(_Loader):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
-        lc: Optional[list[Any]] = None,
+        docRoot: str | None = None,
+        lc: list[Any] | None = None,
     ) -> Any:
         errors: Final = []
 
@@ -817,8 +819,8 @@ class _URILoader(_Loader):
         inner: _Loader,
         scoped_id: bool,
         vocab_term: bool,
-        scoped_ref: Optional[int],
-        no_link_check: Optional[bool],
+        scoped_ref: int | None,
+        no_link_check: bool | None,
     ) -> None:
         self.inner: Final = inner
         self.scoped_id: Final = scoped_id
@@ -831,8 +833,8 @@ class _URILoader(_Loader):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
-        lc: Optional[list[Any]] = None,
+        docRoot: str | None = None,
+        lc: list[Any] | None = None,
     ) -> Any:
         if self.no_link_check is not None:
             loadingOptions = LoadingOptions(
@@ -880,7 +882,7 @@ class _URILoader(_Loader):
 
 
 class _TypeDSLLoader(_Loader):
-    def __init__(self, inner: _Loader, refScope: Optional[int], salad_version: str) -> None:
+    def __init__(self, inner: _Loader, refScope: int | None, salad_version: str) -> None:
         self.inner: Final = inner
         self.refScope: Final = refScope
         self.salad_version: Final = salad_version
@@ -890,7 +892,7 @@ class _TypeDSLLoader(_Loader):
         doc: str,
         baseuri: str,
         loadingOptions: LoadingOptions,
-    ) -> Union[list[Union[dict[str, Any], str]], dict[str, Any], str]:
+    ) -> list[dict[str, Any] | str] | dict[str, Any] | str:
         doc_ = doc
         optional = False
         if doc_.endswith("?"):
@@ -899,7 +901,7 @@ class _TypeDSLLoader(_Loader):
 
         if doc_.endswith("[]"):
             salad_versions: Final = [int(v) for v in self.salad_version[1:].split(".")]
-            items: Union[list[Union[dict[str, Any], str]], dict[str, Any], str] = ""
+            items: list[dict[str, Any] | str] | dict[str, Any] | str = ""
             rest: Final = doc_[0:-2]
             if salad_versions < [1, 3]:
                 if rest.endswith("[]"):
@@ -911,7 +913,7 @@ class _TypeDSLLoader(_Loader):
                 items = self.resolve(rest, baseuri, loadingOptions)
                 if isinstance(items, str):
                     items = expand_url(items, baseuri, loadingOptions, False, True, self.refScope)
-            expanded: Union[dict[str, Any], str] = {"type": "array", "items": items}
+            expanded: dict[str, Any] | str = {"type": "array", "items": items}
         else:
             expanded = expand_url(doc_, baseuri, loadingOptions, False, True, self.refScope)
 
@@ -925,8 +927,8 @@ class _TypeDSLLoader(_Loader):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
-        lc: Optional[list[Any]] = None,
+        docRoot: str | None = None,
+        lc: list[Any] | None = None,
     ) -> Any:
         if isinstance(doc, MutableSequence):
             r: Final[list[Any]] = []
@@ -950,7 +952,7 @@ class _TypeDSLLoader(_Loader):
 
 
 class _IdMapLoader(_Loader):
-    def __init__(self, inner: _Loader, mapSubject: str, mapPredicate: Optional[str]) -> None:
+    def __init__(self, inner: _Loader, mapSubject: str, mapPredicate: str | None) -> None:
         self.inner: Final = inner
         self.mapSubject: Final = mapSubject
         self.mapPredicate: Final = mapPredicate
@@ -960,8 +962,8 @@ class _IdMapLoader(_Loader):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None,
-        lc: Optional[list[Any]] = None,
+        docRoot: str | None = None,
+        lc: list[Any] | None = None,
     ) -> Any:
         if isinstance(doc, MutableMapping):
             r: Final[list[Any]] = []
@@ -990,10 +992,10 @@ class _IdMapLoader(_Loader):
 
 def _document_load(
     loader: _Loader,
-    doc: Union[str, MutableMapping[str, Any], MutableSequence[Any]],
+    doc: str | MutableMapping[str, Any] | MutableSequence[Any],
     baseuri: str,
     loadingOptions: LoadingOptions,
-    addl_metadata_fields: Optional[MutableSequence[str]] = None,
+    addl_metadata_fields: MutableSequence[str] | None = None,
 ) -> tuple[Any, LoadingOptions]:
     if isinstance(doc, str):
         return _document_load_by_url(
@@ -1062,7 +1064,7 @@ def _document_load_by_url(
     loader: _Loader,
     url: str,
     loadingOptions: LoadingOptions,
-    addl_metadata_fields: Optional[MutableSequence[str]] = None,
+    addl_metadata_fields: MutableSequence[str] | None = None,
 ) -> tuple[Any, LoadingOptions]:
     if url in loadingOptions.idx:
         return loadingOptions.idx[url]
@@ -1117,7 +1119,7 @@ def save_relative_uri(
     uri: Any,
     base_url: str,
     scoped_id: bool,
-    ref_scope: Optional[int],
+    ref_scope: int | None,
     relative_uris: bool,
 ) -> Any:
     """Convert any URI to a relative one, obeying the scoping rules."""
