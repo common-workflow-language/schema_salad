@@ -74,44 +74,46 @@ class DefaultFetcher(MemoryCachingFetcher):
         scheme: Final = split.scheme
         path = split.path
 
-        if scheme in ["http", "https"] and self.session is not None:
-            try:
-                headers = {}
-                if content_types:
-                    headers["Accept"] = ", ".join(content_types) + ", */*;q=0.8"
-                resp: Final = self.session.get(url, headers=headers)
-                resp.raise_for_status()
-            except Exception as e:
-                raise ValidationException(f"Error fetching {url}: {e}") from e
-            if content_types and "content-type" in resp.headers:
-                received_content_types = set(
-                    resp.headers["content-type"].split(";")[:1][0].split(",")
-                )
-                if set(content_types).isdisjoint(received_content_types):
-                    _logger.warning(
-                        "While fetching %s, got content-type of %r. Expected one of %s.",
-                        url,
-                        resp.headers["content-type"].split(";")[:1][0],
-                        content_types,
+        match scheme:
+            case "http" | "https" if self.session is not None:
+                try:
+                    headers = {}
+                    if content_types:
+                        headers["Accept"] = ", ".join(content_types) + ", */*;q=0.8"
+                    resp: Final = self.session.get(url, headers=headers)
+                    resp.raise_for_status()
+                except Exception as e:
+                    raise ValidationException(f"Error fetching {url}: {e}") from e
+                if content_types and "content-type" in resp.headers:
+                    received_content_types = set(
+                        resp.headers["content-type"].split(";")[:1][0].split(",")
                     )
-            return resp.text
-        if scheme == "file":
-            try:
-                # On Windows, url.path will be /drive:/path ; on Unix systems,
-                # /path. As we want drive:/path instead of /drive:/path on Windows,
-                # remove the leading /.
-                if os.path.isabs(
-                    path[1:]
-                ):  # checking if pathis valid after removing front / or not
-                    path = path[1:]
-                with open(urllib.request.url2pathname(str(path)), encoding="utf-8") as fp:
-                    return str(fp.read())
+                    if set(content_types).isdisjoint(received_content_types):
+                        _logger.warning(
+                            "While fetching %s, got content-type of %r. Expected one of %s.",
+                            url,
+                            resp.headers["content-type"].split(";")[:1][0],
+                            content_types,
+                        )
+                return resp.text
+            case "file":
+                try:
+                    # On Windows, url.path will be /drive:/path ; on Unix systems,
+                    # /path. As we want drive:/path instead of /drive:/path on Windows,
+                    # remove the leading /.
+                    if os.path.isabs(
+                        path[1:]
+                    ):  # checking if pathis valid after removing front / or not
+                        path = path[1:]
+                    with open(urllib.request.url2pathname(str(path)), encoding="utf-8") as fp:
+                        return str(fp.read())
 
-            except OSError as err:
-                if err.filename == path:
-                    raise ValidationException(str(err)) from err
-                raise ValidationException(f"Error reading {url}: {err}") from err
-        raise ValidationException(f"Unsupported scheme in url: {url}")
+                except OSError as err:
+                    if err.filename == path:
+                        raise ValidationException(str(err)) from err
+                    raise ValidationException(f"Error reading {url}: {err}") from err
+            case _:
+                raise ValidationException(f"Unsupported scheme in url: {url}")
 
     def check_exists(self, url: str) -> bool:
         if url in self.cache:
@@ -121,21 +123,23 @@ class DefaultFetcher(MemoryCachingFetcher):
         scheme: Final = split.scheme
         path: Final = split.path
 
-        if scheme in ["http", "https"]:
-            if self.session is None:
-                raise ValidationException(f"Can't check {scheme} URL, session is None")
-            try:
-                resp: Final = self.session.head(url, allow_redirects=True)
-                resp.raise_for_status()
-            except Exception:
-                return False
-            self.cache[url] = True
-            return True
-        if scheme == "file":
-            return os.path.exists(urllib.request.url2pathname(str(path)))
-        if scheme == "mailto":
-            return True
-        raise ValidationException(f"Unsupported scheme {scheme!r} in url: {url}")
+        match scheme:
+            case "http" | "https":
+                if self.session is None:
+                    raise ValidationException(f"Can't check {scheme} URL, session is None")
+                try:
+                    resp: Final = self.session.head(url, allow_redirects=True)
+                    resp.raise_for_status()
+                except Exception:
+                    return False
+                self.cache[url] = True
+                return True
+            case "file":
+                return os.path.exists(urllib.request.url2pathname(str(path)))
+            case "mailto":
+                return True
+            case _ as sch:
+                raise ValidationException(f"Unsupported scheme {sch!r} in url: {url}")
 
     def urljoin(self, base_url: str, url: str) -> str:
         if url.startswith("_:"):
