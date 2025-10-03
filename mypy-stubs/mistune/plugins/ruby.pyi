@@ -1,4 +1,4 @@
-from typing import Match
+from re import Match
 
 from ..block_parser import BlockParser as BlockParser
 from ..core import BaseRenderer as BaseRenderer

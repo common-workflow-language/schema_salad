@@ -8,7 +8,7 @@ from collections.abc import MutableMapping, MutableSequence
 from importlib.resources import files
 from io import StringIO
 from pathlib import Path
-from typing import Any, Final, Optional, Union
+from typing import Any, Final
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
@@ -32,7 +32,7 @@ def _ensure_directory_and_write(path: Path, contents: str) -> None:
         f.write(contents)
 
 
-def _doc_to_doc_string(doc: Optional[str], indent_level: int = 0) -> str:
+def _doc_to_doc_string(doc: str | None, indent_level: int = 0) -> str:
     lead: Final = " " + "  " * indent_level + "* " * indent_level
     if doc:
         doc_str = f"{lead}<BLOCKQUOTE>\n"
@@ -122,10 +122,10 @@ class JavaCodeGen(CodeGenBase):
     def __init__(
         self,
         base: str,
-        target: Optional[str],
-        examples: Optional[str],
+        target: str | None,
+        examples: str | None,
         package: str,
-        copyright: Optional[str],
+        copyright: str | None,
     ) -> None:
         super().__init__()
         self.base_uri: Final = base
@@ -392,9 +392,9 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
 
     def type_loader(
         self,
-        type_declaration: Union[list[Any], dict[str, Any], str],
-        container: Optional[str] = None,
-        no_link_check: Optional[bool] = None,
+        type_declaration: list[Any] | dict[str, Any] | str,
+        container: str | None = None,
+        no_link_check: bool | None = None,
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
@@ -687,9 +687,9 @@ public enum {clazz} {{
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: Optional[str],
+        doc: str | None,
         optional: bool,
-        subscope: Optional[str],
+        subscope: str | None,
     ) -> None:
         fieldname = name
         property_name = self.property_name(fieldname)
@@ -789,7 +789,7 @@ public enum {clazz} {{
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: Optional[str],
+        doc: str | None,
         optional: bool,
     ) -> None:
         if self.current_class_is_abstract:
@@ -833,8 +833,8 @@ public enum {clazz} {{
         inner: TypeDef,
         scoped_id: bool,
         vocab_term: bool,
-        ref_scope: Optional[int],
-        no_link_check: Optional[bool] = None,
+        ref_scope: int | None,
+        no_link_check: bool | None = None,
     ) -> TypeDef:
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
@@ -856,7 +856,7 @@ public enum {clazz} {{
         )
 
     def idmap_loader(
-        self, field: str, inner: TypeDef, map_subject: str, map_predicate: Optional[str]
+        self, field: str, inner: TypeDef, map_subject: str, map_predicate: str | None
     ) -> TypeDef:
         instance_type: Final = inner.instance_type or "Object"
         return self.declare_type(
@@ -870,7 +870,7 @@ public enum {clazz} {{
             )
         )
 
-    def typedsl_loader(self, inner: TypeDef, ref_scope: Union[int, None]) -> TypeDef:
+    def typedsl_loader(self, inner: TypeDef, ref_scope: int | None) -> TypeDef:
         """Construct the TypeDef for the given DSL loader."""
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
