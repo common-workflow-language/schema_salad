@@ -205,41 +205,45 @@ unittest
         else:
             annotate_str = ""
 
-        if isinstance(type_, str):
-            stype = shortname(type_)
-            if stype == "boolean":
-                type_str = "bool"
-            elif stype == "null":
-                type_str = "None"
-            else:
-                type_str = stype
-        elif isinstance(type_, list):
-            t_str = [
-                self.parse_record_field_type(t, None, parent_has_idmap=has_idmap)[1] for t in type_
-            ]
-            if has_default:
-                t_str = [t for t in t_str if t != "None"]
-            if len(t_str) == 1:
-                type_str = t_str[0]
-            else:
-                if are_dispatchable(type_, has_idmap):
-                    t_str += ["Any"]
-                union_types = ", ".join(t_str)
-                type_str = f"Union!({union_types})"
-        elif shortname(type_["type"]) == "array":
-            item_type = self.parse_record_field_type(
-                type_["items"], None, parent_has_idmap=has_idmap
-            )[1]
-            type_str = f"{item_type}[]"
-        elif shortname(type_["type"]) == "record":
-            return annotate_str, shortname(type_.get("name", "record"))
-        elif shortname(type_["type"]) == "enum":
-            return annotate_str, "'not yet implemented'"
-        elif shortname(type_["type"]) == "map":
-            value_type = self.parse_record_field_type(
-                type_["values"], None, parent_has_idmap=has_idmap, has_default=True
-            )[1]
-            type_str = f"{value_type}[string]"
+        match type_:
+            case str():
+                match shortname(type_):
+                    case "boolean":
+                        type_str = "bool"
+                    case "null":
+                        type_str = "None"
+                    case str(stype):
+                        type_str = stype
+            case list():
+                t_str = [
+                    self.parse_record_field_type(t, None, parent_has_idmap=has_idmap)[1]
+                    for t in type_
+                ]
+                if has_default:
+                    t_str = [t for t in t_str if t != "None"]
+                if len(t_str) == 1:
+                    type_str = t_str[0]
+                else:
+                    if are_dispatchable(type_, has_idmap):
+                        t_str += ["Any"]
+                    union_types = ", ".join(t_str)
+                    type_str = f"Union!({union_types})"
+            case dict():
+                match shortname(type_["type"]):
+                    case "array":
+                        item_type = self.parse_record_field_type(
+                            type_["items"], None, parent_has_idmap=has_idmap
+                        )[1]
+                        type_str = f"{item_type}[]"
+                    case "record":
+                        return annotate_str, shortname(type_.get("name", "record"))
+                    case "enum":
+                        return annotate_str, "'not yet implemented'"
+                    case "map":
+                        value_type = self.parse_record_field_type(
+                            type_["values"], None, parent_has_idmap=has_idmap, has_default=True
+                        )[1]
+                        type_str = f"{value_type}[string]"
         return annotate_str, type_str
 
     def parse_record_field(self, field: dict[str, Any], parent_name: str | None = None) -> str:
