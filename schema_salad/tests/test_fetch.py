@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 from urllib.parse import urljoin, urlsplit
 
 import pytest
@@ -14,11 +13,11 @@ class testFetcher(Fetcher):
     def __init__(
         self,
         cache: CacheType,
-        session: Optional[requests.sessions.Session],
+        session: requests.sessions.Session | None,
     ) -> None:
         pass
 
-    def fetch_text(self, url: str, content_types: Optional[list[str]] = None) -> str:
+    def fetch_text(self, url: str, content_types: list[str] | None = None) -> str:
         if url == "keep:abc+123/foo.txt":
             return "hello: keepfoo"
         if url.endswith("foo.txt"):
@@ -47,11 +46,11 @@ class CWLTestFetcher(Fetcher):
     def __init__(
         self,
         cache: CacheType,
-        session: Optional[requests.sessions.Session],
+        session: requests.sessions.Session | None,
     ) -> None:
         pass
 
-    def fetch_text(self, url: str, content_types: Optional[list[str]] = None) -> str:
+    def fetch_text(self, url: str, content_types: list[str] | None = None) -> str:
         if url == "baz:bar/foo.cwl":
             return """
 cwlVersion: v1.0

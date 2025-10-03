@@ -21,7 +21,7 @@ which can be combined with the CWL V1.0 schema as shown below::
 
 import os
 import re
-from typing import IO, Any, Optional, Union, cast
+from typing import IO, Any, cast
 
 from . import _logger
 from .codegen_base import CodeGenBase, TypeDef
@@ -585,11 +585,11 @@ class CppCodeGen(CodeGenBase):
         self,
         base: str,
         target: IO[str],
-        examples: Optional[str],
+        examples: str | None,
         package: str,
-        copyright: Optional[str],
-        spdx_copyright_text: Optional[list[str]],
-        spdx_license_identifier: Optional[str],
+        copyright: str | None,
+        spdx_copyright_text: list[str] | None,
+        spdx_license_identifier: str | None,
     ) -> None:
         """Initialize the C++ code generator."""
         super().__init__()
@@ -607,7 +607,7 @@ class CppCodeGen(CodeGenBase):
         self.unionDefinitions: dict[str, UnionDefinition] = {}
         self.documentRootTypes: list[ClassDefinition] = []
 
-    def convertTypeToCpp(self, type_declaration: Union[list[Any], dict[str, Any], str]) -> str:
+    def convertTypeToCpp(self, type_declaration: list[Any] | dict[str, Any] | str) -> str:
         """Convert a Schema Salad type to a C++ type."""
         if not isinstance(type_declaration, list):
             return self.convertTypeToCpp([type_declaration])
@@ -713,7 +713,7 @@ class CppCodeGen(CodeGenBase):
         type_declaration = ", ".join(type_declaration)
         return f"std::variant<{type_declaration}>"
 
-    def epilogue(self, root_loader: Optional[TypeDef]) -> None:
+    def epilogue(self, root_loader: TypeDef | None) -> None:
         """Trigger to generate the epilouge code."""
         # find common namespace
 
