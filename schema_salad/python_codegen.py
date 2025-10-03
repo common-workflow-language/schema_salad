@@ -3,7 +3,7 @@
 import textwrap
 from collections.abc import MutableMapping, MutableSequence
 from io import StringIO
-from typing import IO, Any, Final, Optional, Union
+from typing import IO, Any, Final
 
 try:
     import black
@@ -72,7 +72,7 @@ class PythonCodeGen(CodeGenBase):
     def __init__(
         self,
         out: IO[str],
-        copyright: Optional[str],
+        copyright: str | None,
         parser_info: str,
         salad_version: str,
     ) -> None:
@@ -372,9 +372,9 @@ if _errors__:
 
     def type_loader(
         self,
-        type_declaration: Union[list[Any], dict[str, Any], str],
-        container: Optional[str] = None,
-        no_link_check: Optional[bool] = None,
+        type_declaration: list[Any] | dict[str, Any] | str,
+        container: str | None = None,
+        no_link_check: bool | None = None,
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
@@ -503,7 +503,7 @@ if _errors__:
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: Optional[str],
+        doc: str | None,
         optional: bool,
     ) -> None:
         if self.current_class_is_abstract:
@@ -539,9 +539,9 @@ if _errors__:
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: Optional[str],
+        doc: str | None,
         optional: bool,
-        subscope: Optional[str],
+        subscope: str | None,
     ) -> None:
         if self.current_class_is_abstract:
             return
@@ -722,8 +722,8 @@ if self.{safename} is not None:
         inner: TypeDef,
         scoped_id: bool,
         vocab_term: bool,
-        ref_scope: Optional[int],
-        no_link_check: Optional[bool] = None,
+        ref_scope: int | None,
+        no_link_check: bool | None = None,
     ) -> TypeDef:
         """Construct the TypeDef for the given URI loader."""
         return self.declare_type(
@@ -737,7 +737,7 @@ if self.{safename} is not None:
         )
 
     def idmap_loader(
-        self, field: str, inner: TypeDef, map_subject: str, map_predicate: Optional[str]
+        self, field: str, inner: TypeDef, map_subject: str, map_predicate: str | None
     ) -> TypeDef:
         """Construct the TypeDef for the given mapped ID loader."""
         return self.declare_type(
@@ -747,7 +747,7 @@ if self.{safename} is not None:
             )
         )
 
-    def typedsl_loader(self, inner: TypeDef, ref_scope: Optional[int]) -> TypeDef:
+    def typedsl_loader(self, inner: TypeDef, ref_scope: int | None) -> TypeDef:
         """Construct the TypeDef for the given DSL loader."""
         return self.declare_type(
             TypeDef(

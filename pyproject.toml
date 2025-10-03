@@ -30,4 +30,4 @@ before-all = "apk add ccache || yum install -y ccache || dnf --nogpg -y install 
 
 [tool.black]
 line-length = 100
-target-version = [ "py39" ]
+target-version = [ "py310" ]
