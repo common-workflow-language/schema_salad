@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple
+from collections.abc import Callable, Iterable
+from typing import Any
 
 from .core import BlockState as BlockState
 from .markdown import Markdown as Markdown
@@ -8,7 +9,7 @@ def add_toc_hook(
     md: Markdown,
     min_level: int = 1,
     max_level: int = 3,
-    heading_id: Optional[Callable[[Dict[str, Any], int], str]] = None,
+    heading_id: Callable[[dict[str, Any], int], str] | None = None,
 ) -> None: ...
-def normalize_toc_item(md: Markdown, token: Dict[str, Any]) -> Tuple[int, str, str]: ...
-def render_toc_ul(toc: Iterable[Tuple[int, str, str]]) -> str: ...
+def normalize_toc_item(md: Markdown, token: dict[str, Any]) -> tuple[int, str, str]: ...
+def render_toc_ul(toc: Iterable[tuple[int, str, str]]) -> str: ...

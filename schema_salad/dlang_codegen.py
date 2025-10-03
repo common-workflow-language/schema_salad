@@ -4,7 +4,7 @@ import datetime
 import functools
 import json
 import textwrap
-from typing import IO, Any, Optional, Union, cast
+from typing import IO, Any, cast
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, TypeDef
@@ -27,10 +27,10 @@ class DlangCodeGen(CodeGenBase):
         self,
         base: str,
         target: IO[str],
-        examples: Optional[str],
+        examples: str | None,
         package: str,
-        copyright_: Optional[str],
-        parser_info: Optional[str],
+        copyright_: str | None,
+        parser_info: str | None,
         salad_version: str,
     ) -> None:
         """Initialize the D codegen."""
@@ -148,7 +148,7 @@ unittest
             avn = avn[5:]
         return avn
 
-    def to_doc_comment(self, doc: Union[None, str, list[str]]) -> str:
+    def to_doc_comment(self, doc: None | str | list[str]) -> str:
         """Return an embedded documentation comments for a given string."""
         if doc is None:
             return "///\n"
@@ -172,7 +172,7 @@ unittest
     def parse_record_field_type(
         self,
         type_: Any,
-        jsonld_pred: Union[None, str, dict[str, Any]],
+        jsonld_pred: None | str | dict[str, Any],
         parent_has_idmap: bool = False,
         has_default: bool = False,
     ) -> tuple[str, str]:
@@ -242,7 +242,7 @@ unittest
             type_str = f"{value_type}[string]"
         return annotate_str, type_str
 
-    def parse_record_field(self, field: dict[str, Any], parent_name: Optional[str] = None) -> str:
+    def parse_record_field(self, field: dict[str, Any], parent_name: str | None = None) -> str:
         """Return a declaration string for a given record field."""
         fname = shortname(field["name"]) + "_"
         jsonld_pred = field.get("jsonldPredicate", None)

@@ -203,8 +203,8 @@ def load_document_by_uri(tmp_path: Path, path: Path) -> Any:
 def python_codegen(
     file_uri: str,
     target: Path,
-    parser_info: Optional[str] = None,
-    package: Optional[str] = None,
+    parser_info: str | None = None,
+    package: str | None = None,
 ) -> None:
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(file_uri)
     assert isinstance(avsc_names, Names)
