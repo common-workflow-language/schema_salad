@@ -397,69 +397,66 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
         no_link_check: bool | None = None,
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
-        if isinstance(type_declaration, MutableSequence):
-            sub = [self.type_loader(i) for i in type_declaration]
-            if len(sub) < 2:
-                return sub[0]
+        match type_declaration:
+            case MutableSequence() as decl:
+                sub = [self.type_loader(i) for i in decl]
+                if len(sub) < 2:
+                    return sub[0]
 
-            if len(sub) == 2:
-                type_1 = sub[0]
-                type_2 = sub[1]
-                type_1_name = type_1.name
-                type_2_name = type_2.name
-                if type_1_name == "NullInstance" or type_2_name == "NullInstance":
-                    non_null_type = type_1 if type_1.name != "NullInstance" else type_2
-                    return self.declare_type(
-                        TypeDef(
-                            instance_type="java.util.Optional<{}>".format(
-                                non_null_type.instance_type
-                            ),
-                            init=f"new OptionalLoader({non_null_type.name})",
-                            name=f"optional_{non_null_type.name}",
-                            loader_type="Loader<java.util.Optional<{}>>".format(
-                                non_null_type.instance_type
-                            ),
+                if len(sub) == 2:
+                    type_1 = sub[0]
+                    type_2 = sub[1]
+                    type_1_name = type_1.name
+                    type_2_name = type_2.name
+                    if type_1_name == "NullInstance" or type_2_name == "NullInstance":
+                        non_null_type = type_1 if type_1.name != "NullInstance" else type_2
+                        return self.declare_type(
+                            TypeDef(
+                                instance_type="java.util.Optional<{}>".format(
+                                    non_null_type.instance_type
+                                ),
+                                init=f"new OptionalLoader({non_null_type.name})",
+                                name=f"optional_{non_null_type.name}",
+                                loader_type="Loader<java.util.Optional<{}>>".format(
+                                    non_null_type.instance_type
+                                ),
+                            )
                         )
-                    )
-                if (
-                    type_1_name == f"array_of_{type_2_name}"
-                    or type_2_name == f"array_of_{type_1_name}"
-                ) and USE_ONE_OR_LIST_OF_TYPES:
-                    if type_1_name == f"array_of_{type_2_name}":
-                        single_type = type_2
-                        array_type = type_1
-                    else:
-                        single_type = type_1
-                        array_type = type_2
-                    fqclass = f"{self.package}.{single_type.instance_type}"
-                    return self.declare_type(
-                        TypeDef(
-                            instance_type=f"{self.package}.utils.OneOrListOf<{fqclass}>",
-                            init="new OneOrListOfLoader<{}>({}, {})".format(
-                                fqclass, single_type.name, array_type.name
-                            ),
-                            name=f"one_or_array_of_{single_type.name}",
-                            loader_type="Loader<{}.utils.OneOrListOf<{}>>".format(
-                                self.package, fqclass
-                            ),
+                    if (
+                        type_1_name == f"array_of_{type_2_name}"
+                        or type_2_name == f"array_of_{type_1_name}"
+                    ) and USE_ONE_OR_LIST_OF_TYPES:
+                        if type_1_name == f"array_of_{type_2_name}":
+                            single_type = type_2
+                            array_type = type_1
+                        else:
+                            single_type = type_1
+                            array_type = type_2
+                        fqclass = f"{self.package}.{single_type.instance_type}"
+                        return self.declare_type(
+                            TypeDef(
+                                instance_type=f"{self.package}.utils.OneOrListOf<{fqclass}>",
+                                init="new OneOrListOfLoader<{}>({}, {})".format(
+                                    fqclass, single_type.name, array_type.name
+                                ),
+                                name=f"one_or_array_of_{single_type.name}",
+                                loader_type="Loader<{}.utils.OneOrListOf<{}>>".format(
+                                    self.package, fqclass
+                                ),
+                            )
                         )
+                return self.declare_type(
+                    TypeDef(
+                        instance_type="Object",
+                        init="new UnionLoader(new Loader[] {{ {} }})".format(
+                            ", ".join(s.name for s in sub)
+                        ),
+                        name="union_of_{}".format("_or_".join(s.name for s in sub)),
+                        loader_type="Loader<Object>",
                     )
-            return self.declare_type(
-                TypeDef(
-                    instance_type="Object",
-                    init="new UnionLoader(new Loader[] {{ {} }})".format(
-                        ", ".join(s.name for s in sub)
-                    ),
-                    name="union_of_{}".format("_or_".join(s.name for s in sub)),
-                    loader_type="Loader<Object>",
                 )
-            )
-        if isinstance(type_declaration, MutableMapping):
-            if type_declaration["type"] in (
-                "array",
-                "https://w3id.org/cwl/salad#array",
-            ):
-                i = self.type_loader(type_declaration["items"])
+            case {"type": "array" | "https://w3id.org/cwl/salad#array", "items": items}:
+                i = self.type_loader(items)
                 instance_type = (
                     "java.util.List<String>"
                     if i.instance_type == "String"
@@ -475,11 +472,8 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                         loader_type=f"Loader<java.util.List<{i.instance_type}>>",
                     )
                 )
-            if type_declaration["type"] in (
-                "map",
-                "https://w3id.org/cwl/salad#map",
-            ):
-                i = self.type_loader(type_declaration["values"])
+            case {"type": "map" | "https://w3id.org/cwl/salad#map", "values": values}:
+                i = self.type_loader(values)
                 return self.declare_type(
                     TypeDef(
                         # special doesn't work out with subclassing, gotta be more clever
@@ -496,18 +490,21 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                         loader_type=f"Loader<java.util.Map<String, {i.instance_type}>>",
                     )
                 )
-            if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
-                return self.type_loader_enum(type_declaration)
-            if type_declaration["type"] in (
-                "record",
-                "https://w3id.org/cwl/salad#record",
-            ):
-                is_abstract = type_declaration.get("abstract", False)
-                fqclass = "{}.{}".format(self.package, self.safe_name(type_declaration["name"]))
+            case {
+                "type": "enum" | "https://w3id.org/cwl/salad#enum",
+            }:
+                return self.type_loader_enum(type_declaration)  # type: ignore[arg-type]
+            case {
+                "type": "record" | "https://w3id.org/cwl/salad#record",
+                "name": name,
+                **rest,
+            }:
+                is_abstract = rest.get("abstract", False)
+                fqclass = f"{self.package}.{self.safe_name(name)}"
                 return self.declare_type(
                     TypeDef(
-                        instance_type=self.safe_name(type_declaration["name"]),
-                        name=self.safe_name(type_declaration["name"]),
+                        instance_type=self.safe_name(name),
+                        name=self.safe_name(name),
                         init="new RecordLoader<{clazz}>({clazz}{ext}.class, "
                         "{container}, {no_link_check})".format(
                             clazz=fqclass,
@@ -522,12 +519,13 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                         loader_type=f"Loader<{fqclass}>",
                     )
                 )
-            if type_declaration["type"] in (
-                "union",
-                "https://w3id.org/cwl/salad#union",
-            ):
+            case {
+                "type": "union" | "https://w3id.org/cwl/salad#union",
+                "name": name,
+                "names": names,
+            }:
                 # Declare the named loader to handle recursive union definitions
-                loader_name = self.safe_name(type_declaration["name"])
+                loader_name = self.safe_name(name)
                 loader_type = TypeDef(
                     instance_type="Object",
                     init="new UnionLoader(new Loader[] {})",
@@ -536,7 +534,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                 )
                 self.declare_type(loader_type)
                 # Parse inner types
-                sub = [self.type_loader(i) for i in type_declaration["names"]]
+                sub = [self.type_loader(i) for i in names]
 
                 if len(sub) == 2:
                     type_1 = sub[0]
@@ -590,19 +588,20 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                     )
                 )
                 return loader_type
-            raise SchemaException("wft {}".format(type_declaration["type"]))
-        if type_declaration in prims:
-            return prims[type_declaration]
-        if type_declaration in ("Expression", "https://w3id.org/cwl/cwl#Expression"):
-            return self.declare_type(
-                TypeDef(
-                    name=self.safe_name(type_declaration) + "Loader",
-                    init="new ExpressionLoader()",
-                    loader_type="Loader<String>",
-                    instance_type="String",
+            case {"type": type_decl}:
+                raise SchemaException(f"wft {type_decl}")
+            case str() as decl if decl in prims:
+                return prims[decl]
+            case "Expression" | "https://w3id.org/cwl/cwl#Expression" as decl:
+                return self.declare_type(
+                    TypeDef(
+                        name=self.safe_name(decl) + "Loader",
+                        init="new ExpressionLoader()",
+                        loader_type="Loader<String>",
+                        instance_type="String",
+                    )
                 )
-            )
-        return self.collected_types[self.safe_name(type_declaration)]
+        return self.collected_types[self.safe_name(type_declaration)]  # type: ignore[arg-type]
 
     def type_loader_enum(self, type_declaration: dict[str, Any]) -> TypeDef:
         """Build an enum type loader for the given declaration."""
