@@ -2,7 +2,7 @@
 
 from collections import OrderedDict
 from collections.abc import MutableSequence
-from typing import Any, Optional, Union
+from typing import Any
 
 
 class TypeDef:  # pylint: disable=too-few-public-methods
@@ -27,9 +27,9 @@ class TypeDef:  # pylint: disable=too-few-public-methods
         init: str,
         is_uri: bool = False,
         scoped_id: bool = False,
-        ref_scope: Optional[int] = 0,
-        loader_type: Optional[str] = None,
-        instance_type: Optional[str] = None,
+        ref_scope: int | None = 0,
+        loader_type: str | None = None,
+        instance_type: str | None = None,
         abstract: bool = False,
     ) -> None:
         self.name = name
@@ -111,9 +111,9 @@ class CodeGenBase:
 
     def type_loader(
         self,
-        type_declaration: Union[list[Any], dict[str, Any]],
-        container: Optional[str] = None,
-        no_link_check: Optional[bool] = None,
+        type_declaration: list[Any] | dict[str, Any],
+        container: str | None = None,
+        no_link_check: bool | None = None,
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         raise NotImplementedError()
@@ -122,9 +122,9 @@ class CodeGenBase:
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: Optional[str],
+        doc: str | None,
         optional: bool,
-        subscope: Optional[str],
+        subscope: str | None,
     ) -> None:
         """Output the code to load the given field."""
         raise NotImplementedError()
@@ -133,7 +133,7 @@ class CodeGenBase:
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: Optional[str],
+        doc: str | None,
         optional: bool,
     ) -> None:
         """Output the code to handle the given ID field."""
@@ -144,19 +144,19 @@ class CodeGenBase:
         inner: TypeDef,
         scoped_id: bool,
         vocab_term: bool,
-        ref_scope: Optional[int],
-        no_link_check: Optional[bool] = None,
+        ref_scope: int | None,
+        no_link_check: bool | None = None,
     ) -> TypeDef:
         """Construct the TypeDef for the given URI loader."""
         raise NotImplementedError()
 
     def idmap_loader(
-        self, field: str, inner: TypeDef, map_subject: str, map_predicate: Optional[str]
+        self, field: str, inner: TypeDef, map_subject: str, map_predicate: str | None
     ) -> TypeDef:
         """Construct the TypeDef for the given mapped ID loader."""
         raise NotImplementedError()
 
-    def typedsl_loader(self, inner: TypeDef, ref_scope: Optional[int]) -> TypeDef:
+    def typedsl_loader(self, inner: TypeDef, ref_scope: int | None) -> TypeDef:
         """Construct the TypeDef for the given DSL loader."""
         raise NotImplementedError()
 
