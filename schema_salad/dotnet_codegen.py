@@ -7,7 +7,7 @@ from collections.abc import MutableMapping, MutableSequence
 from importlib.resources import files
 from io import StringIO
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from xml.sax.saxutils import escape  # nosec
 
 from . import _logger, schema
@@ -392,26 +392,27 @@ public class {cls} : {current_interface}, ISaveable
         no_link_check: bool | None = None,
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
-        if isinstance(type_declaration, MutableSequence):
-            sub_types = [self.type_loader(i) for i in type_declaration]
-            sub_names: list[str] = list(dict.fromkeys([i.name for i in sub_types]))
-            sub_instance_types: list[str] = list(
-                dict.fromkeys([i.instance_type for i in sub_types if i.instance_type is not None])
-            )
-            return self.declare_type(
-                TypeDef(
-                    name="union_of_{}".format("_or_".join(sub_names)),
-                    init="new UnionLoader(new List<ILoader> {{ {} }})".format(", ".join(sub_names)),
-                    instance_type="OneOf<" + ", ".join(sub_instance_types) + ">",
-                    loader_type="ILoader<object>",
+        match type_declaration:
+            case MutableSequence():
+                sub_types = [self.type_loader(i) for i in type_declaration]
+                sub_names: list[str] = list(dict.fromkeys([i.name for i in sub_types]))
+                sub_instance_types: list[str] = list(
+                    dict.fromkeys(
+                        [i.instance_type for i in sub_types if i.instance_type is not None]
+                    )
                 )
-            )
-        if isinstance(type_declaration, MutableMapping):
-            if type_declaration["type"] in (
-                "array",
-                "https://w3id.org/cwl/salad#array",
-            ):
-                i = self.type_loader(type_declaration["items"])
+                return self.declare_type(
+                    TypeDef(
+                        name="union_of_{}".format("_or_".join(sub_names)),
+                        init="new UnionLoader(new List<ILoader> {{ {} }})".format(
+                            ", ".join(sub_names)
+                        ),
+                        instance_type="OneOf<" + ", ".join(sub_instance_types) + ">",
+                        loader_type="ILoader<object>",
+                    )
+                )
+            case {"type": "array" | "https://w3id.org/cwl/salad#array", "items": items}:
+                i = self.type_loader(items)
                 return self.declare_type(
                     TypeDef(
                         instance_type=f"List<{i.instance_type}>",
@@ -420,11 +421,8 @@ public class {cls} : {current_interface}, ISaveable
                         init=f"new ArrayLoader<{i.instance_type}>({i.name})",
                     )
                 )
-            if type_declaration["type"] in (
-                "map",
-                "https://w3id.org/cwl/salad#map",
-            ):
-                i = self.type_loader(type_declaration["values"])
+            case {"type": "map" | "https://w3id.org/cwl/salad#map", "values": values}:
+                i = self.type_loader(values)
                 return self.declare_type(
                     TypeDef(
                         instance_type=f"Dictionary<string, {i.instance_type}>",
@@ -440,33 +438,35 @@ public class {cls} : {current_interface}, ISaveable
                         ),
                     )
                 )
-            if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
-                return self.type_loader_enum(type_declaration)
-            if type_declaration["type"] in (
-                "record",
-                "https://w3id.org/cwl/salad#record",
-            ):
+            case {"type": "enum" | "https://w3id.org/cwl/salad#enum"}:
+                return self.type_loader_enum(type_declaration)  # type: ignore[arg-type]
+            case {
+                "type": "record" | "https://w3id.org/cwl/salad#record",
+                "name": str(name),
+                **rest,
+            }:
                 return self.declare_type(
                     TypeDef(
-                        instance_type=self.safe_name(type_declaration["name"]),
-                        name=self.safe_name(type_declaration["name"]) + "Loader",
+                        instance_type=self.safe_name(name),
+                        name=self.safe_name(name) + "Loader",
                         init="new RecordLoader<{}>({}, {})".format(
-                            self.safe_name(type_declaration["name"]),
+                            self.safe_name(name),
                             (
                                 f"'{container}'" if container is not None else self.to_dotnet(None)
                             ),  # noqa: B907
                             self.to_dotnet(no_link_check),
                         ),
-                        loader_type="ILoader<{}>".format(self.safe_name(type_declaration["name"])),
-                        abstract=type_declaration.get("abstract", False),
+                        loader_type=f"ILoader<{self.safe_name(name)}>",
+                        abstract=cast(bool, rest.get("abstract", False)),
                     )
                 )
-            if type_declaration["type"] in (
-                "union",
-                "https://w3id.org/cwl/salad#union",
-            ):
+            case {
+                "type": "union" | "https://w3id.org/cwl/salad#union",
+                "name": name,
+                "names": names,
+            }:
                 # Declare the named loader to handle recursive union definitions
-                loader_name = self.safe_name(type_declaration["name"]) + "Loader"
+                loader_name = self.safe_name(name) + "Loader"
                 loader_type = TypeDef(
                     name=loader_name,
                     init="new UnionLoader(new List<ILoader>())",
@@ -475,7 +475,7 @@ public class {cls} : {current_interface}, ISaveable
                 )
                 self.declare_type(loader_type)
                 # Parse inner types
-                sub_types = [self.type_loader(i) for i in type_declaration["names"]]
+                sub_types = [self.type_loader(i) for i in names]
                 # Register lazy initialization for the loader
                 self.add_lazy_init(
                     LazyInitDef(
@@ -486,19 +486,23 @@ public class {cls} : {current_interface}, ISaveable
                     )
                 )
                 return loader_type
-            raise SchemaException("wft {}".format(type_declaration["type"]))
-        if type_declaration in prims:
-            return prims[type_declaration]
-        if type_declaration in ("Expression", "https://w3id.org/cwl/cwl#Expression"):
-            return self.declare_type(
-                TypeDef(
-                    name=self.safe_name(type_declaration) + "Loader",
-                    init="new ExpressionLoader()",
-                    loader_type="ILoader<string>",
-                    instance_type="string",
+            case {"type": type_decl}:
+                raise SchemaException(f"wft {type_decl}")
+            case str(decl) if decl in prims:
+                return prims[decl]
+            case "Expression" | "https://w3id.org/cwl/cwl#Expression" as decl:
+                return self.declare_type(
+                    TypeDef(
+                        name=self.safe_name(decl) + "Loader",
+                        init="new ExpressionLoader()",
+                        loader_type="ILoader<string>",
+                        instance_type="string",
+                    )
                 )
-            )
-        return self.collected_types[self.safe_name(type_declaration) + "Loader"]
+            case str(decl):
+                return self.collected_types[self.safe_name(decl) + "Loader"]
+            case _ as decl:
+                raise SchemaException(f"wft {decl}")
 
     def type_loader_enum(self, type_declaration: dict[str, Any]) -> TypeDef:
         """Build an enum type loader for the given declaration."""
