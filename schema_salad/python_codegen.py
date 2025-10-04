@@ -1,9 +1,9 @@
 """Python code generator for a given schema salad definition."""
 
 import textwrap
-from collections.abc import MutableMapping, MutableSequence
+from collections.abc import MutableSequence
 from io import StringIO
-from typing import IO, Any, Optional, Union
+from typing import IO, Any
 
 try:
     import black
@@ -72,7 +72,7 @@ class PythonCodeGen(CodeGenBase):
     def __init__(
         self,
         out: IO[str],
-        copyright: Optional[str],
+        copyright: str | None,
         parser_info: str,
         salad_version: str,
     ) -> None:
@@ -370,40 +370,34 @@ if _errors__:
 
     def type_loader(
         self,
-        type_declaration: Union[list[Any], dict[str, Any], str],
-        container: Optional[str] = None,
-        no_link_check: Optional[bool] = None,
+        type_declaration: list[Any] | dict[str, Any] | str,
+        container: str | None = None,
+        no_link_check: bool | None = None,
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         sub_names: list[str]
-        if isinstance(type_declaration, MutableSequence):
-            sub_names = list(dict.fromkeys([self.type_loader(i).name for i in type_declaration]))
-            return self.declare_type(
-                TypeDef(
-                    "union_of_{}".format("_or_".join(sub_names)),
-                    "_UnionLoader(({},))".format(", ".join(sub_names)),
+        match type_declaration:
+            case MutableSequence():
+                sub_names = list(
+                    dict.fromkeys([self.type_loader(i).name for i in type_declaration])
                 )
-            )
-        if isinstance(type_declaration, MutableMapping):
-            if type_declaration["type"] in (
-                "array",
-                "https://w3id.org/cwl/salad#array",
-            ):
-                i = self.type_loader(type_declaration["items"])
+                return self.declare_type(
+                    TypeDef(
+                        "union_of_{}".format("_or_".join(sub_names)),
+                        "_UnionLoader(({},))".format(", ".join(sub_names)),
+                    )
+                )
+            case {"type": "array" | "https://w3id.org/cwl/salad#array", "items": items}:
+                i = self.type_loader(items)
                 return self.declare_type(
                     TypeDef(
                         f"array_of_{i.name}",
                         f"_ArrayLoader({i.name})",
                     )
                 )
-            if type_declaration["type"] in (
-                "map",
-                "https://w3id.org/cwl/salad#map",
-            ):
-                i = self.type_loader(type_declaration["values"])
-                name = (
-                    self.safe_name(type_declaration["name"]) if "name" in type_declaration else None
-                )
+            case {"type": "map" | "https://w3id.org/cwl/salad#map", "values": values, **rest}:
+                i = self.type_loader(values)
+                name = self.safe_name(str(rest["name"])) if "name" in rest else None
                 anon_type = self.declare_type(
                     TypeDef(
                         f"map_of_{i.name}",
@@ -415,65 +409,64 @@ if _errors__:
                         ),
                     )
                 )
-                if "name" in type_declaration:
+                if "name" in rest:
                     return self.declare_type(
-                        TypeDef(self.safe_name(type_declaration["name"]) + "Loader", anon_type.name)
+                        TypeDef(self.safe_name(str(rest["name"])) + "Loader", anon_type.name)
                     )
                 else:
                     return anon_type
-            if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
-                for sym in type_declaration["symbols"]:
+            case {
+                "type": "enum" | "https://w3id.org/cwl/salad#enum",
+                "symbols": symbols,
+                "name": name,
+                **rest,
+            }:
+                for sym in symbols:
                     self.add_vocab(shortname(sym), sym)
-                if "doc" in type_declaration:
-                    doc = type_declaration["doc"]
+                if "doc" in rest:
+                    doc = rest["doc"]
                     if isinstance(doc, MutableSequence):
                         formated_doc = "\n".join(doc)
                     else:
-                        formated_doc = doc.strip()
+                        formated_doc = str(doc).strip()
                     docstring = f'\n"""\n{formated_doc}\n"""'
                 else:
                     docstring = ""
                 return self.declare_type(
                     TypeDef(
-                        self.safe_name(type_declaration["name"]) + "Loader",
+                        self.safe_name(name) + "Loader",
                         '_EnumLoader(("{}",), "{}"){}'.format(
-                            '", "'.join(
-                                schema.avro_field_name(sym) for sym in type_declaration["symbols"]
-                            ),
-                            self.safe_name(type_declaration["name"]),
+                            '", "'.join(schema.avro_field_name(sym) for sym in symbols),
+                            self.safe_name(name),
                             docstring,
                         ),
                     )
                 )
 
-            if type_declaration["type"] in (
-                "record",
-                "https://w3id.org/cwl/salad#record",
-            ):
+            case {"type": "record" | "https://w3id.org/cwl/salad#record", "name": name, **rest}:
                 return self.declare_type(
                     TypeDef(
-                        self.safe_name(type_declaration["name"]) + "Loader",
+                        self.safe_name(name) + "Loader",
                         "_RecordLoader({}, {}, {})".format(
-                            self.safe_name(type_declaration["name"]),
+                            self.safe_name(name),
                             f"'{container}'" if container is not None else None,  # noqa: B907
                             no_link_check,
                         ),
-                        abstract=type_declaration.get("abstract", False),
+                        abstract=bool(rest.get("abstract", False)),
                     )
                 )
 
-            if type_declaration["type"] in (
-                "union",
-                "https://w3id.org/cwl/salad#union",
-            ):
+            case {
+                "type": "union" | "https://w3id.org/cwl/salad#union",
+                "name": name,
+                "names": list(names),
+            }:
                 # Declare the named loader to handle recursive union definitions
-                loader_name = self.safe_name(type_declaration["name"]) + "Loader"
+                loader_name = self.safe_name(name) + "Loader"
                 loader_type = TypeDef(loader_name, f"_UnionLoader((), '{loader_name}')")
                 self.declare_type(loader_type)
                 # Parse inner types
-                sub_names = list(
-                    dict.fromkeys([self.type_loader(i).name for i in type_declaration["names"]])
-                )
+                sub_names = list(dict.fromkeys([self.type_loader(i).name for i in names]))
                 # Register lazy initialization for the loader
                 self.add_lazy_init(
                     LazyInitDef(
@@ -482,25 +475,29 @@ if _errors__:
                     )
                 )
                 return loader_type
-            raise SchemaException("wft {}".format(type_declaration["type"]))
+            case {"type": decl}:
+                raise SchemaException(f"wft {decl}")
 
-        if type_declaration in prims:
-            return prims[type_declaration]
+            case str(decl) if decl in prims:
+                return prims[decl]
 
-        if type_declaration in ("Expression", "https://w3id.org/cwl/cwl#Expression"):
-            return self.declare_type(
-                TypeDef(
-                    self.safe_name(type_declaration) + "Loader",
-                    "_ExpressionLoader(str)",
+            case "Expression" | "https://w3id.org/cwl/cwl#Expression" as decl:
+                return self.declare_type(
+                    TypeDef(
+                        self.safe_name(decl) + "Loader",
+                        "_ExpressionLoader(str)",
+                    )
                 )
-            )
-        return self.collected_types[self.safe_name(type_declaration) + "Loader"]
+            case str(decl):
+                return self.collected_types[self.safe_name(decl) + "Loader"]
+            case _ as decl:
+                raise SchemaException(f"wtf {decl}")
 
     def declare_id_field(
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: Optional[str],
+        doc: str | None,
         optional: bool,
     ) -> None:
         if self.current_class_is_abstract:
@@ -536,9 +533,9 @@ if _errors__:
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: Optional[str],
+        doc: str | None,
         optional: bool,
-        subscope: Optional[str],
+        subscope: str | None,
     ) -> None:
         if self.current_class_is_abstract:
             return
@@ -719,8 +716,8 @@ if self.{safename} is not None:
         inner: TypeDef,
         scoped_id: bool,
         vocab_term: bool,
-        ref_scope: Optional[int],
-        no_link_check: Optional[bool] = None,
+        ref_scope: int | None,
+        no_link_check: bool | None = None,
     ) -> TypeDef:
         """Construct the TypeDef for the given URI loader."""
         return self.declare_type(
@@ -734,7 +731,7 @@ if self.{safename} is not None:
         )
 
     def idmap_loader(
-        self, field: str, inner: TypeDef, map_subject: str, map_predicate: Optional[str]
+        self, field: str, inner: TypeDef, map_subject: str, map_predicate: str | None
     ) -> TypeDef:
         """Construct the TypeDef for the given mapped ID loader."""
         return self.declare_type(
@@ -744,7 +741,7 @@ if self.{safename} is not None:
             )
         )
 
-    def typedsl_loader(self, inner: TypeDef, ref_scope: Optional[int]) -> TypeDef:
+    def typedsl_loader(self, inner: TypeDef, ref_scope: int | None) -> TypeDef:
         """Construct the TypeDef for the given DSL loader."""
         return self.declare_type(
             TypeDef(

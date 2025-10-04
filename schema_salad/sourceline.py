@@ -1,7 +1,7 @@
 import os
 import re
-from collections.abc import MutableMapping, MutableSequence
-from typing import Any, AnyStr, Callable, Optional, Union
+from collections.abc import Callable, MutableMapping, MutableSequence
+from typing import Any, AnyStr
 
 import ruamel.yaml
 from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq
@@ -31,7 +31,7 @@ def add_lc_filename(r: ruamel.yaml.comments.CommentedBase, source: str) -> None:
     _add_lc_filename(r, relname(source))
 
 
-def reflow_all(text: str, maxline: Optional[int] = None) -> str:
+def reflow_all(text: str, maxline: int | None = None) -> str:
     if maxline is None:
         maxline = int(os.environ.get("COLUMNS", "100"))
     maxno = 0
@@ -58,7 +58,7 @@ def reflow_all(text: str, maxline: Optional[int] = None) -> str:
     return "\n".join(msg)
 
 
-def reflow(text: str, maxline: int, shift: Optional[str] = "") -> str:
+def reflow(text: str, maxline: int, shift: str | None = "") -> str:
     maxline = max(maxline, 20)
     if len(text) > maxline:
         sp = text.rfind(" ", 0, maxline)
@@ -100,7 +100,7 @@ def strip_duplicated_lineno(text: str) -> str:
 
     Same as :py:meth:`strip_dup_lineno` but without reflow.
     """
-    pre: Optional[str] = None
+    pre: str | None = None
     msg = []
     for line in text.splitlines():
         g = lineno_re.match(line)
@@ -119,10 +119,10 @@ def strip_duplicated_lineno(text: str) -> str:
     return "\n".join(msg)
 
 
-def strip_dup_lineno(text: str, maxline: Optional[int] = None) -> str:
+def strip_dup_lineno(text: str, maxline: int | None = None) -> str:
     if maxline is None:
         maxline = int(os.environ.get("COLUMNS", "100"))
-    pre: Optional[str] = None
+    pre: str | None = None
     msg = []
     maxno = 0
     for line in text.splitlines():
@@ -159,10 +159,10 @@ def strip_dup_lineno(text: str, maxline: Optional[int] = None) -> str:
 
 
 def cmap(
-    d: Union[int, float, str, MutableMapping[str, Any], MutableSequence[Any], None],
-    lc: Optional[list[int]] = None,
-    fn: Optional[str] = None,
-) -> Union[int, float, str, CommentedMap, CommentedSeq, None]:
+    d: int | float | str | MutableMapping[str, Any] | MutableSequence[Any] | None,
+    lc: list[int] | None = None,
+    fn: str | None = None,
+) -> int | float | str | CommentedMap | CommentedSeq | None:
     if lc is None:
         lc = [0, 0, 0, 0]
     if fn is None:
@@ -218,7 +218,7 @@ class SourceLine:
     def __init__(
         self,
         item: Any,
-        key: Optional[Any] = None,
+        key: Any | None = None,
         raise_type: Callable[[str], Any] = str,
         include_traceback: bool = False,
     ) -> None:
@@ -240,12 +240,12 @@ class SourceLine:
             return
         raise self.makeError(str(exc_value)) from exc_value
 
-    def file(self) -> Optional[str]:
+    def file(self) -> str | None:
         if hasattr(self.item, "lc") and hasattr(self.item.lc, "filename"):
             return str(self.item.lc.filename)
         return None
 
-    def start(self) -> Optional[tuple[int, int]]:
+    def start(self) -> tuple[int, int] | None:
         """Determine the starting location."""
         if self.file() is None:
             return None
@@ -256,7 +256,7 @@ class SourceLine:
             (self.item.lc.data[self.key][1] or 0) + 1,
         )
 
-    def end(self) -> Optional[tuple[int, int]]:
+    def end(self) -> tuple[int, int] | None:
         """Empty, for now."""
         return None
 
