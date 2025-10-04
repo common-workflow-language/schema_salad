@@ -148,8 +148,6 @@ setup(
     },
     install_requires=install_requires,
     extras_require=extras_require,
-    test_suite="tests",
-    tests_require=["pytest<9"],
     entry_points={
         "console_scripts": [
             "schema-salad-tool=schema_salad.main:main",
