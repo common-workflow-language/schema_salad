@@ -6,7 +6,7 @@ from typing import Any, AnyStr, Callable, Optional, Union
 import ruamel.yaml
 from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq
 
-lineno_re = re.compile("^(.*?:[0-9]+:[0-9]+: )(( *)(.*))")
+lineno_re = re.compile(r"^(.*?:[0-9]+:[0-9]+: )(( *)(.*))")
 
 
 def _add_lc_filename(r: ruamel.yaml.comments.CommentedBase, source: AnyStr) -> None:
@@ -32,6 +32,7 @@ def add_lc_filename(r: ruamel.yaml.comments.CommentedBase, source: str) -> None:
 
 
 def reflow_all(text: str, maxline: Optional[int] = None) -> str:
+    """Reflow text respecting a common prefix with line & col info."""
     if maxline is None:
         maxline = int(os.environ.get("COLUMNS", "100"))
     maxno = 0
@@ -59,6 +60,7 @@ def reflow_all(text: str, maxline: Optional[int] = None) -> str:
 
 
 def reflow(text: str, maxline: int, shift: Optional[str] = "") -> str:
+    """Reflow a single line of text."""
     maxline = max(maxline, 20)
     if len(text) > maxline:
         sp = text.rfind(" ", 0, maxline)
@@ -120,6 +122,7 @@ def strip_duplicated_lineno(text: str) -> str:
 
 
 def strip_dup_lineno(text: str, maxline: Optional[int] = None) -> str:
+    """Strip duplicated line numbers."""
     if maxline is None:
         maxline = int(os.environ.get("COLUMNS", "100"))
     pre: Optional[str] = None
@@ -163,6 +166,16 @@ def cmap(
     lc: Optional[list[int]] = None,
     fn: Optional[str] = None,
 ) -> Union[int, float, str, CommentedMap, CommentedSeq, None]:
+    """
+    Apply line+column & filename data through to the provided data.
+
+    :param d: Target datastructure: number and strings will be passed through
+              unchanged. Non-Commented container types with be transformed into
+              the relevant Commented container types.
+    :param lc: Line & Column information to be applied.
+    :param fn: The Filename to store.
+    :returns: The (transformed) datastructure.
+    """
     if lc is None:
         lc = [0, 0, 0, 0]
     if fn is None:
@@ -241,6 +254,7 @@ class SourceLine:
         raise self.makeError(str(exc_value)) from exc_value
 
     def file(self) -> Optional[str]:
+        """Return the embedded filename."""
         if hasattr(self.item, "lc") and hasattr(self.item.lc, "filename"):
             return str(self.item.lc.filename)
         return None

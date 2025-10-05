@@ -99,6 +99,7 @@ class Schema:
     """Base class for all Schema classes."""
 
     def __init__(self, atype: str, other_props: Optional[PropsType] = None) -> None:
+        """Avro Schema initializer."""
         # Ensure valid ctor args
         if not isinstance(atype, str):
             raise SchemaParseException(
@@ -123,9 +124,11 @@ class Schema:
 
     # utility functions to manipulate properties dict
     def get_prop(self, key: str) -> Optional[PropType]:
+        """Retrieve a property from the Schema."""
         return self._props.get(key)
 
     def set_prop(self, key: str, value: Optional[PropType]) -> None:
+        """Set a Schema property."""
         self._props[key] = value
 
 
@@ -173,6 +176,7 @@ class Name:
 
     @property
     def fullname(self) -> Optional[str]:
+        """Retrieve the computed full name."""
         return self._full
 
     def get_space(self) -> Optional[str]:
@@ -189,10 +193,12 @@ class Names:
     """Track name set and default namespace during parsing."""
 
     def __init__(self, default_namespace: Optional[str] = None) -> None:
+        """Create a namespace tracker."""
         self.names: dict[str, NamedSchema] = {}
         self.default_namespace = default_namespace
 
     def has_name(self, name_attr: str, space_attr: Optional[str]) -> bool:
+        """Test if the given namespace is stored."""
         test = Name(name_attr, space_attr, self.default_namespace).fullname
         return test in self.names
 
@@ -324,13 +330,16 @@ class Field:
     # read-only properties
     @property
     def default(self) -> Optional[Any]:
+        """Return the default value, if any."""
         return self.get_prop("default")
 
     # utility functions to manipulate properties dict
     def get_prop(self, key: str) -> Optional[PropType]:
+        """Retrieve a property from the Field."""
         return self._props.get(key)
 
     def set_prop(self, key: str, value: Optional[PropType]) -> None:
+        """Set a Field property."""
         self._props[key] = value
 
 
@@ -341,6 +350,7 @@ class PrimitiveSchema(Schema):
     """Valid primitive types are in PRIMITIVE_TYPES."""
 
     def __init__(self, atype: str, other_props: Optional[PropsType] = None) -> None:
+        """Create a PrimitiveSchema."""
         # Ensure valid ctor args
         if atype not in PRIMITIVE_TYPES:
             raise AvroException(f"{atype} is not a valid primitive type.")

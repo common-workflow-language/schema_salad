@@ -1,7 +1,7 @@
 """
 C++17 code generator for a given Schema Salad definition.
 
-Currently only supports emiting YAML from the C++ objects, not yet parsing
+Currently only supports emitting YAML from the C++ objects, not yet parsing
 YAML into C++ objects.
 
 The generated code requires the libyaml-cpp library & headers
@@ -489,7 +489,7 @@ class EnumDefinition:
 
 # !TODO way to many functions, most of these shouldn't exists
 def isPrimitiveType(v: Any) -> bool:
-    """Check if v is a primitve type."""
+    """Check if v is a primitive type."""
     if not isinstance(v, str):
         return False
     return v in ["null", "boolean", "int", "long", "float", "double", "string"]
@@ -714,6 +714,7 @@ class CppCodeGen(CodeGenBase):
         return f"std::variant<{type_declaration}>"
 
     def epilogue(self, root_loader: Optional[TypeDef]) -> None:
+        """Trigger to generate the epilouge code."""
         # find common namespace
 
         common_namespace = os.path.commonprefix(

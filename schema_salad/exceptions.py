@@ -66,6 +66,7 @@ class SchemaSaladException(Exception):
         return self
 
     def with_sourceline(self, sl: Optional[SourceLine]) -> "SchemaSaladException":
+        """Use the provided SourceLine to set the causal location."""
         if sl and sl.file():
             self.file = sl.file()
             self.start = sl.start()
