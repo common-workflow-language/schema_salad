@@ -646,7 +646,7 @@ def extend_and_specialize(items: list[dict[str, Any]], loader: Loader) -> list[d
                 #       because we have unit tests that rely on the order that
                 #       fields are written. Codegen output changes as well.
                 #       We are relying on the insertion order preserving
-                #       property of python dicts (i.e. relyig on Py3.5+).
+                #       property of Python dicts (i.e. relying on Py3.5+).
 
                 # First pass adding the exfields.
                 for sn_exfield, exfield in sns_exfields.items():

@@ -32,7 +32,7 @@ def _ensure_directory_and_write(path: Path, contents: str) -> None:
         f.write(contents)
 
 
-def doc_to_doc_string(doc: Optional[str], indent_level: int = 0) -> str:
+def _doc_to_doc_string(doc: Optional[str], indent_level: int = 0) -> str:
     lead = " " + "  " * indent_level + "* " * indent_level
     if doc:
         doc_str = f"{lead}<BLOCKQUOTE>\n"
@@ -185,9 +185,9 @@ class JavaCodeGen(CodeGenBase):
         if not abstract:
             implemented_by = "This interface is implemented by {{@link {}Impl}}<BR>"
             interface_doc_str += implemented_by.format(cls)
-        interface_doc_str += doc_to_doc_string(doc)
+        interface_doc_str += _doc_to_doc_string(doc)
         class_doc_str = f"* Auto-generated class implementation for <I>{classname}</I><BR>"
-        class_doc_str += doc_to_doc_string(doc)
+        class_doc_str += _doc_to_doc_string(doc)
         target = self.main_src_dir / f"{cls}.java"
         with open(target, "w") as f:
             _logger.info("Writing file: %s", target)
@@ -683,7 +683,7 @@ public enum {clazz} {{
 {field_doc_str}
    */
 """.format(
-            fieldname=fieldname, field_doc_str=doc_to_doc_string(doc, indent_level=1)
+            fieldname=fieldname, field_doc_str=_doc_to_doc_string(doc, indent_level=1)
         )
         target = self.main_src_dir / f"{self.current_class}.java"
         with open(target, "a") as f:
@@ -850,6 +850,7 @@ public enum {clazz} {{
         )
 
     def typedsl_loader(self, inner: TypeDef, ref_scope: Union[int, None]) -> TypeDef:
+        """Construct the TypeDef for the given DSL loader."""
         instance_type = inner.instance_type or "Object"
         return self.declare_type(
             TypeDef(

@@ -285,7 +285,7 @@ class Loader:
         self.vocab.update(ns)
 
     def add_schemas(self, ns: Union[list[str], str], base_url: str) -> None:
-        """Fetch exernal schemas and add them to the graph."""
+        """Fetch external schemas and add them to the graph."""
         if self.skip_schemas:
             return
         for sch in aslist(ns):
@@ -1102,6 +1102,7 @@ class Loader:
         return link
 
     def getid(self, d: Any) -> Optional[str]:
+        """Use our identifiers to extract the first match from the document."""
         if isinstance(d, MutableMapping):
             for i in self.identifiers:
                 if i in d:
