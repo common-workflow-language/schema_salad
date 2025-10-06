@@ -129,8 +129,11 @@ jobs:
           path: ./wheelhouse/*.whl
 
   build_wheels_riscv64:
-    name: riscv64 wheels
+    name: riscv64 ${{ matrix.target }} wheels
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [ 'many', 'musl' ]
     steps:
       - uses: actions/checkout@v5
         if: ${{ github.event_name != 'repository_dispatch' }}
@@ -142,8 +145,20 @@ jobs:
           fetch-depth: 0  # slow, but gets all the tags
           ref: ${{ github.event.client_payload.ref }}
 
+      - name: musllinux target
+        if: ${{ matrix.target == 'musl' }}
+        run: |
+          echo "CIBW_BUILD=*musllinux*" >> "$GITHUB_ENV"
+
+      - name: manylinux target
+        if: ${{ matrix.target == 'many' }}
+        run: |
+          echo "CIBW_BUILD=*manylinux*" >> "$GITHUB_ENV"
+
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ github.job }}-${{ matrix.target }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -172,7 +187,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: artifact-riscv64
+          name: artifact-riscv64-${{ matrix.target }}
           path: ./wheelhouse/*.whl
 
   upload_pypi:
