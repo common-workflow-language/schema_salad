@@ -39,6 +39,9 @@ jobs:
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ github.job }}-${{ matrix.image }}
+          verbose: 2
 
       # Used to host cibuildwheel
       - uses: actions/setup-python@v6
@@ -59,7 +62,7 @@ jobs:
           # emulated ones
           # Linux arm64 wheels are built on circleci
           CIBW_ARCHS_LINUX: auto64 # ppc64le s390x
-          CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
+          CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:/usr/lib/ccache/bin:/usr/lib64/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -108,6 +111,9 @@ jobs:
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ github.job }}-${{ matrix.os }}
+          verbose: 2
 
       # Used to host cibuildwheel
       - uses: actions/setup-python@v6
@@ -121,7 +127,7 @@ jobs:
       - name: Build wheels
         run: python -m cibuildwheel . --output-dir wheelhouse
         env:
-          CIBW_ENVIRONMENT_MACOS: PATH=/usr/local/opt/ccache/libexec:$PATH SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
+          CIBW_ENVIRONMENT_MACOS: PATH=/usr/local/opt/ccache/libexec:/opt/homebrew/opt/ccache/libexec:$PATH SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -159,6 +165,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: ${{ github.job }}-${{ matrix.target }}
+          verbose: 2
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -183,7 +190,7 @@ jobs:
         run: python -m cibuildwheel . --output-dir wheelhouse
         env:
           CIBW_ARCHS_LINUX: riscv64
-          CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
+          CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:/usr/lib/ccache/bin:/usr/lib64/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
       - uses: actions/upload-artifact@v4
         with:
