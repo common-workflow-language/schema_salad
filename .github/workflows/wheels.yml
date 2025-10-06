@@ -37,11 +37,8 @@ jobs:
           fetch-depth: 0  # slow, but gets all the tags
           ref: ${{ github.event.client_payload.ref }}
 
-      # - name: Set up QEMU
-      #   if: runner.os == 'Linux'
-      #   uses: docker/setup-qemu-action@v2
-      #   with:
-      #     platforms: all
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
 
       # Used to host cibuildwheel
       - uses: actions/setup-python@v6
@@ -62,6 +59,7 @@ jobs:
           # emulated ones
           # Linux arm64 wheels are built on circleci
           CIBW_ARCHS_LINUX: auto64 # ppc64le s390x
+          CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -95,8 +93,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # macos-13 is an intel runner, macos-14 is apple silicon
-        os: [macos-13, macos-14]
+        # macos-13 is an intel runner, macos-14+ is apple silicon
+        os: [macos-13, macos-latest]
     steps:
       - uses: actions/checkout@v5
         if: ${{ github.event_name != 'repository_dispatch' }}
@@ -107,6 +105,9 @@ jobs:
         with:
           fetch-depth: 0  # slow, but gets all the tags
           ref: ${{ github.event.client_payload.ref }}
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
 
       # Used to host cibuildwheel
       - uses: actions/setup-python@v6
@@ -119,6 +120,8 @@ jobs:
 
       - name: Build wheels
         run: python -m cibuildwheel . --output-dir wheelhouse
+        env:
+          CIBW_ENVIRONMENT_MACOS: PATH=/usr/local/opt/ccache/libexec:$PATH SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -138,6 +141,10 @@ jobs:
         with:
           fetch-depth: 0  # slow, but gets all the tags
           ref: ${{ github.event.client_payload.ref }}
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
@@ -161,6 +168,8 @@ jobs:
         run: python -m cibuildwheel . --output-dir wheelhouse
         env:
           CIBW_ARCHS_LINUX: riscv64
+          CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
+
       - uses: actions/upload-artifact@v4
         with:
           name: artifact-riscv64

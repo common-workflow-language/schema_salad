@@ -25,6 +25,9 @@ skip = ["pp*", "cp31?t-*"]
 build-verbosity = 1
 environment = { SCHEMA_SALAD_USE_MYPYC="1", MYPYPATH="$(pwd)/mypy-stubs" }
 
+[tool.cibuildwheel.linux]
+before-all = "apk add ccache || yum install -y ccache || apt-get install -y --no-install-recommends ccache"
+
 [tool.black]
 line-length = 100
 target-version = [ "py39" ]
