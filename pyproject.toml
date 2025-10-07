@@ -16,7 +16,7 @@ build-backend = "setuptools.build_meta"
 write_to = "schema_salad/_version.py"
 
 [tool.cibuildwheel]
-test-command = "python -m pytest -n 2 --junitxml={project}/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad"
+test-command = "python -m pytest -n auto --junitxml={project}/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad"
 test-requires = "-r test-requirements.txt"
 test-extras = "pycodegen"
 skip = ["pp*", "cp31?t-*"]
