@@ -381,7 +381,7 @@ class EnumSchema(NamedSchema):
             raise AvroException("Enum Schema requires a JSON array for the symbols property.")
         if False in [isinstance(s, str) for s in symbols]:
             raise AvroException("Enum Schema requires all symbols to be JSON strings.")
-        if len(set(symbols)) < len(symbols):
+        if len(frozenset(symbols)) < len(symbols):
             raise AvroException(f"Duplicate symbol: {symbols}")
 
         # Call parent ctor

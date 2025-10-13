@@ -1,7 +1,7 @@
 import logging
 import unicodedata
 from collections.abc import Iterable, MutableMapping, MutableSequence
-from typing import Any, Optional, Union, cast
+from typing import Any, Final, Optional, Union, cast
 from urllib.parse import urldefrag, urlsplit
 
 import rdflib
@@ -24,7 +24,7 @@ def pred(
     defaultBase: str,
     namespaces: dict[str, rdflib.namespace.Namespace],
 ) -> Union[dict[str, Optional[str]], str]:
-    split = urlsplit(name)
+    split: Final = urlsplit(name)
 
     vee: Optional[str] = None
 
@@ -91,10 +91,10 @@ def process_type(
 
         _logger.debug("Processing %s %s\n", t.get("type"), t)
 
-        classnode = URIRef(recordname)
+        classnode: Final = URIRef(recordname)
         g.add((classnode, RDF.type, RDFS.Class))
 
-        split = urlsplit(recordname)
+        split: Final = urlsplit(recordname)
         predicate = recordname
         if t.get("inVocab", True):
             if split.scheme:
@@ -179,10 +179,10 @@ def process_type(
 def salad_to_jsonld_context(
     j: Iterable[MutableMapping[str, Any]], schema_ctx: MutableMapping[str, Any]
 ) -> tuple[ContextType, Graph]:
-    context: ContextType = {}
-    namespaces = {}
-    g = Graph()
-    defaultPrefix = ""
+    context: Final[ContextType] = {}
+    namespaces: Final = {}
+    g: Final = Graph()
+    defaultPrefix: Final = ""
 
     for k, v in schema_ctx.items():
         context[k] = v
@@ -222,8 +222,8 @@ def makerdf(
     ctx: ContextType,
     graph: Optional[Graph] = None,
 ) -> Graph:
-    prefixes = {}
-    idfields = []
+    prefixes: Final = {}
+    idfields: Final = []
     for k, v in ctx.items():
         if isinstance(v, MutableMapping):
             url = v["@id"]
@@ -238,7 +238,7 @@ def makerdf(
 
     fix_jsonld_ids(wf, idfields)
 
-    g = Graph() if graph is None else graph
+    g: Final = Graph() if graph is None else graph
 
     if isinstance(wf, MutableSequence):
         for w in wf:

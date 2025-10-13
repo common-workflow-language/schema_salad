@@ -7,7 +7,7 @@ import sys
 import urllib.parse
 import urllib.request
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Final, Optional
 
 import requests
 from mypy_extensions import mypyc_attr
@@ -15,8 +15,8 @@ from mypy_extensions import mypyc_attr
 from .exceptions import ValidationException
 from .utils import CacheType
 
-_re_drive = re.compile(r"/([a-zA-Z]):")
-_logger = logging.getLogger("salad")
+_re_drive: Final = re.compile(r"/([a-zA-Z]):")
+_logger: Final = logging.getLogger("salad")
 
 
 @mypyc_attr(allow_interpreted_subclasses=True)
@@ -62,23 +62,24 @@ class DefaultFetcher(MemoryCachingFetcher):
     ) -> None:
         """Create a DefaultFetcher object."""
         super().__init__(cache)
-        self.session = session
+        self.session: Final = session
 
     def fetch_text(self, url: str, content_types: Optional[list[str]] = None) -> str:
         """Retrieve the given resource as a string."""
-        result = self.cache.get(url, None)
+        result: Final = self.cache.get(url, None)
         if isinstance(result, str):
             return result
 
-        split = urllib.parse.urlsplit(url)
-        scheme, path = split.scheme, split.path
+        split: Final = urllib.parse.urlsplit(url)
+        scheme: Final = split.scheme
+        path = split.path
 
         if scheme in ["http", "https"] and self.session is not None:
             try:
                 headers = {}
                 if content_types:
                     headers["Accept"] = ", ".join(content_types) + ", */*;q=0.8"
-                resp = self.session.get(url, headers=headers)
+                resp: Final = self.session.get(url, headers=headers)
                 resp.raise_for_status()
             except Exception as e:
                 raise ValidationException(f"Error fetching {url}: {e}") from e
@@ -116,14 +117,15 @@ class DefaultFetcher(MemoryCachingFetcher):
         if url in self.cache:
             return True
 
-        split = urllib.parse.urlsplit(url)
-        scheme, path = split.scheme, split.path
+        split: Final = urllib.parse.urlsplit(url)
+        scheme: Final = split.scheme
+        path: Final = split.path
 
         if scheme in ["http", "https"]:
             if self.session is None:
                 raise ValidationException(f"Can't check {scheme} URL, session is None")
             try:
-                resp = self.session.head(url, allow_redirects=True)
+                resp: Final = self.session.head(url, allow_redirects=True)
                 resp.raise_for_status()
             except Exception:
                 return False
@@ -165,7 +167,7 @@ class DefaultFetcher(MemoryCachingFetcher):
                 # file:///server1.example.com/path
                 # https://tools.ietf.org/html/rfc8089#appendix-E.3.2
                 # (TODO: test this)
-                netloc = split.netloc or basesplit.netloc
+                netloc: Final = split.netloc or basesplit.netloc
 
                 # Check if url is a local path like "C:/Users/fred"
                 # or actually an absolute URI like http://example.com/fred
@@ -182,8 +184,8 @@ class DefaultFetcher(MemoryCachingFetcher):
                     )
                 if not split.scheme and not netloc and split.path and split.path.startswith("/"):
                     # Relative - but does it have a drive?
-                    base_drive = _re_drive.match(basesplit.path)
-                    drive = _re_drive.match(split.path)
+                    base_drive: Final = _re_drive.match(basesplit.path)
+                    drive: Final = _re_drive.match(split.path)
                     if base_drive and not drive:
                         # Keep drive letter from base_url
                         # https://tools.ietf.org/html/rfc8089#appendix-E.2.1

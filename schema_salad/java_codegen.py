@@ -8,7 +8,7 @@ from collections.abc import MutableMapping, MutableSequence
 from importlib.resources import files
 from io import StringIO
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Final, Optional, Union
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
@@ -20,9 +20,9 @@ from .utils import Traversable
 # referencing one or a list of objects. It is useful for improving the RootLoader
 # for simple schema with a single root loader - but doesn't help with CWL at all and
 # may even confuse things a bit so turning these off be default.
-USE_ONE_OR_LIST_OF_TYPES = False
+USE_ONE_OR_LIST_OF_TYPES: Final = False
 
-BASIC_JAVA_IDENTIFIER_RE = re.compile(r"[^0-9a-zA-Z]+")
+BASIC_JAVA_IDENTIFIER_RE: Final = re.compile(r"[^0-9a-zA-Z]+")
 
 
 def _ensure_directory_and_write(path: Path, contents: str) -> None:
@@ -33,7 +33,7 @@ def _ensure_directory_and_write(path: Path, contents: str) -> None:
 
 
 def _doc_to_doc_string(doc: Optional[str], indent_level: int = 0) -> str:
-    lead = " " + "  " * indent_level + "* " * indent_level
+    lead: Final = " " + "  " * indent_level + "* " * indent_level
     if doc:
         doc_str = f"{lead}<BLOCKQUOTE>\n"
         doc_str += "\n".join([f"{lead}{line}" for line in doc.split("\n")])
@@ -49,56 +49,56 @@ def _safe_makedirs(path: Path) -> None:
         _logger.info("Created directory: %s", path)
 
 
-_string_type_def = TypeDef(
+_string_type_def: Final = TypeDef(
     instance_type="String",
     init="new PrimitiveLoader<String>(String.class)",
     name="StringInstance",
     loader_type="Loader<String>",
 )
 
-_int_type_def = TypeDef(
+_int_type_def: Final = TypeDef(
     instance_type="Integer",
     init="new PrimitiveLoader<Integer>(Integer.class)",
     name="IntegerInstance",
     loader_type="Loader<Integer>",
 )
 
-_long_type_def = TypeDef(
+_long_type_def: Final = TypeDef(
     instance_type="Long",
     name="LongInstance",
     loader_type="Loader<Long>",
     init="new PrimitiveLoader<Long>(Long.class)",
 )
 
-_float_type_def = TypeDef(
+_float_type_def: Final = TypeDef(
     instance_type="Double",
     name="DoubleInstance",
     loader_type="Loader<Double>",
     init="new PrimitiveLoader<Double>(Double.class)",
 )
 
-_bool_type_def = TypeDef(
+_bool_type_def: Final = TypeDef(
     instance_type="Boolean",
     name="BooleanInstance",
     loader_type="Loader<Boolean>",
     init="new PrimitiveLoader<Boolean>(Boolean.class)",
 )
 
-_null_type_def = TypeDef(
+_null_type_def: Final = TypeDef(
     instance_type="Object",
     name="NullInstance",
     loader_type="Loader<Object>",
     init="new NullLoader()",
 )
 
-_any_type_def = TypeDef(
+_any_type_def: Final = TypeDef(
     instance_type="Object",
     name="AnyInstance",
     init="new AnyLoader()",
     loader_type="Loader<Object>",
 )
 
-prims = {
+prims: Final = {
     "http://www.w3.org/2001/XMLSchema#string": _string_type_def,
     "http://www.w3.org/2001/XMLSchema#int": _int_type_def,
     "http://www.w3.org/2001/XMLSchema#long": _long_type_def,
@@ -128,17 +128,19 @@ class JavaCodeGen(CodeGenBase):
         copyright: Optional[str],
     ) -> None:
         super().__init__()
-        self.base_uri = base
-        self.examples = examples
-        self.package = package
-        self.artifact = self.package.split(".")[-1]
-        self.copyright = copyright
-        self.target_dir = Path(target or ".").resolve()
+        self.base_uri: Final = base
+        self.examples: Final = examples
+        self.package: Final = package
+        self.artifact: Final = self.package.split(".")[-1]
+        self.copyright: Final = copyright
+        self.target_dir: Final = Path(target or ".").resolve()
         rel_package_dir = self.package.replace(".", "/")
-        self.rel_package_dir = Path(rel_package_dir)
-        self.main_src_dir = self.target_dir / "src" / "main" / "java" / rel_package_dir
-        self.test_src_dir = self.target_dir / "src" / "test" / "java" / rel_package_dir
-        self.test_resources_dir = self.target_dir / "src" / "test" / "resources" / rel_package_dir
+        self.rel_package_dir: Final = Path(rel_package_dir)
+        self.main_src_dir: Final = self.target_dir / "src" / "main" / "java" / rel_package_dir
+        self.test_src_dir: Final = self.target_dir / "src" / "test" / "java" / rel_package_dir
+        self.test_resources_dir: Final = (
+            self.target_dir / "src" / "test" / "resources" / rel_package_dir
+        )
 
     def prologue(self) -> None:
         for src_dir in [self.main_src_dir, self.test_src_dir]:
@@ -149,7 +151,7 @@ class JavaCodeGen(CodeGenBase):
 
     @staticmethod
     def property_name(name: str) -> str:
-        avn = schema.avro_field_name(name)
+        avn: Final = schema.avro_field_name(name)
         return avn
 
     @staticmethod
@@ -837,7 +839,7 @@ public enum {clazz} {{
     def idmap_loader(
         self, field: str, inner: TypeDef, map_subject: str, map_predicate: Optional[str]
     ) -> TypeDef:
-        instance_type = inner.instance_type or "Object"
+        instance_type: Final = inner.instance_type or "Object"
         return self.declare_type(
             TypeDef(
                 instance_type=instance_type,
@@ -890,13 +892,15 @@ public enum {clazz} {{
         )
 
         def template_from_resource(resource: Traversable) -> string.Template:
-            template_str = resource.read_text("utf-8")
-            template = string.Template(template_str)
+            template_str: Final = resource.read_text("utf-8")
+            template: Final = string.Template(template_str)
             return template
 
         def expand_resource_template_to(resource: str, path: Path) -> None:
-            template = template_from_resource(files("schema_salad").joinpath(f"java/{resource}"))
-            src = template.safe_substitute(template_vars)
+            template: Final = template_from_resource(
+                files("schema_salad").joinpath(f"java/{resource}")
+            )
+            src: Final = template.safe_substitute(template_vars)
             _ensure_directory_and_write(path, src)
 
         expand_resource_template_to("pom.xml", self.target_dir / "pom.xml")
@@ -980,7 +984,7 @@ public enum {clazz} {{
             example_tests=example_tests,
         )
 
-        util_src_dirs = {
+        util_src_dirs: Final = {
             "main_utils": self.main_src_dir,
             "test_utils": self.test_src_dir,
         }
@@ -992,7 +996,7 @@ public enum {clazz} {{
                 _ensure_directory_and_write(src_path, src)
 
     def secondaryfilesdsl_loader(self, inner: TypeDef) -> TypeDef:
-        instance_type = inner.instance_type or "Object"
+        instance_type: Final = inner.instance_type or "Object"
         return self.declare_type(
             TypeDef(
                 instance_type=instance_type,

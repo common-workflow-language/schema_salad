@@ -3,7 +3,7 @@
 import textwrap
 from collections.abc import MutableMapping, MutableSequence
 from io import StringIO
-from typing import IO, Any, Optional, Union
+from typing import IO, Any, Final, Optional, Union
 
 try:
     import black
@@ -17,14 +17,14 @@ from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
 
-_string_type_def = TypeDef("strtype", "_PrimitiveLoader(str)")
-_int_type_def = TypeDef("inttype", "_PrimitiveLoader(int)")
-_float_type_def = TypeDef("floattype", "_PrimitiveLoader(float)")
-_bool_type_def = TypeDef("booltype", "_PrimitiveLoader(bool)")
-_null_type_def = TypeDef("None_type", "_PrimitiveLoader(type(None))")
-_any_type_def = TypeDef("Any_type", "_AnyLoader()")
+_string_type_def: Final = TypeDef("strtype", "_PrimitiveLoader(str)")
+_int_type_def: Final = TypeDef("inttype", "_PrimitiveLoader(int)")
+_float_type_def: Final = TypeDef("floattype", "_PrimitiveLoader(float)")
+_bool_type_def: Final = TypeDef("booltype", "_PrimitiveLoader(bool)")
+_null_type_def: Final = TypeDef("None_type", "_PrimitiveLoader(type(None))")
+_any_type_def: Final = TypeDef("Any_type", "_AnyLoader()")
 
-prims = {
+prims: Final = {
     "http://www.w3.org/2001/XMLSchema#string": _string_type_def,
     "http://www.w3.org/2001/XMLSchema#int": _int_type_def,
     "http://www.w3.org/2001/XMLSchema#long": _int_type_def,
@@ -77,13 +77,13 @@ class PythonCodeGen(CodeGenBase):
         salad_version: str,
     ) -> None:
         super().__init__()
-        self.out = out
+        self.out: Final = out
         self.current_class_is_abstract = False
         self.serializer = StringIO()
         self.idfield = ""
-        self.copyright = copyright
-        self.parser_info = parser_info
-        self.salad_version = salad_version
+        self.copyright: Final = copyright
+        self.parser_info: Final = parser_info
+        self.salad_version: Final = salad_version
 
     @staticmethod
     def safe_name(name: str) -> str:
@@ -117,7 +117,7 @@ class PythonCodeGen(CodeGenBase):
                 )
             )
 
-        python_codegen_support = (
+        python_codegen_support: Final = (
             files("schema_salad").joinpath("python_codegen_support.py").read_text("UTF-8")
         )
         self.out.write(python_codegen_support[python_codegen_support.find("\n") + 1 :])
@@ -164,14 +164,14 @@ class PythonCodeGen(CodeGenBase):
             self.out.write("    pass\n\n\n")
             return
 
-        idfield_safe_name = self.safe_name(idfield) if idfield != "" else None
+        idfield_safe_name: Final = self.safe_name(idfield) if idfield != "" else None
         if idfield_safe_name is not None:
             self.out.write(f"    {idfield_safe_name}: str\n\n")
 
-        required_field_names = [f for f in field_names if f not in optional_fields]
-        optional_field_names = [f for f in field_names if f in optional_fields]
+        required_field_names: Final = [f for f in field_names if f not in optional_fields]
+        optional_field_names: Final = [f for f in field_names if f in optional_fields]
 
-        safe_inits: list[str] = ["        self,"]
+        safe_inits: Final[list[str]] = ["        self,"]
         safe_inits.extend(
             [f"        {self.safe_name(f)}: Any," for f in required_field_names if f != "class"]
         )
@@ -215,13 +215,13 @@ class PythonCodeGen(CodeGenBase):
 """.format(
                     self.safe_name(name)
                 )
-        field_eqs = []
-        field_hashes = []
+        field_eqs: Final = []
+        field_hashes: Final = []
         for name in field_names:
             field_eqs.append("self.{0} == other.{0}".format(self.safe_name(name)))
             field_hashes.append(f"self.{self.safe_name(name)}")
-        field_eq = " and\n                    ".join(field_eqs)
-        field_hash = ",\n            ".join(field_hashes)
+        field_eq: Final = " and\n                    ".join(field_eqs)
+        field_hash: Final = ",\n            ".join(field_hashes)
         self.out.write(field_inits)
         self.out.write(
             "\n"
@@ -345,9 +345,11 @@ if _errors__:
             )
         )
 
-        safe_init_fields: list[str] = [self.safe_name(f) for f in field_names if f != "class"]
+        safe_init_fields: Final[list[str]] = [
+            self.safe_name(f) for f in field_names if f != "class"
+        ]
 
-        safe_inits = [f + "=" + f for f in safe_init_fields]
+        safe_inits: Final = [f + "=" + f for f in safe_init_fields]
 
         safe_inits.extend(["extension_fields=extension_fields", "loadingOptions=loadingOptions"])
 
@@ -375,13 +377,14 @@ if _errors__:
         no_link_check: Optional[bool] = None,
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
-        sub_names: list[str]
         if isinstance(type_declaration, MutableSequence):
-            sub_names = list(dict.fromkeys([self.type_loader(i).name for i in type_declaration]))
+            sub_names1: Final[list[str]] = list(
+                dict.fromkeys([self.type_loader(i).name for i in type_declaration])
+            )
             return self.declare_type(
                 TypeDef(
-                    "union_of_{}".format("_or_".join(sub_names)),
-                    "_UnionLoader(({},))".format(", ".join(sub_names)),
+                    "union_of_{}".format("_or_".join(sub_names1)),
+                    "_UnionLoader(({},))".format(", ".join(sub_names1)),
                 )
             )
         if isinstance(type_declaration, MutableMapping):
@@ -389,26 +392,26 @@ if _errors__:
                 "array",
                 "https://w3id.org/cwl/salad#array",
             ):
-                i = self.type_loader(type_declaration["items"])
+                i1: Final = self.type_loader(type_declaration["items"])
                 return self.declare_type(
                     TypeDef(
-                        f"array_of_{i.name}",
-                        f"_ArrayLoader({i.name})",
+                        f"array_of_{i1.name}",
+                        f"_ArrayLoader({i1.name})",
                     )
                 )
             if type_declaration["type"] in (
                 "map",
                 "https://w3id.org/cwl/salad#map",
             ):
-                i = self.type_loader(type_declaration["values"])
+                i2: Final = self.type_loader(type_declaration["values"])
                 name = (
                     self.safe_name(type_declaration["name"]) if "name" in type_declaration else None
                 )
-                anon_type = self.declare_type(
+                anon_type: Final = self.declare_type(
                     TypeDef(
-                        f"map_of_{i.name}",
+                        f"map_of_{i2.name}",
                         "_MapLoader({}, {}, {}, {})".format(
-                            i.name,
+                            i2.name,
                             f"'{name}'",  # noqa: B907
                             f"'{container}'" if container is not None else None,  # noqa: B907
                             no_link_check,
@@ -425,7 +428,7 @@ if _errors__:
                 for sym in type_declaration["symbols"]:
                     self.add_vocab(shortname(sym), sym)
                 if "doc" in type_declaration:
-                    doc = type_declaration["doc"]
+                    doc: Final = type_declaration["doc"]
                     if isinstance(doc, MutableSequence):
                         formated_doc = "\n".join(doc)
                     else:
@@ -471,14 +474,14 @@ if _errors__:
                 loader_type = TypeDef(loader_name, f"_UnionLoader((), '{loader_name}')")
                 self.declare_type(loader_type)
                 # Parse inner types
-                sub_names = list(
+                sub_names2: Final[list[str]] = list(
                     dict.fromkeys([self.type_loader(i).name for i in type_declaration["names"]])
                 )
                 # Register lazy initialization for the loader
                 self.add_lazy_init(
                     LazyInitDef(
                         loader_name,
-                        "{}.add_loaders(({},))".format(loader_name, ", ".join(sub_names)),
+                        "{}.add_loaders(({},))".format(loader_name, ", ".join(sub_names2)),
                     )
                 )
                 return loader_type

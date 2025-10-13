@@ -56,17 +56,17 @@ def replaceKeywords(s: str) -> str:
 
 def safename(name: str) -> str:
     """Create a C++ safe name."""
-    classname = re.sub("[^a-zA-Z0-9]", "_", name)
+    classname = re.sub(r"[^a-zA-Z0-9]", "_", name)
     return replaceKeywords(classname)
 
 
 def safenamespacename(name: str) -> str:
     """Create a C++ safe name for namespaces."""
-    name = re.sub("^[a-zA-Z0-9]+://", "", name)  # remove protocol
-    name = re.sub("//+", "", name)  # remove duplicate slashes
-    name = re.sub("/$", "", name)  # remove trailing slashes
-    name = re.sub("[^a-zA-Z0-9/]", "_", name)
-    name = re.sub("[/]", "::", name)
+    name = re.sub(r"^[a-zA-Z0-9]+://", "", name)  # remove protocol
+    name = re.sub(r"//+", "", name)  # remove duplicate slashes
+    name = re.sub(r"/$", "", name)  # remove trailing slashes
+    name = re.sub(r"[^a-zA-Z0-9/]", "_", name)
+    name = re.sub(r"[/]", "::", name)
 
     return name
 

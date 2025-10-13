@@ -1,9 +1,19 @@
 """Shared Exception classes."""
 
 from collections.abc import Sequence
-from typing import Optional, Union
+from typing import Final, Optional, Union
 
 from .sourceline import SourceLine, reflow_all, strip_duplicated_lineno
+
+
+def _simplify(exc: "SchemaSaladException") -> list["SchemaSaladException"]:
+    return [exc] if len(exc.message) else exc.children
+
+
+def _with_bullet(exc: "SchemaSaladException", bullet: str) -> "SchemaSaladException":
+    if exc.bullet == "":
+        exc.bullet = bullet
+    return exc
 
 
 class SchemaSaladException(Exception):
@@ -18,8 +28,8 @@ class SchemaSaladException(Exception):
         detailed_message: Optional[str] = None,
     ) -> None:
         super().__init__(msg)
-        self.message = self.args[0]
-        self.detailed_message = detailed_message
+        self.message: Final = self.args[0]
+        self.detailed_message: Final = detailed_message
         self.file: Optional[str] = None
         self.start: Optional[tuple[int, int]] = None
         self.end: Optional[tuple[int, int]] = None
@@ -29,21 +39,13 @@ class SchemaSaladException(Exception):
         # It will be set by its parent
         self.bullet: str = ""
 
-        def simplify(exc: "SchemaSaladException") -> list["SchemaSaladException"]:
-            return [exc] if len(exc.message) else exc.children
-
-        def with_bullet(exc: "SchemaSaladException", bullet: str) -> "SchemaSaladException":
-            if exc.bullet == "":
-                exc.bullet = bullet
-            return exc
-
         if children is None:
             self.children: list["SchemaSaladException"] = []
         elif len(children) <= 1:
-            self.children = sum((simplify(c) for c in children), [])
+            self.children = sum((_simplify(c) for c in children), [])
         else:
             self.children = sum(
-                (simplify(with_bullet(c, bullet_for_children)) for c in children), []
+                (_simplify(_with_bullet(c, bullet_for_children)) for c in children), []
             )
 
         self.with_sourceline(sl)
@@ -97,10 +99,10 @@ class SchemaSaladException(Exception):
         return pre + "Warning: " if self.is_warning else pre
 
     def summary(self, level: int = 0, with_bullet: bool = False) -> str:
-        indent_per_level = 2
-        spaces = (level * indent_per_level) * " "
-        bullet = self.bullet + " " if len(self.bullet) > 0 and with_bullet else ""
-        message_string = (
+        indent_per_level: Final = 2
+        spaces: Final = (level * indent_per_level) * " "
+        bullet: Final = self.bullet + " " if len(self.bullet) > 0 and with_bullet else ""
+        message_string: Final = (
             self.detailed_message
             if (len(self.children) < 1 and self.detailed_message)
             else self.message
@@ -112,15 +114,17 @@ class SchemaSaladException(Exception):
         return str(self.pretty_str())
 
     def pretty_str(self, level: int = 0) -> str:
-        messages = (
+        messages: Final = (
             len(self.message)
             if len(self.children) > 0
             else len(self.detailed_message or self.message)
         )
-        my_summary = [self.summary(level, True)] if messages else []
-        next_level = level + 1 if messages else level
+        my_summary: Final = [self.summary(level, True)] if messages else []
+        next_level: Final = level + 1 if messages else level
 
-        ret = "\n".join(e for e in my_summary + [c.pretty_str(next_level) for c in self.children])
+        ret: Final = "\n".join(
+            e for e in my_summary + [c.pretty_str(next_level) for c in self.children]
+        )
         if level == 0:
             return strip_duplicated_lineno(reflow_all(ret))
         return ret
