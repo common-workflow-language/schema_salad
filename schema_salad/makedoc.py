@@ -7,7 +7,7 @@ import re
 import sys
 from collections.abc import MutableMapping, MutableSequence
 from io import StringIO, TextIOWrapper
-from typing import IO, Any, Literal, Optional, Union, cast
+from typing import IO, Any, Final, Literal, Optional, Union, cast
 from urllib.parse import urldefrag
 
 from mistune import create_markdown
@@ -29,7 +29,15 @@ PluginName = Literal[
     "abbr",
 ]
 
-_logger = logging.getLogger("salad")
+_logger: Final = logging.getLogger("salad")
+
+fenced_code_pattern: Final = re.compile(
+    r"( *)(`{3,}|~{3,})([^`\n]*)\n(?:|([\s\S]*?)\n)(?:\1\2[~`]* *\n+|$)"
+)
+""" Pattern inspired from 'mistune.block_parser.BlockParser.FENCED_CODE'.
+However, instead of the initial ' {0,3}' part to match any indented fenced-code,
+use any quantity of spaces, as long as they match at the end as well (using '\1').
+Because of nested fenced-code in lists, it can be more indented than "normal"."""
 
 
 def escape_html(s: str) -> str:
@@ -44,7 +52,7 @@ def vocab_type_name(url: str) -> str:
 
 def has_types(items: Any) -> list[str]:
     """Retrieve all the types of a record."""
-    r: list[str] = []
+    r: Final[list[str]] = []
     if isinstance(items, MutableMapping):
         if items["type"] == "https://w3id.org/cwl/salad#record":
             return [items["name"]]
@@ -62,7 +70,7 @@ def has_types(items: Any) -> list[str]:
 
 
 def linkto(item: str) -> str:
-    frg = urldefrag(item)[1]
+    frg: Final = urldefrag(item)[1]
     return f"[{frg}](#{to_id(frg)})"
 
 
@@ -105,15 +113,8 @@ class MyRenderer(HTMLRenderer):
 
 def patch_fenced_code(original_markdown_text: str, modified_markdown_text: str) -> str:
     """Reverts fenced code fragments found in the modified contents back to their original definition."""
-    # Pattern inspired from 'mistune.block_parser.BlockParser.FENCED_CODE'.
-    # However, instead of the initial ' {0,3}' part to match any indented fenced-code,
-    # use any quantity of spaces, as long as they match at the end as well (using '\1').
-    # Because of nested fenced-code in lists, it can be more indented than "normal".
-    fenced_code_pattern = re.compile(
-        r"( *)(`{3,}|~{3,})([^`\n]*)\n(?:|([\s\S]*?)\n)(?:\1\2[~`]* *\n+|$)"
-    )
-    matches_original = list(re.finditer(fenced_code_pattern, original_markdown_text))
-    matches_modified = list(re.finditer(fenced_code_pattern, modified_markdown_text))
+    matches_original: Final = list(re.finditer(fenced_code_pattern, original_markdown_text))
+    matches_modified: Final = list(re.finditer(fenced_code_pattern, modified_markdown_text))
     if len(matches_original) != len(matches_modified):
         raise ValueError("Cannot patch fenced code definitions with inconsistent matches.")
     result = ""
@@ -147,7 +148,7 @@ class ToC:
 
     def add_entry(self, thisdepth: int, title: str) -> str:
         """Add an entry to the table of contents."""
-        depth = len(self.numbering)
+        depth: Final = len(self.numbering)
         if thisdepth < depth:
             self.toc += "</ol>"
             for _ in range(0, depth - thisdepth):
@@ -163,7 +164,7 @@ class ToC:
         elif thisdepth > depth:
             self.numbering.append(1)
 
-        num = (
+        num: Final = (
             "{}.{}".format(self.numbering[0], ".".join([str(n) for n in self.numbering[1:]]))
             if self.start_numbering
             else ""
@@ -183,7 +184,7 @@ class ToC:
         return toc
 
 
-basicTypes = (
+basicTypes: Final = (
     "https://w3id.org/cwl/salad#null",
     "http://www.w3.org/2001/XMLSchema#boolean",
     "http://www.w3.org/2001/XMLSchema#int",
@@ -221,16 +222,24 @@ def number_headings(toc: ToC, maindoc: str) -> str:
             line = re.sub(r"^(https?://\S+)", r"[\1](\1)", line)
         mdlines.append(line)
 
-    maindoc = "\n".join(mdlines)
-    return maindoc
+    return "\n".join(mdlines)
 
 
 def fix_doc(doc: Union[list[str], str]) -> str:
     """Concatenate doc strings, replacing email addresses with mailto links."""
-    docstr = "".join(doc) if isinstance(doc, MutableSequence) else doc
+    docstr: Final = "".join(doc) if isinstance(doc, MutableSequence) else doc
     return "\n".join(
         [re.sub(r"<([^>@]+@[^>]+)>", r"[\1](mailto:\1)", d) for d in docstr.splitlines()]
     )
+
+
+def _extendsfrom(
+    item: dict[str, Any], ex: list[dict[str, Any]], typemap: dict[str, dict[str, str]]
+) -> None:
+    if "extends" in item:
+        for e in aslist(item["extends"]):
+            ex.insert(0, typemap[e])
+            _extendsfrom(typemap[e], ex, typemap)
 
 
 class RenderType:
@@ -243,14 +252,14 @@ class RenderType:
         primitiveType: str,
     ) -> None:
         self.typedoc = StringIO()
-        self.toc = toc
-        self.subs: dict[str, str] = {}
-        self.docParent: dict[str, list[str]] = {}
-        self.docAfter: dict[str, list[str]] = {}
-        self.rendered: set[str] = set()
-        self.redirects = redirects
+        self.toc: Final = toc
+        self.subs: Final[dict[str, str]] = {}
+        self.docParent: Final[dict[str, list[str]]] = {}
+        self.docAfter: Final[dict[str, list[str]]] = {}
+        self.rendered: Final[set[str]] = set()
+        self.redirects: Final = redirects
         self.title: Optional[str] = None
-        self.primitiveType = primitiveType
+        self.primitiveType: Final = primitiveType
 
         for t in j:
             if "extends" in t:
@@ -269,12 +278,12 @@ class RenderType:
             if t.get("docAfter"):
                 add_dictlist(self.docAfter, t["docAfter"], t["name"])
 
-        metaschema_loader = get_metaschema()[2]
-        alltypes = extend_and_specialize(j, metaschema_loader)
+        metaschema_loader: Final = get_metaschema()[2]
+        alltypes: Final = extend_and_specialize(j, metaschema_loader)
 
-        self.typemap: dict[str, dict[str, str]] = {}
-        self.uses: dict[str, list[tuple[str, str]]] = {}
-        self.record_refs: dict[str, list[str]] = {}
+        self.typemap: Final[dict[str, dict[str, str]]] = {}
+        self.uses: Final[dict[str, list[tuple[str, str]]]] = {}
+        self.record_refs: Final[dict[str, list[str]]] = {}
         for entry in alltypes:
             self.typemap[entry["name"]] = entry
             try:
@@ -357,7 +366,7 @@ class RenderType:
                 "https://w3id.org/cwl/salad#record",
                 "https://w3id.org/cwl/salad#enum",
             ):
-                frg = vocab_type_name(tp["name"])
+                frg: Final = vocab_type_name(tp["name"])
                 if tp["name"] in redirects:
                     return """<a href="{}">{}</a>""".format(redirects[tp["name"]], frg)
                 if tp["name"] in self.typemap:
@@ -376,7 +385,7 @@ class RenderType:
                 return """<a href="{}">{}</a>""".format(
                     self.primitiveType, vocab_type_name(str(tp))
                 )
-            frg2 = urldefrag(tp)[1]
+            frg2: Final = urldefrag(tp)[1]
             if frg2 != "":
                 tp = frg2
             return f"""<a href="#{to_id(tp)}">{tp}</a>"""
@@ -401,14 +410,8 @@ class RenderType:
         if "doc" not in f:
             f["doc"] = ""
 
-        def extendsfrom(item: dict[str, Any], ex: list[dict[str, Any]]) -> None:
-            if "extends" in item:
-                for e in aslist(item["extends"]):
-                    ex.insert(0, self.typemap[e])
-                    extendsfrom(self.typemap[e], ex)
-
-        ex = [f]
-        extendsfrom(f, ex)
+        ex: Final = [f]
+        _extendsfrom(f, ex, self.typemap)
 
         enumDesc = {}
         if f["type"] == "enum" and isinstance(f["doc"], MutableSequence):
@@ -451,7 +454,7 @@ class RenderType:
             f["doc"] = number_headings(self.toc, f["doc"])
 
         doc = doc + "\n\n" + f["doc"]
-        plugins: list[PluginName] = [
+        plugins: Final[list[PluginName]] = [
             "strikethrough",
             "footnotes",
             "table",
@@ -548,10 +551,10 @@ def avrold_doc(
     brandstyle: Optional[str] = None,
     brandinverse: Optional[bool] = False,
 ) -> None:
-    toc = ToC()
+    toc: Final = ToC()
     toc.start_numbering = False
 
-    rt = RenderType(toc, j, renderlist, redirects, primtype)
+    rt: Final = RenderType(toc, j, renderlist, redirects, primtype)
     content = rt.typedoc.getvalue()
 
     if brandstyle is None:
@@ -562,8 +565,10 @@ def avrold_doc(
         brandstyle_template = '<link rel="stylesheet" href={} integrity={} crossorigin="anonymous">'
         brandstyle = brandstyle_template.format(bootstrap_url, bootstrap_integrity)
 
-    picturefill_url = "https://cdn.rawgit.com/scottjehl/picturefill/3.0.2/dist/picturefill.min.js"
-    picturefill_integrity = (
+    picturefill_url: Final = (
+        "https://cdn.rawgit.com/scottjehl/picturefill/3.0.2/dist/picturefill.min.js"
+    )
+    picturefill_integrity: Final = (
         "sha384-ZJsVW8YHHxQHJ+SJDncpN90d0EfAhPP+yA94n+EhSRzhcxfo84yMnNk+v37RGlWR"
     )
     outdoc.write(
@@ -685,7 +690,7 @@ def avrold_doc(
     """
     )
 
-    navbar_extraclass = "navbar-inverse" if brandinverse else ""
+    navbar_extraclass: Final = "navbar-inverse" if brandinverse else ""
     outdoc.write(
         """
       <nav class="navbar sticky-top navbar-expand-lg navbar-light bg-light {}">
@@ -745,7 +750,7 @@ def avrold_doc(
 
 def arg_parser() -> argparse.ArgumentParser:
     """Build the argument parser."""
-    parser = argparse.ArgumentParser()
+    parser: Final = argparse.ArgumentParser()
     parser.add_argument("schema")
     parser.add_argument("--only", action="append")
     parser.add_argument("--redirect", action="append")
@@ -760,7 +765,7 @@ def arg_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     """Shortcut entrypoint."""
-    args = arg_parser().parse_args()
+    args: Final = arg_parser().parse_args()
     if args.debug:
         _logger.setLevel(logging.DEBUG)
     makedoc(
@@ -788,7 +793,7 @@ def makedoc(
     brandinverse: Optional[bool] = False,
 ) -> None:
     """Emit HTML representation of a given schema."""
-    s: list[dict[str, Any]] = []
+    s: Final[list[dict[str, Any]]] = []
     with open(schema, encoding="utf-8") as f:
         if schema.endswith("md"):
             s.append(

@@ -2,13 +2,13 @@
 
 from collections import OrderedDict
 from collections.abc import MutableSequence
-from typing import Any, Optional, Union
+from typing import Any, Final, Optional, Union
 
 
 class TypeDef:  # pylint: disable=too-few-public-methods
     """Schema Salad type description."""
 
-    __slots__ = [
+    __slots__: Final = [
         "name",
         "init",
         "is_uri",
@@ -32,21 +32,21 @@ class TypeDef:  # pylint: disable=too-few-public-methods
         instance_type: Optional[str] = None,
         abstract: bool = False,
     ) -> None:
-        self.name = name
-        self.init = init
-        self.is_uri = is_uri
-        self.scoped_id = scoped_id
-        self.ref_scope = ref_scope
-        self.abstract = abstract
+        self.name: Final = name
+        self.init: Final = init
+        self.is_uri: Final = is_uri
+        self.scoped_id: Final = scoped_id
+        self.ref_scope: Final = ref_scope
+        self.abstract: Final = abstract
         # Follow attributes used by Java but not Python.
-        self.loader_type = loader_type
-        self.instance_type = instance_type
+        self.loader_type: Final = loader_type
+        self.instance_type: Final = instance_type
 
 
 class LazyInitDef:
     """Lazy initialization logic."""
 
-    __slots__ = (
+    __slots__: Final = (
         "name",
         "init",
     )
@@ -57,8 +57,8 @@ class LazyInitDef:
         init: str,
     ) -> None:
         """Create a LazyInitDef object."""
-        self.name = name
-        self.init = init
+        self.name: Final = name
+        self.init: Final = init
 
 
 class CodeGenBase:

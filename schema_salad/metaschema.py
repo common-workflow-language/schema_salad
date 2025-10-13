@@ -14,7 +14,7 @@ from abc import ABC, abstractmethod
 from collections.abc import MutableMapping, MutableSequence, Sequence
 from io import StringIO
 from itertools import chain
-from typing import Any, Optional, Union, cast
+from typing import Any, Final, Optional, Union, cast
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
@@ -30,28 +30,28 @@ from schema_salad.utils import CacheType, yaml_no_ts  # requires schema-salad v8
 _vocab: dict[str, str] = {}
 _rvocab: dict[str, str] = {}
 
-_logger = logging.getLogger("salad")
+_logger: Final = logging.getLogger("salad")
 
 
 IdxType = MutableMapping[str, tuple[Any, "LoadingOptions"]]
 
 
 class LoadingOptions:
-    idx: IdxType
-    fileuri: Optional[str]
-    baseuri: str
-    namespaces: MutableMapping[str, str]
-    schemas: MutableSequence[str]
-    original_doc: Optional[Any]
-    addl_metadata: MutableMapping[str, Any]
-    fetcher: Fetcher
-    vocab: dict[str, str]
-    rvocab: dict[str, str]
-    cache: CacheType
-    imports: list[str]
-    includes: list[str]
-    no_link_check: Optional[bool]
-    container: Optional[str]
+    idx: Final[IdxType]
+    fileuri: Final[Optional[str]]
+    baseuri: Final[str]
+    namespaces: Final[MutableMapping[str, str]]
+    schemas: Final[MutableSequence[str]]
+    original_doc: Final[Optional[Any]]
+    addl_metadata: Final[MutableMapping[str, Any]]
+    fetcher: Final[Fetcher]
+    vocab: Final[dict[str, str]]
+    rvocab: Final[dict[str, str]]
+    cache: Final[CacheType]
+    imports: Final[list[str]]
+    includes: Final[list[str]]
+    no_link_check: Final[Optional[bool]]
+    container: Final[Optional[str]]
 
     def __init__(
         self,
@@ -73,59 +73,69 @@ class LoadingOptions:
         self.original_doc = original_doc
 
         if idx is not None:
-            self.idx = idx
+            temp_idx = idx
         else:
-            self.idx = copyfrom.idx if copyfrom is not None else {}
+            temp_idx = copyfrom.idx if copyfrom is not None else {}
+        self.idx = temp_idx
 
         if fileuri is not None:
-            self.fileuri = fileuri
+            temp_fileuri: Optional[str] = fileuri
         else:
-            self.fileuri = copyfrom.fileuri if copyfrom is not None else None
+            temp_fileuri = copyfrom.fileuri if copyfrom is not None else None
+        self.fileuri = temp_fileuri
 
         if baseuri is not None:
-            self.baseuri = baseuri
+            temp_baseuri = baseuri
         else:
-            self.baseuri = copyfrom.baseuri if copyfrom is not None else ""
+            temp_baseuri = copyfrom.baseuri if copyfrom is not None else ""
+        self.baseuri = temp_baseuri
 
         if namespaces is not None:
-            self.namespaces = namespaces
+            temp_namespaces: MutableMapping[str, str] = namespaces
         else:
-            self.namespaces = copyfrom.namespaces if copyfrom is not None else {}
+            temp_namespaces = copyfrom.namespaces if copyfrom is not None else {}
+        self.namespaces = temp_namespaces
 
         if schemas is not None:
-            self.schemas = schemas
+            temp_schemas: MutableSequence[str] = schemas
         else:
-            self.schemas = copyfrom.schemas if copyfrom is not None else []
+            temp_schemas = copyfrom.schemas if copyfrom is not None else []
+        self.schemas = temp_schemas
 
         if addl_metadata is not None:
-            self.addl_metadata = addl_metadata
+            temp_addl_metadata: MutableMapping[str, Any] = addl_metadata
         else:
-            self.addl_metadata = copyfrom.addl_metadata if copyfrom is not None else {}
+            temp_addl_metadata = copyfrom.addl_metadata if copyfrom is not None else {}
+        self.addl_metadata = temp_addl_metadata
 
         if imports is not None:
-            self.imports = imports
+            temp_imports = imports
         else:
-            self.imports = copyfrom.imports if copyfrom is not None else []
+            temp_imports = copyfrom.imports if copyfrom is not None else []
+        self.imports = temp_imports
 
         if includes is not None:
-            self.includes = includes
+            temp_includes = includes
         else:
-            self.includes = copyfrom.includes if copyfrom is not None else []
+            temp_includes = copyfrom.includes if copyfrom is not None else []
+        self.includes = temp_includes
 
         if no_link_check is not None:
-            self.no_link_check = no_link_check
+            temp_no_link_check: Optional[bool] = no_link_check
         else:
-            self.no_link_check = copyfrom.no_link_check if copyfrom is not None else False
+            temp_no_link_check = copyfrom.no_link_check if copyfrom is not None else False
+        self.no_link_check = temp_no_link_check
 
         if container is not None:
-            self.container = container
+            temp_container: Optional[str] = container
         else:
-            self.container = copyfrom.container if copyfrom is not None else None
+            temp_container = copyfrom.container if copyfrom is not None else None
+        self.container = temp_container
 
         if fetcher is not None:
-            self.fetcher = fetcher
+            temp_fetcher = fetcher
         elif copyfrom is not None:
-            self.fetcher = copyfrom.fetcher
+            temp_fetcher = copyfrom.fetcher
         else:
             import requests
             from cachecontrol.caches import SeparateBodyFileCache
@@ -136,19 +146,22 @@ class LoadingOptions:
                 requests.Session(),
                 cache=SeparateBodyFileCache(root / ".cache" / "salad"),
             )
-            self.fetcher: Fetcher = DefaultFetcher({}, session)
+            temp_fetcher = DefaultFetcher({}, session)
+        self.fetcher = temp_fetcher
 
         self.cache = self.fetcher.cache if isinstance(self.fetcher, MemoryCachingFetcher) else {}
 
-        self.vocab = _vocab
-        self.rvocab = _rvocab
-
-        if self.namespaces is not None:
-            self.vocab = self.vocab.copy()
-            self.rvocab = self.rvocab.copy()
+        if self.namespaces != {}:
+            temp_vocab = _vocab.copy()
+            temp_rvocab = _rvocab.copy()
             for k, v in self.namespaces.items():
-                self.vocab[k] = v
-                self.rvocab[v] = k
+                temp_vocab[k] = v
+                temp_rvocab[v] = k
+        else:
+            temp_vocab = _vocab
+            temp_rvocab = _rvocab
+        self.vocab = temp_vocab
+        self.rvocab = temp_rvocab
 
     @property
     def graph(self) -> Graph:
@@ -156,7 +169,7 @@ class LoadingOptions:
         graph = Graph()
         if not self.schemas:
             return graph
-        key = str(hash(tuple(self.schemas)))
+        key: Final = str(hash(tuple(self.schemas)))
         if key in self.cache:
             return cast(Graph, self.cache[key])
         for schema in self.schemas:
@@ -221,20 +234,20 @@ def load_field(
         if "$import" in val:
             if loadingOptions.fileuri is None:
                 raise SchemaSaladException("Cannot load $import without fileuri")
-            url = loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$import"])
+            url1: Final = loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$import"])
             result, metadata = _document_load_by_url(
                 fieldtype,
-                url,
+                url1,
                 loadingOptions,
             )
-            loadingOptions.imports.append(url)
+            loadingOptions.imports.append(url1)
             return result
         if "$include" in val:
             if loadingOptions.fileuri is None:
                 raise SchemaSaladException("Cannot load $import without fileuri")
-            url = loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
-            val = loadingOptions.fetcher.fetch_text(url)
-            loadingOptions.includes.append(url)
+            url2: Final = loadingOptions.fetcher.urljoin(loadingOptions.fileuri, val["$include"])
+            val = loadingOptions.fetcher.fetch_text(url2)
+            loadingOptions.includes.append(url2)
     return fieldtype.load(val, baseuri, loadingOptions, lc=lc)
 
 
@@ -243,7 +256,7 @@ save_type = Optional[Union[MutableMapping[str, Any], MutableSequence[Any], int, 
 
 def extract_type(val_type: type[Any]) -> str:
     """Take a type of value, and extracts the value as a string."""
-    val_str = str(val_type)
+    val_str: Final = str(val_type)
     return val_str.split("'")[1]
 
 
@@ -264,10 +277,10 @@ def parse_errors(error_message: str) -> tuple[str, str, str]:
     """Parse error messages from several loaders into one error message."""
     if not error_message.startswith("Expected"):
         return error_message, "", ""
-    vals = error_message.split("\n")
+    vals: Final = error_message.split("\n")
     if len(vals) == 1:
         return error_message, "", ""
-    types = set()
+    types1: Final = set()
     for val in vals:
         individual_vals = val.split(" ")
         if val == "":
@@ -275,27 +288,29 @@ def parse_errors(error_message: str) -> tuple[str, str, str]:
         if individual_vals[1] == "one":
             individual_vals = val.split("(")[1].split(",")
             for t in individual_vals:
-                types.add(t.strip(" ").strip(")\n"))
+                types1.add(t.strip(" ").strip(")\n"))
         elif individual_vals[2] == "<class":
-            types.add(individual_vals[3].strip(">").replace("'", ""))
+            types1.add(individual_vals[3].strip(">").replace("'", ""))
         elif individual_vals[0] == "Value":
-            types.add(individual_vals[-1].strip("."))
+            types1.add(individual_vals[-1].strip("."))
         else:
-            types.add(individual_vals[1].replace(",", ""))
-    types = {val for val in types if val != "NoneType"}
-    if "str" in types:
-        types = {convert_typing(val) for val in types if "'" not in val}
+            types1.add(individual_vals[1].replace(",", ""))
+    types2: Final = {val for val in types1 if val != "NoneType"}
+    if "str" in types2:
+        types3 = {convert_typing(val) for val in types2 if "'" not in val}
+    else:
+        types3 = types2
     to_print = ""
-    for val in types:
+    for val in types3:
         if "'" in val:
-            to_print = "value" if len(types) == 1 else "values"
+            to_print = "value" if len(types3) == 1 else "values"
 
     if to_print == "":
-        to_print = "type" if len(types) == 1 else "types"
+        to_print = "type" if len(types3) == 1 else "types"
 
-    verb_tensage = "is" if len(types) == 1 else "are"
+    verb_tensage: Final = "is" if len(types3) == 1 else "are"
 
-    return str(types).replace("{", "(").replace("}", ")").replace("'", ""), to_print, verb_tensage
+    return str(types3).replace("{", "(").replace("}", ")").replace("'", ""), to_print, verb_tensage
 
 
 def save(
@@ -309,7 +324,7 @@ def save(
     if isinstance(val, MutableSequence):
         return [save(v, top=False, base_url=base_url, relative_uris=relative_uris) for v in val]
     if isinstance(val, MutableMapping):
-        newdict = {}
+        newdict: Final = {}
         for key in val:
             newdict[key] = save(val[key], top=False, base_url=base_url, relative_uris=relative_uris)
         return newdict
@@ -326,7 +341,7 @@ def save_with_metadata(
     relative_uris: bool = True,
 ) -> save_type:
     """Save and set $namespaces, $schemas, $base and any other metadata fields at the top level."""
-    saved_val = save(val, top, base_url, relative_uris)
+    saved_val: Final = save(val, top, base_url, relative_uris)
     newdict: MutableMapping[str, Any] = {}
     if isinstance(saved_val, MutableSequence):
         newdict = {"$graph": saved_val}
@@ -361,30 +376,30 @@ def expand_url(
         return url
 
     if bool(loadingOptions.vocab) and ":" in url:
-        prefix = url.split(":")[0]
+        prefix: Final = url.split(":")[0]
         if prefix in loadingOptions.vocab:
             url = loadingOptions.vocab[prefix] + url[len(prefix) + 1 :]
 
-    split = urlsplit(url)
+    split1: Final = urlsplit(url)
 
     if (
-        (bool(split.scheme) and split.scheme in loadingOptions.fetcher.supported_schemes())
+        (bool(split1.scheme) and split1.scheme in loadingOptions.fetcher.supported_schemes())
         or url.startswith("$(")
         or url.startswith("${")
     ):
         pass
-    elif scoped_id and not bool(split.fragment):
-        splitbase = urlsplit(base_url)
-        frg = ""
-        if bool(splitbase.fragment):
-            frg = splitbase.fragment + "/" + split.path
+    elif scoped_id and not bool(split1.fragment):
+        splitbase1: Final = urlsplit(base_url)
+        frg: str
+        if bool(splitbase1.fragment):
+            frg = splitbase1.fragment + "/" + split1.path
         else:
-            frg = split.path
-        pt = splitbase.path if splitbase.path != "" else "/"
-        url = urlunsplit((splitbase.scheme, splitbase.netloc, pt, splitbase.query, frg))
-    elif scoped_ref is not None and not bool(split.fragment):
-        splitbase = urlsplit(base_url)
-        sp = splitbase.fragment.split("/")
+            frg = split1.path
+        pt: Final = splitbase1.path if splitbase1.path != "" else "/"
+        url = urlunsplit((splitbase1.scheme, splitbase1.netloc, pt, splitbase1.query, frg))
+    elif scoped_ref is not None and not bool(split1.fragment):
+        splitbase2: Final = urlsplit(base_url)
+        sp = splitbase2.fragment.split("/")
         n = scoped_ref
         while n > 0 and len(sp) > 0:
             sp.pop()
@@ -392,10 +407,10 @@ def expand_url(
         sp.append(url)
         url = urlunsplit(
             (
-                splitbase.scheme,
-                splitbase.netloc,
-                splitbase.path,
-                splitbase.query,
+                splitbase2.scheme,
+                splitbase2.netloc,
+                splitbase2.path,
+                splitbase2.query,
                 "/".join(sp),
             )
         )
@@ -403,8 +418,8 @@ def expand_url(
         url = loadingOptions.fetcher.urljoin(base_url, url)
 
     if vocab_term:
-        split = urlsplit(url)
-        if bool(split.scheme):
+        split2: Final = urlsplit(url)
+        if bool(split2.scheme):
             if url in loadingOptions.rvocab:
                 return loadingOptions.rvocab[url]
         else:
@@ -441,7 +456,7 @@ class _AnyLoader(_Loader):
 
 class _PrimitiveLoader(_Loader):
     def __init__(self, tp: Union[type, tuple[type[str], type[str]]]) -> None:
-        self.tp = tp
+        self.tp: Final = tp
 
     def load(
         self,
@@ -461,7 +476,7 @@ class _PrimitiveLoader(_Loader):
 
 class _ArrayLoader(_Loader):
     def __init__(self, items: _Loader) -> None:
-        self.items = items
+        self.items: Final = items
 
     def load(
         self,
@@ -476,9 +491,9 @@ class _ArrayLoader(_Loader):
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
                 f"but valid type for this field is an array."
             )
-        r: list[Any] = []
-        errors: list[SchemaSaladException] = []
-        fields: list[str] = []
+        r: Final[list[Any]] = []
+        errors: Final[list[SchemaSaladException]] = []
+        fields: Final[list[str]] = []
         for i in range(0, len(doc)):
             try:
                 lf = load_field(
@@ -524,10 +539,10 @@ class _MapLoader(_Loader):
         container: Optional[str] = None,
         no_link_check: Optional[bool] = None,
     ) -> None:
-        self.values = values
-        self.name = name
-        self.container = container
-        self.no_link_check = no_link_check
+        self.values: Final = values
+        self.name: Final = name
+        self.container: Final = container
+        self.no_link_check: Final = no_link_check
 
     def load(
         self,
@@ -543,8 +558,8 @@ class _MapLoader(_Loader):
             loadingOptions = LoadingOptions(
                 copyfrom=loadingOptions, container=self.container, no_link_check=self.no_link_check
             )
-        r: dict[str, Any] = {}
-        errors: list[SchemaSaladException] = []
+        r: Final[dict[str, Any]] = {}
+        errors: Final[list[SchemaSaladException]] = []
         for k, v in doc.items():
             try:
                 lf = load_field(v, self.values, baseuri, loadingOptions, lc)
@@ -561,8 +576,8 @@ class _MapLoader(_Loader):
 
 class _EnumLoader(_Loader):
     def __init__(self, symbols: Sequence[str], name: str) -> None:
-        self.symbols = symbols
-        self.name = name
+        self.symbols: Final = symbols
+        self.name: Final = name
 
     def load(
         self,
@@ -582,7 +597,7 @@ class _EnumLoader(_Loader):
 
 class _SecondaryDSLLoader(_Loader):
     def __init__(self, inner: _Loader) -> None:
-        self.inner = inner
+        self.inner: Final = inner
 
     def load(
         self,
@@ -592,7 +607,7 @@ class _SecondaryDSLLoader(_Loader):
         docRoot: Optional[str] = None,
         lc: Optional[list[Any]] = None,
     ) -> Any:
-        r: list[dict[str, Any]] = []
+        r: Final[list[dict[str, Any]]] = []
         if isinstance(doc, MutableSequence):
             for d in doc:
                 if isinstance(d, str):
@@ -601,15 +616,15 @@ class _SecondaryDSLLoader(_Loader):
                     else:
                         r.append({"pattern": d})
                 elif isinstance(d, dict):
-                    new_dict: dict[str, Any] = {}
+                    new_dict1: dict[str, Any] = {}
                     dict_copy = copy.deepcopy(d)
                     if "pattern" in dict_copy:
-                        new_dict["pattern"] = dict_copy.pop("pattern")
+                        new_dict1["pattern"] = dict_copy.pop("pattern")
                     else:
                         raise ValidationException(
                             f"Missing pattern in secondaryFiles specification entry: {d}"
                         )
-                    new_dict["required"] = (
+                    new_dict1["required"] = (
                         dict_copy.pop("required") if "required" in dict_copy else None
                     )
 
@@ -619,28 +634,28 @@ class _SecondaryDSLLoader(_Loader):
                                 dict_copy
                             )
                         )
-                    r.append(new_dict)
+                    r.append(new_dict1)
 
                 else:
                     raise ValidationException(
                         "Expected a string or sequence of (strings or mappings)."
                     )
         elif isinstance(doc, MutableMapping):
-            new_dict = {}
-            doc_copy = copy.deepcopy(doc)
+            new_dict2: Final = {}
+            doc_copy: Final = copy.deepcopy(doc)
             if "pattern" in doc_copy:
-                new_dict["pattern"] = doc_copy.pop("pattern")
+                new_dict2["pattern"] = doc_copy.pop("pattern")
             else:
                 raise ValidationException(
                     f"Missing pattern in secondaryFiles specification entry: {doc}"
                 )
-            new_dict["required"] = doc_copy.pop("required") if "required" in doc_copy else None
+            new_dict2["required"] = doc_copy.pop("required") if "required" in doc_copy else None
 
             if len(doc_copy):
                 raise ValidationException(
                     f"Unallowed values in secondaryFiles specification entry: {doc_copy}"
                 )
-            r.append(new_dict)
+            r.append(new_dict2)
 
         elif isinstance(doc, str):
             if doc.endswith("?"):
@@ -659,9 +674,9 @@ class _RecordLoader(_Loader):
         container: Optional[str] = None,
         no_link_check: Optional[bool] = None,
     ) -> None:
-        self.classtype = classtype
-        self.container = container
-        self.no_link_check = no_link_check
+        self.classtype: Final = classtype
+        self.container: Final = container
+        self.no_link_check: Final = no_link_check
 
     def load(
         self,
@@ -688,7 +703,7 @@ class _RecordLoader(_Loader):
 
 class _ExpressionLoader(_Loader):
     def __init__(self, items: type[str]) -> None:
-        self.items = items
+        self.items: Final = items
 
     def load(
         self,
@@ -709,7 +724,7 @@ class _ExpressionLoader(_Loader):
 class _UnionLoader(_Loader):
     def __init__(self, alternates: Sequence[_Loader], name: Optional[str] = None) -> None:
         self.alternates = alternates
-        self.name = name
+        self.name: Final = name
 
     def add_loaders(self, loaders: Sequence[_Loader]) -> None:
         self.alternates = tuple(loader for loader in chain(self.alternates, loaders))
@@ -722,7 +737,7 @@ class _UnionLoader(_Loader):
         docRoot: Optional[str] = None,
         lc: Optional[list[Any]] = None,
     ) -> Any:
-        errors = []
+        errors: Final = []
 
         if lc is None:
             lc = []
@@ -805,11 +820,11 @@ class _URILoader(_Loader):
         scoped_ref: Optional[int],
         no_link_check: Optional[bool],
     ) -> None:
-        self.inner = inner
-        self.scoped_id = scoped_id
-        self.vocab_term = vocab_term
-        self.scoped_ref = scoped_ref
-        self.no_link_check = no_link_check
+        self.inner: Final = inner
+        self.scoped_id: Final = scoped_id
+        self.vocab_term: Final = vocab_term
+        self.scoped_ref: Final = scoped_ref
+        self.no_link_check: Final = no_link_check
 
     def load(
         self,
@@ -824,7 +839,7 @@ class _URILoader(_Loader):
                 copyfrom=loadingOptions, no_link_check=self.no_link_check
             )
         if isinstance(doc, MutableSequence):
-            newdoc = []
+            newdoc: Final = []
             for i in doc:
                 if isinstance(i, str):
                     newdoc.append(
@@ -851,7 +866,7 @@ class _URILoader(_Loader):
             )
         if isinstance(doc, str):
             if not loadingOptions.no_link_check:
-                errors = []
+                errors: Final = []
                 try:
                     if not loadingOptions.fetcher.check_exists(doc):
                         errors.append(
@@ -866,9 +881,9 @@ class _URILoader(_Loader):
 
 class _TypeDSLLoader(_Loader):
     def __init__(self, inner: _Loader, refScope: Optional[int], salad_version: str) -> None:
-        self.inner = inner
-        self.refScope = refScope
-        self.salad_version = salad_version
+        self.inner: Final = inner
+        self.refScope: Final = refScope
+        self.salad_version: Final = salad_version
 
     def resolve(
         self,
@@ -883,9 +898,9 @@ class _TypeDSLLoader(_Loader):
             doc_ = doc_[0:-1]
 
         if doc_.endswith("[]"):
-            salad_versions = [int(v) for v in self.salad_version[1:].split(".")]
+            salad_versions: Final = [int(v) for v in self.salad_version[1:].split(".")]
             items: Union[list[Union[dict[str, Any], str]], dict[str, Any], str] = ""
-            rest = doc_[0:-2]
+            rest: Final = doc_[0:-2]
             if salad_versions < [1, 3]:
                 if rest.endswith("[]"):
                     # To show the error message with the original type
@@ -914,7 +929,7 @@ class _TypeDSLLoader(_Loader):
         lc: Optional[list[Any]] = None,
     ) -> Any:
         if isinstance(doc, MutableSequence):
-            r: list[Any] = []
+            r: Final[list[Any]] = []
             for d in doc:
                 if isinstance(d, str):
                     resolved = self.resolve(d, baseuri, loadingOptions)
@@ -936,9 +951,9 @@ class _TypeDSLLoader(_Loader):
 
 class _IdMapLoader(_Loader):
     def __init__(self, inner: _Loader, mapSubject: str, mapPredicate: Optional[str]) -> None:
-        self.inner = inner
-        self.mapSubject = mapSubject
-        self.mapPredicate = mapPredicate
+        self.inner: Final = inner
+        self.mapSubject: Final = mapSubject
+        self.mapPredicate: Final = mapPredicate
 
     def load(
         self,
@@ -949,7 +964,7 @@ class _IdMapLoader(_Loader):
         lc: Optional[list[Any]] = None,
     ) -> Any:
         if isinstance(doc, MutableMapping):
-            r: list[Any] = []
+            r: Final[list[Any]] = []
             for k in doc.keys():
                 val = doc[k]
                 if isinstance(val, CommentedMap):
@@ -989,13 +1004,13 @@ def _document_load(
         )
 
     if isinstance(doc, MutableMapping):
-        addl_metadata = {}
+        addl_metadata: Final = {}
         if addl_metadata_fields is not None:
             for mf in addl_metadata_fields:
                 if mf in doc:
                     addl_metadata[mf] = doc[mf]
 
-        docuri = baseuri
+        docuri: Final = baseuri
         if "$base" in doc:
             baseuri = doc["$base"]
 
@@ -1007,22 +1022,22 @@ def _document_load(
             addl_metadata=addl_metadata,
         )
 
-        doc = copy.copy(doc)
-        if "$namespaces" in doc:
-            doc.pop("$namespaces")
-        if "$schemas" in doc:
-            doc.pop("$schemas")
-        if "$base" in doc:
-            doc.pop("$base")
+        doc2: Final = copy.copy(doc)
+        if "$namespaces" in doc2:
+            doc2.pop("$namespaces")
+        if "$schemas" in doc2:
+            doc2.pop("$schemas")
+        if "$base" in doc2:
+            doc2.pop("$base")
 
-        if "$graph" in doc:
+        if "$graph" in doc2:
             loadingOptions.idx[baseuri] = (
-                loader.load(doc["$graph"], baseuri, loadingOptions),
+                loader.load(doc2["$graph"], baseuri, loadingOptions),
                 loadingOptions,
             )
         else:
             loadingOptions.idx[baseuri] = (
-                loader.load(doc, baseuri, loadingOptions, docRoot=baseuri),
+                loader.load(doc2, baseuri, loadingOptions, docRoot=baseuri),
                 loadingOptions,
             )
 
@@ -1054,11 +1069,11 @@ def _document_load_by_url(
 
     doc_url, frg = urldefrag(url)
 
-    text = loadingOptions.fetcher.fetch_text(doc_url)
-    textIO = StringIO(text)
+    text: Final = loadingOptions.fetcher.fetch_text(doc_url)
+    textIO: Final = StringIO(text)
     textIO.name = str(doc_url)
-    yaml = yaml_no_ts()
-    result = yaml.load(textIO)
+    yaml: Final = yaml_no_ts()
+    result: Final = yaml.load(textIO)
     add_lc_filename(result, doc_url)
 
     loadingOptions = LoadingOptions(copyfrom=loadingOptions, fileuri=doc_url)
@@ -1079,7 +1094,7 @@ def file_uri(path: str, split_frag: bool = False) -> str:
     if path.startswith("file://"):
         return path
     if split_frag:
-        pathsp = path.split("#", 2)
+        pathsp: Final = path.split("#", 2)
         frag = "#" + quote(str(pathsp[1])) if len(pathsp) == 2 else ""
         urlpath = pathname2url(str(pathsp[0]))
     else:
@@ -1111,8 +1126,8 @@ def save_relative_uri(
     elif isinstance(uri, str):
         if not relative_uris or uri == base_url:
             return uri
-        urisplit = urlsplit(uri)
-        basesplit = urlsplit(base_url)
+        urisplit: Final = urlsplit(uri)
+        basesplit: Final = urlsplit(base_url)
         if urisplit.scheme == basesplit.scheme and urisplit.netloc == basesplit.netloc:
             if urisplit.path != basesplit.path:
                 p = os.path.relpath(urisplit.path, os.path.dirname(basesplit.path))
@@ -1143,7 +1158,7 @@ def shortname(inputid: str) -> str:
 
     See https://w3id.org/cwl/v1.2/SchemaSalad.html#Short_names.
     """
-    parsed_id = urlparse(inputid)
+    parsed_id: Final = urlparse(inputid)
     if parsed_id.fragment:
         return parsed_id.fragment.split("/")[-1]
     return parsed_id.path.split("/")[-1]

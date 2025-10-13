@@ -1,12 +1,12 @@
 import os
 import re
 from collections.abc import MutableMapping, MutableSequence
-from typing import Any, AnyStr, Callable, Optional, Union
+from typing import Any, AnyStr, Callable, Final, Optional, Union
 
 import ruamel.yaml
 from ruamel.yaml.comments import CommentedBase, CommentedMap, CommentedSeq
 
-lineno_re = re.compile(r"^(.*?:[0-9]+:[0-9]+: )(( *)(.*))")
+lineno_re: Final = re.compile(r"^(.*?:[0-9]+:[0-9]+: )(( *)(.*))")
 
 
 def _add_lc_filename(r: ruamel.yaml.comments.CommentedBase, source: AnyStr) -> None:
@@ -43,8 +43,8 @@ def reflow_all(text: str, maxline: Optional[int] = None) -> str:
         group = g.group(1)
         assert group is not None  # nosec
         maxno = max(maxno, len(group))
-    maxno_text = maxline - maxno
-    msg: list[str] = []
+    maxno_text: Final = maxline - maxno
+    msg: Final[list[str]] = []
     for line in text.splitlines():
         g = lineno_re.match(line)
         if not g:
@@ -61,32 +61,33 @@ def reflow_all(text: str, maxline: Optional[int] = None) -> str:
 
 def reflow(text: str, maxline: int, shift: Optional[str] = "") -> str:
     """Reflow a single line of text."""
-    maxline = max(maxline, 20)
-    if len(text) > maxline:
-        sp = text.rfind(" ", 0, maxline)
+    maxline2: Final = max(maxline, 20)
+    if len(text) > maxline2:
+        sp = text.rfind(" ", 0, maxline2)
         if sp < 1:
             sp = text.find(" ", sp + 1)
             if sp == -1:
                 sp = len(text)
         if sp < len(text):
-            return f"{text[0:sp]}\n{shift}{reflow(text[sp + 1 :], maxline, shift)}"
+            return f"{text[0:sp]}\n{shift}{reflow(text[sp + 1 :], maxline2, shift)}"
     return text
+
+
+def _lineno(i: int, line: str, shift: str, bullet: str) -> str:
+    if (r := lineno_re.match(line)) is not None:
+        group1: Final = r.group(1)
+        group2: Final = r.group(2)
+        assert group1 is not None  # nosec
+        assert group2 is not None  # nosec
+        return group1 + (bullet if i == 0 else shift) + group2
+    return (bullet if i == 0 else shift) + line
 
 
 def indent(v: str, nolead: bool = False, shift: str = "  ", bullet: str = "  ") -> str:
     if nolead:
         return v.splitlines()[0] + "\n".join([shift + line for line in v.splitlines()[1:]])
 
-    def lineno(i: int, line: str) -> str:
-        if (r := lineno_re.match(line)) is not None:
-            group1 = r.group(1)
-            group2 = r.group(2)
-            assert group1 is not None  # nosec
-            assert group2 is not None  # nosec
-            return group1 + (bullet if i == 0 else shift) + group2
-        return (bullet if i == 0 else shift) + line
-
-    return "\n".join([lineno(i, line) for i, line in enumerate(v.splitlines())])
+    return "\n".join([_lineno(i, line, shift, bullet) for i, line in enumerate(v.splitlines())])
 
 
 def bullets(textlist: list[str], bul: str) -> str:
@@ -103,7 +104,7 @@ def strip_duplicated_lineno(text: str) -> str:
     Same as :py:meth:`strip_dup_lineno` but without reflow.
     """
     pre: Optional[str] = None
-    msg = []
+    msg: Final = []
     for line in text.splitlines():
         g = lineno_re.match(line)
         if not g:
@@ -126,7 +127,7 @@ def strip_dup_lineno(text: str, maxline: Optional[int] = None) -> str:
     if maxline is None:
         maxline = int(os.environ.get("COLUMNS", "100"))
     pre: Optional[str] = None
-    msg = []
+    msg: Final = []
     maxno = 0
     for line in text.splitlines():
         g = lineno_re.match(line)
@@ -198,7 +199,7 @@ def cmap(
                 d[k2] = cmap(v2, lc, fn=fn)
         return d
     if isinstance(d, MutableMapping):
-        cm = CommentedMap()
+        cm: Final = CommentedMap()
         for k in sorted(d.keys()):
             v = d[k]
             if isinstance(v, CommentedBase):
@@ -212,7 +213,7 @@ def cmap(
             cm.lc.filename = fn
         return cm
     if isinstance(d, MutableSequence):
-        cs = CommentedSeq()
+        cs: Final = CommentedSeq()
         for k3, v3 in enumerate(d):
             if isinstance(v3, CommentedBase):
                 uselc = [v3.lc.line, v3.lc.col, v3.lc.line, v3.lc.col]
@@ -276,7 +277,7 @@ class SourceLine:
 
     def makeLead(self) -> str:
         if self.file():
-            lcol = self.start()
+            lcol: Final = self.start()
             line, col = lcol if lcol else ("", "")
             return f"{self.file()}:{line}:{col}:"
         return ""
@@ -284,8 +285,8 @@ class SourceLine:
     def makeError(self, msg: str) -> Any:
         if not isinstance(self.item, ruamel.yaml.comments.CommentedBase):
             return self.raise_type(msg)
-        errs = []
-        lead = self.makeLead()
+        errs: Final = []
+        lead: Final = self.makeLead()
         for m in msg.splitlines():
             if bool(lineno_re.match(m)):
                 errs.append(m)

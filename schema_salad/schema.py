@@ -4,7 +4,7 @@ import copy
 import hashlib
 from collections.abc import Mapping, MutableMapping, MutableSequence
 from importlib.resources import files
-from typing import IO, Any, Optional, Union, cast
+from typing import IO, Any, Final, Optional, Union, cast
 from urllib.parse import urlparse
 
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
@@ -30,7 +30,7 @@ from .exceptions import (
 from .ref_resolver import Loader
 from .sourceline import SourceLine, add_lc_filename, relname
 
-SALAD_FILES = (
+SALAD_FILES: Final = (
     "metaschema.yml",
     "metaschema_base.yml",
     "salad.md",
@@ -66,7 +66,19 @@ SALAD_FILES = (
     "sfdsl_res_proc.yml",
 )
 
-saladp = "https://w3id.org/cwl/salad#"
+saladp: Final = "https://w3id.org/cwl/salad#"
+primitives: Final = {
+    "http://www.w3.org/2001/XMLSchema#string",
+    "http://www.w3.org/2001/XMLSchema#boolean",
+    "http://www.w3.org/2001/XMLSchema#int",
+    "http://www.w3.org/2001/XMLSchema#long",
+    saladp + "null",
+    saladp + "enum",
+    saladp + "array",
+    saladp + "record",
+    saladp + "Any",
+}
+
 
 cached_metaschema: Optional[tuple[Names, list[dict[str, str]], Loader]] = None
 
@@ -77,7 +89,7 @@ def get_metaschema() -> tuple[Names, list[dict[str, str]], Loader]:
     if cached_metaschema is not None:
         return cached_metaschema
 
-    loader = ref_resolver.Loader(
+    loader: Final = ref_resolver.Loader(
         {
             "Any": saladp + "Any",
             "ArraySchema": saladp + "ArraySchema",
@@ -185,17 +197,17 @@ def get_metaschema() -> tuple[Names, list[dict[str, str]], Loader]:
         files("schema_salad").joinpath("metaschema/metaschema.yml").read_text("UTF-8")
     )
 
-    yaml = yaml_no_ts()
-    j = yaml.load(loader.cache["https://w3id.org/cwl/salad"])
+    yaml: Final = yaml_no_ts()
+    j: Final = yaml.load(loader.cache["https://w3id.org/cwl/salad"])
     add_lc_filename(j, "metaschema.yml")
-    j2 = loader.resolve_all(j, saladp)[0]
+    j2: Final = loader.resolve_all(j, saladp)[0]
 
     if not isinstance(j2, list):
         _logger.error("%s", j2)
         raise SchemaParseException(f"Not a list: {j2}")
-    sch_obj = make_avro(j2, loader, loader.vocab)
+    sch_obj: Final = make_avro(j2, loader, loader.vocab)
     try:
-        sch_names = make_avro_schema_from_avro(sch_obj)
+        sch_names: Final = make_avro_schema_from_avro(sch_obj)
     except SchemaParseException:
         _logger.error("Metaschema error, avro was:\n%s", json_dumps(sch_obj, indent=4))
         raise
@@ -335,14 +347,14 @@ def validate_doc(
     else:
         raise ValidationException("Document must be dict or list")
 
-    roots = []
+    roots: Final = []
     for root in schema_names.names.values():
         if (hasattr(root, "get_prop") and root.get_prop("documentRoot")) or (
             root.props.get("documentRoot")
         ):
             roots.append(root)
 
-    anyerrors = []
+    anyerrors: Final = []
     for pos, item in enumerate(vdoc):
         sourceline = SourceLine(vdoc, pos, str)
         success = False
@@ -408,7 +420,7 @@ def validate_doc(
 def get_anon_name(rec: MutableMapping[str, Union[str, dict[str, str], list[str]]]) -> str:
     """Calculate a reproducible name for anonymous types."""
     if "name" in rec:
-        name = rec["name"]
+        name: Final = rec["name"]
         if isinstance(name, str):
             return name
         raise ValidationException(f"Expected name field to be a string, was {name}")
@@ -500,7 +512,7 @@ def avro_field_name(url: str) -> str:
     Extract either the last part of the URL fragment past the slash, otherwise
     the whole fragment.
     """
-    d = urlparse(url)
+    d: Final = urlparse(url)
     if d.fragment:
         return d.fragment.split("/")[-1]
     return d.path.split("/")[-1]
@@ -524,7 +536,7 @@ def make_valid_avro(
 
     # Possibly could be integrated into our fork of avro/schema.py?
     if isinstance(items, MutableMapping):
-        avro = copy.copy(items)
+        avro: Final = copy.copy(items)
         if avro.get("name"):
             if fielddef:
                 avro["name"] = avro_field_name(avro["name"])
@@ -561,7 +573,7 @@ def make_valid_avro(
             avro["symbols"] = [avro_field_name(sym) for sym in avro["symbols"]]
         return avro
     if items and isinstance(items, MutableSequence):
-        ret = []
+        ret: Final = []
         for i in items:
             ret.append(
                 make_valid_avro(i, alltypes, found, union=union, fielddef=fielddef, vocab=vocab)
@@ -592,10 +604,12 @@ def deepcopy_strip(item: Any) -> Any:
 
 def extend_and_specialize(items: list[dict[str, Any]], loader: Loader) -> list[dict[str, Any]]:
     """Apply 'extend' and 'specialize' to fully materialize derived record types."""
-    items2 = deepcopy_strip(items)
-    types: dict[str, Any] = {i["name"]: i for i in items2}
+    items2: Final = deepcopy_strip(items)
+    types: dict[str, Any] = {
+        i["name"]: i for i in items2
+    }  # no Final, error: ‘CPyStatic_types___’ undeclared (first use in this function)
     types.update({k[len(saladp) :]: v for k, v in types.items() if k.startswith(saladp)})
-    results = []
+    results: Final = []
 
     for stype in items2:
         if "extends" in stype:
@@ -685,11 +699,11 @@ def extend_and_specialize(items: list[dict[str, Any]], loader: Loader) -> list[d
 
         results.append(stype)
 
-    ex_types = {}
+    ex_types: Final = {}
     for result in results:
         ex_types[result["name"]] = result
 
-    extended_by: dict[str, str] = {}
+    extended_by: Final[dict[str, str]] = {}
     for result in results:
         if "extends" in result:
             for ex in aslist(result["extends"]):
@@ -717,13 +731,13 @@ def make_avro(
     loader: Loader,
     metaschema_vocab: Optional[dict[str, str]] = None,
 ) -> list[Any]:
-    j = extend_and_specialize(i, loader)
+    j: Final = extend_and_specialize(i, loader)
 
-    name_dict: dict[str, dict[str, Any]] = {}
+    name_dict: Final[dict[str, dict[str, Any]]] = {}
     for entry in j:
         name_dict[entry["name"]] = entry
 
-    avro = make_valid_avro(j, name_dict, set(), vocab=metaschema_vocab)
+    avro: Final = make_valid_avro(j, name_dict, set(), vocab=metaschema_vocab)
 
     return [
         t
@@ -743,22 +757,22 @@ def make_avro_schema(
     Call make_avro() and make_avro_schema_from_avro() separately if you need
     the intermediate result for diagnostic output.
     """
-    names = Names()
-    avro = make_avro(i, loader, metaschema_vocab)
+    names: Final = Names()
+    avro: Final = make_avro(i, loader, metaschema_vocab)
     make_avsc_object(convert_to_dict(avro), names)
     return names
 
 
 def make_avro_schema_from_avro(avro: list[Union[Avro, dict[str, str], str]]) -> Names:
     """Create avro.schema.Names from the given definitions."""
-    names = Names()
+    names: Final = Names()
     make_avsc_object(convert_to_dict(avro), names)
     return names
 
 
 def shortname(inputid: str) -> str:
     """Return the last segment of the provided fragment or path."""
-    parsed_id = urlparse(inputid)
+    parsed_id: Final = urlparse(inputid)
     if parsed_id.fragment:
         return parsed_id.fragment.split("/")[-1]
     return parsed_id.path.split("/")[-1]
@@ -785,19 +799,7 @@ def print_inheritance(doc: list[dict[str, Any]], stream: IO[Any]) -> None:
 
 def print_fieldrefs(doc: list[dict[str, Any]], loader: Loader, stream: IO[Any]) -> None:
     """Write a GraphViz graph of the relationships between the fields."""
-    obj = extend_and_specialize(doc, loader)
-
-    primitives = {
-        "http://www.w3.org/2001/XMLSchema#string",
-        "http://www.w3.org/2001/XMLSchema#boolean",
-        "http://www.w3.org/2001/XMLSchema#int",
-        "http://www.w3.org/2001/XMLSchema#long",
-        saladp + "null",
-        saladp + "enum",
-        saladp + "array",
-        saladp + "record",
-        saladp + "Any",
-    }
+    obj: Final = extend_and_specialize(doc, loader)
 
     stream.write("digraph {\n")
     for entry in obj:

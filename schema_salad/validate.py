@@ -1,7 +1,7 @@
 import logging
 import pprint
 from collections.abc import Mapping, MutableMapping, MutableSequence
-from typing import Any, Optional
+from typing import Any, Final, Optional
 from urllib.parse import urlsplit
 
 from . import avro
@@ -13,7 +13,7 @@ from .exceptions import (
 )
 from .sourceline import SourceLine
 
-_logger = logging.getLogger("salad")
+_logger: Final = logging.getLogger("salad")
 
 
 def validate(
@@ -39,10 +39,10 @@ def validate(
     )
 
 
-INT_MIN_VALUE = -(1 << 31)
-INT_MAX_VALUE = (1 << 31) - 1
-LONG_MIN_VALUE = -(1 << 63)
-LONG_MAX_VALUE = (1 << 63) - 1
+INT_MIN_VALUE: Final = -(1 << 31)
+INT_MAX_VALUE: Final = (1 << 31) - 1
+LONG_MIN_VALUE: Final = -(1 << 63)
+LONG_MAX_VALUE: Final = (1 << 63) - 1
 
 
 def avro_shortname(name: str) -> str:
@@ -50,8 +50,8 @@ def avro_shortname(name: str) -> str:
     return name.split(".")[-1]
 
 
-saladp = "https://w3id.org/cwl/salad#"
-primitives = {
+saladp: Final = "https://w3id.org/cwl/salad#"
+primitives: Final = {
     "http://www.w3.org/2001/XMLSchema#string": "string",
     "http://www.w3.org/2001/XMLSchema#boolean": "boolean",
     "http://www.w3.org/2001/XMLSchema#int": "int",
@@ -80,8 +80,8 @@ def avro_type_name(url: str) -> str:
     if url in primitives:
         return primitives[url]
 
-    u = urlsplit(url)
-    joined = filter(
+    u: Final = urlsplit(url)
+    joined: Final = filter(
         lambda x: x,
         list(reversed(u.netloc.split("."))) + u.path.split("/") + u.fragment.split("/"),
     )
@@ -124,7 +124,7 @@ def validate_ex(
     vocab: Optional[Mapping[str, str]] = None,
 ) -> bool:
     """Determine if a python datum is an instance of a schema."""
-    debug = _logger.isEnabledFor(logging.DEBUG)
+    debug: Final = _logger.isEnabledFor(logging.DEBUG)
     if not identifiers:
         identifiers = []
 
@@ -134,7 +134,7 @@ def validate_ex(
     if vocab is None:
         raise Exception("vocab must be provided")
 
-    schema_type = expected_schema.type
+    schema_type: Final = expected_schema.type
 
     if schema_type == "null":
         if datum is None:
@@ -255,8 +255,8 @@ def validate_ex(
         if not raise_ex:
             return False
 
-        errors: list[SchemaSaladException] = []
-        checked = []
+        errors1: Final[list[SchemaSaladException]] = []
+        checked: Final = []
         for s in expected_schema.schemas:
             if isinstance(datum, MutableSequence) and not isinstance(s, avro.schema.ArraySchema):
                 continue
@@ -294,14 +294,14 @@ def validate_ex(
             except ClassValidationException:
                 raise
             except ValidationException as e:
-                errors.append(e)
-        if bool(errors):
+                errors1.append(e)
+        if bool(errors1):
             raise ValidationException(
                 "",
                 None,
                 [
                     ValidationException(f"tried {friendly(check)} but", None, [err])
-                    for (check, err) in zip(checked, errors)
+                    for (check, err) in zip(checked, errors1)
                 ],
                 "-",
             )
@@ -337,7 +337,7 @@ def validate_ex(
                 classmatch = d
                 break
 
-        errors = []
+        errors2: Final = []
         for f in expected_schema.fields:
             if f.name in ("class",):
                 continue
@@ -367,9 +367,9 @@ def validate_ex(
                     return False
             except ValidationException as v:
                 if f.name not in datum:
-                    errors.append(ValidationException(f"missing required field {f.name!r}"))
+                    errors2.append(ValidationException(f"missing required field {f.name!r}"))
                 else:
-                    errors.append(
+                    errors2.append(
                         ValidationException(
                             f"the {f.name!r} field is not valid because",
                             sl,
@@ -387,7 +387,7 @@ def validate_ex(
                 if d is None:
                     err = ValidationException("mapping with implicit null key", sl)
                     if strict:
-                        errors.append(err)
+                        errors2.append(err)
                     else:
                         logger.warning(err.as_warning())
                     continue
@@ -424,7 +424,7 @@ def validate_ex(
                                 sl,
                             )
                             if strict_foreign_properties:
-                                errors.append(err)
+                                errors2.append(err)
                             elif len(foreign_properties) > 0:
                                 logger.warning(err.as_warning())
                     else:
@@ -436,15 +436,15 @@ def validate_ex(
                             sl,
                         )
                         if strict:
-                            errors.append(err)
+                            errors2.append(err)
                         else:
                             logger.warning(err.as_warning())
 
-        if bool(errors):
+        if bool(errors2):
             if raise_ex:
                 if classmatch:
-                    raise ClassValidationException("", None, errors, "*")
-                raise ValidationException("", None, errors, "*")
+                    raise ClassValidationException("", None, errors2, "*")
+                raise ValidationException("", None, errors2, "*")
             return False
         return True
 

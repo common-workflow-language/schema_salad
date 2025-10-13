@@ -3,7 +3,7 @@
 import sys
 from collections.abc import MutableMapping, MutableSequence
 from io import TextIOWrapper
-from typing import Any, Optional, TextIO, Union
+from typing import Any, Final, Optional, TextIO, Union
 from urllib.parse import urlsplit
 
 from . import schema
@@ -19,7 +19,7 @@ from .schema import shortname
 from .typescript_codegen import TypeScriptCodeGen
 from .utils import aslist
 
-FIELD_SORT_ORDER = ["class", "id", "name"]
+FIELD_SORT_ORDER: Final = ["class", "id", "name"]
 
 
 def codegen(

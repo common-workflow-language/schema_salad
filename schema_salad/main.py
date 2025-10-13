@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 from collections.abc import Mapping, MutableSequence
-from typing import Any, Optional, Union, cast
+from typing import Any, Final, Optional, Union, cast
 from urllib.parse import urlparse
 
 from rdflib import __version__ as rdflib_version
@@ -25,7 +25,7 @@ if int(rdflib_version.split(".", maxsplit=1)[0]) < 6:
 
 import importlib.metadata
 
-_logger = logging.getLogger("salad")
+_logger: Final = logging.getLogger("salad")
 
 
 def printrdf(
@@ -34,13 +34,13 @@ def printrdf(
     ctx: dict[str, Any],
     sr: str,
 ) -> None:
-    g = jsonld_context.makerdf(workflow, wf, ctx)
+    g: Final = jsonld_context.makerdf(workflow, wf, ctx)
     g.serialize(destination=stdout(), format=sr)
 
 
 def arg_parser() -> argparse.ArgumentParser:
     """Build the argument parser."""
-    parser = argparse.ArgumentParser()
+    parser: Final = argparse.ArgumentParser()
     parser.add_argument(
         "--rdf-serializer",
         help="Output RDF serialization format used by --print-rdf"
@@ -61,7 +61,7 @@ def arg_parser() -> argparse.ArgumentParser:
         default=False,
     )
 
-    exgroup = parser.add_mutually_exclusive_group()
+    exgroup: Final = parser.add_mutually_exclusive_group()
     exgroup.add_argument(
         "--print-jsonld-context",
         action="store_true",
@@ -166,7 +166,7 @@ def arg_parser() -> argparse.ArgumentParser:
         "--print-doc", action="store_true", help="Print HTML schema documentation page"
     )
 
-    exgroup_strict = parser.add_mutually_exclusive_group()
+    exgroup_strict: Final = parser.add_mutually_exclusive_group()
     exgroup_strict.add_argument(
         "--strict",
         action="store_true",
@@ -182,7 +182,7 @@ def arg_parser() -> argparse.ArgumentParser:
         dest="strict",
     )
 
-    exgroup_volume = parser.add_mutually_exclusive_group()
+    exgroup_volume: Final = parser.add_mutually_exclusive_group()
     exgroup_volume.add_argument("--verbose", action="store_true", help="Default logging")
     exgroup_volume.add_argument(
         "--quiet", action="store_true", help="Only print warnings and errors."
@@ -231,7 +231,7 @@ def main(argsl: Optional[list[str]] = None) -> int:
     if argsl is None:
         argsl = sys.argv[1:]
 
-    args = arg_parser().parse_args(argsl)
+    args: Final = arg_parser().parse_args(argsl)
 
     if args.version is None and args.schema is None:
         print(f"{sys.argv[0]}: error: too few arguments.")
@@ -256,7 +256,7 @@ def main(argsl: Optional[list[str]] = None) -> int:
     schema_uri = args.schema
     if not (urlparse(schema_uri)[0] and urlparse(schema_uri)[0] in ["http", "https", "file"]):
         schema_uri = file_uri(os.path.abspath(schema_uri))
-    schema_raw_doc = metaschema_loader.fetch(schema_uri)
+    schema_raw_doc: Final = metaschema_loader.fetch(schema_uri)
 
     try:
         schema_doc, schema_metadata = metaschema_loader.resolve_all(schema_raw_doc, schema_uri)
@@ -310,7 +310,7 @@ def main(argsl: Optional[list[str]] = None) -> int:
         return 1
 
     # Get the json-ld context and RDFS representation from the schema
-    metactx = schema.collect_namespaces(schema_metadata)
+    metactx: Final = schema.collect_namespaces(schema_metadata)
     if "$base" in schema_metadata:
         metactx["@base"] = schema_metadata["$base"]
     if isinstance(schema_doc, CommentedSeq):
@@ -319,8 +319,8 @@ def main(argsl: Optional[list[str]] = None) -> int:
         raise ValidationException(f"Expected a CommentedSeq, got {type(schema_doc)}: {schema_doc}.")
 
     # Create the loader that will be used to load the target document.
-    schema_version = schema_metadata.get("saladVersion", None)
-    document_loader = Loader(
+    schema_version: Final = schema_metadata.get("saladVersion", None)
+    document_loader: Final = Loader(
         schema_ctx, skip_schemas=args.skip_schemas, salad_version=schema_version
     )
 
@@ -343,9 +343,9 @@ def main(argsl: Optional[list[str]] = None) -> int:
     # Make the Avro validation that will be used to validate the target
     # document
     if isinstance(schema_doc, MutableSequence):
-        avsc_obj = schema.make_avro(schema_doc, document_loader)
+        avsc_obj: Final = schema.make_avro(schema_doc, document_loader)
         try:
-            avsc_names = schema.make_avro_schema_from_avro(avsc_obj)
+            avsc_names: Final = schema.make_avro_schema_from_avro(avsc_obj)
         except SchemaParseException as err:
             _logger.error(
                 "Schema %r error:\n%s",
@@ -367,7 +367,7 @@ def main(argsl: Optional[list[str]] = None) -> int:
 
     # Optionally print the json-ld context from the schema
     if args.print_jsonld_context:
-        j = {"@context": schema_ctx}
+        j: Final = {"@context": schema_ctx}
         json_dump(j, fp=sys.stdout, indent=4, sort_keys=True, default=str)
         return 0
 

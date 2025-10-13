@@ -9,7 +9,7 @@ import urllib
 import xml.sax  # nosec
 from collections.abc import MutableMapping, MutableSequence
 from io import StringIO
-from typing import Any, Callable, Optional, Union, cast
+from typing import Any, Callable, Final, Optional, Union, cast
 
 import requests
 from cachecontrol.caches import SeparateBodyFileCache
@@ -41,14 +41,14 @@ from .utils import (
     yaml_no_ts,
 )
 
-_logger = logging.getLogger("salad")
+_logger: Final = logging.getLogger("salad")
 
 
 def file_uri(path: str, split_frag: bool = False) -> str:
     if path.startswith("file://"):
         return path
     if split_frag:
-        pathsp = path.split("#", 2)
+        pathsp: Final = path.split("#", 2)
         if len(pathsp) == 2:
             frag = "#" + urllib.parse.quote(str(pathsp[1]))
         else:
@@ -63,7 +63,7 @@ def file_uri(path: str, split_frag: bool = False) -> str:
 
 
 def uri_file_path(url: str) -> str:
-    split = urllib.parse.urlsplit(url)
+    split: Final = urllib.parse.urlsplit(url)
     if split.scheme == "file":
         return urllib.request.url2pathname(str(split.path)) + (
             "#" + urllib.parse.unquote(str(split.fragment)) if bool(split.fragment) else ""
@@ -73,17 +73,17 @@ def uri_file_path(url: str) -> str:
 
 def to_validation_exception(e: MarkedYAMLError) -> ValidationException:
     """Convert ruamel.yaml exception to our type."""
-    fname_regex = re.compile(r"^file://" + re.escape(os.getcwd()) + "/")
+    fname_regex: Final = re.compile(r"^file://" + re.escape(os.getcwd()) + "/")
 
-    exc = ValidationException(e.problem)
-    mark = e.problem_mark
+    exc: Final = ValidationException(e.problem)
+    mark: Final = e.problem_mark
     exc.file = re.sub(fname_regex, "", mark.name)
     exc.start = (mark.line + 1, mark.column + 1)
     exc.end = None
 
     if e.context:
-        parent = ValidationException(e.context)
-        context_mark = e.context_mark
+        parent: Final = ValidationException(e.context)
+        context_mark: Final = e.context_mark
         if context_mark:
             parent.file = re.sub(fname_regex, "", context_mark.name)
             parent.start = (context_mark.line + 1, context_mark.column + 1)
@@ -98,7 +98,7 @@ class NormDict(dict[str, Union[CommentedMap, CommentedSeq, str, None]]):
 
     def __init__(self, normalize: Callable[[str], str] = str) -> None:
         super().__init__()
-        self.normalize = normalize
+        self.normalize: Final = normalize
 
     def __eq__(self, other: Any) -> bool:
         return super().__eq__(other)
@@ -156,58 +156,60 @@ class Loader:
         doc_cache: Union[str, bool] = True,
         salad_version: Optional[str] = None,
     ) -> None:
-        self.idx: IdxType = NormDict(_url_norm) if idx is None else idx
+        self.idx: Final[IdxType] = NormDict(_url_norm) if idx is None else idx
 
-        self.ctx: ContextType = {}
+        self.ctx: Final[ContextType] = {}
         self.graph = schemagraph if schemagraph is not None else Graph()
-        self.foreign_properties = (
+        self.foreign_properties: Final = (
             set(foreign_properties) if foreign_properties is not None else set()
         )
-        self.cache = cache if cache is not None else {}
-        self.skip_schemas = skip_schemas if skip_schemas is not None else False
+        self.cache: Final = cache if cache is not None else {}
+        self.skip_schemas: Final = skip_schemas if skip_schemas is not None else False
 
         if session is None:
             if doc_cache is False:
-                self.session = requests.Session()
+                temp_session = requests.Session()
             elif doc_cache is True:
-                root = pathlib.Path(os.environ.get("HOME", tempfile.gettempdir()))
-                self.session = CacheControl(
+                root: Final = pathlib.Path(os.environ.get("HOME", tempfile.gettempdir()))
+                temp_session = CacheControl(
                     requests.Session(),
                     cache=SeparateBodyFileCache(root / ".cache" / "salad"),
                 )
             elif isinstance(doc_cache, str):
-                self.session = CacheControl(
+                temp_session = CacheControl(
                     requests.Session(), cache=SeparateBodyFileCache(doc_cache)
                 )
         else:
-            self.session = session
+            temp_session = session
+        self.session = temp_session
 
-        self.fetcher_constructor = (
+        self.fetcher_constructor: Final = (
             fetcher_constructor if fetcher_constructor is not None else DefaultFetcher
         )
-        self.fetcher = self.fetcher_constructor(self.cache, self.session)
-        self.fetch_text = self.fetcher.fetch_text
-        self.check_exists = self.fetcher.check_exists
-        self.url_fields: set[str] = set() if url_fields is None else set(url_fields)
-        self.scoped_ref_fields: dict[str, int] = {}
-        self.vocab_fields: set[str] = set()
-        self.identifiers: list[str] = []
-        self.identity_links: set[str] = set()
+        self.fetcher: Final = self.fetcher_constructor(self.cache, self.session)
+        self.fetch_text: Final = self.fetcher.fetch_text
+        self.check_exists: Final = self.fetcher.check_exists
+        self.url_fields: Final[set[str]] = set() if url_fields is None else set(url_fields)
+        self.scoped_ref_fields: Final[dict[str, int]] = {}
+        self.vocab_fields: Final[set[str]] = set()
+        self.identifiers: Final[list[str]] = []
+        self.identity_links: Final[set[str]] = set()
         self.standalone: Optional[set[str]] = None
-        self.nolinkcheck: set[str] = set()
-        self.vocab: dict[str, str] = {}
-        self.rvocab: dict[str, str] = {}
-        self.idmap: dict[str, str] = {}
-        self.mapPredicate: dict[str, str] = {}
-        self.type_dsl_fields: set[str] = set()
-        self.subscopes: dict[str, str] = {}
-        self.secondaryFile_dsl_fields: set[str] = set()
-        self.allow_attachments = allow_attachments
+        self.nolinkcheck: Final[set[str]] = set()
+        self.vocab: Final[dict[str, str]] = {}
+        self.rvocab: Final[dict[str, str]] = {}
+        self.idmap: Final[dict[str, str]] = {}
+        self.mapPredicate: Final[dict[str, str]] = {}
+        self.type_dsl_fields: Final[set[str]] = set()
+        self.subscopes: Final[dict[str, str]] = {}
+        self.secondaryFile_dsl_fields: Final[set[str]] = set()
+        self.allow_attachments: Final = allow_attachments
 
         if salad_version:
-            self.salad_version = salad_version
+            temp_salad_version = salad_version
         else:
-            self.salad_version = "v1.1"
+            temp_salad_version = "v1.1"
+        self.salad_version: Final = temp_salad_version
 
         self.add_context(ctx)
 
@@ -229,7 +231,7 @@ class Loader:
             return url
 
         if bool(self.vocab) and ":" in url:
-            prefix = url.split(":")[0]
+            prefix: Final = url.split(":")[0]
             if not prefix:
                 pass
             elif prefix in self.vocab:
@@ -246,7 +248,7 @@ class Loader:
                     url,
                 )
 
-        split = urllib.parse.urlsplit(url)
+        split: Final = urllib.parse.urlsplit(url)
 
         if (
             (bool(split.scheme) and split.scheme in self.fetcher.supported_schemes())
@@ -255,9 +257,11 @@ class Loader:
         ):
             pass
         elif scoped_id and not bool(split.fragment):
-            splitbase = urllib.parse.urlsplit(base_url)
-            frg = splitbase.fragment + "/" + split.path if bool(splitbase.fragment) else split.path
-            pt = splitbase.path if splitbase.path != "" else "/"
+            splitbase: Final = urllib.parse.urlsplit(base_url)
+            frg: Final = (
+                splitbase.fragment + "/" + split.path if bool(splitbase.fragment) else split.path
+            )
+            pt: Final = splitbase.path if splitbase.path != "" else "/"
             url = urllib.parse.urlunsplit(
                 (splitbase.scheme, splitbase.netloc, pt, splitbase.query, frg)
             )
@@ -341,7 +345,7 @@ class Loader:
         if bool(self.vocab):
             raise ValidationException("Refreshing context that already has stuff in it")
 
-        self.url_fields = {"$schemas"}
+        self.url_fields.add("$schemas")
         self.scoped_ref_fields.clear()
         self.vocab_fields.clear()
         self.identifiers.clear()
@@ -643,7 +647,7 @@ class Loader:
 
         if t_.endswith("[]"):
             salad_versions = [int(v) for v in self.salad_version[1:].split(".")]
-            rest = t_[0:-2]
+            rest: Final = t_[0:-2]
             if salad_versions < [1, 3]:
                 if rest.endswith("[]"):
                     # To show the error message with the original type
@@ -679,10 +683,10 @@ class Loader:
     ) -> Union[str, CommentedMap, CommentedSeq]:
         if not isinstance(t, str):
             return t
-        pat = t[0:-1] if t.endswith("?") else t
-        req: Optional[bool] = False if t.endswith("?") else None
+        pat: Final = t[0:-1] if t.endswith("?") else t
+        req: Final[Optional[bool]] = False if t.endswith("?") else None
 
-        second = CommentedMap((("pattern", pat), ("required", req)))
+        second: Final = CommentedMap((("pattern", pat), ("required", req)))
         second.lc.add_kv_line_col("pattern", lc)
         second.lc.add_kv_line_col("required", lc)
         second.lc.filename = filename
@@ -707,7 +711,7 @@ class Loader:
         document: CommentedMap,
         loader: "Loader",
     ) -> None:
-        fields = list(loader.type_dsl_fields)
+        fields: Final = list(loader.type_dsl_fields)
         fields.extend(loader.secondaryFile_dsl_fields)
 
         for d in fields:
@@ -1003,12 +1007,12 @@ class Loader:
         if url in self.idx:
             return self.idx[url]
         try:
-            text = self.fetch_text(url, content_types=content_types)
-            textIO = StringIO(text)
+            text: Final = self.fetch_text(url, content_types=content_types)
+            textIO: Final = StringIO(text)
             textIO.name = str(url)
-            yaml = yaml_no_ts()
-            attachments = yaml.load_all(textIO)
-            result = cast(Union[CommentedSeq, CommentedMap], next(attachments))
+            yaml: Final = yaml_no_ts()
+            attachments: Final = yaml.load_all(textIO)
+            result: Final = cast(Union[CommentedSeq, CommentedMap], next(attachments))
 
             if self.allow_attachments is not None and self.allow_attachments(result):
                 i = 1
@@ -1030,13 +1034,13 @@ class Loader:
         return result
 
     def validate_scoped(self, field: str, link: str, docid: str) -> str:
-        split = urllib.parse.urlsplit(docid)
+        split: Final = urllib.parse.urlsplit(docid)
         sp = split.fragment.split("/")
         n = self.scoped_ref_fields[field]
         while n > 0 and len(sp) > 0:
             sp.pop()
             n -= 1
-        tried = []
+        tried: Final = []
         while True:
             sp.append(link)
             url = urllib.parse.urlunsplit(
@@ -1083,7 +1087,7 @@ class Loader:
                         f"Field {field!r} contains undefined reference to {link!r}"
                     )
         elif isinstance(link, CommentedSeq):
-            errors = []
+            errors: Final = []
             for n, i in enumerate(link):
                 try:
                     link[n] = self.validate_link(field, i, docid, all_doc_ids)
@@ -1118,9 +1122,9 @@ class Loader:
         all_doc_ids: dict[str, str],
         strict_foreign_properties: bool = False,
     ) -> None:
-        docid = self.getid(document) or base_url
+        docid: Final = self.getid(document) or base_url
 
-        errors: list[SchemaSaladException] = []
+        errors: Final[list[SchemaSaladException]] = []
         iterator: Any = None
         if isinstance(document, MutableSequence):
             iterator = enumerate(document)
