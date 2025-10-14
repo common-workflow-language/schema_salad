@@ -159,7 +159,7 @@ def test_error_message15(tmp_path: Path) -> None:
 .*test15\.cwl:9:5:\s+the\s+`inputBinding`\s+field\s+is\s+not\s+valid\s+because:
 \s+tried\s+`CommandLineBinding`\s+but
 .*test15\.cwl:11:7:\s+\*\s+invalid\s+field\s+`invalid_field`,\s+expected\s+one\s+of:\s+`loadContents`,\s+`position`,\s+`prefix`,\s+`separate`,\s+`itemSeparator`,\s+`valueFrom`,\s+`shellQuote`
-.*test15\.cwl:12:7:\s+\*\s+invalid\s+field\s+`another_invalid_field`,\s+expected one\s+of:\s+`loadContents`,\s+`position`,\s+`prefix`,\s+`separate`,\s+`itemSeparator`,\s+`valueFrom`,\s+`shellQuote`$"""
+.*test15\.cwl:12:7:\s+\*\s+invalid\s+field\s+`another_invalid_field`,\s+expected\s+one\s+of:\s+`loadContents`,\s+`position`,\s+`prefix`,\s+`separate`,\s+`itemSeparator`,\s+`valueFrom`,\s+`shellQuote`$"""
     path = get_path("tests/" + t)
     assert path.exists()
     with pytest.raises(ValidationException, match=match):
