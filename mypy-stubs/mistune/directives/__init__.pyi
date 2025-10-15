@@ -1,5 +1,3 @@
-from typing import List
-
 from ._base import BaseDirective as BaseDirective
 from ._base import DirectiveParser as DirectiveParser
 from ._base import DirectivePlugin as DirectivePlugin
@@ -25,4 +23,4 @@ __all__ = [
 ]
 
 class RstDirective(RSTDirective):
-    def __init__(self, plugins: List[DirectivePlugin]) -> None: ...
+    def __init__(self, plugins: list[DirectivePlugin]) -> None: ...

@@ -1,5 +1,3 @@
-from typing import Optional, Union
-
 from rdflib.graph import Graph
 
 from schema_salad.avro.schema import Names
@@ -20,7 +18,7 @@ def test_load_schema_cache() -> None:
     path1 = get_path("tests/test_schema/misc_schema_v1.yml")
 
     with path1.open() as f:
-        cache1: Optional[dict[str, Union[str, Graph, bool]]] = {schemaid: f.read()}
+        cache1: dict[str, str | Graph | bool] | None = {schemaid: f.read()}
 
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
         schemaid, cache=cache1
@@ -31,7 +29,7 @@ def test_load_schema_cache() -> None:
     path2 = get_path("tests/test_schema/misc_schema_v2.yml")
 
     with path2.open() as f:
-        cache2: Optional[dict[str, Union[str, Graph, bool]]] = {schemaid: f.read()}
+        cache2: dict[str, str | Graph | bool] | None = {schemaid: f.read()}
 
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(
         schemaid, cache=cache2

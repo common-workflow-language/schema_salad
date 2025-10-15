@@ -4,7 +4,7 @@ Checks loading of some real world tools and workflows found in the wild (e.g. do
 run individually as py.test -k tests/test_real_cwl.py
 """
 
-from typing import Any, Optional, Union
+from typing import Any
 
 import pytest
 
@@ -20,9 +20,9 @@ test_dir_name = "tests/test_real_cwl/"
 
 class TestRealWorldCWL:
     document_loader: Loader
-    avsc_names: Union[Names, SchemaParseException, None] = None
-    schema_metadata: Optional[dict[str, Any]] = None
-    metaschema_loader: Optional[Loader] = None
+    avsc_names: Names | SchemaParseException | None = None
+    schema_metadata: dict[str, Any] | None = None
+    metaschema_loader: Loader | None = None
 
     @classmethod
     def setup_class(cls) -> None:
