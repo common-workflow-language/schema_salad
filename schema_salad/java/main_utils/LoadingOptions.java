@@ -65,7 +65,7 @@ public class LoadingOptions {
     }
 
     if (!this.vocab.isEmpty() && url.contains(":")) {
-      String prefix = url.split(":", 1)[0];
+      String prefix = url.split(":")[0];
       if (this.vocab.containsKey(prefix)) {
         url = this.vocab.get(prefix) + url.substring(prefix.length() + 1);
       }
