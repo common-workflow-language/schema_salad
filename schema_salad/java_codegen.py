@@ -224,12 +224,17 @@ class JavaCodeGen(CodeGenBase):
 
 package {package};
 
+import {package}.utils.LoadingOptions;
 import {package}.utils.Saveable;
 
 /**
 {interface_doc_str}
  */
-public interface {cls} {ext} {{""".format(
+public interface {cls} {ext} {{
+
+  java.util.Map<String, Object> getExtensionFields();
+  LoadingOptions getLoadingOptions();
+""".format(
                     package=self.package,
                     cls=cls,
                     ext=ext,
@@ -283,6 +288,9 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
   private LoadingOptions loadingOptions_ = new LoadingOptionsBuilder().build();
   private java.util.Map<String, Object> extensionFields_ =
       new java.util.HashMap<String, Object>();
+  public LoadingOptions getLoadingOptions() {{
+    return this.loadingOptions_;
+  }}
   public java.util.Map<String, Object> getExtensionFields() {{
     return this.extensionFields_;
   }}
@@ -356,7 +364,17 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                     safename=self.safe_name(fieldname), type=fieldtype.instance_type
                 )
             )
-
+        self.current_loader.write(
+            """    for (String field:__doc.keySet()) {
+      if (!attrs.contains(field)) {
+        if (field.contains(":")) {
+          String expanded_field = __loadingOptions.expandUrl(field, "", false, false, null);
+          extensionFields_.put(expanded_field, __doc.get(field));
+        }
+      }
+    }
+"""
+        )
         self.current_loader.write("""  }""")
         target = self.main_src_dir / f"{self.current_class}Impl.java"
         with open(
@@ -366,8 +384,9 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
             f.write(self.current_fields.getvalue())
             f.write(self.current_loader.getvalue())
             f.write(
-                """
-}
+                f"""
+  private java.util.List<String> attrs = java.util.Arrays.asList("{'", "'.join(field_names)}");
+}}
 """
             )
 
