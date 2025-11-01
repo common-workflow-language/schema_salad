@@ -2,63 +2,27 @@
 
 from collections import OrderedDict
 from collections.abc import MutableSequence
-from typing import Any, Final, Optional, Union
+from typing import Any, NamedTuple
 
 
-class TypeDef:  # pylint: disable=too-few-public-methods
+class TypeDef(NamedTuple):
     """Schema Salad type description."""
 
-    __slots__: Final = [
-        "name",
-        "init",
-        "is_uri",
-        "scoped_id",
-        "ref_scope",
-        "loader_type",
-        "instance_type",
-        "abstract",
-    ]
-
-    # switch to class-style typing.NamedTuple once support for Python < 3.6
-    # is dropped
-    def __init__(
-        self,  # pylint: disable=too-many-arguments
-        name: str,
-        init: str,
-        is_uri: bool = False,
-        scoped_id: bool = False,
-        ref_scope: Optional[int] = 0,
-        loader_type: Optional[str] = None,
-        instance_type: Optional[str] = None,
-        abstract: bool = False,
-    ) -> None:
-        self.name: Final = name
-        self.init: Final = init
-        self.is_uri: Final = is_uri
-        self.scoped_id: Final = scoped_id
-        self.ref_scope: Final = ref_scope
-        self.abstract: Final = abstract
-        # Follow attributes used by Java but not Python.
-        self.loader_type: Final = loader_type
-        self.instance_type: Final = instance_type
+    name: str
+    init: str
+    is_uri: bool = False
+    scoped_id: bool = False
+    ref_scope: int | None = 0
+    loader_type: str | None = None
+    instance_type: str | None = None
+    abstract: bool = False
 
 
-class LazyInitDef:
+class LazyInitDef(NamedTuple):
     """Lazy initialization logic."""
 
-    __slots__: Final = (
-        "name",
-        "init",
-    )
-
-    def __init__(
-        self,
-        name: str,
-        init: str,
-    ) -> None:
-        """Create a LazyInitDef object."""
-        self.name: Final = name
-        self.init: Final = init
+    name: str
+    init: str
 
 
 class CodeGenBase:
@@ -111,9 +75,9 @@ class CodeGenBase:
 
     def type_loader(
         self,
-        type_declaration: Union[list[Any], dict[str, Any]],
-        container: Optional[str] = None,
-        no_link_check: Optional[bool] = None,
+        type_declaration: list[Any] | dict[str, Any],
+        container: str | None = None,
+        no_link_check: bool | None = None,
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         raise NotImplementedError()
@@ -122,9 +86,9 @@ class CodeGenBase:
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: Optional[str],
+        doc: str | None,
         optional: bool,
-        subscope: Optional[str],
+        subscope: str | None,
     ) -> None:
         """Output the code to load the given field."""
         raise NotImplementedError()
@@ -133,7 +97,7 @@ class CodeGenBase:
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: Optional[str],
+        doc: str | None,
         optional: bool,
     ) -> None:
         """Output the code to handle the given ID field."""
@@ -144,19 +108,19 @@ class CodeGenBase:
         inner: TypeDef,
         scoped_id: bool,
         vocab_term: bool,
-        ref_scope: Optional[int],
-        no_link_check: Optional[bool] = None,
+        ref_scope: int | None,
+        no_link_check: bool | None = None,
     ) -> TypeDef:
         """Construct the TypeDef for the given URI loader."""
         raise NotImplementedError()
 
     def idmap_loader(
-        self, field: str, inner: TypeDef, map_subject: str, map_predicate: Optional[str]
+        self, field: str, inner: TypeDef, map_subject: str, map_predicate: str | None
     ) -> TypeDef:
         """Construct the TypeDef for the given mapped ID loader."""
         raise NotImplementedError()
 
-    def typedsl_loader(self, inner: TypeDef, ref_scope: Optional[int]) -> TypeDef:
+    def typedsl_loader(self, inner: TypeDef, ref_scope: int | None) -> TypeDef:
         """Construct the TypeDef for the given DSL loader."""
         raise NotImplementedError()
 

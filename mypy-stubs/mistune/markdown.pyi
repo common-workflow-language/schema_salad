@@ -1,4 +1,5 @@
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from collections.abc import Iterable
+from typing import Any
 
 from _typeshed import Incomplete
 
@@ -17,17 +18,17 @@ class Markdown:
     after_render_hooks: Incomplete
     def __init__(
         self,
-        renderer: Optional[BaseRenderer] = None,
-        block: Optional[BlockParser] = None,
-        inline: Optional[InlineParser] = None,
-        plugins: Optional[Iterable[Plugin]] = None,
+        renderer: BaseRenderer | None = None,
+        block: BlockParser | None = None,
+        inline: InlineParser | None = None,
+        plugins: Iterable[Plugin] | None = None,
     ) -> None: ...
     def use(self, plugin: Plugin) -> None: ...
-    def render_state(self, state: BlockState) -> Union[str, List[Dict[str, Any]]]: ...
+    def render_state(self, state: BlockState) -> str | list[dict[str, Any]]: ...
     def parse(
-        self, s: str, state: Optional[BlockState] = None
-    ) -> Tuple[Union[str, List[Dict[str, Any]]], BlockState]: ...
+        self, s: str, state: BlockState | None = None
+    ) -> tuple[str | list[dict[str, Any]], BlockState]: ...
     def read(
-        self, filepath: str, encoding: str = "utf-8", state: Optional[BlockState] = None
-    ) -> Tuple[Union[str, List[Dict[str, Any]]], BlockState]: ...
-    def __call__(self, s: str) -> Union[str, List[Dict[str, Any]]]: ...
+        self, filepath: str, encoding: str = "utf-8", state: BlockState | None = None
+    ) -> tuple[str | list[dict[str, Any]], BlockState]: ...
+    def __call__(self, s: str) -> str | list[dict[str, Any]]: ...
