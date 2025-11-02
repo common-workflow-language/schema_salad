@@ -1,5 +1,4 @@
-from re import Match
-from typing import Any
+from typing import Any, Dict, Match
 
 from _typeshed import Incomplete
 
@@ -11,7 +10,7 @@ from ._base import DirectivePlugin as DirectivePlugin
 
 class Admonition(DirectivePlugin):
     SUPPORTED_NAMES: Incomplete
-    def parse(self, block: BlockParser, m: Match[str], state: BlockState) -> dict[str, Any]: ...
+    def parse(self, block: BlockParser, m: Match[str], state: BlockState) -> Dict[str, Any]: ...
     def __call__(self, directive: BaseDirective, md: Markdown) -> None: ...
 
 def render_admonition(self, text: str, name: str, **attrs: Any) -> str: ...

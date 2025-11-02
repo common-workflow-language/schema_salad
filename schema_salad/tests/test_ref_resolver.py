@@ -5,7 +5,7 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, Union
 
 import pytest
 from _pytest.fixtures import FixtureRequest
@@ -218,7 +218,7 @@ def test_attachments() -> None:
         content = f1.read()
         assert {"foo": "bar", "baz": content, "quux": content} == r1
 
-    def aa1(item: CommentedMap | CommentedSeq) -> bool:
+    def aa1(item: Union[CommentedMap, CommentedSeq]) -> bool:
         return bool(item["foo"] == "bar")
 
     l2 = Loader({}, allow_attachments=aa1)
@@ -229,7 +229,7 @@ def test_attachments() -> None:
         "quux": "This is the [second attachment].",
     } == r2
 
-    def aa2(item: CommentedMap | CommentedSeq) -> bool:
+    def aa2(item: Union[CommentedMap, CommentedSeq]) -> bool:
         return bool(item["foo"] == "baz")
 
     l3 = Loader({}, allow_attachments=aa2)

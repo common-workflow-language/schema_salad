@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 from collections.abc import Mapping, MutableSequence
-from typing import Any, Final, cast
+from typing import Any, Final, Optional, Union, cast
 from urllib.parse import urlparse
 
 from rdflib import __version__ as rdflib_version
@@ -30,7 +30,7 @@ _logger: Final = logging.getLogger("salad")
 
 def printrdf(
     workflow: str,
-    wf: CommentedMap | CommentedSeq,
+    wf: Union[CommentedMap, CommentedSeq],
     ctx: dict[str, Any],
     sr: str,
 ) -> None:
@@ -226,7 +226,7 @@ def arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argsl: list[str] | None = None) -> int:
+def main(argsl: Optional[list[str]] = None) -> int:
     """Run the schema-salad-tool."""
     if argsl is None:
         argsl = sys.argv[1:]

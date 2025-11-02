@@ -1,7 +1,7 @@
 import inspect
 import os
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Optional, cast
 
 from rdflib import Graph
 from rdflib.compare import to_isomorphic
@@ -58,8 +58,8 @@ def test_meta_schema_gen_no_base(tmp_path: Path) -> None:
 def python_codegen(
     file_uri: str,
     target: Path,
-    parser_info: str | None = None,
-    package: str | None = None,
+    parser_info: Optional[str] = None,
+    package: Optional[str] = None,
 ) -> None:
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(file_uri)
     assert isinstance(avsc_names, Names)

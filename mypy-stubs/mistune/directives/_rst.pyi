@@ -1,4 +1,4 @@
-from re import Match
+from typing import Match, Optional
 
 from ..block_parser import BlockParser
 from ..core import BlockState
@@ -21,5 +21,5 @@ class RSTDirective(BaseDirective):
     directive_pattern: str
     def parse_directive(
         self, block: BlockParser, m: Match[str], state: BlockState
-    ) -> int | None: ...
+    ) -> Optional[int]: ...
     def __call__(self, markdown: Markdown) -> None: ...

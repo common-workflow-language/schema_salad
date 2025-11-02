@@ -3,7 +3,7 @@
 import sys
 from collections.abc import MutableMapping, MutableSequence
 from io import TextIOWrapper
-from typing import Any, Final, TextIO
+from typing import Any, Final, Optional, TextIO, Union
 from urllib.parse import urlsplit
 
 from . import schema
@@ -27,18 +27,18 @@ def codegen(
     i: list[dict[str, str]],
     schema_metadata: dict[str, Any],
     loader: Loader,
-    target: str | None = None,
-    examples: str | None = None,
-    package: str | None = None,
-    copyright: str | None = None,
-    spdx_copyright_text: list[str] | None = None,
-    spdx_license_identifier: str | None = None,
-    parser_info: str | None = None,
+    target: Optional[str] = None,
+    examples: Optional[str] = None,
+    package: Optional[str] = None,
+    copyright: Optional[str] = None,
+    spdx_copyright_text: Optional[list[str]] = None,
+    spdx_license_identifier: Optional[str] = None,
+    parser_info: Optional[str] = None,
 ) -> None:
     """Generate classes with loaders for the given Schema Salad description."""
     j = schema.extend_and_specialize(i, loader)
 
-    gen: CodeGenBase | None = None
+    gen: Optional[CodeGenBase] = None
     base = schema_metadata.get("$base", schema_metadata.get("id"))
     # ``urlsplit`` decides whether to return an encoded result based
     # on the object type. To ensure the code behaves the same for Py
@@ -56,7 +56,7 @@ def codegen(
 
     if lang in {"python", "cpp", "dlang"}:
         if target:
-            dest: TextIOWrapper | TextIO = open(target, mode="w", encoding="utf-8")
+            dest: Union[TextIOWrapper, TextIO] = open(target, mode="w", encoding="utf-8")
         else:
             dest = sys.stdout
         if lang == "cpp":

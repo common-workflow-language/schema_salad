@@ -1,8 +1,8 @@
-from typing import TypeAlias
+from typing import Dict, Union
 
 from rdflib.graph import ConjunctiveGraph, Graph
 
-Stats: TypeAlias = dict[str, int | str]
+Stats = Dict[str, Union[int, str]]
 
 class IsomorphicGraph(ConjunctiveGraph):
     pass

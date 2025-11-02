@@ -1,5 +1,4 @@
-from re import Match
-from typing import Any
+from typing import Any, Dict, List, Match, Union
 
 from ..block_parser import BlockParser as BlockParser
 from ..core import BaseRenderer as BaseRenderer
@@ -11,7 +10,7 @@ from ._base import DirectivePlugin as DirectivePlugin
 class Include(DirectivePlugin):
     def parse(
         self, block: BlockParser, m: Match[str], state: BlockState
-    ) -> dict[str, Any] | list[dict[str, Any]]: ...
+    ) -> Union[Dict[str, Any], List[Dict[str, Any]]]: ...
     def __call__(self, directive: BaseDirective, md: Markdown) -> None: ...
 
 def render_html_include(renderer: BaseRenderer, text: str, **attrs: Any) -> str: ...

@@ -1,5 +1,6 @@
-from collections.abc import Iterable
-from typing import Any, Literal, TypeAlias
+from typing import Any, Dict, Iterable, List, Optional, Union
+
+from typing_extensions import Literal
 
 from .block_parser import BlockParser as BlockParser
 from .core import BaseRenderer as BaseRenderer
@@ -31,13 +32,13 @@ __all__ = [
     "markdown",
 ]
 
-RendererRef: TypeAlias = Literal["html", "ast"] | BaseRenderer
+RendererRef = Union[Literal["html", "ast"], BaseRenderer]
 
 def create_markdown(
     escape: bool = True,
     hard_wrap: bool = False,
-    renderer: RendererRef | None = "html",
-    plugins: Iterable[PluginRef] | None = None,
+    renderer: Optional[RendererRef] = "html",
+    plugins: Optional[Iterable[PluginRef]] = None,
 ) -> Markdown: ...
 
 html: Markdown
@@ -45,6 +46,6 @@ html: Markdown
 def markdown(
     text: str,
     escape: bool = True,
-    renderer: RendererRef | None = "html",
-    plugins: Iterable[Any] | None = None,
-) -> str | list[dict[str, Any]]: ...
+    renderer: Optional[RendererRef] = "html",
+    plugins: Optional[Iterable[Any]] = None,
+) -> Union[str, List[Dict[str, Any]]]: ...

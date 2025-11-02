@@ -1,9 +1,9 @@
 import json
 import os
 import sys
-from collections.abc import Callable, Iterable, Mapping, MutableSequence
+from collections.abc import Iterable, Mapping, MutableSequence
 from io import BufferedWriter
-from typing import IO, TYPE_CHECKING, Any, Final, Optional, TypeAlias, TypeVar, Union
+from typing import IO, TYPE_CHECKING, Any, Callable, Final, Optional, TypeVar, Union
 
 import requests
 from rdflib.graph import Graph
@@ -21,18 +21,18 @@ else:
 
 __all__: Final = ["Traversable"]
 
-ContextType: TypeAlias = dict[str, Union[dict[str, Any], str, Iterable[str]]]
+ContextType = dict[str, Union[dict[str, Any], str, Iterable[str]]]
 DocumentType = TypeVar("DocumentType", CommentedSeq, CommentedMap)
 DocumentOrStrType = TypeVar("DocumentOrStrType", CommentedSeq, CommentedMap, str)
 FieldType = TypeVar("FieldType", str, CommentedSeq, CommentedMap)
-MandatoryResolveType: TypeAlias = Union[int, float, str, CommentedMap, CommentedSeq]
-ResolveType: TypeAlias = Optional[MandatoryResolveType]
-ResolvedRefType: TypeAlias = tuple[ResolveType, CommentedMap]
-IdxResultType: TypeAlias = Union[CommentedMap, CommentedSeq, str, None]
-IdxType: TypeAlias = dict[str, IdxResultType]
-CacheType: TypeAlias = dict[str, Union[str, Graph, bool]]
-FetcherCallableType: TypeAlias = Callable[[CacheType, requests.sessions.Session], "Fetcher"]
-AttachmentsType: TypeAlias = Callable[[Union[CommentedMap, CommentedSeq]], bool]
+MandatoryResolveType = Union[int, float, str, CommentedMap, CommentedSeq]
+ResolveType = Optional[MandatoryResolveType]
+ResolvedRefType = tuple[ResolveType, CommentedMap]
+IdxResultType = Union[CommentedMap, CommentedSeq, str, None]
+IdxType = dict[str, IdxResultType]
+CacheType = dict[str, Union[str, Graph, bool]]
+FetcherCallableType = Callable[[CacheType, requests.sessions.Session], "Fetcher"]
+AttachmentsType = Callable[[Union[CommentedMap, CommentedSeq]], bool]
 
 
 def add_dictlist(di: dict[Any, Any], key: Any, val: Any) -> None:

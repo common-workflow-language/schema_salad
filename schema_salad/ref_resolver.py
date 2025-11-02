@@ -7,9 +7,9 @@ import tempfile
 import traceback
 import urllib
 import xml.sax  # nosec
-from collections.abc import Callable, MutableMapping, MutableSequence
+from collections.abc import MutableMapping, MutableSequence
 from io import StringIO
-from typing import Any, Final, Optional, cast
+from typing import Any, Callable, Final, Optional, Union, cast
 
 import requests
 from cachecontrol.caches import SeparateBodyFileCache
@@ -93,7 +93,7 @@ def to_validation_exception(e: MarkedYAMLError) -> ValidationException:
     return exc
 
 
-class NormDict(dict[str, CommentedMap | CommentedSeq | str | None]):
+class NormDict(dict[str, Union[CommentedMap, CommentedSeq, str, None]]):
     """A Dict where all keys are normalized using the provided function."""
 
     def __init__(self, normalize: Callable[[str], str] = str) -> None:
@@ -144,17 +144,17 @@ class Loader:
     def __init__(
         self,
         ctx: ContextType,
-        schemagraph: Graph | None = None,
-        foreign_properties: set[str] | None = None,
-        idx: IdxType | None = None,
-        cache: CacheType | None = None,
-        session: requests.sessions.Session | None = None,
-        fetcher_constructor: FetcherCallableType | None = None,
-        skip_schemas: bool | None = None,
-        url_fields: set[str] | None = None,
-        allow_attachments: AttachmentsType | None = None,
-        doc_cache: str | bool = True,
-        salad_version: str | None = None,
+        schemagraph: Optional[Graph] = None,
+        foreign_properties: Optional[set[str]] = None,
+        idx: Optional[IdxType] = None,
+        cache: Optional[CacheType] = None,
+        session: Optional[requests.sessions.Session] = None,
+        fetcher_constructor: Optional[FetcherCallableType] = None,
+        skip_schemas: Optional[bool] = None,
+        url_fields: Optional[set[str]] = None,
+        allow_attachments: Optional[AttachmentsType] = None,
+        doc_cache: Union[str, bool] = True,
+        salad_version: Optional[str] = None,
     ) -> None:
         self.idx: Final[IdxType] = NormDict(_url_norm) if idx is None else idx
 
@@ -194,7 +194,7 @@ class Loader:
         self.vocab_fields: Final[set[str]] = set()
         self.identifiers: Final[list[str]] = []
         self.identity_links: Final[set[str]] = set()
-        self.standalone: set[str] | None = None
+        self.standalone: Optional[set[str]] = None
         self.nolinkcheck: Final[set[str]] = set()
         self.vocab: Final[dict[str, str]] = {}
         self.rvocab: Final[dict[str, str]] = {}
@@ -219,7 +219,7 @@ class Loader:
         base_url: str,
         scoped_id: bool = False,
         vocab_term: bool = False,
-        scoped_ref: int | None = None,
+        scoped_ref: Optional[int] = None,
     ) -> str:
         if url in ("@id", "@type"):
             return url
@@ -288,7 +288,7 @@ class Loader:
         """Add the given namespace to our vocab list."""
         self.vocab.update(ns)
 
-    def add_schemas(self, ns: list[str] | str, base_url: str) -> None:
+    def add_schemas(self, ns: Union[list[str], str], base_url: str) -> None:
         """Fetch external schemas and add them to the graph."""
         if self.skip_schemas:
             return
@@ -419,17 +419,17 @@ class Loader:
     def resolve_ref(
         self,
         ref: ResolveType,
-        base_url: str | None = None,
+        base_url: Optional[str] = None,
         checklinks: bool = True,
         strict_foreign_properties: bool = False,
-        content_types: list[str] | None = None,  # Expected content-types
+        content_types: Optional[list[str]] = None,  # Expected content-types
     ) -> ResolvedRefType:
         lref = ref
-        obj: CommentedMap | None = None
+        obj: Optional[CommentedMap] = None
         resolved_obj: ResolveType = None
         imp = False
         inc = False
-        mixin: MutableMapping[str, str] | None = None
+        mixin: Optional[MutableMapping[str, str]] = None
 
         if not base_url:
             base_url = file_uri(os.getcwd()) + "/"
@@ -487,7 +487,7 @@ class Loader:
         if url in self.idx and (not mixin):
             resolved_obj = self.idx[url]
             if isinstance(resolved_obj, MutableMapping):
-                metadata: CommentedMap | CommentedSeq | str | None = self.idx.get(
+                metadata: Union[CommentedMap, CommentedSeq, str, None] = self.idx.get(
                     urllib.parse.urldefrag(url)[0], CommentedMap()
                 )
                 if isinstance(metadata, MutableMapping):
@@ -599,7 +599,7 @@ class Loader:
                     ls = CommentedSeq()
                     for k in sorted(idmapFieldValue.keys()):
                         val = idmapFieldValue[k]
-                        v: CommentedMap | None = None
+                        v: Optional[CommentedMap] = None
                         if not isinstance(val, CommentedMap):
                             if idmapField in loader.mapPredicate:
                                 v = CommentedMap(((loader.mapPredicate[idmapField], val),))
@@ -632,10 +632,10 @@ class Loader:
 
     def _type_dsl(
         self,
-        t: str | CommentedMap | CommentedSeq,
+        t: Union[str, CommentedMap, CommentedSeq],
         lc: LineCol,
         filename: str,
-    ) -> str | CommentedMap | CommentedSeq:
+    ) -> Union[str, CommentedMap, CommentedSeq]:
         if not isinstance(t, str):
             return t
 
@@ -660,7 +660,7 @@ class Loader:
             cmap.lc.add_kv_line_col("type", lc)
             cmap.lc.add_kv_line_col("items", lc)
             cmap.lc.filename = filename
-            expanded: str | CommentedMap | CommentedSeq = cmap
+            expanded: Union[str, CommentedMap, CommentedSeq] = cmap
         else:
             expanded = t_
 
@@ -669,7 +669,7 @@ class Loader:
             cs.lc.add_kv_line_col(0, lc)
             cs.lc.add_kv_line_col(1, lc)
             cs.lc.filename = filename
-            ret: str | CommentedMap | CommentedSeq = cs
+            ret: Union[str, CommentedMap, CommentedSeq] = cs
         else:
             ret = expanded
 
@@ -677,14 +677,14 @@ class Loader:
 
     def _secondaryFile_dsl(
         self,
-        t: str | CommentedMap | CommentedSeq,
+        t: Union[str, CommentedMap, CommentedSeq],
         lc: LineCol,
         filename: str,
-    ) -> str | CommentedMap | CommentedSeq:
+    ) -> Union[str, CommentedMap, CommentedSeq]:
         if not isinstance(t, str):
             return t
         pat: Final = t[0:-1] if t.endswith("?") else t
-        req: Final[bool | None] = False if t.endswith("?") else None
+        req: Final[Optional[bool]] = False if t.endswith("?") else None
 
         second: Final = CommentedMap((("pattern", pat), ("required", req)))
         second.lc.add_kv_line_col("pattern", lc)
@@ -694,12 +694,12 @@ class Loader:
 
     def _apply_dsl(
         self,
-        datum: str | CommentedMap | CommentedSeq,
+        datum: Union[str, CommentedMap, CommentedSeq],
         d: str,
         loader: "Loader",
         lc: LineCol,
         filename: str,
-    ) -> str | CommentedMap | CommentedSeq:
+    ) -> Union[str, CommentedMap, CommentedSeq]:
         if d in loader.type_dsl_fields:
             return self._type_dsl(datum, lc, filename)
         if d in loader.secondaryFile_dsl_fields:
@@ -778,7 +778,7 @@ class Loader:
 
     def _resolve_identity(
         self,
-        document: dict[str, str | MutableSequence[str | CommentedMap]],
+        document: dict[str, Union[str, MutableSequence[Union[str, CommentedMap]]]],
         loader: "Loader",
         base_url: str,
     ) -> None:
@@ -806,7 +806,7 @@ class Loader:
 
     def _resolve_uris(
         self,
-        document: dict[str, str | MutableSequence[str | CommentedMap]],
+        document: dict[str, Union[str, MutableSequence[Union[str, CommentedMap]]]],
         loader: "Loader",
         base_url: str,
     ) -> None:
@@ -837,7 +837,7 @@ class Loader:
         self,
         document: ResolveType,
         base_url: str,
-        file_base: str | None = None,
+        file_base: Optional[str] = None,
         checklinks: bool = True,
         strict_foreign_properties: bool = False,
     ) -> ResolvedRefType:
@@ -1002,7 +1002,7 @@ class Loader:
         self,
         url: str,
         inject_ids: bool = True,
-        content_types: list[str] | None = None,
+        content_types: Optional[list[str]] = None,
     ) -> IdxResultType:
         if url in self.idx:
             return self.idx[url]
@@ -1012,7 +1012,7 @@ class Loader:
             textIO.name = str(url)
             yaml: Final = yaml_no_ts()
             attachments: Final = yaml.load_all(textIO)
-            result: Final = cast(CommentedSeq | CommentedMap, next(attachments))
+            result: Final = cast(Union[CommentedSeq, CommentedMap], next(attachments))
 
             if self.allow_attachments is not None and self.allow_attachments(result):
                 i = 1
@@ -1062,12 +1062,12 @@ class Loader:
     def validate_link(
         self,
         field: str,
-        link: str | CommentedSeq | CommentedMap,
+        link: Union[str, CommentedSeq, CommentedMap],
         # link also can be None, but that results in
         # mypyc "error: Local variable "link" has inferred type None; add an annotation"
         docid: str,
         all_doc_ids: dict[str, str],
-    ) -> str | CommentedSeq | CommentedMap:
+    ) -> Union[str, CommentedSeq, CommentedMap]:
         if field in self.nolinkcheck:
             return link
         if isinstance(link, str):
@@ -1105,7 +1105,7 @@ class Loader:
             )
         return link
 
-    def getid(self, d: Any) -> str | None:
+    def getid(self, d: Any) -> Optional[str]:
         """Use our identifiers to extract the first match from the document."""
         if isinstance(d, MutableMapping):
             for i in self.identifiers:
@@ -1201,7 +1201,7 @@ class Loader:
 
 
 def _copy_dict_without_key(
-    from_dict: CommentedMap | ContextType, filtered_key: str
+    from_dict: Union[CommentedMap, ContextType], filtered_key: str
 ) -> CommentedMap:
     new_dict = CommentedMap(from_dict.items())
     if filtered_key in new_dict:

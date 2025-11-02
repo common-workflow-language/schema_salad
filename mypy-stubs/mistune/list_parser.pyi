@@ -1,4 +1,4 @@
-from re import Match
+from typing import Match
 
 from .block_parser import BlockParser as BlockParser
 from .core import BlockState as BlockState

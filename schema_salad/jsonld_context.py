@@ -1,7 +1,7 @@
 import logging
 import unicodedata
 from collections.abc import Iterable, MutableMapping, MutableSequence
-from typing import Any, Final, cast
+from typing import Any, Final, Optional, Union, cast
 from urllib.parse import urldefrag, urlsplit
 
 import rdflib
@@ -17,16 +17,16 @@ _logger = logging.getLogger("salad")
 
 
 def pred(
-    datatype: MutableMapping[str, dict[str, str] | str],
-    field: dict[str, Any] | None,
+    datatype: MutableMapping[str, Union[dict[str, str], str]],
+    field: Optional[dict[str, Any]],
     name: str,
     context: ContextType,
     defaultBase: str,
     namespaces: dict[str, rdflib.namespace.Namespace],
-) -> dict[str, str | None] | str:
+) -> Union[dict[str, Optional[str]], str]:
     split: Final = urlsplit(name)
 
-    vee: str | None = None
+    vee: Optional[str] = None
 
     if split.scheme != "":
         vee = name
@@ -36,7 +36,7 @@ def pred(
             vee = str(namespaces[ns[0:-1]][ln])
         _logger.debug("name, v %s %s", name, vee)
 
-    v: dict[str, str | None] | str | None = None
+    v: Optional[Union[dict[str, Optional[str]], str]] = None
 
     if field is not None and "jsonldPredicate" in field:
         if isinstance(field["jsonldPredicate"], MutableMapping):
@@ -122,7 +122,7 @@ def process_type(
 
             _logger.debug("Processing field %s", i)
 
-            v: dict[Any, Any] | str | None = pred(
+            v: Union[dict[Any, Any], str, None] = pred(
                 t, i, fieldname, context, defaultPrefix, namespaces
             )
 
@@ -203,7 +203,7 @@ def salad_to_jsonld_context(
     return (context, g)
 
 
-def fix_jsonld_ids(obj: CommentedMap | float | str | CommentedSeq, ids: list[str]) -> None:
+def fix_jsonld_ids(obj: Union[CommentedMap, float, str, CommentedSeq], ids: list[str]) -> None:
     """Add missing identity entries."""
     if isinstance(obj, MutableMapping):
         for i in ids:
@@ -217,10 +217,10 @@ def fix_jsonld_ids(obj: CommentedMap | float | str | CommentedSeq, ids: list[str
 
 
 def makerdf(
-    workflow: str | None,
-    wf: CommentedMap | float | str | CommentedSeq,
+    workflow: Optional[str],
+    wf: Union[CommentedMap, float, str, CommentedSeq],
     ctx: ContextType,
-    graph: Graph | None = None,
+    graph: Optional[Graph] = None,
 ) -> Graph:
     prefixes: Final = {}
     idfields: Final = []

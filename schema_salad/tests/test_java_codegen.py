@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Optional, cast
 
 from schema_salad import codegen
 from schema_salad.schema import load_schema
@@ -36,7 +36,7 @@ def test_meta_schema_gen(tmp_path: Path) -> None:
     assert src_dir.exists()
 
 
-def java_codegen(file_uri: str, target: Path, examples: Path | None = None) -> None:
+def java_codegen(file_uri: str, target: Path, examples: Optional[Path] = None) -> None:
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(file_uri)
     schema_raw_doc = metaschema_loader.fetch(file_uri)
     schema_doc, schema_metadata = metaschema_loader.resolve_all(schema_raw_doc, file_uri)
