@@ -612,72 +612,106 @@ class CppCodeGen(CodeGenBase):
         if not isinstance(type_declaration, list):
             return self.convertTypeToCpp([type_declaration])
 
-        if len(type_declaration) > 1:
-            type_declaration = list(map(self.convertTypeToCpp, type_declaration))
-            type_declaration = ", ".join(type_declaration)
-            return f"std::variant<{type_declaration}>"
-
-        match type_declaration[0]:
-            case "null" | "https://w3id.org/cwl/salad#null":
+        if len(type_declaration) == 1:
+            if type_declaration[0] in ("null", "https://w3id.org/cwl/salad#null"):
                 return "std::monostate"
-            case "string" | "http://www.w3.org/2001/XMLSchema#string":
+            elif type_declaration[0] in (
+                "string",
+                "http://www.w3.org/2001/XMLSchema#string",
+            ):
                 return "std::string"
-            case "int" | "http://www.w3.org/2001/XMLSchema#int":
+            elif type_declaration[0] in ("int", "http://www.w3.org/2001/XMLSchema#int"):
                 return "int32_t"
-            case "long" | "http://www.w3.org/2001/XMLSchema#long":
+            elif type_declaration[0] in (
+                "long",
+                "http://www.w3.org/2001/XMLSchema#long",
+            ):
                 return "int64_t"
-            case "float" | "http://www.w3.org/2001/XMLSchema#float":
+            elif type_declaration[0] in (
+                "float",
+                "http://www.w3.org/2001/XMLSchema#float",
+            ):
                 return "float"
-            case "double" | "http://www.w3.org/2001/XMLSchema#double":
+            elif type_declaration[0] in (
+                "double",
+                "http://www.w3.org/2001/XMLSchema#double",
+            ):
                 return "double"
-            case "boolean" | "http://www.w3.org/2001/XMLSchema#boolean":
+            elif type_declaration[0] in (
+                "boolean",
+                "http://www.w3.org/2001/XMLSchema#boolean",
+            ):
                 return "bool"
-            case "https://w3id.org/cwl/salad#Any":
+            elif type_declaration[0] == "https://w3id.org/cwl/salad#Any":
                 return "std::any"
-            case "https://w3id.org/cwl/cwl#Expression":
+            elif type_declaration[0] == "https://w3id.org/cwl/cwl#Expression":
                 return "cwl_expression_string"
-            case "PrimitiveType" | "https://w3id.org/cwl/salad#PrimitiveType":
+            elif type_declaration[0] in (
+                "PrimitiveType",
+                "https://w3id.org/cwl/salad#PrimitiveType",
+            ):
                 return "std::variant<bool, int32_t, int64_t, float, double, std::string>"
-            case {"type": "enum" | "https://w3id.org/cwl/salad#enum"}:
-                name = type_declaration[0]["name"]
-                if name not in self.enumDefinitions:
-                    self.enumDefinitions[name] = EnumDefinition(
-                        type_declaration[0]["name"],
-                        list(map(shortname, type_declaration[0]["symbols"])),
-                    )
-                if len(name.split("#")) != 2:
-                    return safename(name)
-                (namespace, classname) = name.split("#")
-                return safenamespacename(namespace) + "::" + safename(classname)
-            case {"type": "array" | "https://w3id.org/cwl/salad#array", "items": list(items)}:
-                ts = [self.convertTypeToCpp(i) for i in items]
-                name = ", ".join(ts)
-                return f"std::vector<std::variant<{name}>>"
-            case {"type": "array" | "https://w3id.org/cwl/salad#array", "items": items}:
-                i = self.convertTypeToCpp(items)
-                return f"std::vector<{i}>"
-            case {"type": "map" | "https://w3id.org/cwl/salad#map", "values": list(values)}:
-                ts = [self.convertTypeToCpp(i) for i in values]
-                name = ", ".join(ts)
-                return f"std::map<std::string, std::variant<{name}>>"
-            case {"type": "map" | "https://w3id.org/cwl/salad#map", "values": values}:
-                i = self.convertTypeToCpp(values)
-                return f"std::map<std::string, {i}>"
-            case {"type": "record" | "https://w3id.org/cwl/salad#record"}:
-                n = type_declaration[0]["name"]
-                (namespace, classname) = split_name(n)
-                return safenamespacename(namespace) + "::" + safename(classname)
-            case dict():
+            elif isinstance(type_declaration[0], dict):
+                if "type" in type_declaration[0] and type_declaration[0]["type"] in (
+                    "enum",
+                    "https://w3id.org/cwl/salad#enum",
+                ):
+                    name = type_declaration[0]["name"]
+                    if name not in self.enumDefinitions:
+                        self.enumDefinitions[name] = EnumDefinition(
+                            type_declaration[0]["name"],
+                            list(map(shortname, type_declaration[0]["symbols"])),
+                        )
+                    if len(name.split("#")) != 2:
+                        return safename(name)
+                    (namespace, classname) = name.split("#")
+                    return safenamespacename(namespace) + "::" + safename(classname)
+                elif "type" in type_declaration[0] and type_declaration[0]["type"] in (
+                    "array",
+                    "https://w3id.org/cwl/salad#array",
+                ):
+                    items = type_declaration[0]["items"]
+                    if isinstance(items, list):
+                        ts = [self.convertTypeToCpp(i) for i in items]
+                        name = ", ".join(ts)
+                        return f"std::vector<std::variant<{name}>>"
+                    else:
+                        i = self.convertTypeToCpp(items)
+                        return f"std::vector<{i}>"
+                elif "type" in type_declaration[0] and type_declaration[0]["type"] in (
+                    "map",
+                    "https://w3id.org/cwl/salad#map",
+                ):
+                    values = type_declaration[0]["values"]
+                    if isinstance(values, list):
+                        ts = [self.convertTypeToCpp(i) for i in values]
+                        name = ", ".join(ts)
+                        return f"std::map<std::string, std::variant<{name}>>"
+                    else:
+                        i = self.convertTypeToCpp(values)
+                        return f"std::map<std::string, {i}>"
+                elif "type" in type_declaration[0] and type_declaration[0]["type"] in (
+                    "record",
+                    "https://w3id.org/cwl/salad#record",
+                ):
+                    n = type_declaration[0]["name"]
+                    (namespace, classname) = split_name(n)
+                    return safenamespacename(namespace) + "::" + safename(classname)
+
                 n = type_declaration[0]["type"]
                 (namespace, classname) = split_name(n)
                 return safenamespacename(namespace) + "::" + safename(classname)
 
-        if len(type_declaration[0].split("#")) != 2:
-            _logger.debug(f"// something weird2 about {type_declaration[0]}")
-            return cast(str, type_declaration[0])
+            if len(type_declaration[0].split("#")) != 2:
+                _logger.debug(f"// something weird2 about {type_declaration[0]}")
+                return cast(str, type_declaration[0])
 
-        (namespace, classname) = split_name(type_declaration[0])
-        return safenamespacename(namespace) + "::" + safename(classname)
+            (namespace, classname) = split_name(type_declaration[0])
+            return safenamespacename(namespace) + "::" + safename(classname)
+
+        type_declaration = list(map(self.convertTypeToCpp, type_declaration))
+        type_declaration = ", ".join(type_declaration)
+        return f"std::variant<{type_declaration}>"
 
     def epilogue(self, root_loader: TypeDef | None) -> None:
         """Trigger to generate the epilouge code."""

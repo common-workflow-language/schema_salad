@@ -360,24 +360,25 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
         no_link_check: bool | None = None,
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
-        match type_declaration:
-            case MutableSequence():
-                sub_types1: Final = [self.type_loader(i) for i in type_declaration]
-                sub_names: Final[list[str]] = list(dict.fromkeys([i.name for i in sub_types1]))
-                sub_instance_types: Final[list[str]] = list(
-                    dict.fromkeys(
-                        [i.instance_type for i in sub_types1 if i.instance_type is not None]
-                    )
+        if isinstance(type_declaration, MutableSequence):
+            sub_types1: Final = [self.type_loader(i) for i in type_declaration]
+            sub_names: Final[list[str]] = list(dict.fromkeys([i.name for i in sub_types1]))
+            sub_instance_types: Final[list[str]] = list(
+                dict.fromkeys([i.instance_type for i in sub_types1 if i.instance_type is not None])
+            )
+            return self.declare_type(
+                TypeDef(
+                    "unionOf{}".format("Or".join(sub_names)),
+                    "new _UnionLoader([{}])".format(", ".join(sub_names)),
+                    instance_type=" | ".join(sub_instance_types),
                 )
-                return self.declare_type(
-                    TypeDef(
-                        "unionOf{}".format("Or".join(sub_names)),
-                        "new _UnionLoader([{}])".format(", ".join(sub_names)),
-                        instance_type=" | ".join(sub_instance_types),
-                    )
-                )
-            case {"type": "array" | "https://w3id.org/cwl/salad#array", "items": items}:
-                i1: Final = self.type_loader(items)
+            )
+        if isinstance(type_declaration, MutableMapping):
+            if type_declaration["type"] in (
+                "array",
+                "https://w3id.org/cwl/salad#array",
+            ):
+                i1: Final = self.type_loader(type_declaration["items"])
                 return self.declare_type(
                     TypeDef(
                         f"arrayOf{i1.name}",
@@ -385,8 +386,11 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                         instance_type=f"Array<{i1.instance_type}>",
                     )
                 )
-            case {"type": "map" | "https://w3id.org/cwl/salad#map", "values": values}:
-                i2: Final = self.type_loader(values)
+            if type_declaration["type"] in (
+                "map",
+                "https://w3id.org/cwl/salad#map",
+            ):
+                i2: Final = self.type_loader(type_declaration["values"])
                 return self.declare_type(
                     TypeDef(
                         f"mapOf{i2.name}",
@@ -402,17 +406,18 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                         instance_type=f"Dictionary<{i2.instance_type}>",
                     )
                 )
-            case {
-                "type": "enum" | "https://w3id.org/cwl/salad#enum",
-            }:
-                return self.type_loader_enum(type_declaration)  # type: ignore[arg-type]
+            if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
+                return self.type_loader_enum(type_declaration)
 
-            case {"type": "record" | "https://w3id.org/cwl/salad#record", "name": name, **rest}:
+            if type_declaration["type"] in (
+                "record",
+                "https://w3id.org/cwl/salad#record",
+            ):
                 return self.declare_type(
                     TypeDef(
-                        self.safe_name(name) + "Loader",
+                        self.safe_name(type_declaration["name"]) + "Loader",
                         "new _RecordLoader({}.fromDoc, {}, {})".format(
-                            self.safe_name(name),
+                            self.safe_name(type_declaration["name"]),
                             (
                                 f"'{container}'"
                                 if container is not None
@@ -420,17 +425,16 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                             ),  # noqa: B907
                             self.to_typescript(no_link_check),
                         ),
-                        instance_type="Internal." + self.safe_name(name),
-                        abstract=rest.get("abstract", False),  # type: ignore[arg-type]
+                        instance_type="Internal." + self.safe_name(type_declaration["name"]),
+                        abstract=type_declaration.get("abstract", False),
                     )
                 )
-            case {
-                "type": "union" | "https://w3id.org/cwl/salad#union",
-                "name": name,
-                "names": names,
-            }:
+            if type_declaration["type"] in (
+                "union",
+                "https://w3id.org/cwl/salad#union",
+            ):
                 # Declare the named loader to handle recursive union definitions
-                loader_name: Final = self.safe_name(name) + "Loader"
+                loader_name: Final = self.safe_name(type_declaration["name"]) + "Loader"
                 loader_type: Final = TypeDef(
                     loader_name,
                     "new _UnionLoader([])",
@@ -438,7 +442,7 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                 )
                 self.declare_type(loader_type)
                 # Parse inner types
-                sub_types2: Final = [self.type_loader(i) for i in names]
+                sub_types2: Final = [self.type_loader(i) for i in type_declaration["names"]]
 
                 # Register lazy initialization for the loader
                 self.add_lazy_init(
@@ -450,22 +454,20 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                     )
                 )
                 return loader_type
-            case {"type": decl}:
-                raise SchemaException(f"wtf {decl}")
-            case str(decl) if decl in prims:
-                return prims[decl]
-            case "Expression" | "https://w3id.org/cwl/cwl#Expression" as decl:
-                return self.declare_type(
-                    TypeDef(
-                        self.safe_name(decl) + "Loader",
-                        "new _ExpressionLoader()",
-                        instance_type="string",
-                    )
+            raise SchemaException("wft {}".format(type_declaration["type"]))
+
+        if type_declaration in prims:
+            return prims[type_declaration]
+
+        if type_declaration in ("Expression", "https://w3id.org/cwl/cwl#Expression"):
+            return self.declare_type(
+                TypeDef(
+                    self.safe_name(type_declaration) + "Loader",
+                    "new _ExpressionLoader()",
+                    instance_type="string",
                 )
-            case str(decl):
-                return self.collected_types[self.safe_name(decl) + "Loader"]
-            case _ as decl:
-                raise SchemaException(f"wtf {decl}")
+            )
+        return self.collected_types[self.safe_name(type_declaration) + "Loader"]
 
     def type_loader_enum(self, type_declaration: dict[str, Any]) -> TypeDef:
         """Build an enum type loader for the given declaration."""
