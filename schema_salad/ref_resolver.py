@@ -156,7 +156,7 @@ class Loader:
         doc_cache: Union[str, bool] = True,
         salad_version: Optional[str] = None,
     ) -> None:
-        self.idx: Final[IdxType] = NormDict(_url_norm) if idx is None else idx
+        self.idx: IdxType = NormDict(_url_norm) if idx is None else idx
 
         self.ctx: Final[ContextType] = {}
         self.graph = schemagraph if schemagraph is not None else Graph()
