@@ -1,7 +1,7 @@
 import logging
 import pprint
 from collections.abc import Mapping, MutableMapping, MutableSequence
-from typing import Any, Final
+from typing import Any, Final, Optional
 from urllib.parse import urlsplit
 
 from . import avro
@@ -19,10 +19,10 @@ _logger: Final = logging.getLogger("salad")
 def validate(
     expected_schema: Schema,
     datum: Any,
-    identifiers: list[str] | None = None,
+    identifiers: Optional[list[str]] = None,
     strict: bool = False,
-    foreign_properties: set[str] | None = None,
-    vocab: Mapping[str, str] | None = None,
+    foreign_properties: Optional[set[str]] = None,
+    vocab: Optional[Mapping[str, str]] = None,
 ) -> bool:
     if not identifiers:
         identifiers = []
@@ -114,14 +114,14 @@ def vpformat(datum: Any) -> str:
 def validate_ex(
     expected_schema: Schema,
     datum: Any,
-    identifiers: list[str] | None = None,
+    identifiers: Optional[list[str]] = None,
     strict: bool = False,
-    foreign_properties: set[str] | None = None,
+    foreign_properties: Optional[set[str]] = None,
     raise_ex: bool = True,
     strict_foreign_properties: bool = False,
     logger: logging.Logger = _logger,
     skip_foreign_properties: bool = False,
-    vocab: Mapping[str, str] | None = None,
+    vocab: Optional[Mapping[str, str]] = None,
 ) -> bool:
     """Determine if a python datum is an instance of a schema."""
     debug: Final = _logger.isEnabledFor(logging.DEBUG)

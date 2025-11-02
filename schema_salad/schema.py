@@ -4,7 +4,7 @@ import copy
 import hashlib
 from collections.abc import Mapping, MutableMapping, MutableSequence
 from importlib.resources import files
-from typing import IO, Any, Final, TypeAlias, cast
+from typing import IO, Any, Final, Optional, Union, cast
 from urllib.parse import urlparse
 
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
@@ -79,7 +79,8 @@ primitives: Final = {
     saladp + "Any",
 }
 
-cached_metaschema: tuple[Names, list[dict[str, str]], Loader] | None = None
+
+cached_metaschema: Optional[tuple[Names, list[dict[str, str]], Loader]] = None
 
 
 def get_metaschema() -> tuple[Names, list[dict[str, str]], Loader]:
@@ -238,12 +239,12 @@ def collect_namespaces(metadata: Mapping[str, Any]) -> dict[str, str]:
     return namespaces
 
 
-schema_type: TypeAlias = tuple[Loader, Names | SchemaParseException, dict[str, Any], Loader]
+schema_type = tuple[Loader, Union[Names, SchemaParseException], dict[str, Any], Loader]
 
 
 def load_schema(
     schema_ref: ResolveType,
-    cache: CacheType | None = None,
+    cache: Optional[CacheType] = None,
 ) -> schema_type:
     """
     Load a schema that can be used to validate documents using load_and_validate.
@@ -283,7 +284,7 @@ def load_schema(
 def load_and_validate(
     document_loader: Loader,
     avsc_names: Names,
-    document: CommentedMap | str,
+    document: Union[CommentedMap, str],
     strict: bool,
     strict_foreign_properties: bool = False,
 ) -> tuple[Any, dict[str, Any]]:
@@ -416,7 +417,7 @@ def validate_doc(
         raise ValidationException("", None, anyerrors, "*")
 
 
-def get_anon_name(rec: MutableMapping[str, str | dict[str, str] | list[str]]) -> str:
+def get_anon_name(rec: MutableMapping[str, Union[str, dict[str, str], list[str]]]) -> str:
     """Calculate a reproducible name for anonymous types."""
     if "name" in rec:
         name: Final = rec["name"]
@@ -517,7 +518,7 @@ def avro_field_name(url: str) -> str:
     return d.path.split("/")[-1]
 
 
-Avro: TypeAlias = MutableMapping[str, Any] | MutableSequence[Any] | str
+Avro = Union[MutableMapping[str, Any], MutableSequence[Any], str]
 
 
 def make_valid_avro(
@@ -526,8 +527,8 @@ def make_valid_avro(
     found: set[str],
     union: bool = False,
     fielddef: bool = False,
-    vocab: dict[str, str] | None = None,
-) -> Avro | MutableMapping[str, str] | str | list[Any | MutableMapping[str, str] | str]:
+    vocab: Optional[dict[str, str]] = None,
+) -> Union[Avro, MutableMapping[str, str], str, list[Union[Any, MutableMapping[str, str], str]]]:
     """Convert our schema to be more avro like."""
     if vocab is None:
         _, _, metaschema_loader = get_metaschema()
@@ -728,7 +729,7 @@ def extend_and_specialize(items: list[dict[str, Any]], loader: Loader) -> list[d
 def make_avro(
     i: list[dict[str, Any]],
     loader: Loader,
-    metaschema_vocab: dict[str, str] | None = None,
+    metaschema_vocab: Optional[dict[str, str]] = None,
 ) -> list[Any]:
     j: Final = extend_and_specialize(i, loader)
 
@@ -748,7 +749,7 @@ def make_avro(
 
 
 def make_avro_schema(
-    i: list[Any], loader: Loader, metaschema_vocab: dict[str, str] | None = None
+    i: list[Any], loader: Loader, metaschema_vocab: Optional[dict[str, str]] = None
 ) -> Names:
     """
     All in one convenience function.
@@ -762,7 +763,7 @@ def make_avro_schema(
     return names
 
 
-def make_avro_schema_from_avro(avro: list[Avro | dict[str, str] | str]) -> Names:
+def make_avro_schema_from_avro(avro: list[Union[Avro, dict[str, str], str]]) -> Names:
     """Create avro.schema.Names from the given definitions."""
     names: Final = Names()
     make_avsc_object(convert_to_dict(avro), names)

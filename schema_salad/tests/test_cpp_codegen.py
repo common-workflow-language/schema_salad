@@ -3,7 +3,7 @@
 import filecmp
 import os
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Optional, cast
 
 import pytest
 
@@ -107,8 +107,8 @@ def test_cwl_cpp_generations_with_spdx(tmp_path: Path) -> None:
 def cpp_codegen(
     file_uri: str,
     target: Path,
-    spdx_copyright_text: list[str] | None = None,
-    spdx_license_identifier: str | None = None,
+    spdx_copyright_text: Optional[list[str]] = None,
+    spdx_license_identifier: Optional[str] = None,
 ) -> None:
     """Help using the C++ code generation function."""
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(file_uri)

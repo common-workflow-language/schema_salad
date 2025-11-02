@@ -7,7 +7,7 @@ from collections.abc import MutableMapping, MutableSequence
 from importlib.resources import files
 from io import StringIO
 from pathlib import Path
-from typing import Any, Final
+from typing import Any, Final, Optional, Union
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
@@ -17,7 +17,7 @@ from .schema import shortname
 from .utils import Traversable
 
 
-def doc_to_doc_string(doc: str | None, indent_level: int = 0) -> str:
+def doc_to_doc_string(doc: Optional[str], indent_level: int = 0) -> str:
     """Generate a documentation string from a schema salad doc field."""
     lead: Final = " " + "  " * indent_level + "* "
     if doc:
@@ -79,7 +79,9 @@ prims: Final = {
 class TypeScriptCodeGen(CodeGenBase):
     """Generation of TypeScript code for a given Schema Salad definition."""
 
-    def __init__(self, base: str, examples: str | None, target: str | None, package: str) -> None:
+    def __init__(
+        self, base: str, examples: Optional[str], target: Optional[str], package: str
+    ) -> None:
         """Initialize the TypeScript codegen."""
         super().__init__()
         self.target_dir: Final = Path(target or ".").resolve()
@@ -355,9 +357,9 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
 
     def type_loader(
         self,
-        type_declaration: list[Any] | dict[str, Any] | str,
-        container: str | None = None,
-        no_link_check: bool | None = None,
+        type_declaration: Union[list[Any], dict[str, Any], str],
+        container: Optional[str] = None,
+        no_link_check: Optional[bool] = None,
     ) -> TypeDef:
         """Parse the given type declaration and declare its components."""
         if isinstance(type_declaration, MutableSequence):
@@ -508,9 +510,9 @@ export enum {enum_name} {{
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: str | None,
+        doc: Optional[str],
         optional: bool,
-        subscope: str | None,
+        subscope: Optional[str],
     ) -> None:
         """Output the code to load the given field."""
         safename: Final = self.safe_name(name)
@@ -673,7 +675,7 @@ export enum {enum_name} {{
         self,
         name: str,
         fieldtype: TypeDef,
-        doc: str | None,
+        doc: Optional[str],
         optional: bool,
     ) -> None:
         """Output the code to handle the given ID field."""
@@ -717,8 +719,8 @@ export enum {enum_name} {{
         inner: TypeDef,
         scoped_id: bool,
         vocab_term: bool,
-        ref_scope: int | None,
-        no_link_check: bool | None = None,
+        ref_scope: Optional[int],
+        no_link_check: Optional[bool] = None,
     ) -> TypeDef:
         """Construct the TypeDef for the given URI loader."""
         instance_type = inner.instance_type or "any"
@@ -740,7 +742,7 @@ export enum {enum_name} {{
         )
 
     def idmap_loader(
-        self, field: str, inner: TypeDef, map_subject: str, map_predicate: str | None
+        self, field: str, inner: TypeDef, map_subject: str, map_predicate: Optional[str]
     ) -> TypeDef:
         """Construct the TypeDef for the given mapped ID loader."""
         instance_type = inner.instance_type or "any"
@@ -752,7 +754,7 @@ export enum {enum_name} {{
             )
         )
 
-    def typedsl_loader(self, inner: TypeDef, ref_scope: int | None) -> TypeDef:
+    def typedsl_loader(self, inner: TypeDef, ref_scope: Optional[int]) -> TypeDef:
         """Construct the TypeDef for the given DSL loader."""
         instance_type = inner.instance_type or "any"
         return self.declare_type(
