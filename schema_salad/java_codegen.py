@@ -1,5 +1,6 @@
 """Java code generator for a given schema salad definition."""
 
+import html
 import os
 import re
 import shutil
@@ -36,7 +37,7 @@ def _doc_to_doc_string(doc: str | None, indent_level: int = 0) -> str:
     lead: Final = " " + "  " * indent_level + "* " * indent_level
     if doc:
         doc_str = f"{lead}<BLOCKQUOTE>\n"
-        doc_str += "\n".join([f"{lead}{line}" for line in doc.split("\n")])
+        doc_str += "\n".join([f"{lead}{line}" for line in html.escape(doc).split("\n")])
         doc_str += f"{lead}</BLOCKQUOTE>"
     else:
         doc_str = ""
