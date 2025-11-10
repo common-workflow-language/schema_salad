@@ -9,7 +9,7 @@ SETUP_DIR = os.path.dirname(__file__)
 README = os.path.join(SETUP_DIR, "README.rst")
 
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
-pytest_runner: list[str] = ["pytest < 9", "pytest-runner"] if needs_pytest else []
+pytest_runner: list[str] = ["pytest < 10", "pytest-runner"] if needs_pytest else []
 
 USE_MYPYC = False
 # To compile with mypyc, a mypyc checkout must be present on the PYTHONPATH
@@ -95,7 +95,7 @@ extras_require = {
     "docs": [
         "sphinx >= 2.2",
         "sphinx-rtd-theme >= 1",
-        "pytest < 9",
+        "pytest < 10",
         "sphinx-autoapi",
         "sphinx-autodoc-typehints",
         "sphinxcontrib-autoprogram",
