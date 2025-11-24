@@ -89,6 +89,7 @@ install_requires = [
     "mistune>=3,<3.2",
     "CacheControl[filecache] >= 0.13.1, < 0.15",
     "mypy_extensions",
+    "rich-argparse",
 ]
 
 extras_require = {

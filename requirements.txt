@@ -5,3 +5,4 @@ mistune>=3,<3.2
 CacheControl[filecache]>= 0.13.1, < 0.15
 black>=19.10b0,<25.12
 mypy_extensions
+rich-argparse

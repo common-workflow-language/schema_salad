@@ -4,4 +4,4 @@ import sys
 
 from . import main
 
-sys.exit(main.main())
+sys.exit(main.main(sys.argv[1:]))
