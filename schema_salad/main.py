@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 from rdflib import __version__ as rdflib_version
 from rdflib.parser import Parser
 from rdflib.plugin import register
+from rich_argparse import HelpPreviewAction, RichHelpFormatter
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from . import codegen, jsonld_context, schema
@@ -40,7 +41,8 @@ def printrdf(
 
 def arg_parser() -> argparse.ArgumentParser:
     """Build the argument parser."""
-    parser: Final = argparse.ArgumentParser()
+    RichHelpFormatter.group_name_formatter = str
+    parser: Final = argparse.ArgumentParser(formatter_class=RichHelpFormatter)
     parser.add_argument(
         "--rdf-serializer",
         help="Output RDF serialization format used by --print-rdf"
@@ -223,6 +225,12 @@ def arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("schema", type=str, nargs="?", default=None)
     parser.add_argument("document", type=str, nargs="*", default=None)
     parser.add_argument("--version", "-v", action="store_true", help="Print version", default=None)
+
+    parser.add_argument(
+        "--generate-help-preview",
+        action=HelpPreviewAction,
+        path="help-preview.svg",  # (optional) or "help-preview.html" or "help-preview.txt"
+    )
     return parser
 
 
@@ -234,7 +242,8 @@ def main(argsl: list[str] | None = None) -> int:
     args: Final = arg_parser().parse_args(argsl)
 
     if args.version is None and args.schema is None:
-        print(f"{sys.argv[0]}: error: too few arguments.")
+        _logger.error("Error: too few arguments.")
+        arg_parser().print_help(sys.stderr)
         return 1
 
     if args.quiet:
