@@ -689,14 +689,14 @@ def avrold_doc(
     """
     )
 
-    navbar_extraclass: Final = "navbar-inverse" if brandinverse else ""
+    navbarclass: Final = "navbar-dark bg-dark " if brandinverse else "navbar-light bg-light "
     outdoc.write(
         """
-      <nav class="navbar sticky-top navbar-expand-lg navbar-light bg-light {}">
+      <nav class="navbar sticky-top navbar-expand-lg {}">
         <div class="container">
           <a class="navbar-brand" href="{}">{}</a>
     """.format(
-            navbar_extraclass, brandlink, brand
+            navbarclass, brandlink, brand
         )
     )
 
