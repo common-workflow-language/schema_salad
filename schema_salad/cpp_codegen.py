@@ -165,7 +165,8 @@ class ClassDefinition:
         # Declaring default destructor
         if self.abstract:
             target.write(
-                f"{fullInd}inline {self.namespace}::{self.classname}::~{self.classname}() = default;\n"
+                f"{fullInd}inline "
+                f"{self.namespace}::{self.classname}::~{self.classname}() = default;\n"
             )
 
         # Write toYaml function
@@ -673,7 +674,7 @@ class CppCodeGen(CodeGenBase):
                 return safenamespacename(namespace) + "::" + safename(classname)
 
         if len(type_declaration[0].split("#")) != 2:
-            _logger.debug(f"// something weird2 about {type_declaration[0]}")
+            _logger.debug("// something weird2 about %s", type_declaration[0])
             return cast(str, type_declaration[0])
 
         (namespace, classname) = split_name(type_declaration[0])
@@ -693,7 +694,7 @@ class CppCodeGen(CodeGenBase):
         )
         common_namespace = re.sub("(::)+$", "", common_namespace)
 
-        """Generate final part of our cpp file."""
+        # Generate final part of our cpp file
         if self.spdx_copyright_text:
             for text in self.spdx_copyright_text:
                 self.target.write(f"""// SPDX-FileCopyrightText: {text}\n""")
@@ -1089,23 +1090,23 @@ public:
         )
         # main body, printing fwd declaration, class definitions, and then implementations
 
-        for key in self.classDefinitions:
-            self.classDefinitions[key].writeFwdDeclaration(self.target, "", "    ")
-        for key in self.mapDefinitions:
-            self.mapDefinitions[key].writeFwdDeclaration(self.target, "", "    ")
-        for key in self.unionDefinitions:
-            self.unionDefinitions[key].writeFwdDeclaration(self.target, "", "    ")
+        for class_definition in self.classDefinitions.values():
+            class_definition.writeFwdDeclaration(self.target, "", "    ")
+        for map_definition in self.mapDefinitions.values():
+            map_definition.writeFwdDeclaration(self.target, "", "    ")
+        for union_definition in self.unionDefinitions.values():
+            union_definition.writeFwdDeclaration(self.target, "", "    ")
 
         # remove parent classes, that are specialized/templated versions
-        for key in self.classDefinitions:
-            if len(self.classDefinitions[key].specializationTypes) > 0:
-                self.classDefinitions[key].extends = []
+        for class_definition in self.classDefinitions.values():
+            if len(class_definition.specializationTypes) > 0:
+                class_definition.extends = []
 
         # remove fields that are available in a parent class
-        for key in self.classDefinitions:
-            for field in self.classDefinitions[key].allfields:
+        for class_definition in self.classDefinitions.values():
+            for field in class_definition.allfields:
                 found = False
-                for parent_key in self.classDefinitions[key].extends:
+                for parent_key in class_definition.extends:
                     fullKey = parent_key["namespace"] + "#" + parent_key["classname"]
                     for f in self.classDefinitions[fullKey].allfields:
                         if f.name == field.name:
@@ -1115,17 +1116,17 @@ public:
                         break
 
                 if not found:
-                    self.classDefinitions[key].fields.append(field)  # noqa: B038
+                    class_definition.fields.append(field)  # noqa: B038
 
         # write definitions
-        for key in self.enumDefinitions:
-            self.enumDefinitions[key].writeDefinition(self.target, "    ", common_namespace)
-        for key in self.classDefinitions:
-            self.classDefinitions[key].writeDefinition(self.target, "", "    ", common_namespace)
-        for key in self.mapDefinitions:
-            self.mapDefinitions[key].writeDefinition(self.target, "    ", common_namespace)
-        for key in self.unionDefinitions:
-            self.unionDefinitions[key].writeDefinition(self.target, "    ", common_namespace)
+        for enum_definition in self.enumDefinitions.values():
+            enum_definition.writeDefinition(self.target, "    ", common_namespace)
+        for class_definition in self.classDefinitions.values():
+            class_definition.writeDefinition(self.target, "", "    ", common_namespace)
+        for map_definition in self.mapDefinitions.values():
+            map_definition.writeDefinition(self.target, "    ", common_namespace)
+        for union_definition in self.unionDefinitions.values():
+            union_definition.writeDefinition(self.target, "    ", common_namespace)
 
         # CPP23: std::unique_ptr in heap_object is constexpr.
         # Hence, the compiler will try to instantiate the destructor on definition.
@@ -1140,16 +1141,12 @@ public:
         )
 
         # write implementations
-        for key in self.classDefinitions:
-            self.classDefinitions[key].writeImplDefinition(
-                self.target, "", "    ", common_namespace
-            )
-        for key in self.mapDefinitions:
-            self.mapDefinitions[key].writeImplDefinition(self.target, "", "    ", common_namespace)
-        for key in self.unionDefinitions:
-            self.unionDefinitions[key].writeImplDefinition(
-                self.target, "", "    ", common_namespace
-            )
+        for class_definition in self.classDefinitions.values():
+            class_definition.writeImplDefinition(self.target, "", "    ", common_namespace)
+        for map_definition in self.mapDefinitions.values():
+            map_definition.writeImplDefinition(self.target, "", "    ", common_namespace)
+        for union_definition in self.unionDefinitions.values():
+            union_definition.writeImplDefinition(self.target, "", "    ", common_namespace)
 
         self.target.write(f"namespace {common_namespace} {{\n")
         self.target.write(
@@ -1393,7 +1390,7 @@ auto store_document_as_string(DocumentRootType const& root, store_config config=
             elif isEnumSchema(stype):
                 self.parseEnum(stype)
             else:
-                _logger.error(f"not parsed{stype}")
+                _logger.error("not parsed %s", stype)
 
         self.epilogue(None)
         self.target.close()
