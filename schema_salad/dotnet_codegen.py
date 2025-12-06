@@ -12,7 +12,7 @@ from xml.sax.saxutils import escape  # nosec
 
 from . import _logger, schema
 from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
-from .exceptions import SchemaException
+from .exceptions import SchemaException, SchemaSaladException
 from .java_codegen import _ensure_directory_and_write, _safe_makedirs
 from .schema import shortname
 from .utils import Traversable
@@ -110,6 +110,18 @@ class DotNetCodeGen(CodeGenBase):
         self.package = package
         self.base_uri = base
         self.examples = examples
+        self.current_class = ""
+        self.current_class_is_abstract: bool = False
+        self.current_constructor_signature: StringIO = StringIO()
+        self.current_constructor_signature_optionals: StringIO = StringIO()
+        self.current_constructor_body: StringIO = StringIO()
+        self.current_loader: StringIO = StringIO()
+        self.current_serializer: StringIO = StringIO()
+        self.current_fieldtypes: dict[str, TypeDef] = {}
+        self.optional_field_names: list[str] = []
+        self.mandatory_field_names: list[str] = []
+        self.idfield: str | None = None
+        self.id_field_type: TypeDef | None = None
 
     def prologue(self) -> None:
         """Trigger to generate the prolouge code."""
@@ -140,6 +152,18 @@ class DotNetCodeGen(CodeGenBase):
 
         return avn
 
+    def _current_interface(self, classname: str) -> str:
+        return "I" + self.safe_name(classname)
+
+    def _current_class(self, classname: str) -> str:
+        return self.safe_name(classname)
+
+    def _current_interface_target_file(self, interface_module_name: str) -> Path:
+        return self.main_src_dir / f"{interface_module_name}.cs"
+
+    def _current_class_target_file(self, class_module_name: str) -> Path:
+        return self.main_src_dir / f"{class_module_name}.cs"
+
     def begin_class(
         self,  # pylint: disable=too-many-arguments
         classname: str,
@@ -151,22 +175,19 @@ class DotNetCodeGen(CodeGenBase):
         optional_fields: set[str],
     ) -> None:
         """Produce the header for the given class."""
-        self.current_interface = "I" + self.safe_name(classname)
-        cls = self.safe_name(classname)
-        self.current_class = cls
+        current_interface = self._current_interface(classname)
+        cls = self.current_class = self._current_class(classname)
         self.current_class_is_abstract = abstract
-        interface_module_name = self.current_interface
-        self.current_interface_target_file = self.main_src_dir / f"{interface_module_name}.cs"
-        class_module_name = self.current_class
-        self.current_class_target_file = self.main_src_dir / f"{class_module_name}.cs"
+        current_interface_target_file = self._current_interface_target_file(current_interface)
+        current_class_target_file = self._current_class_target_file(self.current_class)
         self.current_constructor_signature = StringIO()
         self.current_constructor_signature_optionals = StringIO()
         self.current_constructor_body = StringIO()
         self.current_loader = StringIO()
         self.current_serializer = StringIO()
-        self.current_fieldtypes: dict[str, TypeDef] = {}
-        self.optional_field_names: list[str] = []
-        self.mandatory_field_names: list[str] = []
+        self.current_fieldtypes = {}
+        self.optional_field_names = []
+        self.mandatory_field_names = []
         self.idfield = idfield
 
         doc_string = f"""
@@ -179,8 +200,8 @@ class DotNetCodeGen(CodeGenBase):
             doc_string += "\n"
         doc_string += "/// </summary>"
 
-        with open(self.current_interface_target_file, "w") as f:
-            _logger.info("Writing file: %s", self.current_interface_target_file)
+        with open(current_interface_target_file, "w") as f:
+            _logger.info("Writing file: %s", current_interface_target_file)
             if extends:
                 ext = " : " + ", ".join("I" + self.safe_name(e) for e in extends)
             else:
@@ -193,7 +214,7 @@ public interface {cls}{ext}
 {{
 """.format(
                     docstring=doc_string,
-                    cls=f"{self.current_interface}",
+                    cls=current_interface,
                     ext=ext,
                     package=self.package,
                 )
@@ -210,8 +231,8 @@ public interface {cls}{ext}
             doc_string += doc_to_doc_string(doc)
             doc_string += "\n"
         doc_string += "/// </summary>"
-        with open(self.current_class_target_file, "w") as f:
-            _logger.info("Writing file: %s", self.current_class_target_file)
+        with open(current_class_target_file, "w") as f:
+            _logger.info("Writing file: %s", current_class_target_file)
             f.write(
                 """using System.Collections;
 using OneOf;
@@ -226,7 +247,7 @@ public class {cls} : {current_interface}, ISaveable
     readonly Dictionary<object, object> extensionFields;
 """.format(
                     cls=cls,
-                    current_interface=self.current_interface,
+                    current_interface=current_interface,
                     docstring=doc_string,
                     package=self.package,
                 )
@@ -277,8 +298,11 @@ public class {cls} : {current_interface}, ISaveable
 
     def end_class(self, classname: str, field_names: list[str]) -> None:
         """Signal that we are done with this class."""
-        with open(self.current_interface_target_file, "a") as f:
-            f.write("}\n")
+        current_interface_target_file = self._current_interface_target_file(
+            self._current_interface(classname)
+        )
+        with open(current_interface_target_file, "a") as f1:
+            f1.write("}\n")
         if self.current_class_is_abstract:
             return
 
@@ -365,21 +389,22 @@ public class {cls} : {current_interface}, ISaveable
 
 """
         )
+        current_class_target_file = self._current_class_target_file(self.current_class)
         with open(
-            self.current_class_target_file,
+            current_class_target_file,
             "a",
-        ) as f:
-            f.write(self.current_constructor_signature.getvalue())
-            f.write(self.current_constructor_body.getvalue())
-            f.write(self.current_loader.getvalue())
-            f.write(self.current_serializer.getvalue())
-            f.write(
+        ) as f2:
+            f2.write(self.current_constructor_signature.getvalue())
+            f2.write(self.current_constructor_body.getvalue())
+            f2.write(self.current_loader.getvalue())
+            f2.write(self.current_serializer.getvalue())
+            f2.write(
                 "    static readonly System.Collections.Generic.HashSet<string>"
                 + " attr = new() { "
                 + ", ".join(['"' + shortname(f) + '"' for f in field_names])
                 + " };"
             )
-            f.write(
+            f2.write(
                 """
 }
 """
@@ -613,6 +638,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
         """Output the code to load the given field."""
         if self.current_class_is_abstract:
             return
+        current_class_target_file = self._current_class_target_file(self.current_class)
         safename = self.safe_name(name)
         fieldname = shortname(name)
         self.current_fieldtypes[safename] = fieldtype
@@ -629,7 +655,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
             self.mandatory_field_names.append(safename)
             optionalstring = ""
 
-        with open(self.current_class_target_file, "a") as f:
+        with open(current_class_target_file, "a") as f:
             if doc:
                 f.write(
                     """
@@ -743,14 +769,17 @@ public class {enum_name} : IEnumClass<{enum_name}>
 
         if name == self.idfield or not self.idfield:
             baseurl = "baseUrl"
-        elif self.id_field_type.instance_type is not None:
-            if self.id_field_type.instance_type.startswith("OneOf"):
-                baseurl = (
-                    f"(this.{self.safe_name(self.idfield)}.Value is "
-                    f'None ? "" : {self.safe_name(self.idfield)}.Value)'
-                )
-            else:
-                baseurl = f"this.{self.safe_name(self.idfield)}"
+        else:
+            if self.id_field_type is None:
+                raise SchemaSaladException("Must call declare_id_field before declare_field.")
+            if self.id_field_type.instance_type is not None:
+                if self.id_field_type.instance_type.startswith("OneOf"):
+                    baseurl = (
+                        f"(this.{self.safe_name(self.idfield)}.Value is "
+                        f'None ? "" : {self.safe_name(self.idfield)}.Value)'
+                    )
+                else:
+                    baseurl = f"this.{self.safe_name(self.idfield)}"
 
         if fieldtype.is_uri:
             self.current_serializer.write(
@@ -828,12 +857,13 @@ public class {enum_name} : IEnumClass<{enum_name}>
 
     def to_dotnet(self, val: Any) -> Any:
         """Convert a Python keyword to a DotNet keyword."""
-        if val is True:
-            return "true"
-        elif val is None:
-            return "null"
-        elif val is False:
-            return "false"
+        match val:
+            case True:
+                return "true"
+            case None:
+                return "null"
+            case False:
+                return "false"
         return val
 
     def uri_loader(
@@ -900,12 +930,12 @@ public class {enum_name} : IEnumClass<{enum_name}>
         pd = pd + " for parsing documents corresponding to the "
         pd = pd + str(self.base_uri) + " schema."
 
-        template_vars: MutableMapping[str, str] = dict(
-            project_name=self.package,
-            version="0.0.1-SNAPSHOT",
-            project_description=pd,
-            license_name="Apache License, Version 2.0",
-        )
+        template_vars: MutableMapping[str, str] = {
+            "project_name": self.package,
+            "version": "0.0.1-SNAPSHOT",
+            "project_description": pd,
+            "license_name": "Apache License, Version 2.0",
+        }
 
         def template_from_resource(resource: Traversable) -> string.Template:
             template_str = resource.read_text("utf-8")
@@ -981,16 +1011,16 @@ public class {enum_name} : IEnumClass<{enum_name}>
                         example_name=example_name,
                     )
 
-        template_args: MutableMapping[str, str] = dict(
-            project_name=self.package,
-            loader_instances=loader_instances,
-            vocab=vocab,
-            rvocab=rvocab,
-            root_loader=root_loader.name,
-            root_loader_type=root_loader.instance_type or "object",
-            tests=example_tests,
-            project_description=pd,
-        )
+        template_args: MutableMapping[str, str] = {
+            "project_name": self.package,
+            "loader_instances": loader_instances,
+            "vocab": vocab,
+            "rvocab": rvocab,
+            "root_loader": root_loader.name,
+            "root_loader_type": root_loader.instance_type or "object",
+            "tests": example_tests,
+            "project_description": pd,
+        }
 
         util_src_dirs = {
             "util": self.main_src_dir / "util",
