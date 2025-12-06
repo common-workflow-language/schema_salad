@@ -883,12 +883,13 @@ public enum {clazz} {{
         )
 
     def to_java(self, val: Any) -> Any:
-        if val is True:
-            return "true"
-        elif val is None:
-            return "null"
-        elif val is False:
-            return "false"
+        match val:
+            case True:
+                return "true"
+            case None:
+                return "null"
+            case False:
+                return "false"
         return val
 
     def epilogue(self, root_loader: TypeDef) -> None:
@@ -898,17 +899,17 @@ public enum {clazz} {{
         pd = pd + " for parsing documents corresponding to the "
         pd = pd + str(self.base_uri) + " schema."
 
-        template_vars: MutableMapping[str, str] = dict(
-            base_uri=self.base_uri,
-            package=self.package,
-            group_id=self.package,
-            artifact_id=self.artifact,
-            version="0.0.1-SNAPSHOT",
-            project_name=self.package,
-            project_description=pd,
-            license_name="Apache License, Version 2.0",
-            license_url="https://www.apache.org/licenses/LICENSE-2.0.txt",
-        )
+        template_vars: MutableMapping[str, str] = {
+            "base_uri": self.base_uri,
+            "package": self.package,
+            "group_id": self.package,
+            "artifact_id": self.artifact,
+            "version": "0.0.1-SNAPSHOT",
+            "project_name": self.package,
+            "project_description": pd,
+            "license_name": "Apache License, Version 2.0",
+            "license_url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        }
 
         def template_from_resource(resource: Traversable) -> string.Template:
             template_str: Final = resource.read_text("utf-8")
@@ -993,15 +994,15 @@ public enum {clazz} {{
                         example_name=example_name,
                     )
 
-        template_args: MutableMapping[str, str] = dict(
-            package=self.package,
-            vocab=vocab,
-            rvocab=rvocab,
-            loader_instances=loader_instances,
-            root_loader_name=root_loader.name,
-            root_loader_instance_type=root_loader.instance_type or "Object",
-            example_tests=example_tests,
-        )
+        template_args: MutableMapping[str, str] = {
+            "package": self.package,
+            "vocab": vocab,
+            "rvocab": rvocab,
+            "loader_instances": loader_instances,
+            "root_loader_name": root_loader.name,
+            "root_loader_instance_type": root_loader.instance_type or "Object",
+            "example_tests": example_tests,
+        }
 
         util_src_dirs: Final = {
             "main_utils": self.main_src_dir,
