@@ -44,7 +44,7 @@ jobs:
       - name: Upgrade setuptools and install tox
         run: |
           pip install -U pip setuptools wheel
-          pip install 'tox<4' tox-gh-actions
+          pip install 'tox>=4' tox-gh-actions
 
       - name: MyPy cache
         uses: actions/cache@v4
@@ -89,7 +89,7 @@ jobs:
       - name: Upgrade setuptools and install tox
         run: |
           pip install -U pip setuptools wheel
-          pip install 'tox<4' tox-gh-actions
+          pip install 'tox>=4' tox-gh-actions
 
       - if: ${{ matrix.step == 'pydocstyle' && github.event_name == 'pull_request'}}
         name: Create local branch for diff-quality for PRs
