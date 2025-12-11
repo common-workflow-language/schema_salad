@@ -177,7 +177,7 @@ class PythonCodeGen(CodeGenBase):
         )
         safe_inits.extend(
             [
-                f"        {self.safe_name(f)}: Optional[Any] = None,"
+                f"        {self.safe_name(f)}: Any | None = None,"
                 for f in optional_field_names
                 if f != "class"
             ]
@@ -185,8 +185,8 @@ class PythonCodeGen(CodeGenBase):
         self.out.write(
             "    def __init__(\n"
             + "\n".join(safe_inits)
-            + "\n        extension_fields: Optional[dict[str, Any]] = None,"
-            + "\n        loadingOptions: Optional[LoadingOptions] = None,"
+            + "\n        extension_fields: dict[str, Any] | None = None,"
+            + "\n        loadingOptions: LoadingOptions | None = None,"
             + "\n    ) -> None:\n"
             + """        if extension_fields:
             self.extension_fields = extension_fields
@@ -257,7 +257,7 @@ class PythonCodeGen(CodeGenBase):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None
+        docRoot: str | None = None
     ) -> "{classname}":
         _doc = copy.copy(doc)
 
@@ -788,8 +788,8 @@ if self.{safename} is not None:
             """
 def load_document(
     doc: Any,
-    baseuri: Optional[str] = None,
-    loadingOptions: Optional[LoadingOptions] = None,
+    baseuri: str | None = None,
+    loadingOptions: LoadingOptions | None = None,
 ) -> Any:
     if baseuri is None:
         baseuri = file_uri(os.getcwd()) + "/"
@@ -806,9 +806,9 @@ def load_document(
 
 def load_document_with_metadata(
     doc: Any,
-    baseuri: Optional[str] = None,
-    loadingOptions: Optional[LoadingOptions] = None,
-    addl_metadata_fields: Optional[MutableSequence[str]] = None,
+    baseuri: str | None = None,
+    loadingOptions: LoadingOptions | None = None,
+    addl_metadata_fields: MutableSequence[str] | None = None,
 ) -> Any:
     if baseuri is None:
         baseuri = file_uri(os.getcwd()) + "/"
@@ -826,7 +826,7 @@ def load_document_with_metadata(
 def load_document_by_string(
     string: Any,
     uri: str,
-    loadingOptions: Optional[LoadingOptions] = None,
+    loadingOptions: LoadingOptions | None = None,
 ) -> Any:
     yaml = yaml_no_ts()
     result = yaml.load(string)
@@ -847,7 +847,7 @@ def load_document_by_string(
 def load_document_by_yaml(
     yaml: Any,
     uri: str,
-    loadingOptions: Optional[LoadingOptions] = None,
+    loadingOptions: LoadingOptions | None = None,
 ) -> Any:
     """
             '"""'
