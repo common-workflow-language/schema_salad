@@ -1,5 +1,7 @@
 """Template code used by python_codegen.py."""
 
+from __future__ import annotations
+
 import copy
 import logging
 import os
@@ -11,7 +13,7 @@ from abc import ABC, abstractmethod
 from collections.abc import MutableMapping, MutableSequence, Sequence
 from io import StringIO
 from itertools import chain
-from typing import Any, Final, Optional, TypeAlias, cast
+from typing import Any, Final, TypeAlias, cast
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
@@ -56,7 +58,7 @@ class LoadingOptions:
         namespaces: dict[str, str] | None = None,
         schemas: list[str] | None = None,
         fileuri: str | None = None,
-        copyfrom: Optional["LoadingOptions"] = None,
+        copyfrom: LoadingOptions | None = None,
         original_doc: Any | None = None,
         addl_metadata: dict[str, str] | None = None,
         baseuri: str | None = None,
