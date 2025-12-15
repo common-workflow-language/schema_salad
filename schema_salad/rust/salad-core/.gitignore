@@ -1,0 +1,14 @@
+.idea/
+*.iml
+.vscode/
+.history/
+.zed/
+.DS_Store
+[Dd]esktop.ini
+*~
+
+debug/
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb

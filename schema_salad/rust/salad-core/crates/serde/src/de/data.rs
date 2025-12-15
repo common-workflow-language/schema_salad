@@ -1,0 +1,2 @@
+// WIP
+pub struct SeedData;
