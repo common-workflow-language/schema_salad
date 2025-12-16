@@ -3,18 +3,24 @@
 # The code itself is released under the Apache 2.0 license and the help text is
 # subject to the license of the original schema.
 
+from __future__ import annotations
+
 import copy
 import logging
 import os
 import pathlib
+import sys
 import tempfile
 import uuid as _uuid__  # pylint: disable=unused-import # noqa: F401
 import xml.sax  # nosec
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from collections.abc import MutableMapping, MutableSequence, Sequence
+from collections.abc import Collection  # pylint: disable=unused-import # noqa: F401
 from io import StringIO
 from itertools import chain
-from typing import Any, Final, Optional, TypeAlias, cast
+from mypy_extensions import trait
+from typing import Any, Final, Generic, TypeAlias, TypeVar, cast
+from typing import ClassVar  # pylint: disable=unused-import # noqa: F401
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
@@ -27,13 +33,19 @@ from schema_salad.fetcher import DefaultFetcher, Fetcher, MemoryCachingFetcher
 from schema_salad.sourceline import SourceLine, add_lc_filename
 from schema_salad.utils import CacheType, yaml_no_ts  # requires schema-salad v8.2+
 
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
+
 _vocab: dict[str, str] = {}
 _rvocab: dict[str, str] = {}
 
 _logger: Final = logging.getLogger("salad")
 
 
-IdxType = MutableMapping[str, tuple[Any, "LoadingOptions"]]
+IdxType: TypeAlias = MutableMapping[str, tuple[Any, "LoadingOptions"]]
+S = TypeVar("S", bound="Saveable")
 
 
 class LoadingOptions:
@@ -59,7 +71,7 @@ class LoadingOptions:
         namespaces: dict[str, str] | None = None,
         schemas: list[str] | None = None,
         fileuri: str | None = None,
-        copyfrom: Optional["LoadingOptions"] = None,
+        copyfrom: LoadingOptions | None = None,
         original_doc: Any | None = None,
         addl_metadata: dict[str, str] | None = None,
         baseuri: str | None = None,
@@ -201,7 +213,8 @@ class LoadingOptions:
         return graph
 
 
-class Saveable(ABC):
+@trait
+class Saveable(metaclass=ABCMeta):
     """Mark classes than have a save() and fromDoc() function."""
 
     @classmethod
@@ -212,7 +225,7 @@ class Saveable(ABC):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-    ) -> "Saveable":
+    ) -> Self:
         """Construct this object from the result of yaml.load()."""
 
     @abstractmethod
@@ -223,11 +236,11 @@ class Saveable(ABC):
 
 
 def load_field(
-    val: str | dict[str, str],
+    val: Any | None,
     fieldtype: "_Loader",
     baseuri: str,
     loadingOptions: LoadingOptions,
-    lc: list[Any] | None = None,
+    lc: Any | None = None,
 ) -> Any:
     """Load field."""
     if isinstance(val, MutableMapping):
@@ -437,8 +450,8 @@ class _Loader:
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
-    ) -> Any:
+        lc: Any | None = None,
+    ) -> Any | None:
         pass
 
 
@@ -449,7 +462,7 @@ class _AnyLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
+        lc: Any | None = None,
     ) -> Any:
         if doc is not None:
             return doc
@@ -466,7 +479,7 @@ class _PrimitiveLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
+        lc: Any | None = None,
     ) -> Any:
         if not isinstance(doc, self.tp):
             raise ValidationException(f"Expected a {self.tp} but got {doc.__class__.__name__}")
@@ -486,8 +499,8 @@ class _ArrayLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
-    ) -> Any:
+        lc: Any | None = None,
+    ) -> list[Any]:
         if not isinstance(doc, MutableSequence):
             raise ValidationException(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
@@ -552,8 +565,8 @@ class _MapLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
-    ) -> Any:
+        lc: Any | None = None,
+    ) -> dict[str, Any]:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(f"Expected a map, was {type(doc)}")
         if self.container is not None or self.no_link_check is not None:
@@ -587,10 +600,10 @@ class _EnumLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
-    ) -> Any:
+        lc: Any | None = None,
+    ) -> str:
         if doc in self.symbols:
-            return doc
+            return cast(str, doc)
         raise ValidationException(f"Expected one of {self.symbols}")
 
     def __repr__(self) -> str:
@@ -607,7 +620,7 @@ class _SecondaryDSLLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
+        lc: Any | None = None,
     ) -> Any:
         r: Final[list[dict[str, Any]]] = []
         match doc:
@@ -670,10 +683,10 @@ class _SecondaryDSLLoader(_Loader):
         return self.inner.load(r, baseuri, loadingOptions, docRoot, lc=lc)
 
 
-class _RecordLoader(_Loader):
+class _RecordLoader(_Loader, Generic[S]):
     def __init__(
         self,
-        classtype: type[Saveable],
+        classtype: type[S],
         container: str | None = None,
         no_link_check: bool | None = None,
     ) -> None:
@@ -687,8 +700,8 @@ class _RecordLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
-    ) -> Any:
+        lc: Any | None = None,
+    ) -> S:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
@@ -714,14 +727,15 @@ class _ExpressionLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
-    ) -> Any:
+        lc: Any | None = None,
+    ) -> str:
         if not isinstance(doc, str):
             raise ValidationException(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
                 f"but valid type for this field is a str."
             )
-        return doc
+        else:
+            return doc
 
 
 class _UnionLoader(_Loader):
@@ -738,7 +752,7 @@ class _UnionLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
+        lc: Any | None = None,
     ) -> Any:
         errors: Final = []
 
@@ -835,7 +849,7 @@ class _URILoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
+        lc: Any | None = None,
     ) -> Any:
         if self.no_link_check is not None:
             loadingOptions = LoadingOptions(
@@ -930,7 +944,7 @@ class _TypeDSLLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
+        lc: Any | None = None,
     ) -> Any:
         if isinstance(doc, MutableSequence):
             r: Final[list[Any]] = []
@@ -965,7 +979,7 @@ class _IdMapLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
+        lc: Any | None = None,
     ) -> Any:
         if isinstance(doc, MutableMapping):
             r: Final[list[Any]] = []
@@ -1172,6 +1186,7 @@ def parser_info() -> str:
     return "org.w3id.cwl.salad"
 
 
+@trait
 class Documented(Saveable):
     pass
 
@@ -1187,9 +1202,9 @@ class RecordField(Documented):
         self,
         name: Any,
         type_: Any,
-        doc: Optional[Any] = None,
-        extension_fields: Optional[dict[str, Any]] = None,
-        loadingOptions: Optional[LoadingOptions] = None,
+        doc: Any | None = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
     ) -> None:
         if extension_fields:
             self.extension_fields = extension_fields
@@ -1221,8 +1236,8 @@ class RecordField(Documented):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None
-    ) -> "RecordField":
+        docRoot: str | None = None
+    ) -> Self:
         _doc = copy.copy(doc)
 
         if hasattr(doc, "lc"):
@@ -1380,7 +1395,7 @@ class RecordField(Documented):
                             "is not valid because:",
                         )
                     )
-        extension_fields: dict[str, Any] = {}
+        extension_fields: MutableMapping[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
                 if not k:
@@ -1445,16 +1460,16 @@ class RecordField(Documented):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["doc", "name", "type"])
+    attrs: ClassVar[Collection[str]] = frozenset(["doc", "name", "type"])
 
 
 class RecordSchema(Saveable):
     def __init__(
         self,
         type_: Any,
-        fields: Optional[Any] = None,
-        extension_fields: Optional[dict[str, Any]] = None,
-        loadingOptions: Optional[LoadingOptions] = None,
+        fields: Any | None = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
     ) -> None:
         if extension_fields:
             self.extension_fields = extension_fields
@@ -1481,8 +1496,8 @@ class RecordSchema(Saveable):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None
-    ) -> "RecordSchema":
+        docRoot: str | None = None
+    ) -> Self:
         _doc = copy.copy(doc)
 
         if hasattr(doc, "lc"):
@@ -1584,7 +1599,7 @@ class RecordSchema(Saveable):
                             "is not valid because:",
                         )
                     )
-        extension_fields: dict[str, Any] = {}
+        extension_fields: MutableMapping[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
                 if not k:
@@ -1644,7 +1659,7 @@ class RecordSchema(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["fields", "type"])
+    attrs: ClassVar[Collection[str]] = frozenset(["fields", "type"])
 
 
 class EnumSchema(Saveable):
@@ -1659,9 +1674,9 @@ class EnumSchema(Saveable):
         self,
         symbols: Any,
         type_: Any,
-        name: Optional[Any] = None,
-        extension_fields: Optional[dict[str, Any]] = None,
-        loadingOptions: Optional[LoadingOptions] = None,
+        name: Any | None = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
     ) -> None:
         if extension_fields:
             self.extension_fields = extension_fields
@@ -1693,8 +1708,8 @@ class EnumSchema(Saveable):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None
-    ) -> "EnumSchema":
+        docRoot: str | None = None
+    ) -> Self:
         _doc = copy.copy(doc)
 
         if hasattr(doc, "lc"):
@@ -1853,7 +1868,7 @@ class EnumSchema(Saveable):
                             "is not valid because:",
                         )
                     )
-        extension_fields: dict[str, Any] = {}
+        extension_fields: MutableMapping[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
                 if not k:
@@ -1917,7 +1932,7 @@ class EnumSchema(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["name", "symbols", "type"])
+    attrs: ClassVar[Collection[str]] = frozenset(["name", "symbols", "type"])
 
 
 class ArraySchema(Saveable):
@@ -1925,8 +1940,8 @@ class ArraySchema(Saveable):
         self,
         items: Any,
         type_: Any,
-        extension_fields: Optional[dict[str, Any]] = None,
-        loadingOptions: Optional[LoadingOptions] = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
     ) -> None:
         if extension_fields:
             self.extension_fields = extension_fields
@@ -1953,8 +1968,8 @@ class ArraySchema(Saveable):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None
-    ) -> "ArraySchema":
+        docRoot: str | None = None
+    ) -> Self:
         _doc = copy.copy(doc)
 
         if hasattr(doc, "lc"):
@@ -2057,7 +2072,7 @@ class ArraySchema(Saveable):
                             "is not valid because:",
                         )
                     )
-        extension_fields: dict[str, Any] = {}
+        extension_fields: MutableMapping[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
                 if not k:
@@ -2116,7 +2131,7 @@ class ArraySchema(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["items", "type"])
+    attrs: ClassVar[Collection[str]] = frozenset(["items", "type"])
 
 
 class MapSchema(Saveable):
@@ -2124,8 +2139,8 @@ class MapSchema(Saveable):
         self,
         type_: Any,
         values: Any,
-        extension_fields: Optional[dict[str, Any]] = None,
-        loadingOptions: Optional[LoadingOptions] = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
     ) -> None:
         if extension_fields:
             self.extension_fields = extension_fields
@@ -2152,8 +2167,8 @@ class MapSchema(Saveable):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None
-    ) -> "MapSchema":
+        docRoot: str | None = None
+    ) -> Self:
         _doc = copy.copy(doc)
 
         if hasattr(doc, "lc"):
@@ -2256,7 +2271,7 @@ class MapSchema(Saveable):
                             "is not valid because:",
                         )
                     )
-        extension_fields: dict[str, Any] = {}
+        extension_fields: MutableMapping[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
                 if not k:
@@ -2315,7 +2330,7 @@ class MapSchema(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["type", "values"])
+    attrs: ClassVar[Collection[str]] = frozenset(["type", "values"])
 
 
 class UnionSchema(Saveable):
@@ -2323,8 +2338,8 @@ class UnionSchema(Saveable):
         self,
         names: Any,
         type_: Any,
-        extension_fields: Optional[dict[str, Any]] = None,
-        loadingOptions: Optional[LoadingOptions] = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
     ) -> None:
         if extension_fields:
             self.extension_fields = extension_fields
@@ -2351,8 +2366,8 @@ class UnionSchema(Saveable):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None
-    ) -> "UnionSchema":
+        docRoot: str | None = None
+    ) -> Self:
         _doc = copy.copy(doc)
 
         if hasattr(doc, "lc"):
@@ -2455,7 +2470,7 @@ class UnionSchema(Saveable):
                             "is not valid because:",
                         )
                     )
-        extension_fields: dict[str, Any] = {}
+        extension_fields: MutableMapping[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
                 if not k:
@@ -2514,7 +2529,7 @@ class UnionSchema(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["names", "type"])
+    attrs: ClassVar[Collection[str]] = frozenset(["names", "type"])
 
 
 class JsonldPredicate(Saveable):
@@ -2526,19 +2541,19 @@ class JsonldPredicate(Saveable):
 
     def __init__(
         self,
-        _id: Optional[Any] = None,
-        _type: Optional[Any] = None,
-        _container: Optional[Any] = None,
-        identity: Optional[Any] = None,
-        noLinkCheck: Optional[Any] = None,
-        mapSubject: Optional[Any] = None,
-        mapPredicate: Optional[Any] = None,
-        refScope: Optional[Any] = None,
-        typeDSL: Optional[Any] = None,
-        secondaryFilesDSL: Optional[Any] = None,
-        subscope: Optional[Any] = None,
-        extension_fields: Optional[dict[str, Any]] = None,
-        loadingOptions: Optional[LoadingOptions] = None,
+        _id: Any | None = None,
+        _type: Any | None = None,
+        _container: Any | None = None,
+        identity: Any | None = None,
+        noLinkCheck: Any | None = None,
+        mapSubject: Any | None = None,
+        mapPredicate: Any | None = None,
+        refScope: Any | None = None,
+        typeDSL: Any | None = None,
+        secondaryFilesDSL: Any | None = None,
+        subscope: Any | None = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
     ) -> None:
         if extension_fields:
             self.extension_fields = extension_fields
@@ -2600,8 +2615,8 @@ class JsonldPredicate(Saveable):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None
-    ) -> "JsonldPredicate":
+        docRoot: str | None = None
+    ) -> Self:
         _doc = copy.copy(doc)
 
         if hasattr(doc, "lc"):
@@ -3125,7 +3140,7 @@ class JsonldPredicate(Saveable):
                                 "is not valid because:",
                             )
                         )
-        extension_fields: dict[str, Any] = {}
+        extension_fields: MutableMapping[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
                 if not k:
@@ -3244,7 +3259,7 @@ class JsonldPredicate(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(
+    attrs: ClassVar[Collection[str]] = frozenset(
         [
             "_id",
             "_type",
@@ -3266,8 +3281,8 @@ class SpecializeDef(Saveable):
         self,
         specializeFrom: Any,
         specializeTo: Any,
-        extension_fields: Optional[dict[str, Any]] = None,
-        loadingOptions: Optional[LoadingOptions] = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
     ) -> None:
         if extension_fields:
             self.extension_fields = extension_fields
@@ -3297,8 +3312,8 @@ class SpecializeDef(Saveable):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None
-    ) -> "SpecializeDef":
+        docRoot: str | None = None
+    ) -> Self:
         _doc = copy.copy(doc)
 
         if hasattr(doc, "lc"):
@@ -3401,7 +3416,7 @@ class SpecializeDef(Saveable):
                             "is not valid because:",
                         )
                     )
-        extension_fields: dict[str, Any] = {}
+        extension_fields: MutableMapping[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
                 if not k:
@@ -3461,17 +3476,20 @@ class SpecializeDef(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["specializeFrom", "specializeTo"])
+    attrs: ClassVar[Collection[str]] = frozenset(["specializeFrom", "specializeTo"])
 
 
+@trait
 class NamedType(Saveable):
     pass
 
 
+@trait
 class DocType(Documented):
     pass
 
 
+@trait
 class SchemaDefinedType(DocType):
     """
     Abstract base for schema-defined types.
@@ -3492,11 +3510,11 @@ class SaladRecordField(RecordField):
         self,
         name: Any,
         type_: Any,
-        doc: Optional[Any] = None,
-        jsonldPredicate: Optional[Any] = None,
-        default: Optional[Any] = None,
-        extension_fields: Optional[dict[str, Any]] = None,
-        loadingOptions: Optional[LoadingOptions] = None,
+        doc: Any | None = None,
+        jsonldPredicate: Any | None = None,
+        default: Any | None = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
     ) -> None:
         if extension_fields:
             self.extension_fields = extension_fields
@@ -3534,8 +3552,8 @@ class SaladRecordField(RecordField):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None
-    ) -> "SaladRecordField":
+        docRoot: str | None = None
+    ) -> Self:
         _doc = copy.copy(doc)
 
         if hasattr(doc, "lc"):
@@ -3787,7 +3805,7 @@ class SaladRecordField(RecordField):
                                 "is not valid because:",
                             )
                         )
-        extension_fields: dict[str, Any] = {}
+        extension_fields: MutableMapping[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
                 if not k:
@@ -3865,7 +3883,9 @@ class SaladRecordField(RecordField):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(["doc", "name", "type", "jsonldPredicate", "default"])
+    attrs: ClassVar[Collection[str]] = frozenset(
+        ["doc", "name", "type", "jsonldPredicate", "default"]
+    )
 
 
 class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
@@ -3875,19 +3895,19 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         self,
         name: Any,
         type_: Any,
-        inVocab: Optional[Any] = None,
-        fields: Optional[Any] = None,
-        doc: Optional[Any] = None,
-        docParent: Optional[Any] = None,
-        docChild: Optional[Any] = None,
-        docAfter: Optional[Any] = None,
-        jsonldPredicate: Optional[Any] = None,
-        documentRoot: Optional[Any] = None,
-        abstract: Optional[Any] = None,
-        extends: Optional[Any] = None,
-        specialize: Optional[Any] = None,
-        extension_fields: Optional[dict[str, Any]] = None,
-        loadingOptions: Optional[LoadingOptions] = None,
+        inVocab: Any | None = None,
+        fields: Any | None = None,
+        doc: Any | None = None,
+        docParent: Any | None = None,
+        docChild: Any | None = None,
+        docAfter: Any | None = None,
+        jsonldPredicate: Any | None = None,
+        documentRoot: Any | None = None,
+        abstract: Any | None = None,
+        extends: Any | None = None,
+        specialize: Any | None = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
     ) -> None:
         if extension_fields:
             self.extension_fields = extension_fields
@@ -3955,8 +3975,8 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None
-    ) -> "SaladRecordSchema":
+        docRoot: str | None = None
+    ) -> Self:
         _doc = copy.copy(doc)
 
         if hasattr(doc, "lc"):
@@ -4584,7 +4604,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                                 "is not valid because:",
                             )
                         )
-        extension_fields: dict[str, Any] = {}
+        extension_fields: MutableMapping[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
                 if not k:
@@ -4707,7 +4727,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(
+    attrs: ClassVar[Collection[str]] = frozenset(
         [
             "name",
             "inVocab",
@@ -4738,17 +4758,17 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         self,
         symbols: Any,
         type_: Any,
-        name: Optional[Any] = None,
-        inVocab: Optional[Any] = None,
-        doc: Optional[Any] = None,
-        docParent: Optional[Any] = None,
-        docChild: Optional[Any] = None,
-        docAfter: Optional[Any] = None,
-        jsonldPredicate: Optional[Any] = None,
-        documentRoot: Optional[Any] = None,
-        extends: Optional[Any] = None,
-        extension_fields: Optional[dict[str, Any]] = None,
-        loadingOptions: Optional[LoadingOptions] = None,
+        name: Any | None = None,
+        inVocab: Any | None = None,
+        doc: Any | None = None,
+        docParent: Any | None = None,
+        docChild: Any | None = None,
+        docAfter: Any | None = None,
+        jsonldPredicate: Any | None = None,
+        documentRoot: Any | None = None,
+        extends: Any | None = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
     ) -> None:
         if extension_fields:
             self.extension_fields = extension_fields
@@ -4810,8 +4830,8 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None
-    ) -> "SaladEnumSchema":
+        docRoot: str | None = None
+    ) -> Self:
         _doc = copy.copy(doc)
 
         if hasattr(doc, "lc"):
@@ -5346,7 +5366,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                                 "is not valid because:",
                             )
                         )
-        extension_fields: dict[str, Any] = {}
+        extension_fields: MutableMapping[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
                 if not k:
@@ -5452,7 +5472,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(
+    attrs: ClassVar[Collection[str]] = frozenset(
         [
             "name",
             "inVocab",
@@ -5482,15 +5502,15 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
         name: Any,
         type_: Any,
         values: Any,
-        inVocab: Optional[Any] = None,
-        doc: Optional[Any] = None,
-        docParent: Optional[Any] = None,
-        docChild: Optional[Any] = None,
-        docAfter: Optional[Any] = None,
-        jsonldPredicate: Optional[Any] = None,
-        documentRoot: Optional[Any] = None,
-        extension_fields: Optional[dict[str, Any]] = None,
-        loadingOptions: Optional[LoadingOptions] = None,
+        inVocab: Any | None = None,
+        doc: Any | None = None,
+        docParent: Any | None = None,
+        docChild: Any | None = None,
+        docAfter: Any | None = None,
+        jsonldPredicate: Any | None = None,
+        documentRoot: Any | None = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
     ) -> None:
         if extension_fields:
             self.extension_fields = extension_fields
@@ -5549,8 +5569,8 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None
-    ) -> "SaladMapSchema":
+        docRoot: str | None = None
+    ) -> Self:
         _doc = copy.copy(doc)
 
         if hasattr(doc, "lc"):
@@ -6038,7 +6058,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                                 "is not valid because:",
                             )
                         )
-        extension_fields: dict[str, Any] = {}
+        extension_fields: MutableMapping[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
                 if not k:
@@ -6140,7 +6160,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(
+    attrs: ClassVar[Collection[str]] = frozenset(
         [
             "name",
             "inVocab",
@@ -6169,14 +6189,14 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
         name: Any,
         names: Any,
         type_: Any,
-        inVocab: Optional[Any] = None,
-        doc: Optional[Any] = None,
-        docParent: Optional[Any] = None,
-        docChild: Optional[Any] = None,
-        docAfter: Optional[Any] = None,
-        documentRoot: Optional[Any] = None,
-        extension_fields: Optional[dict[str, Any]] = None,
-        loadingOptions: Optional[LoadingOptions] = None,
+        inVocab: Any | None = None,
+        doc: Any | None = None,
+        docParent: Any | None = None,
+        docChild: Any | None = None,
+        docAfter: Any | None = None,
+        documentRoot: Any | None = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
     ) -> None:
         if extension_fields:
             self.extension_fields = extension_fields
@@ -6232,8 +6252,8 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None
-    ) -> "SaladUnionSchema":
+        docRoot: str | None = None
+    ) -> Self:
         _doc = copy.copy(doc)
 
         if hasattr(doc, "lc"):
@@ -6674,7 +6694,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                                 "is not valid because:",
                             )
                         )
-        extension_fields: dict[str, Any] = {}
+        extension_fields: MutableMapping[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
                 if not k:
@@ -6768,7 +6788,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(
+    attrs: ClassVar[Collection[str]] = frozenset(
         [
             "name",
             "inVocab",
@@ -6796,13 +6816,13 @@ class Documentation(NamedType, DocType):
         self,
         name: Any,
         type_: Any,
-        inVocab: Optional[Any] = None,
-        doc: Optional[Any] = None,
-        docParent: Optional[Any] = None,
-        docChild: Optional[Any] = None,
-        docAfter: Optional[Any] = None,
-        extension_fields: Optional[dict[str, Any]] = None,
-        loadingOptions: Optional[LoadingOptions] = None,
+        inVocab: Any | None = None,
+        doc: Any | None = None,
+        docParent: Any | None = None,
+        docChild: Any | None = None,
+        docAfter: Any | None = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
     ) -> None:
         if extension_fields:
             self.extension_fields = extension_fields
@@ -6852,8 +6872,8 @@ class Documentation(NamedType, DocType):
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        docRoot: Optional[str] = None
-    ) -> "Documentation":
+        docRoot: str | None = None
+    ) -> Self:
         _doc = copy.copy(doc)
 
         if hasattr(doc, "lc"):
@@ -7199,7 +7219,7 @@ class Documentation(NamedType, DocType):
                             "is not valid because:",
                         )
                     )
-        extension_fields: dict[str, Any] = {}
+        extension_fields: MutableMapping[str, Any] = {}
         for k in _doc.keys():
             if k not in cls.attrs:
                 if not k:
@@ -7281,7 +7301,7 @@ class Documentation(NamedType, DocType):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs = frozenset(
+    attrs: ClassVar[Collection[str]] = frozenset(
         ["name", "inVocab", "doc", "docParent", "docChild", "docAfter", "type"]
     )
 
@@ -7357,13 +7377,13 @@ _rvocab = {
     "https://w3id.org/cwl/salad#union": "union",
 }
 
-strtype = _PrimitiveLoader(str)
-inttype = _PrimitiveLoader(int)
-floattype = _PrimitiveLoader(float)
-booltype = _PrimitiveLoader(bool)
-None_type = _PrimitiveLoader(type(None))
-Any_type = _AnyLoader()
-PrimitiveTypeLoader = _EnumLoader(
+strtype: Final = _PrimitiveLoader(str)
+inttype: Final = _PrimitiveLoader(int)
+floattype: Final = _PrimitiveLoader(float)
+booltype: Final = _PrimitiveLoader(bool)
+None_type: Final = _PrimitiveLoader(type(None))
+Any_type: Final = _AnyLoader()
+PrimitiveTypeLoader: Final = _EnumLoader(
     (
         "null",
         "boolean",
@@ -7389,34 +7409,36 @@ float: single precision (32-bit) IEEE 754 floating-point number
 double: double precision (64-bit) IEEE 754 floating-point number
 string: Unicode character sequence
 """
-AnyLoader = _EnumLoader(("Any",), "Any")
+AnyLoader: Final = _EnumLoader(("Any",), "Any")
 """
 The **Any** type validates for any non-null value.
 """
-RecordFieldLoader = _RecordLoader(RecordField, None, None)
-RecordSchemaLoader = _RecordLoader(RecordSchema, None, None)
-EnumSchemaLoader = _RecordLoader(EnumSchema, None, None)
-ArraySchemaLoader = _RecordLoader(ArraySchema, None, None)
-MapSchemaLoader = _RecordLoader(MapSchema, None, None)
-UnionSchemaLoader = _RecordLoader(UnionSchema, None, None)
-JsonldPredicateLoader = _RecordLoader(JsonldPredicate, None, None)
-SpecializeDefLoader = _RecordLoader(SpecializeDef, None, None)
-SaladRecordFieldLoader = _RecordLoader(SaladRecordField, None, None)
-SaladRecordSchemaLoader = _RecordLoader(SaladRecordSchema, None, None)
-SaladEnumSchemaLoader = _RecordLoader(SaladEnumSchema, None, None)
-SaladMapSchemaLoader = _RecordLoader(SaladMapSchema, None, None)
-SaladUnionSchemaLoader = _RecordLoader(SaladUnionSchema, None, None)
-DocumentationLoader = _RecordLoader(Documentation, None, None)
-array_of_strtype = _ArrayLoader(strtype)
-union_of_None_type_or_strtype_or_array_of_strtype = _UnionLoader(
+RecordFieldLoader: Final = _RecordLoader(RecordField, None, None)
+RecordSchemaLoader: Final = _RecordLoader(RecordSchema, None, None)
+EnumSchemaLoader: Final = _RecordLoader(EnumSchema, None, None)
+ArraySchemaLoader: Final = _RecordLoader(ArraySchema, None, None)
+MapSchemaLoader: Final = _RecordLoader(MapSchema, None, None)
+UnionSchemaLoader: Final = _RecordLoader(UnionSchema, None, None)
+JsonldPredicateLoader: Final = _RecordLoader(JsonldPredicate, None, None)
+SpecializeDefLoader: Final = _RecordLoader(SpecializeDef, None, None)
+SaladRecordFieldLoader: Final = _RecordLoader(SaladRecordField, None, None)
+SaladRecordSchemaLoader: Final = _RecordLoader(SaladRecordSchema, None, None)
+SaladEnumSchemaLoader: Final = _RecordLoader(SaladEnumSchema, None, None)
+SaladMapSchemaLoader: Final = _RecordLoader(SaladMapSchema, None, None)
+SaladUnionSchemaLoader: Final = _RecordLoader(SaladUnionSchema, None, None)
+DocumentationLoader: Final = _RecordLoader(Documentation, None, None)
+array_of_strtype: Final = _ArrayLoader(strtype)
+union_of_None_type_or_strtype_or_array_of_strtype: Final = _UnionLoader(
     (
         None_type,
         strtype,
         array_of_strtype,
     )
 )
-uri_strtype_True_False_None_None = _URILoader(strtype, True, False, None, None)
-union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
+uri_strtype_True_False_None_None: Final = _URILoader(strtype, True, False, None, None)
+union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype: (
+    Final
+) = _UnionLoader(
     (
         PrimitiveTypeLoader,
         RecordSchemaLoader,
@@ -7427,10 +7449,14 @@ union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArrayS
         strtype,
     )
 )
-array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _ArrayLoader(
+array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype: (
+    Final
+) = _ArrayLoader(
     union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype
 )
-union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype = _UnionLoader(
+union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype: (
+    Final
+) = _UnionLoader(
     (
         PrimitiveTypeLoader,
         RecordSchemaLoader,
@@ -7442,110 +7468,122 @@ union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArrayS
         array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
     )
 )
-typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2 = _TypeDSLLoader(
+typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2: (
+    Final
+) = _TypeDSLLoader(
     union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
     2,
     "v1.1",
 )
-array_of_RecordFieldLoader = _ArrayLoader(RecordFieldLoader)
-union_of_None_type_or_array_of_RecordFieldLoader = _UnionLoader(
+array_of_RecordFieldLoader: Final = _ArrayLoader(RecordFieldLoader)
+union_of_None_type_or_array_of_RecordFieldLoader: Final = _UnionLoader(
     (
         None_type,
         array_of_RecordFieldLoader,
     )
 )
-idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader = _IdMapLoader(
+idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader: Final = _IdMapLoader(
     union_of_None_type_or_array_of_RecordFieldLoader, "name", "type"
 )
-Record_nameLoader = _EnumLoader(("record",), "Record_name")
-typedsl_Record_nameLoader_2 = _TypeDSLLoader(Record_nameLoader, 2, "v1.1")
-union_of_None_type_or_strtype = _UnionLoader(
+Record_nameLoader: Final = _EnumLoader(("record",), "Record_name")
+typedsl_Record_nameLoader_2: Final = _TypeDSLLoader(Record_nameLoader, 2, "v1.1")
+union_of_None_type_or_strtype: Final = _UnionLoader(
     (
         None_type,
         strtype,
     )
 )
-uri_union_of_None_type_or_strtype_True_False_None_None = _URILoader(
+uri_union_of_None_type_or_strtype_True_False_None_None: Final = _URILoader(
     union_of_None_type_or_strtype, True, False, None, None
 )
-uri_array_of_strtype_True_False_None_None = _URILoader(
+uri_array_of_strtype_True_False_None_None: Final = _URILoader(
     array_of_strtype, True, False, None, None
 )
-Enum_nameLoader = _EnumLoader(("enum",), "Enum_name")
-typedsl_Enum_nameLoader_2 = _TypeDSLLoader(Enum_nameLoader, 2, "v1.1")
-uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None = _URILoader(
+Enum_nameLoader: Final = _EnumLoader(("enum",), "Enum_name")
+typedsl_Enum_nameLoader_2: Final = _TypeDSLLoader(Enum_nameLoader, 2, "v1.1")
+uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None: (
+    Final
+) = _URILoader(
     union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
     False,
     True,
     2,
     None,
 )
-Array_nameLoader = _EnumLoader(("array",), "Array_name")
-typedsl_Array_nameLoader_2 = _TypeDSLLoader(Array_nameLoader, 2, "v1.1")
-Map_nameLoader = _EnumLoader(("map",), "Map_name")
-typedsl_Map_nameLoader_2 = _TypeDSLLoader(Map_nameLoader, 2, "v1.1")
-Union_nameLoader = _EnumLoader(("union",), "Union_name")
-typedsl_Union_nameLoader_2 = _TypeDSLLoader(Union_nameLoader, 2, "v1.1")
-union_of_None_type_or_booltype = _UnionLoader(
+Array_nameLoader: Final = _EnumLoader(("array",), "Array_name")
+typedsl_Array_nameLoader_2: Final = _TypeDSLLoader(Array_nameLoader, 2, "v1.1")
+Map_nameLoader: Final = _EnumLoader(("map",), "Map_name")
+typedsl_Map_nameLoader_2: Final = _TypeDSLLoader(Map_nameLoader, 2, "v1.1")
+Union_nameLoader: Final = _EnumLoader(("union",), "Union_name")
+typedsl_Union_nameLoader_2: Final = _TypeDSLLoader(Union_nameLoader, 2, "v1.1")
+union_of_None_type_or_booltype: Final = _UnionLoader(
     (
         None_type,
         booltype,
     )
 )
-union_of_None_type_or_inttype = _UnionLoader(
+union_of_None_type_or_inttype: Final = _UnionLoader(
     (
         None_type,
         inttype,
     )
 )
-uri_strtype_False_False_1_None = _URILoader(strtype, False, False, 1, None)
-uri_union_of_None_type_or_strtype_False_False_None_None = _URILoader(
+uri_strtype_False_False_1_None: Final = _URILoader(strtype, False, False, 1, None)
+uri_union_of_None_type_or_strtype_False_False_None_None: Final = _URILoader(
     union_of_None_type_or_strtype, False, False, None, None
 )
-uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None = (
+uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None: Final = (
     _URILoader(
         union_of_None_type_or_strtype_or_array_of_strtype, False, False, None, None
     )
 )
-union_of_None_type_or_strtype_or_JsonldPredicateLoader = _UnionLoader(
+union_of_None_type_or_strtype_or_JsonldPredicateLoader: Final = _UnionLoader(
     (
         None_type,
         strtype,
         JsonldPredicateLoader,
     )
 )
-union_of_None_type_or_Any_type = _UnionLoader(
+union_of_None_type_or_Any_type: Final = _UnionLoader(
     (
         None_type,
         Any_type,
     )
 )
-array_of_SaladRecordFieldLoader = _ArrayLoader(SaladRecordFieldLoader)
-union_of_None_type_or_array_of_SaladRecordFieldLoader = _UnionLoader(
+array_of_SaladRecordFieldLoader: Final = _ArrayLoader(SaladRecordFieldLoader)
+union_of_None_type_or_array_of_SaladRecordFieldLoader: Final = _UnionLoader(
     (
         None_type,
         array_of_SaladRecordFieldLoader,
     )
 )
-idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader = _IdMapLoader(
-    union_of_None_type_or_array_of_SaladRecordFieldLoader, "name", "type"
+idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader: Final = (
+    _IdMapLoader(union_of_None_type_or_array_of_SaladRecordFieldLoader, "name", "type")
 )
-uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None = _URILoader(
-    union_of_None_type_or_strtype_or_array_of_strtype, False, False, 1, None
+uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None: Final = (
+    _URILoader(union_of_None_type_or_strtype_or_array_of_strtype, False, False, 1, None)
 )
-array_of_SpecializeDefLoader = _ArrayLoader(SpecializeDefLoader)
-union_of_None_type_or_array_of_SpecializeDefLoader = _UnionLoader(
+array_of_SpecializeDefLoader: Final = _ArrayLoader(SpecializeDefLoader)
+union_of_None_type_or_array_of_SpecializeDefLoader: Final = _UnionLoader(
     (
         None_type,
         array_of_SpecializeDefLoader,
     )
 )
-idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader = _IdMapLoader(
-    union_of_None_type_or_array_of_SpecializeDefLoader, "specializeFrom", "specializeTo"
+idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader: Final = (
+    _IdMapLoader(
+        union_of_None_type_or_array_of_SpecializeDefLoader,
+        "specializeFrom",
+        "specializeTo",
+    )
 )
-Documentation_nameLoader = _EnumLoader(("documentation",), "Documentation_name")
-typedsl_Documentation_nameLoader_2 = _TypeDSLLoader(Documentation_nameLoader, 2, "v1.1")
-union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader = _UnionLoader(
+Documentation_nameLoader: Final = _EnumLoader(("documentation",), "Documentation_name")
+typedsl_Documentation_nameLoader_2: Final = _TypeDSLLoader(
+    Documentation_nameLoader, 2, "v1.1"
+)
+union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader: (
+    Final
+) = _UnionLoader(
     (
         SaladRecordSchemaLoader,
         SaladEnumSchemaLoader,
@@ -7554,10 +7592,14 @@ union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoade
         DocumentationLoader,
     )
 )
-array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader = _ArrayLoader(
+array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader: (
+    Final
+) = _ArrayLoader(
     union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader
 )
-union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader = _UnionLoader(
+union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader: (
+    Final
+) = _UnionLoader(
     (
         SaladRecordSchemaLoader,
         SaladEnumSchemaLoader,
@@ -7571,8 +7613,8 @@ union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoade
 
 def load_document(
     doc: Any,
-    baseuri: Optional[str] = None,
-    loadingOptions: Optional[LoadingOptions] = None,
+    baseuri: str | None = None,
+    loadingOptions: LoadingOptions | None = None,
 ) -> Any:
     if baseuri is None:
         baseuri = file_uri(os.getcwd()) + "/"
@@ -7589,9 +7631,9 @@ def load_document(
 
 def load_document_with_metadata(
     doc: Any,
-    baseuri: Optional[str] = None,
-    loadingOptions: Optional[LoadingOptions] = None,
-    addl_metadata_fields: Optional[MutableSequence[str]] = None,
+    baseuri: str | None = None,
+    loadingOptions: LoadingOptions | None = None,
+    addl_metadata_fields: MutableSequence[str] | None = None,
 ) -> Any:
     if baseuri is None:
         baseuri = file_uri(os.getcwd()) + "/"
@@ -7609,7 +7651,7 @@ def load_document_with_metadata(
 def load_document_by_string(
     string: Any,
     uri: str,
-    loadingOptions: Optional[LoadingOptions] = None,
+    loadingOptions: LoadingOptions | None = None,
 ) -> Any:
     yaml = yaml_no_ts()
     result = yaml.load(string)
@@ -7630,7 +7672,7 @@ def load_document_by_string(
 def load_document_by_yaml(
     yaml: Any,
     uri: str,
-    loadingOptions: Optional[LoadingOptions] = None,
+    loadingOptions: LoadingOptions | None = None,
 ) -> Any:
     """
     Shortcut to load via a YAML object.

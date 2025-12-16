@@ -145,13 +145,19 @@ class PythonCodeGen(CodeGenBase):
         optional_fields: set[str],
     ) -> None:
         classname = self.safe_name(classname)
+        self.current_class_is_abstract = abstract
 
         if extends:
             ext = ", ".join(self.safe_name(e) for e in extends)
         else:
             ext = "Saveable"
 
-        self.out.write(fmt(f"class {classname}({ext}):\n    pass", 0)[:-9])
+        if self.current_class_is_abstract:
+            decorator = "@trait\n"
+        else:
+            decorator = ""
+
+        self.out.write(fmt(f"{decorator}class {classname}({ext}):\n    pass", 0)[:-9])
         # make a valid class for Black, but then trim off the "pass"
 
         if doc:
@@ -159,7 +165,6 @@ class PythonCodeGen(CodeGenBase):
 
         self.serializer = StringIO()
 
-        self.current_class_is_abstract = abstract
         if self.current_class_is_abstract:
             self.out.write("    pass\n\n\n")
             return
@@ -185,7 +190,7 @@ class PythonCodeGen(CodeGenBase):
         self.out.write(
             "    def __init__(\n"
             + "\n".join(safe_inits)
-            + "\n        extension_fields: dict[str, Any] | None = None,"
+            + "\n        extension_fields: MutableMapping[str, Any] | None = None,"
             + "\n        loadingOptions: LoadingOptions | None = None,"
             + "\n    ) -> None:\n"
             + """        if extension_fields:
@@ -201,7 +206,7 @@ class PythonCodeGen(CodeGenBase):
         field_inits = ""
         for name in field_names:
             if name == "class":
-                field_inits += """        self.class_ = "{}"
+                field_inits += """        self.class_: Final[str] = "{}"
 """.format(
                     classname
                 )
@@ -250,7 +255,7 @@ class PythonCodeGen(CodeGenBase):
         )
 
         self.out.write(
-            f"""
+            """
     @classmethod
     def fromDoc(
         cls,
@@ -258,7 +263,7 @@ class PythonCodeGen(CodeGenBase):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None
-    ) -> "{classname}":
+    ) -> Self:
         _doc = copy.copy(doc)
 
         if hasattr(doc, "lc"):
@@ -294,7 +299,7 @@ class PythonCodeGen(CodeGenBase):
         self.out.write(
             fmt(
                 """
-extension_fields: dict[str, Any] = {{}}
+extension_fields: MutableMapping[str, Any] = {{}}
 for k in _doc.keys():
     if k not in cls.attrs:
         if not k:
@@ -340,7 +345,7 @@ if _errors__:
 
         self.serializer.write(
             fmt(
-                f"""attrs = frozenset(["{'", "'.join(field_names)}"])\n""",  # noqa: B907
+                f"""attrs: ClassVar[Collection[str]] = frozenset(["{'", "'.join(field_names)}"])\n""",  # noqa: B907
                 4,
             )
         )
@@ -776,7 +781,7 @@ if self.{safename} is not None:
 
         for _, collected_type in self.collected_types.items():
             if not collected_type.abstract:
-                self.out.write(fmt(f"{collected_type.name} = {collected_type.init}\n", 0))
+                self.out.write(fmt(f"{collected_type.name}: Final = {collected_type.init}\n", 0))
         self.out.write("\n")
 
         if self.lazy_inits:
