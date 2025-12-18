@@ -23,6 +23,7 @@ class LazyInitDef(NamedTuple):
 
     name: str
     init: str
+    instance_type: str | None = None
 
 
 class CodeGenBase:

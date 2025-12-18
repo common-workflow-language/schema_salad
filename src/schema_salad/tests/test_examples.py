@@ -17,7 +17,6 @@ from schema_salad.jsonld_context import makerdf
 from schema_salad.ref_resolver import Loader, file_uri, uri_file_path
 from schema_salad.sourceline import SourceLine, cmap
 from schema_salad.utils import ContextType, stdout, yaml_no_ts
-
 from .util import cwl_file_uri, get_data, get_data_uri, get_path
 
 
@@ -610,11 +609,13 @@ def test_python_codegen_parent(tmp_path: Path) -> None:
     )
     with open(src_target) as f:
         content = f.read()
-    assert "class ArraySchema(Saveable)" not in content
     assert "class CWLArraySchema(schema_salad.metaschema.ArraySchema)" in content
-    assert "class Workflow(Process)" in content
-    assert "EnumSchemaLoader: Final = _RecordLoader(EnumSchema, None, None)" not in content
+    assert "class Workflow(Saveable)" in content
     assert (
-        "EnumSchemaLoader: Final = _RecordLoader(schema_salad.metaschema.EnumSchema, None, None)"
-        in content
+        "EnumSchemaLoader: Final[Loader[EnumSchema]] = _RecordLoader(EnumSchema, None, None)"
+        not in content
+    )
+    assert (
+        "EnumSchemaLoader: Final[Loader[schema_salad.metaschema.EnumSchema]] = "
+        "_RecordLoader(schema_salad.metaschema.EnumSchema, None, None)" in content
     )
