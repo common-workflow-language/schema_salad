@@ -20,7 +20,7 @@ from io import StringIO
 from itertools import chain
 from mypy_extensions import trait
 from typing import Any, Final, Generic, TypeAlias, TypeVar, cast
-from typing import ClassVar  # pylint: disable=unused-import # noqa: F401
+from typing import ClassVar, Literal, Mapping  # pylint: disable=unused-import # noqa: F401
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
@@ -38,8 +38,8 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import Self
 
-_vocab: dict[str, str] = {}
-_rvocab: dict[str, str] = {}
+_vocab: Final[dict[str, str]] = {}
+_rvocab: Final[dict[str, str]] = {}
 
 _logger: Final = logging.getLogger("salad")
 
@@ -1198,26 +1198,6 @@ class RecordField(Documented):
 
     name: str
 
-    def __init__(
-        self,
-        name: Any,
-        type_: Any,
-        doc: Any | None = None,
-        extension_fields: MutableMapping[str, Any] | None = None,
-        loadingOptions: LoadingOptions | None = None,
-    ) -> None:
-        if extension_fields:
-            self.extension_fields = extension_fields
-        else:
-            self.extension_fields = CommentedMap()
-        if loadingOptions:
-            self.loadingOptions = loadingOptions
-        else:
-            self.loadingOptions = LoadingOptions()
-        self.doc = doc
-        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
-        self.type_ = type_
-
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, RecordField):
             return bool(
@@ -1420,8 +1400,8 @@ class RecordField(Documented):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
+            name=cast(str, name),
             doc=doc,
-            name=name,
             type_=type_,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
@@ -1460,14 +1440,11 @@ class RecordField(Documented):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs: ClassVar[Collection[str]] = frozenset(["doc", "name", "type"])
-
-
-class RecordSchema(Saveable):
     def __init__(
         self,
-        type_: Any,
-        fields: Any | None = None,
+        name: str,
+        type_: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str,
+        doc: None | Sequence[str] | str = None,
         extension_fields: MutableMapping[str, Any] | None = None,
         loadingOptions: LoadingOptions | None = None,
     ) -> None:
@@ -1479,9 +1456,14 @@ class RecordSchema(Saveable):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.fields = fields
+        self.doc = doc
+        self.name = name
         self.type_ = type_
 
+    attrs: ClassVar[Collection[str]] = frozenset(["doc", "name", "type"])
+
+
+class RecordSchema(Saveable):
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, RecordSchema):
             return bool(self.fields == other.fields and self.type_ == other.type_)
@@ -1659,22 +1641,10 @@ class RecordSchema(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs: ClassVar[Collection[str]] = frozenset(["fields", "type"])
-
-
-class EnumSchema(Saveable):
-    """
-    Define an enumerated type.
-
-    """
-
-    name: str
-
     def __init__(
         self,
-        symbols: Any,
-        type_: Any,
-        name: Any | None = None,
+        type_: Literal["record"],
+        fields: None | Sequence[RecordField] = None,
         extension_fields: MutableMapping[str, Any] | None = None,
         loadingOptions: LoadingOptions | None = None,
     ) -> None:
@@ -1686,9 +1656,19 @@ class EnumSchema(Saveable):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
-        self.symbols = symbols
+        self.fields = fields
         self.type_ = type_
+
+    attrs: ClassVar[Collection[str]] = frozenset(["fields", "type"])
+
+
+class EnumSchema(Saveable):
+    """
+    Define an enumerated type.
+
+    """
+
+    name: str
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, EnumSchema):
@@ -1893,7 +1873,7 @@ class EnumSchema(Saveable):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
-            name=name,
+            name=cast(str, name),
             symbols=symbols,
             type_=type_,
             extension_fields=extension_fields,
@@ -1932,14 +1912,11 @@ class EnumSchema(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs: ClassVar[Collection[str]] = frozenset(["name", "symbols", "type"])
-
-
-class ArraySchema(Saveable):
     def __init__(
         self,
-        items: Any,
-        type_: Any,
+        symbols: Sequence[str],
+        type_: Literal["enum"],
+        name: None | str = None,
         extension_fields: MutableMapping[str, Any] | None = None,
         loadingOptions: LoadingOptions | None = None,
     ) -> None:
@@ -1951,9 +1928,14 @@ class ArraySchema(Saveable):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.items = items
+        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
+        self.symbols = symbols
         self.type_ = type_
 
+    attrs: ClassVar[Collection[str]] = frozenset(["name", "symbols", "type"])
+
+
+class ArraySchema(Saveable):
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, ArraySchema):
             return bool(self.items == other.items and self.type_ == other.type_)
@@ -2131,14 +2113,10 @@ class ArraySchema(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs: ClassVar[Collection[str]] = frozenset(["items", "type"])
-
-
-class MapSchema(Saveable):
     def __init__(
         self,
-        type_: Any,
-        values: Any,
+        items: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str,
+        type_: Literal["array"],
         extension_fields: MutableMapping[str, Any] | None = None,
         loadingOptions: LoadingOptions | None = None,
     ) -> None:
@@ -2150,9 +2128,13 @@ class MapSchema(Saveable):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
+        self.items = items
         self.type_ = type_
-        self.values = values
 
+    attrs: ClassVar[Collection[str]] = frozenset(["items", "type"])
+
+
+class MapSchema(Saveable):
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, MapSchema):
             return bool(self.type_ == other.type_ and self.values == other.values)
@@ -2330,14 +2312,10 @@ class MapSchema(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs: ClassVar[Collection[str]] = frozenset(["type", "values"])
-
-
-class UnionSchema(Saveable):
     def __init__(
         self,
-        names: Any,
-        type_: Any,
+        type_: Literal["map"],
+        values: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str,
         extension_fields: MutableMapping[str, Any] | None = None,
         loadingOptions: LoadingOptions | None = None,
     ) -> None:
@@ -2349,9 +2327,13 @@ class UnionSchema(Saveable):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.names = names
         self.type_ = type_
+        self.values = values
 
+    attrs: ClassVar[Collection[str]] = frozenset(["type", "values"])
+
+
+class UnionSchema(Saveable):
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, UnionSchema):
             return bool(self.names == other.names and self.type_ == other.type_)
@@ -2529,29 +2511,10 @@ class UnionSchema(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs: ClassVar[Collection[str]] = frozenset(["names", "type"])
-
-
-class JsonldPredicate(Saveable):
-    """
-    Attached to a record field to define how the parent record field is handled for
-    URI resolution and JSON-LD context generation.
-
-    """
-
     def __init__(
         self,
-        _id: Any | None = None,
-        _type: Any | None = None,
-        _container: Any | None = None,
-        identity: Any | None = None,
-        noLinkCheck: Any | None = None,
-        mapSubject: Any | None = None,
-        mapPredicate: Any | None = None,
-        refScope: Any | None = None,
-        typeDSL: Any | None = None,
-        secondaryFilesDSL: Any | None = None,
-        subscope: Any | None = None,
+        names: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str,
+        type_: Literal["union"],
         extension_fields: MutableMapping[str, Any] | None = None,
         loadingOptions: LoadingOptions | None = None,
     ) -> None:
@@ -2563,17 +2526,18 @@ class JsonldPredicate(Saveable):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self._id = _id
-        self._type = _type
-        self._container = _container
-        self.identity = identity
-        self.noLinkCheck = noLinkCheck
-        self.mapSubject = mapSubject
-        self.mapPredicate = mapPredicate
-        self.refScope = refScope
-        self.typeDSL = typeDSL
-        self.secondaryFilesDSL = secondaryFilesDSL
-        self.subscope = subscope
+        self.names = names
+        self.type_ = type_
+
+    attrs: ClassVar[Collection[str]] = frozenset(["names", "type"])
+
+
+class JsonldPredicate(Saveable):
+    """
+    Attached to a record field to define how the parent record field is handled for
+    URI resolution and JSON-LD context generation.
+
+    """
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, JsonldPredicate):
@@ -3259,6 +3223,42 @@ class JsonldPredicate(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
+    def __init__(
+        self,
+        _id: None | str = None,
+        _type: None | str = None,
+        _container: None | str = None,
+        identity: None | bool = None,
+        noLinkCheck: None | bool = None,
+        mapSubject: None | str = None,
+        mapPredicate: None | str = None,
+        refScope: None | int = None,
+        typeDSL: None | bool = None,
+        secondaryFilesDSL: None | bool = None,
+        subscope: None | str = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
+    ) -> None:
+        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self._id = _id
+        self._type = _type
+        self._container = _container
+        self.identity = identity
+        self.noLinkCheck = noLinkCheck
+        self.mapSubject = mapSubject
+        self.mapPredicate = mapPredicate
+        self.refScope = refScope
+        self.typeDSL = typeDSL
+        self.secondaryFilesDSL = secondaryFilesDSL
+        self.subscope = subscope
+
     attrs: ClassVar[Collection[str]] = frozenset(
         [
             "_id",
@@ -3277,24 +3277,6 @@ class JsonldPredicate(Saveable):
 
 
 class SpecializeDef(Saveable):
-    def __init__(
-        self,
-        specializeFrom: Any,
-        specializeTo: Any,
-        extension_fields: MutableMapping[str, Any] | None = None,
-        loadingOptions: LoadingOptions | None = None,
-    ) -> None:
-        if extension_fields:
-            self.extension_fields = extension_fields
-        else:
-            self.extension_fields = CommentedMap()
-        if loadingOptions:
-            self.loadingOptions = loadingOptions
-        else:
-            self.loadingOptions = LoadingOptions()
-        self.specializeFrom = specializeFrom
-        self.specializeTo = specializeTo
-
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, SpecializeDef):
             return bool(
@@ -3476,6 +3458,24 @@ class SpecializeDef(Saveable):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
+    def __init__(
+        self,
+        specializeFrom: str,
+        specializeTo: str,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
+    ) -> None:
+        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.specializeFrom = specializeFrom
+        self.specializeTo = specializeTo
+
     attrs: ClassVar[Collection[str]] = frozenset(["specializeFrom", "specializeTo"])
 
 
@@ -3505,30 +3505,6 @@ class SaladRecordField(RecordField):
     """
 
     name: str
-
-    def __init__(
-        self,
-        name: Any,
-        type_: Any,
-        doc: Any | None = None,
-        jsonldPredicate: Any | None = None,
-        default: Any | None = None,
-        extension_fields: MutableMapping[str, Any] | None = None,
-        loadingOptions: LoadingOptions | None = None,
-    ) -> None:
-        if extension_fields:
-            self.extension_fields = extension_fields
-        else:
-            self.extension_fields = CommentedMap()
-        if loadingOptions:
-            self.loadingOptions = loadingOptions
-        else:
-            self.loadingOptions = LoadingOptions()
-        self.doc = doc
-        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
-        self.type_ = type_
-        self.jsonldPredicate = jsonldPredicate
-        self.default = default
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, SaladRecordField):
@@ -3830,8 +3806,8 @@ class SaladRecordField(RecordField):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
+            name=cast(str, name),
             doc=doc,
-            name=name,
             type_=type_,
             jsonldPredicate=jsonldPredicate,
             default=default,
@@ -3883,29 +3859,13 @@ class SaladRecordField(RecordField):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
-    attrs: ClassVar[Collection[str]] = frozenset(
-        ["doc", "name", "type", "jsonldPredicate", "default"]
-    )
-
-
-class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
-    name: str
-
     def __init__(
         self,
-        name: Any,
-        type_: Any,
-        inVocab: Any | None = None,
-        fields: Any | None = None,
-        doc: Any | None = None,
-        docParent: Any | None = None,
-        docChild: Any | None = None,
-        docAfter: Any | None = None,
-        jsonldPredicate: Any | None = None,
-        documentRoot: Any | None = None,
-        abstract: Any | None = None,
-        extends: Any | None = None,
-        specialize: Any | None = None,
+        name: str,
+        type_: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str,
+        doc: None | Sequence[str] | str = None,
+        jsonldPredicate: JsonldPredicate | None | str = None,
+        default: Any | None = None,
         extension_fields: MutableMapping[str, Any] | None = None,
         loadingOptions: LoadingOptions | None = None,
     ) -> None:
@@ -3917,19 +3877,19 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
-        self.inVocab = inVocab
-        self.fields = fields
-        self.type_ = type_
         self.doc = doc
-        self.docParent = docParent
-        self.docChild = docChild
-        self.docAfter = docAfter
+        self.name = name
+        self.type_ = type_
         self.jsonldPredicate = jsonldPredicate
-        self.documentRoot = documentRoot
-        self.abstract = abstract
-        self.extends = extends
-        self.specialize = specialize
+        self.default = default
+
+    attrs: ClassVar[Collection[str]] = frozenset(
+        ["doc", "name", "type", "jsonldPredicate", "default"]
+    )
+
+
+class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
+    name: str
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, SaladRecordSchema):
@@ -4629,7 +4589,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
-            name=name,
+            name=cast(str, name),
             inVocab=inVocab,
             fields=fields,
             type_=type_,
@@ -4727,6 +4687,46 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
+    def __init__(
+        self,
+        name: str,
+        type_: Literal["record"],
+        inVocab: None | bool = None,
+        fields: None | Sequence[SaladRecordField] = None,
+        doc: None | Sequence[str] | str = None,
+        docParent: None | str = None,
+        docChild: None | Sequence[str] | str = None,
+        docAfter: None | str = None,
+        jsonldPredicate: JsonldPredicate | None | str = None,
+        documentRoot: None | bool = None,
+        abstract: None | bool = None,
+        extends: None | Sequence[str] | str = None,
+        specialize: None | Sequence[SpecializeDef] = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
+    ) -> None:
+        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.name = name
+        self.inVocab = inVocab
+        self.fields = fields
+        self.type_ = type_
+        self.doc = doc
+        self.docParent = docParent
+        self.docChild = docChild
+        self.docAfter = docAfter
+        self.jsonldPredicate = jsonldPredicate
+        self.documentRoot = documentRoot
+        self.abstract = abstract
+        self.extends = extends
+        self.specialize = specialize
+
     attrs: ClassVar[Collection[str]] = frozenset(
         [
             "name",
@@ -4753,42 +4753,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
     """
 
     name: str
-
-    def __init__(
-        self,
-        symbols: Any,
-        type_: Any,
-        name: Any | None = None,
-        inVocab: Any | None = None,
-        doc: Any | None = None,
-        docParent: Any | None = None,
-        docChild: Any | None = None,
-        docAfter: Any | None = None,
-        jsonldPredicate: Any | None = None,
-        documentRoot: Any | None = None,
-        extends: Any | None = None,
-        extension_fields: MutableMapping[str, Any] | None = None,
-        loadingOptions: LoadingOptions | None = None,
-    ) -> None:
-        if extension_fields:
-            self.extension_fields = extension_fields
-        else:
-            self.extension_fields = CommentedMap()
-        if loadingOptions:
-            self.loadingOptions = loadingOptions
-        else:
-            self.loadingOptions = LoadingOptions()
-        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
-        self.inVocab = inVocab
-        self.symbols = symbols
-        self.type_ = type_
-        self.doc = doc
-        self.docParent = docParent
-        self.docChild = docChild
-        self.docAfter = docAfter
-        self.jsonldPredicate = jsonldPredicate
-        self.documentRoot = documentRoot
-        self.extends = extends
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, SaladEnumSchema):
@@ -5391,7 +5355,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
-            name=name,
+            name=cast(str, name),
             inVocab=inVocab,
             symbols=symbols,
             type_=type_,
@@ -5472,6 +5436,42 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
+    def __init__(
+        self,
+        symbols: Sequence[str],
+        type_: Literal["enum"],
+        name: None | str = None,
+        inVocab: None | bool = None,
+        doc: None | Sequence[str] | str = None,
+        docParent: None | str = None,
+        docChild: None | Sequence[str] | str = None,
+        docAfter: None | str = None,
+        jsonldPredicate: JsonldPredicate | None | str = None,
+        documentRoot: None | bool = None,
+        extends: None | Sequence[str] | str = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
+    ) -> None:
+        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
+        self.inVocab = inVocab
+        self.symbols = symbols
+        self.type_ = type_
+        self.doc = doc
+        self.docParent = docParent
+        self.docChild = docChild
+        self.docAfter = docAfter
+        self.jsonldPredicate = jsonldPredicate
+        self.documentRoot = documentRoot
+        self.extends = extends
+
     attrs: ClassVar[Collection[str]] = frozenset(
         [
             "name",
@@ -5496,40 +5496,6 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
     """
 
     name: str
-
-    def __init__(
-        self,
-        name: Any,
-        type_: Any,
-        values: Any,
-        inVocab: Any | None = None,
-        doc: Any | None = None,
-        docParent: Any | None = None,
-        docChild: Any | None = None,
-        docAfter: Any | None = None,
-        jsonldPredicate: Any | None = None,
-        documentRoot: Any | None = None,
-        extension_fields: MutableMapping[str, Any] | None = None,
-        loadingOptions: LoadingOptions | None = None,
-    ) -> None:
-        if extension_fields:
-            self.extension_fields = extension_fields
-        else:
-            self.extension_fields = CommentedMap()
-        if loadingOptions:
-            self.loadingOptions = loadingOptions
-        else:
-            self.loadingOptions = LoadingOptions()
-        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
-        self.inVocab = inVocab
-        self.type_ = type_
-        self.values = values
-        self.doc = doc
-        self.docParent = docParent
-        self.docChild = docChild
-        self.docAfter = docAfter
-        self.jsonldPredicate = jsonldPredicate
-        self.documentRoot = documentRoot
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, SaladMapSchema):
@@ -6083,7 +6049,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
-            name=name,
+            name=cast(str, name),
             inVocab=inVocab,
             type_=type_,
             values=values,
@@ -6160,6 +6126,40 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
+    def __init__(
+        self,
+        name: str,
+        type_: Literal["map"],
+        values: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str,
+        inVocab: None | bool = None,
+        doc: None | Sequence[str] | str = None,
+        docParent: None | str = None,
+        docChild: None | Sequence[str] | str = None,
+        docAfter: None | str = None,
+        jsonldPredicate: JsonldPredicate | None | str = None,
+        documentRoot: None | bool = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
+    ) -> None:
+        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.name = name
+        self.inVocab = inVocab
+        self.type_ = type_
+        self.values = values
+        self.doc = doc
+        self.docParent = docParent
+        self.docChild = docChild
+        self.docAfter = docAfter
+        self.jsonldPredicate = jsonldPredicate
+        self.documentRoot = documentRoot
+
     attrs: ClassVar[Collection[str]] = frozenset(
         [
             "name",
@@ -6183,38 +6183,6 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
     """
 
     name: str
-
-    def __init__(
-        self,
-        name: Any,
-        names: Any,
-        type_: Any,
-        inVocab: Any | None = None,
-        doc: Any | None = None,
-        docParent: Any | None = None,
-        docChild: Any | None = None,
-        docAfter: Any | None = None,
-        documentRoot: Any | None = None,
-        extension_fields: MutableMapping[str, Any] | None = None,
-        loadingOptions: LoadingOptions | None = None,
-    ) -> None:
-        if extension_fields:
-            self.extension_fields = extension_fields
-        else:
-            self.extension_fields = CommentedMap()
-        if loadingOptions:
-            self.loadingOptions = loadingOptions
-        else:
-            self.loadingOptions = LoadingOptions()
-        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
-        self.inVocab = inVocab
-        self.names = names
-        self.type_ = type_
-        self.doc = doc
-        self.docParent = docParent
-        self.docChild = docChild
-        self.docAfter = docAfter
-        self.documentRoot = documentRoot
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, SaladUnionSchema):
@@ -6719,7 +6687,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
-            name=name,
+            name=cast(str, name),
             inVocab=inVocab,
             names=names,
             type_=type_,
@@ -6788,6 +6756,38 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
+    def __init__(
+        self,
+        name: str,
+        names: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str,
+        type_: Literal["union"],
+        inVocab: None | bool = None,
+        doc: None | Sequence[str] | str = None,
+        docParent: None | str = None,
+        docChild: None | Sequence[str] | str = None,
+        docAfter: None | str = None,
+        documentRoot: None | bool = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
+    ) -> None:
+        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.name = name
+        self.inVocab = inVocab
+        self.names = names
+        self.type_ = type_
+        self.doc = doc
+        self.docParent = docParent
+        self.docChild = docChild
+        self.docAfter = docAfter
+        self.documentRoot = documentRoot
+
     attrs: ClassVar[Collection[str]] = frozenset(
         [
             "name",
@@ -6811,34 +6811,6 @@ class Documentation(NamedType, DocType):
     """
 
     name: str
-
-    def __init__(
-        self,
-        name: Any,
-        type_: Any,
-        inVocab: Any | None = None,
-        doc: Any | None = None,
-        docParent: Any | None = None,
-        docChild: Any | None = None,
-        docAfter: Any | None = None,
-        extension_fields: MutableMapping[str, Any] | None = None,
-        loadingOptions: LoadingOptions | None = None,
-    ) -> None:
-        if extension_fields:
-            self.extension_fields = extension_fields
-        else:
-            self.extension_fields = CommentedMap()
-        if loadingOptions:
-            self.loadingOptions = loadingOptions
-        else:
-            self.loadingOptions = LoadingOptions()
-        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
-        self.inVocab = inVocab
-        self.doc = doc
-        self.docParent = docParent
-        self.docChild = docChild
-        self.docAfter = docAfter
-        self.type_ = type_
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, Documentation):
@@ -7244,7 +7216,7 @@ class Documentation(NamedType, DocType):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
-            name=name,
+            name=cast(str, name),
             inVocab=inVocab,
             doc=doc,
             docParent=docParent,
@@ -7301,12 +7273,40 @@ class Documentation(NamedType, DocType):
                 r["$schemas"] = self.loadingOptions.schemas
         return r
 
+    def __init__(
+        self,
+        name: str,
+        type_: Literal["documentation"],
+        inVocab: None | bool = None,
+        doc: None | Sequence[str] | str = None,
+        docParent: None | str = None,
+        docChild: None | Sequence[str] | str = None,
+        docAfter: None | str = None,
+        extension_fields: MutableMapping[str, Any] | None = None,
+        loadingOptions: LoadingOptions | None = None,
+    ) -> None:
+        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+        self.name = name
+        self.inVocab = inVocab
+        self.doc = doc
+        self.docParent = docParent
+        self.docChild = docChild
+        self.docAfter = docAfter
+        self.type_ = type_
+
     attrs: ClassVar[Collection[str]] = frozenset(
         ["name", "inVocab", "doc", "docParent", "docChild", "docAfter", "type"]
     )
 
 
-_vocab = {
+_vocab.update({
     "Any": "https://w3id.org/cwl/salad#Any",
     "ArraySchema": "https://w3id.org/cwl/salad#ArraySchema",
     "DocType": "https://w3id.org/cwl/salad#DocType",
@@ -7340,8 +7340,8 @@ _vocab = {
     "record": "https://w3id.org/cwl/salad#record",
     "string": "http://www.w3.org/2001/XMLSchema#string",
     "union": "https://w3id.org/cwl/salad#union",
-}
-_rvocab = {
+})
+_rvocab.update({
     "https://w3id.org/cwl/salad#Any": "Any",
     "https://w3id.org/cwl/salad#ArraySchema": "ArraySchema",
     "https://w3id.org/cwl/salad#DocType": "DocType",
@@ -7375,7 +7375,7 @@ _rvocab = {
     "https://w3id.org/cwl/salad#record": "record",
     "http://www.w3.org/2001/XMLSchema#string": "string",
     "https://w3id.org/cwl/salad#union": "union",
-}
+})
 
 strtype: Final = _PrimitiveLoader(str)
 inttype: Final = _PrimitiveLoader(int)

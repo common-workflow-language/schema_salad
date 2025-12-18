@@ -17,7 +17,7 @@ from io import StringIO
 from itertools import chain
 from mypy_extensions import trait
 from typing import Any, Final, Generic, TypeAlias, TypeVar, cast
-from typing import ClassVar  # pylint: disable=unused-import # noqa: F401
+from typing import ClassVar, Literal, Mapping  # pylint: disable=unused-import # noqa: F401
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
@@ -35,8 +35,8 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import Self
 
-_vocab: dict[str, str] = {}
-_rvocab: dict[str, str] = {}
+_vocab: Final[dict[str, str]] = {}
+_rvocab: Final[dict[str, str]] = {}
 
 _logger: Final = logging.getLogger("salad")
 
