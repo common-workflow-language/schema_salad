@@ -1,17 +1,23 @@
 """Template code used by python_codegen.py."""
 
+from __future__ import annotations
+
 import copy
 import logging
 import os
 import pathlib
+import sys
 import tempfile
 import uuid as _uuid__  # pylint: disable=unused-import # noqa: F401
 import xml.sax  # nosec
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from collections.abc import MutableMapping, MutableSequence, Sequence
+from collections.abc import Collection  # pylint: disable=unused-import # noqa: F401
 from io import StringIO
 from itertools import chain
-from typing import Any, Final, Optional, TypeAlias, cast
+from mypy_extensions import trait
+from typing import Any, Final, Generic, TypeAlias, TypeVar, cast
+from typing import ClassVar  # pylint: disable=unused-import # noqa: F401
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
@@ -24,13 +30,19 @@ from schema_salad.fetcher import DefaultFetcher, Fetcher, MemoryCachingFetcher
 from schema_salad.sourceline import SourceLine, add_lc_filename
 from schema_salad.utils import CacheType, yaml_no_ts  # requires schema-salad v8.2+
 
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
+
 _vocab: dict[str, str] = {}
 _rvocab: dict[str, str] = {}
 
 _logger: Final = logging.getLogger("salad")
 
 
-IdxType = MutableMapping[str, tuple[Any, "LoadingOptions"]]
+IdxType: TypeAlias = MutableMapping[str, tuple[Any, "LoadingOptions"]]
+S = TypeVar("S", bound="Saveable")
 
 
 class LoadingOptions:
@@ -56,7 +68,7 @@ class LoadingOptions:
         namespaces: dict[str, str] | None = None,
         schemas: list[str] | None = None,
         fileuri: str | None = None,
-        copyfrom: Optional["LoadingOptions"] = None,
+        copyfrom: LoadingOptions | None = None,
         original_doc: Any | None = None,
         addl_metadata: dict[str, str] | None = None,
         baseuri: str | None = None,
@@ -198,7 +210,8 @@ class LoadingOptions:
         return graph
 
 
-class Saveable(ABC):
+@trait
+class Saveable(metaclass=ABCMeta):
     """Mark classes than have a save() and fromDoc() function."""
 
     @classmethod
@@ -209,7 +222,7 @@ class Saveable(ABC):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-    ) -> "Saveable":
+    ) -> Self:
         """Construct this object from the result of yaml.load()."""
 
     @abstractmethod
@@ -220,11 +233,11 @@ class Saveable(ABC):
 
 
 def load_field(
-    val: str | dict[str, str],
+    val: Any | None,
     fieldtype: "_Loader",
     baseuri: str,
     loadingOptions: LoadingOptions,
-    lc: list[Any] | None = None,
+    lc: Any | None = None,
 ) -> Any:
     """Load field."""
     if isinstance(val, MutableMapping):
@@ -434,8 +447,8 @@ class _Loader:
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
-    ) -> Any:
+        lc: Any | None = None,
+    ) -> Any | None:
         pass
 
 
@@ -446,7 +459,7 @@ class _AnyLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
+        lc: Any | None = None,
     ) -> Any:
         if doc is not None:
             return doc
@@ -463,7 +476,7 @@ class _PrimitiveLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
+        lc: Any | None = None,
     ) -> Any:
         if not isinstance(doc, self.tp):
             raise ValidationException(f"Expected a {self.tp} but got {doc.__class__.__name__}")
@@ -483,8 +496,8 @@ class _ArrayLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
-    ) -> Any:
+        lc: Any | None = None,
+    ) -> list[Any]:
         if not isinstance(doc, MutableSequence):
             raise ValidationException(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
@@ -549,8 +562,8 @@ class _MapLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
-    ) -> Any:
+        lc: Any | None = None,
+    ) -> dict[str, Any]:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(f"Expected a map, was {type(doc)}")
         if self.container is not None or self.no_link_check is not None:
@@ -584,10 +597,10 @@ class _EnumLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
-    ) -> Any:
+        lc: Any | None = None,
+    ) -> str:
         if doc in self.symbols:
-            return doc
+            return cast(str, doc)
         raise ValidationException(f"Expected one of {self.symbols}")
 
     def __repr__(self) -> str:
@@ -604,7 +617,7 @@ class _SecondaryDSLLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
+        lc: Any | None = None,
     ) -> Any:
         r: Final[list[dict[str, Any]]] = []
         match doc:
@@ -667,10 +680,10 @@ class _SecondaryDSLLoader(_Loader):
         return self.inner.load(r, baseuri, loadingOptions, docRoot, lc=lc)
 
 
-class _RecordLoader(_Loader):
+class _RecordLoader(_Loader, Generic[S]):
     def __init__(
         self,
-        classtype: type[Saveable],
+        classtype: type[S],
         container: str | None = None,
         no_link_check: bool | None = None,
     ) -> None:
@@ -684,8 +697,8 @@ class _RecordLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
-    ) -> Any:
+        lc: Any | None = None,
+    ) -> S:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
@@ -711,14 +724,15 @@ class _ExpressionLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
-    ) -> Any:
+        lc: Any | None = None,
+    ) -> str:
         if not isinstance(doc, str):
             raise ValidationException(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
                 f"but valid type for this field is a str."
             )
-        return doc
+        else:
+            return doc
 
 
 class _UnionLoader(_Loader):
@@ -735,7 +749,7 @@ class _UnionLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
+        lc: Any | None = None,
     ) -> Any:
         errors: Final = []
 
@@ -832,7 +846,7 @@ class _URILoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
+        lc: Any | None = None,
     ) -> Any:
         if self.no_link_check is not None:
             loadingOptions = LoadingOptions(
@@ -927,7 +941,7 @@ class _TypeDSLLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
+        lc: Any | None = None,
     ) -> Any:
         if isinstance(doc, MutableSequence):
             r: Final[list[Any]] = []
@@ -962,7 +976,7 @@ class _IdMapLoader(_Loader):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        lc: list[Any] | None = None,
+        lc: Any | None = None,
     ) -> Any:
         if isinstance(doc, MutableMapping):
             r: Final[list[Any]] = []

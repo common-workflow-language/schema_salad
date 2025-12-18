@@ -38,7 +38,7 @@ def codegen(
     """Generate classes with loaders for the given Schema Salad description."""
     j = schema.extend_and_specialize(i, loader)
 
-    gen: CodeGenBase | None = None
+    gen: CodeGenBase
     base = schema_metadata.get("$base", schema_metadata.get("id"))
     # ``urlsplit`` decides whether to return an encoded result based
     # on the object type. To ensure the code behaves the same for Py
@@ -54,53 +54,55 @@ def codegen(
     info = parser_info or pkg
     salad_version = schema_metadata.get("saladVersion", "v1.1")
 
-    if lang in {"python", "cpp", "dlang"}:
-        if target:
-            dest: TextIOWrapper | TextIO = open(target, mode="w", encoding="utf-8")
-        else:
-            dest = sys.stdout
-        if lang == "cpp":
-            gen = CppCodeGen(
+    match lang:
+        case "python" | "cpp" | "dlang":
+            if target:
+                dest: TextIOWrapper | TextIO = open(target, mode="w", encoding="utf-8")
+            else:
+                dest = sys.stdout
+            match lang:
+                case "cpp":
+                    gen = CppCodeGen(
+                        base,
+                        dest,
+                        examples,
+                        pkg,
+                        copyright,
+                        spdx_copyright_text,
+                        spdx_license_identifier,
+                    )
+                    gen.parse(j)
+                    return
+                case "dlang":
+                    gen = DlangCodeGen(
+                        base,
+                        dest,
+                        examples,
+                        pkg,
+                        copyright,
+                        info,
+                        salad_version,
+                    )
+                    gen.parse(j)
+                    return
+                case "python":
+                    gen = PythonCodeGen(
+                        dest, copyright=copyright, parser_info=info, salad_version=salad_version
+                    )
+        case "java":
+            gen = JavaCodeGen(
                 base,
-                dest,
-                examples,
-                pkg,
-                copyright,
-                spdx_copyright_text,
-                spdx_license_identifier,
+                target=target,
+                examples=examples,
+                package=pkg,
+                copyright=copyright,
             )
-            gen.parse(j)
-            return
-        if lang == "dlang":
-            gen = DlangCodeGen(
-                base,
-                dest,
-                examples,
-                pkg,
-                copyright,
-                info,
-                salad_version,
-            )
-            gen.parse(j)
-            return
-        gen = PythonCodeGen(
-            dest, copyright=copyright, parser_info=info, salad_version=salad_version
-        )
-
-    elif lang == "java":
-        gen = JavaCodeGen(
-            base,
-            target=target,
-            examples=examples,
-            package=pkg,
-            copyright=copyright,
-        )
-    elif lang == "typescript":
-        gen = TypeScriptCodeGen(base, target=target, package=pkg, examples=examples)
-    elif lang == "dotnet":
-        gen = DotNetCodeGen(base, target=target, package=pkg, examples=examples)
-    else:
-        raise SchemaSaladException(f"Unsupported code generation language {lang!r}")
+        case "typescript":
+            gen = TypeScriptCodeGen(base, target=target, package=pkg, examples=examples)
+        case "dotnet":
+            gen = DotNetCodeGen(base, target=target, package=pkg, examples=examples)
+        case _:
+            raise SchemaSaladException(f"Unsupported code generation language {lang!r}")
 
     gen.prologue()
 
