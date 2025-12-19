@@ -348,7 +348,7 @@ if _errors__:
             if name == "class":
                 field_inits += """        self.class_: Final[str] = "{}"
 """.format(
-                    classname
+                    self.safe_name(classname)
                 )
             elif name == idfield_safe_name and name in optional_field_names:
                 field_inits += """        self.{0} = {0} if {0} is not None else "_:" + str(_uuid__.uuid4())
