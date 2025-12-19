@@ -154,6 +154,7 @@ class PythonCodeGen(CodeGenBase):
             ext = "Saveable"
 
         if self.current_class_is_abstract:
+            ext += ", metaclass=ABCMeta"
             decorator = "@trait\n"
         else:
             decorator = ""
