@@ -15,7 +15,7 @@ from collections.abc import MutableMapping, MutableSequence, Sequence
 from collections.abc import Collection  # pylint: disable=unused-import # noqa: F401
 from io import StringIO
 from itertools import chain
-from mypy_extensions import trait
+from mypy_extensions import i32, i64, trait
 from typing import Any, Final, Generic, TypeAlias, TypeVar, cast
 from typing import ClassVar, Literal, Mapping  # pylint: disable=unused-import # noqa: F401
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
@@ -262,7 +262,7 @@ def load_field(
 
 
 save_type: TypeAlias = (
-    None | MutableMapping[str, Any] | MutableSequence[Any] | int | float | bool | str
+    None | MutableMapping[str, Any] | MutableSequence[Any] | i32 | i64 | float | bool | str
 )
 
 
@@ -340,7 +340,7 @@ def save(
         for key in val:
             newdict[key] = save(val[key], top=False, base_url=base_url, relative_uris=relative_uris)
         return newdict
-    if val is None or isinstance(val, (int, float, bool, str)):
+    if val is None or isinstance(val, (i32, i64, float, bool, str)):
         return val
     raise Exception("Not Saveable: %s" % type(val))
 

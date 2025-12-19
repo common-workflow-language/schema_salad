@@ -18,7 +18,8 @@ from .exceptions import SchemaException
 from .schema import shortname
 
 _string_type_def: Final = TypeDef(name="strtype", init="_PrimitiveLoader(str)", instance_type="str")
-_int_type_def: Final = TypeDef(name="inttype", init="_PrimitiveLoader(int)", instance_type="int")
+_int_type_def: Final = TypeDef(name="inttype", init="_PrimitiveLoader(i32)", instance_type="i32")
+_long_type_def: Final = TypeDef(name="longtype", init="_PrimitiveLoader(i64)", instance_type="i64")
 _float_type_def: Final = TypeDef(
     name="floattype", init="_PrimitiveLoader(float)", instance_type="float"
 )
@@ -41,7 +42,7 @@ prims: Final = {
     "https://w3id.org/cwl/salad#Any": _any_type_def,
     "string": _string_type_def,
     "int": _int_type_def,
-    "long": _int_type_def,
+    "long": _long_type_def,
     "float": _float_type_def,
     "double": _float_type_def,
     "boolean": _bool_type_def,
