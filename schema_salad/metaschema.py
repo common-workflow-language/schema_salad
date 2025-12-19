@@ -1187,7 +1187,7 @@ def parser_info() -> str:
 
 
 @trait
-class Documented(Saveable):
+class Documented(Saveable, metaclass=ABCMeta):
     pass
 
 
@@ -3480,17 +3480,17 @@ class SpecializeDef(Saveable):
 
 
 @trait
-class NamedType(Saveable):
+class NamedType(Saveable, metaclass=ABCMeta):
     pass
 
 
 @trait
-class DocType(Documented):
+class DocType(Documented, metaclass=ABCMeta):
     pass
 
 
 @trait
-class SchemaDefinedType(DocType):
+class SchemaDefinedType(DocType, metaclass=ABCMeta):
     """
     Abstract base for schema-defined types.
 
