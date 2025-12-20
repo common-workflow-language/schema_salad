@@ -176,7 +176,6 @@ class PythonCodeGen(CodeGenBase):
         self.serializer = StringIO()
 
         if self.current_class_is_abstract:
-            self.out.write("    pass\n\n\n")
             return
 
         self.current_idfield: str | None = self.safe_name(idfield) if idfield != "" else None
@@ -255,6 +254,15 @@ class PythonCodeGen(CodeGenBase):
     def end_class(self, classname: str, field_names: list[str]) -> None:
         """Signal that we are done with this class."""
         if self.current_class_is_abstract:
+            if field_names:
+                for name in field_names:
+                    safename = self.safe_name(name)
+                    self.out.write(
+                        f"    {safename}: {self.current_fieldtypes[safename].instance_type}\n"
+                    )
+                self.out.write("\n\n")
+            else:
+                self.out.write("    pass\n\n\n")
             return
 
         self.out.write(
@@ -352,14 +360,15 @@ if _errors__:
                     self.safe_name(classname)
                 )
             elif name == idfield_safe_name and name in optional_field_names:
-                field_inits += """        self.{0} = {0} if {0} is not None else "_:" + str(_uuid__.uuid4())
-""".format(
-                    self.safe_name(name)
+                field_inits += (
+                    "        self.{0}: str = {0} if {0} is not None else "
+                    '"_:" + str(_uuid__.uuid4())\n'.format(self.safe_name(name))
                 )
             else:
-                field_inits += """        self.{0} = {0}
+                field_inits += """        self.{0}: {1} = {0}
 """.format(
-                    self.safe_name(name)
+                    self.safe_name(name),
+                    self.current_fieldtypes[self.safe_name(name)].instance_type,
                 )
         self.serializer.write(f"{field_inits}\n")
 
@@ -370,16 +379,21 @@ if _errors__:
             )
         )
 
-        safe_init_fields: Final[list[str]] = [
-            self.safe_name(f) for f in field_names if f not in ("class", self.current_idfield)
-        ]
-
         safe_inits2: Final = []
 
         if self.current_idfield is not None:
             safe_inits2.append(f"{idfield_safe_name}=cast(str, {idfield_safe_name})")
 
-        safe_inits2.extend([f"{f}={f}" for f in safe_init_fields])
+        safe_inits2.extend(
+            [
+                f"{f}={f}"
+                for f in (
+                    self.safe_name(f)
+                    for f in field_names
+                    if f not in ("class", self.current_idfield)
+                )
+            ]
+        )
         safe_inits2.extend(["extension_fields=extension_fields", "loadingOptions=loadingOptions"])
 
         self.out.write(
@@ -555,10 +569,10 @@ if _errors__:
         doc: str | None,
         optional: bool,
     ) -> None:
+        self.declare_field(name, fieldtype, doc, True, "")
+
         if self.current_class_is_abstract:
             return
-
-        self.declare_field(name, fieldtype, doc, True, "")
 
         if optional:
             opt = """{safename} = "_:" + str(_uuid__.uuid4())""".format(
@@ -592,9 +606,10 @@ if _errors__:
         optional: bool,
         subscope: str | None,
     ) -> None:
+        self.current_fieldtypes[self.safe_name(name)] = fieldtype
+
         if self.current_class_is_abstract:
             return
-        self.current_fieldtypes[self.safe_name(name)] = fieldtype
 
         if optional:
             self.out.write(f"""        {self.safe_name(name)} = None\n""")
