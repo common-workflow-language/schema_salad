@@ -6,7 +6,7 @@ requires = [
     "black>=19.10b0,<26.2",
     "types-requests",
     "types-dataclasses",
-    "ruamel.yaml>=0.17.6, < 0.19",
+    "ruamel.yaml>= 0.17.6, < 0.20",
     "types-setuptools",
     "CacheControl[filecache] >= 0.14.0, < 0.15",
     "rich-argparse",
