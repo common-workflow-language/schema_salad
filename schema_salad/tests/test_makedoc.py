@@ -177,7 +177,7 @@ def test_multiline_list_entries_word_spacing(metaschema_doc: str) -> None:
     """Hanging indents in Markdown lists don't lead to wordsmushing."""
     assert "as itis poorly documented" not in metaschema_doc
     assert "base URI for the document used toresolve relative" not in metaschema_doc
-    assert "The keys ofthe object are namespace prefixes" not in metaschema_doc
+    assert "The keys of the object are namespace prefixes" not in metaschema_doc
     assert "This field may list URIreferences to documents in RDF-XML" not in metaschema_doc
     assert "defines valid fields thatmake up a record type" not in metaschema_doc
     assert "set of symbols that arevalid value" not in metaschema_doc

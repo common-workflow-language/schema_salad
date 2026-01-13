@@ -47,7 +47,7 @@ doc: |
   [Picard tools](https://broadinstitute.github.io/picard/) are used to mark duplicated reads in the aligned and sorted BAM file, making thus the files lighter and less prone to errors in the downstream steps of the pipeline.
 
   ## GATK
-  [Genome Analysis Tool Kit](https://software.broadinstitute.org/gatk) refered to as GATK (DePristo et al., 2011) is used to process the data throught multiple steps as described by the [GATK best-practices](https://software.broadinstitute.org/gatk/best-practices/bp_3step.php?case=GermShortWGS) (i.e. figure bellow).
+  [Genome Analysis Tool Kit](https://software.broadinstitute.org/gatk) referred to as GATK (DePristo et al., 2011) is used to process the data throught multiple steps as described by the [GATK best-practices](https://software.broadinstitute.org/gatk/best-practices/bp_3step.php?case=GermShortWGS) (i.e. figure below).
   ![GATK best-practices pipeline](https://raw.githubusercontent.com/h3abionet/h3agatk/master/workflows/GATK/gatk.png)
   The GATK steps are the following:
   	1. Indel Realignment:

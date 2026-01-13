@@ -313,8 +313,8 @@ node_modules/
 **/*.Server/ModelManifest.xml
 _Pvt_Extensions
 
-# Paket dependency manager
-.paket/paket.exe
+# Packet dependency manager
+.packet/packet.exe
 paket-files/
 
 # FAKE - F# Make
