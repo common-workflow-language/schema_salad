@@ -17,12 +17,19 @@ from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
 
-_string_type_def: Final = TypeDef("strtype", "_PrimitiveLoader(str)")
-_int_type_def: Final = TypeDef("inttype", "_PrimitiveLoader(int)")
-_float_type_def: Final = TypeDef("floattype", "_PrimitiveLoader(float)")
-_bool_type_def: Final = TypeDef("booltype", "_PrimitiveLoader(bool)")
-_null_type_def: Final = TypeDef("None_type", "_PrimitiveLoader(type(None))")
-_any_type_def: Final = TypeDef("Any_type", "_AnyLoader()")
+_string_type_def: Final = TypeDef(name="strtype", init="_PrimitiveLoader(str)", instance_type="str")
+_int_type_def: Final = TypeDef(name="inttype", init="_PrimitiveLoader(i32)", instance_type="i32")
+_long_type_def: Final = TypeDef(name="longtype", init="_PrimitiveLoader(i64)", instance_type="i64")
+_float_type_def: Final = TypeDef(
+    name="floattype", init="_PrimitiveLoader(float)", instance_type="float"
+)
+_bool_type_def: Final = TypeDef(
+    name="booltype", init="_PrimitiveLoader(bool)", instance_type="bool"
+)
+_null_type_def: Final = TypeDef(
+    name="None_type", init="_PrimitiveLoader(type(None))", instance_type="None"
+)
+_any_type_def: Final = TypeDef(name="Any_type", init="_AnyLoader()", instance_type="Any")
 
 prims: Final = {
     "http://www.w3.org/2001/XMLSchema#string": _string_type_def,
@@ -35,7 +42,7 @@ prims: Final = {
     "https://w3id.org/cwl/salad#Any": _any_type_def,
     "string": _string_type_def,
     "int": _int_type_def,
-    "long": _int_type_def,
+    "long": _long_type_def,
     "float": _float_type_def,
     "double": _float_type_def,
     "boolean": _bool_type_def,
@@ -59,7 +66,7 @@ def fmt(text: str, indent: int) -> str:
         black.format_str(
             text,
             mode=black.mode.Mode(
-                target_versions={black.mode.TargetVersion.PY36}, line_length=88 - indent
+                target_versions={black.mode.TargetVersion.PY310}, line_length=88 - indent
             ),
         ),
         " " * indent,
@@ -145,6 +152,8 @@ class PythonCodeGen(CodeGenBase):
         optional_fields: set[str],
     ) -> None:
         classname = self.safe_name(classname)
+        self.current_optional_fields = optional_fields
+        self.current_fieldtypes: dict[str, TypeDef] = {}
         self.current_class_is_abstract = abstract
 
         if extends:
@@ -153,6 +162,7 @@ class PythonCodeGen(CodeGenBase):
             ext = "Saveable"
 
         if self.current_class_is_abstract:
+            ext += ", metaclass=ABCMeta"
             decorator = "@trait\n"
         else:
             decorator = ""
@@ -166,60 +176,12 @@ class PythonCodeGen(CodeGenBase):
         self.serializer = StringIO()
 
         if self.current_class_is_abstract:
-            self.out.write("    pass\n\n\n")
             return
 
-        idfield_safe_name: Final = self.safe_name(idfield) if idfield != "" else None
-        if idfield_safe_name is not None:
-            self.out.write(f"    {idfield_safe_name}: str\n\n")
+        self.current_idfield: str | None = self.safe_name(idfield) if idfield != "" else None
+        if self.current_idfield is not None:
+            self.out.write(f"    {self.current_idfield}: str\n\n")
 
-        required_field_names: Final = [f for f in field_names if f not in optional_fields]
-        optional_field_names: Final = [f for f in field_names if f in optional_fields]
-
-        safe_inits: Final[list[str]] = ["        self,"]
-        safe_inits.extend(
-            [f"        {self.safe_name(f)}: Any," for f in required_field_names if f != "class"]
-        )
-        safe_inits.extend(
-            [
-                f"        {self.safe_name(f)}: Any | None = None,"
-                for f in optional_field_names
-                if f != "class"
-            ]
-        )
-        self.out.write(
-            "    def __init__(\n"
-            + "\n".join(safe_inits)
-            + "\n        extension_fields: MutableMapping[str, Any] | None = None,"
-            + "\n        loadingOptions: LoadingOptions | None = None,"
-            + "\n    ) -> None:\n"
-            + """        if extension_fields:
-            self.extension_fields = extension_fields
-        else:
-            self.extension_fields = CommentedMap()
-        if loadingOptions:
-            self.loadingOptions = loadingOptions
-        else:
-            self.loadingOptions = LoadingOptions()
-"""
-        )
-        field_inits = ""
-        for name in field_names:
-            if name == "class":
-                field_inits += """        self.class_: Final[str] = "{}"
-""".format(
-                    classname
-                )
-            elif name == idfield_safe_name:
-                field_inits += """        self.{0} = {0} if {0} is not None else "_:" + str(_uuid__.uuid4())
-""".format(
-                    self.safe_name(name)
-                )
-            else:
-                field_inits += """        self.{0} = {0}
-""".format(
-                    self.safe_name(name)
-                )
         field_eqs: Final = []
         field_hashes: Final = []
         for name in field_names:
@@ -227,10 +189,8 @@ class PythonCodeGen(CodeGenBase):
             field_hashes.append(f"self.{self.safe_name(name)}")
         field_eq: Final = " and\n                    ".join(field_eqs)
         field_hash: Final = ",\n            ".join(field_hashes)
-        self.out.write(field_inits)
         self.out.write(
-            "\n"
-            + fmt(
+            fmt(
                 f"""def __eq__(
     self,
     other: Any
@@ -294,6 +254,15 @@ class PythonCodeGen(CodeGenBase):
     def end_class(self, classname: str, field_names: list[str]) -> None:
         """Signal that we are done with this class."""
         if self.current_class_is_abstract:
+            if field_names:
+                for name in field_names:
+                    safename = self.safe_name(name)
+                    self.out.write(
+                        f"    {safename}: {self.current_fieldtypes[safename].instance_type}\n"
+                    )
+                self.out.write("\n\n")
+            else:
+                self.out.write("    pass\n\n\n")
             return
 
         self.out.write(
@@ -341,7 +310,67 @@ if _errors__:
 """
         )
 
-        self.serializer.write("        return r\n\n")
+        self.serializer.write("        return r\n")
+
+        required_field_names: Final = [
+            f for f in field_names if f not in self.current_optional_fields
+        ]
+        optional_field_names: Final = [f for f in field_names if f in self.current_optional_fields]
+
+        idfield_safe_name: Final = (
+            self.safe_name(self.current_idfield) if self.current_idfield is not None else None
+        )
+        safe_inits: Final[list[str]] = ["        self,"]
+        safe_inits.extend(
+            [
+                f"        {self.safe_name(f)}: {self.current_fieldtypes[self.safe_name(f)].instance_type},"
+                for f in required_field_names
+                if f != "class"
+            ]
+        )
+        safe_inits.extend(
+            [
+                f"        {self.safe_name(f)}: "
+                f"{self.current_fieldtypes[self.safe_name(f)].instance_type} = None,"
+                for f in optional_field_names
+                if f != "class"
+            ]
+        )
+        self.serializer.write(
+            "\n    def __init__(\n"
+            + "\n".join(safe_inits)
+            + "\n        extension_fields: MutableMapping[str, Any] | None = None,"
+            + "\n        loadingOptions: LoadingOptions | None = None,"
+            + "\n    ) -> None:\n"
+            + """        if extension_fields:
+            self.extension_fields = extension_fields
+        else:
+            self.extension_fields = CommentedMap()
+        if loadingOptions:
+            self.loadingOptions = loadingOptions
+        else:
+            self.loadingOptions = LoadingOptions()
+"""
+        )
+        field_inits = ""
+        for name in field_names:
+            if name == "class":
+                field_inits += """        self.class_: Final[str] = "{}"
+""".format(
+                    self.safe_name(classname)
+                )
+            elif name == idfield_safe_name and name in optional_field_names:
+                field_inits += (
+                    "        self.{0}: str = {0} if {0} is not None else "
+                    '"_:" + str(_uuid__.uuid4())\n'.format(self.safe_name(name))
+                )
+            else:
+                field_inits += """        self.{0}: {1} = {0}
+""".format(
+                    self.safe_name(name),
+                    self.current_fieldtypes[self.safe_name(name)].instance_type,
+                )
+        self.serializer.write(f"{field_inits}\n")
 
         self.serializer.write(
             fmt(
@@ -350,17 +379,26 @@ if _errors__:
             )
         )
 
-        safe_init_fields: Final[list[str]] = [
-            self.safe_name(f) for f in field_names if f != "class"
-        ]
+        safe_inits2: Final = []
 
-        safe_inits: Final = [f + "=" + f for f in safe_init_fields]
+        if self.current_idfield is not None:
+            safe_inits2.append(f"{idfield_safe_name}=cast(str, {idfield_safe_name})")
 
-        safe_inits.extend(["extension_fields=extension_fields", "loadingOptions=loadingOptions"])
+        safe_inits2.extend(
+            [
+                f"{f}={f}"
+                for f in (
+                    self.safe_name(f)
+                    for f in field_names
+                    if f not in ("class", self.current_idfield)
+                )
+            ]
+        )
+        safe_inits2.extend(["extension_fields=extension_fields", "loadingOptions=loadingOptions"])
 
         self.out.write(
             "        _constructed = cls(\n            "
-            + ",\n            ".join(safe_inits)
+            + ",\n            ".join(safe_inits2)
             + ",\n        )\n"
         )
         if self.idfield:
@@ -384,21 +422,24 @@ if _errors__:
         """Parse the given type declaration and declare its components."""
         match type_declaration:
             case MutableSequence():
-                sub_names1: Final = list(
-                    dict.fromkeys([self.type_loader(i).name for i in type_declaration])
-                )
+                sub_types1: Final = [self.type_loader(i) for i in type_declaration]
+                sub_names1: Final = [t.name for t in sub_types1]
                 return self.declare_type(
                     TypeDef(
-                        "union_of_{}".format("_or_".join(sub_names1)),
-                        "_UnionLoader(({},))".format(", ".join(sub_names1)),
+                        name="union_of_{}".format("_or_".join(sub_names1)),
+                        init="_UnionLoader(({},))".format(", ".join(sub_names1)),
+                        instance_type=" | ".join(
+                            sorted({t.instance_type or "" for t in sub_types1})
+                        ),
                     )
                 )
             case {"type": "array" | "https://w3id.org/cwl/salad#array", "items": items}:
                 i1: Final = self.type_loader(items)
                 return self.declare_type(
                     TypeDef(
-                        f"array_of_{i1.name}",
-                        f"_ArrayLoader({i1.name})",
+                        name=f"array_of_{i1.name}",
+                        init=f"_ArrayLoader({i1.name})",
+                        instance_type=f"Sequence[{i1.instance_type}]",
                     )
                 )
             case {"type": "map" | "https://w3id.org/cwl/salad#map", "values": values, **rest}:
@@ -406,18 +447,23 @@ if _errors__:
                 name = self.safe_name(str(rest["name"])) if "name" in rest else None
                 anon_type = self.declare_type(
                     TypeDef(
-                        f"map_of_{i2.name}",
-                        "_MapLoader({}, {}, {}, {})".format(
+                        name=f"map_of_{i2.name}",
+                        init="_MapLoader({}, {}, {}, {})".format(
                             i2.name,
                             f"'{name}'",  # noqa: B907
                             f"'{container}'" if container is not None else None,  # noqa: B907
                             no_link_check,
                         ),
+                        instance_type=f"Mapping[str, {i2.instance_type}]",
                     )
                 )
                 if "name" in rest:
                     return self.declare_type(
-                        TypeDef(self.safe_name(str(rest["name"])) + "Loader", anon_type.name)
+                        TypeDef(
+                            name=self.safe_name(str(rest["name"])) + "Loader",
+                            init=anon_type.name,
+                            instance_type=anon_type.instance_type,
+                        )
                     )
                 else:
                     return anon_type
@@ -438,26 +484,30 @@ if _errors__:
                     docstring = f'\n"""\n{formated_doc}\n"""'
                 else:
                     docstring = ""
+                sym_names: Final = [schema.avro_field_name(sym) for sym in symbols]
+                sym_literals: Final = [f'"{s}"' for s in sym_names]
                 return self.declare_type(
                     TypeDef(
-                        self.safe_name(name) + "Loader",
-                        '_EnumLoader(("{}",), "{}"){}'.format(
-                            '", "'.join(schema.avro_field_name(sym) for sym in symbols),
+                        name=self.safe_name(name) + "Loader",
+                        init='_EnumLoader(("{}",), "{}"){}'.format(
+                            '", "'.join(sym_names),
                             self.safe_name(name),
                             docstring,
                         ),
+                        instance_type=f"Literal[{', '.join(sym_literals)}]",
                     )
                 )
 
             case {"type": "record" | "https://w3id.org/cwl/salad#record", "name": name, **rest}:
                 return self.declare_type(
                     TypeDef(
-                        self.safe_name(name) + "Loader",
-                        "_RecordLoader({}, {}, {})".format(
+                        name=self.safe_name(name) + "Loader",
+                        init="_RecordLoader({}, {}, {})".format(
                             self.safe_name(name),
                             f"'{container}'" if container is not None else None,  # noqa: B907
                             no_link_check,
                         ),
+                        instance_type=self.safe_name(name),
                         abstract=bool(rest.get("abstract", False)),
                     )
                 )
@@ -469,15 +519,27 @@ if _errors__:
             }:
                 # Declare the named loader to handle recursive union definitions
                 loader_name = self.safe_name(name) + "Loader"
-                loader_type = TypeDef(loader_name, f"_UnionLoader((), '{loader_name}')")
+                loader_type = TypeDef(
+                    name=loader_name,
+                    init=f"_UnionLoader((), '{loader_name}')",
+                    instance_type=self.safe_name(name),
+                )
                 self.declare_type(loader_type)
                 # Parse inner types
-                sub_names2: Final = list(dict.fromkeys([self.type_loader(i).name for i in names]))
+                sub_types2: Final = [self.type_loader(i) for i in names]
+                sub_names2: Final = list(dict.fromkeys(t.name for t in sub_types2))
                 # Register lazy initialization for the loader
                 self.add_lazy_init(
                     LazyInitDef(
-                        loader_name,
-                        "{}.add_loaders(({},))".format(loader_name, ", ".join(sub_names2)),
+                        name=loader_name,
+                        init="{}.add_loaders(({},))".format(loader_name, ", ".join(sub_names2)),
+                        instance_type=f'{self.safe_name(name)}: TypeAlias = "'
+                        + " | ".join(
+                            sorted(
+                                {t.instance_type for t in sub_types2 if t.instance_type is not None}
+                            )
+                        )
+                        + '"',
                     )
                 )
                 return loader_type
@@ -490,8 +552,9 @@ if _errors__:
             case "Expression" | "https://w3id.org/cwl/cwl#Expression" as decl:
                 return self.declare_type(
                     TypeDef(
-                        self.safe_name(decl) + "Loader",
-                        "_ExpressionLoader(str)",
+                        name=self.safe_name(decl) + "Loader",
+                        init="_ExpressionLoader(str)",
+                        instance_type="str",
                     )
                 )
             case str(decl):
@@ -506,10 +569,10 @@ if _errors__:
         doc: str | None,
         optional: bool,
     ) -> None:
+        self.declare_field(name, fieldtype, doc, True, "")
+
         if self.current_class_is_abstract:
             return
-
-        self.declare_field(name, fieldtype, doc, True, "")
 
         if optional:
             opt = """{safename} = "_:" + str(_uuid__.uuid4())""".format(
@@ -543,6 +606,8 @@ if _errors__:
         optional: bool,
         subscope: str | None,
     ) -> None:
+        self.current_fieldtypes[self.safe_name(name)] = fieldtype
+
         if self.current_class_is_abstract:
             return
 
@@ -728,11 +793,12 @@ if self.{safename} is not None:
         """Construct the TypeDef for the given URI loader."""
         return self.declare_type(
             TypeDef(
-                f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}_{no_link_check}",
-                f"_URILoader({inner.name}, {scoped_id}, {vocab_term}, {ref_scope}, {no_link_check})",
+                name=f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}_{no_link_check}",
+                init=f"_URILoader({inner.name}, {scoped_id}, {vocab_term}, {ref_scope}, {no_link_check})",
                 is_uri=True,
                 scoped_id=scoped_id,
                 ref_scope=ref_scope,
+                instance_type=inner.instance_type,
             )
         )
 
@@ -742,8 +808,9 @@ if self.{safename} is not None:
         """Construct the TypeDef for the given mapped ID loader."""
         return self.declare_type(
             TypeDef(
-                f"idmap_{self.safe_name(field)}_{inner.name}",
-                f"_IdMapLoader({inner.name}, '{map_subject}', '{map_predicate}')",  # noqa: B907
+                name=f"idmap_{self.safe_name(field)}_{inner.name}",
+                init=f"_IdMapLoader({inner.name}, '{map_subject}', '{map_predicate}')",  # noqa: B907
+                instance_type=inner.instance_type,
             )
         )
 
@@ -751,9 +818,10 @@ if self.{safename} is not None:
         """Construct the TypeDef for the given DSL loader."""
         return self.declare_type(
             TypeDef(
-                f"typedsl_{self.safe_name(inner.name)}_{ref_scope}",
-                f"_TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope}, "  # noqa: B907
+                name=f"typedsl_{self.safe_name(inner.name)}_{ref_scope}",
+                init=f"_TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope}, "  # noqa: B907
                 f"'{self.salad_version}')",  # noqa: B907
+                instance_type=inner.instance_type,
             )
         )
 
@@ -761,23 +829,24 @@ if self.{safename} is not None:
         """Construct the TypeDef for secondary files."""
         return self.declare_type(
             TypeDef(
-                f"secondaryfilesdsl_{inner.name}",
-                f"_UnionLoader((_SecondaryDSLLoader({inner.name}), {inner.name},))",
+                name=f"secondaryfilesdsl_{inner.name}",
+                init=f"_UnionLoader((_SecondaryDSLLoader({inner.name}), {inner.name},))",
+                instance_type=inner.instance_type,
             )
         )
 
     def epilogue(self, root_loader: TypeDef) -> None:
         """Trigger to generate the epilouge code."""
 
-        self.out.write("_vocab = {\n")
+        self.out.write("_vocab.update({\n")
         for k in sorted(self.vocab.keys()):
             self.out.write(f'    "{k}": "{self.vocab[k]}",\n')  # noqa: B907
-        self.out.write("}\n")
+        self.out.write("})\n")
 
-        self.out.write("_rvocab = {\n")
+        self.out.write("_rvocab.update({\n")
         for k in sorted(self.vocab.keys()):
             self.out.write(f'    "{self.vocab[k]}": "{k}",\n')  # noqa: B907
-        self.out.write("}\n\n")
+        self.out.write("})\n\n")
 
         for _, collected_type in self.collected_types.items():
             if not collected_type.abstract:
@@ -787,6 +856,7 @@ if self.{safename} is not None:
         if self.lazy_inits:
             for lazy_init in self.lazy_inits.values():
                 self.out.write(fmt(f"{lazy_init.init}\n", 0))
+                self.out.write(fmt(f"{lazy_init.instance_type}", 0))
             self.out.write("\n")
 
         self.out.write(
