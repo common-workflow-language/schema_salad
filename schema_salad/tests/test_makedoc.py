@@ -66,8 +66,7 @@ def test_doc_fenced_code_contents_preserved() -> None:
     However, special characters (e.g.: ``<``, ``>``) must still be escaped,
     otherwise they will not be correctly rendered within an HTML ``<pre><code>`` block.
     """
-    data = inspect.cleandoc(
-        """
+    data = inspect.cleandoc("""
         Option one generic example:
         ```
         some_cwl_field:
@@ -96,8 +95,7 @@ def test_doc_fenced_code_contents_preserved() -> None:
           - test: value 1 < 2 is true
           - test: value 2 > 1 is false
         ```
-        """
-    )
+        """)
     schema_data = json.dumps(
         [
             {

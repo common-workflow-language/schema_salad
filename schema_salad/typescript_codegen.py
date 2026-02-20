@@ -184,11 +184,9 @@ export interface {cls} {ext} {{
         self.record_types.add(cls)
         self.modules.add(class_module_name)
         with open(self.current_interface_target_file, "a") as f:
-            f.write(
-                """
+            f.write("""
   extensionFields?: Internal.Dictionary<any>
-"""
-            )
+""")
         doc_string = f"""
 /**
  * Auto-generated class implementation for {classname}
@@ -229,14 +227,11 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
         self.current_constructor_signature.write(
             "\n" + "\n" + "  constructor ({loadingOptions, extensionFields"
         )
-        self.current_constructor_body.write(
-            """
+        self.current_constructor_body.write("""
     super(loadingOptions)
     this.extensionFields = extensionFields ?? {}
-"""
-        )
-        self.current_loader.write(
-            """
+""")
+        self.current_loader.write("""
   /**
    * Used to construct instances of {{@link {cls} }}.
    *
@@ -252,21 +247,16 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
     docRoot?: string): Promise<Saveable> {{
     const _doc = Object.assign({{}}, __doc)
     const __errors: ValidationException[] = []
-            """.format(
-                cls=cls
-            )
-        )
+            """.format(cls=cls))
 
-        self.current_serializer.write(
-            """
+        self.current_serializer.write("""
   save (top: boolean = false, baseUrl: string = '', relativeUris: boolean = true)
   : Dictionary<any> {
     const r: Dictionary<any> = {}
     for (const ef in this.extensionFields) {
       r[prefixUrl(ef, this.loadingOptions.vocab)] = this.extensionFields.ef
     }
-"""
-        )
+""")
 
     def end_class(self, classname: str, field_names: list[str]) -> None:
         """Signal that we are done with this class."""
@@ -313,14 +303,11 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
             ",\n      ".join(self.safe_name(f) + ": " + self.safe_name(f) for f in field_names)
             + "\n    })"
         )
-        self.current_loader.write(
-            """
+        self.current_loader.write("""
     return schema
   }
-        """
-        )
-        self.current_serializer.write(
-            """
+        """)
+        self.current_serializer.write("""
     if (top) {
       if (this.loadingOptions.namespaces != null) {
         r.$namespaces = this.loadingOptions.namespaces
@@ -331,8 +318,7 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
     }
     return r
   }
-            """
-        )
+            """)
         with open(
             self.current_class_target_file,
             "a",
@@ -347,11 +333,9 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
                 + ",".join(["'" + shortname(f) + "'" for f in field_names])
                 + "])"
             )
-            f.write(
-                """
+            f.write("""
 }
-"""
-            )
+""")
 
     def type_loader(
         self,
@@ -478,21 +462,15 @@ export class {cls} extends Saveable implements Internal.{current_interface} {{
         self.record_types.add(enum_name)
         with open(enum_path, "w") as f:
             _logger.info("Writing file: %s", enum_path)
-            f.write(
-                """
+            f.write("""
 export enum {enum_name} {{
-""".format(
-                    enum_name=enum_name
-                )
-            )
+""".format(enum_name=enum_name))
             for sym in type_declaration["symbols"]:
                 val = self.safe_name(sym)
                 const = self.safe_name(sym).replace("-", "_").replace(".", "_").upper()
                 f.write(f"""  {const}='{val}',\n""")  # noqa: B907
-            f.write(
-                """}
-"""
-            )
+            f.write("""}
+""")
         return self.declare_type(
             TypeDef(
                 instance_type="Internal." + enum_name,
@@ -521,15 +499,11 @@ export enum {enum_name} {{
 
         with open(self.current_interface_target_file, "a") as f:
             if doc:
-                f.write(
-                    """
+                f.write("""
   /**
 {doc_str}
    */
-""".format(
-                        doc_str=doc_to_doc_string(doc, indent_level=1)
-                    )
-                )
+""".format(doc_str=doc_to_doc_string(doc, indent_level=1)))
             if fieldname == "class":
                 f.write(
                     "  {safename}{optionalstring}: {type}\n".format(
@@ -551,15 +525,11 @@ export enum {enum_name} {{
 
         with open(self.current_class_target_file, "a") as f:
             if doc:
-                f.write(
-                    """
+                f.write("""
   /**
 {doc_str}
    */
-""".format(
-                        doc_str=doc_to_doc_string(doc, indent_level=1)
-                    )
-                )
+""".format(doc_str=doc_to_doc_string(doc, indent_level=1)))
             f.write(
                 "  {safename}{optionalstring}: {type}\n".format(
                     safename=safename,
@@ -590,19 +560,11 @@ export enum {enum_name} {{
             "    this.{safeName} = {safeName}\n".format(safeName=safename)
         )
 
-        self.current_loader.write(
-            """
-    let {safename}""".format(
-                safename=safename
-            )
-        )
+        self.current_loader.write("""
+    let {safename}""".format(safename=safename))
         if optional:
-            self.current_loader.write(
-                """
-    if ('{fieldname}' in _doc) {{""".format(
-                    fieldname=fieldname
-                )
-            )
+            self.current_loader.write("""
+    if ('{fieldname}' in _doc) {{""".format(fieldname=fieldname))
             spc = "  "
         else:
             spc = ""
@@ -683,8 +645,7 @@ export enum {enum_name} {{
                 fieldname=shortname(name)
             )
 
-        self.current_loader.write(
-            """
+        self.current_loader.write("""
     const original{safename}IsUndefined = ({safename} === undefined)
     if (original{safename}IsUndefined ) {{
       if (docRoot != null) {{
@@ -695,10 +656,7 @@ export enum {enum_name} {{
     }} else {{
       baseuri = {safename} as string
     }}
-            """.format(
-                safename=self.safe_name(name), opt=opt
-            )
-        )
+            """.format(safename=self.safe_name(name), opt=opt))
 
     def to_typescript(self, val: Any) -> Any:
         """Convert a Python keyword to a TypeScript keyword."""

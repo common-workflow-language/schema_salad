@@ -53,7 +53,7 @@ def cwl_v1_2_schema(
 
 
 def load_cwl(cwl_v1_2_schema: SchemaType, src: str) -> tuple[Any, dict[str, Any]]:
-    (document_loader, avsc_names, schema_metadata, metaschema_loader) = cwl_v1_2_schema
+    document_loader, avsc_names, schema_metadata, metaschema_loader = cwl_v1_2_schema
     path = get_data(test_dir_name + src)
     assert isinstance(avsc_names, Names)
     res = load_and_validate(document_loader, avsc_names, path, True)

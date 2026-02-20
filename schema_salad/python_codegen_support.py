@@ -11,16 +11,16 @@ import tempfile
 import uuid as _uuid__  # pylint: disable=unused-import # noqa: F401
 import xml.sax  # nosec
 from abc import ABCMeta, abstractmethod
-from collections.abc import MutableMapping, MutableSequence, Sequence
 from collections.abc import Collection  # pylint: disable=unused-import # noqa: F401
+from collections.abc import MutableMapping, MutableSequence, Sequence
 from io import StringIO
 from itertools import chain
-from mypy_extensions import trait
-from typing import Any, Final, Generic, TypeAlias, TypeVar, cast
 from typing import ClassVar  # pylint: disable=unused-import # noqa: F401
+from typing import Any, Final, Generic, TypeAlias, TypeVar, cast
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
+from mypy_extensions import trait
 from rdflib import Graph
 from rdflib.plugins.parsers.notation3 import BadSyntax
 from ruamel.yaml.comments import CommentedMap

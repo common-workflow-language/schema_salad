@@ -198,17 +198,11 @@ class JavaCodeGen(CodeGenBase):
                 ext = "extends " + ", ".join(self.interface_name(e) for e in extends) + ", Saveable"
             else:
                 ext = "extends Saveable"
-            f.write(
-                """// Copyright Common Workflow Language project contributors
-"""
-            )
+            f.write("""// Copyright Common Workflow Language project contributors
+""")
             if self.copyright:
-                f.write(
-                    """// {copyright}
-""".format(
-                        copyright=self.copyright
-                    )
-                )
+                f.write("""// {copyright}
+""".format(copyright=self.copyright))
             f.write(
                 """//
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -249,17 +243,11 @@ public interface {cls} {ext} {{
         target = self.main_src_dir / f"{cls}Impl.java"
         with open(target, "w") as f:
             _logger.info("Writing file: %s", target)
-            f.write(
-                """// Copyright Common Workflow Language project contributors
-"""
-            )
+            f.write("""// Copyright Common Workflow Language project contributors
+""")
             if self.copyright:
-                f.write(
-                    """// {copyright}
-""".format(
-                        copyright=self.copyright
-                    )
-                )
+                f.write("""// {copyright}
+""".format(copyright=self.copyright))
             f.write(
                 """//
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -301,8 +289,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
                     class_doc_str=class_doc_str,
                 )
             )
-        self.current_loader.write(
-            """
+        self.current_loader.write("""
   /**
    * Used by {{@link {package}.utils.RootLoader}} to construct instances of {cls}Impl.
    *
@@ -333,40 +320,28 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
     if (__loadingOptions != null) {{
       this.loadingOptions_ = __loadingOptions;
     }}
-""".format(
-                cls=cls, package=self.package
-            )
-        )
+""".format(cls=cls, package=self.package))
 
     def end_class(self, classname: str, field_names: list[str]) -> None:
         """Finish this class."""
         with open(self.main_src_dir / f"{self.current_class}.java", "a") as f:
-            f.write(
-                """
+            f.write("""
 }
-"""
-            )
+""")
         if self.current_class_is_abstract:
             return
 
-        self.current_loader.write(
-            """    if (!__errors.isEmpty()) {
+        self.current_loader.write("""    if (!__errors.isEmpty()) {
       throw new ValidationException("Trying 'RecordField'", __errors);
     }
-"""
-        )
+""")
         for fieldname in field_names:
             fieldtype = self.current_fieldtypes.get(fieldname)
             if fieldtype is None:
                 continue
-            self.current_loader.write(
-                """    this.{safename} = ({type}) {safename};
-""".format(
-                    safename=self.safe_name(fieldname), type=fieldtype.instance_type
-                )
-            )
-        self.current_loader.write(
-            """    for (String field:__doc.keySet()) {
+            self.current_loader.write("""    this.{safename} = ({type}) {safename};
+""".format(safename=self.safe_name(fieldname), type=fieldtype.instance_type))
+        self.current_loader.write("""    for (String field:__doc.keySet()) {
       if (!attrs.contains(field)) {
         if (field.contains(":")) {
           String expanded_field = __loadingOptions.expandUrl(field, "", false, false, null);
@@ -374,8 +349,7 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
         }
       }
     }
-"""
-        )
+""")
         self.current_loader.write("""  }""")
         target = self.main_src_dir / f"{self.current_class}Impl.java"
         with open(
@@ -384,12 +358,10 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
         ) as f:
             f.write(self.current_fields.getvalue())
             f.write(self.current_loader.getvalue())
-            f.write(
-                f"""
+            f.write(f"""
   private java.util.List<String> attrs = java.util.Arrays.asList("{'", "'.join(field_names)}");
 }}
-"""
-            )
+""")
 
     def type_loader(
         self,
@@ -614,19 +586,12 @@ public class {cls}Impl extends SaveableImpl implements {cls} {{
         enum_path = self.main_src_dir / f"{clazz}.java"
         with open(enum_path, "w") as f:
             _logger.info("Writing file: %s", enum_path)
-            f.write(
-                """// Copyright Common Workflow Language project contributors
-"""
-            )
+            f.write("""// Copyright Common Workflow Language project contributors
+""")
             if self.copyright:
-                f.write(
-                    """// {copyright}
-""".format(
-                        copyright=self.copyright
-                    )
-                )
-            f.write(
-                """//
+                f.write("""// {copyright}
+""".format(copyright=self.copyright))
+            f.write("""//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -644,16 +609,12 @@ package {package};
 import {package}.utils.ValidationException;
 
 public enum {clazz} {{
-""".format(
-                    package=self.package, clazz=clazz
-                )
-            )
+""".format(package=self.package, clazz=clazz))
             for i, sym in enumerate(symbols):
                 suffix = "," if i < (len(symbols) - 1) else ";"
                 const = self.safe_name(sym).replace("-", "_").replace(".", "_").upper()
                 f.write(f"""  {const}("{sym}"){suffix}\n""")  # noqa: B907
-            f.write(
-                """
+            f.write("""
   private static String[] symbols = {symbols_decl};
   private String docVal;
 
@@ -670,10 +631,7 @@ public enum {clazz} {{
     throw new ValidationException(String.format("Expected one of %s", {clazz}.symbols, docVal));
   }}
 }}
-""".format(
-                    clazz=clazz, symbols_decl=symbols_decl
-                )
-            )
+""".format(clazz=clazz, symbols_decl=symbols_decl))
         return self.declare_type(
             TypeDef(
                 instance_type=clazz,
@@ -703,9 +661,7 @@ public enum {clazz} {{
    * Getter for property <I>{fieldname}</I><BR>
 {field_doc_str}
    */
-""".format(
-            fieldname=fieldname, field_doc_str=_doc_to_doc_string(doc, indent_level=1)
-        )
+""".format(fieldname=fieldname, field_doc_str=_doc_to_doc_string(doc, indent_level=1))
         target = self.main_src_dir / f"{self.current_class}.java"
         with open(target, "a") as f:
             f.write(
@@ -737,20 +693,12 @@ public enum {clazz} {{
             )
         )
 
-        self.current_loader.write(
-            """    {type} {safename};
-""".format(
-                type=fieldtype.instance_type, safename=safename
-            )
-        )
+        self.current_loader.write("""    {type} {safename};
+""".format(type=fieldtype.instance_type, safename=safename))
         if optional:
-            self.current_loader.write(
-                """
+            self.current_loader.write("""
     if (__doc.containsKey("{fieldname}")) {{
-""".format(
-                    fieldname=property_name
-                )
-            )
+""".format(fieldname=property_name))
             spc = "  "
         else:
             spc = ""
@@ -775,15 +723,11 @@ public enum {clazz} {{
         )
 
         if optional:
-            self.current_loader.write(
-                """
+            self.current_loader.write("""
     }} else {{
       {safename} = null;
     }}
-""".format(
-                    safename=safename
-                )
-            )
+""".format(safename=safename))
 
     def declare_id_field(
         self,

@@ -174,9 +174,7 @@ class ToC:
 
     def contents(self, idn: str) -> str:
         toc = """<h1 id="{}">Table of contents</h1>
-               <nav class="tocnav"><ol>{}""".format(
-            idn, self.toc
-        )
+               <nav class="tocnav"><ol>{}""".format(idn, self.toc)
         toc += "</ol>"
         for _ in range(0, len(self.numbering)):
             toc += "</li></ol>"
@@ -570,8 +568,7 @@ def avrold_doc(
     picturefill_integrity: Final = (
         "sha384-ZJsVW8YHHxQHJ+SJDncpN90d0EfAhPP+yA94n+EhSRzhcxfo84yMnNk+v37RGlWR"
     )
-    outdoc.write(
-        """
+    outdoc.write("""
     <!DOCTYPE html>
     <html>
     <head>
@@ -585,15 +582,11 @@ def avrold_doc(
     <script src="{}"
         integrity="{}"
         crossorigin="anonymous" async></script>
-    """.format(
-            brandstyle, picturefill_url, picturefill_integrity
-        )
-    )
+    """.format(brandstyle, picturefill_url, picturefill_integrity))
 
     outdoc.write(f"<title>{rt.title}</title>")
 
-    outdoc.write(
-        """
+    outdoc.write("""
     <style>
     :target {
       padding-top: 61px;
@@ -686,65 +679,48 @@ def avrold_doc(
     </style>
     </head>
     <body>
-    """
-    )
+    """)
 
     navbarclass: Final = "navbar-dark bg-dark " if brandinverse else "navbar-light bg-light "
-    outdoc.write(
-        """
+    outdoc.write("""
       <nav class="navbar sticky-top navbar-expand-lg {}">
         <div class="container">
           <a class="navbar-brand" href="{}">{}</a>
-    """.format(
-            navbarclass, brandlink, brand
-        )
-    )
+    """.format(navbarclass, brandlink, brand))
 
     if "<!--ToC-->" in content:
         content = content.replace("<!--ToC-->", toc.contents("toc"))
-        outdoc.write(
-            """
+        outdoc.write("""
               <ul class="navbar-nav me-auto">
                 <li class="nav-item"><a class="nav-link" href="#toc">Table of contents</a></li>
               </ul>
-        """
-        )
+        """)
 
-    outdoc.write(
-        """
+    outdoc.write("""
         </div>
       </nav>
-    """
-    )
+    """)
 
-    outdoc.write(
-        """
+    outdoc.write("""
     <div class="container mt-4">
-    """
-    )
+    """)
 
-    outdoc.write(
-        """
+    outdoc.write("""
     <div class="row">
-    """
-    )
+    """)
 
-    outdoc.write(
-        """
-    <div class="col-md-12" role="main" id="main">"""
-    )
+    outdoc.write("""
+    <div class="col-md-12" role="main" id="main">""")
 
     outdoc.write(content)
 
     outdoc.write("""</div>""")
 
-    outdoc.write(
-        """
+    outdoc.write("""
     </div>
     </div>
     </body>
-    </html>"""
-    )
+    </html>""")
 
 
 def arg_parser() -> argparse.ArgumentParser:

@@ -30,7 +30,7 @@ def pred(
 
     if split.scheme != "":
         vee = name
-        (ns, ln) = rdflib.namespace.split_uri(str(vee))
+        ns, ln = rdflib.namespace.split_uri(str(vee))
         name = ln
         if ns[0:-1] in namespaces:
             vee = str(namespaces[ns[0:-1]][ln])
@@ -98,7 +98,7 @@ def process_type(
         predicate = recordname
         if t.get("inVocab", True):
             if split.scheme:
-                (ns, ln) = rdflib.namespace.split_uri(str(recordname))
+                ns, ln = rdflib.namespace.split_uri(str(recordname))
                 predicate = recordname
                 recordname = ln
             else:
@@ -133,7 +133,7 @@ def process_type(
 
             if bool(v):
                 try:
-                    (ns, ln) = rdflib.namespace.split_uri(str(v))
+                    ns, ln = rdflib.namespace.split_uri(str(v))
                 except ValueError:
                     # rdflib 5.0.0 compatibility
                     uri = str(v)

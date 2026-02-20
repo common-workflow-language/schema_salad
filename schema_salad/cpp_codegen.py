@@ -94,7 +94,7 @@ def split_field(s: str) -> tuple[str, str, str]:
 
     similar to split_name but for field names
     """
-    (namespace, field) = split_name(s)
+    namespace, field = split_name(s)
     t = field.split("/")
     if len(t) != 2:
         raise ValueError("Expected field to be formatted as 'https://xyz.xyz/blub#cwl/class'.")
@@ -116,7 +116,7 @@ class ClassDefinition:
         self.allfields: list[FieldDefinition] = []
         self.fields: list[FieldDefinition] = []
         self.abstract = False
-        (self.namespace, self.classname) = split_name(name)
+        self.namespace, self.classname = split_name(name)
         self.namespace = safenamespacename(self.namespace)
         self.classname = safename(self.classname)
 
@@ -286,7 +286,7 @@ class MapDefinition:
     def __init__(self, name: str, values: list[str]):
         """Initialize union definition with a name and possible values."""
         self.values = values
-        (self.namespace, self.classname) = split_name(name)
+        self.namespace, self.classname = split_name(name)
         self.namespace = safenamespacename(self.namespace)
         self.classname = safename(self.classname)
 
@@ -343,7 +343,7 @@ class UnionDefinition:
 
     def __init__(self, name: str, types: list[str]):
         """Initialize union definition with a name and possible types."""
-        (self.namespace, self.classname) = split_name(name)
+        self.namespace, self.classname = split_name(name)
         self.namespace = safenamespacename(self.namespace)
         self.classname = safename(self.classname)
         self.types = (
@@ -425,7 +425,7 @@ class EnumDefinition:
         self.name = name
         self.values = values
 
-        (self.namespace, self.classname) = split_name(name)
+        self.namespace, self.classname = split_name(name)
         self.namespace = safenamespacename(self.namespace)
         self.classname = safename(self.classname)
 
@@ -433,7 +433,7 @@ class EnumDefinition:
         """Write enum definition to output."""
         namespace = ""
         if len(self.name.split("#")) == 2:
-            (namespace, classname) = split_name(self.name)
+            namespace, classname = split_name(self.name)
             namespace = safenamespacename(namespace)
             classname = safename(classname)
 
@@ -648,7 +648,7 @@ class CppCodeGen(CodeGenBase):
                     )
                 if len(name.split("#")) != 2:
                     return safename(name)
-                (namespace, classname) = name.split("#")
+                namespace, classname = name.split("#")
                 return safenamespacename(namespace) + "::" + safename(classname)
             case {"type": "array" | "https://w3id.org/cwl/salad#array", "items": list(items)}:
                 ts = [self.convertTypeToCpp(i) for i in items]
@@ -666,18 +666,18 @@ class CppCodeGen(CodeGenBase):
                 return f"std::map<std::string, {i}>"
             case {"type": "record" | "https://w3id.org/cwl/salad#record"}:
                 n = type_declaration[0]["name"]
-                (namespace, classname) = split_name(n)
+                namespace, classname = split_name(n)
                 return safenamespacename(namespace) + "::" + safename(classname)
             case dict():
                 n = type_declaration[0]["type"]
-                (namespace, classname) = split_name(n)
+                namespace, classname = split_name(n)
                 return safenamespacename(namespace) + "::" + safename(classname)
 
         if len(type_declaration[0].split("#")) != 2:
             _logger.debug("// something weird2 about %s", type_declaration[0])
             return cast(str, type_declaration[0])
 
-        (namespace, classname) = split_name(type_declaration[0])
+        namespace, classname = split_name(type_declaration[0])
         return safenamespacename(namespace) + "::" + safename(classname)
 
     def epilogue(self, root_loader: TypeDef | None) -> None:
@@ -703,20 +703,17 @@ class CppCodeGen(CodeGenBase):
             self.target.write(f"""// SPDX-License-Identifier: {self.spdx_license_identifier}\n""")
         self.target.write("#pragma once\n\n")
 
-        self.target.write(
-            """/* This file was generated using schema-salad code generator.
+        self.target.write("""/* This file was generated using schema-salad code generator.
  *
  * The embedded document is subject to the license of the original schema.
- """
-        )
+ """)
 
         if self.copyright:
             self.target.write("* The original schema is {self.copyright}.\n")
 
         self.target.write("*/\n\n")
 
-        self.target.write(
-            """#include <any>
+        self.target.write("""#include <any>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -730,12 +727,10 @@ class CppCodeGen(CodeGenBase):
 #include <vector>
 #include <yaml-cpp/yaml.h>
 
-"""
-        )
+""")
 
         self.target.write(f"namespace {common_namespace} {{\n")
-        self.target.write(
-            """
+        self.target.write("""
 struct store_config {
     bool simplifyTypes = true;
     bool transformListsToMaps = true;
@@ -1086,8 +1081,7 @@ public:
 };
 
 }
-"""
-        )
+""")
         # main body, printing fwd declaration, class definitions, and then implementations
 
         for class_definition in self.classDefinitions.values():
@@ -1149,8 +1143,7 @@ public:
             union_definition.writeImplDefinition(self.target, "", "    ", common_namespace)
 
         self.target.write(f"namespace {common_namespace} {{\n")
-        self.target.write(
-            """
+        self.target.write("""
 template <typename T>
 auto toYaml(std::vector<T> const& v, [[maybe_unused]] store_config const& config) -> YAML::Node {
     auto n = YAML::Node(YAML::NodeType::Sequence);
@@ -1243,16 +1236,14 @@ void fromYaml(YAML::Node const& n, std::variant<Args...>& v){
     bool found = detectAndExtractFromYaml<std::variant<Args...>, Args...>(n, v);
     if (!found) throw std::runtime_error{"didn't find any overload"};
 }
-"""
-        )
+""")
         rootTypes = []
         for cd in self.documentRootTypes:
             rootTypes.append(f"{cd.namespace}::{cd.classname}")
         documentRootType = ", ".join(rootTypes)
 
         self.target.write(f"using DocumentRootType = std::variant<{documentRootType}>;")
-        self.target.write(
-            """
+        self.target.write("""
 auto load_document_from_yaml(YAML::Node n) -> DocumentRootType {
     DocumentRootType root;
     fromYaml(n, root);
@@ -1281,12 +1272,11 @@ auto store_document_as_string(DocumentRootType const& root, store_config config=
     return ss.str();
 }
 
-}"""
-        )
+}""")
 
     def parseRecordField(self, field: dict[str, Any]) -> FieldDefinition:
         """Parse a record field."""
-        (namespace, classname, fieldname) = split_field(field["name"])
+        namespace, classname, fieldname = split_field(field["name"])
         mapSubject = ""
         mapPredicate = ""
         typeDSL = False
@@ -1323,7 +1313,7 @@ auto store_document_as_string(DocumentRootType const& root, store_config config=
 
         if "extends" in stype:
             for ex in aslist(stype["extends"]):
-                (base_namespace, base_classname) = split_name(ex)
+                base_namespace, base_classname = split_name(ex)
                 ext = {"namespace": base_namespace, "classname": base_classname}
                 cd.extends.append(ext)
 

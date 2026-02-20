@@ -109,9 +109,7 @@ def test_error_message4() -> None:
     match = r"""
 ^.+test4\.cwl:6:1: checking field\s+'outputs'
 .+test4\.cwl:7:3:   checking object\s+'.+test4\.cwl#bar'
-\s+'type'\s+field\s+is\s+int,\s+expected\s+string,\s+list,\s+or\s+a\s+dict.$"""[
-        1:
-    ]
+\s+'type'\s+field\s+is\s+int,\s+expected\s+string,\s+list,\s+or\s+a\s+dict.$"""[1:]
     with pytest.raises(ValidationException, match=match):
         load_and_validate(document_loader, avsc_names, get_data("tests/" + t), True)
 
@@ -128,9 +126,7 @@ def test_error_message5() -> None:
 .+test5\.cwl:8:1:\s+the 'steps'\s+field\s+is\s+not\s+valid\s+because
 \s+tried array\s+of\s+<WorkflowStep>\s+but
 .+test5\.cwl:8:9:\s+item is\s+invalid\s+because
-\s+is not a\s+dict.\s+Expected\s+a\s+WorkflowStep\s+object.$"""[
-        1:
-    ]
+\s+is not a\s+dict.\s+Expected\s+a\s+WorkflowStep\s+object.$"""[1:]
     with pytest.raises(ValidationException, match=match):
         load_and_validate(document_loader, avsc_names, get_data("tests/" + t), True)
 
@@ -205,9 +201,7 @@ def test_error_message10() -> None:
 .+test10\.cwl:9:3:\s+item is\s+invalid\s+because
 \s+\* missing\s+required\s+field\s+'run'
 .+test10\.cwl:10:5:\s+\* the\s+'scatterMethod'\s+field\s+is\s+not\s+valid\s+because
-\s+value\s+is\s+a\s+CommentedSeq,\s+expected\s+null\s+or\s+ScatterMethod$"""[
-        1:
-    ]
+\s+value\s+is\s+a\s+CommentedSeq,\s+expected\s+null\s+or\s+ScatterMethod$"""[1:]
     with pytest.raises(ValidationException, match=match):
         load_and_validate(document_loader, avsc_names, get_data("tests/" + t), True)
 
