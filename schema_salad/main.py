@@ -331,7 +331,7 @@ def main(argsl: list[str] | None = None) -> int:
     if "$base" in schema_metadata:
         metactx["@base"] = schema_metadata["$base"]
     if isinstance(schema_doc, CommentedSeq):
-        (schema_ctx, rdfs) = jsonld_context.salad_to_jsonld_context(schema_doc, metactx)
+        schema_ctx, rdfs = jsonld_context.salad_to_jsonld_context(schema_doc, metactx)
     else:
         raise ValidationException(f"Expected a CommentedSeq, got {type(schema_doc)}: {schema_doc}.")
 

@@ -259,14 +259,11 @@ public class {cls} : {current_interface}, ISaveable
                 cls=cls,
             )
         )
-        self.current_constructor_body.write(
-            """
+        self.current_constructor_body.write("""
         this.loadingOptions = loadingOptions ?? new LoadingOptions();
         this.extensionFields = extensionFields ?? new Dictionary<object, object>();
-"""
-        )
-        self.current_loader.write(
-            """
+""")
+        self.current_loader.write("""
     public static ISaveable FromDoc(object doc__, string baseUri, LoadingOptions loadingOptions,
         string? docRoot = null)
     {
@@ -280,11 +277,9 @@ public class {cls} : {current_interface}, ISaveable
         Dictionary<object, object> doc_ = ((IDictionary)doc__)
             .Cast<dynamic>()
             .ToDictionary(entry => entry.Key, entry => entry.Value);
-"""
-        )
+""")
 
-        self.current_serializer.write(
-            """
+        self.current_serializer.write("""
     public Dictionary<object, object> Save(bool top = false, string baseUrl = "",
         bool relativeUris = true)
     {
@@ -293,8 +288,7 @@ public class {cls} : {current_interface}, ISaveable
         {
             r[loadingOptions.PrefixUrl((string)ef.Value)] = ef.Value;
         }
-"""
-        )
+""")
 
     def end_class(self, classname: str, field_names: list[str]) -> None:
         """Signal that we are done with this class."""
@@ -359,18 +353,15 @@ public class {cls} : {current_interface}, ISaveable
         self.current_loader.write("\n        );\n")
 
         for optionalField in self.optional_field_names:
-            self.current_loader.write(
-                f"""
+            self.current_loader.write(f"""
         if ({optionalField} != null)
         {{
             res__.{optionalField} = {optionalField};
         }}
-"""
-            )
+""")
         self.current_loader.write("\n        return res__;")
         self.current_loader.write("\n    " + "}" + "\n")
-        self.current_serializer.write(
-            """
+        self.current_serializer.write("""
         if (top)
         {
             if (loadingOptions.namespaces != null)
@@ -387,8 +378,7 @@ public class {cls} : {current_interface}, ISaveable
         return r;
     }
 
-"""
-        )
+""")
         current_class_target_file = self._current_class_target_file(self.current_class)
         with open(
             current_class_target_file,
@@ -404,11 +394,9 @@ public class {cls} : {current_interface}, ISaveable
                 + ", ".join(['"' + shortname(f) + '"' for f in field_names])
                 + " };"
             )
-            f2.write(
-                """
+            f2.write("""
 }
-"""
-            )
+""")
 
     def type_loader(
         self,
@@ -538,18 +526,14 @@ public class {cls} : {current_interface}, ISaveable
         enum_path = self.main_src_dir / f"{enum_module_name}.cs"
         with open(enum_path, "w") as f:
             _logger.info("Writing file: %s", enum_path)
-            f.write(
-                """namespace {package};
+            f.write("""namespace {package};
 
 public class {enum_name} : IEnumClass<{enum_name}>
 {{
     private string _Name;
     private static readonly List<{enum_name}> members = new();
 
-""".format(
-                    enum_name=enum_name, package=self.package
-                )
-            )
+""".format(enum_name=enum_name, package=self.package))
             for sym in type_declaration["symbols"]:
                 const = self.safe_name(sym).replace("-", "_").replace(".", "_").upper()
                 f.write(
@@ -558,8 +542,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
                         const=const, val=self.safe_name(sym), enum_name=enum_name
                     )
                 )
-            f.write(
-                """
+            f.write("""
     public string Name
     {{
         get {{ return _Name; }}
@@ -614,10 +597,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
         return _Name;
     }}
 }}
-""".format(
-                    enum_name=enum_name
-                )
-            )
+""".format(enum_name=enum_name))
         return self.declare_type(
             TypeDef(
                 instance_type=enum_name,
@@ -657,15 +637,11 @@ public class {enum_name} : IEnumClass<{enum_name}>
 
         with open(current_class_target_file, "a") as f:
             if doc:
-                f.write(
-                    """
+                f.write("""
     /// <summary>
 {doc_str}
     /// </summary>
-""".format(
-                        doc_str=doc_to_doc_string(doc, indent_level=1)
-                    )
-                )
+""".format(doc_str=doc_to_doc_string(doc, indent_level=1)))
             f.write(
                 "    public {type}{optionalstring} {safename} {{ get; set; }}\n".format(
                     safename=safename,
@@ -725,20 +701,12 @@ public class {enum_name} : IEnumClass<{enum_name}>
                 "        this.{safeName} = {safeName};\n".format(safeName=safename)
             )
 
-        self.current_loader.write(
-            """
-        dynamic {safename} = default!;""".format(
-                safename=safename
-            )
-        )
+        self.current_loader.write("""
+        dynamic {safename} = default!;""".format(safename=safename))
         if optional:
-            self.current_loader.write(
-                """
+            self.current_loader.write("""
         if (doc_.ContainsKey("{fieldname}"))
-        {{""".format(
-                    fieldname=fieldname
-                )
-            )
+        {{""".format(fieldname=fieldname))
             spc = "        "
         else:
             spc = "    "
@@ -833,8 +801,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
                 fieldname=shortname(name)
             )
 
-        self.current_loader.write(
-            """
+        self.current_loader.write("""
         if ({safename} == null)
         {{
             if (docRoot != null)
@@ -850,10 +817,7 @@ public class {enum_name} : IEnumClass<{enum_name}>
         {{
             baseUri = (string){safename};
         }}
-""".format(
-                safename=self.safe_name(name), opt=opt
-            )
-        )
+""".format(safename=self.safe_name(name), opt=opt))
 
     def to_dotnet(self, val: Any) -> Any:
         """Convert a Python keyword to a DotNet keyword."""

@@ -67,8 +67,7 @@ class DlangCodeGen(CodeGenBase):
         ]
 
         self.target.write(self.to_doc_comment(module_comment))
-        self.target.write(
-            f"""module {self.package};
+        self.target.write(f"""module {self.package};
 
 import salad.meta.impl : genBody_;
 import salad.meta.parser : import_ = importFromURI;
@@ -76,42 +75,34 @@ import salad.meta.uda : defaultValue, documentRoot, id, idMap, link, LinkResolve
 import salad.primitives : EnumSchemaBase, MapSchemaBase, RecordSchemaBase, UnionSchemaBase;
 import salad.type : None, Union;
 
-"""
-        )
+""")
         if self.parser_info:
-            self.target.write(
-                f"""/// parser information
+            self.target.write(f"""/// parser information
 enum parserInfo = "{self.parser_info}";
-"""  # noqa: B907
-            )
+""")  # noqa: B907
 
-        self.target.write(
-            f"""
+        self.target.write(f"""
 enum saladVersion = "{self.salad_version}";
 
 mixin template genBody()
 {{
     mixin genBody_!saladVersion;
 }}
-"""  # noqa: B907
-        )
+""")  # noqa: B907
 
     def epilogue(self, root_loader: TypeDef) -> None:
         """Trigger to generate the epilouge code."""
         doc_root_type_str = ", ".join(self.doc_root_types)
         doc_root_type = f"Union!({doc_root_type_str})"
-        self.target.write(
-            f"""
+        self.target.write(f"""
 ///
 alias DocumentRootType = {doc_root_type};
 
 ///
 alias importFromURI = import_!DocumentRootType;
-"""
-        )
+""")
         if self.examples:
-            self.target.write(
-                f"""
+            self.target.write(f"""
 @("Test for generated parser")
 unittest
 {{
@@ -134,8 +125,7 @@ unittest
         importFromURI(file.absoluteURI).assertNotThrown(format!"Failed to load %s"(file));
     }}
 }}
-"""  # noqa: B907
-            )
+""")  # noqa: B907
 
     @staticmethod
     def safe_name(name: str) -> str:

@@ -31,6 +31,7 @@ A schema may be one of:
   A boolean; or
   Null.
 """
+
 from typing import Any, Optional, TypeAlias, Union, cast
 
 from mypy_extensions import mypyc_attr
