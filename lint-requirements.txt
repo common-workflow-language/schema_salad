@@ -2,5 +2,5 @@ diff_cover < 10.3
 pydocstyle < 6.4
 flake8 > 4
 flake8-bugbear < 24.13
-bandit < 1.9.4
+bandit < 1.9.5
 pylint < 4.1
