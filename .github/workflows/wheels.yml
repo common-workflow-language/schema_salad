@@ -60,7 +60,7 @@ jobs:
           CIBW_ARCHS_LINUX: auto64 # ppc64le s390x
           CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:/usr/lib/ccache/bin:/usr/lib64/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros" CCACHE_NOHASHDIR="true" SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: artifact-${{ matrix.image }}
           path: ./wheelhouse/*.whl
@@ -82,7 +82,7 @@ jobs:
       - name: Build sdist
         run: pipx run build --sdist
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: artifact-source
           path: dist/*.tar.gz
@@ -127,7 +127,7 @@ jobs:
         env:
           CIBW_ENVIRONMENT_MACOS: CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros" CCACHE_NOHASHDIR="true" PATH=/usr/local/opt/ccache/libexec:/opt/homebrew/opt/ccache/libexec:$PATH SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: artifact-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
@@ -190,7 +190,7 @@ jobs:
           CIBW_ARCHS_LINUX: riscv64
           CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:/usr/lib/ccache/bin:/usr/lib64/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros" CCACHE_NOHASHDIR="true" SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: artifact-riscv64-${{ matrix.target }}
           path: ./wheelhouse/*.whl
