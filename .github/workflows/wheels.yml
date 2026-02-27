@@ -209,6 +209,7 @@ jobs:
           pattern: artifact-*
           merge-multiple: true
           path: dist
+          skip-decompress: false
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
