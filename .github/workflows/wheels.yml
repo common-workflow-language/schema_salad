@@ -203,7 +203,7 @@ jobs:
       id-token: write
     if: (github.event_name == 'release' && github.event.action == 'published') || (github.event_name == 'repository_dispatch' && github.event.client_payload.publish_wheel == true)
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           # unpacks default artifact into dist/
           pattern: artifact-*
