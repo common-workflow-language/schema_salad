@@ -117,7 +117,7 @@ setup(
     license="Apache 2.0",
     python_requires=">=3.10,<3.15",
     use_scm_version=True,
-    setup_requires=pytest_runner + ["setuptools_scm>=8.0.4,<10"],
+    setup_requires=pytest_runner + ["setuptools_scm>=8.0.4,<11"],
     packages=["schema_salad", "schema_salad.tests", "schema_salad.avro"],
     package_data={
         "schema_salad": [
