@@ -6,7 +6,7 @@ label: "merge_vcfs"
 
 doc: |
     This tool will merge VCFs by type (SV, SNV, INDEL). This CWL wrapper was written by Solomon Shorser.
-    The Perl script was originaly written by Brian O'Connor and maintained by Solomon Shorser.
+    The Perl script was originally written by Brian O'Connor and maintained by Solomon Shorser.
 
 $namespaces:
  s: https://schema.org/

@@ -39,7 +39,7 @@
         <oboInOwl:hasSubset>data &quot;EDAM types of data&quot;</oboInOwl:hasSubset>
         <oboInOwl:hasSubset>relations &quot;EDAM relations&quot;</oboInOwl:hasSubset>
         <oboInOwl:hasSubset>edam &quot;EDAM&quot;</oboInOwl:hasSubset>
-        <oboOther:remark>EDAM editors: Jon Ison, Matus Kalas, and Herve Menager. Contributors: Inge Jonassen, Dan Bolser, Hamish McWilliam, Mahmut Uludag, James Malone, Rodrigo Lopez, Steve Pettifer, and Peter Rice. Contibutions from these projects: EMBRACE, ELIXIR, and BioMedBridges (EU); EMBOSS (BBSRC, UK); eSysbio, FUGE Bioinformatics Platform, and ELIXIR.NO/Norwegian Bioinformatics Platform (Research Council of Norway). See http://edamontology.org for documentation and licence.</oboOther:remark>
+        <oboOther:remark>EDAM editors: Jon Ison, Matus Kalas, and Herve Menager. Contributors: Inge Jonassen, Dan Bolser, Hamish McWilliam, Mahmut Uludag, James Malone, Rodrigo Lopez, Steve Pettifer, and Peter Rice. Contributions from these projects: EMBRACE, ELIXIR, and BioMedBridges (EU); EMBOSS (BBSRC, UK); eSysbio, FUGE Bioinformatics Platform, and ELIXIR.NO/Norwegian Bioinformatics Platform (Research Council of Norway). See http://edamontology.org for documentation and licence.</oboOther:remark>
         <oboInOwl:hasSubset>operations &quot;EDAM operations&quot;</oboInOwl:hasSubset>
         <oboOther:idspace>EDAM http://edamontology.org/ &quot;EDAM relations and concept properties&quot;</oboOther:idspace>
         <dc:format>application/rdf+xml</dc:format>
@@ -97,7 +97,7 @@
 
     <owl:AnnotationProperty rdf:about="http://edamontology.org/example">
         <rdfs:label>Example</rdfs:label>
-        <oboInOwl:hasDefinition>&apos;Example&apos; concept property (&apos;example&apos; metadat tag) lists examples of valid values of types of identifiers (accessions). Applicable to some other types of data, too.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>&apos;Example&apos; concept property (&apos;example&apos; metadata tag) lists examples of valid values of types of identifiers (accessions). Applicable to some other types of data, too.</oboInOwl:hasDefinition>
         <oboOther:is_metadata_tag>true</oboOther:is_metadata_tag>
         <oboInOwl:inSubset>concept_properties</oboInOwl:inSubset>
     </owl:AnnotationProperty>
@@ -1182,7 +1182,7 @@
         </rdfs:subClassOf>
         <created_in>beta12orEarlier</created_in>
         <rdfs:comment>This can include metadata about a motif or sequence profile such as its name, length, technical details about the profile construction, and so on.</rdfs:comment>
-        <oboInOwl:hasDefinition>Data concering concerning specific or conserved pattern in molecular sequences and the classifiers used for their identification, including sequence motifs, profiles or other diagnostic element.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>Data concerning concerning specific or conserved pattern in molecular sequences and the classifiers used for their identification, including sequence motifs, profiles or other diagnostic element.</oboInOwl:hasDefinition>
         <oboInOwl:hasSubset rdf:resource="&oboOther;edam#data"/>
         <oboInOwl:hasSubset rdf:resource="&oboOther;edam#edam"/>
     </owl:Class>
@@ -2032,7 +2032,7 @@
     <owl:Class rdf:about="http://edamontology.org/data_0918">
         <rdfs:label>DNA variation</rdfs:label>
         <rdfs:subClassOf rdf:resource="&oboInOwl;ObsoleteClass"/>
-        <oboInOwl:hasDefinition>stable, naturally occuring mutations in a nucleotide sequence including alleles, naturally occurring mutations such as single base nucleotide substitutions, deletions and insertions, RFLPs and other polymorphisms.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>stable, naturally occurring mutations in a nucleotide sequence including alleles, naturally occurring mutations such as single base nucleotide substitutions, deletions and insertions, RFLPs and other polymorphisms.</oboInOwl:hasDefinition>
         <owl:deprecated>true</owl:deprecated>
         <obsolete_since>1.8</obsolete_since>
         <created_in>beta12orEarlier</created_in>
@@ -10544,7 +10544,7 @@
         <oboInOwl:hasExactSynonym>Nucleic acid report (folding)</oboInOwl:hasExactSynonym>
         <created_in>beta12orEarlier</created_in>
         <oboInOwl:hasExactSynonym>Nucleic acid report (folding model)</oboInOwl:hasExactSynonym>
-        <oboInOwl:hasNarrowSynonym>RNA secondary structure folding probablities</oboInOwl:hasNarrowSynonym>
+        <oboInOwl:hasNarrowSynonym>RNA secondary structure folding probabilities</oboInOwl:hasNarrowSynonym>
         <oboInOwl:hasDefinition>A report on an analysis of RNA/DNA folding, minimum folding energies for DNA or RNA sequences, energy landscape of RNA mutants etc.</oboInOwl:hasDefinition>
         <rdfs:comment>This is a broad data type and is used a placeholder for other, more specific types.  It is primarily intended to help navigation of EDAM and would not typically be used for annotation.</rdfs:comment>
         <oboInOwl:hasNarrowSynonym>RNA secondary structure folding classification</oboInOwl:hasNarrowSynonym>
@@ -13356,7 +13356,7 @@
         <oboInOwl:hasExactSynonym>Map position</oboInOwl:hasExactSynonym>
         <oboInOwl:hasDbXref>Moby:Position</oboInOwl:hasDbXref>
         <oboInOwl:hasExactSynonym>Locus</oboInOwl:hasExactSynonym>
-        <oboInOwl:hasExactSynonym>Sequence co-ordinates</oboInOwl:hasExactSynonym>
+        <oboInOwl:hasExactSynonym>Sequence coordinates</oboInOwl:hasExactSynonym>
         <oboInOwl:hasDefinition>A position in a map (for example a genetic map), either a single position (point) or a region / interval.</oboInOwl:hasDefinition>
         <oboInOwl:hasDbXref>Moby:GenePosition</oboInOwl:hasDbXref>
         <rdfs:comment>This includes positions in genomes based on a reference sequence. A position may be specified for any mappable object, i.e. anything that may have positional information such as a physical position in a chromosome. Data might include sequence region name, strand, coordinate system name, assembly name, start position and end position.</rdfs:comment>
@@ -14093,7 +14093,7 @@
     <owl:Class rdf:about="http://edamontology.org/data_2109">
         <rdfs:label>Identifier (hybrid)</rdfs:label>
         <rdfs:subClassOf rdf:resource="http://edamontology.org/data_0842"/>
-        <oboInOwl:hasDefinition>An identifier that is re-used for data objects of fundamentally different types (typically served from a single database).</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>An identifier that is reused for data objects of fundamentally different types (typically served from a single database).</oboInOwl:hasDefinition>
         <created_in>beta12orEarlier</created_in>
         <rdfs:comment>This branch provides an alternative organisation of the concepts nested under &apos;Accession&apos; and &apos;Name&apos;. All concepts under here are already included under &apos;Accession&apos; or &apos;Name&apos;.</rdfs:comment>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#data"/>
@@ -22925,7 +22925,7 @@
         <rdfs:subClassOf rdf:resource="http://edamontology.org/data_0867"/>
         <oboInOwl:hasDefinition>An informative report about a DNA sequence assembly.</oboInOwl:hasDefinition>
         <created_in>1.1</created_in>
-        <rdfs:comment>This might include an overall quality assement of the assembly and summary statistics including counts, average length and number of bases for reads, matches and non-matches, contigs, reads in pairs etc.</rdfs:comment>
+        <rdfs:comment>This might include an overall quality assessment of the assembly and summary statistics including counts, average length and number of bases for reads, matches and non-matches, contigs, reads in pairs etc.</rdfs:comment>
         <oboInOwl:hasExactSynonym>Assembly report</oboInOwl:hasExactSynonym>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#data"/>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#edam"/>
@@ -30810,7 +30810,7 @@
         <rdfs:subClassOf rdf:resource="http://edamontology.org/format_2554"/>
         <created_in>1.3</created_in>
         <oboInOwl:hasExactSynonym>Block file format</oboInOwl:hasExactSynonym>
-        <oboInOwl:hasDefinition>A multiple alignment in vertical format, as used in the AMPS (Alignment of Multiple Protein Sequences) pacakge.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>A multiple alignment in vertical format, as used in the AMPS (Alignment of Multiple Protein Sequences) package.</oboInOwl:hasDefinition>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#edam"/>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#formats"/>
         <documentation rdf:resource="http://www.compbio.dundee.ac.uk/manuals/amps/subsubsection3_18_2_5.html#SECTION00018250000000000000"/>
@@ -34492,7 +34492,7 @@
         </rdfs:subClassOf>
         <rdfs:comment>Methods might predict silent or pathological mutations.</rdfs:comment>
         <oboInOwl:hasExactSynonym>Protein mutation modelling</oboInOwl:hasExactSynonym>
-        <oboInOwl:hasDefinition>Predict the effect of point mutation on a protein structure, in terms of strucural effects and protein folding, stability and function.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>Predict the effect of point mutation on a protein structure, in terms of structural effects and protein folding, stability and function.</oboInOwl:hasDefinition>
         <created_in>beta12orEarlier</created_in>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#edam"/>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#operations"/>
@@ -42649,7 +42649,7 @@ sequences matching a given sequence motif or pattern, such as a Prosite pattern 
     <owl:Class rdf:about="http://edamontology.org/operation_3182">
         <rdfs:label>Genome alignment</rdfs:label>
         <rdfs:subClassOf rdf:resource="http://edamontology.org/operation_0292"/>
-        <oboInOwl:hasDefinition>Align two or more (tpyically huge) molecular sequences that represent genomes.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>Align two or more (typically huge) molecular sequences that represent genomes.</oboInOwl:hasDefinition>
         <oboInOwl:hasExactSynonym>Genome alignment construction</oboInOwl:hasExactSynonym>
         <created_in>1.1</created_in>
         <oboInOwl:hasExactSynonym>Genome alignment</oboInOwl:hasExactSynonym>
@@ -42893,7 +42893,7 @@ sequences matching a given sequence motif or pattern, such as a Prosite pattern 
     <owl:Class rdf:about="http://edamontology.org/operation_3199">
         <rdfs:label>Split read mapping</rdfs:label>
         <rdfs:subClassOf rdf:resource="http://edamontology.org/operation_3198"/>
-        <oboInOwl:hasDefinition>A varient of oligonucleotide mapping where a read is mapped to two separate locations because of possible structural variation.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>A variant of oligonucleotide mapping where a read is mapped to two separate locations because of possible structural variation.</oboInOwl:hasDefinition>
         <created_in>1.1</created_in>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#edam"/>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#operations"/>
@@ -43191,7 +43191,7 @@ sequences matching a given sequence motif or pattern, such as a Prosite pattern 
         <rdfs:subClassOf rdf:resource="http://edamontology.org/operation_2428"/>
         <rdfs:subClassOf rdf:resource="http://edamontology.org/operation_2478"/>
         <oboInOwl:hasExactSynonym>Sequence read pre-processing</oboInOwl:hasExactSynonym>
-        <rdfs:comment>This is a broad concept and is used a placeholder for other, more specific concepts.  For example process paired end reads to trim low quality ends remove short sequences, identify sequence inserts, detect chimeric reads, or remove low quality sequnces including vector, adaptor, low complexity and contaminant sequences. Sequences might come from genomic DNA library, EST libraries, SSH library and so on.</rdfs:comment>
+        <rdfs:comment>This is a broad concept and is used a placeholder for other, more specific concepts.  For example process paired end reads to trim low quality ends remove short sequences, identify sequence inserts, detect chimeric reads, or remove low quality sequences including vector, adaptor, low complexity and contaminant sequences. Sequences might come from genomic DNA library, EST libraries, SSH library and so on.</rdfs:comment>
         <oboInOwl:hasDefinition>Pre-process sequence reads to ensure (or improve) quality and reliability.</oboInOwl:hasDefinition>
         <created_in>1.1</created_in>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#edam"/>
@@ -43330,7 +43330,7 @@ sequences matching a given sequence motif or pattern, such as a Prosite pattern 
         <oboInOwl:hasExactSynonym>Targeted exome capture</oboInOwl:hasExactSynonym>
         <rdfs:comment>Exome sequencing is considered a cheap alternative to whole genome sequencing.</rdfs:comment>
         <oboInOwl:hasExactSynonym>Exome sequence analysis</oboInOwl:hasExactSynonym>
-        <oboInOwl:hasDefinition>Anaylse sequencing data from experiments aiming to selectively sequence the coding regions of the genome.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>Analyse sequencing data from experiments aiming to selectively sequence the coding regions of the genome.</oboInOwl:hasDefinition>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#edam"/>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#operations"/>
     </owl:Class>
@@ -44114,7 +44114,7 @@ sequences matching a given sequence motif or pattern, such as a Prosite pattern 
         <rdfs:label>Taxonomic classification</rdfs:label>
         <rdfs:subClassOf rdf:resource="http://edamontology.org/operation_2995"/>
         <created_in>1.7</created_in>
-        <oboInOwl:hasDefinition>Classifiication of molecular sequences by assignment to some taxonomic hierarchy.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>Classification of molecular sequences by assignment to some taxonomic hierarchy.</oboInOwl:hasDefinition>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#edam"/>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#operations"/>
     </owl:Class>
@@ -44263,7 +44263,7 @@ sequences matching a given sequence motif or pattern, such as a Prosite pattern 
     <owl:Class rdf:about="http://edamontology.org/operation_3480">
         <rdfs:label>Probabilistic data generation</rdfs:label>
         <rdfs:subClassOf rdf:resource="http://edamontology.org/operation_3429"/>
-        <oboInOwl:hasDefinition>Generate some data from a choosen probibalistic model, possibly to evaluate algorithms.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>Generate some data from a chosen probibalistic model, possibly to evaluate algorithms.</oboInOwl:hasDefinition>
         <created_in>1.7</created_in>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#edam"/>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#operations"/>
@@ -44452,7 +44452,7 @@ sequences matching a given sequence motif or pattern, such as a Prosite pattern 
     <!-- http://edamontology.org/operation_3560 -->
 
     <owl:Class rdf:about="http://edamontology.org/operation_3560">
-        <rdfs:label>Maximum occurence analysis</rdfs:label>
+        <rdfs:label>Maximum occurrence analysis</rdfs:label>
         <rdfs:subClassOf rdf:resource="http://edamontology.org/operation_0321"/>
         <oboInOwl:hasDefinition>A method for making numerical assessments about the maximum percent of time that a conformer of a flexible macromolecule can exist and still be compatible with the experimental data. </oboInOwl:hasDefinition>
         <created_in>beta12orEarlier</created_in>
@@ -44518,7 +44518,7 @@ sequences matching a given sequence motif or pattern, such as a Prosite pattern 
         <rdfs:label>Chemical redundancy removal</rdfs:label>
         <rdfs:subClassOf rdf:resource="http://edamontology.org/operation_2483"/>
         <created_in>1.9</created_in>
-        <oboInOwl:hasDefinition>Identify and remove redudancy from a set of small molecule structures.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>Identify and remove redundancy from a set of small molecule structures.</oboInOwl:hasDefinition>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#edam"/>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#operations"/>
     </owl:Class>
@@ -45744,7 +45744,7 @@ positional features such as functional and other key sites, in molecular sequenc
         <rdfs:subClassOf rdf:resource="http://edamontology.org/topic_0625"/>
         <rdfs:subClassOf rdf:resource="http://edamontology.org/topic_3511"/>
         <rdfs:seeAlso>http://purl.bioontology.org/ontology/MSH/D014644</rdfs:seeAlso>
-        <oboInOwl:hasDefinition>Stable, naturally occuring mutations in a nucleotide sequence including alleles, naturally occurring mutations such as single base nucleotide substitutions, deletions and insertions, RFLPs and other polymorphisms.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>Stable, naturally occurring mutations in a nucleotide sequence including alleles, naturally occurring mutations such as single base nucleotide substitutions, deletions and insertions, RFLPs and other polymorphisms.</oboInOwl:hasDefinition>
         <oboInOwl:hasExactSynonym>DNA variation</oboInOwl:hasExactSynonym>
         <oboInOwl:hasNarrowSynonym>Mutation</oboInOwl:hasNarrowSynonym>
         <oboInOwl:hasNarrowSynonym>Polymorphism</oboInOwl:hasNarrowSynonym>
@@ -49378,10 +49378,10 @@ positional features such as functional sites in nucleotide sequences.</oboInOwl:
     <owl:Class rdf:about="http://edamontology.org/topic_3324">
         <rdfs:label>Infectious disease</rdfs:label>
         <rdfs:subClassOf rdf:resource="http://edamontology.org/topic_0634"/>
-        <oboInOwl:hasExactSynonym>Transmissable disease</oboInOwl:hasExactSynonym>
+        <oboInOwl:hasExactSynonym>Transmissible disease</oboInOwl:hasExactSynonym>
         <oboInOwl:hasDbXref>VT 3.3.4 Infectious diseases</oboInOwl:hasDbXref>
         <oboInOwl:hasExactSynonym>Communicable disease</oboInOwl:hasExactSynonym>
-        <oboInOwl:hasDefinition>The branch of medicine that deals with the prevention, diagnosis and management of transmissable disease with clinically evident illness resulting from infection with pathogenic biological agents (viruses, bacteria, fungi, protozoa, parasites and prions).</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>The branch of medicine that deals with the prevention, diagnosis and management of transmissible disease with clinically evident illness resulting from infection with pathogenic biological agents (viruses, bacteria, fungi, protozoa, parasites and prions).</oboInOwl:hasDefinition>
         <created_in>1.3</created_in>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#edam"/>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#events"/>
@@ -49862,7 +49862,7 @@ positional features such as functional sites in nucleotide sequences.</oboInOwl:
         <rdfs:subClassOf rdf:resource="http://edamontology.org/topic_3377"/>
         <created_in>1.4</created_in>
         <rdfs:comment>Pharmacovigilence concerns safety once a drug has gone to market.</rdfs:comment>
-        <oboInOwl:hasDefinition>The detection, assesment, understanding and prevention of adverse effects of medicines.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>The detection, assessment, understanding and prevention of adverse effects of medicines.</oboInOwl:hasDefinition>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#edam"/>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#events"/>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#topics"/>
@@ -50078,7 +50078,7 @@ positional features such as functional sites in nucleotide sequences.</oboInOwl:
         <rdfs:label>Systems medicine</rdfs:label>
         <rdfs:subClassOf rdf:resource="http://edamontology.org/topic_3303"/>
         <created_in>1.4</created_in>
-        <oboInOwl:hasDefinition>An interdisciplinary field of study that looks at the dynamic systems of the human body as part of an integrted whole, incoporating biochemical, physiological, and environmental interactions that sustain life.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>An interdisciplinary field of study that looks at the dynamic systems of the human body as part of an integrted whole, incorporating biochemical, physiological, and environmental interactions that sustain life.</oboInOwl:hasDefinition>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#edam"/>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#events"/>
         <oboInOwl:inSubset rdf:resource="&oboOther;edam#topics"/>
@@ -50140,7 +50140,7 @@ positional features such as functional sites in nucleotide sequences.</oboInOwl:
         <rdfs:label>Allergy, clinical immunology and immunotherapeutics.</rdfs:label>
         <rdfs:subClassOf rdf:resource="http://edamontology.org/topic_3303"/>
         <oboInOwl:hasDbXref>VT 3.2.1 Allergy</oboInOwl:hasDbXref>
-        <oboInOwl:hasDefinition>Health issues related to the immune system and their prevention, diagnosis and mangement.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>Health issues related to the immune system and their prevention, diagnosis and management.</oboInOwl:hasDefinition>
         <created_in>1.4</created_in>
         <oboInOwl:hasNarrowSynonym>Immune disorders</oboInOwl:hasNarrowSynonym>
         <oboInOwl:hasNarrowSynonym>Clinical immunology</oboInOwl:hasNarrowSynonym>
@@ -50416,7 +50416,7 @@ positional features such as functional sites in nucleotide sequences.</oboInOwl:
     <!-- http://edamontology.org/topic_3417 -->
 
     <owl:Class rdf:about="http://edamontology.org/topic_3417">
-        <rdfs:label>Opthalmology</rdfs:label>
+        <rdfs:label>Ophthalmology</rdfs:label>
         <rdfs:subClassOf rdf:resource="http://edamontology.org/topic_3303"/>
         <oboInOwl:hasNarrowSynonym>Eye disoders</oboInOwl:hasNarrowSynonym>
         <oboInOwl:hasDbXref>VT 3.2.18 Optometry</oboInOwl:hasDbXref>
@@ -50453,7 +50453,7 @@ positional features such as functional sites in nucleotide sequences.</oboInOwl:
     <owl:Class rdf:about="http://edamontology.org/topic_3419">
         <rdfs:label>Psychiatry</rdfs:label>
         <rdfs:subClassOf rdf:resource="http://edamontology.org/topic_3303"/>
-        <oboInOwl:hasDefinition>The branch of medicine that deals with the mangement of mental illness, emotional disturbance and abnormal behaviour.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>The branch of medicine that deals with the management of mental illness, emotional disturbance and abnormal behaviour.</oboInOwl:hasDefinition>
         <created_in>1.4</created_in>
         <oboInOwl:hasNarrowSynonym>Psychiatric disorders</oboInOwl:hasNarrowSynonym>
         <oboInOwl:hasDbXref>VT 3.2.23 Psychiatry</oboInOwl:hasDbXref>
@@ -50610,7 +50610,7 @@ positional features such as functional sites in nucleotide sequences.</oboInOwl:
     <owl:Class rdf:about="http://edamontology.org/topic_3474">
         <rdfs:label>Machine learning</rdfs:label>
         <rdfs:subClassOf rdf:resource="http://edamontology.org/topic_3316"/>
-        <oboInOwl:hasDefinition>A topic concerning the application of artificial intelligence methods to algorithms, in order to create methods that can learn from data in order to generate an ouput, rather than relying on explicitly encoded information only.</oboInOwl:hasDefinition>
+        <oboInOwl:hasDefinition>A topic concerning the application of artificial intelligence methods to algorithms, in order to create methods that can learn from data in order to generate an output, rather than relying on explicitly encoded information only.</oboInOwl:hasDefinition>
         <oboInOwl:hasBroadSynonym>Artificial Intelligence</oboInOwl:hasBroadSynonym>
         <created_in>1.7</created_in>
         <oboInOwl:hasDbXref>VT 1.2.2 Artificial Intelligence (expert systems, machine learning, robotics)</oboInOwl:hasDbXref>
