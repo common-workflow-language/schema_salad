@@ -28,7 +28,7 @@ def test_cwl_gen(tmp_path: Path) -> None:
     python_codegen(cwl_file_uri, src_target)
     assert os.path.exists(src_target)
     with open(src_target) as f:
-        assert "class Workflow(Process)" in f.read()
+        assert "class Workflow(Saveable)" in f.read()
 
 
 def test_meta_schema_gen(tmp_path: Path) -> None:

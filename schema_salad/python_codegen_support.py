@@ -15,12 +15,12 @@ from collections.abc import Collection  # pylint: disable=unused-import # noqa: 
 from collections.abc import MutableMapping, MutableSequence, Sequence
 from io import StringIO
 from itertools import chain
-from typing import ClassVar  # pylint: disable=unused-import # noqa: F401
+from mypy_extensions import i32, i64
+from typing import ClassVar, Literal, Mapping  # pylint: disable=unused-import # noqa: F401
 from typing import Any, Final, Generic, TypeAlias, TypeVar, cast
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
-from mypy_extensions import trait
 from rdflib import Graph
 from rdflib.plugins.parsers.notation3 import BadSyntax
 from ruamel.yaml.comments import CommentedMap
@@ -35,8 +35,8 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import Self
 
-_vocab: dict[str, str] = {}
-_rvocab: dict[str, str] = {}
+_vocab: Final[dict[str, str]] = {}
+_rvocab: Final[dict[str, str]] = {}
 
 _logger: Final = logging.getLogger("salad")
 
@@ -210,7 +210,6 @@ class LoadingOptions:
         return graph
 
 
-@trait
 class Saveable(metaclass=ABCMeta):
     """Mark classes than have a save() and fromDoc() function."""
 
@@ -262,7 +261,7 @@ def load_field(
 
 
 save_type: TypeAlias = (
-    None | MutableMapping[str, Any] | MutableSequence[Any] | int | float | bool | str
+    None | MutableMapping[str, Any] | MutableSequence[Any] | i32 | i64 | float | bool | str
 )
 
 
@@ -340,7 +339,7 @@ def save(
         for key in val:
             newdict[key] = save(val[key], top=False, base_url=base_url, relative_uris=relative_uris)
         return newdict
-    if val is None or isinstance(val, (int, float, bool, str)):
+    if val is None or isinstance(val, (i32, i64, float, bool, str)):
         return val
     raise Exception("Not Saveable: %s" % type(val))
 
