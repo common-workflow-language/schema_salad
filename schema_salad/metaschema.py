@@ -24,7 +24,6 @@ from typing import Any, Final, Generic, TypeAlias, TypeVar, cast
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
 from urllib.request import pathname2url
 
-from mypy_extensions import trait
 from rdflib import Graph
 from rdflib.plugins.parsers.notation3 import BadSyntax
 from ruamel.yaml.comments import CommentedMap
@@ -214,7 +213,6 @@ class LoadingOptions:
         return graph
 
 
-@trait
 class Saveable(metaclass=ABCMeta):
     """Mark classes than have a save() and fromDoc() function."""
 
@@ -1187,12 +1185,7 @@ def parser_info() -> str:
     return "org.w3id.cwl.salad"
 
 
-@trait
-class Documented(Saveable, metaclass=ABCMeta):
-    doc: None | Sequence[str] | str
-
-
-class RecordField(Documented):
+class RecordField(Saveable):
     """
     A field of a record.
     """
@@ -1457,9 +1450,9 @@ class RecordField(Documented):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.doc: None | Sequence[str] | str = doc
-        self.name: str = name
-        self.type_: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str = type_
+        self.doc = doc
+        self.name = name
+        self.type_ = type_
 
     attrs: ClassVar[Collection[str]] = frozenset(["doc", "name", "type"])
 
@@ -1657,8 +1650,8 @@ class RecordSchema(Saveable):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.fields: None | Sequence[RecordField] = fields
-        self.type_: Literal["record"] = type_
+        self.fields = fields
+        self.type_ = type_
 
     attrs: ClassVar[Collection[str]] = frozenset(["fields", "type"])
 
@@ -1929,9 +1922,9 @@ class EnumSchema(Saveable):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.name: str = name if name is not None else "_:" + str(_uuid__.uuid4())
-        self.symbols: Sequence[str] = symbols
-        self.type_: Literal["enum"] = type_
+        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
+        self.symbols = symbols
+        self.type_ = type_
 
     attrs: ClassVar[Collection[str]] = frozenset(["name", "symbols", "type"])
 
@@ -2129,8 +2122,8 @@ class ArraySchema(Saveable):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.items: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str = items
-        self.type_: Literal["array"] = type_
+        self.items = items
+        self.type_ = type_
 
     attrs: ClassVar[Collection[str]] = frozenset(["items", "type"])
 
@@ -2328,8 +2321,8 @@ class MapSchema(Saveable):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.type_: Literal["map"] = type_
-        self.values: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str = values
+        self.type_ = type_
+        self.values = values
 
     attrs: ClassVar[Collection[str]] = frozenset(["type", "values"])
 
@@ -2527,8 +2520,8 @@ class UnionSchema(Saveable):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.names: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str = names
-        self.type_: Literal["union"] = type_
+        self.names = names
+        self.type_ = type_
 
     attrs: ClassVar[Collection[str]] = frozenset(["names", "type"])
 
@@ -3248,17 +3241,17 @@ class JsonldPredicate(Saveable):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self._id: None | str = _id
-        self._type: None | str = _type
-        self._container: None | str = _container
-        self.identity: None | bool = identity
-        self.noLinkCheck: None | bool = noLinkCheck
-        self.mapSubject: None | str = mapSubject
-        self.mapPredicate: None | str = mapPredicate
-        self.refScope: None | i32 = refScope
-        self.typeDSL: None | bool = typeDSL
-        self.secondaryFilesDSL: None | bool = secondaryFilesDSL
-        self.subscope: None | str = subscope
+        self._id = _id
+        self._type = _type
+        self._container = _container
+        self.identity = identity
+        self.noLinkCheck = noLinkCheck
+        self.mapSubject = mapSubject
+        self.mapPredicate = mapPredicate
+        self.refScope = refScope
+        self.typeDSL = typeDSL
+        self.secondaryFilesDSL = secondaryFilesDSL
+        self.subscope = subscope
 
     attrs: ClassVar[Collection[str]] = frozenset(
         [
@@ -3474,39 +3467,10 @@ class SpecializeDef(Saveable):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.specializeFrom: str = specializeFrom
-        self.specializeTo: str = specializeTo
+        self.specializeFrom = specializeFrom
+        self.specializeTo = specializeTo
 
     attrs: ClassVar[Collection[str]] = frozenset(["specializeFrom", "specializeTo"])
-
-
-@trait
-class NamedType(Saveable, metaclass=ABCMeta):
-    name: str
-    inVocab: None | bool
-
-
-@trait
-class DocType(Documented, metaclass=ABCMeta):
-    doc: None | Sequence[str] | str
-    docParent: None | str
-    docChild: None | Sequence[str] | str
-    docAfter: None | str
-
-
-@trait
-class SchemaDefinedType(DocType, metaclass=ABCMeta):
-    """
-    Abstract base for schema-defined types.
-
-    """
-
-    doc: None | Sequence[str] | str
-    docParent: None | str
-    docChild: None | Sequence[str] | str
-    docAfter: None | str
-    jsonldPredicate: JsonldPredicate | None | str
-    documentRoot: None | bool
 
 
 class SaladRecordField(RecordField):
@@ -3887,18 +3851,18 @@ class SaladRecordField(RecordField):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.doc: None | Sequence[str] | str = doc
-        self.name: str = name
-        self.type_: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str = type_
-        self.jsonldPredicate: JsonldPredicate | None | str = jsonldPredicate
-        self.default: Any | None = default
+        self.doc = doc
+        self.name = name
+        self.type_ = type_
+        self.jsonldPredicate = jsonldPredicate
+        self.default = default
 
     attrs: ClassVar[Collection[str]] = frozenset(
         ["doc", "name", "type", "jsonldPredicate", "default"]
     )
 
 
-class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
+class SaladRecordSchema(RecordSchema):
     name: str
 
     def __eq__(self, other: Any) -> bool:
@@ -4723,19 +4687,19 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.name: str = name
-        self.inVocab: None | bool = inVocab
-        self.fields: None | Sequence[SaladRecordField] = fields
-        self.type_: Literal["record"] = type_
-        self.doc: None | Sequence[str] | str = doc
-        self.docParent: None | str = docParent
-        self.docChild: None | Sequence[str] | str = docChild
-        self.docAfter: None | str = docAfter
-        self.jsonldPredicate: JsonldPredicate | None | str = jsonldPredicate
-        self.documentRoot: None | bool = documentRoot
-        self.abstract: None | bool = abstract
-        self.extends: None | Sequence[str] | str = extends
-        self.specialize: None | Sequence[SpecializeDef] = specialize
+        self.name = name
+        self.inVocab = inVocab
+        self.fields = fields
+        self.type_ = type_
+        self.doc = doc
+        self.docParent = docParent
+        self.docChild = docChild
+        self.docAfter = docAfter
+        self.jsonldPredicate = jsonldPredicate
+        self.documentRoot = documentRoot
+        self.abstract = abstract
+        self.extends = extends
+        self.specialize = specialize
 
     attrs: ClassVar[Collection[str]] = frozenset(
         [
@@ -4756,7 +4720,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
     )
 
 
-class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
+class SaladEnumSchema(EnumSchema):
     """
     Define an enumerated type.
 
@@ -5470,17 +5434,17 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.name: str = name if name is not None else "_:" + str(_uuid__.uuid4())
-        self.inVocab: None | bool = inVocab
-        self.symbols: Sequence[str] = symbols
-        self.type_: Literal["enum"] = type_
-        self.doc: None | Sequence[str] | str = doc
-        self.docParent: None | str = docParent
-        self.docChild: None | Sequence[str] | str = docChild
-        self.docAfter: None | str = docAfter
-        self.jsonldPredicate: JsonldPredicate | None | str = jsonldPredicate
-        self.documentRoot: None | bool = documentRoot
-        self.extends: None | Sequence[str] | str = extends
+        self.name = name if name is not None else "_:" + str(_uuid__.uuid4())
+        self.inVocab = inVocab
+        self.symbols = symbols
+        self.type_ = type_
+        self.doc = doc
+        self.docParent = docParent
+        self.docChild = docChild
+        self.docAfter = docAfter
+        self.jsonldPredicate = jsonldPredicate
+        self.documentRoot = documentRoot
+        self.extends = extends
 
     attrs: ClassVar[Collection[str]] = frozenset(
         [
@@ -5499,7 +5463,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
     )
 
 
-class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
+class SaladMapSchema(MapSchema):
     """
     Define a map type.
 
@@ -6159,16 +6123,16 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.name: str = name
-        self.inVocab: None | bool = inVocab
-        self.type_: Literal["map"] = type_
-        self.values: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str = values
-        self.doc: None | Sequence[str] | str = doc
-        self.docParent: None | str = docParent
-        self.docChild: None | Sequence[str] | str = docChild
-        self.docAfter: None | str = docAfter
-        self.jsonldPredicate: JsonldPredicate | None | str = jsonldPredicate
-        self.documentRoot: None | bool = documentRoot
+        self.name = name
+        self.inVocab = inVocab
+        self.type_ = type_
+        self.values = values
+        self.doc = doc
+        self.docParent = docParent
+        self.docChild = docChild
+        self.docAfter = docAfter
+        self.jsonldPredicate = jsonldPredicate
+        self.documentRoot = documentRoot
 
     attrs: ClassVar[Collection[str]] = frozenset(
         [
@@ -6186,7 +6150,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
     )
 
 
-class SaladUnionSchema(NamedType, UnionSchema, DocType):
+class SaladUnionSchema(UnionSchema):
     """
     Define a union type.
 
@@ -6788,15 +6752,15 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.name: str = name
-        self.inVocab: None | bool = inVocab
-        self.names: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str = names
-        self.type_: Literal["union"] = type_
-        self.doc: None | Sequence[str] | str = doc
-        self.docParent: None | str = docParent
-        self.docChild: None | Sequence[str] | str = docChild
-        self.docAfter: None | str = docAfter
-        self.documentRoot: None | bool = documentRoot
+        self.name = name
+        self.inVocab = inVocab
+        self.names = names
+        self.type_ = type_
+        self.doc = doc
+        self.docParent = docParent
+        self.docChild = docChild
+        self.docAfter = docAfter
+        self.documentRoot = documentRoot
 
     attrs: ClassVar[Collection[str]] = frozenset(
         [
@@ -6813,7 +6777,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
     )
 
 
-class Documentation(NamedType, DocType):
+class Documentation(Saveable):
     """
     A documentation section.  This type exists to facilitate self-documenting
     schemas but has no role in formal validation.
@@ -7303,13 +7267,13 @@ class Documentation(NamedType, DocType):
             self.loadingOptions = loadingOptions
         else:
             self.loadingOptions = LoadingOptions()
-        self.name: str = name
-        self.inVocab: None | bool = inVocab
-        self.doc: None | Sequence[str] | str = doc
-        self.docParent: None | str = docParent
-        self.docChild: None | Sequence[str] | str = docChild
-        self.docAfter: None | str = docAfter
-        self.type_: Literal["documentation"] = type_
+        self.name = name
+        self.inVocab = inVocab
+        self.doc = doc
+        self.docParent = docParent
+        self.docChild = docChild
+        self.docAfter = docAfter
+        self.type_ = type_
 
     attrs: ClassVar[Collection[str]] = frozenset(
         ["name", "inVocab", "doc", "docParent", "docChild", "docAfter", "type"]
@@ -7620,6 +7584,17 @@ union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoade
         array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader,
     )
 )
+
+SchemaDefinedType: TypeAlias = SaladEnumSchema | SaladMapSchema | SaladRecordSchema
+NamedType: TypeAlias = (
+    Documentation
+    | SaladEnumSchema
+    | SaladMapSchema
+    | SaladRecordSchema
+    | SaladUnionSchema
+)
+DocType: TypeAlias = Documentation | SaladUnionSchema | SchemaDefinedType
+Documented: TypeAlias = DocType | RecordField
 
 
 def load_document(
