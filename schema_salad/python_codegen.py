@@ -179,7 +179,9 @@ class PythonCodeGen(CodeGenBase):
 
         parents = [self.safe_name(e) for e in extends if self.safe_name(e) not in self.subclasses]
         ext = ", ".join(parents) if parents else "Saveable"
-        self.out.write(fmt(f"class {classname}({ext}):\n    pass", 0)[:-9])
+        self.out.write(
+            fmt(f"@mypyc_attr(native_class=True)\nclass {classname}({ext}):\n    pass", 0)[:-9]
+        )
 
         if doc:
             self.out.write(fmt(f'"""\n{doc}\n"""\n', 4) + "\n")

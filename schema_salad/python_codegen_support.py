@@ -15,7 +15,7 @@ from collections.abc import Collection  # pylint: disable=unused-import # noqa: 
 from collections.abc import MutableMapping, MutableSequence, Sequence
 from io import StringIO
 from itertools import chain
-from mypy_extensions import i32, i64
+from mypy_extensions import i32, i64, mypyc_attr
 from typing import ClassVar, Literal, Mapping  # pylint: disable=unused-import # noqa: F401
 from typing import Any, Final, Generic, TypeAlias, TypeVar, cast
 from urllib.parse import quote, urldefrag, urlparse, urlsplit, urlunsplit
@@ -47,6 +47,7 @@ S = TypeVar("S", bound="Saveable")
 T = TypeVar("T", covariant=True)
 
 
+@mypyc_attr(native_class=True)
 class LoadingOptions:
     idx: Final[IdxType]
     fileuri: Final[str | None]
@@ -212,6 +213,7 @@ class LoadingOptions:
         return graph
 
 
+@mypyc_attr(native_class=True)
 class Saveable(metaclass=ABCMeta):
     """Mark classes than have a save() and fromDoc() function."""
 
@@ -441,6 +443,7 @@ def expand_url(
     return url
 
 
+@mypyc_attr(native_class=True)
 class _Loader(Generic[T], metaclass=ABCMeta):
     @abstractmethod
     def load(
@@ -453,6 +456,7 @@ class _Loader(Generic[T], metaclass=ABCMeta):
     ) -> T: ...
 
 
+@mypyc_attr(native_class=True)
 class _AnyLoader(_Loader[Any]):
     def load(
         self,
@@ -467,6 +471,7 @@ class _AnyLoader(_Loader[Any]):
         raise ValidationException("Expected non-null")
 
 
+@mypyc_attr(native_class=True)
 class _PrimitiveLoader(_Loader[T]):
     def __init__(self, tp: type[T]) -> None:
         self.tp: Final = tp
@@ -487,6 +492,7 @@ class _PrimitiveLoader(_Loader[T]):
         return str(self.tp)
 
 
+@mypyc_attr(native_class=True)
 class _ArrayLoader(_Loader[Sequence[T]]):
     def __init__(self, items: _Loader[T]) -> None:
         self.items: Final = items
@@ -544,6 +550,7 @@ class _ArrayLoader(_Loader[Sequence[T]]):
         return f"array<{self.items}>"
 
 
+@mypyc_attr(native_class=True)
 class _MapLoader(_Loader[Mapping[str, T]]):
     def __init__(
         self,
@@ -587,6 +594,7 @@ class _MapLoader(_Loader[Mapping[str, T]]):
         return self.name if self.name is not None else f"map<string, {self.values}>"
 
 
+@mypyc_attr(native_class=True)
 class _EnumLoader(_Loader[E]):
     def __init__(self, symbols: Sequence[str], name: str) -> None:
         self.symbols: Final = symbols
@@ -608,6 +616,7 @@ class _EnumLoader(_Loader[E]):
         return self.name
 
 
+@mypyc_attr(native_class=True)
 class _SecondaryDSLLoader(_Loader[T]):
     def __init__(self, inner: _Loader[T]) -> None:
         self.inner: Final = inner
@@ -681,6 +690,7 @@ class _SecondaryDSLLoader(_Loader[T]):
         return self.inner.load(r, baseuri, loadingOptions, docRoot, lc=lc)
 
 
+@mypyc_attr(native_class=True)
 class _RecordLoader(_Loader[S]):
     def __init__(
         self,
@@ -715,6 +725,7 @@ class _RecordLoader(_Loader[S]):
         return str(self.classtype.__name__)
 
 
+@mypyc_attr(native_class=True)
 class _ExpressionLoader(_Loader[str]):
     def __init__(self, items: type[str]) -> None:
         self.items: Final = items
@@ -736,6 +747,7 @@ class _ExpressionLoader(_Loader[str]):
             return doc
 
 
+@mypyc_attr(native_class=True)
 class _UnionLoader(_Loader[T]):
     def __init__(self, alternates: Sequence[_Loader[T]], name: str | None = None) -> None:
         self.alternates = alternates
@@ -826,6 +838,7 @@ class _UnionLoader(_Loader[T]):
         return self.name if self.name is not None else " | ".join(str(a) for a in self.alternates)
 
 
+@mypyc_attr(native_class=True)
 class _URILoader(_Loader[T]):
     def __init__(
         self,
@@ -895,6 +908,7 @@ class _URILoader(_Loader[T]):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
+@mypyc_attr(native_class=True)
 class _TypeDSLLoader(_Loader[T]):
     def __init__(self, inner: _Loader[T], refScope: int | None, salad_version: str) -> None:
         self.inner: Final = inner
@@ -965,6 +979,7 @@ class _TypeDSLLoader(_Loader[T]):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
+@mypyc_attr(native_class=True)
 class _IdMapLoader(_Loader[T]):
     def __init__(self, inner: _Loader[T], mapSubject: str, mapPredicate: str | None) -> None:
         self.inner: Final = inner
