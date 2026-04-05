@@ -45,7 +45,9 @@ _logger: Final = logging.getLogger("salad")
 
 
 IdxType: TypeAlias = MutableMapping[str, tuple[Any, "LoadingOptions"]]
+E = TypeVar("E", bound=str)
 S = TypeVar("S", bound="Saveable")
+T = TypeVar("T", covariant=True)
 
 
 class LoadingOptions:
@@ -236,11 +238,11 @@ class Saveable(metaclass=ABCMeta):
 
 def load_field(
     val: Any | None,
-    fieldtype: "_Loader",
+    fieldtype: _Loader[T],
     baseuri: str,
     loadingOptions: LoadingOptions,
     lc: Any | None = None,
-) -> Any:
+) -> T:
     """Load field."""
     if isinstance(val, MutableMapping):
         if "$import" in val:
@@ -442,7 +444,8 @@ def expand_url(
     return url
 
 
-class _Loader:
+class _Loader(Generic[T], metaclass=ABCMeta):
+    @abstractmethod
     def load(
         self,
         doc: Any,
@@ -450,11 +453,10 @@ class _Loader:
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> Any | None:
-        pass
+    ) -> T: ...
 
 
-class _AnyLoader(_Loader):
+class _AnyLoader(_Loader[Any]):
     def load(
         self,
         doc: Any,
@@ -468,8 +470,8 @@ class _AnyLoader(_Loader):
         raise ValidationException("Expected non-null")
 
 
-class _PrimitiveLoader(_Loader):
-    def __init__(self, tp: type | tuple[type[str], type[str]]) -> None:
+class _PrimitiveLoader(_Loader[T]):
+    def __init__(self, tp: type[T]) -> None:
         self.tp: Final = tp
 
     def load(
@@ -479,7 +481,7 @@ class _PrimitiveLoader(_Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> Any:
+    ) -> T:
         if not isinstance(doc, self.tp):
             raise ValidationException(f"Expected a {self.tp} but got {doc.__class__.__name__}")
         return doc
@@ -488,8 +490,8 @@ class _PrimitiveLoader(_Loader):
         return str(self.tp)
 
 
-class _ArrayLoader(_Loader):
-    def __init__(self, items: _Loader) -> None:
+class _ArrayLoader(_Loader[Sequence[T]]):
+    def __init__(self, items: _Loader[T]) -> None:
         self.items: Final = items
 
     def load(
@@ -499,7 +501,7 @@ class _ArrayLoader(_Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> list[Any]:
+    ) -> list[T]:
         if not isinstance(doc, MutableSequence):
             raise ValidationException(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
@@ -545,10 +547,10 @@ class _ArrayLoader(_Loader):
         return f"array<{self.items}>"
 
 
-class _MapLoader(_Loader):
+class _MapLoader(_Loader[Mapping[str, T]]):
     def __init__(
         self,
-        values: _Loader,
+        values: _Loader[T],
         name: str | None = None,
         container: str | None = None,
         no_link_check: bool | None = None,
@@ -565,7 +567,7 @@ class _MapLoader(_Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> dict[str, Any]:
+    ) -> dict[str, T]:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(f"Expected a map, was {type(doc)}")
         if self.container is not None or self.no_link_check is not None:
@@ -588,7 +590,7 @@ class _MapLoader(_Loader):
         return self.name if self.name is not None else f"map<string, {self.values}>"
 
 
-class _EnumLoader(_Loader):
+class _EnumLoader(_Loader[E]):
     def __init__(self, symbols: Sequence[str], name: str) -> None:
         self.symbols: Final = symbols
         self.name: Final = name
@@ -600,17 +602,17 @@ class _EnumLoader(_Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> str:
+    ) -> E:
         if doc in self.symbols:
-            return cast(str, doc)
+            return cast(E, doc)
         raise ValidationException(f"Expected one of {self.symbols}")
 
     def __repr__(self) -> str:
         return self.name
 
 
-class _SecondaryDSLLoader(_Loader):
-    def __init__(self, inner: _Loader) -> None:
+class _SecondaryDSLLoader(_Loader[T]):
+    def __init__(self, inner: _Loader[T]) -> None:
         self.inner: Final = inner
 
     def load(
@@ -620,7 +622,7 @@ class _SecondaryDSLLoader(_Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> Any:
+    ) -> T:
         r: Final[list[dict[str, Any]]] = []
         match doc:
             case MutableSequence() as dlist:
@@ -682,7 +684,7 @@ class _SecondaryDSLLoader(_Loader):
         return self.inner.load(r, baseuri, loadingOptions, docRoot, lc=lc)
 
 
-class _RecordLoader(_Loader, Generic[S]):
+class _RecordLoader(_Loader[S]):
     def __init__(
         self,
         classtype: type[S],
@@ -716,7 +718,7 @@ class _RecordLoader(_Loader, Generic[S]):
         return str(self.classtype.__name__)
 
 
-class _ExpressionLoader(_Loader):
+class _ExpressionLoader(_Loader[str]):
     def __init__(self, items: type[str]) -> None:
         self.items: Final = items
 
@@ -737,12 +739,12 @@ class _ExpressionLoader(_Loader):
             return doc
 
 
-class _UnionLoader(_Loader):
-    def __init__(self, alternates: Sequence[_Loader], name: str | None = None) -> None:
+class _UnionLoader(_Loader[T]):
+    def __init__(self, alternates: Sequence[_Loader[T]], name: str | None = None) -> None:
         self.alternates = alternates
         self.name: Final = name
 
-    def add_loaders(self, loaders: Sequence[_Loader]) -> None:
+    def add_loaders(self, loaders: Sequence[_Loader[T]]) -> None:
         self.alternates = tuple(loader for loader in chain(self.alternates, loaders))
 
     def load(
@@ -752,7 +754,7 @@ class _UnionLoader(_Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> Any:
+    ) -> T:
         errors: Final = []
 
         if lc is None:
@@ -827,10 +829,10 @@ class _UnionLoader(_Loader):
         return self.name if self.name is not None else " | ".join(str(a) for a in self.alternates)
 
 
-class _URILoader(_Loader):
+class _URILoader(_Loader[T]):
     def __init__(
         self,
-        inner: _Loader,
+        inner: _Loader[T],
         scoped_id: bool,
         vocab_term: bool,
         scoped_ref: int | None,
@@ -849,7 +851,7 @@ class _URILoader(_Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> Any:
+    ) -> T:
         if self.no_link_check is not None:
             loadingOptions = LoadingOptions(
                 copyfrom=loadingOptions, no_link_check=self.no_link_check
@@ -896,8 +898,8 @@ class _URILoader(_Loader):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
-class _TypeDSLLoader(_Loader):
-    def __init__(self, inner: _Loader, refScope: int | None, salad_version: str) -> None:
+class _TypeDSLLoader(_Loader[T]):
+    def __init__(self, inner: _Loader[T], refScope: int | None, salad_version: str) -> None:
         self.inner: Final = inner
         self.refScope: Final = refScope
         self.salad_version: Final = salad_version
@@ -944,7 +946,7 @@ class _TypeDSLLoader(_Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> Any:
+    ) -> T:
         if isinstance(doc, MutableSequence):
             r: Final[list[Any]] = []
             for d in doc:
@@ -966,8 +968,8 @@ class _TypeDSLLoader(_Loader):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
-class _IdMapLoader(_Loader):
-    def __init__(self, inner: _Loader, mapSubject: str, mapPredicate: str | None) -> None:
+class _IdMapLoader(_Loader[T]):
+    def __init__(self, inner: _Loader[T], mapSubject: str, mapPredicate: str | None) -> None:
         self.inner: Final = inner
         self.mapSubject: Final = mapSubject
         self.mapPredicate: Final = mapPredicate
@@ -979,7 +981,7 @@ class _IdMapLoader(_Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> Any:
+    ) -> T:
         if isinstance(doc, MutableMapping):
             r: Final[list[Any]] = []
             for k in doc.keys():
@@ -1006,12 +1008,12 @@ class _IdMapLoader(_Loader):
 
 
 def _document_load(
-    loader: _Loader,
+    loader: _Loader[T],
     doc: str | MutableMapping[str, Any] | MutableSequence[Any],
     baseuri: str,
     loadingOptions: LoadingOptions,
     addl_metadata_fields: MutableSequence[str] | None = None,
-) -> tuple[Any, LoadingOptions]:
+) -> tuple[T, LoadingOptions]:
     if isinstance(doc, str):
         return _document_load_by_url(
             loader,
@@ -1076,11 +1078,11 @@ def _document_load(
 
 
 def _document_load_by_url(
-    loader: _Loader,
+    loader: _Loader[T],
     url: str,
     loadingOptions: LoadingOptions,
     addl_metadata_fields: MutableSequence[str] | None = None,
-) -> tuple[Any, LoadingOptions]:
+) -> tuple[T, LoadingOptions]:
     if url in loadingOptions.idx:
         return loadingOptions.idx[url]
 
@@ -1266,14 +1268,14 @@ class RecordField(Saveable):
                             )
                         )
 
-        __original_name_is_none = name is None
         if name is None:
             if docRoot is not None:
                 name = docRoot
             else:
+                name = ""
                 _errors__.append(ValidationException("missing name"))
-        if not __original_name_is_none:
-            baseuri = cast(str, name)
+        else:
+            baseuri = name
         doc = None
         if "doc" in _doc:
             try:
@@ -1394,13 +1396,13 @@ class RecordField(Saveable):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
-            name=cast(str, name),
+            name=name,
             doc=doc,
             type_=type_,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
-        loadingOptions.idx[cast(str, name)] = (_constructed, loadingOptions)
+        loadingOptions.idx[name] = (_constructed, loadingOptions)
         return _constructed
 
     def save(
@@ -1415,7 +1417,7 @@ class RecordField(Saveable):
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
         if self.name is not None:
-            u = save_relative_uri(self.name, base_url, True, None, relative_uris)
+            u = save_relative_uri(self.name, self.name, True, None, relative_uris)
             r["name"] = u
         if self.doc is not None:
             r["doc"] = save(
@@ -1738,14 +1740,13 @@ class EnumSchema(Saveable):
                             )
                         )
 
-        __original_name_is_none = name is None
         if name is None:
             if docRoot is not None:
                 name = docRoot
             else:
                 name = "_:" + str(_uuid__.uuid4())
-        if not __original_name_is_none:
-            baseuri = cast(str, name)
+        else:
+            baseuri = name
         try:
             if _doc.get("symbols") is None:
                 raise ValidationException("missing required field `symbols`", None, [])
@@ -1867,13 +1868,13 @@ class EnumSchema(Saveable):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
-            name=cast(str, name),
+            name=name,
             symbols=symbols,
             type_=type_,
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
-        loadingOptions.idx[cast(str, name)] = (_constructed, loadingOptions)
+        loadingOptions.idx[name] = (_constructed, loadingOptions)
         return _constructed
 
     def save(
@@ -1888,7 +1889,7 @@ class EnumSchema(Saveable):
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
         if self.name is not None:
-            u = save_relative_uri(self.name, base_url, True, None, relative_uris)
+            u = save_relative_uri(self.name, self.name, True, None, relative_uris)
             r["name"] = u
         if self.symbols is not None:
             u = save_relative_uri(self.symbols, self.name, True, None, relative_uris)
@@ -3558,14 +3559,14 @@ class SaladRecordField(RecordField):
                             )
                         )
 
-        __original_name_is_none = name is None
         if name is None:
             if docRoot is not None:
                 name = docRoot
             else:
+                name = ""
                 _errors__.append(ValidationException("missing name"))
-        if not __original_name_is_none:
-            baseuri = cast(str, name)
+        else:
+            baseuri = name
         doc = None
         if "doc" in _doc:
             try:
@@ -3780,7 +3781,7 @@ class SaladRecordField(RecordField):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
-            name=cast(str, name),
+            name=name,
             doc=doc,
             type_=type_,
             jsonldPredicate=jsonldPredicate,
@@ -3788,7 +3789,7 @@ class SaladRecordField(RecordField):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
-        loadingOptions.idx[cast(str, name)] = (_constructed, loadingOptions)
+        loadingOptions.idx[name] = (_constructed, loadingOptions)
         return _constructed
 
     def save(
@@ -3803,7 +3804,7 @@ class SaladRecordField(RecordField):
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
         if self.name is not None:
-            u = save_relative_uri(self.name, base_url, True, None, relative_uris)
+            u = save_relative_uri(self.name, self.name, True, None, relative_uris)
             r["name"] = u
         if self.doc is not None:
             r["doc"] = save(
@@ -3965,14 +3966,14 @@ class SaladRecordSchema(RecordSchema):
                             )
                         )
 
-        __original_name_is_none = name is None
         if name is None:
             if docRoot is not None:
                 name = docRoot
             else:
+                name = ""
                 _errors__.append(ValidationException("missing name"))
-        if not __original_name_is_none:
-            baseuri = cast(str, name)
+        else:
+            baseuri = name
         inVocab = None
         if "inVocab" in _doc:
             try:
@@ -4563,7 +4564,7 @@ class SaladRecordSchema(RecordSchema):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
-            name=cast(str, name),
+            name=name,
             inVocab=inVocab,
             fields=fields,
             type_=type_,
@@ -4579,7 +4580,7 @@ class SaladRecordSchema(RecordSchema):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
-        loadingOptions.idx[cast(str, name)] = (_constructed, loadingOptions)
+        loadingOptions.idx[name] = (_constructed, loadingOptions)
         return _constructed
 
     def save(
@@ -4594,7 +4595,7 @@ class SaladRecordSchema(RecordSchema):
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
         if self.name is not None:
-            u = save_relative_uri(self.name, base_url, True, None, relative_uris)
+            u = save_relative_uri(self.name, self.name, True, None, relative_uris)
             r["name"] = u
         if self.inVocab is not None:
             r["inVocab"] = save(
@@ -4824,14 +4825,13 @@ class SaladEnumSchema(EnumSchema):
                             )
                         )
 
-        __original_name_is_none = name is None
         if name is None:
             if docRoot is not None:
                 name = docRoot
             else:
                 name = "_:" + str(_uuid__.uuid4())
-        if not __original_name_is_none:
-            baseuri = cast(str, name)
+        else:
+            baseuri = name
         inVocab = None
         if "inVocab" in _doc:
             try:
@@ -5329,7 +5329,7 @@ class SaladEnumSchema(EnumSchema):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
-            name=cast(str, name),
+            name=name,
             inVocab=inVocab,
             symbols=symbols,
             type_=type_,
@@ -5343,7 +5343,7 @@ class SaladEnumSchema(EnumSchema):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
-        loadingOptions.idx[cast(str, name)] = (_constructed, loadingOptions)
+        loadingOptions.idx[name] = (_constructed, loadingOptions)
         return _constructed
 
     def save(
@@ -5358,7 +5358,7 @@ class SaladEnumSchema(EnumSchema):
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
         if self.name is not None:
-            u = save_relative_uri(self.name, base_url, True, None, relative_uris)
+            u = save_relative_uri(self.name, self.name, True, None, relative_uris)
             r["name"] = u
         if self.inVocab is not None:
             r["inVocab"] = save(
@@ -5565,14 +5565,14 @@ class SaladMapSchema(MapSchema):
                             )
                         )
 
-        __original_name_is_none = name is None
         if name is None:
             if docRoot is not None:
                 name = docRoot
             else:
+                name = ""
                 _errors__.append(ValidationException("missing name"))
-        if not __original_name_is_none:
-            baseuri = cast(str, name)
+        else:
+            baseuri = name
         inVocab = None
         if "inVocab" in _doc:
             try:
@@ -6023,7 +6023,7 @@ class SaladMapSchema(MapSchema):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
-            name=cast(str, name),
+            name=name,
             inVocab=inVocab,
             type_=type_,
             values=values,
@@ -6036,7 +6036,7 @@ class SaladMapSchema(MapSchema):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
-        loadingOptions.idx[cast(str, name)] = (_constructed, loadingOptions)
+        loadingOptions.idx[name] = (_constructed, loadingOptions)
         return _constructed
 
     def save(
@@ -6051,7 +6051,7 @@ class SaladMapSchema(MapSchema):
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
         if self.name is not None:
-            u = save_relative_uri(self.name, base_url, True, None, relative_uris)
+            u = save_relative_uri(self.name, self.name, True, None, relative_uris)
             r["name"] = u
         if self.inVocab is not None:
             r["inVocab"] = save(
@@ -6250,14 +6250,14 @@ class SaladUnionSchema(UnionSchema):
                             )
                         )
 
-        __original_name_is_none = name is None
         if name is None:
             if docRoot is not None:
                 name = docRoot
             else:
+                name = ""
                 _errors__.append(ValidationException("missing name"))
-        if not __original_name_is_none:
-            baseuri = cast(str, name)
+        else:
+            baseuri = name
         inVocab = None
         if "inVocab" in _doc:
             try:
@@ -6661,7 +6661,7 @@ class SaladUnionSchema(UnionSchema):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
-            name=cast(str, name),
+            name=name,
             inVocab=inVocab,
             names=names,
             type_=type_,
@@ -6673,7 +6673,7 @@ class SaladUnionSchema(UnionSchema):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
-        loadingOptions.idx[cast(str, name)] = (_constructed, loadingOptions)
+        loadingOptions.idx[name] = (_constructed, loadingOptions)
         return _constructed
 
     def save(
@@ -6688,7 +6688,7 @@ class SaladUnionSchema(UnionSchema):
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
         if self.name is not None:
-            u = save_relative_uri(self.name, base_url, True, None, relative_uris)
+            u = save_relative_uri(self.name, self.name, True, None, relative_uris)
             r["name"] = u
         if self.inVocab is not None:
             r["inVocab"] = save(
@@ -6874,14 +6874,14 @@ class Documentation(Saveable):
                             )
                         )
 
-        __original_name_is_none = name is None
         if name is None:
             if docRoot is not None:
                 name = docRoot
             else:
+                name = ""
                 _errors__.append(ValidationException("missing name"))
-        if not __original_name_is_none:
-            baseuri = cast(str, name)
+        else:
+            baseuri = name
         inVocab = None
         if "inVocab" in _doc:
             try:
@@ -7190,7 +7190,7 @@ class Documentation(Saveable):
         if _errors__:
             raise ValidationException("", None, _errors__, "*")
         _constructed = cls(
-            name=cast(str, name),
+            name=name,
             inVocab=inVocab,
             doc=doc,
             docParent=docParent,
@@ -7200,7 +7200,7 @@ class Documentation(Saveable):
             extension_fields=extension_fields,
             loadingOptions=loadingOptions,
         )
-        loadingOptions.idx[cast(str, name)] = (_constructed, loadingOptions)
+        loadingOptions.idx[name] = (_constructed, loadingOptions)
         return _constructed
 
     def save(
@@ -7215,7 +7215,7 @@ class Documentation(Saveable):
             for ef in self.extension_fields:
                 r[ef] = self.extension_fields[ef]
         if self.name is not None:
-            u = save_relative_uri(self.name, base_url, True, None, relative_uris)
+            u = save_relative_uri(self.name, self.name, True, None, relative_uris)
             r["name"] = u
         if self.inVocab is not None:
             r["inVocab"] = save(
@@ -7351,14 +7351,16 @@ _rvocab.update({
     "https://w3id.org/cwl/salad#union": "union",
 })
 
-strtype: Final = _PrimitiveLoader(str)
-inttype: Final = _PrimitiveLoader(i32)
-floattype: Final = _PrimitiveLoader(float)
-booltype: Final = _PrimitiveLoader(bool)
-None_type: Final = _PrimitiveLoader(type(None))
-Any_type: Final = _AnyLoader()
-longtype: Final = _PrimitiveLoader(i64)
-PrimitiveTypeLoader: Final = _EnumLoader(
+strtype: Final[_Loader[str]] = _PrimitiveLoader(str)
+inttype: Final[_Loader[i32]] = _PrimitiveLoader(i32)
+floattype: Final[_Loader[float]] = _PrimitiveLoader(float)
+booltype: Final[_Loader[bool]] = _PrimitiveLoader(bool)
+None_type: Final[_Loader[None]] = _PrimitiveLoader(type(None))
+Any_type: Final[_Loader[Any]] = _AnyLoader()
+longtype: Final[_Loader[i64]] = _PrimitiveLoader(i64)
+PrimitiveTypeLoader: Final[
+    _Loader[Literal["null", "boolean", "int", "long", "float", "double", "string"]]
+] = _EnumLoader(
     (
         "null",
         "boolean",
@@ -7384,36 +7386,66 @@ float: single precision (32-bit) IEEE 754 floating-point number
 double: double precision (64-bit) IEEE 754 floating-point number
 string: Unicode character sequence
 """
-AnyLoader: Final = _EnumLoader(("Any",), "Any")
+AnyLoader: Final[_Loader[Literal["Any"]]] = _EnumLoader(("Any",), "Any")
 """
 The **Any** type validates for any non-null value.
 """
-RecordFieldLoader: Final = _RecordLoader(RecordField, None, None)
-RecordSchemaLoader: Final = _RecordLoader(RecordSchema, None, None)
-EnumSchemaLoader: Final = _RecordLoader(EnumSchema, None, None)
-ArraySchemaLoader: Final = _RecordLoader(ArraySchema, None, None)
-MapSchemaLoader: Final = _RecordLoader(MapSchema, None, None)
-UnionSchemaLoader: Final = _RecordLoader(UnionSchema, None, None)
-JsonldPredicateLoader: Final = _RecordLoader(JsonldPredicate, None, None)
-SpecializeDefLoader: Final = _RecordLoader(SpecializeDef, None, None)
-SaladRecordFieldLoader: Final = _RecordLoader(SaladRecordField, None, None)
-SaladRecordSchemaLoader: Final = _RecordLoader(SaladRecordSchema, None, None)
-SaladEnumSchemaLoader: Final = _RecordLoader(SaladEnumSchema, None, None)
-SaladMapSchemaLoader: Final = _RecordLoader(SaladMapSchema, None, None)
-SaladUnionSchemaLoader: Final = _RecordLoader(SaladUnionSchema, None, None)
-DocumentationLoader: Final = _RecordLoader(Documentation, None, None)
-array_of_strtype: Final = _ArrayLoader(strtype)
-union_of_None_type_or_strtype_or_array_of_strtype: Final = _UnionLoader(
+RecordFieldLoader: Final[_Loader[RecordField]] = _RecordLoader(RecordField, None, None)
+RecordSchemaLoader: Final[_Loader[RecordSchema]] = _RecordLoader(
+    RecordSchema, None, None
+)
+EnumSchemaLoader: Final[_Loader[EnumSchema]] = _RecordLoader(EnumSchema, None, None)
+ArraySchemaLoader: Final[_Loader[ArraySchema]] = _RecordLoader(ArraySchema, None, None)
+MapSchemaLoader: Final[_Loader[MapSchema]] = _RecordLoader(MapSchema, None, None)
+UnionSchemaLoader: Final[_Loader[UnionSchema]] = _RecordLoader(UnionSchema, None, None)
+JsonldPredicateLoader: Final[_Loader[JsonldPredicate]] = _RecordLoader(
+    JsonldPredicate, None, None
+)
+SpecializeDefLoader: Final[_Loader[SpecializeDef]] = _RecordLoader(
+    SpecializeDef, None, None
+)
+SaladRecordFieldLoader: Final[_Loader[SaladRecordField]] = _RecordLoader(
+    SaladRecordField, None, None
+)
+SaladRecordSchemaLoader: Final[_Loader[SaladRecordSchema]] = _RecordLoader(
+    SaladRecordSchema, None, None
+)
+SaladEnumSchemaLoader: Final[_Loader[SaladEnumSchema]] = _RecordLoader(
+    SaladEnumSchema, None, None
+)
+SaladMapSchemaLoader: Final[_Loader[SaladMapSchema]] = _RecordLoader(
+    SaladMapSchema, None, None
+)
+SaladUnionSchemaLoader: Final[_Loader[SaladUnionSchema]] = _RecordLoader(
+    SaladUnionSchema, None, None
+)
+DocumentationLoader: Final[_Loader[Documentation]] = _RecordLoader(
+    Documentation, None, None
+)
+array_of_strtype: Final[_Loader[Sequence[str]]] = _ArrayLoader(strtype)
+union_of_None_type_or_strtype_or_array_of_strtype: Final[
+    _Loader[None | Sequence[str] | str]
+] = _UnionLoader(
     (
         None_type,
         strtype,
         array_of_strtype,
     )
 )
-uri_strtype_True_False_None_None: Final = _URILoader(strtype, True, False, None, None)
-union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype: (
-    Final
-) = _UnionLoader(
+uri_strtype_True_False_None_None: Final[_Loader[str]] = _URILoader(
+    strtype, True, False, None, None
+)
+union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype: Final[
+    _Loader[
+        ArraySchema
+        | EnumSchema
+        | Literal["null", "boolean", "int", "long", "float", "double", "string"]
+        | MapSchema
+        | RecordSchema
+        | UnionSchema
+        | str
+    ]
+] = _UnionLoader(
     (
         PrimitiveTypeLoader,
         RecordSchemaLoader,
@@ -7424,14 +7456,41 @@ union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArrayS
         strtype,
     )
 )
-array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype: (
-    Final
-) = _ArrayLoader(
+array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype: Final[
+    _Loader[
+        Sequence[
+            ArraySchema
+            | EnumSchema
+            | Literal["null", "boolean", "int", "long", "float", "double", "string"]
+            | MapSchema
+            | RecordSchema
+            | UnionSchema
+            | str
+        ]
+    ]
+] = _ArrayLoader(
     union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype
 )
-union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype: (
-    Final
-) = _UnionLoader(
+union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype: Final[
+    _Loader[
+        ArraySchema
+        | EnumSchema
+        | Literal["null", "boolean", "int", "long", "float", "double", "string"]
+        | MapSchema
+        | RecordSchema
+        | Sequence[
+            ArraySchema
+            | EnumSchema
+            | Literal["null", "boolean", "int", "long", "float", "double", "string"]
+            | MapSchema
+            | RecordSchema
+            | UnionSchema
+            | str
+        ]
+        | UnionSchema
+        | str
+    ]
+] = _UnionLoader(
     (
         PrimitiveTypeLoader,
         RecordSchemaLoader,
@@ -7443,122 +7502,194 @@ union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArrayS
         array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
     )
 )
-typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2: (
-    Final
-) = _TypeDSLLoader(
+typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2: Final[
+    _Loader[
+        ArraySchema
+        | EnumSchema
+        | Literal["null", "boolean", "int", "long", "float", "double", "string"]
+        | MapSchema
+        | RecordSchema
+        | Sequence[
+            ArraySchema
+            | EnumSchema
+            | Literal["null", "boolean", "int", "long", "float", "double", "string"]
+            | MapSchema
+            | RecordSchema
+            | UnionSchema
+            | str
+        ]
+        | UnionSchema
+        | str
+    ]
+] = _TypeDSLLoader(
     union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
     2,
     "v1.1",
 )
-array_of_RecordFieldLoader: Final = _ArrayLoader(RecordFieldLoader)
-union_of_None_type_or_array_of_RecordFieldLoader: Final = _UnionLoader(
+array_of_RecordFieldLoader: Final[_Loader[Sequence[RecordField]]] = _ArrayLoader(
+    RecordFieldLoader
+)
+union_of_None_type_or_array_of_RecordFieldLoader: Final[
+    _Loader[None | Sequence[RecordField]]
+] = _UnionLoader(
     (
         None_type,
         array_of_RecordFieldLoader,
     )
 )
-idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader: Final = _IdMapLoader(
-    union_of_None_type_or_array_of_RecordFieldLoader, "name", "type"
+idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader: Final[
+    _Loader[None | Sequence[RecordField]]
+] = _IdMapLoader(union_of_None_type_or_array_of_RecordFieldLoader, "name", "type")
+Record_nameLoader: Final[_Loader[Literal["record"]]] = _EnumLoader(
+    ("record",), "Record_name"
 )
-Record_nameLoader: Final = _EnumLoader(("record",), "Record_name")
-typedsl_Record_nameLoader_2: Final = _TypeDSLLoader(Record_nameLoader, 2, "v1.1")
-union_of_None_type_or_strtype: Final = _UnionLoader(
+typedsl_Record_nameLoader_2: Final[_Loader[Literal["record"]]] = _TypeDSLLoader(
+    Record_nameLoader, 2, "v1.1"
+)
+union_of_None_type_or_strtype: Final[_Loader[None | str]] = _UnionLoader(
     (
         None_type,
         strtype,
     )
 )
-uri_union_of_None_type_or_strtype_True_False_None_None: Final = _URILoader(
-    union_of_None_type_or_strtype, True, False, None, None
+uri_union_of_None_type_or_strtype_True_False_None_None: Final[_Loader[None | str]] = (
+    _URILoader(union_of_None_type_or_strtype, True, False, None, None)
 )
-uri_array_of_strtype_True_False_None_None: Final = _URILoader(
+uri_array_of_strtype_True_False_None_None: Final[_Loader[Sequence[str]]] = _URILoader(
     array_of_strtype, True, False, None, None
 )
-Enum_nameLoader: Final = _EnumLoader(("enum",), "Enum_name")
-typedsl_Enum_nameLoader_2: Final = _TypeDSLLoader(Enum_nameLoader, 2, "v1.1")
-uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None: (
-    Final
-) = _URILoader(
+Enum_nameLoader: Final[_Loader[Literal["enum"]]] = _EnumLoader(("enum",), "Enum_name")
+typedsl_Enum_nameLoader_2: Final[_Loader[Literal["enum"]]] = _TypeDSLLoader(
+    Enum_nameLoader, 2, "v1.1"
+)
+uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None: Final[
+    _Loader[
+        ArraySchema
+        | EnumSchema
+        | Literal["null", "boolean", "int", "long", "float", "double", "string"]
+        | MapSchema
+        | RecordSchema
+        | Sequence[
+            ArraySchema
+            | EnumSchema
+            | Literal["null", "boolean", "int", "long", "float", "double", "string"]
+            | MapSchema
+            | RecordSchema
+            | UnionSchema
+            | str
+        ]
+        | UnionSchema
+        | str
+    ]
+] = _URILoader(
     union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
     False,
     True,
     2,
     None,
 )
-Array_nameLoader: Final = _EnumLoader(("array",), "Array_name")
-typedsl_Array_nameLoader_2: Final = _TypeDSLLoader(Array_nameLoader, 2, "v1.1")
-Map_nameLoader: Final = _EnumLoader(("map",), "Map_name")
-typedsl_Map_nameLoader_2: Final = _TypeDSLLoader(Map_nameLoader, 2, "v1.1")
-Union_nameLoader: Final = _EnumLoader(("union",), "Union_name")
-typedsl_Union_nameLoader_2: Final = _TypeDSLLoader(Union_nameLoader, 2, "v1.1")
-union_of_None_type_or_booltype: Final = _UnionLoader(
+Array_nameLoader: Final[_Loader[Literal["array"]]] = _EnumLoader(
+    ("array",), "Array_name"
+)
+typedsl_Array_nameLoader_2: Final[_Loader[Literal["array"]]] = _TypeDSLLoader(
+    Array_nameLoader, 2, "v1.1"
+)
+Map_nameLoader: Final[_Loader[Literal["map"]]] = _EnumLoader(("map",), "Map_name")
+typedsl_Map_nameLoader_2: Final[_Loader[Literal["map"]]] = _TypeDSLLoader(
+    Map_nameLoader, 2, "v1.1"
+)
+Union_nameLoader: Final[_Loader[Literal["union"]]] = _EnumLoader(
+    ("union",), "Union_name"
+)
+typedsl_Union_nameLoader_2: Final[_Loader[Literal["union"]]] = _TypeDSLLoader(
+    Union_nameLoader, 2, "v1.1"
+)
+union_of_None_type_or_booltype: Final[_Loader[None | bool]] = _UnionLoader(
     (
         None_type,
         booltype,
     )
 )
-union_of_None_type_or_inttype: Final = _UnionLoader(
+union_of_None_type_or_inttype: Final[_Loader[None | i32]] = _UnionLoader(
     (
         None_type,
         inttype,
     )
 )
-uri_strtype_False_False_1_None: Final = _URILoader(strtype, False, False, 1, None)
-uri_union_of_None_type_or_strtype_False_False_None_None: Final = _URILoader(
-    union_of_None_type_or_strtype, False, False, None, None
+uri_strtype_False_False_1_None: Final[_Loader[str]] = _URILoader(
+    strtype, False, False, 1, None
 )
-uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None: Final = (
-    _URILoader(
-        union_of_None_type_or_strtype_or_array_of_strtype, False, False, None, None
-    )
+uri_union_of_None_type_or_strtype_False_False_None_None: Final[_Loader[None | str]] = (
+    _URILoader(union_of_None_type_or_strtype, False, False, None, None)
 )
-union_of_None_type_or_strtype_or_JsonldPredicateLoader: Final = _UnionLoader(
+uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None: Final[
+    _Loader[None | Sequence[str] | str]
+] = _URILoader(
+    union_of_None_type_or_strtype_or_array_of_strtype, False, False, None, None
+)
+union_of_None_type_or_strtype_or_JsonldPredicateLoader: Final[
+    _Loader[JsonldPredicate | None | str]
+] = _UnionLoader(
     (
         None_type,
         strtype,
         JsonldPredicateLoader,
     )
 )
-union_of_None_type_or_Any_type: Final = _UnionLoader(
+union_of_None_type_or_Any_type: Final[_Loader[Any | None]] = _UnionLoader(
     (
         None_type,
         Any_type,
     )
 )
-array_of_SaladRecordFieldLoader: Final = _ArrayLoader(SaladRecordFieldLoader)
-union_of_None_type_or_array_of_SaladRecordFieldLoader: Final = _UnionLoader(
+array_of_SaladRecordFieldLoader: Final[_Loader[Sequence[SaladRecordField]]] = (
+    _ArrayLoader(SaladRecordFieldLoader)
+)
+union_of_None_type_or_array_of_SaladRecordFieldLoader: Final[
+    _Loader[None | Sequence[SaladRecordField]]
+] = _UnionLoader(
     (
         None_type,
         array_of_SaladRecordFieldLoader,
     )
 )
-idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader: Final = (
-    _IdMapLoader(union_of_None_type_or_array_of_SaladRecordFieldLoader, "name", "type")
+idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader: Final[
+    _Loader[None | Sequence[SaladRecordField]]
+] = _IdMapLoader(union_of_None_type_or_array_of_SaladRecordFieldLoader, "name", "type")
+uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None: Final[
+    _Loader[None | Sequence[str] | str]
+] = _URILoader(union_of_None_type_or_strtype_or_array_of_strtype, False, False, 1, None)
+array_of_SpecializeDefLoader: Final[_Loader[Sequence[SpecializeDef]]] = _ArrayLoader(
+    SpecializeDefLoader
 )
-uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None: Final = (
-    _URILoader(union_of_None_type_or_strtype_or_array_of_strtype, False, False, 1, None)
-)
-array_of_SpecializeDefLoader: Final = _ArrayLoader(SpecializeDefLoader)
-union_of_None_type_or_array_of_SpecializeDefLoader: Final = _UnionLoader(
+union_of_None_type_or_array_of_SpecializeDefLoader: Final[
+    _Loader[None | Sequence[SpecializeDef]]
+] = _UnionLoader(
     (
         None_type,
         array_of_SpecializeDefLoader,
     )
 )
-idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader: Final = (
-    _IdMapLoader(
-        union_of_None_type_or_array_of_SpecializeDefLoader,
-        "specializeFrom",
-        "specializeTo",
-    )
+idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader: Final[
+    _Loader[None | Sequence[SpecializeDef]]
+] = _IdMapLoader(
+    union_of_None_type_or_array_of_SpecializeDefLoader, "specializeFrom", "specializeTo"
 )
-Documentation_nameLoader: Final = _EnumLoader(("documentation",), "Documentation_name")
-typedsl_Documentation_nameLoader_2: Final = _TypeDSLLoader(
-    Documentation_nameLoader, 2, "v1.1"
+Documentation_nameLoader: Final[_Loader[Literal["documentation"]]] = _EnumLoader(
+    ("documentation",), "Documentation_name"
 )
-union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader: (
-    Final
-) = _UnionLoader(
+typedsl_Documentation_nameLoader_2: Final[_Loader[Literal["documentation"]]] = (
+    _TypeDSLLoader(Documentation_nameLoader, 2, "v1.1")
+)
+union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader: Final[
+    _Loader[
+        Documentation
+        | SaladEnumSchema
+        | SaladMapSchema
+        | SaladRecordSchema
+        | SaladUnionSchema
+    ]
+] = _UnionLoader(
     (
         SaladRecordSchemaLoader,
         SaladEnumSchemaLoader,
@@ -7567,14 +7698,35 @@ union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoade
         DocumentationLoader,
     )
 )
-array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader: (
-    Final
-) = _ArrayLoader(
+array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader: Final[
+    _Loader[
+        Sequence[
+            Documentation
+            | SaladEnumSchema
+            | SaladMapSchema
+            | SaladRecordSchema
+            | SaladUnionSchema
+        ]
+    ]
+] = _ArrayLoader(
     union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader
 )
-union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader: (
-    Final
-) = _UnionLoader(
+union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader: Final[
+    _Loader[
+        Documentation
+        | SaladEnumSchema
+        | SaladMapSchema
+        | SaladRecordSchema
+        | SaladUnionSchema
+        | Sequence[
+            Documentation
+            | SaladEnumSchema
+            | SaladMapSchema
+            | SaladRecordSchema
+            | SaladUnionSchema
+        ]
+    ]
+] = _UnionLoader(
     (
         SaladRecordSchemaLoader,
         SaladEnumSchemaLoader,

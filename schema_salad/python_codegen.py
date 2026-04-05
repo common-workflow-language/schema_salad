@@ -18,19 +18,36 @@ from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
 from .exceptions import SchemaException
 from .schema import shortname
 
-_string_type_def: Final = TypeDef(name="strtype", init="_PrimitiveLoader(str)", instance_type="str")
-_int_type_def: Final = TypeDef(name="inttype", init="_PrimitiveLoader(i32)", instance_type="i32")
-_long_type_def: Final = TypeDef(name="longtype", init="_PrimitiveLoader(i64)", instance_type="i64")
+_string_type_def: Final = TypeDef(
+    name="strtype", init="_PrimitiveLoader(str)", instance_type="str", loader_type="_Loader[str]"
+)
+_int_type_def: Final = TypeDef(
+    name="inttype", init="_PrimitiveLoader(i32)", instance_type="i32", loader_type="_Loader[i32]"
+)
+_long_type_def: Final = TypeDef(
+    name="longtype", init="_PrimitiveLoader(i64)", instance_type="i64", loader_type="_Loader[i64]"
+)
 _float_type_def: Final = TypeDef(
-    name="floattype", init="_PrimitiveLoader(float)", instance_type="float"
+    name="floattype",
+    init="_PrimitiveLoader(float)",
+    instance_type="float",
+    loader_type="_Loader[float]",
 )
 _bool_type_def: Final = TypeDef(
-    name="booltype", init="_PrimitiveLoader(bool)", instance_type="bool"
+    name="booltype",
+    init="_PrimitiveLoader(bool)",
+    instance_type="bool",
+    loader_type="_Loader[bool]",
 )
 _null_type_def: Final = TypeDef(
-    name="None_type", init="_PrimitiveLoader(type(None))", instance_type="None"
+    name="None_type",
+    init="_PrimitiveLoader(type(None))",
+    instance_type="None",
+    loader_type="_Loader[None]",
 )
-_any_type_def: Final = TypeDef(name="Any_type", init="_AnyLoader()", instance_type="Any")
+_any_type_def: Final = TypeDef(
+    name="Any_type", init="_AnyLoader()", instance_type="Any", loader_type="_Loader[Any]"
+)
 
 prims: Final = {
     "http://www.w3.org/2001/XMLSchema#string": _string_type_def,
@@ -88,7 +105,7 @@ class PythonCodeGen(CodeGenBase):
         self.out: Final = out
         self.current_class_is_abstract = False
         self.serializer = StringIO()
-        self.idfield = ""
+        self.idfield: str | None = ""
         self.copyright: Final = copyright
         self.parser_info: Final = parser_info
         self.salad_version: Final = salad_version
@@ -169,9 +186,9 @@ class PythonCodeGen(CodeGenBase):
 
         self.serializer = StringIO()
 
-        self.current_idfield: str | None = self.safe_name(idfield) if idfield != "" else None
-        if self.current_idfield is not None:
-            self.out.write(f"    {self.current_idfield}: str\n\n")
+        self.idfield = self.safe_name(idfield) if idfield != "" else None
+        if self.idfield is not None:
+            self.out.write(f"    {self.idfield}: str\n\n")
         field_eqs: Final = []
         field_hashes: Final = []
         for name in field_names:
@@ -220,8 +237,6 @@ class PythonCodeGen(CodeGenBase):
             _doc.lc.filename = doc.lc.filename
         _errors__ = []
 """)  # noqa: B907
-
-        self.idfield = idfield
 
         self.serializer.write("""
     def save(
@@ -292,9 +307,6 @@ if _errors__:
         ]
         optional_field_names: Final = [f for f in field_names if f in self.current_optional_fields]
 
-        idfield_safe_name: Final = (
-            self.safe_name(self.current_idfield) if self.current_idfield is not None else None
-        )
         safe_inits: Final[list[str]] = ["        self,"]
         safe_inits.extend(
             [
@@ -332,7 +344,7 @@ if _errors__:
             if name == "class":
                 field_inits += """        self.class_: Final[str] = "{}"
 """.format(self.safe_name(classname))
-            elif name == idfield_safe_name and name in optional_field_names:
+            elif name == self.idfield and name in optional_field_names:
                 field_inits += (
                     "        self.{0} = {0} if {0} is not None else "
                     '"_:" + str(_uuid__.uuid4())\n'.format(self.safe_name(name))
@@ -353,16 +365,14 @@ if _errors__:
 
         safe_inits2: Final = []
 
-        if self.current_idfield is not None:
-            safe_inits2.append(f"{idfield_safe_name}=cast(str, {idfield_safe_name})")
+        if self.idfield is not None:
+            safe_inits2.append(f"{self.idfield}={self.idfield}")
 
         safe_inits2.extend(
             [
                 f"{f}={f}"
                 for f in (
-                    self.safe_name(f)
-                    for f in field_names
-                    if f not in ("class", self.current_idfield)
+                    self.safe_name(f) for f in field_names if f not in ("class", self.idfield)
                 )
             ]
         )
@@ -373,9 +383,9 @@ if _errors__:
             + ",\n            ".join(safe_inits2)
             + ",\n        )\n"
         )
-        if self.idfield:
+        if self.idfield is not None:
             self.out.write(
-                f"        loadingOptions.idx[cast(str, {self.safe_name(self.idfield)})] "
+                f"        loadingOptions.idx[{self.safe_name(self.idfield)}] "
                 "= (_constructed, loadingOptions)\n"
             )
 
@@ -396,13 +406,15 @@ if _errors__:
             case MutableSequence():
                 sub_types1: Final = [self.type_loader(i) for i in type_declaration]
                 sub_names1: Final = [t.name for t in sub_types1]
+                instance_type: Final = " | ".join(
+                    sorted({t.instance_type or "" for t in sub_types1})
+                )
                 return self.declare_type(
                     TypeDef(
                         name="union_of_{}".format("_or_".join(sub_names1)),
                         init="_UnionLoader(({},))".format(", ".join(sub_names1)),
-                        instance_type=" | ".join(
-                            sorted({t.instance_type or "" for t in sub_types1})
-                        ),
+                        instance_type=instance_type,
+                        loader_type=f"_Loader[{instance_type}]",
                     )
                 )
             case {"type": "array" | "https://w3id.org/cwl/salad#array", "items": items}:
@@ -412,6 +424,7 @@ if _errors__:
                         name=f"array_of_{i1.name}",
                         init=f"_ArrayLoader({i1.name})",
                         instance_type=f"Sequence[{i1.instance_type}]",
+                        loader_type=f"_Loader[Sequence[{i1.instance_type}]]",
                     )
                 )
             case {"type": "map" | "https://w3id.org/cwl/salad#map", "values": values, **rest}:
@@ -427,6 +440,7 @@ if _errors__:
                             no_link_check,
                         ),
                         instance_type=f"Mapping[str, {i2.instance_type}]",
+                        loader_type=f"_Loader[Mapping[str, {i2.instance_type}]]",
                     )
                 )
                 if "name" in rest:
@@ -435,6 +449,7 @@ if _errors__:
                             name=self.safe_name(str(rest["name"])) + "Loader",
                             init=anon_type.name,
                             instance_type=anon_type.instance_type,
+                            loader_type=anon_type.loader_type,
                         )
                     )
                 else:
@@ -458,6 +473,7 @@ if _errors__:
                     docstring = ""
                 sym_names: Final = [schema.avro_field_name(sym) for sym in symbols]
                 sym_literals: Final = [f'"{s}"' for s in sym_names]
+                instance_type2: Final = f"Literal[{', '.join(sym_literals)}]"
                 return self.declare_type(
                     TypeDef(
                         name=self.safe_name(name) + "Loader",
@@ -466,7 +482,8 @@ if _errors__:
                             self.safe_name(name),
                             docstring,
                         ),
-                        instance_type=f"Literal[{', '.join(sym_literals)}]",
+                        instance_type=instance_type2,
+                        loader_type=f"_Loader[{instance_type2}]",
                     )
                 )
 
@@ -480,6 +497,7 @@ if _errors__:
                             no_link_check,
                         ),
                         instance_type=self.safe_name(name),
+                        loader_type=f"_Loader[{self.safe_name(name)}]",
                         abstract=bool(rest.get("abstract", False)),
                     )
                 )
@@ -495,6 +513,7 @@ if _errors__:
                     name=loader_name,
                     init=f"_UnionLoader((), '{loader_name}')",
                     instance_type=self.safe_name(name),
+                    loader_type="_UnionLoader[Any]",
                 )
                 self.declare_type(loader_type)
                 # Parse inner types
@@ -551,19 +570,19 @@ if _errors__:
                 safename=self.safe_name(name)
             )
         else:
-            opt = """_errors__.append(ValidationException("missing {fieldname}"))""".format(
-                fieldname=shortname(name)
+            opt = """{safename} = \"\"
+                _errors__.append(ValidationException("missing {fieldname}"))""".format(
+                safename=self.safe_name(name), fieldname=shortname(name)
             )
 
         self.out.write("""
-        __original_{safename}_is_none = {safename} is None
         if {safename} is None:
             if docRoot is not None:
                 {safename} = docRoot
             else:
                 {opt}
-        if not __original_{safename}_is_none:
-            baseuri = cast(str, {safename})
+        else:
+            baseuri = {safename}
 """.format(safename=self.safe_name(name), opt=opt))
 
     def declare_field(
@@ -761,6 +780,7 @@ if self.{safename} is not None:
                 scoped_id=scoped_id,
                 ref_scope=ref_scope,
                 instance_type=inner.instance_type,
+                loader_type=inner.loader_type,
             )
         )
 
@@ -773,6 +793,7 @@ if self.{safename} is not None:
                 name=f"idmap_{self.safe_name(field)}_{inner.name}",
                 init=f"_IdMapLoader({inner.name}, '{map_subject}', '{map_predicate}')",  # noqa: B907
                 instance_type=inner.instance_type,
+                loader_type=inner.loader_type,
             )
         )
 
@@ -784,6 +805,7 @@ if self.{safename} is not None:
                 init=f"_TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope}, "  # noqa: B907
                 f"'{self.salad_version}')",  # noqa: B907
                 instance_type=inner.instance_type,
+                loader_type=inner.loader_type,
             )
         )
 
@@ -794,6 +816,7 @@ if self.{safename} is not None:
                 name=f"secondaryfilesdsl_{inner.name}",
                 init=f"_UnionLoader((_SecondaryDSLLoader({inner.name}), {inner.name},))",
                 instance_type=inner.instance_type,
+                loader_type=inner.loader_type,
             )
         )
 
@@ -812,7 +835,20 @@ if self.{safename} is not None:
 
         for _, collected_type in self.collected_types.items():
             if not collected_type.abstract:
-                self.out.write(fmt(f"{collected_type.name}: Final = {collected_type.init}\n", 0))
+                self.out.write(
+                    fmt(
+                        "{0}{1} = {2}\n".format(
+                            collected_type.name,
+                            (
+                                f": Final[{collected_type.loader_type}]"
+                                if collected_type.loader_type is not None
+                                else ""
+                            ),
+                            collected_type.init,
+                        ),
+                        0,
+                    )
+                )
         self.out.write("\n")
 
         if self.lazy_inits:
