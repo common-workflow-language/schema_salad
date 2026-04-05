@@ -119,7 +119,7 @@ class PythonCodeGen(CodeGenBase):
             avn = avn[5:]
         elif avn[0].isdigit():
             avn = f"_{avn}"
-        elif avn in ("class", "in", "type"):
+        elif avn in ("class", "in", "type", "Any"):
             # reserved words
             avn = f"{avn}_"
         return avn.replace(".", "_")
@@ -476,6 +476,13 @@ if _errors__:
                 sym_names: Final = [schema.avro_field_name(sym) for sym in symbols]
                 sym_literals: Final = [f'"{s}"' for s in sym_names]
                 instance_type2: Final = f"Literal[{', '.join(sym_literals)}]"
+                self.declare_type(
+                    TypeDef(
+                        name=self.safe_name(name),
+                        init=instance_type2,
+                        instance_type="TypeAlias",
+                    )
+                )
                 return self.declare_type(
                     TypeDef(
                         name=self.safe_name(name) + "Loader",
@@ -484,8 +491,8 @@ if _errors__:
                             self.safe_name(name),
                             docstring,
                         ),
-                        instance_type=instance_type2,
-                        loader_type=f"_Loader[{instance_type2}]",
+                        instance_type=self.safe_name(name),
+                        loader_type=f"_Loader[{self.safe_name(name)}]",
                     )
                 )
 
@@ -548,6 +555,7 @@ if _errors__:
                         name=self.safe_name(decl) + "Loader",
                         init="_ExpressionLoader(str)",
                         instance_type="str",
+                        loader_type="_Loader[str]"
                     )
                 )
             case str(decl):
@@ -839,12 +847,12 @@ if self.{safename} is not None:
             if not collected_type.abstract:
                 self.out.write(
                     fmt(
-                        "{0}{1} = {2}\n".format(
+                        "{0}: {1} = {2}\n".format(
                             collected_type.name,
                             (
-                                f": Final[{collected_type.loader_type}]"
+                                f"Final[{collected_type.loader_type}]"
                                 if collected_type.loader_type is not None
-                                else ""
+                                else collected_type.instance_type
                             ),
                             collected_type.init,
                         ),

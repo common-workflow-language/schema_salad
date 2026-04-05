@@ -1455,7 +1455,7 @@ class RecordField(Saveable):
     def __init__(
         self,
         name: str,
-        type_: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str,
+        type_: ArraySchema | EnumSchema | MapSchema | PrimitiveType | RecordSchema | Sequence[ArraySchema | EnumSchema | MapSchema | PrimitiveType | RecordSchema | UnionSchema | str] | UnionSchema | str,
         doc: None | Sequence[str] | str = None,
         extension_fields: MutableMapping[str, Any] | None = None,
         loadingOptions: LoadingOptions | None = None,
@@ -1656,7 +1656,7 @@ class RecordSchema(Saveable):
 
     def __init__(
         self,
-        type_: Literal["record"],
+        type_: Record_name,
         fields: None | Sequence[RecordField] = None,
         extension_fields: MutableMapping[str, Any] | None = None,
         loadingOptions: LoadingOptions | None = None,
@@ -1928,7 +1928,7 @@ class EnumSchema(Saveable):
     def __init__(
         self,
         symbols: Sequence[str],
-        type_: Literal["enum"],
+        type_: Enum_name,
         name: None | str = None,
         extension_fields: MutableMapping[str, Any] | None = None,
         loadingOptions: LoadingOptions | None = None,
@@ -2129,8 +2129,8 @@ class ArraySchema(Saveable):
 
     def __init__(
         self,
-        items: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str,
-        type_: Literal["array"],
+        items: ArraySchema | EnumSchema | MapSchema | PrimitiveType | RecordSchema | Sequence[ArraySchema | EnumSchema | MapSchema | PrimitiveType | RecordSchema | UnionSchema | str] | UnionSchema | str,
+        type_: Array_name,
         extension_fields: MutableMapping[str, Any] | None = None,
         loadingOptions: LoadingOptions | None = None,
     ) -> None:
@@ -2329,8 +2329,8 @@ class MapSchema(Saveable):
 
     def __init__(
         self,
-        type_: Literal["map"],
-        values: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str,
+        type_: Map_name,
+        values: ArraySchema | EnumSchema | MapSchema | PrimitiveType | RecordSchema | Sequence[ArraySchema | EnumSchema | MapSchema | PrimitiveType | RecordSchema | UnionSchema | str] | UnionSchema | str,
         extension_fields: MutableMapping[str, Any] | None = None,
         loadingOptions: LoadingOptions | None = None,
     ) -> None:
@@ -2529,8 +2529,8 @@ class UnionSchema(Saveable):
 
     def __init__(
         self,
-        names: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str,
-        type_: Literal["union"],
+        names: ArraySchema | EnumSchema | MapSchema | PrimitiveType | RecordSchema | Sequence[ArraySchema | EnumSchema | MapSchema | PrimitiveType | RecordSchema | UnionSchema | str] | UnionSchema | str,
+        type_: Union_name,
         extension_fields: MutableMapping[str, Any] | None = None,
         loadingOptions: LoadingOptions | None = None,
     ) -> None:
@@ -3861,7 +3861,7 @@ class SaladRecordField(RecordField):
     def __init__(
         self,
         name: str,
-        type_: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str,
+        type_: ArraySchema | EnumSchema | MapSchema | PrimitiveType | RecordSchema | Sequence[ArraySchema | EnumSchema | MapSchema | PrimitiveType | RecordSchema | UnionSchema | str] | UnionSchema | str,
         doc: None | Sequence[str] | str = None,
         jsonldPredicate: JsonldPredicate | None | str = None,
         default: Any | None = None,
@@ -4690,7 +4690,7 @@ class SaladRecordSchema(RecordSchema):
     def __init__(
         self,
         name: str,
-        type_: Literal["record"],
+        type_: Record_name,
         inVocab: None | bool = None,
         fields: None | Sequence[SaladRecordField] = None,
         doc: None | Sequence[str] | str = None,
@@ -5439,7 +5439,7 @@ class SaladEnumSchema(EnumSchema):
     def __init__(
         self,
         symbols: Sequence[str],
-        type_: Literal["enum"],
+        type_: Enum_name,
         name: None | str = None,
         inVocab: None | bool = None,
         doc: None | Sequence[str] | str = None,
@@ -6130,8 +6130,8 @@ class SaladMapSchema(MapSchema):
     def __init__(
         self,
         name: str,
-        type_: Literal["map"],
-        values: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str,
+        type_: Map_name,
+        values: ArraySchema | EnumSchema | MapSchema | PrimitiveType | RecordSchema | Sequence[ArraySchema | EnumSchema | MapSchema | PrimitiveType | RecordSchema | UnionSchema | str] | UnionSchema | str,
         inVocab: None | bool = None,
         doc: None | Sequence[str] | str = None,
         docParent: None | str = None,
@@ -6761,8 +6761,8 @@ class SaladUnionSchema(UnionSchema):
     def __init__(
         self,
         name: str,
-        names: ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | Sequence[ArraySchema | EnumSchema | Literal["null", "boolean", "int", "long", "float", "double", "string"] | MapSchema | RecordSchema | UnionSchema | str] | UnionSchema | str,
-        type_: Literal["union"],
+        names: ArraySchema | EnumSchema | MapSchema | PrimitiveType | RecordSchema | Sequence[ArraySchema | EnumSchema | MapSchema | PrimitiveType | RecordSchema | UnionSchema | str] | UnionSchema | str,
+        type_: Union_name,
         inVocab: None | bool = None,
         doc: None | Sequence[str] | str = None,
         docParent: None | str = None,
@@ -7279,7 +7279,7 @@ class Documentation(Saveable):
     def __init__(
         self,
         name: str,
-        type_: Literal["documentation"],
+        type_: Documentation_name,
         inVocab: None | bool = None,
         doc: None | Sequence[str] | str = None,
         docParent: None | str = None,
@@ -7387,9 +7387,10 @@ booltype: Final[_Loader[bool]] = _PrimitiveLoader(bool)
 None_type: Final[_Loader[None]] = _PrimitiveLoader(type(None))
 Any_type: Final[_Loader[Any]] = _AnyLoader()
 longtype: Final[_Loader[i64]] = _PrimitiveLoader(i64)
-PrimitiveTypeLoader: Final[
-    _Loader[Literal["null", "boolean", "int", "long", "float", "double", "string"]]
-] = _EnumLoader(
+PrimitiveType: TypeAlias = Literal[
+    "null", "boolean", "int", "long", "float", "double", "string"
+]
+PrimitiveTypeLoader: Final[_Loader[PrimitiveType]] = _EnumLoader(
     (
         "null",
         "boolean",
@@ -7415,7 +7416,8 @@ float: single precision (32-bit) IEEE 754 floating-point number
 double: double precision (64-bit) IEEE 754 floating-point number
 string: Unicode character sequence
 """
-AnyLoader: Final[_Loader[Literal["Any"]]] = _EnumLoader(("Any",), "Any")
+Any_: TypeAlias = Literal["Any"]
+Any_Loader: Final[_Loader[Any_]] = _EnumLoader(("Any",), "Any_")
 """
 The **Any** type validates for any non-null value.
 """
@@ -7468,8 +7470,8 @@ union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArrayS
     _Loader[
         ArraySchema
         | EnumSchema
-        | Literal["null", "boolean", "int", "long", "float", "double", "string"]
         | MapSchema
+        | PrimitiveType
         | RecordSchema
         | UnionSchema
         | str
@@ -7490,8 +7492,8 @@ array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_
         Sequence[
             ArraySchema
             | EnumSchema
-            | Literal["null", "boolean", "int", "long", "float", "double", "string"]
             | MapSchema
+            | PrimitiveType
             | RecordSchema
             | UnionSchema
             | str
@@ -7504,14 +7506,14 @@ union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArrayS
     _Loader[
         ArraySchema
         | EnumSchema
-        | Literal["null", "boolean", "int", "long", "float", "double", "string"]
         | MapSchema
+        | PrimitiveType
         | RecordSchema
         | Sequence[
             ArraySchema
             | EnumSchema
-            | Literal["null", "boolean", "int", "long", "float", "double", "string"]
             | MapSchema
+            | PrimitiveType
             | RecordSchema
             | UnionSchema
             | str
@@ -7535,14 +7537,14 @@ typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_o
     _Loader[
         ArraySchema
         | EnumSchema
-        | Literal["null", "boolean", "int", "long", "float", "double", "string"]
         | MapSchema
+        | PrimitiveType
         | RecordSchema
         | Sequence[
             ArraySchema
             | EnumSchema
-            | Literal["null", "boolean", "int", "long", "float", "double", "string"]
             | MapSchema
+            | PrimitiveType
             | RecordSchema
             | UnionSchema
             | str
@@ -7569,10 +7571,9 @@ union_of_None_type_or_array_of_RecordFieldLoader: Final[
 idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader: Final[
     _Loader[None | Sequence[RecordField]]
 ] = _IdMapLoader(union_of_None_type_or_array_of_RecordFieldLoader, "name", "type")
-Record_nameLoader: Final[_Loader[Literal["record"]]] = _EnumLoader(
-    ("record",), "Record_name"
-)
-typedsl_Record_nameLoader_2: Final[_Loader[Literal["record"]]] = _TypeDSLLoader(
+Record_name: TypeAlias = Literal["record"]
+Record_nameLoader: Final[_Loader[Record_name]] = _EnumLoader(("record",), "Record_name")
+typedsl_Record_nameLoader_2: Final[_Loader[Record_name]] = _TypeDSLLoader(
     Record_nameLoader, 2, "v1.1"
 )
 union_of_None_type_or_strtype: Final[_Loader[None | str]] = _UnionLoader(
@@ -7587,22 +7588,23 @@ uri_union_of_None_type_or_strtype_True_False_None_None: Final[_Loader[None | str
 uri_array_of_strtype_True_False_None_None: Final[_Loader[Sequence[str]]] = _URILoader(
     array_of_strtype, True, False, None, None
 )
-Enum_nameLoader: Final[_Loader[Literal["enum"]]] = _EnumLoader(("enum",), "Enum_name")
-typedsl_Enum_nameLoader_2: Final[_Loader[Literal["enum"]]] = _TypeDSLLoader(
+Enum_name: TypeAlias = Literal["enum"]
+Enum_nameLoader: Final[_Loader[Enum_name]] = _EnumLoader(("enum",), "Enum_name")
+typedsl_Enum_nameLoader_2: Final[_Loader[Enum_name]] = _TypeDSLLoader(
     Enum_nameLoader, 2, "v1.1"
 )
 uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None: Final[
     _Loader[
         ArraySchema
         | EnumSchema
-        | Literal["null", "boolean", "int", "long", "float", "double", "string"]
         | MapSchema
+        | PrimitiveType
         | RecordSchema
         | Sequence[
             ArraySchema
             | EnumSchema
-            | Literal["null", "boolean", "int", "long", "float", "double", "string"]
             | MapSchema
+            | PrimitiveType
             | RecordSchema
             | UnionSchema
             | str
@@ -7617,20 +7619,19 @@ uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_Ar
     2,
     None,
 )
-Array_nameLoader: Final[_Loader[Literal["array"]]] = _EnumLoader(
-    ("array",), "Array_name"
-)
-typedsl_Array_nameLoader_2: Final[_Loader[Literal["array"]]] = _TypeDSLLoader(
+Array_name: TypeAlias = Literal["array"]
+Array_nameLoader: Final[_Loader[Array_name]] = _EnumLoader(("array",), "Array_name")
+typedsl_Array_nameLoader_2: Final[_Loader[Array_name]] = _TypeDSLLoader(
     Array_nameLoader, 2, "v1.1"
 )
-Map_nameLoader: Final[_Loader[Literal["map"]]] = _EnumLoader(("map",), "Map_name")
-typedsl_Map_nameLoader_2: Final[_Loader[Literal["map"]]] = _TypeDSLLoader(
+Map_name: TypeAlias = Literal["map"]
+Map_nameLoader: Final[_Loader[Map_name]] = _EnumLoader(("map",), "Map_name")
+typedsl_Map_nameLoader_2: Final[_Loader[Map_name]] = _TypeDSLLoader(
     Map_nameLoader, 2, "v1.1"
 )
-Union_nameLoader: Final[_Loader[Literal["union"]]] = _EnumLoader(
-    ("union",), "Union_name"
-)
-typedsl_Union_nameLoader_2: Final[_Loader[Literal["union"]]] = _TypeDSLLoader(
+Union_name: TypeAlias = Literal["union"]
+Union_nameLoader: Final[_Loader[Union_name]] = _EnumLoader(("union",), "Union_name")
+typedsl_Union_nameLoader_2: Final[_Loader[Union_name]] = _TypeDSLLoader(
     Union_nameLoader, 2, "v1.1"
 )
 union_of_None_type_or_booltype: Final[_Loader[None | bool]] = _UnionLoader(
@@ -7704,11 +7705,12 @@ idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader: Final[
 ] = _IdMapLoader(
     union_of_None_type_or_array_of_SpecializeDefLoader, "specializeFrom", "specializeTo"
 )
-Documentation_nameLoader: Final[_Loader[Literal["documentation"]]] = _EnumLoader(
+Documentation_name: TypeAlias = Literal["documentation"]
+Documentation_nameLoader: Final[_Loader[Documentation_name]] = _EnumLoader(
     ("documentation",), "Documentation_name"
 )
-typedsl_Documentation_nameLoader_2: Final[_Loader[Literal["documentation"]]] = (
-    _TypeDSLLoader(Documentation_nameLoader, 2, "v1.1")
+typedsl_Documentation_nameLoader_2: Final[_Loader[Documentation_name]] = _TypeDSLLoader(
+    Documentation_nameLoader, 2, "v1.1"
 )
 union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader: Final[
     _Loader[
