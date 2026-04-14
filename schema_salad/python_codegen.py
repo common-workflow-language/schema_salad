@@ -2,19 +2,25 @@
 
 import textwrap
 from collections.abc import MutableSequence
+from importlib.resources import files
 from io import StringIO
+from types import ModuleType
 from typing import IO, Any, Final
 
 try:
+    black: ModuleType | None
     import black
 except ModuleNotFoundError:
-    black = None  # type: ignore[assignment]
+    black = None
 
-from importlib.resources import files
+from mistune import create_markdown
+from mistune.markdown import Markdown
+from mistune.renderers.rst import RSTRenderer
 
 from . import schema
 from .codegen_base import CodeGenBase, LazyInitDef, TypeDef
 from .exceptions import SchemaException
+from .makedoc import markdown_plugins
 from .schema import shortname
 
 _string_type_def: Final = TypeDef("strtype", "_PrimitiveLoader(str)")
@@ -43,6 +49,10 @@ prims: Final = {
     "Any": _any_type_def,
 }
 
+markdown2rst: Markdown = create_markdown(
+    renderer=RSTRenderer(), plugins=markdown_plugins, escape=False
+)
+
 
 def fmt(text: str, indent: int) -> str:
     """
@@ -64,6 +74,11 @@ def fmt(text: str, indent: int) -> str:
         ),
         " " * indent,
     )
+
+
+def md_to_rst(text: str) -> str:
+    """Convert schema doc strings from Markdown to ReStructuredText format."""
+    return str(markdown2rst(text))
 
 
 class PythonCodeGen(CodeGenBase):
@@ -153,7 +168,7 @@ class PythonCodeGen(CodeGenBase):
         # make a valid class for Black, but then trim off the "pass"
 
         if doc:
-            self.out.write(fmt(f'"""\n{doc}\n"""\n', 4) + "\n")
+            self.out.write(fmt(f'"""\n{md_to_rst(doc)}\n"""\n', 4) + "\n")
 
         self.serializer = StringIO()
 
@@ -414,9 +429,9 @@ if _errors__:
                 if "doc" in rest:
                     doc: Final = rest["doc"]
                     if isinstance(doc, MutableSequence):
-                        formated_doc = "\n".join(doc)
+                        formated_doc = md_to_rst("\n\n".join(doc)).strip()
                     else:
-                        formated_doc = str(doc).strip()
+                        formated_doc = md_to_rst(str(doc)).strip()
                     docstring = f'\n"""\n{formated_doc}\n"""'
                 else:
                     docstring = ""
