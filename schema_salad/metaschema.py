@@ -1194,6 +1194,7 @@ class Documented(Saveable):
 class RecordField(Documented):
     """
     A field of a record.
+
     """
 
     name: str
@@ -2534,8 +2535,7 @@ class UnionSchema(Saveable):
 
 class JsonldPredicate(Saveable):
     """
-    Attached to a record field to define how the parent record field is handled for
-    URI resolution and JSON-LD context generation.
+    Attached to a record field to define how the parent record field is handled for URI resolution and JSON-LD context generation.
 
     """
 
@@ -3502,6 +3502,7 @@ class SchemaDefinedType(DocType):
 class SaladRecordField(RecordField):
     """
     A field of a record.
+
     """
 
     name: str
@@ -6805,8 +6806,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
 
 class Documentation(NamedType, DocType):
     """
-    A documentation section.  This type exists to facilitate self-documenting
-    schemas but has no role in formal validation.
+    A documentation section.  This type exists to facilitate self-documenting schemas but has no role in formal validation.
 
     """
 
@@ -7398,15 +7398,20 @@ PrimitiveTypeLoader: Final = _EnumLoader(
 """
 Names of salad data types (based on Avro schema declarations).
 
-Refer to the [Avro schema declaration documentation](https://avro.apache.org/docs/current/spec.html#schemas) for
-detailed information.
+Refer to the `Avro schema declaration documentation <https://avro.apache.org/docs/current/spec.html#schemas>`__ for detailed information.
 
 null: no value
+
 boolean: a binary value
+
 int: 32-bit signed integer
+
 long: 64-bit signed integer
+
 float: single precision (32-bit) IEEE 754 floating-point number
+
 double: double precision (64-bit) IEEE 754 floating-point number
+
 string: Unicode character sequence
 """
 AnyLoader: Final = _EnumLoader(("Any",), "Any")

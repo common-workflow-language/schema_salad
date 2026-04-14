@@ -74,6 +74,14 @@ def linkto(item: str) -> str:
     return f"[{frg}](#{to_id(frg)})"
 
 
+markdown_plugins: Final[list[PluginName]] = [
+    "strikethrough",
+    "footnotes",
+    "table",
+    "url",
+]
+
+
 class MyRenderer(HTMLRenderer):
     """Custom renderer with different representations of selected HTML tags."""
 
@@ -451,18 +459,12 @@ class RenderType:
             f["doc"] = number_headings(self.toc, f["doc"])
 
         doc = doc + "\n\n" + f["doc"]
-        plugins: Final[list[PluginName]] = [
-            "strikethrough",
-            "footnotes",
-            "table",
-            "url",
-        ]
         # if escape active, wraps literal HTML into '<p> {HTML} </p>'
         # we must pass it to both since 'MyRenderer' is predefined
         escape = False
         markdown2html: Markdown = create_markdown(
             renderer=MyRenderer(escape=escape),
-            plugins=plugins,
+            plugins=markdown_plugins,
             escape=escape,
         )
         doc = cast(str, markdown2html(doc))
