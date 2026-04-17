@@ -27,7 +27,7 @@ class SchemaSaladException(Exception):
         bullet_for_children: str = "",
         detailed_message: str | None = None,
     ) -> None:
-        super().__init__(msg)
+        super().__init__(msg, sl, children, bullet_for_children, detailed_message)
         self.message: Final = self.args[0]
         self.detailed_message: Final = detailed_message
         self.file: str | None = None
