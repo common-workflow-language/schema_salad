@@ -8,7 +8,7 @@ requires = [
     "types-dataclasses",
     "ruamel.yaml>= 0.17.6, < 0.20",
     "types-setuptools",
-    "CacheControl[filecache] >= 0.14.0, < 0.15",
+    "CacheControl[filecache] >= 0.14.4, < 0.15",
     "rich-argparse",
     "mistune >= 3.0.1"
 ]
