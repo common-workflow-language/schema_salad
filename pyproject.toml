@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "setuptools>=50",  # 50 is to match mypyc's minimum
+    "setuptools>=82.0.1",  # 50 is to match mypyc's minimum
     "setuptools_scm[toml]>=8.0.4,<11",
     'mypy[mypyc]==1.20.1',  # update mypy-requirements as well
     "black>=19.10b0,<26.4",
