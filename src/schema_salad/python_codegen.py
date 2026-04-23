@@ -88,6 +88,7 @@ class PythonCodeGen(CodeGenBase):
         self,
         out: IO[str],
         copyright: str | None,
+        parents_map: dict[str, str] | None,
         parser_info: str,
         salad_version: str,
     ) -> None:
@@ -97,8 +98,10 @@ class PythonCodeGen(CodeGenBase):
         self.serializer = StringIO()
         self.idfield = ""
         self.copyright: Final = copyright
+        self.parents_map: Final = parents_map or {}
         self.parser_info: Final = parser_info
         self.salad_version: Final = salad_version
+        self.inherited_classes: dict[str, str] = {}
 
     @staticmethod
     def safe_name(name: str) -> str:
@@ -126,6 +129,9 @@ class PythonCodeGen(CodeGenBase):
 # The original schema is {copyright}.
 """.format(copyright=self.copyright))
 
+        for parent in self.parents_map.values():
+            self.out.write(f"import {parent}\n")
+
         python_codegen_support: Final = (
             files("schema_salad").joinpath("python_codegen_support.py").read_text("UTF-8")
         )
@@ -151,11 +157,15 @@ class PythonCodeGen(CodeGenBase):
         idfield: str,
         optional_fields: set[str],
     ) -> None:
-        classname = self.safe_name(classname)
+        if (classname := self.safe_name(classname)) in self.inherited_classes:
+            self.current_class_is_abstract = True
+            return
         self.current_class_is_abstract = abstract
 
         if extends:
-            ext = ", ".join(self.safe_name(e) for e in extends)
+            ext = ", ".join(
+                self.inherited_classes.get(self.safe_name(e), self.safe_name(e)) for e in extends
+            )
         else:
             ext = "Saveable"
 
@@ -447,11 +457,14 @@ if _errors__:
                 )
 
             case {"type": "record" | "https://w3id.org/cwl/salad#record", "name": name, **rest}:
+                classname = self.safe_name(name)
+                if (prefix := name.split("#")[0]) in self.parents_map:
+                    self.inherited_classes[classname] = f"{self.parents_map[prefix]}.{classname}"
                 return self.declare_type(
                     TypeDef(
-                        self.safe_name(name) + "Loader",
+                        classname + "Loader",
                         "_RecordLoader({}, {}, {})".format(
-                            self.safe_name(name),
+                            self.inherited_classes.get(classname, classname),
                             f"'{container}'" if container is not None else None,  # noqa: B907
                             no_link_check,
                         ),

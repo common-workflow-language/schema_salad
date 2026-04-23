@@ -24,11 +24,37 @@ def test_safe_identifiers() -> None:
 
 
 def test_cwl_gen(tmp_path: Path) -> None:
+    """Test that the Python code generator can generate code for the CWL standard."""
     src_target = tmp_path / "src.py"
     python_codegen(cwl_file_uri, src_target)
     assert os.path.exists(src_target)
     with open(src_target) as f:
-        assert "class Workflow(Process)" in f.read()
+        content = f.read()
+    assert "class ArraySchema(Saveable)" in content
+    assert "class CWLArraySchema(ArraySchema)" in content
+    assert "class Workflow(Process)" in content
+    assert "EnumSchemaLoader: Final = _RecordLoader(EnumSchema, None, None)" in content
+
+
+def test_cwl_gen_with_inheritance(tmp_path: Path) -> None:
+    """Test that the Python code generator can handle inheritance."""
+    src_target = tmp_path / "src.py"
+    python_codegen(
+        cwl_file_uri,
+        src_target,
+        parents_map={"https://w3id.org/cwl/salad": "schema_salad.metaschema"},
+    )
+    assert os.path.exists(src_target)
+    with open(src_target) as f:
+        content = f.read()
+    assert "class ArraySchema(Saveable)" not in content
+    assert "class CWLArraySchema(schema_salad.metaschema.ArraySchema)" in content
+    assert "class Workflow(Process)" in content
+    assert "EnumSchemaLoader: Final = _RecordLoader(EnumSchema, None, None)" not in content
+    assert (
+        "EnumSchemaLoader: Final = _RecordLoader(schema_salad.metaschema.EnumSchema, None, None)"
+        in content
+    )
 
 
 def test_meta_schema_gen(tmp_path: Path) -> None:
@@ -60,6 +86,7 @@ def python_codegen(
     target: Path,
     parser_info: str | None = None,
     package: str | None = None,
+    parents_map: dict[str, str] | None = None,
 ) -> None:
     document_loader, avsc_names, schema_metadata, metaschema_loader = load_schema(file_uri)
     assert isinstance(avsc_names, Names)
@@ -73,6 +100,7 @@ def python_codegen(
         target=str(target),
         parser_info=parser_info,
         package=package,
+        parents_map=parents_map,
     )
 
 
