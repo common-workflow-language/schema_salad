@@ -31,6 +31,7 @@ def codegen(
     examples: str | None = None,
     package: str | None = None,
     copyright: str | None = None,
+    parents_map: dict[str, str] | None = None,
     spdx_copyright_text: list[str] | None = None,
     spdx_license_identifier: str | None = None,
     parser_info: str | None = None,
@@ -87,7 +88,11 @@ def codegen(
                     return
                 case "python":
                     gen = PythonCodeGen(
-                        dest, copyright=copyright, parser_info=info, salad_version=salad_version
+                        dest,
+                        copyright=copyright,
+                        parents_map=parents_map,
+                        parser_info=info,
+                        salad_version=salad_version,
                     )
         case "java":
             gen = JavaCodeGen(
