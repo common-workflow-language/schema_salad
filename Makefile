@@ -122,7 +122,7 @@ diff_pylint_report: pylint_report.txt
 	diff-quality --compare-branch=origin/main --violations=pylint pylint_report.txt
 
 .coverage:
-	pytest --cov --cov-config=.coveragerc --cov-report= ${PYTEST_EXTRA}
+	pytest --cov --cov-config=.coveragerc --cov-report= --junitxml=junit.xml -o junit_family=legacy ${PYTEST_EXTRA}
 	$(COVBASE) -m schema_salad.main \
 		--print-jsonld-context src/schema_salad/metaschema/metaschema.yml \
 		> /dev/null
