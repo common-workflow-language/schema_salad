@@ -32,9 +32,6 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import Self
 
-_vocab: Final[dict[str, str]] = {}
-_rvocab: Final[dict[str, str]] = {}
-
 _logger: Final = logging.getLogger("salad")
 
 
@@ -156,18 +153,8 @@ class LoadingOptions:
         self.fetcher = temp_fetcher
 
         self.cache = self.fetcher.cache if isinstance(self.fetcher, MemoryCachingFetcher) else {}
-
-        if self.namespaces != {}:
-            temp_vocab = _vocab.copy()
-            temp_rvocab = _rvocab.copy()
-            for k, v in self.namespaces.items():
-                temp_vocab[k] = v
-                temp_rvocab[v] = k
-        else:
-            temp_vocab = _vocab
-            temp_rvocab = _rvocab
-        self.vocab = temp_vocab
-        self.rvocab = temp_rvocab
+        self.vocab = {k: v for k, v in self.namespaces.items()}
+        self.rvocab = {v: k for k, v in self.namespaces.items()}
 
     @property
     def graph(self) -> Graph:
@@ -374,6 +361,8 @@ def expand_url(
     url: str,
     base_url: str,
     loadingOptions: LoadingOptions,
+    vocab: dict[str, str],
+    rvocab: dict[str, str],
     scoped_id: bool = False,
     vocab_term: bool = False,
     scoped_ref: int | None = None,
@@ -381,13 +370,14 @@ def expand_url(
     if url in ("@id", "@type"):
         return url
 
-    if vocab_term and url in loadingOptions.vocab:
+    vocab = vocab | loadingOptions.vocab
+    if vocab_term and url in vocab:
         return url
 
-    if bool(loadingOptions.vocab) and ":" in url:
+    if bool(vocab) and ":" in url:
         prefix: Final = url.split(":")[0]
-        if prefix in loadingOptions.vocab:
-            url = loadingOptions.vocab[prefix] + url[len(prefix) + 1 :]
+        if prefix in vocab:
+            url = vocab[prefix] + url[len(prefix) + 1 :]
 
     split1: Final = urlsplit(url)
 
@@ -429,8 +419,8 @@ def expand_url(
     if vocab_term:
         split2: Final = urlsplit(url)
         if bool(split2.scheme):
-            if url in loadingOptions.rvocab:
-                return loadingOptions.rvocab[url]
+            if url in (rvocab := rvocab | loadingOptions.rvocab):
+                return rvocab[url]
         else:
             raise ValidationException(f"Term {url!r} not in vocabulary")
 
@@ -830,12 +820,16 @@ class _URILoader(_Loader):
         vocab_term: bool,
         scoped_ref: int | None,
         no_link_check: bool | None,
+        vocab: dict[str, str],
+        rvocab: dict[str, str],
     ) -> None:
         self.inner: Final = inner
         self.scoped_id: Final = scoped_id
         self.vocab_term: Final = vocab_term
         self.scoped_ref: Final = scoped_ref
         self.no_link_check: Final = no_link_check
+        self.vocab: Final = vocab
+        self.rvocab: Final = rvocab
 
     def load(
         self,
@@ -859,6 +853,8 @@ class _URILoader(_Loader):
                                 i,
                                 baseuri,
                                 loadingOptions,
+                                self.vocab,
+                                self.rvocab,
                                 self.scoped_id,
                                 self.vocab_term,
                                 self.scoped_ref,
@@ -872,6 +868,8 @@ class _URILoader(_Loader):
                     decl,
                     baseuri,
                     loadingOptions,
+                    self.vocab,
+                    self.rvocab,
                     self.scoped_id,
                     self.vocab_term,
                     self.scoped_ref,
@@ -892,10 +890,19 @@ class _URILoader(_Loader):
 
 
 class _TypeDSLLoader(_Loader):
-    def __init__(self, inner: _Loader, refScope: int | None, salad_version: str) -> None:
+    def __init__(
+        self,
+        inner: _Loader,
+        refScope: int | None,
+        salad_version: str,
+        vocab: dict[str, str],
+        rvocab: dict[str, str],
+    ) -> None:
         self.inner: Final = inner
         self.refScope: Final = refScope
         self.salad_version: Final = salad_version
+        self.vocab: Final = vocab
+        self.rvocab: Final = rvocab
 
     def resolve(
         self,
@@ -918,14 +925,41 @@ class _TypeDSLLoader(_Loader):
                     # To show the error message with the original type
                     return doc
                 else:
-                    items = expand_url(rest, baseuri, loadingOptions, False, True, self.refScope)
+                    items = expand_url(
+                        rest,
+                        baseuri,
+                        loadingOptions,
+                        self.vocab,
+                        self.rvocab,
+                        False,
+                        True,
+                        self.refScope,
+                    )
             else:
                 items = self.resolve(rest, baseuri, loadingOptions)
                 if isinstance(items, str):
-                    items = expand_url(items, baseuri, loadingOptions, False, True, self.refScope)
+                    items = expand_url(
+                        items,
+                        baseuri,
+                        loadingOptions,
+                        self.vocab,
+                        self.rvocab,
+                        False,
+                        True,
+                        self.refScope,
+                    )
             expanded: dict[str, Any] | str = {"type": "array", "items": items}
         else:
-            expanded = expand_url(doc_, baseuri, loadingOptions, False, True, self.refScope)
+            expanded = expand_url(
+                doc_,
+                baseuri,
+                loadingOptions,
+                self.vocab,
+                self.rvocab,
+                False,
+                True,
+                self.refScope,
+            )
 
         if optional:
             return ["null", expanded]
