@@ -40,8 +40,6 @@ from schema_salad.runtime import (
     save,
     save_relative_uri,
     _document_load,
-    _rvocab,
-    _vocab
 )
 from schema_salad.sourceline import SourceLine, add_lc_filename
 from schema_salad.utils import yaml_no_ts
@@ -50,6 +48,9 @@ if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
+
+_vocab: Final[dict[str, str]] = {}
+_rvocab: Final[dict[str, str]] = {}
 
 
 def parser_info() -> str:
@@ -275,7 +276,13 @@ class RecordField(Documented):
                     )
                 elif ":" in k:
                     ex = expand_url(
-                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                        k,
+                        "",
+                        loadingOptions,
+                        _vocab,
+                        _rvocab,
+                        scoped_id=False,
+                        vocab_term=False,
                     )
                     extension_fields[ex] = _doc[k]
                 else:
@@ -479,7 +486,13 @@ class RecordSchema(Saveable):
                     )
                 elif ":" in k:
                     ex = expand_url(
-                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                        k,
+                        "",
+                        loadingOptions,
+                        _vocab,
+                        _rvocab,
+                        scoped_id=False,
+                        vocab_term=False,
                     )
                     extension_fields[ex] = _doc[k]
                 else:
@@ -748,7 +761,13 @@ class EnumSchema(Saveable):
                     )
                 elif ":" in k:
                     ex = expand_url(
-                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                        k,
+                        "",
+                        loadingOptions,
+                        _vocab,
+                        _rvocab,
+                        scoped_id=False,
+                        vocab_term=False,
                     )
                     extension_fields[ex] = _doc[k]
                 else:
@@ -952,7 +971,13 @@ class ArraySchema(Saveable):
                     )
                 elif ":" in k:
                     ex = expand_url(
-                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                        k,
+                        "",
+                        loadingOptions,
+                        _vocab,
+                        _rvocab,
+                        scoped_id=False,
+                        vocab_term=False,
                     )
                     extension_fields[ex] = _doc[k]
                 else:
@@ -1151,7 +1176,13 @@ class MapSchema(Saveable):
                     )
                 elif ":" in k:
                     ex = expand_url(
-                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                        k,
+                        "",
+                        loadingOptions,
+                        _vocab,
+                        _rvocab,
+                        scoped_id=False,
+                        vocab_term=False,
                     )
                     extension_fields[ex] = _doc[k]
                 else:
@@ -1350,7 +1381,13 @@ class UnionSchema(Saveable):
                     )
                 elif ":" in k:
                     ex = expand_url(
-                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                        k,
+                        "",
+                        loadingOptions,
+                        _vocab,
+                        _rvocab,
+                        scoped_id=False,
+                        vocab_term=False,
                     )
                     extension_fields[ex] = _doc[k]
                 else:
@@ -2019,7 +2056,13 @@ class JsonldPredicate(Saveable):
                     )
                 elif ":" in k:
                     ex = expand_url(
-                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                        k,
+                        "",
+                        loadingOptions,
+                        _vocab,
+                        _rvocab,
+                        scoped_id=False,
+                        vocab_term=False,
                     )
                     extension_fields[ex] = _doc[k]
                 else:
@@ -2295,7 +2338,13 @@ class SpecializeDef(Saveable):
                     )
                 elif ":" in k:
                     ex = expand_url(
-                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                        k,
+                        "",
+                        loadingOptions,
+                        _vocab,
+                        _rvocab,
+                        scoped_id=False,
+                        vocab_term=False,
                     )
                     extension_fields[ex] = _doc[k]
                 else:
@@ -2685,7 +2734,13 @@ class SaladRecordField(RecordField):
                     )
                 elif ":" in k:
                     ex = expand_url(
-                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                        k,
+                        "",
+                        loadingOptions,
+                        _vocab,
+                        _rvocab,
+                        scoped_id=False,
+                        vocab_term=False,
                     )
                     extension_fields[ex] = _doc[k]
                 else:
@@ -3484,7 +3539,13 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
                     )
                 elif ":" in k:
                     ex = expand_url(
-                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                        k,
+                        "",
+                        loadingOptions,
+                        _vocab,
+                        _rvocab,
+                        scoped_id=False,
+                        vocab_term=False,
                     )
                     extension_fields[ex] = _doc[k]
                 else:
@@ -4246,7 +4307,13 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
                     )
                 elif ":" in k:
                     ex = expand_url(
-                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                        k,
+                        "",
+                        loadingOptions,
+                        _vocab,
+                        _rvocab,
+                        scoped_id=False,
+                        vocab_term=False,
                     )
                     extension_fields[ex] = _doc[k]
                 else:
@@ -4938,7 +5005,13 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
                     )
                 elif ":" in k:
                     ex = expand_url(
-                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                        k,
+                        "",
+                        loadingOptions,
+                        _vocab,
+                        _rvocab,
+                        scoped_id=False,
+                        vocab_term=False,
                     )
                     extension_fields[ex] = _doc[k]
                 else:
@@ -5574,7 +5647,13 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
                     )
                 elif ":" in k:
                     ex = expand_url(
-                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                        k,
+                        "",
+                        loadingOptions,
+                        _vocab,
+                        _rvocab,
+                        scoped_id=False,
+                        vocab_term=False,
                     )
                     extension_fields[ex] = _doc[k]
                 else:
@@ -6098,7 +6177,13 @@ class Documentation(NamedType, DocType):
                     )
                 elif ":" in k:
                     ex = expand_url(
-                        k, "", loadingOptions, scoped_id=False, vocab_term=False
+                        k,
+                        "",
+                        loadingOptions,
+                        _vocab,
+                        _rvocab,
+                        scoped_id=False,
+                        vocab_term=False,
                     )
                     extension_fields[ex] = _doc[k]
                 else:
@@ -6310,7 +6395,9 @@ union_of_None_type_or_strtype_or_array_of_strtype: Final = _UnionLoader(
         array_of_strtype,
     )
 )
-uri_strtype_True_False_None_None: Final = _URILoader(strtype, True, False, None, None)
+uri_strtype_True_False_None_None: Final = _URILoader(
+    strtype, True, False, None, None, _vocab, _rvocab
+)
 union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype: (
     Final
 ) = _UnionLoader(
@@ -6349,6 +6436,8 @@ typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_o
     union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
     2,
     "v1.1",
+    _vocab,
+    _rvocab,
 )
 array_of_RecordFieldLoader: Final = _ArrayLoader(RecordFieldLoader)
 union_of_None_type_or_array_of_RecordFieldLoader: Final = _UnionLoader(
@@ -6361,7 +6450,9 @@ idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader: Final = _IdMapLoa
     union_of_None_type_or_array_of_RecordFieldLoader, "name", "type"
 )
 Record_nameLoader: Final = _EnumLoader(("record",), "Record_name")
-typedsl_Record_nameLoader_2: Final = _TypeDSLLoader(Record_nameLoader, 2, "v1.1")
+typedsl_Record_nameLoader_2: Final = _TypeDSLLoader(
+    Record_nameLoader, 2, "v1.1", _vocab, _rvocab
+)
 union_of_None_type_or_strtype: Final = _UnionLoader(
     (
         None_type,
@@ -6369,13 +6460,15 @@ union_of_None_type_or_strtype: Final = _UnionLoader(
     )
 )
 uri_union_of_None_type_or_strtype_True_False_None_None: Final = _URILoader(
-    union_of_None_type_or_strtype, True, False, None, None
+    union_of_None_type_or_strtype, True, False, None, None, _vocab, _rvocab
 )
 uri_array_of_strtype_True_False_None_None: Final = _URILoader(
-    array_of_strtype, True, False, None, None
+    array_of_strtype, True, False, None, None, _vocab, _rvocab
 )
 Enum_nameLoader: Final = _EnumLoader(("enum",), "Enum_name")
-typedsl_Enum_nameLoader_2: Final = _TypeDSLLoader(Enum_nameLoader, 2, "v1.1")
+typedsl_Enum_nameLoader_2: Final = _TypeDSLLoader(
+    Enum_nameLoader, 2, "v1.1", _vocab, _rvocab
+)
 uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None: (
     Final
 ) = _URILoader(
@@ -6384,13 +6477,21 @@ uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_Ar
     True,
     2,
     None,
+    _vocab,
+    _rvocab,
 )
 Array_nameLoader: Final = _EnumLoader(("array",), "Array_name")
-typedsl_Array_nameLoader_2: Final = _TypeDSLLoader(Array_nameLoader, 2, "v1.1")
+typedsl_Array_nameLoader_2: Final = _TypeDSLLoader(
+    Array_nameLoader, 2, "v1.1", _vocab, _rvocab
+)
 Map_nameLoader: Final = _EnumLoader(("map",), "Map_name")
-typedsl_Map_nameLoader_2: Final = _TypeDSLLoader(Map_nameLoader, 2, "v1.1")
+typedsl_Map_nameLoader_2: Final = _TypeDSLLoader(
+    Map_nameLoader, 2, "v1.1", _vocab, _rvocab
+)
 Union_nameLoader: Final = _EnumLoader(("union",), "Union_name")
-typedsl_Union_nameLoader_2: Final = _TypeDSLLoader(Union_nameLoader, 2, "v1.1")
+typedsl_Union_nameLoader_2: Final = _TypeDSLLoader(
+    Union_nameLoader, 2, "v1.1", _vocab, _rvocab
+)
 union_of_None_type_or_booltype: Final = _UnionLoader(
     (
         None_type,
@@ -6403,13 +6504,21 @@ union_of_None_type_or_inttype: Final = _UnionLoader(
         inttype,
     )
 )
-uri_strtype_False_False_1_None: Final = _URILoader(strtype, False, False, 1, None)
+uri_strtype_False_False_1_None: Final = _URILoader(
+    strtype, False, False, 1, None, _vocab, _rvocab
+)
 uri_union_of_None_type_or_strtype_False_False_None_None: Final = _URILoader(
-    union_of_None_type_or_strtype, False, False, None, None
+    union_of_None_type_or_strtype, False, False, None, None, _vocab, _rvocab
 )
 uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None: Final = (
     _URILoader(
-        union_of_None_type_or_strtype_or_array_of_strtype, False, False, None, None
+        union_of_None_type_or_strtype_or_array_of_strtype,
+        False,
+        False,
+        None,
+        None,
+        _vocab,
+        _rvocab,
     )
 )
 union_of_None_type_or_strtype_or_JsonldPredicateLoader: Final = _UnionLoader(
@@ -6436,7 +6545,15 @@ idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader: Final = (
     _IdMapLoader(union_of_None_type_or_array_of_SaladRecordFieldLoader, "name", "type")
 )
 uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None: Final = (
-    _URILoader(union_of_None_type_or_strtype_or_array_of_strtype, False, False, 1, None)
+    _URILoader(
+        union_of_None_type_or_strtype_or_array_of_strtype,
+        False,
+        False,
+        1,
+        None,
+        _vocab,
+        _rvocab,
+    )
 )
 array_of_SpecializeDefLoader: Final = _ArrayLoader(SpecializeDefLoader)
 union_of_None_type_or_array_of_SpecializeDefLoader: Final = _UnionLoader(
@@ -6454,7 +6571,7 @@ idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader: Final = (
 )
 Documentation_nameLoader: Final = _EnumLoader(("documentation",), "Documentation_name")
 typedsl_Documentation_nameLoader_2: Final = _TypeDSLLoader(
-    Documentation_nameLoader, 2, "v1.1"
+    Documentation_nameLoader, 2, "v1.1", _vocab, _rvocab
 )
 union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader: (
     Final

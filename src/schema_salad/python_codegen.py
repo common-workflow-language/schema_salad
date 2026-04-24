@@ -166,8 +166,6 @@ from schema_salad.runtime import (
     save,
     save_relative_uri,
     _document_load,
-    _rvocab,
-    _vocab
 )
 from schema_salad.sourceline import SourceLine, add_lc_filename
 from schema_salad.utils import yaml_no_ts
@@ -180,6 +178,9 @@ from schema_salad.utils import yaml_no_ts
     from typing import Self
 else:
     from typing_extensions import Self
+
+_vocab: Final[dict[str, str]] = {}
+_rvocab: Final[dict[str, str]] = {}
 """)
 
         self.out.write("\n\n")
@@ -363,7 +364,7 @@ for k in _doc.keys():
             )
         elif ":" in k:
             ex = expand_url(
-                k, "", loadingOptions, scoped_id=False, vocab_term=False
+                k, "", loadingOptions, _vocab, _rvocab, scoped_id=False, vocab_term=False
             )
             extension_fields[ex] = _doc[k]
         else:
@@ -607,7 +608,7 @@ if _errors__:
 
         if subscope:
             self.out.write("""
-{spc}        subscope_baseuri = expand_url('{subscope}', baseuri, loadingOptions, True)
+{spc}        subscope_baseuri = expand_url('{subscope}', baseuri, loadingOptions, _vocab, _rvocab, True)
 """.format(subscope=subscope, spc=spc))
             baseurivar = "subscope_baseuri"
         else:
@@ -647,7 +648,8 @@ if _errors__:
         if shortname(name) == "class":
             self.out.write(
                 """
-{spc}            if {safename} not in (cls.__name__, loadingOptions.vocab.get(cls.__name__)):
+{spc}            vocab = _vocab | loadingOptions.vocab
+{spc}            if {safename} not in (cls.__name__, vocab.get(cls.__name__)):
 {spc}               raise ValidationException(f"tried `{{cls.__name__}}` but")
 {spc}        except ValidationException as e:
 {spc}               raise e
@@ -712,8 +714,10 @@ if _errors__:
                 fmt(
                     """
 if self.{safename} is not None:
-    uri = self.loadingOptions.vocab[self.{safename}]
-    if p := self.loadingOptions.rvocab.get(uri[:-len(self.{safename})]):
+    vocab = _vocab | self.loadingOptions.vocab
+    rvocab = _rvocab | self.loadingOptions.rvocab
+    uri = vocab[self.{safename}]
+    if p := rvocab.get(uri[:-len(self.{safename})]):
         uri = f"{{p}}:{{self.{safename}}}"
     else:
         uri = self.{safename}
@@ -775,7 +779,8 @@ if self.{safename} is not None:
         return self.declare_type(
             TypeDef(
                 f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}_{no_link_check}",
-                f"_URILoader({inner.name}, {scoped_id}, {vocab_term}, {ref_scope}, {no_link_check})",
+                f"_URILoader({inner.name}, {scoped_id}, {vocab_term}, {ref_scope}, {no_link_check}, "
+                "_vocab, _rvocab)",
                 is_uri=True,
                 scoped_id=scoped_id,
                 ref_scope=ref_scope,
@@ -799,7 +804,7 @@ if self.{safename} is not None:
             TypeDef(
                 f"typedsl_{self.safe_name(inner.name)}_{ref_scope}",
                 f"_TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope}, "  # noqa: B907
-                f"'{self.salad_version}')",  # noqa: B907
+                f"'{self.salad_version}', _vocab, _rvocab)",  # noqa: B907
             )
         )
 
