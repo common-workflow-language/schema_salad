@@ -5,6 +5,7 @@ import pytest
 
 import schema_salad.metaschema as cg_metaschema
 from schema_salad.exceptions import ValidationException
+from schema_salad.runtime import LoadingOptions, shortname
 from schema_salad.utils import yaml_no_ts
 
 from .matcher import JsonDiffMatcher
@@ -17,7 +18,7 @@ def test_load() -> None:
         "fields": [{"name": "hello", "doc": "Hello test case", "type": "string"}],
     }
     rs = cg_metaschema.RecordSchema.fromDoc(
-        doc, "http://example.com/", cg_metaschema.LoadingOptions(no_link_check=True)
+        doc, "http://example.com/", LoadingOptions(no_link_check=True)
     )
     assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
@@ -38,7 +39,7 @@ def test_load() -> None:
 def test_err() -> None:
     doc = {"doc": "Hello test case", "type": "string"}
     with pytest.raises(ValidationException):
-        cg_metaschema.RecordField.fromDoc(doc, "", cg_metaschema.LoadingOptions())
+        cg_metaschema.RecordField.fromDoc(doc, "", LoadingOptions())
 
 
 def test_include() -> None:
@@ -47,7 +48,7 @@ def test_include() -> None:
     rf = cg_metaschema.Documentation.fromDoc(
         doc,
         "http://example.com/",
-        cg_metaschema.LoadingOptions(fileuri=path_uri, no_link_check=True),
+        LoadingOptions(fileuri=path_uri, no_link_check=True),
     )
     assert "http://example.com/#hello" == rf.name
     assert ["hello world!\n"] == rf.doc
@@ -63,7 +64,7 @@ def test_import() -> None:
     doc = {"type": "record", "fields": [{"$import": "hellofield.yml"}]}
     lead = get_data_uri("tests")
     rs = cg_metaschema.RecordSchema.fromDoc(
-        doc, "http://example.com/", cg_metaschema.LoadingOptions(fileuri=lead + "/_")
+        doc, "http://example.com/", LoadingOptions(fileuri=lead + "/_")
     )
     assert "record" == rs.type_
     assert rs.fields and lead + "/hellofield.yml#hello" == rs.fields[0].name
@@ -83,7 +84,7 @@ def test_import() -> None:
 
 def test_import2() -> None:
     path_uri = get_data_uri("tests/docimp/d1.yml")
-    rs = cg_metaschema.load_document(path_uri, "", cg_metaschema.LoadingOptions())
+    rs = cg_metaschema.load_document(path_uri, "", LoadingOptions())
     path2_uri = get_data_uri("tests/docimp/d1.yml")
     assert [
         {
@@ -108,7 +109,7 @@ def test_err2() -> None:
         "fields": [{"name": "hello", "doc": "Hello test case", "type": "string"}],
     }
     with pytest.raises(ValidationException):
-        cg_metaschema.RecordSchema.fromDoc(doc, "", cg_metaschema.LoadingOptions())
+        cg_metaschema.RecordSchema.fromDoc(doc, "", LoadingOptions())
 
 
 def test_idmap() -> None:
@@ -117,7 +118,7 @@ def test_idmap() -> None:
         "fields": {"hello": {"doc": "Hello test case", "type": "string"}},
     }
     rs = cg_metaschema.RecordSchema.fromDoc(
-        doc, "http://example.com/", cg_metaschema.LoadingOptions(no_link_check=True)
+        doc, "http://example.com/", LoadingOptions(no_link_check=True)
     )
     assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
@@ -138,7 +139,7 @@ def test_idmap() -> None:
 def test_idmap2() -> None:
     doc = {"type": "record", "fields": {"hello": "string"}}
     rs = cg_metaschema.RecordSchema.fromDoc(
-        doc, "http://example.com/", cg_metaschema.LoadingOptions(no_link_check=True)
+        doc, "http://example.com/", LoadingOptions(no_link_check=True)
     )
     assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
@@ -152,9 +153,7 @@ def test_idmap2() -> None:
 
 def test_load_pt() -> None:
     path_uri = get_data_uri("tests/pt.yml")
-    doc = cg_metaschema.load_document(
-        path_uri, "", cg_metaschema.LoadingOptions(no_link_check=True)
-    )
+    doc = cg_metaschema.load_document(path_uri, "", LoadingOptions(no_link_check=True))
     assert [
         "https://w3id.org/cwl/salad#null",
         "http://www.w3.org/2001/XMLSchema#boolean",
@@ -168,12 +167,12 @@ def test_load_pt() -> None:
 
 def test_shortname() -> None:
     """Test shortname() function."""
-    assert cg_metaschema.shortname("http://example.com/foo") == "foo"
-    assert cg_metaschema.shortname("http://example.com/#bar") == "bar"
-    assert cg_metaschema.shortname("http://example.com/foo/bar") == "bar"
-    assert cg_metaschema.shortname("http://example.com/foo#bar") == "bar"
-    assert cg_metaschema.shortname("http://example.com/#foo/bar") == "bar"
-    assert cg_metaschema.shortname("http://example.com/foo#bar/baz") == "baz"
+    assert shortname("http://example.com/foo") == "foo"
+    assert shortname("http://example.com/#bar") == "bar"
+    assert shortname("http://example.com/foo/bar") == "bar"
+    assert shortname("http://example.com/foo#bar") == "bar"
+    assert shortname("http://example.com/#foo/bar") == "bar"
+    assert shortname("http://example.com/foo#bar/baz") == "baz"
 
 
 @pytest.fixture
@@ -189,7 +188,7 @@ def test_load_metaschema(metaschema_pre: Any) -> None:
     doc = cg_metaschema.load_document(
         path_uri,
         "",
-        cg_metaschema.LoadingOptions(no_link_check=True),
+        LoadingOptions(no_link_check=True),
     )
     saved = [d.save(relative_uris=False) for d in doc]
     # with open(get_data("tests/metaschema-pre.yml"), "w") as fh
@@ -216,7 +215,7 @@ def test_load_cwlschema() -> None:
     doc = cg_metaschema.load_document(
         path_uri,
         "",
-        cg_metaschema.LoadingOptions(no_link_check=True),
+        LoadingOptions(no_link_check=True),
     )
     path2 = get_path("tests/cwl-pre.yml")
     saved = [d.save(relative_uris=False) for d in doc]

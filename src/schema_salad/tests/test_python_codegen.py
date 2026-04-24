@@ -12,7 +12,7 @@ from schema_salad import codegen
 from schema_salad.avro.schema import Names
 from schema_salad.fetcher import DefaultFetcher
 from schema_salad.python_codegen import PythonCodeGen
-from schema_salad.python_codegen_support import LoadingOptions
+from schema_salad.runtime import LoadingOptions
 from schema_salad.schema import load_schema
 
 from .util import basket_file_uri, cwl_file_uri, get_data, get_path, metaschema_file_uri

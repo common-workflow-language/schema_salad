@@ -226,7 +226,7 @@ release:
 flake8: FORCE
 	flake8 $(PYSOURCES)
 
-src/schema_salad/metaschema.py: src/schema_salad/codegen_base.py src/schema_salad/python_codegen_support.py src/schema_salad/python_codegen.py src/schema_salad/metaschema/*.yml
+src/schema_salad/metaschema.py: src/schema_salad/codegen_base.py src/schema_salad/runtime.py src/schema_salad/python_codegen.py src/schema_salad/metaschema/*.yml
 	schema-salad-tool --codegen python src/schema_salad/metaschema/metaschema.yml > $@
 
 vpath %.yml src/schema_salad/tests/cpp_tests

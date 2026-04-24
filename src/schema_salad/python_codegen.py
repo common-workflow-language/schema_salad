@@ -2,7 +2,6 @@
 
 import textwrap
 from collections.abc import MutableSequence
-from importlib.resources import files
 from io import StringIO
 from types import ModuleType
 from typing import IO, Any, Final
@@ -129,19 +128,60 @@ class PythonCodeGen(CodeGenBase):
 # The original schema is {copyright}.
 """.format(copyright=self.copyright))
 
-        FUTURE_ANNOTATION: Final[str] = "from __future__ import annotations\n"
-        self.out.write(f"{FUTURE_ANNOTATION}\n")
+        self.out.write("""from __future__ import annotations
+
+import copy
+import os
+import sys
+import uuid as _uuid__
+from collections.abc import Collection, MutableMapping, MutableSequence
+from typing import Any, ClassVar, Final, cast
+
+from mypy_extensions import trait
+from ruamel.yaml.comments import CommentedMap
+
+from schema_salad.exceptions import ValidationException
+from schema_salad.runtime import (
+    LoadingOptions,
+    Saveable,
+    _AnyLoader,
+    _ArrayLoader,
+    _EnumLoader,
+    _ExpressionLoader,
+    _IdMapLoader,
+    _MapLoader,
+    _PrimitiveLoader,
+    _RecordLoader,
+    _SecondaryDSLLoader,
+    _TypeDSLLoader,
+    _UnionLoader,
+    _URILoader,
+    convert_typing,
+    expand_url,
+    extract_type,
+    file_uri,
+    load_field,
+    parse_errors,
+    prefix_url,
+    save,
+    save_relative_uri,
+    _document_load,
+    _rvocab,
+    _vocab
+)
+from schema_salad.sourceline import SourceLine, add_lc_filename
+from schema_salad.utils import yaml_no_ts
+
+""")
         for parent in self.parents_map.values():
             self.out.write(f"import {parent}\n")
 
-        python_codegen_support: Final = (
-            files("schema_salad").joinpath("python_codegen_support.py").read_text("UTF-8")
-        )
-        self.out.write(
-            python_codegen_support[
-                python_codegen_support.find(FUTURE_ANNOTATION) + len(FUTURE_ANNOTATION) :
-            ]
-        )
+        self.out.write("""if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
+""")
+
         self.out.write("\n\n")
 
         self.out.write(f"""def parser_info() -> str:
@@ -775,15 +815,15 @@ if self.{safename} is not None:
     def epilogue(self, root_loader: TypeDef) -> None:
         """Trigger to generate the epilouge code."""
 
-        self.out.write("_vocab = {\n")
+        self.out.write("_vocab.update({\n")
         for k in sorted(self.vocab.keys()):
             self.out.write(f'    "{k}": "{self.vocab[k]}",\n')  # noqa: B907
-        self.out.write("}\n")
+        self.out.write("})\n")
 
-        self.out.write("_rvocab = {\n")
+        self.out.write("_rvocab.update({\n")
         for k in sorted(self.vocab.keys()):
             self.out.write(f'    "{self.vocab[k]}": "{k}",\n')  # noqa: B907
-        self.out.write("}\n\n")
+        self.out.write("})\n\n")
 
         for _, collected_type in self.collected_types.items():
             if not collected_type.abstract:
