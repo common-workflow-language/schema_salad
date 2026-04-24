@@ -129,13 +129,19 @@ class PythonCodeGen(CodeGenBase):
 # The original schema is {copyright}.
 """.format(copyright=self.copyright))
 
+        FUTURE_ANNOTATION: Final[str] = "from __future__ import annotations\n"
+        self.out.write(f"{FUTURE_ANNOTATION}\n")
         for parent in self.parents_map.values():
             self.out.write(f"import {parent}\n")
 
         python_codegen_support: Final = (
             files("schema_salad").joinpath("python_codegen_support.py").read_text("UTF-8")
         )
-        self.out.write(python_codegen_support[python_codegen_support.find("\n") + 1 :])
+        self.out.write(
+            python_codegen_support[
+                python_codegen_support.find(FUTURE_ANNOTATION) + len(FUTURE_ANNOTATION) :
+            ]
+        )
         self.out.write("\n\n")
 
         self.out.write(f"""def parser_info() -> str:
