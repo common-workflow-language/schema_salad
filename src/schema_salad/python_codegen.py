@@ -2,6 +2,7 @@
 
 import textwrap
 from collections.abc import MutableSequence
+from importlib.resources import files
 from io import StringIO
 from types import ModuleType
 from typing import IO, Any, Final
@@ -128,61 +129,41 @@ class PythonCodeGen(CodeGenBase):
 # The original schema is {copyright}.
 """.format(copyright=self.copyright))
 
-        self.out.write("""from __future__ import annotations
+        FUTURE_ANNOTATION: Final[str] = "from __future__ import annotations"
+        self.out.write(f"""{FUTURE_ANNOTATION}
 
-import copy
 import os
 import sys
 import uuid as _uuid__
-from collections.abc import Collection, MutableMapping, MutableSequence
-from typing import Any, ClassVar, Final, cast
-
+from collections.abc import Collection
 from mypy_extensions import trait
-from ruamel.yaml.comments import CommentedMap
+from typing import ClassVar
 
-from schema_salad.exceptions import ValidationException
 from schema_salad.runtime import (
-    LoadingOptions,
-    Saveable,
-    _AnyLoader,
-    _ArrayLoader,
-    _EnumLoader,
-    _ExpressionLoader,
-    _IdMapLoader,
-    _MapLoader,
-    _PrimitiveLoader,
-    _RecordLoader,
-    _SecondaryDSLLoader,
-    _TypeDSLLoader,
-    _UnionLoader,
-    _URILoader,
-    convert_typing,
-    expand_url,
-    extract_type,
     file_uri,
-    load_field,
     parse_errors,
     prefix_url,
     save,
     save_relative_uri,
-    _document_load,
 )
-from schema_salad.sourceline import SourceLine, add_lc_filename
-from schema_salad.utils import yaml_no_ts
 
-""")
-        for parent in self.parents_map.values():
-            self.out.write(f"import {parent}\n")
-
-        self.out.write("""if sys.version_info >= (3, 11):
+if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
-
-_vocab: Final[dict[str, str]] = {}
-_rvocab: Final[dict[str, str]] = {}
 """)
 
+        for parent in self.parents_map.values():
+            self.out.write(f"import {parent}\n")
+
+        python_codegen_support: Final = (
+            files("schema_salad").joinpath("python_codegen_support.py").read_text("UTF-8")
+        )
+        self.out.write(
+            python_codegen_support[
+                python_codegen_support.find(FUTURE_ANNOTATION) + len(FUTURE_ANNOTATION) + 1 :
+            ]
+        )
         self.out.write("\n\n")
 
         self.out.write(f"""def parser_info() -> str:
@@ -363,8 +344,8 @@ for k in _doc.keys():
                 ValidationException("mapping with implicit null key")
             )
         elif ":" in k:
-            ex = expand_url(
-                k, "", loadingOptions, _vocab, _rvocab, scoped_id=False, vocab_term=False
+            ex = _expand_url(
+                k, "", loadingOptions, scoped_id=False, vocab_term=False
             )
             extension_fields[ex] = _doc[k]
         else:
@@ -608,7 +589,7 @@ if _errors__:
 
         if subscope:
             self.out.write("""
-{spc}        subscope_baseuri = expand_url('{subscope}', baseuri, loadingOptions, _vocab, _rvocab, True)
+{spc}        subscope_baseuri = _expand_url('{subscope}', baseuri, loadingOptions, True)
 """.format(subscope=subscope, spc=spc))
             baseurivar = "subscope_baseuri"
         else:
@@ -629,7 +610,7 @@ if _errors__:
             )
 
         self.out.write(
-            """{spc}            {safename} = load_field(
+            """{spc}            {safename} = _load_field(
 {spc}                _doc.get("{fieldname}"),
 {spc}                {fieldtype},
 {spc}                {baseurivar},
@@ -779,8 +760,7 @@ if self.{safename} is not None:
         return self.declare_type(
             TypeDef(
                 f"uri_{inner.name}_{scoped_id}_{vocab_term}_{ref_scope}_{no_link_check}",
-                f"_URILoader({inner.name}, {scoped_id}, {vocab_term}, {ref_scope}, {no_link_check}, "
-                "_vocab, _rvocab)",
+                f"_URILoader({inner.name}, {scoped_id}, {vocab_term}, {ref_scope}, {no_link_check})",
                 is_uri=True,
                 scoped_id=scoped_id,
                 ref_scope=ref_scope,
@@ -804,7 +784,7 @@ if self.{safename} is not None:
             TypeDef(
                 f"typedsl_{self.safe_name(inner.name)}_{ref_scope}",
                 f"_TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope}, "  # noqa: B907
-                f"'{self.salad_version}', _vocab, _rvocab)",  # noqa: B907
+                f"'{self.salad_version}')",  # noqa: B907
             )
         )
 
