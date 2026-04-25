@@ -3,22 +3,23 @@
 from __future__ import annotations
 
 import copy
-
 from collections.abc import MutableSequence, Sequence, MutableMapping
 from io import StringIO
 from itertools import chain
-from typing import Any, Final, cast, Generic, TypeVar
+from typing import Any, Final, cast, Generic
 from urllib.parse import urldefrag, urlsplit, urlunsplit
 
 from ruamel.yaml.comments import CommentedMap
 
 from schema_salad.exceptions import ValidationException, SchemaSaladException
-from schema_salad.runtime import LoadingOptions, convert_typing, extract_type, Saveable
+from schema_salad.runtime import (
+    LoadingOptions,
+    convert_typing,
+    extract_type,
+    SaveableType,
+)
 from schema_salad.sourceline import SourceLine, add_lc_filename
 from schema_salad.utils import yaml_no_ts  # requires schema-salad v8.2+
-
-S = TypeVar("S", bound=Saveable)
-
 
 _vocab: Final[dict[str, str]] = {}
 _rvocab: Final[dict[str, str]] = {}
@@ -264,10 +265,10 @@ class _SecondaryDSLLoader(_Loader):
         return self.inner.load(r, baseuri, loadingOptions, docRoot, lc=lc)
 
 
-class _RecordLoader(_Loader, Generic[S]):
+class _RecordLoader(_Loader, Generic[SaveableType]):
     def __init__(
         self,
-        classtype: type[S],
+        classtype: type[SaveableType],
         container: str | None = None,
         no_link_check: bool | None = None,
     ) -> None:
@@ -282,7 +283,7 @@ class _RecordLoader(_Loader, Generic[S]):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> S:
+    ) -> SaveableType:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "

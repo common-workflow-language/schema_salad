@@ -139,6 +139,7 @@ from collections.abc import Collection
 from typing import ClassVar
 
 from schema_salad.runtime import (
+    Saveable,
     file_uri,
     parse_errors,
     prefix_url,
@@ -152,8 +153,10 @@ else:
     from typing_extensions import Self
 """)
 
-        for parent in self.parents_map.values():
-            self.out.write(f"import {parent}\n")
+        if self.parents_map:
+            self.out.write("\n")
+            for parent in self.parents_map.values():
+                self.out.write(f"import {parent}\n")
 
         python_codegen_support: Final = (
             files("schema_salad").joinpath("python_codegen_support.py").read_text("UTF-8")
@@ -625,9 +628,9 @@ if _errors__:
                 """
 {spc}            vocab = _vocab | loadingOptions.vocab
 {spc}            if {safename} not in (cls.__name__, vocab.get(cls.__name__)):
-{spc}               raise ValidationException(f"tried `{{cls.__name__}}` but")
+{spc}                raise ValidationException(f"tried `{{cls.__name__}}` but")
 {spc}        except ValidationException as e:
-{spc}               raise e
+{spc}            raise e
 """.format(
                     safename=self.safe_name(name),
                     spc=spc,
