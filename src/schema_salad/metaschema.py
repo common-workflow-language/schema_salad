@@ -8,7 +8,6 @@ import os
 import sys
 import uuid as _uuid__
 from collections.abc import Collection
-from mypy_extensions import trait
 from typing import ClassVar
 
 from schema_salad.runtime import (
@@ -837,7 +836,6 @@ def parser_info() -> str:
     return "org.w3id.cwl.salad"
 
 
-@trait
 class Documented(Saveable):
     pass
 
@@ -3130,17 +3128,14 @@ class SpecializeDef(Saveable):
     attrs: ClassVar[Collection[str]] = frozenset(["specializeFrom", "specializeTo"])
 
 
-@trait
 class NamedType(Saveable):
     pass
 
 
-@trait
 class DocType(Documented):
     pass
 
 
-@trait
 class SchemaDefinedType(DocType):
     """
     Abstract base for schema-defined types.

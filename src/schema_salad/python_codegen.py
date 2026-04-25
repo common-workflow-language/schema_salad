@@ -136,7 +136,6 @@ import os
 import sys
 import uuid as _uuid__
 from collections.abc import Collection
-from mypy_extensions import trait
 from typing import ClassVar
 
 from schema_salad.runtime import (
@@ -197,12 +196,7 @@ else:
         else:
             ext = "Saveable"
 
-        if self.current_class_is_abstract:
-            decorator = "@trait\n"
-        else:
-            decorator = ""
-
-        self.out.write(fmt(f"{decorator}class {classname}({ext}):\n    pass", 0)[:-9])
+        self.out.write(fmt(f"class {classname}({ext}):\n    pass", 0)[:-9])
         # make a valid class for Black, but then trim off the "pass"
 
         if doc:

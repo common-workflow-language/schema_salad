@@ -14,7 +14,6 @@ from typing import Any, Final, TypeAlias, cast
 from urllib.parse import quote, urlparse, urlsplit
 from urllib.request import pathname2url
 
-from mypy_extensions import trait
 from rdflib import Graph
 from rdflib.plugins.parsers.notation3 import BadSyntax
 
@@ -187,7 +186,6 @@ class LoadingOptions:
         return graph
 
 
-@trait
 class Saveable(metaclass=ABCMeta):
     """Mark classes than have a save() and fromDoc() function."""
 
