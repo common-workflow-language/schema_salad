@@ -1,3 +1,5 @@
+"""Template code used by python_codegen.py."""
+
 from __future__ import annotations
 
 import copy
