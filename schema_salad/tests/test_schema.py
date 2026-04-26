@@ -3,9 +3,7 @@ from typing import Any, cast
 
 from schema_salad import schema
 
-from .util import get_data_uri
-
-cwl_file_uri = get_data_uri("tests/test_schema/CommonWorkflowLanguage.yml")
+from .util import cwl_file_uri
 
 
 def test_extend_and_specialize_enums(tmp_path: Path) -> None:

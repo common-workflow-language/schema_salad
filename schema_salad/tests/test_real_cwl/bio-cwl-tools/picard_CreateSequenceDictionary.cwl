@@ -36,7 +36,6 @@ inputs:
 - doc: Input reference fasta or fasta.gz [synonymous with -R]
   id: REFERENCE
   type: File
-  format: edam:format_1929  # FASTA
   inputBinding:
     valueFrom: REFERENCE=$(self.basename)
 - doc: Put into AS field of sequence dictionary entry if supplied [synonymous with
@@ -177,7 +176,6 @@ arguments:
 outputs:
   sequences_with_dictionary:
     type: File
-    format: edam:format_2573  # SAM
     secondaryFiles:
       - ^.dict
       - .fai?
@@ -189,7 +187,3 @@ outputs:
     outputBinding:
       glob: $(inputs.REFERENCE.nameroot).dict
 
-$namespaces:
-  edam: http://edamontology.org/
-$schemas:
-  - http://edamontology.org/EDAM_1.18.owl

@@ -10,7 +10,7 @@ from pathlib import Path
 from schema_salad import ref_resolver, schema
 from schema_salad.avro.schema import Names, RecordSchema
 
-from .util import get_data_uri
+from .util import cwl_file_uri
 
 
 def test_recordschema_pickle() -> None:
@@ -30,7 +30,6 @@ def test_loader_pickle() -> None:
 
 
 def test_extend_and_specialize_enums(tmp_path: Path) -> None:
-    cwl_file_uri = get_data_uri("tests/test_schema/CommonWorkflowLanguage.yml")
     _, avsc_names, _, _ = schema.load_schema(cwl_file_uri)
     print(avsc_names)
     print(pickle.loads(pickle.dumps(avsc_names)))
