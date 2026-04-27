@@ -1,5 +1,5 @@
 tox >= 4
-isort > 5, < 8.1
+isort >= 8.0.1, < 8.1
 build < 1.4.5
 autoflake < 2.4
 auto-walrus
