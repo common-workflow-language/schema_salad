@@ -1,6 +1,6 @@
 requests >= 1.0
 ruamel.yaml >= 0.17.6, < 0.20
-rdflib>= 4.2.2, < 8.0.0
+rdflib>= 7.6.0, < 8.0.0
 mistune>=3,<3.3
 CacheControl[filecache]>= 0.13.1, < 0.15
 black>=19.10b0,<26.4
