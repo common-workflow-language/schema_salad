@@ -3,7 +3,7 @@
 import os
 import sys
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 SETUP_DIR = os.path.dirname(__file__)
 README = os.path.join(SETUP_DIR, "README.rst")
@@ -37,42 +37,42 @@ if USE_MYPYC and any(
     ]
 ):
     mypyc_targets = [
-        "schema_salad/__init__.py",
-        "schema_salad/__main__.py",
-        "schema_salad/codegen.py",
-        "schema_salad/codegen_base.py",
-        "schema_salad/cpp_codegen.py",
-        "schema_salad/dlang_codegen.py",
-        "schema_salad/dotnet_codegen.py",
-        # "schema_salad/exceptions.py", # leads to memory leaks
-        "schema_salad/java_codegen.py",
-        "schema_salad/jsonld_context.py",
-        "schema_salad/main.py",
-        "schema_salad/makedoc.py",
-        "schema_salad/python_codegen.py",
-        "schema_salad/ref_resolver.py",
-        # "schema_salad/fetcher.py",  # to allow subclassing {Default,}Fetcher
-        "schema_salad/schema.py",
-        "schema_salad/sourceline.py",
-        "schema_salad/typescript_codegen.py",
-        "schema_salad/utils.py",
-        "schema_salad/validate.py",
-        "schema_salad/avro/__init__.py",
-        "schema_salad/avro/schema.py",
-        # "schema_salad/tests/util.py",
-        # "schema_salad/tests/test_print_oneline.py",
-        # "schema_salad/tests/test_python_codegen.py",
-        # "schema_salad/tests/test_java_codegen.py",
-        # "schema_salad/tests/__init__.py",
-        # "schema_salad/tests/test_cli_args.py",
-        # "schema_salad/tests/test_fetch.py",
-        # "schema_salad/tests/matcher.py",
-        # "schema_salad/tests/test_cg.py",
-        # "schema_salad/tests/test_examples.py",
-        # "schema_salad/tests/test_errors.py",
-        # "schema_salad/tests/test_real_cwl.py",
-        # "schema_salad/tests/test_ref_resolver.py",
-        # "schema_salad/tests/test_fp.py",
+        "src/schema_salad/__init__.py",
+        "src/schema_salad/__main__.py",
+        "src/schema_salad/codegen_base.py",
+        "src/schema_salad/codegen.py",
+        "src/schema_salad/cpp_codegen.py",
+        "src/schema_salad/dlang_codegen.py",
+        "src/schema_salad/dotnet_codegen.py",
+        # "src/schema_salad/exceptions.py", # leads to memory leaks
+        # "src/schema_salad/fetcher.py",  # to allow subclassing {Default,}Fetcher
+        "src/schema_salad/java_codegen.py",
+        "src/schema_salad/jsonld_context.py",
+        "src/schema_salad/main.py",
+        "src/schema_salad/makedoc.py",
+        "src/schema_salad/python_codegen.py",
+        "src/schema_salad/ref_resolver.py",
+        "src/schema_salad/schema.py",
+        "src/schema_salad/sourceline.py",
+        "src/schema_salad/typescript_codegen.py",
+        "src/schema_salad/utils.py",
+        "src/schema_salad/validate.py",
+        "src/schema_salad/avro/__init__.py",
+        "src/schema_salad/avro/schema.py",
+        # "src/schema_salad/tests/util.py",
+        # "src/schema_salad/tests/test_print_oneline.py",
+        # "src/schema_salad/tests/test_python_codegen.py",
+        # "src/schema_salad/tests/test_java_codegen.py",
+        # "src/schema_salad/tests/__init__.py",
+        # "src/schema_salad/tests/test_cli_args.py",
+        # "src/schema_salad/tests/test_fetch.py",
+        # "src/schema_salad/tests/matcher.py",
+        # "src/schema_salad/tests/test_cg.py",
+        # "src/schema_salad/tests/test_examples.py",
+        # "src/schema_salad/tests/test_errors.py",
+        # "src/schema_salad/tests/test_real_cwl.py",
+        # "src/schema_salad/tests/test_ref_resolver.py",
+        # "src/schema_salad/tests/test_fp.py",
     ]
 
     from mypyc.build import mypycify
@@ -118,7 +118,8 @@ setup(
     python_requires=">=3.10,<3.15",
     use_scm_version=True,
     setup_requires=pytest_runner + ["setuptools_scm>=8.0.4,<11"],
-    packages=["schema_salad", "schema_salad.tests", "schema_salad.avro"],
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     package_data={
         "schema_salad": [
             "metaschema/*",

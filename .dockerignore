@@ -18,7 +18,7 @@ testenv*/
 *.so
 *.swp
 .github/
-schema_salad/*.so
+src/schema_salad/*.so
 *.Dockerfile
 build-schema_salad-docker.sh
 __pycache__/

@@ -26,7 +26,7 @@ EXTRAS=[pycodegen]
 
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
-PYSOURCES=$(wildcard ${MODULE}/**.py ${MODULE}/avro/*.py ${MODULE}/tests/*.py) setup.py
+PYSOURCES=$(wildcard src/${MODULE}/**.py src/${MODULE}/avro/*.py src/${MODULE}/tests/*.py) setup.py
 DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt -rlint-requirements.txt
 COVBASE=coverage run --append
 PYTEST_EXTRA ?=
@@ -71,26 +71,27 @@ docs: FORCE
 
 ## clean                  : clean up all temporary / machine-generated files
 clean: FORCE
-	rm -rf ${MODULE}/__pycache__ ${MODULE}/tests/__pycache__ schema_salad/_version.py
-	rm -f *.so ${MODULE}/*.so ${MODULE}/tests/*.so ${MODULE}/avro/*.so
+	find src -type d -name __pycache__ | xargs rm -Rf
+	rm -f src/schema_salad/_version.py
+	find src -type f -name "*.so" -delete
 	python setup.py clean --all || true
 	rm -Rf .coverage
 	rm -f diff-cover.html
 
 # Linting and code style related targets
 ## sort_import            : sorting imports using isort: https://github.com/timothycrosley/isort
-sort_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES)) mypy-stubs
+sort_imports: $(filter-out src/schema_salad/metaschema.py,$(PYSOURCES)) mypy-stubs
 	isort $^
 
-remove_unused_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
+remove_unused_imports: $(filter-out src/schema_salad/metaschema.py,$(PYSOURCES))
 	autoflake --in-place --remove-all-unused-imports $^
 
 pep257: pydocstyle
 ## pydocstyle             : check Python docstring style
-pydocstyle: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
+pydocstyle: $(filter-out src/schema_salad/metaschema.py,$(PYSOURCES))
 	pydocstyle --add-ignore=D100,D101,D102,D103 $^ || true
 
-pydocstyle_report.txt: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
+pydocstyle_report.txt: $(filter-out src/schema_salad/metaschema.py,$(PYSOURCES))
 	pydocstyle setup.py $^ > $@ 2>&1 || true
 
 ## diff_pydocstyle_report : check Python docstring style for changed files only
@@ -103,10 +104,10 @@ codespell:
 
 ## format                 : check/fix all code indentation and formatting (runs black)
 format:
-	black --force-exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
+	black --force-exclude metaschema.py --exclude _version.py src/schema_salad setup.py mypy-stubs
 
 format-check:
-	black --diff --check --force-exclude metaschema.py --exclude _version.py schema_salad setup.py mypy-stubs
+	black --diff --check --force-exclude metaschema.py --exclude _version.py src/schema_salad setup.py mypy-stubs
 
 ## pylint                 : run static code analysis on Python code
 pylint: $(PYSOURCES)
@@ -123,16 +124,16 @@ diff_pylint_report: pylint_report.txt
 .coverage:
 	pytest --cov --cov-config=.coveragerc --cov-report= ${PYTEST_EXTRA}
 	$(COVBASE) -m schema_salad.main \
-		--print-jsonld-context schema_salad/metaschema/metaschema.yml \
+		--print-jsonld-context src/schema_salad/metaschema/metaschema.yml \
 		> /dev/null
 	$(COVBASE) -m schema_salad.main \
-		--print-rdfs schema_salad/metaschema/metaschema.yml \
+		--print-rdfs src/schema_salad/metaschema/metaschema.yml \
 		> /dev/null
 	$(COVBASE) -m schema_salad.main \
-		--print-avro schema_salad/metaschema/metaschema.yml \
+		--print-avro src/schema_salad/metaschema/metaschema.yml \
 		> /dev/null
 	$(COVBASE) -m schema_salad.makedoc --debug \
-		schema_salad/metaschema/metaschema.yml \
+		src/schema_salad/metaschema/metaschema.yml \
 		> /dev/null
 
 coverage.xml: .coverage
@@ -185,12 +186,12 @@ mypyi:
 
 check-metaschema-diff:
 	docker run \
-		-v "$(realpath ${MODULE}/metaschema/):/tmp/:ro" \
+		-v "$(realpath src/${MODULE}/metaschema/):/tmp/:ro" \
 		"quay.io/commonwl/cwltool_module:latest" \
 		schema-salad-doc /tmp/metaschema.yml \
 		> /tmp/metaschema.orig.html
 	schema-salad-doc \
-		"$(realpath ${MODULE}/metaschema/metaschema.yml)" \
+		"$(realpath src/${MODULE}/metaschema/metaschema.yml)" \
 		> /tmp/metaschema.new.html
 	diff -a --color /tmp/metaschema.orig.html /tmp/metaschema.new.html || true
 
@@ -202,9 +203,9 @@ shellcheck: FORCE
 
 ## bandit                 : check for common security issues
 bandit:
-	bandit --recursive --exclude schema_salad/tests/ schema_salad
+	bandit --recursive --exclude src/schema_salad/tests/ src/schema_salad
 
-pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
+pyupgrade: $(filter-out src/schema_salad/metaschema.py,$(PYSOURCES))
 	pyupgrade --exit-zero-even-if-changed --py310-plus $^
 	auto-walrus $^
 
@@ -225,12 +226,12 @@ release:
 flake8: FORCE
 	flake8 $(PYSOURCES)
 
-schema_salad/metaschema.py: schema_salad/codegen_base.py schema_salad/python_codegen_support.py schema_salad/python_codegen.py schema_salad/metaschema/*.yml
-	schema-salad-tool --codegen python schema_salad/metaschema/metaschema.yml > $@
+src/schema_salad/metaschema.py: src/schema_salad/codegen_base.py src/schema_salad/python_codegen_support.py src/schema_salad/python_codegen.py src/schema_salad/metaschema/*.yml
+	schema-salad-tool --codegen python src/schema_salad/metaschema/metaschema.yml > $@
 
-vpath %.yml schema_salad/tests/cpp_tests
+vpath %.yml src/schema_salad/tests/cpp_tests
 
-schema_salad/tests/cpp_tests/%.h: %.yml
+src/schema_salad/tests/cpp_tests/%.h: %.yml
 	schema-salad-tool --codegen cpp --codegen-target $@ $<
 
 FORCE:
