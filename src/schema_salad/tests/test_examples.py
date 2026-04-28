@@ -3,6 +3,7 @@
 import datetime
 import os
 from io import StringIO
+from pathlib import Path
 from typing import Any, cast
 
 import pytest
@@ -16,7 +17,7 @@ from schema_salad.ref_resolver import Loader, file_uri, uri_file_path
 from schema_salad.sourceline import SourceLine, cmap
 from schema_salad.utils import ContextType, stdout, yaml_no_ts
 
-from .util import get_data, get_data_uri, get_path
+from .util import cwl_file_uri, get_data, get_data_uri, get_path
 
 
 def test_schemas() -> None:
@@ -592,3 +593,26 @@ def test_nullable_links() -> None:
 
     ra, _ = ldr.resolve_all(cmap({"link": None}), "http://example.com", checklinks=True)
     assert {"link": None} == ra
+
+
+def test_python_codegen_parent(tmp_path: Path) -> None:
+    """Test CLI Python code generator with inheritance."""
+    src_target = tmp_path / "src.py"
+    assert 0 == schema_salad.main.main(
+        argsl=[
+            "--codegen=python",
+            f"--codegen-target={src_target}",
+            "--codegen-parent=https://w3id.org/cwl/salad=schema_salad.metaschema",
+            cwl_file_uri,
+        ]
+    )
+    with open(src_target) as f:
+        content = f.read()
+    assert "class ArraySchema(Saveable)" not in content
+    assert "class CWLArraySchema(schema_salad.metaschema.ArraySchema)" in content
+    assert "class Workflow(Process)" in content
+    assert "EnumSchemaLoader: Final = _RecordLoader(EnumSchema, None, None)" not in content
+    assert (
+        "EnumSchemaLoader: Final = _RecordLoader(schema_salad.metaschema.EnumSchema, None, None)"
+        in content
+    )
