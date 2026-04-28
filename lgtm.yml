@@ -6,4 +6,4 @@ extraction:
     index:
       # Specify a list of files and folders to exclude from extraction.
       exclude:
-        - schema_salad/typescript/
+        - src/schema_salad/typescript/

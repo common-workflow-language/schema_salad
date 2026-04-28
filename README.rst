@@ -109,7 +109,7 @@ First set of examples is using the `CWL v1.2 schema <https://github.com/common-w
 +-------------+---------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Language    | Repository                                              | Serialization Example                                                                                                                                 | Deserialization Example                                                                                                                                                   |
 +=============+=========================================================+======================================================================================================================================================+============================================================================================================================================================================+
-| Python      | https://github.com/common-workflow-language/cwl-utils/  | `create_cwl_from_objects.py <https://github.com/common-workflow-language/cwl-utils/blob/main/create_cwl_from_objects.py>`_                           | `load_document() <https://github.com/common-workflow-language/cwl-utils/blob/main/cwl_utils/parser/__init__.py#L93>`_                                                      |
+| Python      | https://github.com/common-workflow-language/cwl-utils/  | `create_cwl_from_objects.py <https://github.com/common-workflow-language/cwl-utils/blob/main/create_cwl_from_objects.py>`_                           | `load_document() <https://github.com/common-workflow-language/cwl-utils/blob/main/src/cwl_utils/parser/__init__.py#L93>`_                                                  |
 +-------------+---------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Java        | https://github.com/common-workflow-language/cwljava/    | (Not yet implemented)                                                                                                                                | `PackedWorkflowClassTest.java <https://github.com/common-workflow-language/cwljava/blob/cwl-1.2.0/src/test/java/org/w3id/cwl/cwl1_2/utils/PackedWorkflowClassTest.java>`_  |
 +-------------+---------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -207,8 +207,8 @@ Here is an example schema to do that::
            type: array
            items: Product
 
-You can check the schema and document in schema_salad/tests/basket_schema.yml
-and schema_salad/tests/basket.yml::
+You can check the schema and document in src/schema_salad/tests/basket_schema.yml
+and src/schema_salad/tests/basket.yml::
 
    $ schema-salad-tool basket_schema.yml basket.yml
    Document `basket.yml` is valid
@@ -257,7 +257,7 @@ provides for robust support of inline documentation.
 
 .. _JSON-LD: http://json-ld.org
 .. _Avro: http://avro.apache.org
-.. _metaschema: https://github.com/common-workflow-language/schema_salad/blob/main/schema_salad/metaschema/metaschema.yml
+.. _metaschema: https://github.com/common-workflow-language/schema_salad/blob/main/src/schema_salad/metaschema/metaschema.yml
 .. _specification: http://www.commonwl.org/v1.2/SchemaSalad.html
 .. _Language: https://github.com/common-workflow-language/cwl-v1.2/blob/v1.2.0/CommandLineTool.yml
 .. _RDF: https://www.w3.org/RDF/

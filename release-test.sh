@@ -17,7 +17,7 @@ else
     repo=https://github.com/common-workflow-language/schema_salad.git
     HEAD=$(git rev-parse HEAD)
 fi
-run_tests="bin/py.test --pyargs ${module}"
+run_tests="python3 -m pytest --pyargs ${module}"
 pipver=23.1  # minimum required version of pip for Python 3.12
 setuptoolsver=67.6.1  # required for Python 3.12
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
@@ -38,12 +38,7 @@ then
 	pip install -rtest-requirements.txt ".${extras}"
 	make test
 	pip uninstall -y ${package} || true; pip uninstall -y ${package} || true; make install
-	mkdir testenv1/not-${module}
-	# if there is a subdir named '${module}' py.test will execute tests
-	# there instead of the installed module's tests
-	pushd testenv1/not-${module}
-	# shellcheck disable=SC2086
-	../${run_tests}; popd
+	${run_tests}
 fi
 
 python3 -m venv testenv2
@@ -94,10 +89,7 @@ make test
 pip install "-r${DIR}/mypy-requirements.txt"
 #make mypyc
 pip uninstall -y ${package} || true; pip uninstall -y ${package} || true; make install
-mkdir ../not-${module}
-pushd ../not-${module}
-# shellcheck disable=SC2086
-../../${run_tests}; popd
+${run_tests}
 popd
 popd
 
@@ -111,8 +103,5 @@ rm -f lib/python-wheels/setuptools* \
         && pip install setuptools==${setuptoolsver} wheel
 pip install "$(ls ${module}*.whl)${extras}"
 pip install "-r${DIR}/test-requirements.txt"
-mkdir not-${module}
-pushd not-${module}
-# shellcheck disable=SC2086
-../${run_tests}; popd
+${run_tests}
 popd

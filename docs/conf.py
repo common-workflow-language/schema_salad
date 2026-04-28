@@ -87,7 +87,7 @@ html_static_path = ["_static"]
 
 version = _version.version
 
-autoapi_dirs = ["../schema_salad"]
+autoapi_dirs = ["../src/schema_salad"]
 autodoc_typehints = "description"
 autoapi_keep_files = True
 autoapi_ignore = ["*migrations*", "*.pyi"]

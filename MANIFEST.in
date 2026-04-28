@@ -1,18 +1,18 @@
 include Makefile LICENSE.txt requirements.txt mypy-requirements.txt test-requirements.txt mypy.ini
-include schema_salad/py.typed
-include schema_salad/avro/*
-recursive-include schema_salad/java *
-recursive-include schema_salad/typescript *
-recursive-include schema_salad/dotnet *
-include schema_salad/tests/*
-include schema_salad/tests/test_schema/*.md
-include schema_salad/tests/test_schema/*.yml
-include schema_salad/tests/test_schema/*.cwl
-recursive-include schema_salad/tests/cpp_tests *.h *.yml
-include schema_salad/tests/foreign/*.cwl
-recursive-include schema_salad/tests/test_real_cwl *
-include schema_salad/metaschema/*
-include schema_salad/tests/docimp/*
+include src/schema_salad/py.typed
+include src/schema_salad/avro/*
+recursive-include src/schema_salad/java *
+recursive-include src/schema_salad/typescript *
+recursive-include src/schema_salad/dotnet *
+include src/schema_salad/tests/*
+include src/schema_salad/tests/test_schema/*.md
+include src/schema_salad/tests/test_schema/*.yml
+include src/schema_salad/tests/test_schema/*.cwl
+recursive-include src/schema_salad/tests/cpp_tests *.h *.yml
+include src/schema_salad/tests/foreign/*.cwl
+recursive-include src/schema_salad/tests/test_real_cwl *
+include src/schema_salad/metaschema/*
+include src/schema_salad/tests/docimp/*
 recursive-include mypy-stubs *.py?
 global-exclude *~
 global-exclude *.pyc

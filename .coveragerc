@@ -1,7 +1,7 @@
 [run]
 branch = True
 source = schema_salad
-omit = schema_salad/tests/*
+omit = src/schema_salad/tests/*
 
 [report]
 exclude_lines =
@@ -11,6 +11,6 @@ exclude_lines =
     if __name__ == .__main__.:
 ignore_errors = True
 omit =
-    schema_salad/tests/*
-    schema_salad/metaschema.py
-    schema_salad/python_codegen_support.py
+    src/schema_salad/tests/*
+    src/schema_salad/metaschema.py
+    src/schema_salad/python_codegen_support.py
