@@ -10,6 +10,8 @@ concurrency:
   group: wheels-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions: {}
+
 jobs:
   build_wheels:
     name: ${{ matrix.image }} wheels
@@ -23,24 +25,26 @@ jobs:
             build: "*musllinux*"
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         if: ${{ github.event_name != 'repository_dispatch' }}
         with:
           fetch-depth: 0  # slow, but gets all the tags
-      - uses: actions/checkout@v6
+          persist-credentials: false
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         if: ${{ github.event_name == 'repository_dispatch' }}
         with:
           fetch-depth: 0  # slow, but gets all the tags
           ref: ${{ github.event.client_payload.ref }}
+          persist-credentials: false
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639 # v1.2
         with:
           key: ${{ github.job }}-${{ matrix.image }}
           verbose: 2
 
       # Used to host cibuildwheel
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         with:
           python-version: "3.11 - 3.14"
           update-environment: false
@@ -60,7 +64,7 @@ jobs:
           CIBW_ARCHS_LINUX: auto64 # ppc64le s390x
           CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:/usr/lib/ccache/bin:/usr/lib64/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros" CCACHE_NOHASHDIR="true" SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: artifact-${{ matrix.image }}
           path: ./wheelhouse/*.whl
@@ -69,20 +73,22 @@ jobs:
     name: Build source distribution
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         if: ${{ github.event_name != 'repository_dispatch' }}
         with:
           fetch-depth: 0  # slow, but gets all the tags
-      - uses: actions/checkout@v6
+          persist-credentials: false
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         if: ${{ github.event_name == 'repository_dispatch' }}
         with:
           fetch-depth: 0  # slow, but gets all the tags
           ref: ${{ github.event.client_payload.ref }}
+          persist-credentials: false
 
       - name: Build sdist
         run: pipx run build --sdist
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: artifact-sdist
           path: dist/*.tar.gz
@@ -97,24 +103,26 @@ jobs:
         # macos-14+ is apple silicon
         os: [macos-15-intel, macos-latest]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         if: ${{ github.event_name != 'repository_dispatch' }}
         with:
           fetch-depth: 0  # slow, but gets all the tags
-      - uses: actions/checkout@v6
+          persist-credentials: false
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         if: ${{ github.event_name == 'repository_dispatch' }}
         with:
           fetch-depth: 0  # slow, but gets all the tags
           ref: ${{ github.event.client_payload.ref }}
+          persist-credentials: false
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639 # v1.2
         with:
           key: ${{ github.job }}-${{ matrix.os }}
           verbose: 2
 
       # Used to host cibuildwheel
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         with:
           python-version: "3.11 - 3.14"
           update-environment: false
@@ -127,7 +135,7 @@ jobs:
         env:
           CIBW_ENVIRONMENT_MACOS: CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros" CCACHE_NOHASHDIR="true" PATH=/usr/local/opt/ccache/libexec:/opt/homebrew/opt/ccache/libexec:$PATH SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: artifact-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
@@ -139,15 +147,17 @@ jobs:
       matrix:
         target: [ 'many', 'musl' ]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         if: ${{ github.event_name != 'repository_dispatch' }}
         with:
           fetch-depth: 0  # slow, but gets all the tags
-      - uses: actions/checkout@v6
+          persist-credentials: false
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         if: ${{ github.event_name == 'repository_dispatch' }}
         with:
           fetch-depth: 0  # slow, but gets all the tags
           ref: ${{ github.event.client_payload.ref }}
+          persist-credentials: false
 
       - name: musllinux target
         if: ${{ matrix.target == 'musl' }}
@@ -160,19 +170,19 @@ jobs:
           echo "CIBW_BUILD=*manylinux*" >> "$GITHUB_ENV"
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639 # v1.2
         with:
           key: ${{ github.job }}-${{ matrix.target }}
           verbose: 2
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4
         with:
           platforms: all
         id: qemu
 
       # Used to host cibuildwheel
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         with:
           python-version: "3.11 - 3.14"
           update-environment: false
@@ -186,7 +196,7 @@ jobs:
           CIBW_ARCHS_LINUX: riscv64
           CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:/usr/lib/ccache/bin:/usr/lib64/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros" CCACHE_NOHASHDIR="true" SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: artifact-riscv64-${{ matrix.target }}
           path: ./wheelhouse/*.whl
@@ -199,7 +209,7 @@ jobs:
       id-token: write
     if: (github.event_name == 'release' && github.event.action == 'published') || (github.event_name == 'repository_dispatch' && github.event.client_payload.publish_wheel == true)
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           # unpacks default artifact into dist/
           pattern: artifact-*
@@ -207,6 +217,6 @@ jobs:
           path: dist
           skip-decompress: false
 
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           skip-existing: true
