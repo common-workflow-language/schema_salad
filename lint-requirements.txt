@@ -1,4 +1,4 @@
-diff_cover < 10.3
+diff_cover < 10.4
 pydocstyle < 6.4
 flake8 > 4
 flake8-bugbear < 25.12
