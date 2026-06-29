@@ -18,6 +18,7 @@ from typing import Any, Final, TypeAlias, cast, TypeVar
 from urllib.parse import quote, urlparse, urlsplit
 from urllib.request import pathname2url
 
+from mypy_extensions import mypyc_attr, i32, i64
 from rdflib import Graph
 from rdflib.plugins.parsers.notation3 import BadSyntax
 
@@ -31,6 +32,8 @@ else:
 
 _logger: Final = logging.getLogger("salad")
 
+EnumFieldType = TypeVar("EnumFieldType", bound=str)
+FieldType = TypeVar("FieldType", covariant=True)
 IdxType: TypeAlias = MutableMapping[str, tuple[Any, "LoadingOptions"]]
 
 
@@ -191,6 +194,7 @@ class LoadingOptions:
         return graph
 
 
+@mypyc_attr(native_class=True)
 class Saveable(metaclass=ABCMeta):
     """Mark classes than have a save() and fromDoc() function."""
 
@@ -213,8 +217,9 @@ class Saveable(metaclass=ABCMeta):
 
 
 SaveableType = TypeVar("SaveableType", bound="Saveable")
+
 save_type: TypeAlias = (
-    None | MutableMapping[str, Any] | MutableSequence[Any] | int | float | bool | str
+    None | MutableMapping[str, Any] | MutableSequence[Any] | i32 | i64 | float | bool | str
 )
 
 
@@ -293,7 +298,7 @@ def save(
         for key in val:
             newdict[key] = save(val[key], top=False, base_url=base_url, relative_uris=relative_uris)
         return newdict
-    if val is None or isinstance(val, (int, float, bool, str)):
+    if val is None or isinstance(val, (i32, i64, float, bool, str)):
         return val
     raise Exception("Not Saveable: %s" % type(val))
 

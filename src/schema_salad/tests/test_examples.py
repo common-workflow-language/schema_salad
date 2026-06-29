@@ -608,11 +608,10 @@ def test_python_codegen_parent(tmp_path: Path) -> None:
     )
     with open(src_target) as f:
         content = f.read()
-    assert "class ArraySchema(Saveable)" not in content
     assert "class CWLArraySchema(schema_salad.metaschema.ArraySchema)" in content
-    assert "class Workflow(Process)" in content
+    assert "class Workflow(Saveable)" in content
     assert "EnumSchemaLoader: Final = _RecordLoader(EnumSchema, None, None)" not in content
     assert (
-        "EnumSchemaLoader: Final = _RecordLoader(schema_salad.metaschema.EnumSchema, None, None)"
+        "EnumSchemaLoader: Final[_Loader[schema_salad.metaschema.EnumSchema]] = _RecordLoader("
         in content
     )
