@@ -51,17 +51,20 @@ Schema salad can be used as a command line tool or imported as a Python module::
 
    $ schema-salad-tool
    usage: schema-salad-tool [-h] [--rdf-serializer RDF_SERIALIZER] [--skip-schemas]
-                         [--strict-foreign-properties] [--print-jsonld-context]
-                         [--print-rdfs] [--print-avro] [--print-rdf] [--print-pre]
-                         [--print-index] [--print-metadata] [--print-inheritance-dot]
-                         [--print-fieldrefs-dot] [--codegen language] [--codegen-target CODEGEN_TARGET]
-                         [--codegen-examples directory] [--codegen-package dotted.package]
-                         [--codegen-copyright copyright_string] [--print-oneline]
-                         [--print-doc] [--strict | --non-strict]
+                         [--strict-foreign-properties] [--version]
+                         [--print-jsonld-context | --print-rdfs | --print-avro |
+                              --print-rdf | --print-pre | --print-index | --print-metadata |
+                              --print-inheritance-dot | --print-fieldrefs-dot | --codegen LANGUAGE |
+                              --print-oneline | --print-doc]
+                         [--codegen-target CODEGEN_TARGET] [--codegen-examples DIRECTORY]
+                         [--codegen-package DOTTED.PACKAGE] [--codegen-parent PARENTS_MAP]
+                         [--codegen-copyright COPYRIGHT_STRING]
+                         [--codegen-spdx-copyright-text SPDX_COPYRIGHT_TEXT [SPDX_COPYRIGHT_TEXT ...]]
+                         [--codegen-spdx-license-identifier SPDX_LICENSE_IDENTIFIER]
+                         [--codegen-parser-info PARSER_INFO] [--strict | --non-strict]
                          [--verbose | --quiet | --debug] [--only ONLY] [--redirect REDIRECT]
                          [--brand BRAND] [--brandlink BRANDLINK] [--brandstyle BRANDSTYLE]
-                         [--brandinverse] [--primtype PRIMTYPE] [--version]
-                         [schema] [document]
+                         [--brandinverse] [--primtype PRIMTYPE] [schema] [document ...]
 
    $ python
    >>> import schema_salad

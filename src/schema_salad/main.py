@@ -29,6 +29,15 @@ if int(rdflib_version.split(".", maxsplit=1)[0]) < 6:
 _logger: Final = logging.getLogger("salad")
 
 
+def parse_kv(pair: str) -> tuple[str, str]:
+    """Parse `key=value` arguments into a tuple of `key` and `value`."""
+    try:
+        k, v = pair.split("=", 1)
+        return k, v
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(f"Invalid format: '{pair}', expected key=value") from e
+
+
 def printrdf(
     workflow: str,
     wf: CommentedMap | CommentedSeq,
@@ -145,6 +154,15 @@ def arg_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional override of the package name which is otherwise derived "
         "from the base URL (Java/TypeScript/.Net/Dlang only).",
+    )
+
+    codegen_opts.add_argument(
+        "--codegen-parent",
+        type=parse_kv,
+        metavar="PARENTS_MAP",
+        action="append",
+        default=None,
+        help="Optional mapping of prefix into parent package for generated classes (Python only).",
     )
 
     codegen_opts.add_argument(
@@ -351,6 +369,7 @@ def main(argsl: list[str] | None = None) -> int:
             examples=args.codegen_examples,
             package=args.codegen_package,
             copyright=args.codegen_copyright,
+            parents_map=dict(args.codegen_parent or []),
             spdx_license_identifier=args.codegen_spdx_license_identifier,
             spdx_copyright_text=args.codegen_spdx_copyright_text,
             parser_info=args.codegen_parser_info,

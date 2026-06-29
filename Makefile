@@ -122,7 +122,7 @@ diff_pylint_report: pylint_report.txt
 	diff-quality --compare-branch=origin/main --violations=pylint pylint_report.txt
 
 .coverage:
-	pytest --cov --cov-config=.coveragerc --cov-report= ${PYTEST_EXTRA}
+	pytest --cov --cov-config=.coveragerc --cov-report= --junitxml=junit.xml -o junit_family=legacy ${PYTEST_EXTRA}
 	$(COVBASE) -m schema_salad.main \
 		--print-jsonld-context src/schema_salad/metaschema/metaschema.yml \
 		> /dev/null
@@ -226,7 +226,7 @@ release:
 flake8: FORCE
 	flake8 $(PYSOURCES)
 
-src/schema_salad/metaschema.py: src/schema_salad/codegen_base.py src/schema_salad/python_codegen_support.py src/schema_salad/python_codegen.py src/schema_salad/metaschema/*.yml
+src/schema_salad/metaschema.py: src/schema_salad/codegen_base.py src/schema_salad/runtime.py src/schema_salad/python_codegen.py src/schema_salad/metaschema/*.yml
 	schema-salad-tool --codegen python src/schema_salad/metaschema/metaschema.yml > $@
 
 vpath %.yml src/schema_salad/tests/cpp_tests

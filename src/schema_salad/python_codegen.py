@@ -88,6 +88,7 @@ class PythonCodeGen(CodeGenBase):
         self,
         out: IO[str],
         copyright: str | None,
+        parents_map: dict[str, str] | None,
         parser_info: str,
         salad_version: str,
     ) -> None:
@@ -97,8 +98,10 @@ class PythonCodeGen(CodeGenBase):
         self.serializer = StringIO()
         self.idfield = ""
         self.copyright: Final = copyright
+        self.parents_map: Final = parents_map or {}
         self.parser_info: Final = parser_info
         self.salad_version: Final = salad_version
+        self.inherited_classes: dict[str, str] = {}
 
     @staticmethod
     def safe_name(name: str) -> str:
@@ -126,10 +129,43 @@ class PythonCodeGen(CodeGenBase):
 # The original schema is {copyright}.
 """.format(copyright=self.copyright))
 
+        FUTURE_ANNOTATION: Final[str] = "from __future__ import annotations"
+        self.out.write(f"""{FUTURE_ANNOTATION}
+
+import os
+import sys
+import uuid as _uuid__
+from collections.abc import Collection
+from typing import ClassVar
+
+from schema_salad.runtime import (
+    Saveable,
+    file_uri,
+    parse_errors,
+    prefix_url,
+    save,
+    save_relative_uri,
+)
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
+""")
+
+        if self.parents_map:
+            self.out.write("\n")
+            for parent in self.parents_map.values():
+                self.out.write(f"import {parent}\n")
+
         python_codegen_support: Final = (
             files("schema_salad").joinpath("python_codegen_support.py").read_text("UTF-8")
         )
-        self.out.write(python_codegen_support[python_codegen_support.find("\n") + 1 :])
+        self.out.write(
+            python_codegen_support[
+                python_codegen_support.find(FUTURE_ANNOTATION) + len(FUTURE_ANNOTATION) + 1 :
+            ]
+        )
         self.out.write("\n\n")
 
         self.out.write(f"""def parser_info() -> str:
@@ -151,20 +187,19 @@ class PythonCodeGen(CodeGenBase):
         idfield: str,
         optional_fields: set[str],
     ) -> None:
-        classname = self.safe_name(classname)
+        if (classname := self.safe_name(classname)) in self.inherited_classes:
+            self.current_class_is_abstract = True
+            return
         self.current_class_is_abstract = abstract
 
         if extends:
-            ext = ", ".join(self.safe_name(e) for e in extends)
+            ext = ", ".join(
+                self.inherited_classes.get(self.safe_name(e), self.safe_name(e)) for e in extends
+            )
         else:
             ext = "Saveable"
 
-        if self.current_class_is_abstract:
-            decorator = "@trait\n"
-        else:
-            decorator = ""
-
-        self.out.write(fmt(f"{decorator}class {classname}({ext}):\n    pass", 0)[:-9])
+        self.out.write(fmt(f"class {classname}({ext}):\n    pass", 0)[:-9])
         # make a valid class for Black, but then trim off the "pass"
 
         if doc:
@@ -306,7 +341,7 @@ for k in _doc.keys():
                 ValidationException("mapping with implicit null key")
             )
         elif ":" in k:
-            ex = expand_url(
+            ex = _expand_url(
                 k, "", loadingOptions, scoped_id=False, vocab_term=False
             )
             extension_fields[ex] = _doc[k]
@@ -447,11 +482,14 @@ if _errors__:
                 )
 
             case {"type": "record" | "https://w3id.org/cwl/salad#record", "name": name, **rest}:
+                classname = self.safe_name(name)
+                if (prefix := name.split("#")[0]) in self.parents_map:
+                    self.inherited_classes[classname] = f"{self.parents_map[prefix]}.{classname}"
                 return self.declare_type(
                     TypeDef(
-                        self.safe_name(name) + "Loader",
+                        classname + "Loader",
                         "_RecordLoader({}, {}, {})".format(
-                            self.safe_name(name),
+                            self.inherited_classes.get(classname, classname),
                             f"'{container}'" if container is not None else None,  # noqa: B907
                             no_link_check,
                         ),
@@ -548,7 +586,7 @@ if _errors__:
 
         if subscope:
             self.out.write("""
-{spc}        subscope_baseuri = expand_url('{subscope}', baseuri, loadingOptions, True)
+{spc}        subscope_baseuri = _expand_url('{subscope}', baseuri, loadingOptions, True)
 """.format(subscope=subscope, spc=spc))
             baseurivar = "subscope_baseuri"
         else:
@@ -569,7 +607,7 @@ if _errors__:
             )
 
         self.out.write(
-            """{spc}            {safename} = load_field(
+            """{spc}            {safename} = _load_field(
 {spc}                _doc.get("{fieldname}"),
 {spc}                {fieldtype},
 {spc}                {baseurivar},
@@ -588,10 +626,11 @@ if _errors__:
         if shortname(name) == "class":
             self.out.write(
                 """
-{spc}            if {safename} not in (cls.__name__, loadingOptions.vocab.get(cls.__name__)):
-{spc}               raise ValidationException(f"tried `{{cls.__name__}}` but")
+{spc}            vocab = _vocab | loadingOptions.vocab
+{spc}            if {safename} not in (cls.__name__, vocab.get(cls.__name__)):
+{spc}                raise ValidationException(f"tried `{{cls.__name__}}` but")
 {spc}        except ValidationException as e:
-{spc}               raise e
+{spc}            raise e
 """.format(
                     safename=self.safe_name(name),
                     spc=spc,
@@ -653,8 +692,10 @@ if _errors__:
                 fmt(
                     """
 if self.{safename} is not None:
-    uri = self.loadingOptions.vocab[self.{safename}]
-    if p := self.loadingOptions.rvocab.get(uri[:-len(self.{safename})]):
+    vocab = _vocab | self.loadingOptions.vocab
+    rvocab = _rvocab | self.loadingOptions.rvocab
+    uri = vocab[self.{safename}]
+    if p := rvocab.get(uri[:-len(self.{safename})]):
         uri = f"{{p}}:{{self.{safename}}}"
     else:
         uri = self.{safename}
@@ -756,15 +797,15 @@ if self.{safename} is not None:
     def epilogue(self, root_loader: TypeDef) -> None:
         """Trigger to generate the epilouge code."""
 
-        self.out.write("_vocab = {\n")
+        self.out.write("_vocab.update({\n")
         for k in sorted(self.vocab.keys()):
             self.out.write(f'    "{k}": "{self.vocab[k]}",\n')  # noqa: B907
-        self.out.write("}\n")
+        self.out.write("})\n")
 
-        self.out.write("_rvocab = {\n")
+        self.out.write("_rvocab.update({\n")
         for k in sorted(self.vocab.keys()):
             self.out.write(f'    "{self.vocab[k]}": "{k}",\n')  # noqa: B907
-        self.out.write("}\n\n")
+        self.out.write("})\n\n")
 
         for _, collected_type in self.collected_types.items():
             if not collected_type.abstract:
