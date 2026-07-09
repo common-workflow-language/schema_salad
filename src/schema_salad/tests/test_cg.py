@@ -18,7 +18,10 @@ def test_load() -> None:
         "fields": [{"name": "hello", "doc": "Hello test case", "type": "string"}],
     }
     rs = cg_metaschema.RecordSchema.fromDoc(
-        doc, "http://example.com/", LoadingOptions(no_link_check=True)
+        doc,
+        "http://example.com/",
+        LoadingOptions(no_link_check=True),
+        cg_metaschema.RecordSchemaFieldLoaders,
     )
     assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
@@ -39,7 +42,9 @@ def test_load() -> None:
 def test_err() -> None:
     doc = {"doc": "Hello test case", "type": "string"}
     with pytest.raises(ValidationException):
-        cg_metaschema.RecordField.fromDoc(doc, "", LoadingOptions())
+        cg_metaschema.RecordField.fromDoc(
+            doc, "", LoadingOptions(), cg_metaschema.RecordFieldFieldLoaders
+        )
 
 
 def test_include() -> None:
@@ -49,6 +54,7 @@ def test_include() -> None:
         doc,
         "http://example.com/",
         LoadingOptions(fileuri=path_uri, no_link_check=True),
+        cg_metaschema.DocumentationFieldLoaders,
     )
     assert "http://example.com/#hello" == rf.name
     assert ["hello world!\n"] == rf.doc
@@ -64,7 +70,10 @@ def test_import() -> None:
     doc = {"type": "record", "fields": [{"$import": "hellofield.yml"}]}
     lead = get_data_uri("tests")
     rs = cg_metaschema.RecordSchema.fromDoc(
-        doc, "http://example.com/", LoadingOptions(fileuri=lead + "/_")
+        doc,
+        "http://example.com/",
+        LoadingOptions(fileuri=lead + "/_"),
+        cg_metaschema.RecordSchemaFieldLoaders,
     )
     assert "record" == rs.type_
     assert rs.fields and lead + "/hellofield.yml#hello" == rs.fields[0].name
@@ -109,7 +118,9 @@ def test_err2() -> None:
         "fields": [{"name": "hello", "doc": "Hello test case", "type": "string"}],
     }
     with pytest.raises(ValidationException):
-        cg_metaschema.RecordSchema.fromDoc(doc, "", LoadingOptions())
+        cg_metaschema.RecordSchema.fromDoc(
+            doc, "", LoadingOptions(), cg_metaschema.RecordSchemaFieldLoaders
+        )
 
 
 def test_idmap() -> None:
@@ -118,7 +129,10 @@ def test_idmap() -> None:
         "fields": {"hello": {"doc": "Hello test case", "type": "string"}},
     }
     rs = cg_metaschema.RecordSchema.fromDoc(
-        doc, "http://example.com/", LoadingOptions(no_link_check=True)
+        doc,
+        "http://example.com/",
+        LoadingOptions(no_link_check=True),
+        cg_metaschema.RecordSchemaFieldLoaders,
     )
     assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
@@ -139,7 +153,10 @@ def test_idmap() -> None:
 def test_idmap2() -> None:
     doc = {"type": "record", "fields": {"hello": "string"}}
     rs = cg_metaschema.RecordSchema.fromDoc(
-        doc, "http://example.com/", LoadingOptions(no_link_check=True)
+        doc,
+        "http://example.com/",
+        LoadingOptions(no_link_check=True),
+        cg_metaschema.RecordSchemaFieldLoaders,
     )
     assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name

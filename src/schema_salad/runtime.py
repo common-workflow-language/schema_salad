@@ -13,7 +13,7 @@ import sys
 import tempfile
 import xml.sax  # nosec
 from abc import ABCMeta, abstractmethod
-from collections.abc import MutableMapping, MutableSequence
+from collections.abc import MutableMapping, MutableSequence, Mapping
 from typing import Any, Final, TypeAlias, cast, TypeVar
 from urllib.parse import quote, urlparse, urlsplit
 from urllib.request import pathname2url
@@ -32,6 +32,21 @@ else:
 _logger: Final = logging.getLogger("salad")
 
 IdxType: TypeAlias = MutableMapping[str, tuple[Any, "LoadingOptions"]]
+
+
+class Loader(metaclass=ABCMeta):
+    """Base class for loading Python objects from SALAD documents."""
+
+    @abstractmethod
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: str | None = None,
+        lc: Any | None = None,
+    ) -> Any | None:
+        """Load a Python object from a dictionary."""
 
 
 class LoadingOptions:
@@ -201,6 +216,7 @@ class Saveable(metaclass=ABCMeta):
         _doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
+        loaders: Mapping[str, Loader],
         docRoot: str | None = None,
     ) -> Self:
         """Construct this object from the result of yaml.load()."""

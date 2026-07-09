@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import copy
-from collections.abc import MutableSequence, Sequence, MutableMapping
+from collections.abc import MutableSequence, Sequence, MutableMapping, Mapping
 from io import StringIO
 from itertools import chain
 from typing import Any, Final, cast, Generic
@@ -17,6 +17,7 @@ from schema_salad.runtime import (
     convert_typing,
     extract_type,
     SaveableType,
+    Loader,
 )
 from schema_salad.sourceline import SourceLine, add_lc_filename
 from schema_salad.utils import yaml_no_ts  # requires schema-salad v8.2+
@@ -25,19 +26,7 @@ _vocab: Final[dict[str, str]] = {}
 _rvocab: Final[dict[str, str]] = {}
 
 
-class _Loader:
-    def load(
-        self,
-        doc: Any,
-        baseuri: str,
-        loadingOptions: LoadingOptions,
-        docRoot: str | None = None,
-        lc: Any | None = None,
-    ) -> Any | None:
-        pass
-
-
-class _AnyLoader(_Loader):
+class _AnyLoader(Loader):
     def load(
         self,
         doc: Any,
@@ -51,7 +40,7 @@ class _AnyLoader(_Loader):
         raise ValidationException("Expected non-null")
 
 
-class _PrimitiveLoader(_Loader):
+class _PrimitiveLoader(Loader):
     def __init__(self, tp: type | tuple[type[str], type[str]]) -> None:
         self.tp: Final = tp
 
@@ -71,8 +60,8 @@ class _PrimitiveLoader(_Loader):
         return str(self.tp)
 
 
-class _ArrayLoader(_Loader):
-    def __init__(self, items: _Loader) -> None:
+class _ArrayLoader(Loader):
+    def __init__(self, items: Loader) -> None:
         self.items: Final = items
 
     def load(
@@ -128,10 +117,10 @@ class _ArrayLoader(_Loader):
         return f"array<{self.items}>"
 
 
-class _MapLoader(_Loader):
+class _MapLoader(Loader):
     def __init__(
         self,
-        values: _Loader,
+        values: Loader,
         name: str | None = None,
         container: str | None = None,
         no_link_check: bool | None = None,
@@ -171,7 +160,7 @@ class _MapLoader(_Loader):
         return self.name if self.name is not None else f"map<string, {self.values}>"
 
 
-class _EnumLoader(_Loader):
+class _EnumLoader(Loader):
     def __init__(self, symbols: Sequence[str], name: str) -> None:
         self.symbols: Final = symbols
         self.name: Final = name
@@ -192,8 +181,8 @@ class _EnumLoader(_Loader):
         return self.name
 
 
-class _SecondaryDSLLoader(_Loader):
-    def __init__(self, inner: _Loader) -> None:
+class _SecondaryDSLLoader(Loader):
+    def __init__(self, inner: Loader) -> None:
         self.inner: Final = inner
 
     def load(
@@ -265,14 +254,16 @@ class _SecondaryDSLLoader(_Loader):
         return self.inner.load(r, baseuri, loadingOptions, docRoot, lc=lc)
 
 
-class _RecordLoader(_Loader, Generic[SaveableType]):
+class _RecordLoader(Loader, Generic[SaveableType]):
     def __init__(
         self,
         classtype: type[SaveableType],
+        loaders: Mapping[str, Loader],
         container: str | None = None,
         no_link_check: bool | None = None,
     ) -> None:
         self.classtype: Final = classtype
+        self.loaders: Final = loaders
         self.container: Final = container
         self.no_link_check: Final = no_link_check
 
@@ -293,13 +284,13 @@ class _RecordLoader(_Loader, Generic[SaveableType]):
             loadingOptions = LoadingOptions(
                 copyfrom=loadingOptions, container=self.container, no_link_check=self.no_link_check
             )
-        return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
+        return self.classtype.fromDoc(doc, baseuri, loadingOptions, self.loaders, docRoot=docRoot)
 
     def __repr__(self) -> str:
         return str(self.classtype.__name__)
 
 
-class _ExpressionLoader(_Loader):
+class _ExpressionLoader(Loader):
     def __init__(self, items: type[str]) -> None:
         self.items: Final = items
 
@@ -320,12 +311,12 @@ class _ExpressionLoader(_Loader):
             return doc
 
 
-class _UnionLoader(_Loader):
-    def __init__(self, alternates: Sequence[_Loader], name: str | None = None) -> None:
+class _UnionLoader(Loader):
+    def __init__(self, alternates: Sequence[Loader], name: str | None = None) -> None:
         self.alternates = alternates
         self.name: Final = name
 
-    def add_loaders(self, loaders: Sequence[_Loader]) -> None:
+    def add_loaders(self, loaders: Sequence[Loader]) -> None:
         self.alternates = tuple(loader for loader in chain(self.alternates, loaders))
 
     def load(
@@ -410,10 +401,10 @@ class _UnionLoader(_Loader):
         return self.name if self.name is not None else " | ".join(str(a) for a in self.alternates)
 
 
-class _URILoader(_Loader):
+class _URILoader(Loader):
     def __init__(
         self,
-        inner: _Loader,
+        inner: Loader,
         scoped_id: bool,
         vocab_term: bool,
         scoped_ref: int | None,
@@ -479,10 +470,10 @@ class _URILoader(_Loader):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
-class _TypeDSLLoader(_Loader):
+class _TypeDSLLoader(Loader):
     def __init__(
         self,
-        inner: _Loader,
+        inner: Loader,
         refScope: int | None,
         salad_version: str,
     ) -> None:
@@ -575,8 +566,8 @@ class _TypeDSLLoader(_Loader):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
-class _IdMapLoader(_Loader):
-    def __init__(self, inner: _Loader, mapSubject: str, mapPredicate: str | None) -> None:
+class _IdMapLoader(Loader):
+    def __init__(self, inner: Loader, mapSubject: str, mapPredicate: str | None) -> None:
         self.inner: Final = inner
         self.mapSubject: Final = mapSubject
         self.mapPredicate: Final = mapPredicate
@@ -615,7 +606,7 @@ class _IdMapLoader(_Loader):
 
 
 def _document_load(
-    loader: _Loader,
+    loader: Loader,
     doc: str | MutableMapping[str, Any] | MutableSequence[Any],
     baseuri: str,
     loadingOptions: LoadingOptions,
@@ -685,7 +676,7 @@ def _document_load(
 
 
 def _document_load_by_url(
-    loader: _Loader,
+    loader: Loader,
     url: str,
     loadingOptions: LoadingOptions,
     addl_metadata_fields: MutableSequence[str] | None = None,
@@ -785,7 +776,7 @@ def _expand_url(
 
 def _load_field(
     val: Any | None,
-    fieldtype: "_Loader",
+    fieldtype: Loader,
     baseuri: str,
     loadingOptions: LoadingOptions,
     lc: Any | None = None,
