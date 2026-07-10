@@ -5,7 +5,7 @@ from collections.abc import MutableSequence
 from importlib.resources import files
 from io import StringIO
 from types import ModuleType
-from typing import Final, Any, IO
+from typing import Final, Any, IO, cast
 
 try:
     black: ModuleType | None
@@ -95,8 +95,6 @@ class PythonCodeGen(CodeGenBase):
         super().__init__()
         self.out: Final = out
         self.current_class_is_abstract = False
-        self.current_class_is_inherited = False
-        self.current_field_loaders: dict[str, str] = {}
         self.serializer = StringIO()
         self.idfield = ""
         self.copyright: Final = copyright
@@ -189,12 +187,9 @@ else:
         idfield: str,
         optional_fields: set[str],
     ) -> None:
-        self.current_field_loaders = {}
         if (classname := self.safe_name(classname)) in self.inherited_classes:
-            self.current_class_is_inherited = True
+            self.current_class_is_abstract = True
             return
-        else:
-            self.current_class_is_inherited = False
         self.current_class_is_abstract = abstract
 
         if extends:
@@ -304,8 +299,8 @@ else:
         doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        loaders: Mapping[str, Loader],
-        docRoot: str | None = None
+        docRoot: str | None = None,
+        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         _doc = copy.copy(doc)
 
@@ -334,19 +329,6 @@ else:
     def end_class(self, classname: str, field_names: list[str]) -> None:
         """Signal that we are done with this class."""
         if self.current_class_is_abstract:
-            return
-
-        self.add_lazy_init(
-            LazyInitDef(
-                self.safe_name(classname) + "FieldLoaders",
-                "{}.update({{{}}})".format(
-                    self.safe_name(classname) + "FieldLoaders",
-                    ", ".join(f'"{k}": {v}' for k, v in self.current_field_loaders.items()),
-                ),
-            )
-        )
-
-        if self.current_class_is_inherited:
             return
 
         self.out.write(
@@ -444,14 +426,28 @@ if _errors__:
                         "_UnionLoader(({},))".format(", ".join(sub_names1)),
                     )
                 )
-            case {"type": "array" | "https://w3id.org/cwl/salad#array", "items": items}:
+            case {"type": "array" | "https://w3id.org/cwl/salad#array", "items": items, **rest}:
                 i1: Final = self.type_loader(items)
-                return self.declare_type(
-                    TypeDef(
-                        f"array_of_{i1.name}",
-                        f"_ArrayLoader({i1.name})",
+                if "original_items" in rest:
+                    self.declare_type(
+                        TypeDef(
+                            f"array_of_{i1.name}",
+                            f"_ArrayLoader({i1.name})",
+                        )
                     )
-                )
+                    return self.declare_type(
+                        TypeDef(
+                            f"array_of_{self.safe_name(shortname(cast(str, rest['original_items'])))}",
+                            f"array_of_{i1.name}",
+                        )
+                    )
+                else:
+                    return self.declare_type(
+                        TypeDef(
+                            f"array_of_{i1.name}",
+                            f"_ArrayLoader({i1.name})",
+                        )
+                    )
             case {"type": "map" | "https://w3id.org/cwl/salad#map", "values": values, **rest}:
                 i2: Final = self.type_loader(values)
                 name = self.safe_name(str(rest["name"])) if "name" in rest else None
@@ -466,6 +462,13 @@ if _errors__:
                         ),
                     )
                 )
+                if "original_values" in rest:
+                    anon_type = self.declare_type(
+                        TypeDef(
+                            f"map_of_{self.safe_name(shortname(cast(str, rest['original_values'])))}",
+                            anon_type.name,
+                        )
+                    )
                 if "name" in rest:
                     return self.declare_type(
                         TypeDef(self.safe_name(str(rest["name"])) + "Loader", anon_type.name)
@@ -504,19 +507,11 @@ if _errors__:
                 classname = self.safe_name(name)
                 if (prefix := name.split("#")[0]) in self.parents_map:
                     self.inherited_classes[classname] = f"{self.parents_map[prefix]}.{classname}"
-                self.declare_type(
-                    TypeDef(
-                        classname + "FieldLoaders",
-                        "{}",
-                        instance_type="MutableMapping[str, Loader]",
-                    )
-                )
                 return self.declare_type(
                     TypeDef(
                         classname + "Loader",
-                        "_RecordLoader({}, {}, {}, {})".format(
+                        "_RecordLoader({}, {}, {})".format(
                             self.inherited_classes.get(classname, classname),
-                            classname + "FieldLoaders",
                             f"'{container}'" if container is not None else None,  # noqa: B907
                             no_link_check,
                         ),
@@ -573,9 +568,6 @@ if _errors__:
 
         self.declare_field(name, fieldtype, doc, True, "")
 
-        if self.current_class_is_inherited:
-            return
-
         if optional:
             opt = """{safename} = "_:" + str(_uuid__.uuid4())""".format(
                 safename=self.safe_name(name)
@@ -605,11 +597,6 @@ if _errors__:
         subscope: str | None,
     ) -> None:
         if self.current_class_is_abstract:
-            return
-
-        self.current_field_loaders[shortname(name)] = fieldtype.name
-
-        if self.current_class_is_inherited:
             return
 
         if optional:
@@ -644,7 +631,7 @@ if _errors__:
         self.out.write(
             """{spc}            {safename} = _load_field(
 {spc}                _doc.get("{fieldname}"),
-{spc}                loaders["{fieldname}"],
+{spc}                loaders["{fieldtype}"],
 {spc}                {baseurivar},
 {spc}                loadingOptions,
 {spc}                lc=_doc.get("{fieldname}")
@@ -652,6 +639,7 @@ if _errors__:
 """.format(
                 safename=self.safe_name(name),
                 fieldname=shortname(name),
+                fieldtype=fieldtype.name,
                 baseurivar=baseurivar,
                 spc=spc,
             )
@@ -850,6 +838,12 @@ if self.{safename} is not None:
                 )
                 self.out.write(fmt(f"{collected_type.name}: {type_} = {collected_type.init}\n", 0))
         self.out.write("\n")
+
+        self.out.write("_loaders.update({\n")
+        for _, collected_type in self.collected_types.items():
+            if not collected_type.abstract:
+                self.out.write(f'    "{collected_type.name}": {collected_type.name},\n')
+        self.out.write("})\n\n")
 
         if self.lazy_inits:
             for lazy_init in self.lazy_inits.values():

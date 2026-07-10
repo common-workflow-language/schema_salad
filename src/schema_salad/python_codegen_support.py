@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import copy
-from collections.abc import MutableSequence, Sequence, MutableMapping, Mapping
+from collections.abc import MutableSequence, Sequence, MutableMapping
 from io import StringIO
 from itertools import chain
 from typing import Any, Final, cast, Generic
@@ -22,6 +22,7 @@ from schema_salad.runtime import (
 from schema_salad.sourceline import SourceLine, add_lc_filename
 from schema_salad.utils import yaml_no_ts  # requires schema-salad v8.2+
 
+_loaders: Final[dict[str, Loader]] = {}
 _vocab: Final[dict[str, str]] = {}
 _rvocab: Final[dict[str, str]] = {}
 
@@ -258,12 +259,10 @@ class _RecordLoader(Loader, Generic[SaveableType]):
     def __init__(
         self,
         classtype: type[SaveableType],
-        loaders: Mapping[str, Loader],
         container: str | None = None,
         no_link_check: bool | None = None,
     ) -> None:
         self.classtype: Final = classtype
-        self.loaders: Final = loaders
         self.container: Final = container
         self.no_link_check: Final = no_link_check
 
@@ -284,7 +283,9 @@ class _RecordLoader(Loader, Generic[SaveableType]):
             loadingOptions = LoadingOptions(
                 copyfrom=loadingOptions, container=self.container, no_link_check=self.no_link_check
             )
-        return self.classtype.fromDoc(doc, baseuri, loadingOptions, self.loaders, docRoot=docRoot)
+        return self.classtype.fromDoc(
+            doc, baseuri, loadingOptions, docRoot=docRoot, loaders=_loaders
+        )
 
     def __repr__(self) -> str:
         return str(self.classtype.__name__)
