@@ -1,3 +1,4 @@
+import importlib.machinery
 import inspect
 import os
 from pathlib import Path
@@ -32,7 +33,7 @@ def test_cwl_gen(tmp_path: Path) -> None:
         content = f.read()
     assert "class ArraySchema(Saveable)" in content
     assert "class CWLArraySchema(ArraySchema)" in content
-    assert "class Workflow(Saveable)" in content
+    assert "class Workflow(Process)" in content
     assert (
         "EnumSchemaLoader: Final[Loader[EnumSchema]] = _RecordLoader(EnumSchema, None, None)"
         in content
@@ -51,15 +52,14 @@ def test_cwl_gen_with_inheritance(tmp_path: Path) -> None:
     with open(src_target) as f:
         content = f.read()
     assert "class CWLArraySchema(schema_salad.metaschema.ArraySchema)" in content
-    assert "class Workflow(Saveable)" in content
+    assert "class Workflow(Process)" in content
     assert (
         "EnumSchemaLoader: Final[Loader[EnumSchema]] = _RecordLoader(EnumSchema, None, None)"
         not in content
     )
-    assert (
-        "EnumSchemaLoader: Final[Loader[schema_salad.metaschema.EnumSchema]] = _RecordLoader(schema_salad.metaschema.EnumSchema, None, None)"
-        in content
-    )
+    assert """EnumSchemaLoader: Final[Loader[schema_salad.metaschema.EnumSchema]] = _RecordLoader(
+    schema_salad.metaschema.EnumSchema, None, None
+)""" in content
 
 
 def test_meta_schema_gen(tmp_path: Path) -> None:
@@ -74,8 +74,9 @@ def test_meta_schema_gen_up_to_date(tmp_path: Path) -> None:
     src_target = tmp_path / "src.py"
     python_codegen(metaschema_file_uri, src_target)
     assert os.path.exists(src_target)
-    with open(src_target) as f:
-        assert f.read() == inspect.getsource(cg_metaschema)
+    if not isinstance(cg_metaschema.__loader__, importlib.machinery.ExtensionFileLoader):
+        with open(src_target) as f:
+            assert f.read() == inspect.getsource(cg_metaschema)
 
 
 def test_meta_schema_gen_no_base(tmp_path: Path) -> None:

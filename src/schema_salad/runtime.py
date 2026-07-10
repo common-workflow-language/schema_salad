@@ -13,7 +13,7 @@ import sys
 import tempfile
 import xml.sax  # nosec
 from abc import ABCMeta, abstractmethod
-from collections.abc import MutableMapping, MutableSequence, Mapping
+from collections.abc import MutableMapping, MutableSequence
 from typing import Any, Final, TypeAlias, cast, TypeVar, Generic
 from urllib.parse import quote, urlparse, urlsplit
 from urllib.request import pathname2url
@@ -37,7 +37,7 @@ FieldType = TypeVar("FieldType", covariant=True)
 IdxType: TypeAlias = MutableMapping[str, tuple[Any, "LoadingOptions"]]
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class Loader(Generic[FieldType], metaclass=ABCMeta):
     """Base class for loading Python objects from SALAD documents."""
 
@@ -71,7 +71,7 @@ class LoadingOptions:
     includes: Final[list[str]]
     no_link_check: Final[bool | None]
     container: Final[str | None]
-    loaders: Final[dict[str, Loader | None]]
+    loaders: Final[dict[str, Loader[Any] | None]]
 
     def __init__(
         self,
@@ -88,7 +88,7 @@ class LoadingOptions:
         includes: list[str] | None = None,
         no_link_check: bool | None = None,
         container: str | None = None,
-        loaders: dict[str, Loader | None] | None = None,
+        loaders: dict[str, Loader[Any] | None] | None = None,
     ) -> None:
         """Create a LoadingOptions object."""
         self.original_doc = original_doc
@@ -218,7 +218,7 @@ class LoadingOptions:
         return graph
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class Saveable(metaclass=ABCMeta):
     """Mark classes than have a save() and fromDoc() function."""
 

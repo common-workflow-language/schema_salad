@@ -2,7 +2,6 @@
 
 import textwrap
 from collections.abc import MutableSequence
-from graphlib import TopologicalSorter
 from importlib.resources import files
 from io import StringIO
 from types import ModuleType
@@ -127,7 +126,6 @@ class PythonCodeGen(CodeGenBase):
         self.parser_info: Final = parser_info
         self.salad_version: Final = salad_version
         self.inherited_classes: dict[str, str] = {}
-        self.subclasses: dict[str, list[str]] = {}
 
     @staticmethod
     def safe_name(name: str) -> str:
@@ -213,28 +211,26 @@ else:
         idfield: str,
         optional_fields: set[str],
     ) -> None:
-        classname = self.safe_name(classname)
         self.current_optional_fields = optional_fields
         self.current_fieldtypes: dict[str, TypeDef] = {}
-        self.current_class_is_abstract = classname in self.inherited_classes or abstract
-
-        if self.current_class_is_abstract:
-            self.subclasses[classname] = []
-
-        parents = []
-        for ext in extends:
-            safe_ext = self.inherited_classes.get(self.safe_name(ext), self.safe_name(ext))
-            if safe_ext in self.subclasses:
-                self.subclasses[safe_ext].append(classname)
-            else:
-                parents.append(safe_ext)
-
-        if self.current_class_is_abstract:
+        if (classname := self.safe_name(classname)) in self.inherited_classes:
+            self.current_class_is_abstract = True
             return
+        self.current_class_is_abstract = abstract
 
-        ext = ", ".join(parents) if parents else "Saveable"
+        if extends:
+            ext = ", ".join(
+                self.inherited_classes.get(self.safe_name(e), self.safe_name(e)) for e in extends
+            )
+        else:
+            ext = "Saveable"
+
         self.out.write(
-            fmt(f"@mypyc_attr(native_class=True)\nclass {classname}({ext}):\n    pass", 0)[:-9]
+            fmt(
+                "@mypyc_attr(native_class=True, "
+                f"allow_interpreted_subclasses=True)\nclass {classname}({ext}):\n    pass",
+                0,
+            )[:-9]
         )
         # make a valid class for Black, but then trim off the "pass"
 
@@ -242,6 +238,10 @@ else:
             self.out.write(fmt(f'"""\n{md_to_rst(doc)}\n"""\n', 4) + "\n")
 
         self.serializer = StringIO()
+
+        if self.current_class_is_abstract:
+            self.out.write("    pass\n\n\n")
+            return
 
         self.idfield = self.safe_name(idfield) if idfield != "" else None
         if self.idfield is not None:
@@ -602,7 +602,8 @@ if _errors__:
                 return self.declare_type(
                     TypeDef(
                         name=self.safe_name(name) + "Loader",
-                        init='_EnumLoader(("{}",), "{}"){}'.format(
+                        init='_EnumLoader[{}](("{}",), "{}"){}'.format(
+                            self.safe_name(name),
                             '", "'.join(sym_names),
                             self.safe_name(name),
                             docstring,
@@ -953,7 +954,7 @@ if self.{safename} is not None:
         return self.declare_type(
             TypeDef(
                 name=f"typedsl_{self.safe_name(inner.name)}_{ref_scope}",
-                init=f"_TypeDSLLoader({self.safe_name(inner.name)}, {ref_scope}, "  # noqa: B907
+                init=f"_TypeDSLLoader[{inner.instance_type}]({self.safe_name(inner.name)}, {ref_scope}, "  # noqa: B907
                 f"'{self.salad_version}')",  # noqa: B907
                 instance_type=inner.instance_type,
                 loader_type=inner.loader_type,
@@ -1014,18 +1015,6 @@ if self.{safename} is not None:
                 if lazy_init.instance_type is not None:
                     self.out.write(fmt(f"{lazy_init.instance_type}", 0))
                     self.out.write("\n")
-
-            if abstract_classes := [
-                e for e in TopologicalSorter(self.subclasses).static_order() if e in self.subclasses
-            ]:
-                for class_ in abstract_classes:
-                    if self.subclasses[class_]:
-                        self.out.write(
-                            fmt(
-                                f"{class_}: TypeAlias = {' | '.join(sorted(self.subclasses[class_]))}",
-                                0,
-                            )
-                        )
             self.out.write("\n")
 
         self.out.write(

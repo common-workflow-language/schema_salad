@@ -50,12 +50,12 @@ from schema_salad.runtime import (
 from schema_salad.sourceline import SourceLine, add_lc_filename
 from schema_salad.utils import yaml_no_ts  # requires schema-salad v8.2+
 
-_loaders: Final[dict[str, Loader | None]] = {}
+_loaders: Final[dict[str, Loader[Any] | None]] = {}
 _vocab: Final[dict[str, str]] = {}
 _rvocab: Final[dict[str, str]] = {}
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _AnyLoader(Loader[Any]):
     def load(
         self,
@@ -70,7 +70,7 @@ class _AnyLoader(Loader[Any]):
         raise ValidationException("Expected non-null")
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _PrimitiveLoader(Loader[FieldType]):
     def __init__(self, tp: type[FieldType]) -> None:
         self.tp: Final = tp
@@ -91,7 +91,7 @@ class _PrimitiveLoader(Loader[FieldType]):
         return str(self.tp)
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _ArrayLoader(Loader[Sequence[FieldType]]):
     def __init__(self, items: Loader[FieldType]) -> None:
         self.items: Final = items
@@ -149,7 +149,7 @@ class _ArrayLoader(Loader[Sequence[FieldType]]):
         return f"array<{self.items}>"
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _MapLoader(Loader[Mapping[str, FieldType]]):
     def __init__(
         self,
@@ -193,9 +193,9 @@ class _MapLoader(Loader[Mapping[str, FieldType]]):
         return self.name if self.name is not None else f"map<string, {self.values}>"
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _EnumLoader(Loader[EnumFieldType]):
-    def __init__(self, symbols: Sequence[str], name: str) -> None:
+    def __init__(self, symbols: tuple[EnumFieldType, ...], name: str) -> None:
         self.symbols: Final = symbols
         self.name: Final = name
 
@@ -215,7 +215,7 @@ class _EnumLoader(Loader[EnumFieldType]):
         return self.name
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _SecondaryDSLLoader(Loader[FieldType]):
     def __init__(self, inner: Loader[FieldType]) -> None:
         self.inner: Final = inner
@@ -289,7 +289,7 @@ class _SecondaryDSLLoader(Loader[FieldType]):
         return self.inner.load(r, baseuri, loadingOptions, docRoot, lc=lc)
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _RecordLoader(Loader[SaveableType]):
     def __init__(
         self,
@@ -324,7 +324,7 @@ class _RecordLoader(Loader[SaveableType]):
         return str(self.classtype.__name__)
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _ExpressionLoader(Loader[str]):
     def __init__(self, items: type[str]) -> None:
         self.items: Final = items
@@ -346,7 +346,7 @@ class _ExpressionLoader(Loader[str]):
             return doc
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _UnionLoader(Loader[FieldType]):
     def __init__(self, alternates: Sequence[Loader[FieldType]], name: str | None = None) -> None:
         self.alternates = alternates
@@ -437,7 +437,7 @@ class _UnionLoader(Loader[FieldType]):
         return self.name if self.name is not None else " | ".join(str(a) for a in self.alternates)
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _URILoader(Loader[FieldType]):
     def __init__(
         self,
@@ -507,7 +507,7 @@ class _URILoader(Loader[FieldType]):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _TypeDSLLoader(Loader[FieldType]):
     def __init__(
         self,
@@ -604,7 +604,7 @@ class _TypeDSLLoader(Loader[FieldType]):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _IdMapLoader(Loader[FieldType]):
     def __init__(self, inner: Loader[FieldType], mapSubject: str, mapPredicate: str | None) -> None:
         self.inner: Final = inner
@@ -644,7 +644,7 @@ class _IdMapLoader(Loader[FieldType]):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
-class _ProxyLoader(Loader):
+class _ProxyLoader(Loader[FieldType]):
     def __init__(self, name: str) -> None:
         self.name: Final = name
 
@@ -655,14 +655,14 @@ class _ProxyLoader(Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> Any | None:
+    ) -> FieldType:
         if (
             self.name in loadingOptions.loaders
             and (loader := loadingOptions.loaders.get(self.name)) is not None
         ):
-            return loader.load(doc, baseuri, loadingOptions, lc=lc)
+            return cast(Loader[FieldType], loader).load(doc, baseuri, loadingOptions, lc=lc)
         elif self.name in _loaders and (loader := _loaders.get(self.name)) is not None:
-            return loader.load(doc, baseuri, loadingOptions, lc=lc)
+            return cast(Loader[FieldType], loader).load(doc, baseuri, loadingOptions, lc=lc)
         else:
             raise ValidationException(f"No Loader instance available for {self.name}")
 
@@ -870,8 +870,13 @@ def parser_info() -> str:
     return "org.w3id.cwl.salad"
 
 
-@mypyc_attr(native_class=True)
-class RecordField(Saveable):
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class Documented(Saveable):
+    pass
+
+
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class RecordField(Documented):
     """
     A field of a record.
 
@@ -1194,7 +1199,7 @@ class RecordField(Saveable):
     attrs: ClassVar[Collection[str]] = frozenset(["doc", "name", "type"])
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class RecordSchema(Saveable):
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, RecordSchema):
@@ -1394,7 +1399,7 @@ class RecordSchema(Saveable):
     attrs: ClassVar[Collection[str]] = frozenset(["fields", "type"])
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class EnumSchema(Saveable):
     """
     Define an enumerated type.
@@ -1717,7 +1722,7 @@ class EnumSchema(Saveable):
     attrs: ClassVar[Collection[str]] = frozenset(["name", "symbols", "type"])
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class ArraySchema(Saveable):
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, ArraySchema):
@@ -1917,7 +1922,7 @@ class ArraySchema(Saveable):
     attrs: ClassVar[Collection[str]] = frozenset(["items", "type"])
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class MapSchema(Saveable):
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, MapSchema):
@@ -2117,7 +2122,7 @@ class MapSchema(Saveable):
     attrs: ClassVar[Collection[str]] = frozenset(["type", "values"])
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class UnionSchema(Saveable):
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, UnionSchema):
@@ -2317,7 +2322,7 @@ class UnionSchema(Saveable):
     attrs: ClassVar[Collection[str]] = frozenset(["names", "type"])
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class JsonldPredicate(Saveable):
     """
     Attached to a record field to define how the parent record field is handled for URI resolution and JSON-LD context generation.
@@ -3061,7 +3066,7 @@ class JsonldPredicate(Saveable):
     )
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class SpecializeDef(Saveable):
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, SpecializeDef):
@@ -3265,7 +3270,27 @@ class SpecializeDef(Saveable):
     attrs: ClassVar[Collection[str]] = frozenset(["specializeFrom", "specializeTo"])
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class NamedType(Saveable):
+    pass
+
+
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class DocType(Documented):
+    pass
+
+
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class SchemaDefinedType(DocType):
+    """
+    Abstract base for schema-defined types.
+
+    """
+
+    pass
+
+
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class SaladRecordField(RecordField):
     """
     A field of a record.
@@ -3706,8 +3731,8 @@ class SaladRecordField(RecordField):
     )
 
 
-@mypyc_attr(native_class=True)
-class SaladRecordSchema(RecordSchema):
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
     name: str
 
     def __eq__(self, other: Any) -> bool:
@@ -4615,8 +4640,8 @@ class SaladRecordSchema(RecordSchema):
     )
 
 
-@mypyc_attr(native_class=True)
-class SaladEnumSchema(EnumSchema):
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
     """
     Define an enumerated type.
 
@@ -5408,8 +5433,8 @@ class SaladEnumSchema(EnumSchema):
     )
 
 
-@mypyc_attr(native_class=True)
-class SaladMapSchema(MapSchema):
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
     """
     Define a map type.
 
@@ -6146,8 +6171,8 @@ class SaladMapSchema(MapSchema):
     )
 
 
-@mypyc_attr(native_class=True)
-class SaladUnionSchema(UnionSchema):
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class SaladUnionSchema(NamedType, UnionSchema, DocType):
     """
     Define a union type.
 
@@ -6824,8 +6849,8 @@ class SaladUnionSchema(UnionSchema):
     )
 
 
-@mypyc_attr(native_class=True)
-class Documentation(Saveable):
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class Documentation(NamedType, DocType):
     """
     A documentation section.  This type exists to facilitate self-documenting schemas but has no role in formal validation.
 
@@ -7459,7 +7484,7 @@ DocumentedProxyLoader: Final[Loader[Documented]] = _ProxyLoader("DocumentedLoade
 PrimitiveType: TypeAlias = Literal[
     "null", "boolean", "int", "long", "float", "double", "string"
 ]
-PrimitiveTypeLoader: Final[Loader[PrimitiveType]] = _EnumLoader(
+PrimitiveTypeLoader: Final[Loader[PrimitiveType]] = _EnumLoader[PrimitiveType](
     (
         "null",
         "boolean",
@@ -7491,7 +7516,7 @@ double: double precision (64-bit) IEEE 754 floating-point number
 string: Unicode character sequence
 """
 Any_: TypeAlias = Literal["Any"]
-Any_Loader: Final[Loader[Any_]] = _EnumLoader(("Any",), "Any_")
+Any_Loader: Final[Loader[Any_]] = _EnumLoader[Any_](("Any",), "Any_")
 """
 The **Any** type validates for any non-null value.
 """
@@ -7631,7 +7656,24 @@ typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_o
         | UnionSchema
         | str
     ]
-] = _TypeDSLLoader(
+] = _TypeDSLLoader[
+    ArraySchema
+    | EnumSchema
+    | MapSchema
+    | PrimitiveType
+    | RecordSchema
+    | Sequence[
+        ArraySchema
+        | EnumSchema
+        | MapSchema
+        | PrimitiveType
+        | RecordSchema
+        | UnionSchema
+        | str
+    ]
+    | UnionSchema
+    | str
+](
     union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
     2,
     "v1.1",
@@ -7651,8 +7693,10 @@ idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader: Final[
     Loader[None | Sequence[RecordField]]
 ] = _IdMapLoader(union_of_None_type_or_array_of_RecordFieldLoader, "name", "type")
 Record_name: TypeAlias = Literal["record"]
-Record_nameLoader: Final[Loader[Record_name]] = _EnumLoader(("record",), "Record_name")
-typedsl_Record_nameLoader_2: Final[Loader[Record_name]] = _TypeDSLLoader(
+Record_nameLoader: Final[Loader[Record_name]] = _EnumLoader[Record_name](
+    ("record",), "Record_name"
+)
+typedsl_Record_nameLoader_2: Final[Loader[Record_name]] = _TypeDSLLoader[Record_name](
     Record_nameLoader, 2, "v1.1"
 )
 union_of_None_type_or_strtype: Final[Loader[None | str]] = _UnionLoader(
@@ -7668,8 +7712,10 @@ uri_array_of_strtype_True_False_None_None: Final[Loader[Sequence[str]]] = _URILo
     array_of_strtype, True, False, None, None
 )
 Enum_name: TypeAlias = Literal["enum"]
-Enum_nameLoader: Final[Loader[Enum_name]] = _EnumLoader(("enum",), "Enum_name")
-typedsl_Enum_nameLoader_2: Final[Loader[Enum_name]] = _TypeDSLLoader(
+Enum_nameLoader: Final[Loader[Enum_name]] = _EnumLoader[Enum_name](
+    ("enum",), "Enum_name"
+)
+typedsl_Enum_nameLoader_2: Final[Loader[Enum_name]] = _TypeDSLLoader[Enum_name](
     Enum_nameLoader, 2, "v1.1"
 )
 uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None: Final[
@@ -7699,18 +7745,22 @@ uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_Ar
     None,
 )
 Array_name: TypeAlias = Literal["array"]
-Array_nameLoader: Final[Loader[Array_name]] = _EnumLoader(("array",), "Array_name")
-typedsl_Array_nameLoader_2: Final[Loader[Array_name]] = _TypeDSLLoader(
+Array_nameLoader: Final[Loader[Array_name]] = _EnumLoader[Array_name](
+    ("array",), "Array_name"
+)
+typedsl_Array_nameLoader_2: Final[Loader[Array_name]] = _TypeDSLLoader[Array_name](
     Array_nameLoader, 2, "v1.1"
 )
 Map_name: TypeAlias = Literal["map"]
-Map_nameLoader: Final[Loader[Map_name]] = _EnumLoader(("map",), "Map_name")
-typedsl_Map_nameLoader_2: Final[Loader[Map_name]] = _TypeDSLLoader(
+Map_nameLoader: Final[Loader[Map_name]] = _EnumLoader[Map_name](("map",), "Map_name")
+typedsl_Map_nameLoader_2: Final[Loader[Map_name]] = _TypeDSLLoader[Map_name](
     Map_nameLoader, 2, "v1.1"
 )
 Union_name: TypeAlias = Literal["union"]
-Union_nameLoader: Final[Loader[Union_name]] = _EnumLoader(("union",), "Union_name")
-typedsl_Union_nameLoader_2: Final[Loader[Union_name]] = _TypeDSLLoader(
+Union_nameLoader: Final[Loader[Union_name]] = _EnumLoader[Union_name](
+    ("union",), "Union_name"
+)
+typedsl_Union_nameLoader_2: Final[Loader[Union_name]] = _TypeDSLLoader[Union_name](
     Union_nameLoader, 2, "v1.1"
 )
 union_of_None_type_or_booltype: Final[Loader[None | bool]] = _UnionLoader(
@@ -7785,12 +7835,12 @@ idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader: Final[
     union_of_None_type_or_array_of_SpecializeDefLoader, "specializeFrom", "specializeTo"
 )
 Documentation_name: TypeAlias = Literal["documentation"]
-Documentation_nameLoader: Final[Loader[Documentation_name]] = _EnumLoader(
-    ("documentation",), "Documentation_name"
-)
-typedsl_Documentation_nameLoader_2: Final[Loader[Documentation_name]] = _TypeDSLLoader(
-    Documentation_nameLoader, 2, "v1.1"
-)
+Documentation_nameLoader: Final[Loader[Documentation_name]] = _EnumLoader[
+    Documentation_name
+](("documentation",), "Documentation_name")
+typedsl_Documentation_nameLoader_2: Final[Loader[Documentation_name]] = _TypeDSLLoader[
+    Documentation_name
+](Documentation_nameLoader, 2, "v1.1")
 union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader: Final[
     Loader[
         Documentation
