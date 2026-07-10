@@ -37,7 +37,7 @@ FieldType = TypeVar("FieldType", covariant=True)
 IdxType: TypeAlias = MutableMapping[str, tuple[Any, "LoadingOptions"]]
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class Loader(Generic[FieldType], metaclass=ABCMeta):
     """Base class for loading Python objects from SALAD documents."""
 
@@ -218,7 +218,7 @@ class LoadingOptions:
         return graph
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class Saveable(metaclass=ABCMeta):
     """Mark classes than have a save() and fromDoc() function."""
 

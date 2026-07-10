@@ -7,11 +7,10 @@ from collections.abc import Mapping, Sequence, MutableSequence, MutableMapping
 from io import StringIO
 from itertools import chain
 from typing import Any, Final, cast
-from typing import Literal, TypeVar  # pylint: disable=unused-import # noqa: F401
-from typing import TypeAlias  # pylint: disable=unused-import # noqa: F401
+from typing import Literal, TypeAlias  # pylint: disable=unused-import # noqa: F401
 from urllib.parse import urldefrag, urlsplit, urlunsplit
 
-from mypy_extensions import i32, i64  # pylint: disable=unused-import # noqa: F401
+from mypy_extensions import i32, i64, trait  # pylint: disable=unused-import # noqa: F401
 from mypy_extensions import mypyc_attr
 from ruamel.yaml.comments import CommentedMap
 
@@ -33,7 +32,7 @@ _vocab: Final[dict[str, str]] = {}
 _rvocab: Final[dict[str, str]] = {}
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _AnyLoader(Loader[Any]):
     def load(
         self,
@@ -48,7 +47,7 @@ class _AnyLoader(Loader[Any]):
         raise ValidationException("Expected non-null")
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _PrimitiveLoader(Loader[FieldType]):
     def __init__(self, tp: type[FieldType]) -> None:
         self.tp: Final = tp
@@ -69,7 +68,7 @@ class _PrimitiveLoader(Loader[FieldType]):
         return str(self.tp)
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _ArrayLoader(Loader[Sequence[FieldType]]):
     def __init__(self, items: Loader[FieldType]) -> None:
         self.items: Final = items
@@ -127,7 +126,7 @@ class _ArrayLoader(Loader[Sequence[FieldType]]):
         return f"array<{self.items}>"
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _MapLoader(Loader[Mapping[str, FieldType]]):
     def __init__(
         self,
@@ -171,9 +170,9 @@ class _MapLoader(Loader[Mapping[str, FieldType]]):
         return self.name if self.name is not None else f"map<string, {self.values}>"
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _EnumLoader(Loader[EnumFieldType]):
-    def __init__(self, symbols: Sequence[str], name: str) -> None:
+    def __init__(self, symbols: tuple[EnumFieldType, ...], name: str) -> None:
         self.symbols: Final = symbols
         self.name: Final = name
 
@@ -193,7 +192,7 @@ class _EnumLoader(Loader[EnumFieldType]):
         return self.name
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _SecondaryDSLLoader(Loader[FieldType]):
     def __init__(self, inner: Loader[FieldType]) -> None:
         self.inner: Final = inner
@@ -267,7 +266,7 @@ class _SecondaryDSLLoader(Loader[FieldType]):
         return self.inner.load(r, baseuri, loadingOptions, docRoot, lc=lc)
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _RecordLoader(Loader[SaveableType]):
     def __init__(
         self,
@@ -302,7 +301,7 @@ class _RecordLoader(Loader[SaveableType]):
         return str(self.classtype.__name__)
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _ExpressionLoader(Loader[str]):
     def __init__(self, items: type[str]) -> None:
         self.items: Final = items
@@ -324,7 +323,7 @@ class _ExpressionLoader(Loader[str]):
             return doc
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _UnionLoader(Loader[FieldType]):
     def __init__(self, alternates: Sequence[Loader[FieldType]], name: str | None = None) -> None:
         self.alternates = alternates
@@ -415,7 +414,7 @@ class _UnionLoader(Loader[FieldType]):
         return self.name if self.name is not None else " | ".join(str(a) for a in self.alternates)
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _URILoader(Loader[FieldType]):
     def __init__(
         self,
@@ -485,7 +484,7 @@ class _URILoader(Loader[FieldType]):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _TypeDSLLoader(Loader[FieldType]):
     def __init__(
         self,
@@ -582,7 +581,7 @@ class _TypeDSLLoader(Loader[FieldType]):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _IdMapLoader(Loader[FieldType]):
     def __init__(self, inner: Loader[FieldType], mapSubject: str, mapPredicate: str | None) -> None:
         self.inner: Final = inner
@@ -622,7 +621,7 @@ class _IdMapLoader(Loader[FieldType]):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
-@mypyc_attr(native_class=True)
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class _ProxyLoader(Loader[FieldType]):
     def __init__(self, name: str) -> None:
         self.name: Final = name
