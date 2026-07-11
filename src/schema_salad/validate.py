@@ -328,6 +328,12 @@ def validate_ex(
                 avroname = None
                 if d in vocab:
                     avroname = avro_type_name(vocab[d])
+                elif ":" in d:
+                    prefix = d.split(":")[0]
+                    if prefix in vocab:
+                        d = vocab[prefix] + d[len(prefix) + 1 :]
+                        if d in vocab:
+                            avroname = avro_type_name(vocab[d])
                 if expected_schema.name not in (d, avroname):
                     if raise_ex:
                         raise ValidationException(
