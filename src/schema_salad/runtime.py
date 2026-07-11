@@ -67,6 +67,7 @@ class LoadingOptions:
     includes: Final[list[str]]
     no_link_check: Final[bool | None]
     container: Final[str | None]
+    loaders: Final[dict[str, Loader | None]]
 
     def __init__(
         self,
@@ -83,6 +84,7 @@ class LoadingOptions:
         includes: list[str] | None = None,
         no_link_check: bool | None = None,
         container: str | None = None,
+        loaders: dict[str, Loader | None] | None = None,
     ) -> None:
         """Create a LoadingOptions object."""
         self.original_doc = original_doc
@@ -147,6 +149,12 @@ class LoadingOptions:
             temp_container = copyfrom.container if copyfrom is not None else None
         self.container = temp_container
 
+        if loaders is not None:
+            loaders = loaders
+        else:
+            loaders = copyfrom.loaders if copyfrom is not None else {}
+        self.loaders = loaders
+
         if fetcher is not None:
             temp_fetcher = fetcher
         elif copyfrom is not None:
@@ -206,9 +214,6 @@ class LoadingOptions:
         return graph
 
 
-_loaders: Final[dict[str, Loader]] = {}
-
-
 class Saveable(metaclass=ABCMeta):
     """Mark classes than have a save() and fromDoc() function."""
 
@@ -220,7 +225,6 @@ class Saveable(metaclass=ABCMeta):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         """Construct this object from the result of yaml.load()."""
 

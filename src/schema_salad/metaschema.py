@@ -44,7 +44,7 @@ from schema_salad.runtime import (
 from schema_salad.sourceline import SourceLine, add_lc_filename
 from schema_salad.utils import yaml_no_ts  # requires schema-salad v8.2+
 
-_loaders: Final[dict[str, Loader]] = {}
+_loaders: Final[dict[str, Loader | None]] = {}
 _vocab: Final[dict[str, str]] = {}
 _rvocab: Final[dict[str, str]] = {}
 
@@ -305,9 +305,7 @@ class _RecordLoader(Loader, Generic[SaveableType]):
             loadingOptions = LoadingOptions(
                 copyfrom=loadingOptions, container=self.container, no_link_check=self.no_link_check
             )
-        return self.classtype.fromDoc(
-            doc, baseuri, loadingOptions, docRoot=docRoot, loaders=_loaders
-        )
+        return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
     def __repr__(self) -> str:
         return str(self.classtype.__name__)
@@ -628,6 +626,29 @@ class _IdMapLoader(Loader):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
+class _ProxyLoader(Loader):
+    def __init__(self, name: str) -> None:
+        self.name: Final = name
+
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: str | None = None,
+        lc: Any | None = None,
+    ) -> Any | None:
+        if (
+            self.name in loadingOptions.loaders
+            and (loader := loadingOptions.loaders.get(self.name)) is not None
+        ):
+            return loader.load(doc, baseuri, loadingOptions, lc=lc)
+        elif self.name in _loaders and (loader := _loaders.get(self.name)) is not None:
+            return loader.load(doc, baseuri, loadingOptions, lc=lc)
+        else:
+            raise ValidationException(f"No Loader instance available for {self.name}")
+
+
 def _document_load(
     loader: Loader,
     doc: str | MutableMapping[str, Any] | MutableSequence[Any],
@@ -660,6 +681,7 @@ def _document_load(
             schemas=doc.get("$schemas", None),
             baseuri=doc.get("$base", None),
             addl_metadata=addl_metadata,
+            loaders=_loaders | loadingOptions.loaders,
         )
 
         doc2: Final = copy.copy(doc)
@@ -881,7 +903,6 @@ class RecordField(Documented):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         _doc = copy.copy(doc)
 
@@ -894,7 +915,7 @@ class RecordField(Documented):
             try:
                 name = _load_field(
                     _doc.get("name"),
-                    loaders["uri_strtype_True_False_None_None"],
+                    uri_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("name")
@@ -950,7 +971,7 @@ class RecordField(Documented):
             try:
                 doc = _load_field(
                     _doc.get("doc"),
-                    loaders["union_of_None_type_or_strtype_or_array_of_strtype"],
+                    union_of_None_type_or_strtype_or_array_of_strtype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("doc")
@@ -998,7 +1019,7 @@ class RecordField(Documented):
 
             type_ = _load_field(
                 _doc.get("type"),
-                loaders["typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2"],
+                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -1142,7 +1163,6 @@ class RecordSchema(Saveable):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         _doc = copy.copy(doc)
 
@@ -1155,7 +1175,7 @@ class RecordSchema(Saveable):
             try:
                 fields = _load_field(
                     _doc.get("fields"),
-                    loaders["idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader"],
+                    idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("fields")
@@ -1203,7 +1223,7 @@ class RecordSchema(Saveable):
 
             type_ = _load_field(
                 _doc.get("type"),
-                loaders["typedsl_Record_nameLoader_2"],
+                typedsl_Record_nameLoader_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -1355,7 +1375,6 @@ class EnumSchema(Saveable):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         _doc = copy.copy(doc)
 
@@ -1368,7 +1387,7 @@ class EnumSchema(Saveable):
             try:
                 name = _load_field(
                     _doc.get("name"),
-                    loaders["uri_union_of_None_type_or_strtype_True_False_None_None"],
+                    uri_union_of_None_type_or_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("name")
@@ -1425,7 +1444,7 @@ class EnumSchema(Saveable):
 
             symbols = _load_field(
                 _doc.get("symbols"),
-                loaders["uri_array_of_strtype_True_False_None_None"],
+                uri_array_of_strtype_True_False_None_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("symbols")
@@ -1473,7 +1492,7 @@ class EnumSchema(Saveable):
 
             type_ = _load_field(
                 _doc.get("type"),
-                loaders["typedsl_Enum_nameLoader_2"],
+                typedsl_Enum_nameLoader_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -1616,7 +1635,6 @@ class ArraySchema(Saveable):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         _doc = copy.copy(doc)
 
@@ -1630,7 +1648,7 @@ class ArraySchema(Saveable):
 
             items = _load_field(
                 _doc.get("items"),
-                loaders["uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None"],
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("items")
@@ -1678,7 +1696,7 @@ class ArraySchema(Saveable):
 
             type_ = _load_field(
                 _doc.get("type"),
-                loaders["typedsl_Array_nameLoader_2"],
+                typedsl_Array_nameLoader_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -1816,7 +1834,6 @@ class MapSchema(Saveable):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         _doc = copy.copy(doc)
 
@@ -1830,7 +1847,7 @@ class MapSchema(Saveable):
 
             type_ = _load_field(
                 _doc.get("type"),
-                loaders["typedsl_Map_nameLoader_2"],
+                typedsl_Map_nameLoader_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -1878,7 +1895,7 @@ class MapSchema(Saveable):
 
             values = _load_field(
                 _doc.get("values"),
-                loaders["uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None"],
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("values")
@@ -2016,7 +2033,6 @@ class UnionSchema(Saveable):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         _doc = copy.copy(doc)
 
@@ -2030,7 +2046,7 @@ class UnionSchema(Saveable):
 
             names = _load_field(
                 _doc.get("names"),
-                loaders["uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None"],
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("names")
@@ -2078,7 +2094,7 @@ class UnionSchema(Saveable):
 
             type_ = _load_field(
                 _doc.get("type"),
-                loaders["typedsl_Union_nameLoader_2"],
+                typedsl_Union_nameLoader_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -2265,7 +2281,6 @@ class JsonldPredicate(Saveable):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         _doc = copy.copy(doc)
 
@@ -2278,7 +2293,7 @@ class JsonldPredicate(Saveable):
             try:
                 _id = _load_field(
                     _doc.get("_id"),
-                    loaders["uri_union_of_None_type_or_strtype_True_False_None_None"],
+                    uri_union_of_None_type_or_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("_id")
@@ -2325,7 +2340,7 @@ class JsonldPredicate(Saveable):
             try:
                 _type = _load_field(
                     _doc.get("_type"),
-                    loaders["union_of_None_type_or_strtype"],
+                    union_of_None_type_or_strtype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("_type")
@@ -2372,7 +2387,7 @@ class JsonldPredicate(Saveable):
             try:
                 _container = _load_field(
                     _doc.get("_container"),
-                    loaders["union_of_None_type_or_strtype"],
+                    union_of_None_type_or_strtype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("_container")
@@ -2419,7 +2434,7 @@ class JsonldPredicate(Saveable):
             try:
                 identity = _load_field(
                     _doc.get("identity"),
-                    loaders["union_of_None_type_or_booltype"],
+                    union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("identity")
@@ -2466,7 +2481,7 @@ class JsonldPredicate(Saveable):
             try:
                 noLinkCheck = _load_field(
                     _doc.get("noLinkCheck"),
-                    loaders["union_of_None_type_or_booltype"],
+                    union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("noLinkCheck")
@@ -2513,7 +2528,7 @@ class JsonldPredicate(Saveable):
             try:
                 mapSubject = _load_field(
                     _doc.get("mapSubject"),
-                    loaders["union_of_None_type_or_strtype"],
+                    union_of_None_type_or_strtype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("mapSubject")
@@ -2560,7 +2575,7 @@ class JsonldPredicate(Saveable):
             try:
                 mapPredicate = _load_field(
                     _doc.get("mapPredicate"),
-                    loaders["union_of_None_type_or_strtype"],
+                    union_of_None_type_or_strtype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("mapPredicate")
@@ -2607,7 +2622,7 @@ class JsonldPredicate(Saveable):
             try:
                 refScope = _load_field(
                     _doc.get("refScope"),
-                    loaders["union_of_None_type_or_inttype"],
+                    union_of_None_type_or_inttype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("refScope")
@@ -2654,7 +2669,7 @@ class JsonldPredicate(Saveable):
             try:
                 typeDSL = _load_field(
                     _doc.get("typeDSL"),
-                    loaders["union_of_None_type_or_booltype"],
+                    union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("typeDSL")
@@ -2701,7 +2716,7 @@ class JsonldPredicate(Saveable):
             try:
                 secondaryFilesDSL = _load_field(
                     _doc.get("secondaryFilesDSL"),
-                    loaders["union_of_None_type_or_booltype"],
+                    union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("secondaryFilesDSL")
@@ -2748,7 +2763,7 @@ class JsonldPredicate(Saveable):
             try:
                 subscope = _load_field(
                     _doc.get("subscope"),
-                    loaders["union_of_None_type_or_strtype"],
+                    union_of_None_type_or_strtype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("subscope")
@@ -2963,7 +2978,6 @@ class SpecializeDef(Saveable):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         _doc = copy.copy(doc)
 
@@ -2977,7 +2991,7 @@ class SpecializeDef(Saveable):
 
             specializeFrom = _load_field(
                 _doc.get("specializeFrom"),
-                loaders["uri_strtype_False_False_1_None"],
+                uri_strtype_False_False_1_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("specializeFrom")
@@ -3025,7 +3039,7 @@ class SpecializeDef(Saveable):
 
             specializeTo = _load_field(
                 _doc.get("specializeTo"),
-                loaders["uri_strtype_False_False_1_None"],
+                uri_strtype_False_False_1_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("specializeTo")
@@ -3202,7 +3216,6 @@ class SaladRecordField(RecordField):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         _doc = copy.copy(doc)
 
@@ -3215,7 +3228,7 @@ class SaladRecordField(RecordField):
             try:
                 name = _load_field(
                     _doc.get("name"),
-                    loaders["uri_strtype_True_False_None_None"],
+                    uri_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("name")
@@ -3271,7 +3284,7 @@ class SaladRecordField(RecordField):
             try:
                 doc = _load_field(
                     _doc.get("doc"),
-                    loaders["union_of_None_type_or_strtype_or_array_of_strtype"],
+                    union_of_None_type_or_strtype_or_array_of_strtype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("doc")
@@ -3319,7 +3332,7 @@ class SaladRecordField(RecordField):
 
             type_ = _load_field(
                 _doc.get("type"),
-                loaders["typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2"],
+                typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -3366,7 +3379,7 @@ class SaladRecordField(RecordField):
             try:
                 jsonldPredicate = _load_field(
                     _doc.get("jsonldPredicate"),
-                    loaders["union_of_None_type_or_strtype_or_JsonldPredicateLoader"],
+                    union_of_None_type_or_strtype_or_JsonldPredicateLoader,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("jsonldPredicate")
@@ -3413,7 +3426,7 @@ class SaladRecordField(RecordField):
             try:
                 default = _load_field(
                     _doc.get("default"),
-                    loaders["union_of_None_type_or_Any_type"],
+                    union_of_None_type_or_Any_type,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("default")
@@ -3626,7 +3639,6 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         _doc = copy.copy(doc)
 
@@ -3639,7 +3651,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             try:
                 name = _load_field(
                     _doc.get("name"),
-                    loaders["uri_strtype_True_False_None_None"],
+                    uri_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("name")
@@ -3695,7 +3707,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             try:
                 inVocab = _load_field(
                     _doc.get("inVocab"),
-                    loaders["union_of_None_type_or_booltype"],
+                    union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("inVocab")
@@ -3742,7 +3754,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             try:
                 fields = _load_field(
                     _doc.get("fields"),
-                    loaders["idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader"],
+                    idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("fields")
@@ -3790,7 +3802,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
 
             type_ = _load_field(
                 _doc.get("type"),
-                loaders["typedsl_Record_nameLoader_2"],
+                typedsl_Record_nameLoader_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -3837,7 +3849,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             try:
                 doc = _load_field(
                     _doc.get("doc"),
-                    loaders["union_of_None_type_or_strtype_or_array_of_strtype"],
+                    union_of_None_type_or_strtype_or_array_of_strtype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("doc")
@@ -3884,7 +3896,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             try:
                 docParent = _load_field(
                     _doc.get("docParent"),
-                    loaders["uri_union_of_None_type_or_strtype_False_False_None_None"],
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docParent")
@@ -3931,7 +3943,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             try:
                 docChild = _load_field(
                     _doc.get("docChild"),
-                    loaders["uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None"],
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docChild")
@@ -3978,7 +3990,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             try:
                 docAfter = _load_field(
                     _doc.get("docAfter"),
-                    loaders["uri_union_of_None_type_or_strtype_False_False_None_None"],
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docAfter")
@@ -4025,7 +4037,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             try:
                 jsonldPredicate = _load_field(
                     _doc.get("jsonldPredicate"),
-                    loaders["union_of_None_type_or_strtype_or_JsonldPredicateLoader"],
+                    union_of_None_type_or_strtype_or_JsonldPredicateLoader,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("jsonldPredicate")
@@ -4072,7 +4084,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             try:
                 documentRoot = _load_field(
                     _doc.get("documentRoot"),
-                    loaders["union_of_None_type_or_booltype"],
+                    union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("documentRoot")
@@ -4119,7 +4131,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             try:
                 abstract = _load_field(
                     _doc.get("abstract"),
-                    loaders["union_of_None_type_or_booltype"],
+                    union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("abstract")
@@ -4166,7 +4178,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             try:
                 extends = _load_field(
                     _doc.get("extends"),
-                    loaders["uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None"],
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("extends")
@@ -4213,7 +4225,7 @@ class SaladRecordSchema(NamedType, RecordSchema, SchemaDefinedType):
             try:
                 specialize = _load_field(
                     _doc.get("specialize"),
-                    loaders["idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader"],
+                    idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("specialize")
@@ -4482,7 +4494,6 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         _doc = copy.copy(doc)
 
@@ -4495,7 +4506,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             try:
                 name = _load_field(
                     _doc.get("name"),
-                    loaders["uri_union_of_None_type_or_strtype_True_False_None_None"],
+                    uri_union_of_None_type_or_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("name")
@@ -4551,7 +4562,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             try:
                 inVocab = _load_field(
                     _doc.get("inVocab"),
-                    loaders["union_of_None_type_or_booltype"],
+                    union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("inVocab")
@@ -4599,7 +4610,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
 
             symbols = _load_field(
                 _doc.get("symbols"),
-                loaders["uri_array_of_strtype_True_False_None_None"],
+                uri_array_of_strtype_True_False_None_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("symbols")
@@ -4647,7 +4658,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
 
             type_ = _load_field(
                 _doc.get("type"),
-                loaders["typedsl_Enum_nameLoader_2"],
+                typedsl_Enum_nameLoader_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -4694,7 +4705,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             try:
                 doc = _load_field(
                     _doc.get("doc"),
-                    loaders["union_of_None_type_or_strtype_or_array_of_strtype"],
+                    union_of_None_type_or_strtype_or_array_of_strtype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("doc")
@@ -4741,7 +4752,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             try:
                 docParent = _load_field(
                     _doc.get("docParent"),
-                    loaders["uri_union_of_None_type_or_strtype_False_False_None_None"],
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docParent")
@@ -4788,7 +4799,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             try:
                 docChild = _load_field(
                     _doc.get("docChild"),
-                    loaders["uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None"],
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docChild")
@@ -4835,7 +4846,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             try:
                 docAfter = _load_field(
                     _doc.get("docAfter"),
-                    loaders["uri_union_of_None_type_or_strtype_False_False_None_None"],
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docAfter")
@@ -4882,7 +4893,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             try:
                 jsonldPredicate = _load_field(
                     _doc.get("jsonldPredicate"),
-                    loaders["union_of_None_type_or_strtype_or_JsonldPredicateLoader"],
+                    union_of_None_type_or_strtype_or_JsonldPredicateLoader,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("jsonldPredicate")
@@ -4929,7 +4940,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             try:
                 documentRoot = _load_field(
                     _doc.get("documentRoot"),
-                    loaders["union_of_None_type_or_booltype"],
+                    union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("documentRoot")
@@ -4976,7 +4987,7 @@ class SaladEnumSchema(NamedType, EnumSchema, SchemaDefinedType):
             try:
                 extends = _load_field(
                     _doc.get("extends"),
-                    loaders["uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None"],
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("extends")
@@ -5222,7 +5233,6 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         _doc = copy.copy(doc)
 
@@ -5235,7 +5245,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             try:
                 name = _load_field(
                     _doc.get("name"),
-                    loaders["uri_strtype_True_False_None_None"],
+                    uri_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("name")
@@ -5291,7 +5301,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             try:
                 inVocab = _load_field(
                     _doc.get("inVocab"),
-                    loaders["union_of_None_type_or_booltype"],
+                    union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("inVocab")
@@ -5339,7 +5349,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
 
             type_ = _load_field(
                 _doc.get("type"),
-                loaders["typedsl_Map_nameLoader_2"],
+                typedsl_Map_nameLoader_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -5387,7 +5397,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
 
             values = _load_field(
                 _doc.get("values"),
-                loaders["uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None"],
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("values")
@@ -5434,7 +5444,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             try:
                 doc = _load_field(
                     _doc.get("doc"),
-                    loaders["union_of_None_type_or_strtype_or_array_of_strtype"],
+                    union_of_None_type_or_strtype_or_array_of_strtype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("doc")
@@ -5481,7 +5491,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             try:
                 docParent = _load_field(
                     _doc.get("docParent"),
-                    loaders["uri_union_of_None_type_or_strtype_False_False_None_None"],
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docParent")
@@ -5528,7 +5538,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             try:
                 docChild = _load_field(
                     _doc.get("docChild"),
-                    loaders["uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None"],
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docChild")
@@ -5575,7 +5585,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             try:
                 docAfter = _load_field(
                     _doc.get("docAfter"),
-                    loaders["uri_union_of_None_type_or_strtype_False_False_None_None"],
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docAfter")
@@ -5622,7 +5632,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             try:
                 jsonldPredicate = _load_field(
                     _doc.get("jsonldPredicate"),
-                    loaders["union_of_None_type_or_strtype_or_JsonldPredicateLoader"],
+                    union_of_None_type_or_strtype_or_JsonldPredicateLoader,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("jsonldPredicate")
@@ -5669,7 +5679,7 @@ class SaladMapSchema(NamedType, MapSchema, SchemaDefinedType):
             try:
                 documentRoot = _load_field(
                     _doc.get("documentRoot"),
-                    loaders["union_of_None_type_or_booltype"],
+                    union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("documentRoot")
@@ -5906,7 +5916,6 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         _doc = copy.copy(doc)
 
@@ -5919,7 +5928,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
             try:
                 name = _load_field(
                     _doc.get("name"),
-                    loaders["uri_strtype_True_False_None_None"],
+                    uri_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("name")
@@ -5975,7 +5984,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
             try:
                 inVocab = _load_field(
                     _doc.get("inVocab"),
-                    loaders["union_of_None_type_or_booltype"],
+                    union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("inVocab")
@@ -6023,7 +6032,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
 
             names = _load_field(
                 _doc.get("names"),
-                loaders["uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None"],
+                uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("names")
@@ -6071,7 +6080,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
 
             type_ = _load_field(
                 _doc.get("type"),
-                loaders["typedsl_Union_nameLoader_2"],
+                typedsl_Union_nameLoader_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -6118,7 +6127,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
             try:
                 doc = _load_field(
                     _doc.get("doc"),
-                    loaders["union_of_None_type_or_strtype_or_array_of_strtype"],
+                    union_of_None_type_or_strtype_or_array_of_strtype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("doc")
@@ -6165,7 +6174,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
             try:
                 docParent = _load_field(
                     _doc.get("docParent"),
-                    loaders["uri_union_of_None_type_or_strtype_False_False_None_None"],
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docParent")
@@ -6212,7 +6221,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
             try:
                 docChild = _load_field(
                     _doc.get("docChild"),
-                    loaders["uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None"],
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docChild")
@@ -6259,7 +6268,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
             try:
                 docAfter = _load_field(
                     _doc.get("docAfter"),
-                    loaders["uri_union_of_None_type_or_strtype_False_False_None_None"],
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docAfter")
@@ -6306,7 +6315,7 @@ class SaladUnionSchema(NamedType, UnionSchema, DocType):
             try:
                 documentRoot = _load_field(
                     _doc.get("documentRoot"),
-                    loaders["union_of_None_type_or_booltype"],
+                    union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("documentRoot")
@@ -6526,7 +6535,6 @@ class Documentation(NamedType, DocType):
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         _doc = copy.copy(doc)
 
@@ -6539,7 +6547,7 @@ class Documentation(NamedType, DocType):
             try:
                 name = _load_field(
                     _doc.get("name"),
-                    loaders["uri_strtype_True_False_None_None"],
+                    uri_strtype_True_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("name")
@@ -6595,7 +6603,7 @@ class Documentation(NamedType, DocType):
             try:
                 inVocab = _load_field(
                     _doc.get("inVocab"),
-                    loaders["union_of_None_type_or_booltype"],
+                    union_of_None_type_or_booltype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("inVocab")
@@ -6642,7 +6650,7 @@ class Documentation(NamedType, DocType):
             try:
                 doc = _load_field(
                     _doc.get("doc"),
-                    loaders["union_of_None_type_or_strtype_or_array_of_strtype"],
+                    union_of_None_type_or_strtype_or_array_of_strtype,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("doc")
@@ -6689,7 +6697,7 @@ class Documentation(NamedType, DocType):
             try:
                 docParent = _load_field(
                     _doc.get("docParent"),
-                    loaders["uri_union_of_None_type_or_strtype_False_False_None_None"],
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docParent")
@@ -6736,7 +6744,7 @@ class Documentation(NamedType, DocType):
             try:
                 docChild = _load_field(
                     _doc.get("docChild"),
-                    loaders["uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None"],
+                    uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docChild")
@@ -6783,7 +6791,7 @@ class Documentation(NamedType, DocType):
             try:
                 docAfter = _load_field(
                     _doc.get("docAfter"),
-                    loaders["uri_union_of_None_type_or_strtype_False_False_None_None"],
+                    uri_union_of_None_type_or_strtype_False_False_None_None,
                     baseuri,
                     loadingOptions,
                     lc=_doc.get("docAfter")
@@ -6831,7 +6839,7 @@ class Documentation(NamedType, DocType):
 
             type_ = _load_field(
                 _doc.get("type"),
-                loaders["typedsl_Documentation_nameLoader_2"],
+                typedsl_Documentation_nameLoader_2,
                 baseuri,
                 loadingOptions,
                 lc=_doc.get("type")
@@ -7037,6 +7045,7 @@ floattype: Final = _PrimitiveLoader(float)
 booltype: Final = _PrimitiveLoader(bool)
 None_type: Final = _PrimitiveLoader(type(None))
 Any_type: Final = _AnyLoader()
+DocumentedProxyLoader: Final = _ProxyLoader("DocumentedLoader")
 PrimitiveTypeLoader: Final = _EnumLoader(
     (
         "null",
@@ -7080,6 +7089,9 @@ MapSchemaLoader: Final = _RecordLoader(MapSchema, None, None)
 UnionSchemaLoader: Final = _RecordLoader(UnionSchema, None, None)
 JsonldPredicateLoader: Final = _RecordLoader(JsonldPredicate, None, None)
 SpecializeDefLoader: Final = _RecordLoader(SpecializeDef, None, None)
+NamedTypeProxyLoader: Final = _ProxyLoader("NamedTypeLoader")
+DocTypeProxyLoader: Final = _ProxyLoader("DocTypeLoader")
+SchemaDefinedTypeProxyLoader: Final = _ProxyLoader("SchemaDefinedTypeLoader")
 SaladRecordFieldLoader: Final = _RecordLoader(SaladRecordField, None, None)
 SaladRecordSchemaLoader: Final = _RecordLoader(SaladRecordSchema, None, None)
 SaladEnumSchemaLoader: Final = _RecordLoader(SaladEnumSchema, None, None)
@@ -7270,71 +7282,10 @@ union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoade
 )
 
 _loaders.update({
-    "strtype": strtype,
-    "inttype": inttype,
-    "floattype": floattype,
-    "booltype": booltype,
-    "None_type": None_type,
-    "Any_type": Any_type,
-    "PrimitiveTypeLoader": PrimitiveTypeLoader,
-    "AnyLoader": AnyLoader,
-    "RecordFieldLoader": RecordFieldLoader,
-    "RecordSchemaLoader": RecordSchemaLoader,
-    "EnumSchemaLoader": EnumSchemaLoader,
-    "ArraySchemaLoader": ArraySchemaLoader,
-    "MapSchemaLoader": MapSchemaLoader,
-    "UnionSchemaLoader": UnionSchemaLoader,
-    "JsonldPredicateLoader": JsonldPredicateLoader,
-    "SpecializeDefLoader": SpecializeDefLoader,
-    "SaladRecordFieldLoader": SaladRecordFieldLoader,
-    "SaladRecordSchemaLoader": SaladRecordSchemaLoader,
-    "SaladEnumSchemaLoader": SaladEnumSchemaLoader,
-    "SaladMapSchemaLoader": SaladMapSchemaLoader,
-    "SaladUnionSchemaLoader": SaladUnionSchemaLoader,
-    "DocumentationLoader": DocumentationLoader,
-    "array_of_strtype": array_of_strtype,
-    "union_of_None_type_or_strtype_or_array_of_strtype": union_of_None_type_or_strtype_or_array_of_strtype,
-    "uri_strtype_True_False_None_None": uri_strtype_True_False_None_None,
-    "union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype": union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
-    "array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype": array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
-    "union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype": union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype,
-    "typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2": typedsl_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_2,
-    "array_of_RecordFieldLoader": array_of_RecordFieldLoader,
-    "union_of_None_type_or_array_of_RecordFieldLoader": union_of_None_type_or_array_of_RecordFieldLoader,
-    "idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader": idmap_fields_union_of_None_type_or_array_of_RecordFieldLoader,
-    "Record_nameLoader": Record_nameLoader,
-    "typedsl_Record_nameLoader_2": typedsl_Record_nameLoader_2,
-    "union_of_None_type_or_strtype": union_of_None_type_or_strtype,
-    "uri_union_of_None_type_or_strtype_True_False_None_None": uri_union_of_None_type_or_strtype_True_False_None_None,
-    "uri_array_of_strtype_True_False_None_None": uri_array_of_strtype_True_False_None_None,
-    "Enum_nameLoader": Enum_nameLoader,
-    "typedsl_Enum_nameLoader_2": typedsl_Enum_nameLoader_2,
-    "uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None": uri_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_or_array_of_union_of_PrimitiveTypeLoader_or_RecordSchemaLoader_or_EnumSchemaLoader_or_ArraySchemaLoader_or_MapSchemaLoader_or_UnionSchemaLoader_or_strtype_False_True_2_None,
-    "Array_nameLoader": Array_nameLoader,
-    "typedsl_Array_nameLoader_2": typedsl_Array_nameLoader_2,
-    "Map_nameLoader": Map_nameLoader,
-    "typedsl_Map_nameLoader_2": typedsl_Map_nameLoader_2,
-    "Union_nameLoader": Union_nameLoader,
-    "typedsl_Union_nameLoader_2": typedsl_Union_nameLoader_2,
-    "union_of_None_type_or_booltype": union_of_None_type_or_booltype,
-    "union_of_None_type_or_inttype": union_of_None_type_or_inttype,
-    "uri_strtype_False_False_1_None": uri_strtype_False_False_1_None,
-    "uri_union_of_None_type_or_strtype_False_False_None_None": uri_union_of_None_type_or_strtype_False_False_None_None,
-    "uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None": uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_None_None,
-    "union_of_None_type_or_strtype_or_JsonldPredicateLoader": union_of_None_type_or_strtype_or_JsonldPredicateLoader,
-    "union_of_None_type_or_Any_type": union_of_None_type_or_Any_type,
-    "array_of_SaladRecordFieldLoader": array_of_SaladRecordFieldLoader,
-    "union_of_None_type_or_array_of_SaladRecordFieldLoader": union_of_None_type_or_array_of_SaladRecordFieldLoader,
-    "idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader": idmap_fields_union_of_None_type_or_array_of_SaladRecordFieldLoader,
-    "uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None": uri_union_of_None_type_or_strtype_or_array_of_strtype_False_False_1_None,
-    "array_of_SpecializeDefLoader": array_of_SpecializeDefLoader,
-    "union_of_None_type_or_array_of_SpecializeDefLoader": union_of_None_type_or_array_of_SpecializeDefLoader,
-    "idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader": idmap_specialize_union_of_None_type_or_array_of_SpecializeDefLoader,
-    "Documentation_nameLoader": Documentation_nameLoader,
-    "typedsl_Documentation_nameLoader_2": typedsl_Documentation_nameLoader_2,
-    "union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader": union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader,
-    "array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader": array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader,
-    "union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader": union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader_or_array_of_union_of_SaladRecordSchemaLoader_or_SaladEnumSchemaLoader_or_SaladMapSchemaLoader_or_SaladUnionSchemaLoader_or_DocumentationLoader,
+    "DocumentedLoader": None,
+    "NamedTypeLoader": None,
+    "DocTypeLoader": None,
+    "SchemaDefinedTypeLoader": None,
 })
 
 

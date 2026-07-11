@@ -102,6 +102,7 @@ class PythonCodeGen(CodeGenBase):
         self.parser_info: Final = parser_info
         self.salad_version: Final = salad_version
         self.inherited_classes: dict[str, str] = {}
+        self.dynamic_loaders: set[str] = set()
 
     @staticmethod
     def safe_name(name: str) -> str:
@@ -300,7 +301,6 @@ else:
         baseuri: str,
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
-        loaders: dict[str, Loader] = _loaders,
     ) -> Self:
         _doc = copy.copy(doc)
 
@@ -429,16 +429,24 @@ if _errors__:
             case {"type": "array" | "https://w3id.org/cwl/salad#array", "items": items, **rest}:
                 i1: Final = self.type_loader(items)
                 if "original_items" in rest:
+                    original_type = self.safe_name(shortname(cast(str, rest["original_items"])))
                     self.declare_type(
                         TypeDef(
-                            f"array_of_{i1.name}",
-                            f"_ArrayLoader({i1.name})",
+                            f"{original_type}Loader",
+                            i1.name,
+                            abstract=True,
+                        )
+                    )
+                    self.declare_type(
+                        TypeDef(
+                            f"{original_type}ProxyLoader",
+                            '_ProxyLoader("{}")'.format(original_type + "Loader"),
                         )
                     )
                     return self.declare_type(
                         TypeDef(
-                            f"array_of_{self.safe_name(shortname(cast(str, rest['original_items'])))}",
-                            f"array_of_{i1.name}",
+                            f"array_of_{original_type}",
+                            f"_ArrayLoader({original_type}ProxyLoader)",
                         )
                     )
                 else:
@@ -451,22 +459,42 @@ if _errors__:
             case {"type": "map" | "https://w3id.org/cwl/salad#map", "values": values, **rest}:
                 i2: Final = self.type_loader(values)
                 name = self.safe_name(str(rest["name"])) if "name" in rest else None
-                anon_type = self.declare_type(
-                    TypeDef(
-                        f"map_of_{i2.name}",
-                        "_MapLoader({}, {}, {}, {})".format(
-                            i2.name,
-                            f"'{name}'",  # noqa: B907
-                            f"'{container}'" if container is not None else None,  # noqa: B907
-                            no_link_check,
-                        ),
-                    )
-                )
                 if "original_values" in rest:
+                    original_type = self.safe_name(shortname(cast(str, rest["original_values"])))
+                    self.declare_type(
+                        TypeDef(
+                            original_type + "Loader",
+                            i2.name,
+                            abstract=True,
+                        )
+                    )
+                    self.declare_type(
+                        TypeDef(
+                            f"{original_type}ProxyLoader",
+                            '_ProxyLoader("{}")'.format(original_type + "Loader"),
+                        )
+                    )
                     anon_type = self.declare_type(
                         TypeDef(
-                            f"map_of_{self.safe_name(shortname(cast(str, rest['original_values'])))}",
-                            anon_type.name,
+                            f"map_of_{original_type}",
+                            "_MapLoader({}, {}, {}, {})".format(
+                                f"{original_type}ProxyLoader",
+                                f"'{name}'",  # noqa: B907
+                                f"'{container}'" if container is not None else None,  # noqa: B907
+                                no_link_check,
+                            ),
+                        )
+                    )
+                else:
+                    anon_type = self.declare_type(
+                        TypeDef(
+                            f"map_of_{i2.name}",
+                            "_MapLoader({}, {}, {}, {})".format(
+                                i2.name,
+                                f"'{name}'",  # noqa: B907
+                                f"'{container}'" if container is not None else None,  # noqa: B907
+                                no_link_check,
+                            ),
                         )
                     )
                 if "name" in rest:
@@ -507,17 +535,31 @@ if _errors__:
                 classname = self.safe_name(name)
                 if (prefix := name.split("#")[0]) in self.parents_map:
                     self.inherited_classes[classname] = f"{self.parents_map[prefix]}.{classname}"
-                return self.declare_type(
-                    TypeDef(
-                        classname + "Loader",
-                        "_RecordLoader({}, {}, {})".format(
-                            self.inherited_classes.get(classname, classname),
-                            f"'{container}'" if container is not None else None,  # noqa: B907
-                            no_link_check,
-                        ),
-                        abstract=bool(rest.get("abstract", False)),
+                if rest.get("abstract", False):
+                    self.declare_type(
+                        TypeDef(
+                            classname + "Loader",
+                            "None",
+                            abstract=True,
+                        )
                     )
-                )
+                    return self.declare_type(
+                        TypeDef(
+                            classname + "ProxyLoader",
+                            '_ProxyLoader("{}")'.format(classname + "Loader"),
+                        )
+                    )
+                else:
+                    return self.declare_type(
+                        TypeDef(
+                            classname + "Loader",
+                            "_RecordLoader({}, {}, {})".format(
+                                self.inherited_classes.get(classname, classname),
+                                f"'{container}'" if container is not None else None,  # noqa: B907
+                                no_link_check,
+                            ),
+                        )
+                    )
 
             case {
                 "type": "union" | "https://w3id.org/cwl/salad#union",
@@ -631,7 +673,7 @@ if _errors__:
         self.out.write(
             """{spc}            {safename} = _load_field(
 {spc}                _doc.get("{fieldname}"),
-{spc}                loaders["{fieldtype}"],
+{spc}                {fieldtype},
 {spc}                {baseurivar},
 {spc}                loadingOptions,
 {spc}                lc=_doc.get("{fieldname}")
@@ -841,8 +883,8 @@ if self.{safename} is not None:
 
         self.out.write("_loaders.update({\n")
         for _, collected_type in self.collected_types.items():
-            if not collected_type.abstract:
-                self.out.write(f'    "{collected_type.name}": {collected_type.name},\n')
+            if collected_type.abstract:
+                self.out.write(f'    "{collected_type.name}": {collected_type.init},\n')
         self.out.write("})\n\n")
 
         if self.lazy_inits:
