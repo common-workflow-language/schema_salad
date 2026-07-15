@@ -13,7 +13,7 @@ import sys
 import tempfile
 import xml.sax  # nosec
 from abc import ABCMeta, abstractmethod
-from collections.abc import MutableMapping, MutableSequence, Mapping
+from collections.abc import MutableMapping, MutableSequence
 from typing import Any, Final, TypeAlias, cast, TypeVar
 from urllib.parse import quote, urlparse, urlsplit
 from urllib.request import pathname2url
@@ -67,6 +67,7 @@ class LoadingOptions:
     includes: Final[list[str]]
     no_link_check: Final[bool | None]
     container: Final[str | None]
+    loaders: Final[dict[str, Loader | None]]
 
     def __init__(
         self,
@@ -83,6 +84,7 @@ class LoadingOptions:
         includes: list[str] | None = None,
         no_link_check: bool | None = None,
         container: str | None = None,
+        loaders: dict[str, Loader | None] | None = None,
     ) -> None:
         """Create a LoadingOptions object."""
         self.original_doc = original_doc
@@ -146,6 +148,12 @@ class LoadingOptions:
         else:
             temp_container = copyfrom.container if copyfrom is not None else None
         self.container = temp_container
+
+        if loaders is not None:
+            loaders = loaders
+        else:
+            loaders = copyfrom.loaders if copyfrom is not None else {}
+        self.loaders = loaders
 
         if fetcher is not None:
             temp_fetcher = fetcher
@@ -216,7 +224,6 @@ class Saveable(metaclass=ABCMeta):
         _doc: Any,
         baseuri: str,
         loadingOptions: LoadingOptions,
-        loaders: Mapping[str, Loader],
         docRoot: str | None = None,
     ) -> Self:
         """Construct this object from the result of yaml.load()."""

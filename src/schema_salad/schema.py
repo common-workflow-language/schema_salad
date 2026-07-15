@@ -466,7 +466,8 @@ def replace_type(
             items["name"] = get_anon_name(items)
         for name in ("type", "items", "fields", "values"):
             if name in items:
-                items[name] = replace_type(
+                old_type = items[name]
+                new_type = replace_type(
                     items[name],
                     spec,
                     loader,
@@ -474,6 +475,9 @@ def replace_type(
                     find_embeds=find_embeds,
                     deepen=find_embeds,
                 )
+                if isinstance(old_type, str) and not isinstance(new_type, str):
+                    items[f"original_{name}"] = old_type
+                items[name] = new_type
                 if isinstance(items[name], MutableSequence):
                     items[name] = flatten(items[name])
 

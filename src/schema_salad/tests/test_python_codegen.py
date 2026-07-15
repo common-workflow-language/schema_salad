@@ -33,10 +33,7 @@ def test_cwl_gen(tmp_path: Path) -> None:
     assert "class ArraySchema(Saveable)" in content
     assert "class CWLArraySchema(ArraySchema)" in content
     assert "class Workflow(Process)" in content
-    assert (
-        "EnumSchemaLoader: Final = _RecordLoader(EnumSchema, EnumSchemaFieldLoaders, None, None)"
-        in content
-    )
+    assert "EnumSchemaLoader: Final = _RecordLoader(EnumSchema, None, None)" in content
 
 
 def test_cwl_gen_with_inheritance(tmp_path: Path) -> None:
@@ -53,13 +50,11 @@ def test_cwl_gen_with_inheritance(tmp_path: Path) -> None:
     assert "class ArraySchema(Saveable)" not in content
     assert "class CWLArraySchema(schema_salad.metaschema.ArraySchema)" in content
     assert "class Workflow(Process)" in content
+    assert "EnumSchemaLoader: Final = _RecordLoader(EnumSchema, None, None)" not in content
     assert (
-        "EnumSchemaLoader: Final = _RecordLoader(EnumSchema, EnumSchemaFieldLoaders, None, None)"
-        not in content
+        "EnumSchemaLoader: Final = _RecordLoader(schema_salad.metaschema.EnumSchema, None, None)"
+        in content
     )
-    assert ("""EnumSchemaLoader: Final = _RecordLoader(
-    schema_salad.metaschema.EnumSchema, EnumSchemaFieldLoaders, None, None
-)""") in content
 
 
 def test_meta_schema_gen(tmp_path: Path) -> None:

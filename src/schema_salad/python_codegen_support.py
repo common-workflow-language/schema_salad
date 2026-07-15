@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import copy
-from collections.abc import MutableSequence, Sequence, MutableMapping, Mapping
+from collections.abc import MutableSequence, Sequence, MutableMapping
 from io import StringIO
 from itertools import chain
 from typing import Any, Final, cast, Generic
@@ -22,6 +22,7 @@ from schema_salad.runtime import (
 from schema_salad.sourceline import SourceLine, add_lc_filename
 from schema_salad.utils import yaml_no_ts  # requires schema-salad v8.2+
 
+_loaders: Final[dict[str, Loader | None]] = {}
 _vocab: Final[dict[str, str]] = {}
 _rvocab: Final[dict[str, str]] = {}
 
@@ -258,12 +259,10 @@ class _RecordLoader(Loader, Generic[SaveableType]):
     def __init__(
         self,
         classtype: type[SaveableType],
-        loaders: Mapping[str, Loader],
         container: str | None = None,
         no_link_check: bool | None = None,
     ) -> None:
         self.classtype: Final = classtype
-        self.loaders: Final = loaders
         self.container: Final = container
         self.no_link_check: Final = no_link_check
 
@@ -284,7 +283,7 @@ class _RecordLoader(Loader, Generic[SaveableType]):
             loadingOptions = LoadingOptions(
                 copyfrom=loadingOptions, container=self.container, no_link_check=self.no_link_check
             )
-        return self.classtype.fromDoc(doc, baseuri, loadingOptions, self.loaders, docRoot=docRoot)
+        return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
     def __repr__(self) -> str:
         return str(self.classtype.__name__)
@@ -605,6 +604,29 @@ class _IdMapLoader(Loader):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
+class _ProxyLoader(Loader):
+    def __init__(self, name: str) -> None:
+        self.name: Final = name
+
+    def load(
+        self,
+        doc: Any,
+        baseuri: str,
+        loadingOptions: LoadingOptions,
+        docRoot: str | None = None,
+        lc: Any | None = None,
+    ) -> Any | None:
+        if (
+            self.name in loadingOptions.loaders
+            and (loader := loadingOptions.loaders.get(self.name)) is not None
+        ):
+            return loader.load(doc, baseuri, loadingOptions, lc=lc)
+        elif self.name in _loaders and (loader := _loaders.get(self.name)) is not None:
+            return loader.load(doc, baseuri, loadingOptions, lc=lc)
+        else:
+            raise ValidationException(f"No Loader instance available for {self.name}")
+
+
 def _document_load(
     loader: Loader,
     doc: str | MutableMapping[str, Any] | MutableSequence[Any],
@@ -637,6 +659,7 @@ def _document_load(
             schemas=doc.get("$schemas", None),
             baseuri=doc.get("$base", None),
             addl_metadata=addl_metadata,
+            loaders=_loaders | loadingOptions.loaders,
         )
 
         doc2: Final = copy.copy(doc)

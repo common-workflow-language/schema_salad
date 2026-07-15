@@ -21,7 +21,6 @@ def test_load() -> None:
         doc,
         "http://example.com/",
         LoadingOptions(no_link_check=True),
-        cg_metaschema.RecordSchemaFieldLoaders,
     )
     assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
@@ -43,7 +42,9 @@ def test_err() -> None:
     doc = {"doc": "Hello test case", "type": "string"}
     with pytest.raises(ValidationException):
         cg_metaschema.RecordField.fromDoc(
-            doc, "", LoadingOptions(), cg_metaschema.RecordFieldFieldLoaders
+            doc,
+            "",
+            LoadingOptions(),
         )
 
 
@@ -54,7 +55,6 @@ def test_include() -> None:
         doc,
         "http://example.com/",
         LoadingOptions(fileuri=path_uri, no_link_check=True),
-        cg_metaschema.DocumentationFieldLoaders,
     )
     assert "http://example.com/#hello" == rf.name
     assert ["hello world!\n"] == rf.doc
@@ -73,7 +73,6 @@ def test_import() -> None:
         doc,
         "http://example.com/",
         LoadingOptions(fileuri=lead + "/_"),
-        cg_metaschema.RecordSchemaFieldLoaders,
     )
     assert "record" == rs.type_
     assert rs.fields and lead + "/hellofield.yml#hello" == rs.fields[0].name
@@ -119,7 +118,9 @@ def test_err2() -> None:
     }
     with pytest.raises(ValidationException):
         cg_metaschema.RecordSchema.fromDoc(
-            doc, "", LoadingOptions(), cg_metaschema.RecordSchemaFieldLoaders
+            doc,
+            "",
+            LoadingOptions(),
         )
 
 
@@ -132,7 +133,6 @@ def test_idmap() -> None:
         doc,
         "http://example.com/",
         LoadingOptions(no_link_check=True),
-        cg_metaschema.RecordSchemaFieldLoaders,
     )
     assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
@@ -156,7 +156,6 @@ def test_idmap2() -> None:
         doc,
         "http://example.com/",
         LoadingOptions(no_link_check=True),
-        cg_metaschema.RecordSchemaFieldLoaders,
     )
     assert "record" == rs.type_
     assert rs.fields and "http://example.com/#hello" == rs.fields[0].name
