@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import copy
-from collections.abc import MutableSequence, Sequence, MutableMapping
+from collections.abc import Mapping, Sequence, MutableSequence, MutableMapping
 from io import StringIO
 from itertools import chain
-from typing import Any, Final, cast, Generic
+from typing import Any, Final, cast
+from typing import Literal, TypeVar  # pylint: disable=unused-import # noqa: F401
+from typing import TypeAlias  # pylint: disable=unused-import # noqa: F401
 from urllib.parse import urldefrag, urlsplit, urlunsplit
 
+from mypy_extensions import i32, i64  # pylint: disable=unused-import # noqa: F401
+from mypy_extensions import mypyc_attr
 from ruamel.yaml.comments import CommentedMap
 
 from schema_salad.exceptions import ValidationException, SchemaSaladException
@@ -18,16 +22,19 @@ from schema_salad.runtime import (
     extract_type,
     SaveableType,
     Loader,
+    FieldType,
+    EnumFieldType,
 )
 from schema_salad.sourceline import SourceLine, add_lc_filename
 from schema_salad.utils import yaml_no_ts  # requires schema-salad v8.2+
 
-_loaders: Final[dict[str, Loader | None]] = {}
+_loaders: Final[dict[str, Loader[Any] | None]] = {}
 _vocab: Final[dict[str, str]] = {}
 _rvocab: Final[dict[str, str]] = {}
 
 
-class _AnyLoader(Loader):
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class _AnyLoader(Loader[Any]):
     def load(
         self,
         doc: Any,
@@ -41,8 +48,9 @@ class _AnyLoader(Loader):
         raise ValidationException("Expected non-null")
 
 
-class _PrimitiveLoader(Loader):
-    def __init__(self, tp: type | tuple[type[str], type[str]]) -> None:
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class _PrimitiveLoader(Loader[FieldType]):
+    def __init__(self, tp: type[FieldType]) -> None:
         self.tp: Final = tp
 
     def load(
@@ -52,7 +60,7 @@ class _PrimitiveLoader(Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> Any:
+    ) -> FieldType:
         if not isinstance(doc, self.tp):
             raise ValidationException(f"Expected a {self.tp} but got {doc.__class__.__name__}")
         return doc
@@ -61,8 +69,9 @@ class _PrimitiveLoader(Loader):
         return str(self.tp)
 
 
-class _ArrayLoader(Loader):
-    def __init__(self, items: Loader) -> None:
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class _ArrayLoader(Loader[Sequence[FieldType]]):
+    def __init__(self, items: Loader[FieldType]) -> None:
         self.items: Final = items
 
     def load(
@@ -72,7 +81,7 @@ class _ArrayLoader(Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> list[Any]:
+    ) -> list[FieldType]:
         if not isinstance(doc, MutableSequence):
             raise ValidationException(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
@@ -118,10 +127,11 @@ class _ArrayLoader(Loader):
         return f"array<{self.items}>"
 
 
-class _MapLoader(Loader):
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class _MapLoader(Loader[Mapping[str, FieldType]]):
     def __init__(
         self,
-        values: Loader,
+        values: Loader[FieldType],
         name: str | None = None,
         container: str | None = None,
         no_link_check: bool | None = None,
@@ -138,7 +148,7 @@ class _MapLoader(Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> dict[str, Any]:
+    ) -> dict[str, FieldType]:
         if not isinstance(doc, MutableMapping):
             raise ValidationException(f"Expected a map, was {type(doc)}")
         if self.container is not None or self.no_link_check is not None:
@@ -161,8 +171,9 @@ class _MapLoader(Loader):
         return self.name if self.name is not None else f"map<string, {self.values}>"
 
 
-class _EnumLoader(Loader):
-    def __init__(self, symbols: Sequence[str], name: str) -> None:
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class _EnumLoader(Loader[EnumFieldType]):
+    def __init__(self, symbols: tuple[EnumFieldType, ...], name: str) -> None:
         self.symbols: Final = symbols
         self.name: Final = name
 
@@ -173,17 +184,18 @@ class _EnumLoader(Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> str:
+    ) -> EnumFieldType:
         if doc in self.symbols:
-            return cast(str, doc)
+            return cast(EnumFieldType, doc)
         raise ValidationException(f"Expected one of {self.symbols}")
 
     def __repr__(self) -> str:
         return self.name
 
 
-class _SecondaryDSLLoader(Loader):
-    def __init__(self, inner: Loader) -> None:
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class _SecondaryDSLLoader(Loader[FieldType]):
+    def __init__(self, inner: Loader[FieldType]) -> None:
         self.inner: Final = inner
 
     def load(
@@ -193,7 +205,7 @@ class _SecondaryDSLLoader(Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> Any:
+    ) -> FieldType:
         r: Final[list[dict[str, Any]]] = []
         match doc:
             case MutableSequence() as dlist:
@@ -255,7 +267,8 @@ class _SecondaryDSLLoader(Loader):
         return self.inner.load(r, baseuri, loadingOptions, docRoot, lc=lc)
 
 
-class _RecordLoader(Loader, Generic[SaveableType]):
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class _RecordLoader(Loader[SaveableType]):
     def __init__(
         self,
         classtype: type[SaveableType],
@@ -289,7 +302,8 @@ class _RecordLoader(Loader, Generic[SaveableType]):
         return str(self.classtype.__name__)
 
 
-class _ExpressionLoader(Loader):
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class _ExpressionLoader(Loader[str]):
     def __init__(self, items: type[str]) -> None:
         self.items: Final = items
 
@@ -310,12 +324,13 @@ class _ExpressionLoader(Loader):
             return doc
 
 
-class _UnionLoader(Loader):
-    def __init__(self, alternates: Sequence[Loader], name: str | None = None) -> None:
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class _UnionLoader(Loader[FieldType]):
+    def __init__(self, alternates: Sequence[Loader[FieldType]], name: str | None = None) -> None:
         self.alternates = alternates
         self.name: Final = name
 
-    def add_loaders(self, loaders: Sequence[Loader]) -> None:
+    def add_loaders(self, loaders: Sequence[Loader[FieldType]]) -> None:
         self.alternates = tuple(loader for loader in chain(self.alternates, loaders))
 
     def load(
@@ -325,7 +340,7 @@ class _UnionLoader(Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> Any:
+    ) -> FieldType:
         errors: Final = []
 
         if lc is None:
@@ -400,10 +415,11 @@ class _UnionLoader(Loader):
         return self.name if self.name is not None else " | ".join(str(a) for a in self.alternates)
 
 
-class _URILoader(Loader):
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class _URILoader(Loader[FieldType]):
     def __init__(
         self,
-        inner: Loader,
+        inner: Loader[FieldType],
         scoped_id: bool,
         vocab_term: bool,
         scoped_ref: int | None,
@@ -422,7 +438,7 @@ class _URILoader(Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> Any:
+    ) -> FieldType:
         if self.no_link_check is not None:
             loadingOptions = LoadingOptions(
                 copyfrom=loadingOptions, no_link_check=self.no_link_check
@@ -469,10 +485,11 @@ class _URILoader(Loader):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
-class _TypeDSLLoader(Loader):
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class _TypeDSLLoader(Loader[FieldType]):
     def __init__(
         self,
-        inner: Loader,
+        inner: Loader[FieldType],
         refScope: int | None,
         salad_version: str,
     ) -> None:
@@ -543,7 +560,7 @@ class _TypeDSLLoader(Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> Any:
+    ) -> FieldType:
         if isinstance(doc, MutableSequence):
             r: Final[list[Any]] = []
             for d in doc:
@@ -565,8 +582,9 @@ class _TypeDSLLoader(Loader):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
-class _IdMapLoader(Loader):
-    def __init__(self, inner: Loader, mapSubject: str, mapPredicate: str | None) -> None:
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class _IdMapLoader(Loader[FieldType]):
+    def __init__(self, inner: Loader[FieldType], mapSubject: str, mapPredicate: str | None) -> None:
         self.inner: Final = inner
         self.mapSubject: Final = mapSubject
         self.mapPredicate: Final = mapPredicate
@@ -578,7 +596,7 @@ class _IdMapLoader(Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> Any:
+    ) -> FieldType:
         if isinstance(doc, MutableMapping):
             r: Final[list[Any]] = []
             for k in doc.keys():
@@ -604,7 +622,7 @@ class _IdMapLoader(Loader):
         return self.inner.load(doc, baseuri, loadingOptions, lc=lc)
 
 
-class _ProxyLoader(Loader):
+class _ProxyLoader(Loader[FieldType]):
     def __init__(self, name: str) -> None:
         self.name: Final = name
 
@@ -615,25 +633,25 @@ class _ProxyLoader(Loader):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> Any | None:
+    ) -> FieldType:
         if (
             self.name in loadingOptions.loaders
             and (loader := loadingOptions.loaders.get(self.name)) is not None
         ):
-            return loader.load(doc, baseuri, loadingOptions, lc=lc)
+            return cast(Loader[FieldType], loader).load(doc, baseuri, loadingOptions, lc=lc)
         elif self.name in _loaders and (loader := _loaders.get(self.name)) is not None:
-            return loader.load(doc, baseuri, loadingOptions, lc=lc)
+            return cast(Loader[FieldType], loader).load(doc, baseuri, loadingOptions, lc=lc)
         else:
             raise ValidationException(f"No Loader instance available for {self.name}")
 
 
 def _document_load(
-    loader: Loader,
+    loader: Loader[FieldType],
     doc: str | MutableMapping[str, Any] | MutableSequence[Any],
     baseuri: str,
     loadingOptions: LoadingOptions,
     addl_metadata_fields: MutableSequence[str] | None = None,
-) -> tuple[Any, LoadingOptions]:
+) -> tuple[FieldType, LoadingOptions]:
     if isinstance(doc, str):
         return _document_load_by_url(
             loader,
@@ -699,11 +717,11 @@ def _document_load(
 
 
 def _document_load_by_url(
-    loader: Loader,
+    loader: Loader[FieldType],
     url: str,
     loadingOptions: LoadingOptions,
     addl_metadata_fields: MutableSequence[str] | None = None,
-) -> tuple[Any, LoadingOptions]:
+) -> tuple[FieldType, LoadingOptions]:
     if url in loadingOptions.idx:
         return loadingOptions.idx[url]
 
@@ -799,11 +817,11 @@ def _expand_url(
 
 def _load_field(
     val: Any | None,
-    fieldtype: Loader,
+    fieldtype: Loader[FieldType],
     baseuri: str,
     loadingOptions: LoadingOptions,
     lc: Any | None = None,
-) -> Any:
+) -> FieldType:
     """Load field."""
     if isinstance(val, MutableMapping):
         if "$import" in val:
