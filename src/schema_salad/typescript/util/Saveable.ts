@@ -75,6 +75,12 @@ export function saveRelativeUri (uri: any, baseUrl: string='', scopedId: boolean
           i += 1
         }
         basefrag = sp.join('/')
+        if (basefrag !== '' && !basefrag.endsWith('/')) {
+          // Match only on a path-segment boundary, so that a sibling id
+          // sharing a prefix (e.g. "step_1_input" vs "step_1") is not
+          // truncated.
+          basefrag += '/'
+        }
       }
       if (uriSplit.fragment == null) {
         uriSplit.fragment = ''

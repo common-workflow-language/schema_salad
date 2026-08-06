@@ -403,6 +403,11 @@ def save_relative_uri(
                     sp.pop()
                     i += 1
                 basefrag = "/".join(sp)
+                if basefrag:
+                    # Match only on a path-segment boundary, so that a sibling
+                    # id sharing a prefix (e.g. "step_1_input" vs "step_1")
+                    # is not truncated.
+                    basefrag += "/"
 
             if urisplit.fragment.startswith(basefrag):
                 return urisplit.fragment[len(basefrag) :]
