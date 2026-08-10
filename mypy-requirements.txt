@@ -1,4 +1,4 @@
-mypy[mypyc]==2.0.0  # update pyproject.toml as well
+mypy[mypyc]==2.1.0  # update pyproject.toml as well
 black>=23.12,<26.4
 types-requests
 types-dataclasses
