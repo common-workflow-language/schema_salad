@@ -19,7 +19,6 @@ from schema_salad.utils import (
     json_dumps,
     yaml_no_ts,
 )
-
 from . import _logger, jsonld_context, ref_resolver, validate
 from .avro.schema import Names, SchemaParseException, is_subtype, make_avsc_object
 from .exceptions import (
@@ -466,7 +465,6 @@ def replace_type(
             items["name"] = get_anon_name(items)
         for name in ("type", "items", "fields", "values"):
             if name in items:
-                old_type = items[name]
                 new_type = replace_type(
                     items[name],
                     spec,
@@ -475,8 +473,6 @@ def replace_type(
                     find_embeds=find_embeds,
                     deepen=find_embeds,
                 )
-                if isinstance(old_type, str) and not isinstance(new_type, str):
-                    items[f"original_{name}"] = old_type
                 items[name] = new_type
                 if isinstance(items[name], MutableSequence):
                     items[name] = flatten(items[name])
@@ -605,7 +601,9 @@ def deepcopy_strip(item: Any) -> Any:
     return item
 
 
-def extend_and_specialize(items: list[dict[str, Any]], loader: Loader) -> list[dict[str, Any]]:
+def extend_and_specialize(
+    items: list[dict[str, Any]], loader: Loader, expand_subtypes: bool = True
+) -> list[dict[str, Any]]:
     """Apply 'extend' and 'specialize' to fully materialize derived record types."""
     items2: Final = deepcopy_strip(items)
     types: dict[str, Any] = {
@@ -722,9 +720,13 @@ def extend_and_specialize(items: list[dict[str, Any]], loader: Loader) -> list[d
 
     for result in results:
         if "fields" in result:
-            result["fields"] = replace_type(result["fields"], extended_by, loader, set())
+            result["fields"] = replace_type(
+                result["fields"], extended_by if expand_subtypes else {}, loader, set()
+            )
         elif "values" in result:
-            result["values"] = replace_type(result["values"], extended_by, loader, set())
+            result["values"] = replace_type(
+                result["values"], extended_by if expand_subtypes else {}, loader, set()
+            )
 
     return results
 

@@ -30,6 +30,7 @@ class CodeGenBase:
 
     def __init__(self) -> None:
         self.collected_types: OrderedDict[str, TypeDef] = OrderedDict()
+        self.extended_by: dict[str, set[str]] = {}
         self.lazy_inits: OrderedDict[str, LazyInitDef] = OrderedDict()
         self.vocab: dict[str, str] = {}
 
@@ -38,6 +39,10 @@ class CodeGenBase:
         if declared_type not in self.collected_types.values():
             self.collected_types[declared_type.name] = declared_type
         return declared_type
+
+    def add_extend(self, subtype: str, supertype: str) -> None:
+        """Add type inheritance info."""
+        self.extended_by.setdefault(supertype, set()).add(subtype)
 
     def add_lazy_init(self, lazy_init: LazyInitDef) -> None:
         """Add lazy initialization logic for a given type."""

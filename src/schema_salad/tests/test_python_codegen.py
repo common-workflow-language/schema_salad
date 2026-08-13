@@ -34,6 +34,7 @@ def test_cwl_gen(tmp_path: Path) -> None:
     assert "class CWLArraySchema(ArraySchema)" in content
     assert "class Workflow(Process)" in content
     assert "EnumSchemaLoader: Final = _RecordLoader(EnumSchema, None, None)" in content
+    assert "union_of_ProcessRequirementProxyLoader_or_Any_type: Final = _UnionLoader(" in content
 
 
 def test_cwl_gen_with_inheritance(tmp_path: Path) -> None:
@@ -55,6 +56,7 @@ def test_cwl_gen_with_inheritance(tmp_path: Path) -> None:
         "EnumSchemaLoader: Final = _RecordLoader(schema_salad.metaschema.EnumSchema, None, None)"
         in content
     )
+    assert "union_of_ProcessRequirementProxyLoader_or_Any_type: Final = _UnionLoader(" in content
 
 
 def test_meta_schema_gen(tmp_path: Path) -> None:
