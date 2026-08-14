@@ -42,7 +42,13 @@ jobs:
         with:
           key: ${{ github.job }}-${{ matrix.image }}
           verbose: 2
-
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ${{ runner.temp }}/cibw-cache
+          key: cibw-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            cibw-${{ runner.os }}-
+          lookup-only: true
       # Used to host cibuildwheel
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
@@ -62,6 +68,7 @@ jobs:
           # emulated ones
           # Linux arm64 wheels are built on circleci
           CIBW_ARCHS_LINUX: auto64 # ppc64le s390x
+          CIBW_CACHE_PATH: ${{ runner.temp }}/cibw-cache
           CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:/usr/lib/ccache/bin:/usr/lib64/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros" CCACHE_NOHASHDIR="true" SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -92,10 +99,18 @@ jobs:
       - name: install cibuildwheel
         run: |
           python -m pip install -r cibw-requirements.txt
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ${{ runner.temp }}/cibw-cache
+          key: cibw-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            cibw-${{ runner.os }}-
+          lookup-only: true
       - name: Build wheels
         run: python -m cibuildwheel . --output-dir wheelhouse
         env:
           CIBW_PLATFORM: pyodide
+          CIBW_CACHE_PATH: ${{ runner.temp }}/cibw-cache
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: artifact-pyodide
@@ -152,6 +167,13 @@ jobs:
         with:
           key: ${{ github.job }}-${{ matrix.os }}
           verbose: 2
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ${{ runner.temp }}/cibw-cache
+          key: cibw-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            cibw-${{ runner.os }}-
+          lookup-only: true
 
       # Used to host cibuildwheel
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -165,6 +187,7 @@ jobs:
       - name: Build wheels
         run: python -m cibuildwheel . --output-dir wheelhouse
         env:
+          CIBW_CACHE_PATH: ${{ runner.temp }}/cibw-cache
           CIBW_ENVIRONMENT_MACOS: CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros" CCACHE_NOHASHDIR="true" PATH=/usr/local/opt/ccache/libexec:/opt/homebrew/opt/ccache/libexec:$PATH SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -206,6 +229,13 @@ jobs:
         with:
           key: ${{ github.job }}-${{ matrix.target }}
           verbose: 2
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ${{ runner.temp }}/cibw-cache
+          key: cibw-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            cibw-${{ runner.os }}-
+          lookup-only: true
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
@@ -226,6 +256,7 @@ jobs:
         run: python -m cibuildwheel . --output-dir wheelhouse
         env:
           CIBW_ARCHS_LINUX: riscv64
+          CIBW_CACHE_PATH: ${{ runner.temp }}/cibw-cache
           CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:/usr/lib/ccache/bin:/usr/lib64/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros" CCACHE_NOHASHDIR="true" SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
