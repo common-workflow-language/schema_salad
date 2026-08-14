@@ -30,6 +30,10 @@ test_dir_name = "tests/"
 SchemaType = tuple[Loader, Union[Names, SchemaParseException], dict[str, Any], Loader]
 
 
+if sys.platform == "emscripten":
+    pytest.skip("zip IO is unsupported on Emscripten", allow_module_level=True)
+
+
 @pytest.fixture(scope="session")
 def cwl_v1_2_schema(
     tmp_path_factory: TempPathFactory,
