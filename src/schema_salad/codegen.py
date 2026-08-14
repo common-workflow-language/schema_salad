@@ -37,7 +37,10 @@ def codegen(
     parser_info: str | None = None,
 ) -> None:
     """Generate classes with loaders for the given Schema Salad description."""
-    j = schema.extend_and_specialize(i, loader)
+    j = {
+        r["name"]: r
+        for r in schema.extend_and_specialize(i, loader, expand_subtypes=lang != "python")
+    }
 
     gen: CodeGenBase
     base = schema_metadata.get("$base", schema_metadata.get("id"))
@@ -72,7 +75,7 @@ def codegen(
                         spdx_copyright_text,
                         spdx_license_identifier,
                     )
-                    gen.parse(j)
+                    gen.parse(list(j.values()))
                     return
                 case "dlang":
                     gen = DlangCodeGen(
@@ -84,7 +87,7 @@ def codegen(
                         info,
                         salad_version,
                     )
-                    gen.parse(j)
+                    gen.parse(list(j.values()))
                     return
                 case "python":
                     gen = PythonCodeGen(
@@ -113,23 +116,27 @@ def codegen(
 
     document_roots = []
 
-    for rec in j:
+    for name, rec in j.items():
         if rec["type"] in ("enum", "map", "record", "union"):
             jld = rec.get("jsonldPredicate")
             if isinstance(jld, MutableMapping):
                 gen.type_loader(rec, jld.get("_container"), jld.get("noLinkCheck"))
             else:
                 gen.type_loader(rec)
-            gen.add_vocab(shortname(rec["name"]), rec["name"])
+            gen.add_vocab(shortname(name), name)
+        if rec["type"] == "record" and rec.get("extends"):
+            for t in aslist(rec.get("extends")):
+                if j[t]["type"] == "record" and j[t].get("abstract"):
+                    gen.add_extend(name, t)
 
-    for rec in j:
+    for name, rec in j.items():
         if rec["type"] == "enum":
             for symbol in rec["symbols"]:
                 gen.add_vocab(shortname(symbol), symbol)
 
         if rec["type"] == "record":
             if rec.get("documentRoot"):
-                document_roots.append(rec["name"])
+                document_roots.append(name)
 
             field_names = []
             optional_fields = set()
@@ -146,7 +153,7 @@ def codegen(
                     idfield = field.get("name")
 
             gen.begin_class(
-                rec["name"],
+                name,
                 aslist(rec.get("extends", [])),
                 rec.get("doc", ""),
                 rec.get("abstract", False),
@@ -154,13 +161,13 @@ def codegen(
                 idfield,
                 optional_fields,
             )
-            gen.add_vocab(shortname(rec["name"]), rec["name"])
+            gen.add_vocab(shortname(name), name)
 
             sorted_fields = sorted(
                 rec.get("fields", []),
-                key=lambda i: (
-                    FIELD_SORT_ORDER.index(i["name"].split("/")[-1])
-                    if i["name"].split("/")[-1] in FIELD_SORT_ORDER
+                key=lambda idx: (
+                    FIELD_SORT_ORDER.index(idx["name"].split("/")[-1])
+                    if idx["name"].split("/")[-1] in FIELD_SORT_ORDER
                     else 100
                 ),
             )
@@ -187,7 +194,9 @@ def codegen(
 
                 if isinstance(jld, MutableMapping):
                     type_loader = gen.type_loader(
-                        field["type"], jld.get("_container"), jld.get("noLinkCheck")
+                        field["type"],
+                        jld.get("_container"),
+                        jld.get("noLinkCheck"),
                     )
                     ref_scope = jld.get("refScope")
                     subscope = jld.get("subscope")
@@ -227,7 +236,7 @@ def codegen(
 
                 gen.declare_field(fieldpred, type_loader, field.get("doc"), optional, subscope)
 
-            gen.end_class(rec["name"], field_names)
+            gen.end_class(name, field_names)
 
     root_type = list(document_roots)
     root_type.append({"type": "array", "items": document_roots})

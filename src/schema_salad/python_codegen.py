@@ -5,7 +5,7 @@ from collections.abc import MutableSequence
 from importlib.resources import files
 from io import StringIO
 from types import ModuleType
-from typing import Final, Any, IO, cast
+from typing import Final, Any, IO
 
 try:
     black: ModuleType | None
@@ -102,7 +102,6 @@ class PythonCodeGen(CodeGenBase):
         self.parser_info: Final = parser_info
         self.salad_version: Final = salad_version
         self.inherited_classes: dict[str, str] = {}
-        self.dynamic_loaders: set[str] = set()
 
     @staticmethod
     def safe_name(name: str) -> str:
@@ -417,7 +416,7 @@ if _errors__:
         """Parse the given type declaration and declare its components."""
         match type_declaration:
             case MutableSequence():
-                sub_names1: Final = list(
+                sub_names1 = list(
                     dict.fromkeys([self.type_loader(i).name for i in type_declaration])
                 )
                 return self.declare_type(
@@ -427,76 +426,31 @@ if _errors__:
                     )
                 )
             case {"type": "array" | "https://w3id.org/cwl/salad#array", "items": items, **rest}:
-                i1: Final = self.type_loader(items)
-                if "original_items" in rest:
-                    original_type = self.safe_name(shortname(cast(str, rest["original_items"])))
-                    self.declare_type(
-                        TypeDef(
-                            f"{original_type}Loader",
-                            i1.name,
-                            abstract=True,
-                        )
+                i1: Final = self.type_loader(
+                    items,
+                )
+                return self.declare_type(
+                    TypeDef(
+                        f"array_of_{i1.name}",
+                        f"_ArrayLoader({i1.name})",
                     )
-                    self.declare_type(
-                        TypeDef(
-                            f"{original_type}ProxyLoader",
-                            '_ProxyLoader("{}")'.format(original_type + "Loader"),
-                        )
-                    )
-                    return self.declare_type(
-                        TypeDef(
-                            f"array_of_{original_type}",
-                            f"_ArrayLoader({original_type}ProxyLoader)",
-                        )
-                    )
-                else:
-                    return self.declare_type(
-                        TypeDef(
-                            f"array_of_{i1.name}",
-                            f"_ArrayLoader({i1.name})",
-                        )
-                    )
+                )
             case {"type": "map" | "https://w3id.org/cwl/salad#map", "values": values, **rest}:
-                i2: Final = self.type_loader(values)
+                i2: Final = self.type_loader(
+                    values,
+                )
                 name = self.safe_name(str(rest["name"])) if "name" in rest else None
-                if "original_values" in rest:
-                    original_type = self.safe_name(shortname(cast(str, rest["original_values"])))
-                    self.declare_type(
-                        TypeDef(
-                            original_type + "Loader",
+                anon_type = self.declare_type(
+                    TypeDef(
+                        f"map_of_{i2.name}",
+                        "_MapLoader({}, {}, {}, {})".format(
                             i2.name,
-                            abstract=True,
-                        )
+                            f"'{name}'",  # noqa: B907
+                            f"'{container}'" if container is not None else None,  # noqa: B907
+                            no_link_check,
+                        ),
                     )
-                    self.declare_type(
-                        TypeDef(
-                            f"{original_type}ProxyLoader",
-                            '_ProxyLoader("{}")'.format(original_type + "Loader"),
-                        )
-                    )
-                    anon_type = self.declare_type(
-                        TypeDef(
-                            f"map_of_{original_type}",
-                            "_MapLoader({}, {}, {}, {})".format(
-                                f"{original_type}ProxyLoader",
-                                f"'{name}'",  # noqa: B907
-                                f"'{container}'" if container is not None else None,  # noqa: B907
-                                no_link_check,
-                            ),
-                        )
-                    )
-                else:
-                    anon_type = self.declare_type(
-                        TypeDef(
-                            f"map_of_{i2.name}",
-                            "_MapLoader({}, {}, {}, {})".format(
-                                i2.name,
-                                f"'{name}'",  # noqa: B907
-                                f"'{container}'" if container is not None else None,  # noqa: B907
-                                no_link_check,
-                            ),
-                        )
-                    )
+                )
                 if "name" in rest:
                     return self.declare_type(
                         TypeDef(self.safe_name(str(rest["name"])) + "Loader", anon_type.name)
@@ -594,7 +548,27 @@ if _errors__:
                     )
                 )
             case str(decl):
-                return self.collected_types[self.safe_name(decl) + "Loader"]
+                if decl in self.extended_by:
+                    i3: Final = self.type_loader(
+                        list(self.extended_by[decl])
+                        if len(self.extended_by[decl]) > 1
+                        else next(iter(self.extended_by[decl]))
+                    )
+                    self.declare_type(
+                        TypeDef(
+                            f"{self.safe_name(decl)}Loader",
+                            i3.name,
+                            abstract=True,
+                        )
+                    )
+                    return self.declare_type(
+                        TypeDef(
+                            f"{self.safe_name(decl)}ProxyLoader",
+                            '_ProxyLoader("{}")'.format(self.safe_name(decl) + "Loader"),
+                        )
+                    )
+                else:
+                    return self.collected_types[f"{self.safe_name(decl)}Loader"]
             case _ as decl:
                 raise SchemaException(f"wtf {decl}")
 
