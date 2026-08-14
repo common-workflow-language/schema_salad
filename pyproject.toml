@@ -30,6 +30,9 @@ environment = { SCHEMA_SALAD_USE_MYPYC="1", MYPYPATH="$(pwd)/mypy-stubs", CCACHE
 [tool.cibuildwheel.linux]
 before-all = "apk add ccache || yum install -y ccache || dnf --nogpg -y install https://www.rpmfind.net/linux/opensuse/ports/riscv/tumbleweed/repo/oss/riscv64/ccache-4.13.6-1.3.riscv64.rpm https://www.rpmfind.net/linux/opensuse/ports/riscv/tumbleweed/repo/oss/riscv64/libcpp-httplib0_49-0.49.0-4.1.riscv64.rpm https://www.rpmfind.net/linux/opensuse/ports/riscv/tumbleweed/repo/oss/riscv64/libfmt12-12.1.0-1.1.riscv64.rpm https://www.rpmfind.net/linux/opensuse/ports/riscv/tumbleweed/repo/oss/riscv64/libhiredis1_3_0-1.3.0-1.1.riscv64.rpm https://www.rpmfind.net/linux/opensuse/ports/riscv/tumbleweed/repo/oss/riscv64/libxxhash0-0.8.3-4.2.riscv64.rpm || apt-get install -y --no-install-recommends ccache"
 
+[tool.cibuildwheel.pyodide]
+test-command = "python -m pytest -n 0 --junitxml={project}/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad"
+
 [tool.black]
 line-length = 100
 target-version = [ "py310" ]

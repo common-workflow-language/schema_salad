@@ -2,6 +2,7 @@
 
 import datetime
 import os
+import sys
 from io import StringIO
 from pathlib import Path
 from typing import Any, cast
@@ -42,6 +43,7 @@ def test_schemas() -> None:
     } == ra
 
 
+@pytest.mark.skipif(sys.platform == "emscripten", reason="different error message on emscripten")
 def test_bad_schemas(caplog: pytest.LogCaptureFixture) -> None:
     """Test that bad $schemas refs don't stop parsing."""
     schema_path = get_data("tests/test_schema/CommonWorkflowLanguage.yml")
