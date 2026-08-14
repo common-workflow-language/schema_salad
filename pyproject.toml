@@ -21,9 +21,8 @@ write_to = "src/schema_salad/_version.py"
 test-command = "python -m pytest -n auto --junitxml={project}/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad"
 test-requires = "-r test-requirements.txt"
 test-extras = "pycodegen"
-skip = ["pp*", "cp31?t-*"]
-#      ^ skip building wheels on PyPy (any version)
-#              ^ https://mypy.readthedocs.io/en/stable/changelog.html#mypyc-partial-unsafe-support-for-free-threading
+skip = ["cp31?t-*"]
+#        ^ https://mypy.readthedocs.io/en/stable/changelog.html#mypyc-partial-unsafe-support-for-free-threading
 build-verbosity = 1
 environment = { SCHEMA_SALAD_USE_MYPYC="1", MYPYPATH="$(pwd)/mypy-stubs", CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros", CCACHE_NOHASHDIR="true" }
 
