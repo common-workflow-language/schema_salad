@@ -74,7 +74,7 @@ class _ArrayLoader(Loader):
         lc: Any | None = None,
     ) -> list[Any]:
         if not isinstance(doc, MutableSequence):
-            raise ValidationException(
+            raise SourceLine(doc, None, ValidationException).makeError(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
                 f"but valid type for this field is an array."
             )
@@ -275,7 +275,7 @@ class _RecordLoader(Loader, Generic[SaveableType]):
         lc: Any | None = None,
     ) -> SaveableType:
         if not isinstance(doc, MutableMapping):
-            raise ValidationException(
+            raise SourceLine(doc, None, ValidationException).makeError(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
                 f"but valid type for this field is an object."
             )
@@ -302,7 +302,7 @@ class _ExpressionLoader(Loader):
         lc: Any | None = None,
     ) -> str:
         if not isinstance(doc, str):
-            raise ValidationException(
+            raise SourceLine(doc, None, ValidationException).makeError(
                 f"Value is a {convert_typing(extract_type(type(doc)))}, "
                 f"but valid type for this field is a str."
             )
