@@ -48,7 +48,6 @@ jobs:
           key: cibw-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             cibw-${{ runner.os }}-
-          lookup-only: true
       # Used to host cibuildwheel
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -105,7 +104,6 @@ jobs:
           key: cibw-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             cibw-${{ runner.os }}-
-          lookup-only: true
       - name: Build wheels
         run: python -m cibuildwheel . --output-dir wheelhouse
         env:
@@ -173,7 +171,6 @@ jobs:
           key: cibw-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             cibw-${{ runner.os }}-
-          lookup-only: true
 
       # Used to host cibuildwheel
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -235,7 +232,6 @@ jobs:
           key: cibw-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             cibw-${{ runner.os }}-
-          lookup-only: true
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
