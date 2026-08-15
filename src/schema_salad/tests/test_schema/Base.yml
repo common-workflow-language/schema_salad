@@ -286,7 +286,7 @@ $graph:
         noLinkCheck: true
       doc: |
         The format of the file: this must be an IRI of a concept node that
-        represents the file format, preferrably defined within an ontology.
+        represents the file format, preferably defined within an ontology.
         If no ontology is available, file formats may be tested by exact match.
 
         Reasoning about format compatability must be done by checking that an
@@ -469,15 +469,3 @@ $graph:
     Generic type representing a valid CWL object. It is used to represent
     `default` values passed to CWL `InputParameter` and `WorkflowStepInput`
     record fields.
-
-- name: CWLInputFile
-  type: map
-  values:
-    - "null"
-    - CWLObjectType
-  doc: |
-    Type representing a valid CWL input file as a `map<string, CWLObjectType>`.
-  jsonldPredicate:
-    _id: "cwl:inputfile"
-    _container: "@list"
-    noLinkCheck: true
