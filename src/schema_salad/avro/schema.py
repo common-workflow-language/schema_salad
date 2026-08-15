@@ -43,10 +43,9 @@ from schema_salad.exceptions import SchemaException
 #
 
 PRIMITIVE_TYPES = ("null", "boolean", "string", "int", "long", "float", "double")
-
 NAMED_TYPES = ("enum", "record")
-
-VALID_TYPES = PRIMITIVE_TYPES + NAMED_TYPES + ("array", "map", "union")
+MAYBE_NAMED_TYPES = ("map", "union")
+VALID_TYPES = PRIMITIVE_TYPES + NAMED_TYPES + MAYBE_NAMED_TYPES + ("array",)
 
 SCHEMA_RESERVED_PROPS = (
     "type",
@@ -232,7 +231,7 @@ class Names:
 
 
 class NamedSchema(Schema):
-    """Named Schemas specified in NAMED_TYPES."""
+    """Named Schemas specified in NAMED_TYPES or MAYBE_NAMED_TYPES."""
 
     def __init__(
         self,
@@ -527,6 +526,9 @@ def _build_schema_objects(schemas: list[JsonDataType], names: Names) -> list[Sch
         if (
             new_schema.type in VALID_TYPES
             and new_schema.type not in NAMED_TYPES
+            and not (
+                new_schema.type in MAYBE_NAMED_TYPES and new_schema.get_prop("name") is not None
+            )
             and new_schema.type in [schema.type for schema in schema_objects]
         ):
             raise SchemaParseException(f"{new_schema.type} type already in Union")
