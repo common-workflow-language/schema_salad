@@ -158,13 +158,13 @@ class Loader:
     ) -> None:
         self.idx: IdxType = NormDict(_url_norm) if idx is None else idx
 
-        self.ctx: Final[ContextType] = {}
+        self.ctx: ContextType = {}
         self.graph = schemagraph if schemagraph is not None else Graph()
-        self.foreign_properties: Final = (
+        self.foreign_properties = (
             set(foreign_properties) if foreign_properties is not None else set()
         )
-        self.cache: Final = cache if cache is not None else {}
-        self.skip_schemas: Final = skip_schemas if skip_schemas is not None else False
+        self.cache = cache if cache is not None else {}
+        self.skip_schemas = skip_schemas if skip_schemas is not None else False
 
         if session is None:
             if doc_cache is False:
@@ -183,33 +183,33 @@ class Loader:
             temp_session = session
         self.session = temp_session
 
-        self.fetcher_constructor: Final = (
+        self.fetcher_constructor = (
             fetcher_constructor if fetcher_constructor is not None else DefaultFetcher
         )
-        self.fetcher: Final = self.fetcher_constructor(self.cache, self.session)
-        self.fetch_text: Final = self.fetcher.fetch_text
-        self.check_exists: Final = self.fetcher.check_exists
-        self.url_fields: Final[set[str]] = set() if url_fields is None else set(url_fields)
-        self.scoped_ref_fields: Final[dict[str, int]] = {}
-        self.vocab_fields: Final[set[str]] = set()
-        self.identifiers: Final[list[str]] = []
-        self.identity_links: Final[set[str]] = set()
+        self.fetcher = self.fetcher_constructor(self.cache, self.session)
+        self.fetch_text = self.fetcher.fetch_text
+        self.check_exists = self.fetcher.check_exists
+        self.url_fields: set[str] = set() if url_fields is None else set(url_fields)
+        self.scoped_ref_fields: dict[str, int] = {}
+        self.vocab_fields: set[str] = set()
+        self.identifiers: list[str] = []
+        self.identity_links: set[str] = set()
         self.standalone: set[str] | None = None
-        self.nolinkcheck: Final[set[str]] = set()
-        self.vocab: Final[dict[str, str]] = {}
-        self.rvocab: Final[dict[str, str]] = {}
-        self.idmap: Final[dict[str, str]] = {}
-        self.mapPredicate: Final[dict[str, str]] = {}
-        self.type_dsl_fields: Final[set[str]] = set()
-        self.subscopes: Final[dict[str, str]] = {}
-        self.secondaryFile_dsl_fields: Final[set[str]] = set()
-        self.allow_attachments: Final = allow_attachments
+        self.nolinkcheck: set[str] = set()
+        self.vocab: dict[str, str] = {}
+        self.rvocab: dict[str, str] = {}
+        self.idmap: dict[str, str] = {}
+        self.mapPredicate: dict[str, str] = {}
+        self.type_dsl_fields: set[str] = set()
+        self.subscopes: dict[str, str] = {}
+        self.secondaryFile_dsl_fields: set[str] = set()
+        self.allow_attachments = allow_attachments
 
         if salad_version:
             temp_salad_version = salad_version
         else:
             temp_salad_version = "v1.1"
-        self.salad_version: Final = temp_salad_version
+        self.salad_version = temp_salad_version
 
         self.add_context(ctx)
 
