@@ -56,7 +56,7 @@ install: FORCE
 
 ## dev                    : install the schema-salad package in dev mode
 dev: install-dep
-	pip install -U pip setuptools wheel
+	pip install -U pip setuptools_scm[toml] wheel
 	pip install -e .$(EXTRAS)
 
 ## dist                   : create a module package for distribution
