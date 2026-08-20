@@ -36,3 +36,6 @@ test-command = "python -m pytest -n 0 -k 'not (test_load_by_yaml_metaschema)' --
 [tool.black]
 line-length = 100
 target-version = [ "py310" ]
+
+[tool.pytest.ini_options]
+testpaths = ["src/schema_salad/tests"]
