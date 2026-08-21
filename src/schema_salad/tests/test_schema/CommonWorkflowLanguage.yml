@@ -9,3 +9,15 @@ $graph:
 - $import: Process.yml
 - $import: CommandLineTool.yml
 - $import: Workflow.yml
+
+- name: CWLInputFile
+  type: map
+  values:
+    - "null"
+    - CWLObjectType
+  doc: |
+    Type representing a valid CWL input file as a `map<string, CWLObjectType>`.
+  jsonldPredicate:
+    _id: "cwl:inputfile"
+    _container: "@list"
+    noLinkCheck: true
