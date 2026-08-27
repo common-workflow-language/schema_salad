@@ -31,6 +31,7 @@ before-all = "apk add ccache || yum install -y ccache || dnf --nogpg -y install 
 
 [tool.cibuildwheel.pyodide]
 test-command = "python -m pytest -n 0 -k 'not (test_load_by_yaml_metaschema)' --junitxml={project}/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad"
+# "-n 0", no support for multiprocessing under pyodide/emscripten
 
 [tool.black]
 line-length = 100
