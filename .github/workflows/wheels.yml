@@ -189,12 +189,11 @@ jobs:
           name: artifact-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
 
-  build_wheels_riscv64:
-    name: riscv64 ${{ matrix.target }} wheels
-    runs-on: ubuntu-26.04
-    strategy:
-      matrix:
-        target: [ 'many', 'musl' ]
+  generate_riscv_wheels_matrix:
+    name: Generate riscv wheels matrix
+    runs-on: ubuntu-26.04-arm
+    outputs:
+      include: ${{ steps.set-matrix.outputs.include }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: ${{ github.event_name != 'repository_dispatch' }}
@@ -207,21 +206,49 @@ jobs:
           fetch-depth: 0  # slow, but gets all the tags
           ref: ${{ github.event.client_payload.ref }}
           persist-credentials: false
-
-      - name: musllinux target
-        if: ${{ matrix.target == 'musl' }}
+      # Used to host cibuildwheel
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11 - 3.15"
+          update-environment: false
+      - name: install cibuildwheel
         run: |
-          echo "CIBW_BUILD=*musllinux*" >> "$GITHUB_ENV"
-
-      - name: manylinux target
-        if: ${{ matrix.target == 'many' }}
+          python -m pip install -r cibw-requirements.txt pypyp==1.3.0
+      - id: set-matrix
         run: |
-          echo "CIBW_BUILD=*manylinux*" >> "$GITHUB_ENV"
+          MATRIX=$(
+            {
+              cibuildwheel --print-build-identifiers --platform linux --archs riscv64 . \
+              | pyp 'json.dumps({"only": x, "os": "ubuntu-24.04-arm"})'
+            } | pyp 'json.dumps(list(map(json.loads, lines)))'
+          )
+          echo "include=$MATRIX" | tee -a "$GITHUB_OUTPUT"
 
+
+  build_wheels_riscv64:
+    name: Build ${{ matrix.only }}
+    runs-on: ${{ matrix.os }}
+    needs: generate_riscv_wheels_matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.generate_riscv_wheels_matrix.outputs.include) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: ${{ github.event_name != 'repository_dispatch' }}
+        with:
+          fetch-depth: 0  # slow, but gets all the tags
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: ${{ github.event_name == 'repository_dispatch' }}
+        with:
+          fetch-depth: 0  # slow, but gets all the tags
+          ref: ${{ github.event.client_payload.ref }}
+          persist-credentials: false
       - name: ccache
         uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
         with:
-          key: ${{ github.job }}-${{ matrix.target }}
+          key: ${{ github.job }}-${{ matrix.only }}
           verbose: 2
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -246,15 +273,14 @@ jobs:
           python -m pip install -r cibw-requirements.txt
 
       - name: Build wheels
-        run: python -m cibuildwheel . --output-dir wheelhouse
+        run: python -m cibuildwheel --only ${{ matrix.only }} . --output-dir wheelhouse
         env:
-          CIBW_ARCHS_LINUX: riscv64
           CIBW_CACHE_PATH: ${{ runner.temp }}/cibw-cache
           CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:/usr/lib/ccache/bin:/usr/lib64/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros" CCACHE_NOHASHDIR="true" SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: artifact-riscv64-${{ matrix.target }}
+          name: artifact-${{ matrix.only }}
           path: ./wheelhouse/*.whl
 
   upload_pypi:
