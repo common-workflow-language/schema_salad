@@ -219,7 +219,7 @@ jobs:
           MATRIX=$(
             {
               cibuildwheel --print-build-identifiers --platform linux --archs riscv64 . \
-              | pyp 'json.dumps({"only": x, "os": "ubuntu-24.04-arm"})'
+              | pyp 'json.dumps({"only": x, "os": "ubuntu-24.04-riscv"})'
             } | pyp 'json.dumps(list(map(json.loads, lines)))'
           )
           echo "include=$MATRIX" | tee -a "$GITHUB_OUTPUT"
@@ -253,30 +253,23 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/cibw-cache
-          key: cibw-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+          key: cibw-${{ matrix.only }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
-            cibw-${{ runner.os }}-
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+            cibw-${{ matrix.only }}
+      - name: Setup Python 3.14
+        uses: riseproject-dev/setup-python@0d1135ac814405808323d2060134097ba5fd641b
         with:
-          platforms: all
-        id: qemu
-
-      # Used to host cibuildwheel
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.11 - 3.14"
-          update-environment: false
-      - name: install cibuildwheel
-        run: |
-          python -m pip install -r cibw-requirements.txt
-
+          python-version: 3.14
+          freethreaded: false
+          mirror: https://raw.githubusercontent.com/riseproject-dev/python-versions/main
+      - name: install pipx
+        run: sudo apt-get update && sudo apt-get install -y pipx
       - name: Build wheels
-        run: python -m cibuildwheel --only ${{ matrix.only }} . --output-dir wheelhouse
+        run: pipx run $(cat cibw-requirements.txt) --only ${{ matrix.only }} . --output-dir wheelhouse
         env:
+          PIPX_DEFAULT_PYTHON: python3.14
           CIBW_CACHE_PATH: ${{ runner.temp }}/cibw-cache
-          CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:/usr/lib/ccache/bin:/usr/lib64/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros" CCACHE_NOHASHDIR="true" SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
+          CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:/usr/lib/ccache/bin:/usr/lib64/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros" CCACHE_NOHASHDIR="true" SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs" PIP_EXTRA_INDEX_URL=https://pypi.riseproject.dev/simple/
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
