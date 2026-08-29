@@ -253,9 +253,9 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/cibw-cache
-          key: cibw-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+          key: cibw-${{ matrix.only }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
-            cibw-${{ runner.os }}-
+            cibw-${{ matrix.only }}
       - name: Setup Python 3.14
         uses: riseproject-dev/setup-python@0d1135ac814405808323d2060134097ba5fd641b
         with:
