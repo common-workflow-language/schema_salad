@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import json
 import os
 import sys
-from collections.abc import Callable, Iterable, Mapping, MutableSequence
+from collections.abc import Callable, Iterable, Mapping, MutableSequence, Sequence
 from io import BufferedWriter
-from typing import IO, TYPE_CHECKING, Any, Final, Optional, TypeAlias, TypeVar, Union
+from typing import IO, TYPE_CHECKING, Any, Final, Optional, TypeAlias, TypeVar, Union, cast
 
 import requests
 from rdflib.graph import Graph
@@ -35,6 +37,10 @@ FetcherCallableType: TypeAlias = Callable[[CacheType, requests.sessions.Session]
 AttachmentsType: TypeAlias = Callable[[Union[CommentedMap, CommentedSeq]], bool]
 
 
+_T = TypeVar("_T")
+_NestedSequence: TypeAlias = list[_T | "_NestedSequence[_T]"] | tuple[_T | "_NestedSequence[_T]"]
+
+
 def add_dictlist(di: dict[Any, Any], key: Any, val: Any) -> None:
     """Manage element insertion in dicts of lists."""
     if key not in di:
@@ -53,13 +59,13 @@ def aslist(thing: Any) -> MutableSequence[Any]:
     return [thing]
 
 
-def flatten(thing: Any, ltypes: Any = (list, tuple)) -> Any:
+def flatten(thing: _T | _NestedSequence[_T] | None, ltypes: Any = (list, tuple)) -> list[_T] | tuple[_T]:
     """Flatten lists recursively."""
     # http://rightfootin.blogspot.com/2006/09/more-on-python-flatten.html
     if thing is None:
         return []
     if not isinstance(thing, ltypes):
-        return [thing]
+        return cast(list[_T], [thing])
 
     ltype: Final = type(thing)
     lst: Final = list(thing)
@@ -72,7 +78,7 @@ def flatten(thing: Any, ltypes: Any = (list, tuple)) -> Any:
                 break
             lst[i : i + 1] = lst[i]
         i += 1
-    return ltype(lst)
+    return cast(list[_T] | tuple[_T], ltype(lst))
 
 
 def onWindows() -> bool:

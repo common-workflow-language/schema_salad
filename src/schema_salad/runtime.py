@@ -14,10 +14,11 @@ import tempfile
 import xml.sax  # nosec
 from abc import ABCMeta, abstractmethod
 from collections.abc import MutableMapping, MutableSequence
-from typing import Any, Final, TypeAlias, cast, TypeVar
+from typing import Any, Final, TypeAlias, cast, TypeVar, Generic
 from urllib.parse import quote, urlparse, urlsplit
 from urllib.request import pathname2url
 
+from mypy_extensions import mypyc_attr, i32, i64
 from rdflib import Graph
 from rdflib.plugins.parsers.notation3 import BadSyntax
 
@@ -31,10 +32,13 @@ else:
 
 _logger: Final = logging.getLogger("salad")
 
+EnumFieldType = TypeVar("EnumFieldType", bound=str)
+FieldType = TypeVar("FieldType", covariant=True)
 IdxType: TypeAlias = MutableMapping[str, tuple[Any, "LoadingOptions"]]
 
 
-class Loader(metaclass=ABCMeta):
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
+class Loader(Generic[FieldType], metaclass=ABCMeta):
     """Base class for loading Python objects from SALAD documents."""
 
     @abstractmethod
@@ -45,7 +49,7 @@ class Loader(metaclass=ABCMeta):
         loadingOptions: LoadingOptions,
         docRoot: str | None = None,
         lc: Any | None = None,
-    ) -> Any | None:
+    ) -> FieldType:
         """Load a Python object from a dictionary."""
 
 
@@ -67,7 +71,7 @@ class LoadingOptions:
     includes: Final[list[str]]
     no_link_check: Final[bool | None]
     container: Final[str | None]
-    loaders: Final[dict[str, Loader | None]]
+    loaders: Final[dict[str, Loader[Any] | None]]
 
     def __init__(
         self,
@@ -84,7 +88,7 @@ class LoadingOptions:
         includes: list[str] | None = None,
         no_link_check: bool | None = None,
         container: str | None = None,
-        loaders: dict[str, Loader | None] | None = None,
+        loaders: dict[str, Loader[Any] | None] | None = None,
     ) -> None:
         """Create a LoadingOptions object."""
         self.original_doc = original_doc
@@ -214,6 +218,7 @@ class LoadingOptions:
         return graph
 
 
+@mypyc_attr(native_class=True, allow_interpreted_subclasses=True)
 class Saveable(metaclass=ABCMeta):
     """Mark classes than have a save() and fromDoc() function."""
 
@@ -236,8 +241,9 @@ class Saveable(metaclass=ABCMeta):
 
 
 SaveableType = TypeVar("SaveableType", bound="Saveable")
+
 save_type: TypeAlias = (
-    None | MutableMapping[str, Any] | MutableSequence[Any] | int | float | bool | str
+    None | MutableMapping[str, Any] | MutableSequence[Any] | i32 | i64 | float | bool | str
 )
 
 
@@ -316,7 +322,7 @@ def save(
         for key in val:
             newdict[key] = save(val[key], top=False, base_url=base_url, relative_uris=relative_uris)
         return newdict
-    if val is None or isinstance(val, (int, float, bool, str)):
+    if val is None or isinstance(val, (i32, i64, float, bool, str)):
         return val
     raise Exception("Not Saveable: %s" % type(val))
 
