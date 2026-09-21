@@ -135,6 +135,13 @@ public interface ISaveable
                     }
 
                     baseFrag = string.Join('/', sp);
+                    if (baseFrag.Length > 0 && !baseFrag.EndsWith("/"))
+                    {
+                        // Match only on a path-segment boundary, so that a sibling id
+                        // sharing a prefix (e.g. "step_1_input" vs "step_1") is not
+                        // truncated.
+                        baseFrag += "/";
+                    }
                 }
 
                 if (uriSplit.FragmentWithoutFragmentation().StartsWith(baseFrag))
