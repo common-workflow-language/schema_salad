@@ -646,7 +646,11 @@ def extend_and_specialize(
             if stype["type"] == "record":
                 stype = copy.copy(stype)
                 combined_fields = []
-                fields = stype.get("fields", [])
+                fields = (
+                    replace_type(stype.get("fields", []), {}, loader, set())
+                    if specs
+                    else stype.get("fields", [])
+                )
                 # We use short names here so that if a type inherits a field
                 # (e.g. Child#id) from a parent (Parent#id) we avoid adding
                 # the same field twice (previously we had just
