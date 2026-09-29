@@ -1,0 +1,4 @@
+codecov:
+  notify:
+    after_n_builds: 6  # one for each Python version tested by tox/gh-actions
+    wait_for_ci: false
