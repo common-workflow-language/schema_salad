@@ -37,3 +37,4 @@ target-version = [ "py310" ]
 
 [tool.pytest.ini_options]
 testpaths = ["src/schema_salad/tests"]
+addopts="-n auto --dist=loadscope --pyargs schema_salad.tests"
