@@ -397,9 +397,11 @@ def save_relative_uri(
 
             basefrag = basesplit.fragment + "/"
             if ref_scope:
-                sp = basefrag.split("/")
+                # Pop the same segments the loader pops when expanding a
+                # scoped reference, so that saving then loading round-trips.
+                sp = basesplit.fragment.split("/")
                 i = 0
-                while i < ref_scope:
+                while i < ref_scope and sp:
                     sp.pop()
                     i += 1
                 basefrag = "/".join(sp)

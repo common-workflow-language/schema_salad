@@ -126,16 +126,18 @@ public interface ISaveable
                 string baseFrag = baseSplit.FragmentWithoutFragmentation() + "/";
                 if (refScope != null)
                 {
-                    List<string> sp = baseFrag.Split('/').ToList();
+                    // Pop the same segments the loader pops when expanding a
+                    // scoped reference, so that saving then loading round-trips.
+                    List<string> sp = baseSplit.FragmentWithoutFragmentation().Split('/').ToList();
                     int i = 0;
-                    while (i < refScope)
+                    while (i < refScope && sp.Count > 0)
                     {
                         sp.RemoveAt(sp.Count - 1);
                         i += 1;
                     }
 
                     baseFrag = string.Join('/', sp);
-                    if (baseFrag.Length > 0 && !baseFrag.EndsWith("/"))
+                    if (baseFrag.Length > 0)
                     {
                         // Match only on a path-segment boundary, so that a sibling id
                         // sharing a prefix (e.g. "step_1_input" vs "step_1") is not
