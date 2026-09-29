@@ -68,14 +68,16 @@ export function saveRelativeUri (uri: any, baseUrl: string='', scopedId: boolean
       }
       let basefrag = baseSplit.fragment + '/'
       if (refScope != null) {
-        const sp = basefrag.split('/')
+        // Pop the same segments the loader pops when expanding a scoped
+        // reference, so that saving then loading round-trips.
+        const sp = baseSplit.fragment.split('/')
         let i = 0
-        while (i < refScope) {
+        while (i < refScope && sp.length > 0) {
           sp.pop()
           i += 1
         }
         basefrag = sp.join('/')
-        if (basefrag !== '' && !basefrag.endsWith('/')) {
+        if (basefrag !== '') {
           // Match only on a path-segment boundary, so that a sibling id
           // sharing a prefix (e.g. "step_1_input" vs "step_1") is not
           // truncated.

@@ -1,6 +1,9 @@
-"""Tests of the runtime support functions for generated parsers."""
+"""Test the runtime module."""
 
-from schema_salad.runtime import save_relative_uri
+import pytest
+
+from schema_salad.python_codegen_support import _expand_url
+from schema_salad.runtime import LoadingOptions, save_relative_uri
 
 BASE = "file:///wf.cwl#second_step/input_2"
 
@@ -51,9 +54,37 @@ def test_save_relative_uri_sibling() -> None:
 
 
 def test_save_relative_uri_inside_scope() -> None:
-    """A reference below the popped scope is relativized without a leading slash."""
+    """A reference is relativized against the scope the loader resolves it in.
+
+    For a ref_scope=2 field on "#second_step/input_2" that scope is the
+    document root, so a step output keeps its step name.
+    """
     uri = "file:///wf.cwl#second_step/log"
-    assert save_relative_uri(uri, BASE, False, 2, True) == "log"
+    assert save_relative_uri(uri, BASE, False, 2, True) == "second_step/log"
+
+
+def test_save_relative_uri_packed() -> None:
+    """In a packed document, only the enclosing process's name is stripped.
+
+    E.g. `source: inp` on step input "#main/step/in" (ref_scope=2) and
+    `outputSource: step/log` on workflow output "#main/out" (ref_scope=1).
+    """
+    uri = "file:///wf.cwl#main/inp"
+    assert save_relative_uri(uri, "file:///wf.cwl#main/step/in", False, 2, True) == "inp"
+    uri = "file:///wf.cwl#main/step/log"
+    assert save_relative_uri(uri, "file:///wf.cwl#main/out", False, 1, True) == "step/log"
+
+
+def test_save_relative_uri_scope_is_document_root() -> None:
+    """When ref_scope pops every fragment segment, the full fragment is kept.
+
+    E.g. a ref_scope=2 field whose own id is a single top-level fragment.
+    """
+    base = "file:///wf.cwl#input_2"
+    uri = "file:///wf.cwl#first_input"
+    assert save_relative_uri(uri, base, False, 2, True) == "first_input"
+    uri = "file:///wf.cwl#input_2_other"
+    assert save_relative_uri(uri, base, False, 2, True) == "input_2_other"
 
 
 def test_save_relative_uri_no_ref_scope() -> None:
@@ -64,3 +95,23 @@ def test_save_relative_uri_no_ref_scope() -> None:
     uri = "file:///wf.cwl#second_step/input_2"
     base = "file:///wf.cwl#second_step"
     assert save_relative_uri(uri, base, False, None, True) == "input_2"
+
+
+@pytest.mark.parametrize(
+    "uri,base,ref_scope",
+    [
+        ("file:///wf.cwl#second_step_input", BASE, 2),
+        ("file:///wf.cwl#second_step/log", BASE, 2),
+        ("file:///wf.cwl#first_input", "file:///wf.cwl#input_2", 2),
+        ("file:///wf.cwl#second_step/log", "file:///wf.cwl#second", 1),
+        ("file:///wf.cwl#main/inp", "file:///wf.cwl#main/step/in", 2),
+        ("file:///wf.cwl#main/step_input", "file:///wf.cwl#main/step/in", 2),
+        ("file:///wf.cwl#main/step/log", "file:///wf.cwl#main/out", 1),
+        ("file:///wf.cwl#main/inp", "file:///wf.cwl#main/step/in", 5),
+    ],
+)
+def test_save_relative_uri_round_trip(uri: str, base: str, ref_scope: int) -> None:
+    """Loading a saved scoped reference gives back the original URI."""
+    saved = save_relative_uri(uri, base, False, ref_scope, True)
+    loading_options = LoadingOptions(no_link_check=True)
+    assert _expand_url(saved, base, loading_options, False, False, ref_scope) == uri
