@@ -26,7 +26,7 @@ EXTRAS=[pycodegen]
 
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
-PYSOURCES=$(wildcard src/${MODULE}/**.py src/${MODULE}/avro/*.py src/${MODULE}/tests/*.py) setup.py
+PYSOURCES=$(wildcard src/${MODULE}/**.py src/${MODULE}/avro/*.py src/${MODULE}/tests/*.py)
 DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt -rlint-requirements.txt
 COVBASE=coverage run --append
 PYTEST_EXTRA ?=
@@ -56,7 +56,7 @@ install: FORCE
 
 ## dev                    : install the schema-salad package in dev mode
 dev: install-dep
-	pip install -U pip setuptools_scm[toml] wheel
+	pip install -U pip build wheel
 	pip install -e .$(EXTRAS)
 
 ## dist                   : create a module package for distribution
@@ -74,7 +74,6 @@ clean: FORCE
 	find src -type d -name __pycache__ | xargs rm -Rf
 	rm -f src/schema_salad/_version.py
 	find src -type f -name "*.so" -delete
-	python setup.py clean --all || true
 	rm -Rf .coverage
 	rm -f diff-cover.html
 
@@ -92,7 +91,7 @@ pydocstyle: $(filter-out src/schema_salad/metaschema.py,$(PYSOURCES))
 	pydocstyle --add-ignore=D100,D101,D102,D103 $^ || true
 
 pydocstyle_report.txt: $(filter-out src/schema_salad/metaschema.py,$(PYSOURCES))
-	pydocstyle setup.py $^ > $@ 2>&1 || true
+	pydocstyle $^ > $@ 2>&1 || true
 
 ## diff_pydocstyle_report : check Python docstring style for changed files only
 diff_pydocstyle_report: pydocstyle_report.txt
@@ -104,10 +103,10 @@ codespell:
 
 ## format                 : check/fix all code indentation and formatting (runs black)
 format:
-	black --force-exclude metaschema.py --exclude _version.py src/schema_salad setup.py mypy-stubs
+	black --force-exclude metaschema.py --exclude _version.py src/schema_salad mypy-stubs
 
 format-check:
-	black --diff --check --force-exclude metaschema.py --exclude _version.py src/schema_salad setup.py mypy-stubs
+	black --diff --check --force-exclude metaschema.py --exclude _version.py src/schema_salad mypy-stubs
 
 ## pylint                 : run static code analysis on Python code
 pylint: $(PYSOURCES)
@@ -121,8 +120,7 @@ pylint_report.txt: $(PYSOURCES)
 diff_pylint_report: pylint_report.txt
 	diff-quality --compare-branch=origin/main --violations=pylint pylint_report.txt
 
-.coverage:
-	pytest --cov --cov-config=.coveragerc --cov-report= --junitxml=junit.xml -o junit_family=legacy ${PYTEST_EXTRA}
+.coverage: testcov
 	$(COVBASE) -m schema_salad.main \
 		--print-jsonld-context src/schema_salad/metaschema/metaschema.yml \
 		> /dev/null
@@ -159,8 +157,8 @@ test: $(PYSOURCES)
 	python -m pytest -rsfE ${PYTEST_EXTRA}
 
 ## testcov                : run the schema-salad test suite and collect coverage
-testcov: $(PYSOURCES)
-	pytest --cov ${PYTEST_EXTRA}
+testcov: FORCE
+	pytest --cov= --cov-config=.coveragerc --cov-report= --junitxml=junit.xml -o junit_family=legacy ${PYTEST_EXTRA}
 
 sloccount.sc: $(PYSOURCES) Makefile
 	sloccount --duplicates --wide --details $^ > $@
@@ -174,15 +172,15 @@ list-author-emails:
 	@git log --format='%aN,%aE' | sort -u | grep -v 'root'
 
 mypy3: mypy
-mypy: $(filter-out setup.py,$(PYSOURCES))
+mypy: $(PYSOURCES)
 	MYPYPATH=$$MYPYPATH:mypy-stubs mypy $^
 
 mypyc: $(PYSOURCES)
-	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 pip install --verbose -e . \
+	MYPYPATH=mypy-stubs HATCH_BUILD_HOOKS_ENABLE=1 pip install --verbose -e . \
 		 && pytest "${PYTEST_EXTRA}"
 
 mypyi:
-	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 pip install .${EXTRAS}
+	MYPYPATH=mypy-stubs HATCH_BUILD_HOOKS_ENABLE=1 pip install .${EXTRAS}
 
 check-metaschema-diff:
 	docker run \
