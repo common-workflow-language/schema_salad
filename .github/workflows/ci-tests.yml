@@ -44,9 +44,9 @@ jobs:
             requirements.txt
             tox.ini
 
-      - name: Upgrade setuptools and install tox
+      - name: Upgrade build tools and install tox
         run: |
-          pip install -U pip setuptools wheel
+          pip install -U pip build wheel
           pip install 'tox>=4' tox-gh-actions
 
       - name: MyPy cache
@@ -90,9 +90,9 @@ jobs:
           python-version: ${{ env.py-semver }}
           cache: pip
 
-      - name: Upgrade setuptools and install tox
+      - name: Upgrade build tools and install tox
         run: |
-          pip install -U pip setuptools wheel
+          pip install -U pip build wheel
           pip install 'tox>=4' tox-gh-actions
 
       - if: ${{ matrix.step == 'pydocstyle' && github.event_name == 'pull_request'}}
@@ -121,9 +121,9 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             tox.ini
-      - name: Upgrade setuptools and install schema-salad
+      - name: Upgrade build tools and install schema-salad
         run: |
-          pip install -U pip setuptools wheel
+          pip install -U pip build wheel
           pip install .
       - name: Download valid CWL documents for testing
         run: |
@@ -157,9 +157,9 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             tox.ini
-      - name: Upgrade setuptools and install schema-salad
+      - name: Upgrade build tools and install schema-salad
         run: |
-          pip install -U pip setuptools wheel
+          pip install -U pip build wheel
           pip install .
       - name: Download cwl-cpp-auto for its tests
         run: |
@@ -193,8 +193,7 @@ jobs:
 
       - name: Install packages
         run: |
-          pip install -U pip setuptools wheel
-          pip install virtualenv
+          pip install -U pip build wheel virtualenv
 
       - name: Release test
         env:
@@ -210,6 +209,6 @@ jobs:
       - name: record schema-salad version
         run: |
           python3 -m venv env
-          source env/bin/activate && pip install -U setuptools wheel && pip install setuptools_scm[toml] && python setup.py --version
+          source env/bin/activate && pip install -U pip build wheel hatch && hatch build --hooks-only
       - name: build & test schema_salad container
         run: ./build-schema_salad-docker.sh

@@ -19,5 +19,5 @@ pydocstyle_report.txt
 # PyCharm
 .idea/
 
-# setuptools_scm
+# hatch-vcs
 _version.py
