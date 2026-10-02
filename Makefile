@@ -22,11 +22,11 @@
 
 MODULE=schema_salad
 PACKAGE=schema-salad
-EXTRAS=[pycodegen]
+EXTRAS=[pycodegen,mypy,docs]
 
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
-PYSOURCES=$(wildcard src/${MODULE}/**.py src/${MODULE}/avro/*.py src/${MODULE}/tests/*.py) setup.py
+PYSOURCES=$(wildcard src/${MODULE}/**.py src/${MODULE}/avro/*.py src/${MODULE}/tests/*.py)
 COVBASE=coverage run --append
 PYTEST_EXTRA ?=
 
@@ -47,22 +47,22 @@ cleanup: sort_imports format flake8 diff_pydocstyle_report
 install-dep: install-dependencies
 
 install-dependencies: FORCE
-	pip install -U pip setuptools_scm[toml] wheel build
+	pip install -U pip build wheel
 	pip install --upgrade --group dev
 
 ## install                : install the schema-salad package and scripts
 install: FORCE
-	pip install .$(EXTRAS)
+	HATCH_VERBOSE=3 pip install .$(EXTRAS)
 
 ## dev                    : install the schema-salad package in dev mode
 dev: install-dep
-	pip install -e .$(EXTRAS)
+	HATCH_VERBOSE=3 pip install -e .$(EXTRAS)
 
 ## dist                   : create a module package for distribution
 dist: dist/${MODULE}-$(VERSION).tar.gz
 
 dist/${MODULE}-$(VERSION).tar.gz: $(SOURCES)
-	python -m build
+	HATCH_VERBOSE=3 python -m build
 
 ## docs                   : make the docs
 docs: FORCE
@@ -73,7 +73,6 @@ clean: FORCE
 	find src -type d -name __pycache__ | xargs rm -Rf
 	rm -f src/schema_salad/_version.py
 	find src -type f -name "*.so" -delete
-	python setup.py clean --all || true
 	rm -Rf .coverage
 	rm -f diff-cover.html
 
@@ -91,7 +90,7 @@ pydocstyle: $(filter-out src/schema_salad/metaschema.py,$(PYSOURCES))
 	pydocstyle --add-ignore=D100,D101,D102,D103 $^ || true
 
 pydocstyle_report.txt: $(filter-out src/schema_salad/metaschema.py,$(PYSOURCES))
-	pydocstyle setup.py $^ > $@ 2>&1 || true
+	pydocstyle $^ > $@ 2>&1 || true
 
 ## diff_pydocstyle_report : check Python docstring style for changed files only
 diff_pydocstyle_report: pydocstyle_report.txt
@@ -103,10 +102,10 @@ codespell:
 
 ## format                 : check/fix all code indentation and formatting (runs black)
 format:
-	black --force-exclude metaschema.py --exclude _version.py src/schema_salad setup.py mypy-stubs
+	black --force-exclude metaschema.py --exclude _version.py src/schema_salad mypy-stubs
 
 format-check:
-	black --diff --check --force-exclude metaschema.py --exclude _version.py src/schema_salad setup.py mypy-stubs
+	black --diff --check --force-exclude metaschema.py --exclude _version.py src/schema_salad mypy-stubs
 
 ## pylint                 : run static code analysis on Python code
 pylint: $(PYSOURCES)
@@ -120,8 +119,7 @@ pylint_report.txt: $(PYSOURCES)
 diff_pylint_report: pylint_report.txt
 	diff-quality --compare-branch=origin/main --violations=pylint pylint_report.txt
 
-.coverage:
-	pytest --cov --cov-config=.coveragerc --cov-report= --junitxml=junit.xml -o junit_family=legacy ${PYTEST_EXTRA}
+.coverage: testcov
 	$(COVBASE) -m schema_salad.main \
 		--print-jsonld-context src/schema_salad/metaschema/metaschema.yml \
 		> /dev/null
@@ -158,8 +156,8 @@ test: $(PYSOURCES)
 	python -m pytest -rsfE ${PYTEST_EXTRA}
 
 ## testcov                : run the schema-salad test suite and collect coverage
-testcov: $(PYSOURCES)
-	pytest --cov ${PYTEST_EXTRA}
+testcov: FORCE
+	pytest --cov= --cov-config=.coveragerc --cov-report= --junitxml=junit.xml -o junit_family=legacy ${PYTEST_EXTRA}
 
 sloccount.sc: $(PYSOURCES) Makefile
 	sloccount --duplicates --wide --details $^ > $@
@@ -173,15 +171,15 @@ list-author-emails:
 	@git log --format='%aN,%aE' | sort -u | grep -v 'root'
 
 mypy3: mypy
-mypy: $(filter-out setup.py,$(PYSOURCES))
+mypy: $(PYSOURCES)
 	MYPYPATH=$$MYPYPATH:mypy-stubs mypy $^
 
 mypyc: $(PYSOURCES)
-	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 pip install --verbose -e . \
+	HATCH_VERBOSE=3 MYPYPATH=mypy-stubs HATCH_BUILD_HOOKS_ENABLE=1 pip install --verbose -e . \
 		 && pytest "${PYTEST_EXTRA}"
 
 mypyi:
-	MYPYPATH=mypy-stubs SCHEMA_SALAD_USE_MYPYC=1 pip install .${EXTRAS}
+	HATCH_VERBOSE=3 MYPYPATH=mypy-stubs HATCH_BUILD_HOOKS_ENABLE=1 pip install .${EXTRAS}
 
 check-metaschema-diff:
 	docker run \
@@ -210,7 +208,7 @@ pyupgrade: $(filter-out src/schema_salad/metaschema.py,$(PYSOURCES))
 
 release-test: FORCE
 	git diff-index --quiet HEAD -- || ( echo You have uncommitted changes, please commit them and try again; false )
-	./release-test.sh
+	HATCH_VERBOSE=3 ./release-test.sh
 
 release:
 	export SETUPTOOLS_SCM_PRETEND_VERSION=${VERSION} && \

@@ -38,7 +38,7 @@ jobs:
       - run:
           name: install cibuildwheel and other build reqs
           command: |
-            python3 -m pip install --upgrade pip wheel build setuptools setuptools_scm[toml]
+            python3 -m pip install --upgrade pip build wheel
             python3 -m pip install --group cibw
 
       - run:
