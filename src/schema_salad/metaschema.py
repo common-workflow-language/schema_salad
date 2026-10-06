@@ -308,7 +308,7 @@ class _RecordLoader(Loader, Generic[SaveableType]):
         return self.classtype.fromDoc(doc, baseuri, loadingOptions, docRoot=docRoot)
 
     def __repr__(self) -> str:
-        return str(self.classtype.__name__)
+        return self.classtype.__name__
 
 
 class _ExpressionLoader(Loader):
@@ -733,7 +733,7 @@ def _document_load_by_url(
 
     text: Final = loadingOptions.fetcher.fetch_text(doc_url)
     textIO: Final = StringIO(text)
-    textIO.name = str(doc_url)
+    textIO.name = doc_url
     yaml: Final = yaml_no_ts()
     result: Final = yaml.load(textIO)
     add_lc_filename(result, doc_url)
