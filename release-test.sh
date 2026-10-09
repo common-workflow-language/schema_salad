@@ -7,7 +7,7 @@ export LC_ALL=C
 
 package=schema-salad
 module=schema_salad
-extras="[pycodegen]"
+extras="[pycodegen,testing]"
 
 if [ "$GITHUB_ACTIONS" = "true" ]; then
     # We are running as a GH Action
@@ -19,7 +19,6 @@ else
 fi
 run_tests="python3 -m pytest --pyargs ${module}"
 pipver=23.1  # minimum required version of pip for Python 3.12
-setuptoolsver=67.6.1  # required for Python 3.12
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 rm -Rf testenv? || /bin/true
@@ -31,11 +30,8 @@ then
 	# First we test the head
 	# shellcheck source=/dev/null
 	source testenv1/bin/activate
-	rm -Rf testenv1/local
-	rm -f testenv1/lib/python-wheels/setuptools* \
-		&& pip install --force-reinstall -U pip==${pipver} \
-		&& pip install setuptools==${setuptoolsver} wheel
-	pip install -rtest-requirements.txt ".${extras}"
+	pip install --force-reinstall -U pip==${pipver} build
+	pip install ".${extras}"
 	make test
 	pip uninstall -y ${package} || true; pip uninstall -y ${package} || true; make install
 	${run_tests}
@@ -52,9 +48,8 @@ rm -Rf testenv[2345]/local
 pushd testenv2
 # shellcheck source=/dev/null
 source bin/activate
-rm -f lib/python-wheels/setuptools* \
-	&& pip install --force-reinstall -U pip==${pipver} \
-        && pip install setuptools==${setuptoolsver} wheel
+pip install --force-reinstall -U pip==${pipver} \
+        && pip install build wheel
 # The following can fail if you haven't pushed your commits to ${repo}
 pip install -e "git+${repo}@${HEAD}#egg=${package}${extras}"
 pushd src/${package}
@@ -75,9 +70,8 @@ popd
 pushd testenv3/
 # shellcheck source=/dev/null
 source bin/activate
-rm -f lib/python-wheels/setuptools* \
-	&& pip install --force-reinstall -U pip==${pipver} \
-        && pip install setuptools==${setuptoolsver} wheel
+pip install --force-reinstall -U pip==${pipver} \
+        && pip install build wheel
 package_tar=$(find . -name "${module}*tar.gz")
 pip install "-r${DIR}/test-requirements.txt" build
 pip install "${package_tar}${extras}"
@@ -97,10 +91,9 @@ popd
 
 pushd testenv4/
 # shellcheck source=/dev/null
-source bin/activate
-rm -f lib/python-wheels/setuptools* \
+source bin/activate \
 	&& pip install --force-reinstall -U pip==${pipver} \
-        && pip install setuptools==${setuptoolsver} wheel
+        && pip install build wheel
 pip install "$(ls ${module}*.whl)${extras}"
 pip install "-r${DIR}/test-requirements.txt"
 ${run_tests}
