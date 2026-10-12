@@ -1,5 +1,5 @@
 mypy[mypyc]==2.4.0  # update pyproject.toml as well
-black>=23.12,<26.4
+black>=26.10.0,<26.11
 types-requests
 types-dataclasses
 objgraph
