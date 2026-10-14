@@ -70,7 +70,7 @@ jobs:
           CIBW_CACHE_PATH: ${{ runner.temp }}/cibw-cache
           CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:/usr/lib/ccache/bin:/usr/lib64/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros" CCACHE_NOHASHDIR="true" SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: artifact-${{ matrix.image }}
           path: ./wheelhouse/*.whl
@@ -109,7 +109,7 @@ jobs:
         env:
           CIBW_PLATFORM: pyodide
           CIBW_CACHE_PATH: ${{ runner.temp }}/cibw-cache
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: artifact-pyodide
           path: ./wheelhouse/*.whl
@@ -133,7 +133,7 @@ jobs:
       - name: Build sdist
         run: pipx run build --sdist
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: artifact-sdist
           path: dist/*.tar.gz
@@ -184,7 +184,7 @@ jobs:
           CIBW_CACHE_PATH: ${{ runner.temp }}/cibw-cache
           CIBW_ENVIRONMENT_MACOS: CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros" CCACHE_NOHASHDIR="true" PATH=/usr/local/opt/ccache/libexec:/opt/homebrew/opt/ccache/libexec:$PATH SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs"
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: artifact-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
@@ -271,7 +271,7 @@ jobs:
           CIBW_CACHE_PATH: ${{ runner.temp }}/cibw-cache
           CIBW_ENVIRONMENT_LINUX: PATH=/usr/local/bin:/usr/lib/ccache:/usr/lib/ccache/bin:/usr/lib64/ccache:$PATH CCACHE_DIR=/host${{ github.workspace }}/.ccache CCACHE_CONFIGPATH=/host/home/runner/.config/ccache/ccache.conf CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros" CCACHE_NOHASHDIR="true" SCHEMA_SALAD_USE_MYPYC=1 MYPYPATH="$(pwd)/mypy-stubs" PIP_EXTRA_INDEX_URL=https://pypi.riseproject.dev/simple/
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: artifact-${{ matrix.only }}
           path: ./wheelhouse/*.whl
