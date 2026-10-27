@@ -10,7 +10,7 @@ requires = [
     "types-setuptools",
     "CacheControl[filecache] >= 0.14.0, < 0.15",
     "rich-argparse",
-    "mistune >= 3.3.0, < 3.4",
+    "mistune >= 3.4.0, < 3.5",
 ]
 build-backend = "setuptools.build_meta"
 
