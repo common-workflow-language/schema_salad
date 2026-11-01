@@ -27,7 +27,6 @@ EXTRAS=[pycodegen]
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard src/${MODULE}/**.py src/${MODULE}/avro/*.py src/${MODULE}/tests/*.py) setup.py
-DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt -rlint-requirements.txt
 COVBASE=coverage run --append
 PYTEST_EXTRA ?=
 
@@ -48,7 +47,8 @@ cleanup: sort_imports format flake8 diff_pydocstyle_report
 install-dep: install-dependencies
 
 install-dependencies: FORCE
-	pip install --upgrade $(DEVPKGS)
+	pip install -U pip setuptools_scm[toml] wheel build
+	pip install --upgrade --group dev
 
 ## install                : install the schema-salad package and scripts
 install: FORCE
@@ -56,7 +56,6 @@ install: FORCE
 
 ## dev                    : install the schema-salad package in dev mode
 dev: install-dep
-	pip install -U pip setuptools_scm[toml] wheel
 	pip install -e .$(EXTRAS)
 
 ## dist                   : create a module package for distribution

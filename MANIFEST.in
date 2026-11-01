@@ -1,4 +1,4 @@
-include Makefile LICENSE.txt requirements.txt mypy-requirements.txt test-requirements.txt mypy.ini
+include Makefile LICENSE.txt requirements.txt mypy.ini
 include src/schema_salad/py.typed
 include src/schema_salad/avro/*
 recursive-include src/schema_salad/java *

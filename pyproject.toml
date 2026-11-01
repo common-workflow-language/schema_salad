@@ -14,13 +14,47 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+[dependency-groups]
+lint = [
+  "diff_cover < 10.7",
+  "pydocstyle < 6.4",
+  "flake8 > 4",
+  "flake8-bugbear < 26.10",
+  "bandit < 1.9.5",
+  "pylint < 4.2",
+]
+mypy = [
+  "mypy[mypyc]==2.4.0",  # update the build-system.requires above as well
+  "black>=26.10.1,<26.11",
+  "types-requests",
+  "types-dataclasses",
+  "objgraph",
+]
+test = [
+  "pytest >= 6.2, < 9.1",
+  "pytest-cov",
+  "pytest-xdist",
+  "setuptools",
+  "mistune >= 3.1.4",
+]
+dev = [
+  {include-group = "lint"},
+  {include-group = "mypy"},
+  {include-group = "test"},
+  "tox >= 4",
+  "isort >= 9.0.2, < 9.1",
+  "build < 1.6.2",
+  "autoflake < 2.5",
+  "auto-walrus",
+]
+
 [tool.setuptools_scm]
 write_to = "src/schema_salad/_version.py"
 
 [tool.cibuildwheel]
 test-command = "python -m pytest -n auto -k 'not (test_load_by_yaml_metaschema)' --junitxml={project}/test-results/junit_$(python -V | awk '{print $2}')_${AUDITWHEEL_PLAT}.xml --pyargs schema_salad"
-test-requires = "-r test-requirements.txt"
-test-extras = "pycodegen"
+test-groups = ["test"]
+test-extras = ["pycodegen"]
 build-verbosity = 1
 environment = { SCHEMA_SALAD_USE_MYPYC="1", MYPYPATH="$(pwd)/mypy-stubs", CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime,locale,time_macros", CCACHE_NOHASHDIR="true" }
 
