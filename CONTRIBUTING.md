@@ -1,4 +1,10 @@
-Style guide:
+# Coding agents
+For copyright and licensing reasons we can't accept any contributions made with
+Claude or other LLM based coding agents. You can use whatever tools you want for
+code exploration, but we can only accept human written code for the CWL project.
+
+
+# Style guide
 - Python 3.10+ compatible code
 - PEP-484 type hints
 - Prefer new style format strings https://pyformat.info/
