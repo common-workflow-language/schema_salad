@@ -27,6 +27,11 @@ _vocab: Final[dict[str, str]] = {}
 _rvocab: Final[dict[str, str]] = {}
 
 
+def get_loaders() -> dict[str, Loader | None]:
+    """Return a copy of the loaders registry."""
+    return _loaders.copy()
+
+
 class _AnyLoader(Loader):
     def load(
         self,
