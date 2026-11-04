@@ -19,7 +19,7 @@ lint = [
   "diff_cover < 10.7",
   "pydocstyle < 6.4",
   "flake8 > 4",
-  "flake8-bugbear < 26.10",
+  "flake8-bugbear < 26.11",
   "bandit < 1.9.5",
   "pylint < 4.2",
 ]
