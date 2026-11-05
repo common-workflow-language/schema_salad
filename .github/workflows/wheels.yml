@@ -257,7 +257,7 @@ jobs:
           restore-keys: |
             cibw-${{ matrix.only }}
       - name: Setup Python 3.14
-        uses: riseproject-dev/setup-python@0d1135ac814405808323d2060134097ba5fd641b
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: 3.14
           freethreaded: false
