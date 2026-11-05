@@ -47,6 +47,9 @@ dev = [
   "autoflake < 2.5",
   "auto-walrus",
 ]
+cibw = [
+  "cibuildwheel==4.2.0"
+]
 
 [tool.setuptools_scm]
 write_to = "src/schema_salad/_version.py"
