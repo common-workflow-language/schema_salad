@@ -1,0 +1,73 @@
+[tox]
+envlist = [
+  "lintreadme",
+  "pydocstyle",
+  { product = [
+     ["lint", "unit", "mypy", "memleak"],
+     { prefix = "3.", start = 10, stop = 15},
+   ] },
+]
+skip_missing_interpreters = "True"
+
+[gh-actions]
+python = """
+  3.10: 3.10
+  3.11: 3.11
+  3.12: 3.12
+  3.13: 3.13
+  3.14: 3.14
+  3.15: 3.15
+"""
+
+[env_run_base]  # shared config
+pass_env = ["CI", "GITHUB_*"]
+allowlist_externals = ["make"]
+
+[env_base.unit]
+factors = [ { py_version = { prefix = "3.", start = 10, stop = 15 } }]
+description = "Run the unit tests"
+dependency_groups = ["test"]
+extras = ["pycodegen"]
+set_env = { LC_ALL= "C.UTF-8" }
+commands = [["make", "--always-make", "coverage-report", "coverage.xml", "PYTEST_EXTRA={posargs}"]]
+
+[env_base.lint]
+factors = [ { py_version = { prefix = "3.", start = 10, stop = 15 } }]
+description = "Lint the Python code and search for common security issues"
+dependency_groups = ["lint"]
+extras = ["mypy"]
+commands = [["make", "bandit", "flake8", "format-check", "diff_pylint_report", "diff_pydocstyle_report"]]
+allowlist_externals = ["make", "flake8", "black"]
+
+[env_base.mypy]
+factors = [ { py_version = { prefix = "3.", start = 10, stop = 15 } }]
+description = "Check for type safety"
+dependency_groups = ["test"]
+extras = ["mypy"]
+commands = [["make", "mypy", "mypyc"]]
+
+[env_base.memleak]
+factors = [ { py_version = { prefix = "3.", start = 10, stop = 15 } }]
+description = "Simple test for memory leaks with mypyc"
+deps = ["cwl-utils", "objgraph"]
+extras = ["mypy"]
+commands = [["make", "mypyi"], ["python", "src/schema_salad/tests/memory-leak-check.py", "src/schema_salad/tests/test_real_cwl/ICGC-TCGA-PanCancer/complete/preprocess_vcf.cwl"]]
+
+[env.lintreadme]
+description = "Lint the README.rst->.md conversion"
+commands = [["make", "clean", "dist"], ["twine", "check", "dist/schema[-_]salad*"]]
+deps = [
+  "twine",
+  "build",
+  "readme_renderer[rst]",
+]
+skip_install = true
+
+[env.pydocstyle]
+description = "docstring style checker"
+commands = [["make", "diff_pydocstyle_report"]]
+deps = [
+  "pydocstyle",
+  "diff-cover",
+]
+skip_install = true
