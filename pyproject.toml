@@ -13,7 +13,7 @@ lint = [
 ]
 test = [
   "coverage >= 7.14.0",  # automatic report combining
-  "pytest >= 6.2, < 9.1",
+  "pytest >= 6.2, < 9.3",
   "pytest-xdist",
   "mistune >= 3.1.4, < 3.4",
 ]
