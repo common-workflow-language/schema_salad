@@ -9,15 +9,13 @@ envlist = [
 ]
 skip_missing_interpreters = "True"
 
-[gh-actions]
-python = """
-  3.10: 3.10
-  3.11: 3.11
-  3.12: 3.12
-  3.13: 3.13
-  3.14: 3.14
-  3.15: 3.15
-"""
+[gh.python]
+"3.10" = ["{unit,lint,mypy,memleak}-3.10"]
+"3.11" = ["{unit,lint,mypy,memleak}-3.11"]
+"3.12" = ["{unit,lint,mypy,memleak}-3.12"]
+"3.13" = ["{unit,lint,mypy,memleak}-3.13"]
+"3.14" = ["{unit,lint,mypy,memleak}-3.14"]
+"3.15" = ["{unit,lint,mypy,memleak}-3.15"]
 
 [env_run_base]  # shared config
 pass_env = ["CI", "GITHUB_*"]
