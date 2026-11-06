@@ -15,7 +15,7 @@ test = [
   "coverage >= 7.14.0",  # automatic report combining
   "pytest >= 6.2, < 9.3",
   "pytest-xdist",
-  "mistune >= 3.1.4, < 3.4",
+  "mistune >= 3.1.4, < 3.5",
 ]
 cibw = [
   "cibuildwheel==4.2.0"
@@ -60,7 +60,7 @@ dependencies = [
   "requests >= 1.0",
   "ruamel.yaml >= 0.17.6, < 0.20",
   "rdflib >= 4.2.2, < 8.0.0",
-  "mistune>=3.3.0,<3.4",
+  "mistune>=3.3.0,<3.5",
   "CacheControl[filecache] >= 0.13.1, < 0.15",
   "mypy_extensions",
   "rich-argparse",
