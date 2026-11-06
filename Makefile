@@ -70,6 +70,7 @@ docs: FORCE
 
 ## clean                  : clean up all temporary / machine-generated files
 clean: FORCE
+	rm -Rf build dist
 	find src -type d -name __pycache__ | xargs rm -Rf
 	rm -f src/schema_salad/_version.py
 	find src -type f -name "*.so" -delete
@@ -120,18 +121,19 @@ diff_pylint_report: pylint_report.txt
 	diff-quality --compare-branch=origin/main --violations=pylint pylint_report.txt
 
 .coverage: testcov
-	$(COVBASE) -m schema_salad.main \
-		--print-jsonld-context src/schema_salad/metaschema/metaschema.yml \
-		> /dev/null
-	$(COVBASE) -m schema_salad.main \
-		--print-rdfs src/schema_salad/metaschema/metaschema.yml \
-		> /dev/null
-	$(COVBASE) -m schema_salad.main \
-		--print-avro src/schema_salad/metaschema/metaschema.yml \
-		> /dev/null
-	$(COVBASE) -m schema_salad.makedoc --debug \
-		src/schema_salad/metaschema/metaschema.yml \
-		> /dev/null
+	coverage combine
+#	$(COVBASE) -m schema_salad.main \
+#		--print-jsonld-context src/schema_salad/metaschema/metaschema.yml \
+#		> /dev/null
+#	$(COVBASE) -m schema_salad.main \
+#		--print-rdfs src/schema_salad/metaschema/metaschema.yml \
+#		> /dev/null
+#	$(COVBASE) -m schema_salad.main \
+#		--print-avro src/schema_salad/metaschema/metaschema.yml \
+#		> /dev/null
+#	$(COVBASE) -m schema_salad.makedoc --debug \
+#		src/schema_salad/metaschema/metaschema.yml \
+#		> /dev/null
 
 coverage.xml: .coverage
 	coverage xml
@@ -157,7 +159,7 @@ test: $(PYSOURCES)
 
 ## testcov                : run the schema-salad test suite and collect coverage
 testcov: FORCE
-	pytest --cov= --cov-config=.coveragerc --cov-report= --junitxml=junit.xml -o junit_family=legacy ${PYTEST_EXTRA}
+	coverage run --parallel -m pytest --junitxml=junit.xml -o junit_family=legacy ${PYTEST_EXTRA}
 
 sloccount.sc: $(PYSOURCES) Makefile
 	sloccount --duplicates --wide --details $^ > $@

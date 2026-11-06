@@ -12,10 +12,9 @@ lint = [
   "pylint < 4.2",
 ]
 test = [
+  "coverage >= 7.14.0",  # automatic report combining
   "pytest >= 6.2, < 9.1",
-  "pytest-cov",
   "pytest-xdist",
-  "setuptools",
   "mistune >= 3.1.4, < 3.4",
 ]
 cibw = [
@@ -163,3 +162,13 @@ pythonpath = [
 
 [tool.isort]
 profile = "black"
+
+[tool.coverage.run]
+branch = true
+patch = ["subprocess"]
+source_pkgs = ["schema_salad"]
+omit = ["**/schema_salad/tests/**","**/schema_salad/metaschema.py", "**/schema_salad/python_codegen_support.py", "**/cwl_v1_0.py"]
+
+[tool.coverage.report]
+omit = ["**/cwl_v1_0.py", ]#  "**/schema_salad/metaschema.py", "**/schema_salad/python_codegen_support.py"]
+exclude_also = ["if self.debug:", "raise NotImplementedError", "if __name__ == .__main__.:"]
