@@ -130,6 +130,7 @@ exclude = [
   "/src/schema_salad/metaschema.py", # "Multiple inheritance is not supported"
   "/src/schema_salad/python_codegen_support.py",
   "/src/schema_salad/runtime.py",    # "interpreted classes cannot inherit from compiled"
+  "/src/schema_salad/_version.py",   # "RuntimeError: Reached allegedly unreachable code!"
   "/src/schema_salad/tests/**",      # don't compile the tests
 ]
 
