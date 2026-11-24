@@ -61,7 +61,7 @@ dependencies = [
   "ruamel.yaml >= 0.17.6, < 0.20",
   "rdflib >= 4.2.2, < 8.0.0",
   "mistune>=3.3.0,<3.5",
-  "CacheControl[filecache] >= 0.13.1, < 0.15",
+  "CacheControl[filecache] >= 0.13.1, < 0.16",
   "mypy_extensions",
   "rich-argparse",
 ]
@@ -73,7 +73,7 @@ mypy = [
   "black>=26.10.1,<26.11",
   "types-requests",
   "types-dataclasses",
-  "CacheControl[filecache] >= 0.14.0, < 0.15",
+  "CacheControl[filecache] >= 0.14.0, < 0.16",
 ]
 docs = [
   "sphinx >= 2.2",
